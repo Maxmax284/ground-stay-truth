@@ -111,6 +111,11 @@ export default function EmbedWidget() {
 function FullListing({ unit, blocked, accent }: { unit: UnitData; blocked: BlockedRange[]; accent: string }) {
   return (
     <div style={{ ...styles.container, maxWidth: 480 }}>
+      {unit.photos && unit.photos.length > 0 && (
+        <div style={{ margin: "-20px -20px 16px", borderRadius: "12px 12px 0 0", overflow: "hidden" }}>
+          <img src={unit.photos[0]} alt={unit.name} style={{ width: "100%", height: 200, objectFit: "cover", display: "block" }} />
+        </div>
+      )}
       <div style={{ marginBottom: 16 }}>
         <h2 style={{ ...styles.title, color: accent }}>{unit.name}</h2>
         {unit.description && <p style={styles.description}>{unit.description}</p>}
@@ -149,7 +154,11 @@ function FullListing({ unit, blocked, accent }: { unit: UnitData; blocked: Block
 // ── Compact Card ──
 function CompactCard({ unit, accent }: { unit: UnitData; accent: string }) {
   return (
-    <div style={{ ...styles.container, maxWidth: 320, padding: 16 }}>
+    <div style={{ ...styles.container, maxWidth: 320, padding: 0, overflow: "hidden" }}>
+      {unit.photos && unit.photos.length > 0 && (
+        <img src={unit.photos[0]} alt={unit.name} style={{ width: "100%", height: 140, objectFit: "cover", display: "block" }} />
+      )}
+      <div style={{ padding: 16 }}>
       <h3 style={{ fontSize: 16, fontWeight: 600, color: "#1f2937", margin: "0 0 4px" }}>{unit.name}</h3>
       {unit.description && (
         <p style={{ ...styles.muted, fontSize: 13, marginBottom: 12, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as any, overflow: "hidden" }}>
@@ -164,6 +173,7 @@ function CompactCard({ unit, accent }: { unit: UnitData; accent: string }) {
         <span style={{ fontSize: 18, fontWeight: 700, color: "#1f2937" }}>
           From ${unit.base_price}<span style={{ ...styles.muted, fontSize: 12 }}>/night</span>
         </span>
+      </div>
       </div>
     </div>
   );

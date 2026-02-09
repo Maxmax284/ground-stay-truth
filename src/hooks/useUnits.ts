@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
-export type Unit = Tables<"units">;
+export type Unit = Tables<"units"> & { unit_groups?: { name: string } | null };
 export type UnitInsert = TablesInsert<"units">;
 export type UnitUpdate = TablesUpdate<"units">;
 
@@ -12,7 +12,7 @@ export function useUnits() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("units")
-        .select("*")
+        .select("*, unit_groups(name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Unit[];
