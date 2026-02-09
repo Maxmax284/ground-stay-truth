@@ -18,28 +18,38 @@ import { BookingFormDialog } from "@/components/BookingFormDialog";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { STATE_LABELS, STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 
-function SoftHoldBadge({ booking }: { booking: any }) {
+function BookingStatusBadge({ booking }: { booking: any }) {
   const { data: policies } = usePolicySettings();
   const state = booking.state as BookingState;
 
-  if (state === "soft_hold") {
-    const expiryHours = policies?.find((p: any) => p.key === "soft_hold_expiration_hours");
-    const hours = expiryHours ? Number(expiryHours.value) : 12;
-    const elapsed = differenceInHours(new Date(), new Date(booking.created_at));
-    const isExpired = elapsed >= hours;
-    const remaining = hours - elapsed;
+  const deadlineInfo = (() => {
+    if (state === "soft_hold") {
+      const expiryHours = policies?.find((p: any) => p.key === "soft_hold_expiration_hours");
+      const hours = expiryHours ? Number(expiryHours.value) : 12;
+      const elapsed = differenceInHours(new Date(), new Date(booking.created_at));
+      return { isExpired: elapsed >= hours, remaining: hours - elapsed };
+    }
+    if (state === "pending_deposit") {
+      const deadlineHours = policies?.find((p: any) => p.key === "deposit_deadline_hours");
+      const hours = deadlineHours ? Number(deadlineHours.value) : 24;
+      const elapsed = differenceInHours(new Date(), new Date(booking.updated_at));
+      return { isExpired: elapsed >= hours, remaining: hours - elapsed };
+    }
+    return null;
+  })();
 
+  if (deadlineInfo) {
     return (
       <div className="flex items-center gap-1.5">
         <Badge className={STATE_VARIANTS[state]}>
           {STATE_LABELS[state]}
         </Badge>
-        {isExpired ? (
+        {deadlineInfo.isExpired ? (
           <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
             <AlertTriangle className="h-3 w-3 mr-0.5" /> Expired
           </Badge>
         ) : (
-          <span className="text-[10px] text-muted-foreground">{remaining}h left</span>
+          <span className="text-[10px] text-muted-foreground">{deadlineInfo.remaining}h left</span>
         )}
       </div>
     );
@@ -135,7 +145,7 @@ const Bookings = () => {
                     <TableCell>{format(new Date(b.check_out), "MMM d, yyyy")}</TableCell>
                     <TableCell>{b.num_guests}</TableCell>
                     <TableCell>
-                      <SoftHoldBadge booking={b} />
+                      <BookingStatusBadge booking={b} />
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {format(new Date(b.created_at), "MMM d")}

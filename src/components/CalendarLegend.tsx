@@ -29,6 +29,13 @@ export function CalendarLegend() {
         }} />
         <span className="text-muted-foreground">Cleaning Buffer</span>
       </div>
+      <div className="flex items-center gap-1.5">
+        <div className="h-3 w-6 rounded-sm" style={{
+          backgroundImage: "repeating-linear-gradient(45deg, hsl(var(--destructive) / 0.15), hsl(var(--destructive) / 0.15) 2px, hsl(var(--destructive) / 0.05) 2px, hsl(var(--destructive) / 0.05) 4px)",
+          border: "1px dashed hsl(var(--destructive) / 0.4)",
+        }} />
+        <span className="text-muted-foreground">Maintenance</span>
+      </div>
     </div>
   );
 }

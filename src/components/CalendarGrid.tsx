@@ -1,10 +1,11 @@
 import { useMemo } from "react";
-import { format, addDays, differenceInDays, isSameDay, isWithinInterval, startOfDay } from "date-fns";
+import { format, addDays, differenceInDays, isSameDay, startOfDay } from "date-fns";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { BookingState } from "@/lib/bookingStateMachine";
 import { STATE_LABELS } from "@/lib/bookingStateMachine";
 import type { Unit } from "@/hooks/useUnits";
 import type { BookingWithJoins } from "@/hooks/useBookings";
+import type { MaintenanceBlock } from "@/hooks/useMaintenanceBlocks";
 
 export const CALENDAR_STATE_COLORS: Record<BookingState, string> = {
   inquiry: "bg-muted",
@@ -21,6 +22,7 @@ export const CALENDAR_STATE_COLORS: Record<BookingState, string> = {
 interface CalendarGridProps {
   units: Unit[];
   bookings: BookingWithJoins[];
+  maintenanceBlocks?: MaintenanceBlock[];
   startDate: Date;
   days: number;
   cleaningBufferHours: number;
@@ -31,6 +33,7 @@ interface CalendarGridProps {
 export function CalendarGrid({
   units,
   bookings,
+  maintenanceBlocks = [],
   startDate,
   days,
   cleaningBufferHours,
@@ -54,6 +57,17 @@ export function CalendarGrid({
     }
     return map;
   }, [bookings]);
+
+  // Group maintenance blocks by unit
+  const blocksByUnit = useMemo(() => {
+    const map = new Map<string, MaintenanceBlock[]>();
+    for (const mb of maintenanceBlocks) {
+      const list = map.get(mb.unit_id) ?? [];
+      list.push(mb);
+      map.set(mb.unit_id, list);
+    }
+    return map;
+  }, [maintenanceBlocks]);
 
   const colWidth = 44; // px per day column
   const headerHeight = 56;
@@ -97,6 +111,7 @@ export function CalendarGrid({
           {/* Unit rows */}
           {units.map((unit) => {
             const unitBookings = bookingsByUnit.get(unit.id) ?? [];
+            const unitBlocks = blocksByUnit.get(unit.id) ?? [];
             return (
               <div key={unit.id} className="flex border-b last:border-b-0">
                 {/* Unit label */}
@@ -215,6 +230,46 @@ export function CalendarGrid({
                         </Tooltip>
                       );
                     })}
+
+                  {/* Maintenance block bars */}
+                  {unitBlocks.map((block) => {
+                    const blockStart = startOfDay(new Date(block.start_date));
+                    const blockEnd = addDays(startOfDay(new Date(block.end_date)), 1); // end_date is inclusive
+                    const gridStart = startOfDay(startDate);
+                    const gridEnd = addDays(gridStart, days);
+
+                    if (blockStart >= gridEnd || blockEnd <= gridStart) return null;
+
+                    const barStartOffset = Math.max(0, differenceInDays(blockStart, gridStart));
+                    const barEndOffset = Math.min(days, differenceInDays(blockEnd, gridStart));
+                    const barWidth = barEndOffset - barStartOffset;
+
+                    if (barWidth <= 0) return null;
+
+                    return (
+                      <Tooltip key={`maint-${block.id}`}>
+                        <TooltipTrigger asChild>
+                          <div
+                            className="absolute top-1 rounded-sm"
+                            style={{
+                              left: barStartOffset * colWidth + 2,
+                              width: barWidth * colWidth - 4,
+                              height: rowHeight - 8,
+                              backgroundImage: "repeating-linear-gradient(45deg, hsl(var(--destructive) / 0.15), hsl(var(--destructive) / 0.15) 3px, hsl(var(--destructive) / 0.05) 3px, hsl(var(--destructive) / 0.05) 6px)",
+                              border: "1px dashed hsl(var(--destructive) / 0.4)",
+                            }}
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <p className="text-xs font-medium">Maintenance</p>
+                          {block.reason && <p className="text-xs text-muted-foreground">{block.reason}</p>}
+                          <p className="text-xs text-muted-foreground">
+                            {format(blockStart, "MMM d")} – {format(new Date(block.end_date), "MMM d")}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
                 </div>
               </div>
             );
