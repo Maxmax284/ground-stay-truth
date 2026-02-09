@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import RoleRedirect from "@/components/RoleRedirect";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Units from "./pages/Units";
@@ -13,6 +14,7 @@ import CalendarView from "./pages/CalendarView";
 import Pricing from "./pages/Pricing";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import GuestPortal from "./pages/GuestPortal";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,13 +28,22 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+
+            {/* Root redirects based on role */}
+            <Route path="/" element={<ProtectedRoute><RoleRedirect /></ProtectedRoute>} />
+
+            {/* Staff routes */}
+            <Route path="/dashboard" element={<ProtectedRoute staffOnly><Index /></ProtectedRoute>} />
             <Route path="/units" element={<ProtectedRoute requireAdmin><Units /></ProtectedRoute>} />
-            <Route path="/bookings" element={<ProtectedRoute><Bookings /></ProtectedRoute>} />
-            <Route path="/calendar" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
+            <Route path="/bookings" element={<ProtectedRoute staffOnly><Bookings /></ProtectedRoute>} />
+            <Route path="/calendar" element={<ProtectedRoute staffOnly><CalendarView /></ProtectedRoute>} />
             <Route path="/pricing" element={<ProtectedRoute requireAdmin><Pricing /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute requireAdmin><Reports /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute staffOnly><Settings /></ProtectedRoute>} />
+
+            {/* Guest portal */}
+            <Route path="/guest" element={<ProtectedRoute guestOnly><GuestPortal /></ProtectedRoute>} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
