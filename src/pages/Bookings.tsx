@@ -11,6 +11,7 @@ import { format, differenceInHours } from "date-fns";
 import { useBookings } from "@/hooks/useBookings";
 import { useUnits } from "@/hooks/useUnits";
 import { useAuth } from "@/hooks/useAuth";
+import { permissions } from "@/lib/permissions";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { BookingFilters } from "@/components/BookingFilters";
 import { BookingFormDialog } from "@/components/BookingFormDialog";
@@ -52,7 +53,7 @@ function SoftHoldBadge({ booking }: { booking: any }) {
 }
 
 const Bookings = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, role } = useAuth();
   const { data: units } = useUnits();
 
   // Filters
@@ -80,9 +81,11 @@ const Bookings = () => {
             <h1 className="text-2xl font-bold text-foreground">Bookings</h1>
             <p className="text-muted-foreground mt-1">Manage reservations and booking states</p>
           </div>
-          <Button onClick={() => setShowCreate(true)}>
-            <Plus className="h-4 w-4 mr-2" /> New Booking
-          </Button>
+          {permissions.canCreateBooking(role) && (
+            <Button onClick={() => setShowCreate(true)}>
+              <Plus className="h-4 w-4 mr-2" /> New Booking
+            </Button>
+          )}
         </div>
 
         <BookingFilters
