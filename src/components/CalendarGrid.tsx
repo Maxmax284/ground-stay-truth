@@ -4,7 +4,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { BookingState } from "@/lib/bookingStateMachine";
 import { STATE_LABELS } from "@/lib/bookingStateMachine";
 import type { Unit } from "@/hooks/useUnits";
-import type { Booking } from "@/hooks/useBookings";
+import type { BookingWithJoins } from "@/hooks/useBookings";
 
 export const CALENDAR_STATE_COLORS: Record<BookingState, string> = {
   inquiry: "bg-muted",
@@ -20,7 +20,7 @@ export const CALENDAR_STATE_COLORS: Record<BookingState, string> = {
 
 interface CalendarGridProps {
   units: Unit[];
-  bookings: (Booking & { units: { name: string } | null })[];
+  bookings: BookingWithJoins[];
   startDate: Date;
   days: number;
   cleaningBufferHours: number;
@@ -166,6 +166,9 @@ export function CalendarGrid({
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-xs">
                           <p className="font-medium">{unit.name}</p>
+                          {booking.profiles?.full_name && (
+                            <p className="text-xs font-medium">{booking.profiles.full_name}</p>
+                          )}
                           <p className="text-xs">
                             {format(checkIn, "MMM d")} → {format(checkOut, "MMM d, yyyy")}
                           </p>

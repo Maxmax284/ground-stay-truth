@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useUnits } from "@/hooks/useUnits";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BookingFormDialogProps {
   open: boolean;
@@ -23,6 +26,7 @@ interface FormValues {
   check_out: string;
   num_guests: number;
   notes: string;
+  guest_id: string;
 }
 
 export function BookingFormDialog({
@@ -35,6 +39,25 @@ export function BookingFormDialog({
   const { toast } = useToast();
   const createBooking = useCreateBooking();
   const { data: units } = useUnits();
+  const [guestSearch, setGuestSearch] = useState("");
+
+  const guestProfiles = useQuery({
+    queryKey: ["guest-profiles"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, email")
+        .order("full_name", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const filteredGuests = (guestProfiles.data ?? []).filter((p) => {
+    if (!guestSearch) return true;
+    const q = guestSearch.toLowerCase();
+    return (p.full_name?.toLowerCase().includes(q) || p.email?.toLowerCase().includes(q));
+  });
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
     defaultValues: {
@@ -43,10 +66,12 @@ export function BookingFormDialog({
       check_out: defaultCheckOut ?? "",
       num_guests: 1,
       notes: "",
+      guest_id: "",
     },
   });
 
   const selectedUnitId = watch("unit_id");
+  const selectedGuestId = watch("guest_id");
 
   const onSubmit = async (data: FormValues) => {
     try {
@@ -56,6 +81,7 @@ export function BookingFormDialog({
         check_out: data.check_out,
         num_guests: Number(data.num_guests),
         notes: data.notes || null,
+        guest_id: data.guest_id || null,
         state: "inquiry",
       });
       toast({ title: "Booking created", description: "New inquiry has been logged." });
@@ -113,6 +139,30 @@ export function BookingFormDialog({
           <div className="space-y-2">
             <Label htmlFor="num_guests">Number of Guests</Label>
             <Input id="num_guests" type="number" min={1} {...register("num_guests")} />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Guest (optional)</Label>
+            <Input
+              placeholder="Search by name or email…"
+              value={guestSearch}
+              onChange={(e) => setGuestSearch(e.target.value)}
+              className="mb-1"
+            />
+            <Select value={selectedGuestId} onValueChange={(v) => setValue("guest_id", v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a guest" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">No guest</SelectItem>
+                {filteredGuests.map((p) => (
+                  <SelectItem key={p.user_id} value={p.user_id}>
+                    {p.full_name ?? p.email ?? p.user_id}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <input type="hidden" {...register("guest_id")} />
           </div>
 
           <div className="space-y-2">

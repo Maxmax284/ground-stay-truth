@@ -6,15 +6,50 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus } from "lucide-react";
-import { format } from "date-fns";
+import { Plus, AlertTriangle } from "lucide-react";
+import { format, differenceInHours } from "date-fns";
 import { useBookings } from "@/hooks/useBookings";
 import { useUnits } from "@/hooks/useUnits";
 import { useAuth } from "@/hooks/useAuth";
+import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { BookingFilters } from "@/components/BookingFilters";
 import { BookingFormDialog } from "@/components/BookingFormDialog";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { STATE_LABELS, STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
+
+function SoftHoldBadge({ booking }: { booking: any }) {
+  const { data: policies } = usePolicySettings();
+  const state = booking.state as BookingState;
+
+  if (state === "soft_hold") {
+    const expiryHours = policies?.find((p: any) => p.key === "soft_hold_expiration_hours");
+    const hours = expiryHours ? Number(expiryHours.value) : 12;
+    const elapsed = differenceInHours(new Date(), new Date(booking.created_at));
+    const isExpired = elapsed >= hours;
+    const remaining = hours - elapsed;
+
+    return (
+      <div className="flex items-center gap-1.5">
+        <Badge className={STATE_VARIANTS[state]}>
+          {STATE_LABELS[state]}
+        </Badge>
+        {isExpired ? (
+          <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+            <AlertTriangle className="h-3 w-3 mr-0.5" /> Expired
+          </Badge>
+        ) : (
+          <span className="text-[10px] text-muted-foreground">{remaining}h left</span>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <Badge className={STATE_VARIANTS[state]}>
+      {STATE_LABELS[state]}
+    </Badge>
+  );
+}
 
 const Bookings = () => {
   const { isAdmin } = useAuth();
@@ -76,6 +111,7 @@ const Bookings = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Unit</TableHead>
+                  <TableHead>Guest</TableHead>
                   <TableHead>Check-in</TableHead>
                   <TableHead>Check-out</TableHead>
                   <TableHead>Guests</TableHead>
@@ -91,13 +127,12 @@ const Bookings = () => {
                     onClick={() => setSelectedBookingId(b.id)}
                   >
                     <TableCell className="font-medium">{b.units?.name ?? "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{(b as any).profiles?.full_name ?? "—"}</TableCell>
                     <TableCell>{format(new Date(b.check_in), "MMM d, yyyy")}</TableCell>
                     <TableCell>{format(new Date(b.check_out), "MMM d, yyyy")}</TableCell>
                     <TableCell>{b.num_guests}</TableCell>
                     <TableCell>
-                      <Badge className={STATE_VARIANTS[b.state as BookingState]}>
-                        {STATE_LABELS[b.state as BookingState]}
-                      </Badge>
+                      <SoftHoldBadge booking={b} />
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {format(new Date(b.created_at), "MMM d")}

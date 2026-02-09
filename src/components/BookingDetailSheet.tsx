@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, differenceInHours } from "date-fns";
 import {
   useBooking,
   useBookingStateLog,
@@ -21,8 +21,9 @@ import {
   useCreateMessage,
 } from "@/hooks/useBookings";
 import { BookingStateTransition } from "@/components/BookingStateTransition";
+import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { STATE_LABELS, STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
-import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight } from "lucide-react";
+import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User } from "lucide-react";
 
 interface BookingDetailSheetProps {
   bookingId: string | null;
@@ -36,8 +37,19 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
   const { data: stateLog } = useBookingStateLog(bookingId);
   const { data: payments } = useBookingPayments(bookingId);
   const { data: messages } = useBookingMessages(bookingId);
+  const { data: policies } = usePolicySettings();
+
+  const softHoldInfo = useMemo(() => {
+    if (!booking || (booking.state as BookingState) !== "soft_hold") return null;
+    const expiryHours = policies?.find((p) => p.key === "soft_hold_expiration_hours");
+    const hours = expiryHours ? Number(expiryHours.value) : 12;
+    const elapsed = differenceInHours(new Date(), new Date(booking.created_at));
+    return { isExpired: elapsed >= hours, remaining: hours - elapsed, hours };
+  }, [booking, policies]);
 
   if (!booking) return null;
+
+  const guestName = (booking as any).profiles?.full_name;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -49,6 +61,21 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
               {STATE_LABELS[booking.state as BookingState]}
             </Badge>
           </SheetTitle>
+          {guestName && (
+            <div className="flex items-center gap-2 text-sm text-foreground">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">{guestName}</span>
+            </div>
+          )}
+          {softHoldInfo && (
+            <div className={`flex items-center gap-2 text-sm ${softHoldInfo.isExpired ? "text-destructive" : "text-warning-foreground"}`}>
+              <AlertTriangle className="h-4 w-4" />
+              {softHoldInfo.isExpired
+                ? "This soft hold has expired and should be cancelled or advanced."
+                : `Soft hold expires in ${softHoldInfo.remaining} hour${softHoldInfo.remaining !== 1 ? "s" : ""}.`
+              }
+            </div>
+          )}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CalendarDays className="h-4 w-4" />
             <span>{format(new Date(booking.check_in), "MMM d, yyyy")}</span>

@@ -26,13 +26,13 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<ProtectedRoute requireAdmin><Index /></ProtectedRoute>} />
+            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/units" element={<ProtectedRoute requireAdmin><Units /></ProtectedRoute>} />
-            <Route path="/bookings" element={<ProtectedRoute requireAdmin><Bookings /></ProtectedRoute>} />
-            <Route path="/calendar" element={<ProtectedRoute requireAdmin><CalendarView /></ProtectedRoute>} />
+            <Route path="/bookings" element={<ProtectedRoute><Bookings /></ProtectedRoute>} />
+            <Route path="/calendar" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
             <Route path="/pricing" element={<ProtectedRoute requireAdmin><Pricing /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute requireAdmin><Reports /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute requireAdmin><Settings /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

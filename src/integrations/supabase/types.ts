@@ -100,6 +100,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "bookings_guest_id_profiles_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "bookings_unit_id_fkey"
             columns: ["unit_id"]
             isOneToOne: false

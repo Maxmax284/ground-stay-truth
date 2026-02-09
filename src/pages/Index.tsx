@@ -134,7 +134,12 @@ const Index = () => {
               <CardContent className="space-y-2">
                 {arrivals.data?.map((b: any) => (
                   <div key={b.id} className="flex items-center justify-between text-sm border rounded-md p-3">
-                    <span className="font-medium">{b.units?.name ?? "—"}</span>
+                    <div>
+                      <span className="font-medium">{b.units?.name ?? "—"}</span>
+                      {b.profiles?.full_name && (
+                        <span className="text-muted-foreground ml-2">· {b.profiles.full_name}</span>
+                      )}
+                    </div>
                     <Badge variant="outline">{b.num_guests} guest{b.num_guests !== 1 ? "s" : ""}</Badge>
                   </div>
                 ))}
@@ -153,7 +158,12 @@ const Index = () => {
               <CardContent className="space-y-2">
                 {departures.data?.map((b: any) => (
                   <div key={b.id} className="flex items-center justify-between text-sm border rounded-md p-3">
-                    <span className="font-medium">{b.units?.name ?? "—"}</span>
+                    <div>
+                      <span className="font-medium">{b.units?.name ?? "—"}</span>
+                      {b.profiles?.full_name && (
+                        <span className="text-muted-foreground ml-2">· {b.profiles.full_name}</span>
+                      )}
+                    </div>
                     <Badge variant="outline">{b.num_guests} guest{b.num_guests !== 1 ? "s" : ""}</Badge>
                   </div>
                 ))}

@@ -71,12 +71,42 @@ export function useReports(monthOffset = 0) {
     count,
   }));
 
+  // Derived: blocked vs bookable per unit
+  const blockedVsBookable = (units.data ?? []).map((unit) => {
+    const unitBookings = (bookings.data ?? []).filter((b) => b.unit_id === unit.id);
+    let bookedDays = 0;
+    let blockedDays = 0;
+
+    daysInRange.forEach((day) => {
+      const dayStr = format(day, "yyyy-MM-dd");
+      const booked = unitBookings.some(
+        (b) =>
+          BLOCKING_STATES.includes(b.state as BookingState) &&
+          b.check_in <= dayStr &&
+          b.check_out > dayStr
+      );
+      const blocked = !booked && unitBookings.some(
+        (b) =>
+          ["cancelled", "no_show"].includes(b.state) === false &&
+          !BLOCKING_STATES.includes(b.state as BookingState) &&
+          b.check_in <= dayStr &&
+          b.check_out > dayStr
+      );
+      if (booked) bookedDays++;
+      else if (blocked) blockedDays++;
+    });
+
+    const availableDays = daysInRange.length - bookedDays - blockedDays;
+    return { name: unit.name, booked: bookedDays, blocked: blockedDays, available: availableDays };
+  });
+
   return {
     isLoading: bookings.isLoading || units.isLoading,
     occupancyByDay,
     occupancyRate,
     revenueByUnit,
     stateDistribution,
+    blockedVsBookable,
     rangeLabel: format(refDate, "MMMM yyyy"),
   };
 }
