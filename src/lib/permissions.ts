@@ -18,13 +18,13 @@ const ROLE_HIERARCHY: Record<AppRole, number> = {
 
 /** Navigation items visible per role */
 const NAV_ACCESS: Record<string, AppRole[]> = {
-  "/":         ["front_desk", "front_desk_supervisor", "manager", "admin", "viewer", "maintenance"],
-  "/units":    ["manager", "admin"],
-  "/bookings": ["front_desk", "front_desk_supervisor", "manager", "admin", "viewer"],
-  "/calendar": ["front_desk", "front_desk_supervisor", "manager", "admin", "viewer", "maintenance"],
-  "/pricing":  ["manager", "admin"],
-  "/reports":  ["manager", "admin", "viewer"],
-  "/settings": ["front_desk", "front_desk_supervisor", "manager", "admin"],
+  "/dashboard": ["front_desk", "front_desk_supervisor", "manager", "admin", "viewer", "maintenance"],
+  "/units":     ["manager", "admin"],
+  "/bookings":  ["front_desk", "front_desk_supervisor", "manager", "admin", "viewer"],
+  "/calendar":  ["front_desk", "front_desk_supervisor", "manager", "admin", "viewer", "maintenance"],
+  "/pricing":   ["manager", "admin"],
+  "/reports":   ["manager", "admin", "viewer"],
+  "/settings":  ["front_desk", "front_desk_supervisor", "manager", "admin"],
 };
 
 export function canAccessRoute(role: AppRole | null, path: string): boolean {

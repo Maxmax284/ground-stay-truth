@@ -1,14 +1,17 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { canAccessRoute } from "@/lib/permissions";
+import { permissions } from "@/lib/permissions";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  /** Legacy prop — still supported but route access is now role-driven */
   requireAdmin?: boolean;
+  /** If true, this route is only accessible to guests */
+  guestOnly?: boolean;
+  /** If true, this route is only accessible to staff (non-guest roles) */
+  staffOnly?: boolean;
 }
 
-const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, requireAdmin = false, guestOnly = false, staffOnly = false }: ProtectedRouteProps) => {
   const { user, loading, role, isAdmin } = useAuth();
 
   if (loading) {
@@ -20,6 +23,16 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
   }
 
   if (!user) return <Navigate to="/auth" replace />;
+
+  // Guest trying to access staff routes → redirect to guest portal
+  if (staffOnly && role === "guest") {
+    return <Navigate to="/guest" replace />;
+  }
+
+  // Staff trying to access guest-only routes → redirect to dashboard
+  if (guestOnly && permissions.isStaff(role)) {
+    return <Navigate to="/" replace />;
+  }
 
   // Legacy requireAdmin check
   if (requireAdmin && !isAdmin) {
