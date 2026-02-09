@@ -92,6 +92,10 @@ export const permissions = {
   canSendMessages: (role: AppRole | null) =>
     !!role && ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.front_desk,
 
+  /** Can manage maintenance blocks — Manager+ */
+  canManageMaintenanceBlocks: (role: AppRole | null) =>
+    !!role && ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.manager,
+
   /** Is a staff member (not guest) */
   isStaff: (role: AppRole | null) =>
     !!role && role !== "guest",

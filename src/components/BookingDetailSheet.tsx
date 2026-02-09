@@ -53,6 +53,14 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
     return { isExpired: elapsed >= hours, remaining: hours - elapsed, hours };
   }, [booking, policies]);
 
+  const depositDeadlineInfo = useMemo(() => {
+    if (!booking || (booking.state as BookingState) !== "pending_deposit") return null;
+    const deadlineSetting = policies?.find((p) => p.key === "deposit_deadline_hours");
+    const hours = deadlineSetting ? Number(deadlineSetting.value) : 24;
+    const elapsed = differenceInHours(new Date(), new Date(booking.updated_at));
+    return { isExpired: elapsed >= hours, remaining: hours - elapsed, hours };
+  }, [booking, policies]);
+
   if (!booking) return null;
 
   const guestName = (booking as any).profiles?.full_name;
@@ -79,6 +87,15 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
               {softHoldInfo.isExpired
                 ? "This soft hold has expired and should be cancelled or advanced."
                 : `Soft hold expires in ${softHoldInfo.remaining} hour${softHoldInfo.remaining !== 1 ? "s" : ""}.`
+              }
+            </div>
+          )}
+          {depositDeadlineInfo && (
+            <div className={`flex items-center gap-2 text-sm ${depositDeadlineInfo.isExpired ? "text-destructive" : "text-warning-foreground"}`}>
+              <AlertTriangle className="h-4 w-4" />
+              {depositDeadlineInfo.isExpired
+                ? "Deposit deadline has passed — cancel or record payment."
+                : `Deposit deadline in ${depositDeadlineInfo.remaining} hour${depositDeadlineInfo.remaining !== 1 ? "s" : ""}.`
               }
             </div>
           )}
