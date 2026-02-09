@@ -1,31 +1,140 @@
 
-# Fix: Sidebar Not Visible on Narrow Viewports
 
-## What's Happening
+# Unit Groups + Photo Uploads
 
-The sidebar is actually there -- it's working correctly. The Lovable preview panel is narrower than 768 pixels, which triggers the **mobile layout**. In mobile layout, the sidebar converts from a permanent side panel into a slide-out drawer that's closed by default. The only way to open it is the small hamburger icon (three lines) in the top-left header bar.
+## Overview
 
-The icon is there, but it's small and easy to miss.
+Two enhancements to the Units system, both non-breaking additions:
 
-## The Fix
+1. **Unit Groups** -- A new `unit_groups` table lets you organize units into named collections (e.g., "Beachfront Villas", "Mountain Cabins"). Every unit optionally belongs to a group. The Units page switches to a grouped view when groups exist, with an expandable/collapsible layout. All existing functionality (bookings, calendar, pricing, embeds) continues to work exactly as-is since they reference individual units by ID.
 
-Make the header bar more useful so the sidebar trigger is obvious and the current page context is always clear, even when the sidebar is hidden:
+2. **Photo Uploads** -- A storage bucket for unit images. The unit form gets a photo upload section where you can drag/drop or pick files. Photos are stored in cloud storage and URLs saved to the existing `photos` column on the `units` table. Photos display on unit cards, the guest portal listings, and embed widgets.
 
-1. **Enlarge and label the sidebar trigger** -- add "Menu" text next to the hamburger icon so it's unmistakable
-2. **Show the current page title** in the header bar so you always know where you are, even without the sidebar open
-3. **Add the "Ground Stay" branding** to the header on mobile so the app identity is always visible
+---
 
 ## What Changes
 
-**File: `src/components/DashboardLayout.tsx`**
-- Update the header to show "Ground Stay" branding on mobile
-- Display the current page name (Dashboard, Bookings, Settings, etc.) derived from the current route
-- Make the SidebarTrigger button larger with a visible label
+### Database
 
-This is a single-file change. No database or backend changes needed.
+- **New table: `unit_groups`**
+  - `id` (uuid, PK)
+  - `name` (text, required) -- e.g., "Beachfront Villas"
+  - `description` (text, optional)
+  - `sort_order` (integer, default 0) -- controls display ordering
+  - `is_active` (boolean, default true)
+  - `created_at`, `updated_at` (timestamps)
+  - RLS: Admins can manage, everyone can read active groups
+
+- **New column on `units`**: `group_id` (uuid, nullable, FK to `unit_groups.id`)
+  - Units without a group remain standalone -- nothing breaks
+
+- **New storage bucket**: `unit-photos` (public, so images load without auth tokens)
+  - RLS policies: Admins can upload/delete; public read access
+
+### UI Changes
+
+**Units Page (`src/pages/Units.tsx`)**
+- Add a "Groups" section at the top -- create/edit/delete groups
+- Units display grouped under their group header (collapsible sections)
+- Ungrouped units appear in an "Other Units" section at the bottom
+- Bulk actions: assign multiple units to a group at once
+
+**Unit Form Dialog (`src/components/UnitFormDialog.tsx`)**
+- New "Group" dropdown to assign a unit to a group (optional)
+- New "Photos" section with file upload area
+- Thumbnail grid of uploaded photos with remove buttons
+- Drag-and-drop support for image files
+
+**Unit Cards (Units page, Guest Portal, Embed Widget)**
+- Show the first photo as a card thumbnail/hero image
+- Photo count badge if multiple photos exist
+
+**New file: `src/components/UnitGroupManager.tsx`**
+- Small inline form for creating/editing group names
+- Displayed at the top of the Units page
+
+**New file: `src/hooks/useUnitGroups.ts`**
+- CRUD hooks for the `unit_groups` table (same pattern as `useUnits`)
+
+**Updated: `src/hooks/useUnits.ts`**
+- Join `unit_groups(name)` in the query so group name is available
+
+**Updated: `src/pages/GuestPortal.tsx`**
+- Listings tab groups units by their group name
+- Show first photo on listing cards
+
+**Updated: `src/pages/EmbedWidget.tsx`**
+- Show first photo in the listing and compact widget variants
+
+---
+
+## What Does NOT Change
+
+- Bookings, Calendar, Pricing, Reports, State Machine -- all reference `unit_id` directly and are unaffected
+- The `get-availability` edge function -- unchanged, still serves individual unit data
+- Existing units with no group assigned continue to work normally
+- All RLS policies on existing tables remain untouched
+
+---
 
 ## Technical Details
 
-- Use `useLocation()` from react-router-dom to read the current path and map it to a page title
-- Add responsive classes so the branding shows on small screens but stays hidden on desktop (where the sidebar already shows it)
-- Increase the SidebarTrigger touch target size for mobile usability
+### Storage bucket migration SQL
+
+```sql
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('unit-photos', 'unit-photos', true);
+
+CREATE POLICY "Anyone can view unit photos"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'unit-photos');
+
+CREATE POLICY "Admins can upload unit photos"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'unit-photos' 
+    AND has_role(auth.uid(), 'admin')
+  );
+
+CREATE POLICY "Admins can delete unit photos"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id = 'unit-photos' 
+    AND has_role(auth.uid(), 'admin')
+  );
+```
+
+### Photo upload flow
+
+1. User picks/drops image files in the unit form
+2. On form submit, files upload to `unit-photos/{unit_id}/{filename}` in storage
+3. Public URLs are constructed and saved to the `photos` text array on the unit row
+4. Thumbnails render from those URLs everywhere units are displayed
+
+### Grouped display logic
+
+```text
++-- Beachfront Villas (group header, collapsible)
+|   +-- Villa A (unit card)
+|   +-- Villa B (unit card)
+|
++-- Mountain Cabins (group header, collapsible)
+|   +-- Cabin 1 (unit card)
+|
++-- Other Units (ungrouped)
+    +-- Studio Downtown (unit card)
+```
+
+### Files to create
+- `src/hooks/useUnitGroups.ts`
+- `src/components/UnitGroupManager.tsx`
+- `src/components/UnitPhotoUpload.tsx`
+
+### Files to modify
+- `src/hooks/useUnits.ts` -- add group join
+- `src/components/UnitFormDialog.tsx` -- add group picker + photo upload
+- `src/pages/Units.tsx` -- grouped layout + group management
+- `src/pages/GuestPortal.tsx` -- grouped listings + photos
+- `src/pages/EmbedWidget.tsx` -- show photos in widgets
+- 1 database migration (unit_groups table + group_id column + storage bucket)
+
