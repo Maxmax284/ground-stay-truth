@@ -31,19 +31,35 @@ const GuestPortal = () => {
     },
   });
 
-  // Fetch active units for browsing
+  // Fetch active units for browsing (with group info)
   const { data: units } = useQuery({
     queryKey: ["guest-units"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("units")
-        .select("id, name, description, capacity, base_price, weekend_price, cleaning_fee, min_nights, amenities, photos")
+        .select("id, name, description, capacity, base_price, weekend_price, cleaning_fee, min_nights, amenities, photos, group_id, unit_groups(name)")
         .eq("is_active", true)
         .order("name");
       if (error) throw error;
       return data;
     },
   });
+
+  // Group units for display
+  const groupedUnits = useMemo(() => {
+    if (!units) return [];
+    const map = new Map<string, { name: string; units: typeof units }>();
+    const ungrouped: typeof units = [];
+    for (const u of units) {
+      if (u.group_id && u.unit_groups?.name) {
+        if (!map.has(u.group_id)) map.set(u.group_id, { name: u.unit_groups.name, units: [] });
+        map.get(u.group_id)!.units.push(u);
+      } else {
+        ungrouped.push(u);
+      }
+    }
+    return [...Array.from(map.values()), ...(ungrouped.length ? [{ name: "Other", units: ungrouped }] : [])];
+  }, [units]);
 
   // Cancellation policy from settings
   const cancellationSummary = useMemo(() => {
@@ -124,57 +140,71 @@ const GuestPortal = () => {
 
           {/* ── Listings Tab ── */}
           <TabsContent value="listings">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {units?.map((unit) => (
-                <Card key={unit.id}>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Home className="h-4 w-4 text-primary" />
-                      {unit.name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {unit.description && (
-                      <p className="text-sm text-muted-foreground">{unit.description}</p>
-                    )}
-                    <div className="flex flex-wrap gap-2 text-xs">
-                      <Badge variant="outline">Up to {unit.capacity} guests</Badge>
-                      <Badge variant="outline">Min {unit.min_nights} night{unit.min_nights > 1 ? "s" : ""}</Badge>
-                    </div>
-                    {(unit.amenities?.length ?? 0) > 0 && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {unit.amenities!.slice(0, 8).map((a, i) => (
-                          <Badge key={i} variant="secondary" className="text-[10px]">{a}</Badge>
-                        ))}
-                        {(unit.amenities!.length > 8) && (
-                          <Badge variant="secondary" className="text-[10px]">+{unit.amenities!.length - 8} more</Badge>
+            <div className="space-y-6">
+              {groupedUnits.map((group) => (
+                <div key={group.name}>
+                  {groupedUnits.length > 1 && (
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">{group.name}</h3>
+                  )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {group.units.map((unit) => (
+                      <Card key={unit.id} className="overflow-hidden">
+                        {unit.photos && unit.photos.length > 0 && (
+                          <div className="aspect-[16/9] overflow-hidden">
+                            <img src={unit.photos[0]} alt={unit.name} className="w-full h-full object-cover" />
+                          </div>
                         )}
-                      </div>
-                    )}
-                    <Separator />
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">From</span>
-                      <span className="font-semibold text-foreground">
-                        ${Number(unit.base_price).toFixed(0)}/night
-                      </span>
-                    </div>
-                    {Number(unit.weekend_price ?? 0) > 0 && (
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>Weekend rate</span>
-                        <span>${Number(unit.weekend_price).toFixed(0)}/night</span>
-                      </div>
-                    )}
-                    {Number(unit.cleaning_fee ?? 0) > 0 && (
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>Cleaning fee</span>
-                        <span>${Number(unit.cleaning_fee).toFixed(0)}</span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <Home className="h-4 w-4 text-primary" />
+                            {unit.name}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {unit.description && (
+                            <p className="text-sm text-muted-foreground">{unit.description}</p>
+                          )}
+                          <div className="flex flex-wrap gap-2 text-xs">
+                            <Badge variant="outline">Up to {unit.capacity} guests</Badge>
+                            <Badge variant="outline">Min {unit.min_nights} night{unit.min_nights > 1 ? "s" : ""}</Badge>
+                          </div>
+                          {(unit.amenities?.length ?? 0) > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {unit.amenities!.slice(0, 8).map((a, i) => (
+                                <Badge key={i} variant="secondary" className="text-[10px]">{a}</Badge>
+                              ))}
+                              {(unit.amenities!.length > 8) && (
+                                <Badge variant="secondary" className="text-[10px]">+{unit.amenities!.length - 8} more</Badge>
+                              )}
+                            </div>
+                          )}
+                          <Separator />
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">From</span>
+                            <span className="font-semibold text-foreground">
+                              ${Number(unit.base_price).toFixed(0)}/night
+                            </span>
+                          </div>
+                          {Number(unit.weekend_price ?? 0) > 0 && (
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <span>Weekend rate</span>
+                              <span>${Number(unit.weekend_price).toFixed(0)}/night</span>
+                            </div>
+                          )}
+                          {Number(unit.cleaning_fee ?? 0) > 0 && (
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <span>Cleaning fee</span>
+                              <span>${Number(unit.cleaning_fee).toFixed(0)}</span>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
               ))}
               {!units?.length && (
-                <p className="text-sm text-muted-foreground col-span-full text-center py-8">
+                <p className="text-sm text-muted-foreground text-center py-8">
                   No accommodations are currently listed.
                 </p>
               )}

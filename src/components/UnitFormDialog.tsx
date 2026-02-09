@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -6,8 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateUnit, useUpdateUnit, type Unit, type UnitInsert } from "@/hooks/useUnits";
+import { useUnitGroups } from "@/hooks/useUnitGroups";
+import { UnitPhotoUpload } from "@/components/UnitPhotoUpload";
 
 interface UnitFormDialogProps {
   open: boolean;
@@ -26,8 +29,19 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
   const { toast } = useToast();
   const createUnit = useCreateUnit();
   const updateUnit = useUpdateUnit();
+  const { data: groups } = useUnitGroups();
 
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>(unit?.amenities ?? []);
+  const [selectedGroupId, setSelectedGroupId] = useState<string>(unit?.group_id ?? "none");
+  const [photos, setPhotos] = useState<string[]>(unit?.photos ?? []);
+  const [savedUnitId, setSavedUnitId] = useState<string | undefined>(unit?.id);
+
+  useEffect(() => {
+    setSelectedAmenities(unit?.amenities ?? []);
+    setSelectedGroupId(unit?.group_id ?? "none");
+    setPhotos(unit?.photos ?? []);
+    setSavedUnitId(unit?.id);
+  }, [unit]);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     defaultValues: {
@@ -54,6 +68,8 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
       const payload = {
         ...data,
         amenities: selectedAmenities,
+        photos,
+        group_id: selectedGroupId === "none" ? null : selectedGroupId,
         base_price: Number(data.base_price),
         weekend_price: data.weekend_price ? Number(data.weekend_price) : null,
         cleaning_fee: Number(data.cleaning_fee),
@@ -65,7 +81,8 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
         await updateUnit.mutateAsync({ id: unit.id, ...payload });
         toast({ title: "Unit updated" });
       } else {
-        await createUnit.mutateAsync(payload as UnitInsert);
+        const result = await createUnit.mutateAsync(payload as UnitInsert);
+        setSavedUnitId(result.id);
         toast({ title: "Unit created" });
       }
       reset();
@@ -92,6 +109,24 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
             <Label htmlFor="description">Description</Label>
             <Textarea id="description" {...register("description")} placeholder="A cozy beachfront retreat…" rows={3} />
           </div>
+
+          {/* Group selector */}
+          {groups && groups.length > 0 && (
+            <div className="space-y-2">
+              <Label>Group</Label>
+              <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="No group" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No group</SelectItem>
+                  {groups.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -137,6 +172,16 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Photo upload – only when editing (unit has an ID) */}
+          <div className="space-y-2">
+            <Label>Photos</Label>
+            {savedUnitId ? (
+              <UnitPhotoUpload unitId={savedUnitId} photos={photos} onChange={setPhotos} />
+            ) : (
+              <p className="text-xs text-muted-foreground">Save the unit first to upload photos.</p>
+            )}
           </div>
 
           <div className="space-y-2">

@@ -289,6 +289,36 @@ export type Database = {
         }
         Relationships: []
       }
+      unit_groups: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       units: {
         Row: {
           amenities: string[] | null
@@ -297,6 +327,7 @@ export type Database = {
           cleaning_fee: number | null
           created_at: string
           description: string | null
+          group_id: string | null
           id: string
           is_active: boolean
           min_nights: number
@@ -313,6 +344,7 @@ export type Database = {
           cleaning_fee?: number | null
           created_at?: string
           description?: string | null
+          group_id?: string | null
           id?: string
           is_active?: boolean
           min_nights?: number
@@ -329,6 +361,7 @@ export type Database = {
           cleaning_fee?: number | null
           created_at?: string
           description?: string | null
+          group_id?: string | null
           id?: string
           is_active?: boolean
           min_nights?: number
@@ -338,7 +371,15 @@ export type Database = {
           updated_at?: string
           weekend_price?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "units_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "unit_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
