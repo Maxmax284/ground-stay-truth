@@ -8,6 +8,10 @@ export type BookingInsert = TablesInsert<"bookings">;
 export type BookingStateLog = Tables<"booking_state_log">;
 export type Payment = Tables<"payments">;
 export type Message = Tables<"messages">;
+export type BookingWithJoins = Booking & {
+  units: { name: string } | null;
+  profiles: { full_name: string | null; email: string | null } | null;
+};
 
 // ── Bookings list (with unit name join) ──
 export function useBookings(filters?: {
@@ -19,10 +23,10 @@ export function useBookings(filters?: {
   return useQuery({
     queryKey: ["bookings", filters],
     queryFn: async () => {
-      let query = supabase
+      let query = (supabase
         .from("bookings")
-        .select("*, units(name)")
-        .order("created_at", { ascending: false });
+        .select("*, units(name), profiles!bookings_guest_id_profiles_fkey(full_name, email)")
+        .order("created_at", { ascending: false })) as any;
 
       if (filters?.state) query = query.eq("state", filters.state);
       if (filters?.unitId) query = query.eq("unit_id", filters.unitId);
@@ -31,7 +35,7 @@ export function useBookings(filters?: {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as (Booking & { units: { name: string } | null })[];
+      return data as BookingWithJoins[];
     },
   });
 }
@@ -42,13 +46,13 @@ export function useBooking(id: string | null) {
     queryKey: ["booking", id],
     enabled: !!id,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from("bookings")
-        .select("*, units(name)")
+        .select("*, units(name), profiles!bookings_guest_id_profiles_fkey(full_name, email)")
         .eq("id", id!)
-        .single();
+        .single() as any);
       if (error) throw error;
-      return data as Booking & { units: { name: string } | null };
+      return data as BookingWithJoins;
     },
   });
 }

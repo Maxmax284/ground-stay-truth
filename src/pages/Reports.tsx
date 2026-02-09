@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, TrendingUp, BarChart3, PieChart } from "lucide-react";
+import { ChevronLeft, ChevronRight, TrendingUp, BarChart3, PieChart, Layers } from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, PieChart as RPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ const STATE_COLORS: Record<string, string> = {
 
 const Reports = () => {
   const [monthOffset, setMonthOffset] = useState(0);
-  const { isLoading, occupancyByDay, occupancyRate, revenueByUnit, stateDistribution, rangeLabel } = useReports(monthOffset);
+  const { isLoading, occupancyByDay, occupancyRate, revenueByUnit, stateDistribution, blockedVsBookable, rangeLabel } = useReports(monthOffset);
 
   return (
     <DashboardLayout>
@@ -156,6 +156,35 @@ const Reports = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Blocked vs Bookable */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Layers className="h-5 w-5 text-primary" /> Blocked vs Bookable Time
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-[220px] w-full" />
+            ) : blockedVsBookable.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No units configured yet.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={blockedVsBookable}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(30, 15%, 88%)" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} label={{ value: "Days", angle: -90, position: "insideLeft", fontSize: 11 }} />
+                  <Tooltip contentStyle={{ borderRadius: "0.5rem", fontSize: "0.8rem" }} />
+                  <Legend />
+                  <Bar dataKey="booked" stackId="a" fill="hsl(150, 45%, 40%)" name="Booked" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="blocked" stackId="a" fill="hsl(38, 55%, 65%)" name="Blocked" />
+                  <Bar dataKey="available" stackId="a" fill="hsl(30, 15%, 88%)" name="Available" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );

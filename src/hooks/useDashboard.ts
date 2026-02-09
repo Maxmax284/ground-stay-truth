@@ -9,9 +9,9 @@ export function useDashboardStats() {
   const arrivals = useQuery({
     queryKey: ["dashboard", "arrivals", today],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from("bookings")
-        .select("id, unit_id, num_guests, state, units(name)")
+        .select("id, unit_id, num_guests, state, guest_id, units(name), profiles!bookings_guest_id_profiles_fkey(full_name)") as any)
         .eq("check_in", today)
         .in("state", ["confirmed", "pending_deposit"]);
       if (error) throw error;
@@ -22,9 +22,9 @@ export function useDashboardStats() {
   const departures = useQuery({
     queryKey: ["dashboard", "departures", today],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from("bookings")
-        .select("id, unit_id, num_guests, state, units(name)")
+        .select("id, unit_id, num_guests, state, guest_id, units(name), profiles!bookings_guest_id_profiles_fkey(full_name)") as any)
         .eq("check_out", today)
         .eq("state", "checked_in");
       if (error) throw error;
