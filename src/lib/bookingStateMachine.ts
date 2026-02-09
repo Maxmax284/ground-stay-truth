@@ -1,0 +1,75 @@
+import type { Database } from "@/integrations/supabase/types";
+
+export type BookingState = Database["public"]["Enums"]["booking_state"];
+
+/**
+ * Canonical state transition map for Ground Stay.
+ * Only transitions listed here are valid without an admin override.
+ */
+export const STATE_TRANSITIONS: Record<BookingState, BookingState[]> = {
+  inquiry: ["soft_hold", "cancelled"],
+  soft_hold: ["pending_approval", "cancelled"],
+  pending_approval: ["pending_deposit", "cancelled"],
+  pending_deposit: ["confirmed", "cancelled"],
+  confirmed: ["checked_in", "cancelled", "no_show"],
+  checked_in: ["completed"],
+  completed: [],
+  cancelled: [],
+  no_show: [],
+};
+
+export const STATE_LABELS: Record<BookingState, string> = {
+  inquiry: "Inquiry",
+  soft_hold: "Soft Hold",
+  pending_approval: "Pending Approval",
+  pending_deposit: "Pending Deposit",
+  confirmed: "Confirmed",
+  checked_in: "Checked In",
+  completed: "Completed",
+  cancelled: "Cancelled",
+  no_show: "No-Show",
+};
+
+/** States that block calendar dates (overlap protection) */
+export const BLOCKING_STATES: BookingState[] = [
+  "pending_approval",
+  "pending_deposit",
+  "confirmed",
+  "checked_in",
+];
+
+/** States considered "active" for dashboard counts */
+export const ACTIVE_STATES: BookingState[] = [
+  "inquiry",
+  "soft_hold",
+  "pending_approval",
+  "pending_deposit",
+  "confirmed",
+  "checked_in",
+];
+
+/** Badge color variant per state — maps to design system tokens */
+export const STATE_VARIANTS: Record<BookingState, string> = {
+  inquiry: "bg-muted text-muted-foreground",
+  soft_hold: "bg-accent text-accent-foreground",
+  pending_approval: "bg-warning/20 text-warning-foreground",
+  pending_deposit: "bg-warning/20 text-warning-foreground",
+  confirmed: "bg-success/20 text-[hsl(var(--success))]",
+  checked_in: "bg-info/20 text-[hsl(var(--info))]",
+  completed: "bg-secondary text-secondary-foreground",
+  cancelled: "bg-destructive/10 text-destructive",
+  no_show: "bg-destructive/10 text-destructive",
+};
+
+export function getValidTransitions(currentState: BookingState): BookingState[] {
+  return STATE_TRANSITIONS[currentState] ?? [];
+}
+
+/** For admin override: all states except the current one */
+export function getAllTransitions(currentState: BookingState): BookingState[] {
+  const allStates: BookingState[] = [
+    "inquiry", "soft_hold", "pending_approval", "pending_deposit",
+    "confirmed", "checked_in", "completed", "cancelled", "no_show",
+  ];
+  return allStates.filter((s) => s !== currentState);
+}
