@@ -1,36 +1,109 @@
 
 
-# Fix: Photo Upload Flow + Visual Polish
+# Next Phase: Deposit Deadlines + Maintenance Blocks + Cleaning Buffer Enforcement
 
-## Problem 1: "Where do I add photos?"
+Three features that directly close gaps in the Ground Stay constitution, prioritized by operational impact.
 
-Currently, the unit form says **"Save the unit first to upload photos"** when creating a new unit. This is confusing -- you have to create the unit, then go back and edit it just to add photos.
+---
 
-**Fix**: Change the flow so the form creates the unit first (behind the scenes if needed), then immediately enables photo uploads -- OR simply make it clearer with a two-step workflow where the form stays open after creation so you can add photos right away.
+## 1. Deposit Deadline Warnings
 
-The simplest approach: When creating a new unit, after clicking "Add Unit", the form saves the unit but **stays open in edit mode** instead of closing. This lets you immediately upload photos. A success message confirms the unit was created, and you can then add photos and click "Save Changes" when done.
+**What it does:** Shows a countdown badge on bookings in `pending_deposit` state, warning staff when the 24-hour deposit deadline is approaching or has expired -- exactly like the existing `SoftHoldBadge` pattern.
 
-## Problem 2: Visual Polish
+**Changes:**
 
-The leftover `src/App.css` file contains Vite boilerplate styles (max-width constraints, centered text, logo animations) that aren't currently imported but could cause confusion. It should be cleaned up.
+### `src/pages/Bookings.tsx`
+- Rename `SoftHoldBadge` to `BookingStatusBadge` and extend it to handle both `soft_hold` (existing) and `pending_deposit` states
+- For `pending_deposit`: calculate elapsed time since the booking entered that state (using the `booking_state_log` transition timestamp, or falling back to `updated_at`)
+- Show "Xh left" or "Expired" badge, matching the existing soft hold pattern
+- Use the `deposit_deadline_hours` policy setting (default: 24h)
 
-Beyond that, no CSS regressions were introduced -- the design system in `index.css` with the warm hospitality theme is intact. The visual "feel" on narrow viewports may seem off simply because cards stack vertically, but that's expected responsive behavior.
+### `src/components/BookingDetailSheet.tsx`
+- Add a `depositDeadlineInfo` block (mirroring the existing `softHoldInfo`) that shows a warning banner when the booking is in `pending_deposit`
+- Message: "Deposit deadline in X hours" or "Deposit deadline has passed -- cancel or record payment"
 
-## Changes
+### `src/hooks/useBookings.ts`
+- Update the `useBookings` query to also fetch the most recent state log entry per booking (specifically the `pending_deposit` transition timestamp) so we can calculate deadlines accurately
+- Alternative simpler approach: use `booking.updated_at` as the timestamp for when it entered `pending_deposit` (already available, no extra query needed)
 
-### File: `src/components/UnitFormDialog.tsx`
-- After successfully creating a new unit, **keep the form open** and switch to edit mode (set the saved unit ID so photo upload becomes available)
-- Show a toast saying "Unit created -- you can now add photos"
-- Only close the form on Cancel or after editing/saving changes
-- Remove the "Save the unit first" message since the form will handle this automatically
+We will use the simpler approach (`updated_at`) to avoid query complexity. This is accurate because `updated_at` is set on every state change.
 
-### File: `src/App.css`
-- Remove all the Vite boilerplate CSS (logo spin, `.card`, `.read-the-docs`, `#root` constraints). This file is not imported but cleaning it up avoids future confusion.
+---
 
-## Technical Details
+## 2. Maintenance/Housekeeping Blocks
 
-In `UnitFormDialog.tsx`, the `onSubmit` function currently calls `onOpenChange(false)` after creation. The change:
-- On **create**: save the unit, get the returned `id`, set `savedUnitId` to enable photo uploads, but do NOT close the dialog. Update the form to edit mode.
-- On **edit**: save changes and close the dialog as before.
+**What it does:** Lets Admin/Manager block specific units for date ranges (maintenance, deep cleaning, renovation) with a reason. These blocks appear on the calendar with a distinct hatched pattern and prevent bookings during those dates.
 
-This is a small, contained change -- no database or backend modifications needed.
+**Changes:**
+
+### Database Migration
+- Create a `maintenance_blocks` table:
+  - `id` (uuid, primary key)
+  - `unit_id` (uuid, references units)
+  - `start_date` (date)
+  - `end_date` (date)
+  - `reason` (text)
+  - `created_by` (uuid)
+  - `created_at` (timestamptz)
+- RLS: Admin/Manager can manage; staff can read
+
+### `src/hooks/useMaintenanceBlocks.ts` (new file)
+- `useMaintenanceBlocks(filters?)` -- fetch blocks, optionally filtered by date range or unit
+- `useCreateMaintenanceBlock()` -- create a new block
+- `useDeleteMaintenanceBlock()` -- remove a block
+
+### `src/components/MaintenanceBlockDialog.tsx` (new file)
+- Simple form: select unit, start date, end date, reason
+- Used from the Calendar page (and optionally from Units page)
+
+### `src/components/CalendarGrid.tsx`
+- Render maintenance blocks as a distinct bar (e.g., red hatched pattern) on the calendar grid
+- Show tooltip with "Maintenance: [reason]"
+- Accept a new `maintenanceBlocks` prop
+
+### `src/pages/CalendarView.tsx`
+- Fetch maintenance blocks for the visible date range
+- Pass them to `CalendarGrid`
+- Add a "Block Dates" button (visible to Manager/Admin) that opens `MaintenanceBlockDialog`
+- Add maintenance blocks to the `CalendarLegend`
+
+### `src/components/BookingFormDialog.tsx`
+- When creating a booking, check if the selected dates overlap with any maintenance block for that unit
+- Show a validation error if they do: "This unit is blocked for maintenance from X to Y"
+
+### `src/lib/permissions.ts`
+- Add `canManageMaintenanceBlocks` -- Manager+ only
+
+---
+
+## 3. Cleaning Buffer Enforcement on Booking Creation
+
+**What it does:** When creating a booking, check whether the selected check-in date falls within the cleaning buffer window of an existing booking's check-out. Currently the buffer is only visual on the calendar -- this makes it a real validation.
+
+**Changes:**
+
+### `src/components/BookingFormDialog.tsx`
+- After selecting unit + dates, query existing bookings for that unit
+- Check if the new check-in falls within `cleaning_buffer_hours` of any existing booking's check-out
+- If so, show a validation warning: "Check-in conflicts with cleaning buffer -- earliest available check-in is [date/time]"
+- This is a soft warning for Admin (who can override) and a hard block for other roles
+
+---
+
+## Summary of Files Touched
+
+| File | Action |
+|------|--------|
+| `src/pages/Bookings.tsx` | Extend status badge for deposit deadlines |
+| `src/components/BookingDetailSheet.tsx` | Add deposit deadline warning banner |
+| `src/hooks/useMaintenanceBlocks.ts` | New hook for maintenance blocks |
+| `src/components/MaintenanceBlockDialog.tsx` | New dialog for creating blocks |
+| `src/components/CalendarGrid.tsx` | Render maintenance blocks on calendar |
+| `src/pages/CalendarView.tsx` | Wire up maintenance blocks + "Block Dates" button |
+| `src/components/CalendarLegend.tsx` | Add maintenance entry |
+| `src/components/BookingFormDialog.tsx` | Add buffer + maintenance overlap validation |
+| `src/lib/permissions.ts` | Add `canManageMaintenanceBlocks` |
+| Database migration | Create `maintenance_blocks` table with RLS |
+
+No changes to the booking state machine itself. No changes to pricing or auth. All three features follow existing patterns in the codebase.
+
