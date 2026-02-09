@@ -1,76 +1,141 @@
 
 
-# Ground Stay — Admin Dashboard MVP
+# Ground Stay -- Remaining Work (Gap Analysis and Implementation Plan)
 
-## Overview
-A warm, hospitality-styled admin dashboard for managing 6–20 accommodation units. Built with Supabase backend (auth, database, RLS) from day one. This first phase focuses on the **Admin perspective** with guest account support for future booking flows.
+## What's Already Done
+
+- Database schema: all 9 tables, RLS policies, booking overlap trigger, policy defaults seeded
+- Authentication: email/password login/signup, role checking, protected routes
+- Units: full CRUD with cards, edit dialog, active/inactive toggle
+- App shell: sidebar navigation, warm design system, dashboard layout
+
+## What's Still Needed
+
+The remaining work falls into 5 major feature areas, each currently a stub page. Given the scope, I recommend building them in this order -- each phase is independently useful.
 
 ---
 
-## 1. Authentication & Role System
-- **Email/password login** for staff and guests
-- User profiles table with name, avatar, and contact info
-- Separate **user_roles** table (Admin role for V1, extensible for Manager, Front Desk, etc.)
-- Protected routes — only authenticated Admins can access the dashboard
-- Login and signup pages with warm, welcoming design
+## Phase 1: Booking Management (the core of the system)
 
-## 2. Dashboard Home
-- **At-a-glance overview**: today's arrivals, departures, active bookings count, occupancy snapshot
-- Quick-action cards for common tasks (add unit, create booking, view calendar)
-- Clean, warm layout with soft accent colors and clear typography
+This is the most critical piece -- the booking state machine is the heart of Ground Stay.
 
-## 3. Unit/Property Management
-- **Unit list view** with cards showing photo, name, capacity, status (Active/Inactive)
-- **Unit detail/edit page**: name, description, capacity, amenities (multi-select), photos, minimum nights, cleaning fee, unit-specific rules
-- Toggle units Active/Inactive (inactive units hidden from guest-facing views)
-- Add and remove units
+**New files and hooks:**
+- `src/hooks/useBookings.ts` -- CRUD + state transition logic with audit logging
+- `src/hooks/useProfiles.ts` -- fetch guest profiles for booking display
+- `src/components/BookingFormDialog.tsx` -- create/edit booking (select unit, guest, dates, num_guests, notes)
+- `src/components/BookingDetailSheet.tsx` -- slide-out detail view with state history, pricing breakdown, messages, payments
+- `src/components/BookingStateTransition.tsx` -- state machine controls showing only valid next states, with required reason field
+- `src/components/BookingFilters.tsx` -- filter by state, unit, date range
 
-## 4. Booking Management
-- **Booking list** with filters by status, unit, and date range
-- **Booking detail view** showing full state, guest info, unit, dates, pricing breakdown, and audit log
-- **Booking state machine** with the 9 canonical states (Inquiry → Soft Hold → Pending Approval → Pending Deposit → Confirmed → Checked-In → Completed → Cancelled → No-Show)
-- State transitions enforced — no skipping states without logged override
-- Every state change recorded in an **audit log** with timestamp, user, and reason
-- Offline payment recording support
+**Booking state machine rules (enforced in UI):**
+- Valid transitions defined in a constant map (e.g., inquiry can go to soft_hold or cancelled)
+- Admin override allows skipping states with mandatory reason
+- Every transition writes to `booking_state_log` with from_state, to_state, changed_by, reason
+- UI hides invalid transitions entirely (per constitution: "hide actions users cannot perform")
 
-## 5. Calendar View
-- **Visual calendar** showing all units with blocked/available dates
-- Color-coded by booking state (inquiry, hold, confirmed, checked-in, maintenance)
-- Click a date range to start a new booking
-- Cleaning buffers visually indicated
-- No overlapping bookings enforced at the database level
+**Bookings page (`src/pages/Bookings.tsx`):**
+- Table/list view with columns: unit name, guest, check-in/out, state badge, created date
+- Filters bar (state, unit, date range)
+- Click row to open detail sheet
+- "New Booking" button opens form dialog
 
-## 6. Pricing & Policies (Admin Config)
-- **Per-unit pricing**: base price, weekend price, seasonal pricing rules
-- Manual price override per booking (logged)
-- Policy defaults displayed and editable: soft hold expiration, deposit deadline, cancellation windows, check-in/check-out times, cleaning buffer
-- All changes logged in audit trail
+**Payments section (within booking detail):**
+- Record offline payment (amount, method, notes)
+- Payment list per booking
+- No amounts visible to non-admin roles (V1 is admin-only so this is just architectural prep)
 
-## 7. Reporting (Phase 1)
-- **Occupancy rate** per unit and overall
-- **Revenue per unit** over selectable date ranges
-- **Blocked vs. bookable time** breakdown (including maintenance impact)
-- Simple charts with warm color palette — descriptive only, no forecasting
+**Messages section (within booking detail):**
+- Internal notes per booking
+- Mark as internal vs guest-visible
+- System messages clearly labeled
 
-## 8. Database Schema (Supabase)
-Core tables to be created:
-- `profiles` — user profile data
-- `user_roles` — role assignments (Admin for V1)
-- `units` — property/room definitions
-- `bookings` — reservations with state field
-- `booking_state_log` — audit trail for state transitions
-- `pricing_rules` — seasonal/weekend pricing per unit
-- `policy_settings` — system-wide configurable defaults
-- `messages` — booking-linked communication log (internal notes)
-- `payments` — payment records including offline
+---
 
-Row-level security on all tables, with `has_role()` helper function for policy checks.
+## Phase 2: Calendar View
 
-## 9. Design Direction
-- **Warm & hospitality** aesthetic: soft earth tones, rounded corners, welcoming typography
-- Calm, ops-first language throughout — no urgency or pressure patterns
-- Sidebar navigation with clear section grouping
-- Responsive layout (desktop-first, mobile-friendly)
-- Actions users can't perform are hidden, not grayed out
-- Clear explanations when actions are blocked
+**New files:**
+- `src/pages/CalendarView.tsx` -- full rewrite of the stub
+- `src/components/CalendarGrid.tsx` -- multi-unit timeline grid (units as rows, dates as columns)
+- `src/components/CalendarLegend.tsx` -- color key for states
+
+**Behavior:**
+- Horizontal scrolling timeline, 30-day default view with navigation
+- Each unit is a row; bookings rendered as colored bars spanning check-in to check-out
+- Color coding per state (inquiry = light, soft_hold = amber, confirmed = green, checked_in = blue, etc.)
+- Cleaning buffer shown as hatched/striped blocks after checkout
+- Click empty date range to open new booking form pre-filled with unit and dates
+- No overlapping bookings enforced visually and at database level (already done)
+- Guest-facing meaning: blocked dates show as "Unavailable" (prep for future embed)
+
+---
+
+## Phase 3: Pricing and Policies
+
+**Pricing page (`src/pages/Pricing.tsx`):**
+- Per-unit pricing summary cards showing base price, weekend price
+- Seasonal pricing rules: add/edit/delete rules per unit (name, date range, price)
+- `src/hooks/usePricingRules.ts` -- CRUD for pricing_rules table
+- `src/components/PricingRuleForm.tsx` -- form for seasonal rules
+
+**Policy settings section:**
+- Display and edit all policy_settings from the database
+- `src/hooks/usePolicySettings.ts` -- read/update for policy_settings table
+- `src/components/PolicySettingsForm.tsx` -- form for each policy key with current value, description
+- Changes logged (updated_by tracked in the table)
+
+**Pricing priority display:**
+- Show the priority order: Manual override > Seasonal > Weekend > Base
+- Read-only explainer -- no forecasting
+
+---
+
+## Phase 4: Dashboard Home (live data)
+
+**Update `src/pages/Index.tsx`:**
+- Replace static cards with real queries:
+  - Today's arrivals: bookings with check_in = today and state in (confirmed, pending_deposit)
+  - Today's departures: bookings with check_out = today and state = checked_in
+  - Active bookings: count of bookings in active states
+  - Occupancy: (booked nights / total available nights) for current period
+- Quick action cards linking to /units, /bookings, /calendar
+- Recent activity: last 10 entries from booking_state_log with human-readable descriptions
+
+---
+
+## Phase 5: Reports
+
+**Reports page (`src/pages/Reports.tsx`):**
+- `src/hooks/useReports.ts` -- aggregation queries
+- Three report cards with recharts visualizations:
+  1. **Occupancy rate**: bar chart per unit over selectable date range
+  2. **Revenue per unit**: stacked bar chart over selectable date range
+  3. **Blocked vs bookable time**: stacked bar showing maintenance, booked, and available
+- Date range selector (last 30 days, last 90 days, custom)
+- Descriptive only -- no forecasting or speculative analysis per constitution
+- Warm color palette consistent with design system
+
+---
+
+## Phase 6: Settings
+
+**Settings page (`src/pages/Settings.tsx`):**
+- Profile management: edit own name, phone, avatar
+- Policy settings editor (may share component with Pricing page)
+- User/role management (admin-only): list users, assign roles
+- This is lower priority since policies are also editable from the Pricing page
+
+---
+
+## Technical Notes
+
+- All data hooks follow the existing pattern in `useUnits.ts` (React Query + Supabase client)
+- No new database tables or migrations needed -- everything is already in place
+- State machine transition map will be a shared constant used by both Bookings and Calendar
+- Booking state log writes happen alongside state updates (in the same mutation function)
+- The overlap trigger in the database provides the safety net; UI also prevents invalid date selection
+- Cleaning buffer enforcement uses `policy_settings.cleaning_buffer_hours` value
+
+## Recommended Build Order
+
+Given scope, I recommend starting with **Phase 1 (Bookings)** as it is the operational core. Each phase after that builds on it. I would tackle them one phase per conversation to keep changes focused and testable.
 
