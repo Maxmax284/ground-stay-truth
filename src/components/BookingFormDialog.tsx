@@ -1,16 +1,22 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
+import { differenceInCalendarDays } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useUnits } from "@/hooks/useUnits";
+import { usePricingRules } from "@/hooks/usePricingRules";
 import { supabase } from "@/integrations/supabase/client";
+import { calculatePricing, type PricingSummary } from "@/lib/pricingCalculator";
+import { AlertTriangle } from "lucide-react";
 
 interface BookingFormDialogProps {
   open: boolean;
@@ -29,6 +35,13 @@ interface FormValues {
   guest_id: string;
 }
 
+const SOURCE_LABELS: Record<string, string> = {
+  override: "Manual Override",
+  seasonal: "Seasonal",
+  weekend: "Weekend",
+  base: "Base Rate",
+};
+
 export function BookingFormDialog({
   open,
   onOpenChange,
@@ -39,6 +52,7 @@ export function BookingFormDialog({
   const { toast } = useToast();
   const createBooking = useCreateBooking();
   const { data: units } = useUnits();
+  const { data: allPricingRules } = usePricingRules();
   const [guestSearch, setGuestSearch] = useState("");
 
   const guestProfiles = useQuery({
@@ -72,8 +86,44 @@ export function BookingFormDialog({
 
   const selectedUnitId = watch("unit_id");
   const selectedGuestId = watch("guest_id");
+  const checkIn = watch("check_in");
+  const checkOut = watch("check_out");
+  const numGuests = watch("num_guests");
+
+  const activeUnits = units?.filter((u) => u.is_active) ?? [];
+  const selectedUnit = activeUnits.find((u) => u.id === selectedUnitId);
+
+  // Validation checks
+  const validationErrors = useMemo(() => {
+    const errs: string[] = [];
+    if (!selectedUnit || !checkIn || !checkOut) return errs;
+
+    const nights = differenceInCalendarDays(new Date(checkOut), new Date(checkIn));
+
+    if (nights <= 0) {
+      errs.push("Check-out must be after check-in.");
+    } else if (nights < selectedUnit.min_nights) {
+      errs.push(`Minimum stay is ${selectedUnit.min_nights} night${selectedUnit.min_nights > 1 ? "s" : ""} for this unit.`);
+    }
+
+    if (Number(numGuests) > selectedUnit.capacity) {
+      errs.push(`Maximum capacity is ${selectedUnit.capacity} guest${selectedUnit.capacity > 1 ? "s" : ""} for this unit.`);
+    }
+
+    return errs;
+  }, [selectedUnit, checkIn, checkOut, numGuests]);
+
+  // Pricing breakdown
+  const pricing: PricingSummary = useMemo(() => {
+    if (!selectedUnit || !checkIn || !checkOut || validationErrors.length > 0) {
+      return { nights: [], subtotal: 0, cleaningFee: 0, total: 0 };
+    }
+    return calculatePricing(selectedUnit, checkIn, checkOut, allPricingRules ?? []);
+  }, [selectedUnit, checkIn, checkOut, allPricingRules, validationErrors]);
 
   const onSubmit = async (data: FormValues) => {
+    if (validationErrors.length > 0) return;
+
     try {
       await createBooking.mutateAsync({
         unit_id: data.unit_id,
@@ -82,6 +132,7 @@ export function BookingFormDialog({
         num_guests: Number(data.num_guests),
         notes: data.notes || null,
         guest_id: data.guest_id || null,
+        total_price: pricing.total > 0 ? pricing.total : null,
         state: "inquiry",
       });
       toast({ title: "Booking created", description: "New inquiry has been logged." });
@@ -98,11 +149,22 @@ export function BookingFormDialog({
     }
   };
 
-  const activeUnits = units?.filter((u) => u.is_active) ?? [];
+  // Summarize pricing sources used
+  const pricingSources = useMemo(() => {
+    const sources = new Map<string, number>();
+    pricing.nights.forEach((n) => {
+      const key = n.source === "seasonal" ? `${n.source}:${n.ruleName}` : n.source;
+      sources.set(key, (sources.get(key) ?? 0) + 1);
+    });
+    return Array.from(sources.entries()).map(([key, count]) => {
+      const [source, name] = key.split(":");
+      return { source, name, count };
+    });
+  }, [pricing.nights]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>New Booking</DialogTitle>
         </DialogHeader>
@@ -115,7 +177,12 @@ export function BookingFormDialog({
               </SelectTrigger>
               <SelectContent>
                 {activeUnits.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.name}
+                    <span className="text-muted-foreground ml-1 text-xs">
+                      (max {u.capacity}, min {u.min_nights}n)
+                    </span>
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -138,8 +205,62 @@ export function BookingFormDialog({
 
           <div className="space-y-2">
             <Label htmlFor="num_guests">Number of Guests</Label>
-            <Input id="num_guests" type="number" min={1} {...register("num_guests")} />
+            <Input
+              id="num_guests"
+              type="number"
+              min={1}
+              max={selectedUnit?.capacity ?? 99}
+              {...register("num_guests")}
+            />
           </div>
+
+          {/* Validation warnings */}
+          {validationErrors.length > 0 && (
+            <div className="rounded-md border border-destructive/50 bg-destructive/5 p-3 space-y-1">
+              {validationErrors.map((err, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm text-destructive">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <span>{err}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pricing breakdown */}
+          {pricing.nights.length > 0 && validationErrors.length === 0 && (
+            <div className="rounded-md border border-border bg-muted/30 p-3 space-y-2">
+              <h4 className="text-sm font-semibold text-foreground">Price Breakdown</h4>
+              <div className="space-y-1">
+                {pricingSources.map(({ source, name, count }, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                        {SOURCE_LABELS[source] ?? source}
+                      </Badge>
+                      {name && <span>({name})</span>}
+                      <span>× {count} night{count > 1 ? "s" : ""}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <Separator />
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Subtotal ({pricing.nights.length} night{pricing.nights.length > 1 ? "s" : ""})</span>
+                <span className="font-medium">${pricing.subtotal.toFixed(2)}</span>
+              </div>
+              {pricing.cleaningFee > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Cleaning fee</span>
+                  <span className="font-medium">${pricing.cleaningFee.toFixed(2)}</span>
+                </div>
+              )}
+              <Separator />
+              <div className="flex justify-between text-sm font-semibold">
+                <span>Total</span>
+                <span>${pricing.total.toFixed(2)}</span>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Guest (optional)</Label>
@@ -172,7 +293,7 @@ export function BookingFormDialog({
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={createBooking.isPending}>
+            <Button type="submit" disabled={createBooking.isPending || validationErrors.length > 0}>
               {createBooking.isPending ? "Creating…" : "Create Inquiry"}
             </Button>
           </div>
