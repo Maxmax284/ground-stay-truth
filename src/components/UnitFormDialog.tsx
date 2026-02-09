@@ -35,12 +35,14 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
   const [selectedGroupId, setSelectedGroupId] = useState<string>(unit?.group_id ?? "none");
   const [photos, setPhotos] = useState<string[]>(unit?.photos ?? []);
   const [savedUnitId, setSavedUnitId] = useState<string | undefined>(unit?.id);
+  const [isEditingAfterCreate, setIsEditingAfterCreate] = useState(false);
 
   useEffect(() => {
     setSelectedAmenities(unit?.amenities ?? []);
     setSelectedGroupId(unit?.group_id ?? "none");
     setPhotos(unit?.photos ?? []);
     setSavedUnitId(unit?.id);
+    setIsEditingAfterCreate(false);
   }, [unit]);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
@@ -77,16 +79,18 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
         min_nights: Number(data.min_nights),
       };
 
-      if (isEditing && unit) {
-        await updateUnit.mutateAsync({ id: unit.id, ...payload });
+      if ((isEditing || isEditingAfterCreate) && (unit || savedUnitId)) {
+        const id = unit?.id ?? savedUnitId!;
+        await updateUnit.mutateAsync({ id, ...payload });
         toast({ title: "Unit updated" });
+        reset();
+        onOpenChange(false);
       } else {
         const result = await createUnit.mutateAsync(payload as UnitInsert);
         setSavedUnitId(result.id);
-        toast({ title: "Unit created" });
+        setIsEditingAfterCreate(true);
+        toast({ title: "Unit created — you can now add photos" });
       }
-      reset();
-      onOpenChange(false);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -96,7 +100,7 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit Unit" : "Add Unit"}</DialogTitle>
+          <DialogTitle>{isEditing || isEditingAfterCreate ? "Edit Unit" : "Add Unit"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
@@ -199,7 +203,7 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
               Cancel
             </Button>
             <Button type="submit" disabled={createUnit.isPending || updateUnit.isPending}>
-              {isEditing ? "Save Changes" : "Add Unit"}
+              {isEditing || isEditingAfterCreate ? "Save Changes" : "Add Unit"}
             </Button>
           </div>
         </form>
