@@ -6,6 +6,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useTransitionBookingState } from "@/hooks/useBookings";
+import { useAuth } from "@/hooks/useAuth";
+import { permissions } from "@/lib/permissions";
 import {
   getValidTransitions,
   getAllTransitions,
@@ -21,17 +23,32 @@ interface BookingStateTransitionProps {
 
 export function BookingStateTransition({ bookingId, currentState, isAdmin }: BookingStateTransitionProps) {
   const { toast } = useToast();
+  const { role } = useAuth();
   const transition = useTransitionBookingState();
 
   const [adminOverride, setAdminOverride] = useState(false);
   const [targetState, setTargetState] = useState<BookingState | "">("");
   const [reason, setReason] = useState("");
 
-  const validStates = adminOverride
+  const canOverride = permissions.canAdminOverride(role);
+  const canCheckIn = permissions.canCompleteCheckIn(role);
+  const canCheckOut = permissions.canCompleteCheckOut(role);
+
+  // Get valid transitions then filter by role authority
+  const rawTransitions = adminOverride
     ? getAllTransitions(currentState)
     : getValidTransitions(currentState);
 
-  if (validStates.length === 0 && !isAdmin) return null;
+  const validStates = rawTransitions.filter((s) => {
+    // Check-in requires Supervisor+
+    if (s === "checked_in" && !canCheckIn) return false;
+    // Check-out (completed) requires Supervisor+
+    if (s === "completed" && !canCheckOut) return false;
+    return true;
+  });
+
+  if (!permissions.canTransitionState(role)) return null;
+  if (validStates.length === 0 && !canOverride) return null;
 
   const handleTransition = async () => {
     if (!targetState) return;
@@ -60,10 +77,10 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin }: Boo
     <div className="space-y-3 rounded-lg border border-border p-4">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">Change State</h4>
-        {isAdmin && validStates.length === 0 && !adminOverride && (
+        {canOverride && validStates.length === 0 && !adminOverride && (
           <p className="text-xs text-muted-foreground">No standard transitions — use override</p>
         )}
-        {isAdmin && (
+        {canOverride && (
           <div className="flex items-center gap-2">
             <Label htmlFor="admin-override" className="text-xs text-muted-foreground">Admin Override</Label>
             <Switch

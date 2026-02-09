@@ -1,13 +1,15 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { canAccessRoute } from "@/lib/permissions";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  /** Legacy prop — still supported but route access is now role-driven */
   requireAdmin?: boolean;
 }
 
 const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps) => {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, role, isAdmin } = useAuth();
 
   if (loading) {
     return (
@@ -18,6 +20,8 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
   }
 
   if (!user) return <Navigate to="/auth" replace />;
+
+  // Legacy requireAdmin check
   if (requireAdmin && !isAdmin) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">

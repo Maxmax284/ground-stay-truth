@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { permissions } from "@/lib/permissions";
 import { format, differenceInHours } from "date-fns";
 import {
   useBooking,
@@ -33,11 +35,15 @@ interface BookingDetailSheetProps {
 }
 
 export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: BookingDetailSheetProps) {
+  const { role } = useAuth();
   const { data: booking } = useBooking(bookingId);
   const { data: stateLog } = useBookingStateLog(bookingId);
   const { data: payments } = useBookingPayments(bookingId);
   const { data: messages } = useBookingMessages(bookingId);
   const { data: policies } = usePolicySettings();
+
+  const canSeeAmounts = permissions.canViewPaymentAmounts(role);
+  const canRecordPay = permissions.canRecordPayment(role);
 
   const softHoldInfo = useMemo(() => {
     if (!booking || (booking.state as BookingState) !== "soft_hold") return null;
@@ -110,7 +116,12 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
           </TabsContent>
 
           <TabsContent value="payments">
-            <PaymentsTab payments={payments ?? []} bookingId={booking.id} />
+            <PaymentsTab
+              payments={payments ?? []}
+              bookingId={booking.id}
+              canSeeAmounts={canSeeAmounts}
+              canRecord={canRecordPay}
+            />
           </TabsContent>
 
           <TabsContent value="messages">
@@ -155,7 +166,17 @@ function StateHistoryTab({ logs }: { logs: any[] }) {
 }
 
 // ── Payments Tab ──
-function PaymentsTab({ payments, bookingId }: { payments: any[]; bookingId: string }) {
+function PaymentsTab({
+  payments,
+  bookingId,
+  canSeeAmounts,
+  canRecord,
+}: {
+  payments: any[];
+  bookingId: string;
+  canSeeAmounts: boolean;
+  canRecord: boolean;
+}) {
   const { toast } = useToast();
   const createPayment = useCreatePayment();
   const [amount, setAmount] = useState("");
@@ -190,9 +211,17 @@ function PaymentsTab({ payments, bookingId }: { payments: any[]; bookingId: stri
             {payments.map((p) => (
               <div key={p.id} className="flex items-center justify-between text-sm border rounded-md p-3">
                 <div>
-                  <span className="font-medium">${Number(p.amount).toFixed(2)}</span>
-                  <span className="text-muted-foreground ml-2">({p.method})</span>
-                  {p.notes && <p className="text-xs text-muted-foreground">{p.notes}</p>}
+                  {canSeeAmounts ? (
+                    <span className="font-medium">${Number(p.amount).toFixed(2)}</span>
+                  ) : (
+                    <Badge variant="outline" className="text-xs">
+                      {Number(p.amount) > 0 ? "Paid" : "Unpaid"}
+                    </Badge>
+                  )}
+                  {canSeeAmounts && (
+                    <span className="text-muted-foreground ml-2">({p.method})</span>
+                  )}
+                  {p.notes && canSeeAmounts && <p className="text-xs text-muted-foreground">{p.notes}</p>}
                 </div>
                 <span className="text-xs text-muted-foreground">{format(new Date(p.created_at), "MMM d")}</span>
               </div>
@@ -203,30 +232,34 @@ function PaymentsTab({ payments, bookingId }: { payments: any[]; bookingId: stri
         <p className="text-sm text-muted-foreground">No payments recorded.</p>
       )}
 
-      <Separator />
-      <h4 className="text-sm font-semibold">Record Payment</h4>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-xs">Amount *</Label>
-          <Input type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Method</Label>
-          <Select value={method} onValueChange={setMethod}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="offline">Offline</SelectItem>
-              <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-              <SelectItem value="cash">Cash</SelectItem>
-              <SelectItem value="card">Card</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      <Textarea placeholder="Payment notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
-      <Button size="sm" onClick={handleRecord} disabled={createPayment.isPending} className="w-full">
-        {createPayment.isPending ? "Recording…" : "Record Payment"}
-      </Button>
+      {canRecord && (
+        <>
+          <Separator />
+          <h4 className="text-sm font-semibold">Record Payment</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Amount *</Label>
+              <Input type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Method</Label>
+              <Select value={method} onValueChange={setMethod}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="offline">Offline</SelectItem>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="card">Card</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <Textarea placeholder="Payment notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
+          <Button size="sm" onClick={handleRecord} disabled={createPayment.isPending} className="w-full">
+            {createPayment.isPending ? "Recording…" : "Record Payment"}
+          </Button>
+        </>
+      )}
     </div>
   );
 }
@@ -234,9 +267,38 @@ function PaymentsTab({ payments, bookingId }: { payments: any[]; bookingId: stri
 // ── Messages Tab ──
 function MessagesTab({ messages, bookingId }: { messages: any[]; bookingId: string }) {
   const { toast } = useToast();
+  const { role } = useAuth();
   const createMessage = useCreateMessage();
   const [content, setContent] = useState("");
   const [isInternal, setIsInternal] = useState(true);
+
+  if (!permissions.canSendMessages(role)) {
+    return (
+      <div className="py-3">
+        {messages.length > 0 ? (
+          <ScrollArea className="max-h-[250px]">
+            <div className="space-y-3">
+              {messages.map((m) => (
+                <div key={m.id} className="text-sm space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Badge variant={m.is_internal ? "secondary" : "outline"} className="text-xs">
+                      {m.is_internal ? "Internal" : "Guest-visible"}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(m.created_at), "MMM d, h:mm a")}
+                    </span>
+                  </div>
+                  <p className="text-foreground">{m.content}</p>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        ) : (
+          <p className="text-sm text-muted-foreground">No messages yet.</p>
+        )}
+      </div>
+    );
+  }
 
   const handleSend = async () => {
     if (!content.trim()) return;

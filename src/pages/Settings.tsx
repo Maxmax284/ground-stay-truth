@@ -4,9 +4,13 @@ import ProfileEditor from "@/components/ProfileEditor";
 import UserRoleManager from "@/components/UserRoleManager";
 import { PolicySettingsForm } from "@/components/PolicySettingsForm";
 import { useAuth } from "@/hooks/useAuth";
+import { permissions } from "@/lib/permissions";
 
 const Settings = () => {
-  const { isAdmin } = useAuth();
+  const { role } = useAuth();
+
+  const canManageRoles = permissions.canManageRoles(role);
+  const canManagePolicies = permissions.canManagePolicies(role);
 
   return (
     <DashboardLayout>
@@ -19,21 +23,21 @@ const Settings = () => {
         <Tabs defaultValue="profile" className="space-y-4">
           <TabsList>
             <TabsTrigger value="profile">Profile</TabsTrigger>
-            {isAdmin && <TabsTrigger value="users">Users & Roles</TabsTrigger>}
-            {isAdmin && <TabsTrigger value="policies">Policies</TabsTrigger>}
+            {canManageRoles && <TabsTrigger value="users">Users & Roles</TabsTrigger>}
+            {canManagePolicies && <TabsTrigger value="policies">Policies</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="profile">
             <ProfileEditor />
           </TabsContent>
 
-          {isAdmin && (
+          {canManageRoles && (
             <TabsContent value="users">
               <UserRoleManager />
             </TabsContent>
           )}
 
-          {isAdmin && (
+          {canManagePolicies && (
             <TabsContent value="policies">
               <PolicySettingsForm />
             </TabsContent>
