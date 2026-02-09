@@ -9,6 +9,7 @@ import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { useUnits } from "@/hooks/useUnits";
 import { useBookings } from "@/hooks/useBookings";
 import { useAuth } from "@/hooks/useAuth";
+import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 
 const DEFAULT_DAYS = 30;
@@ -16,6 +17,7 @@ const DEFAULT_DAYS = 30;
 const CalendarView = () => {
   const { isAdmin } = useAuth();
   const { data: units } = useUnits();
+  const { data: policies } = usePolicySettings();
   const activeUnits = useMemo(() => (units ?? []).filter((u) => u.is_active), [units]);
 
   const [startDate, setStartDate] = useState(() => startOfDay(new Date()));
@@ -49,8 +51,10 @@ const CalendarView = () => {
   const goForward = () => setStartDate((d) => addDays(d, 7));
   const goToday = () => setStartDate(startOfDay(new Date()));
 
-  // TODO: read cleaning_buffer_hours from policy_settings; default 4h
-  const cleaningBufferHours = 4;
+  const cleaningBufferHours = useMemo(() => {
+    const setting = policies?.find((p) => p.key === "cleaning_buffer_hours");
+    return setting ? Number(setting.value) : 4;
+  }, [policies]);
 
   return (
     <DashboardLayout>
