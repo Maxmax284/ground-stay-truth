@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleRedirect from "@/components/RoleRedirect";
 import Index from "./pages/Index";
+import EmbedWidget from "./pages/EmbedWidget";
 import Auth from "./pages/Auth";
 import Units from "./pages/Units";
 import Bookings from "./pages/Bookings";
@@ -43,6 +44,9 @@ const App = () => (
 
             {/* Guest portal */}
             <Route path="/guest" element={<ProtectedRoute guestOnly><GuestPortal /></ProtectedRoute>} />
+
+            {/* Public embed widgets — no auth required */}
+            <Route path="/embed/:type/:unitId" element={<EmbedWidget />} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
