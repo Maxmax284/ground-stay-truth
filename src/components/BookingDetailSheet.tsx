@@ -146,6 +146,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
             isAdmin={isAdmin}
             checkInDate={booking.check_in}
             totalPrice={booking.total_price}
+            unitId={booking.unit_id}
           />
         </div>
 

@@ -115,6 +115,53 @@ export type Database = {
           },
         ]
       }
+      early_checkin_requests: {
+        Row: {
+          approved_by: string | null
+          booking_id: string
+          buffer_violation_hours: number | null
+          created_at: string
+          id: string
+          reason: string
+          requested_by: string | null
+          resolved_at: string | null
+          response_note: string | null
+          status: string
+        }
+        Insert: {
+          approved_by?: string | null
+          booking_id: string
+          buffer_violation_hours?: number | null
+          created_at?: string
+          id?: string
+          reason: string
+          requested_by?: string | null
+          resolved_at?: string | null
+          response_note?: string | null
+          status?: string
+        }
+        Update: {
+          approved_by?: string | null
+          booking_id?: string
+          buffer_violation_hours?: number | null
+          created_at?: string
+          id?: string
+          reason?: string
+          requested_by?: string | null
+          resolved_at?: string | null
+          response_note?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "early_checkin_requests_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guest_documents: {
         Row: {
           booking_id: string
