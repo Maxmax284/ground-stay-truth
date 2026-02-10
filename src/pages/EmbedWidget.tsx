@@ -96,11 +96,11 @@ export default function EmbedWidget() {
 
   switch (type) {
     case "listing":
-      return unit ? <FullListing unit={unit} blocked={blocked} accent={accentColor} /> : <p style={styles.muted}>Unit not found</p>;
+      return unit ? <FullListing unit={unit} blocked={blocked} accent={accentColor} contactUrl={contactUrl} /> : <p style={styles.muted}>Unit not found</p>;
     case "compact":
-      return unit ? <CompactCard unit={unit} accent={accentColor} /> : <p style={styles.muted}>Unit not found</p>;
+      return unit ? <CompactCard unit={unit} accent={accentColor} contactUrl={contactUrl} /> : <p style={styles.muted}>Unit not found</p>;
     case "calendar":
-      return unit ? <CalendarOnly unit={unit} blocked={blocked} accent={accentColor} /> : <p style={styles.muted}>Unit not found</p>;
+      return unit ? <CalendarOnly unit={unit} blocked={blocked} accent={accentColor} contactUrl={contactUrl} /> : <p style={styles.muted}>Unit not found</p>;
     case "cta":
       return unit ? <CTAOnly unit={unit} accent={accentColor} contactUrl={contactUrl} /> : <p style={styles.muted}>Unit not found</p>;
     default:
@@ -109,7 +109,7 @@ export default function EmbedWidget() {
 }
 
 // ── Full Listing ──
-function FullListing({ unit, blocked, accent }: { unit: UnitData; blocked: BlockedRange[]; accent: string }) {
+function FullListing({ unit, blocked, accent, contactUrl }: { unit: UnitData; blocked: BlockedRange[]; accent: string; contactUrl: string }) {
   return (
     <div style={{ ...styles.container, maxWidth: 480 }}>
       {unit.photos && unit.photos.length > 0 && (
@@ -148,12 +148,20 @@ function FullListing({ unit, blocked, accent }: { unit: UnitData; blocked: Block
       </div>
 
       <MiniCalendar blocked={blocked} accent={accent} />
+
+      {contactUrl && (
+        <div style={{ marginTop: 16, textAlign: "center" as const }}>
+          <a href={contactUrl} target="_blank" rel="noopener noreferrer" style={{ padding: "10px 20px", background: accent, color: "#fff", borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "inline-block", textDecoration: "none" }}>
+            {contactUrl.includes("/auth?register=true") ? "Book Now" : "Check Availability"}
+          </a>
+        </div>
+      )}
     </div>
   );
 }
 
 // ── Compact Card ──
-function CompactCard({ unit, accent }: { unit: UnitData; accent: string }) {
+function CompactCard({ unit, accent, contactUrl }: { unit: UnitData; accent: string; contactUrl: string }) {
   return (
     <div style={{ ...styles.container, maxWidth: 320, padding: 0, overflow: "hidden" }}>
       {unit.photos && unit.photos.length > 0 && (
@@ -175,13 +183,20 @@ function CompactCard({ unit, accent }: { unit: UnitData; accent: string }) {
           From ${unit.base_price}<span style={{ ...styles.muted, fontSize: 12 }}>/night</span>
         </span>
       </div>
+      {contactUrl && (
+        <div style={{ marginTop: 12, textAlign: "center" as const }}>
+          <a href={contactUrl} target="_blank" rel="noopener noreferrer" style={{ padding: "8px 16px", background: accent, color: "#fff", borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: "pointer", display: "inline-block", textDecoration: "none", width: "100%" }}>
+            {contactUrl.includes("/auth?register=true") ? "Book Now" : "Check Availability"}
+          </a>
+        </div>
+      )}
       </div>
     </div>
   );
 }
 
 // ── Calendar Only ──
-function CalendarOnly({ unit, blocked, accent }: { unit: UnitData; blocked: BlockedRange[]; accent: string }) {
+function CalendarOnly({ unit, blocked, accent, contactUrl }: { unit: UnitData; blocked: BlockedRange[]; accent: string; contactUrl: string }) {
   return (
     <div style={{ ...styles.container, maxWidth: 340 }}>
       <h3 style={{ fontSize: 14, fontWeight: 600, color: "#1f2937", margin: "0 0 12px" }}>
@@ -198,6 +213,13 @@ function CalendarOnly({ unit, blocked, accent }: { unit: UnitData; blocked: Bloc
           Unavailable
         </span>
       </div>
+      {contactUrl && (
+        <div style={{ marginTop: 12, textAlign: "center" as const }}>
+          <a href={contactUrl} target="_blank" rel="noopener noreferrer" style={{ padding: "8px 16px", background: accent, color: "#fff", borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: "pointer", display: "inline-block", textDecoration: "none" }}>
+            {contactUrl.includes("/auth?register=true") ? "Book Now" : "Check Availability"}
+          </a>
+        </div>
+      )}
     </div>
   );
 }

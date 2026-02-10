@@ -50,30 +50,28 @@ export function EmbedCodeGenerator() {
           <div className="space-y-2"><Label>{t("embed.unit")}</Label><Select value={selectedUnit} onValueChange={setSelectedUnit}><SelectTrigger><SelectValue placeholder={t("bookingForm.selectUnit")} /></SelectTrigger><SelectContent>{activeUnits.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent></Select></div>
           <div className="space-y-2"><Label>{t("embed.widgetType")}</Label><Select value={selectedType} onValueChange={setSelectedType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{WIDGET_TYPES.map((w) => <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>)}</SelectContent></Select></div>
         </div>
-        {selectedType === "cta" && (
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label>{t("embed.ctaTarget")}</Label>
-              <Select value={ctaTarget} onValueChange={(v) => setCtaTarget(v as "contact" | "register")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="contact">{t("embed.ctaTargetContact")}</SelectItem>
-                  <SelectItem value="register">{t("embed.ctaTargetRegister")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {ctaTarget === "contact" && (
-              <div className="space-y-2">
-                <Label>{t("embed.contactUrl")}</Label>
-                <Input type="url" placeholder="https://yoursite.com/contact" value={contactUrl} onChange={(e) => setContactUrl(e.target.value)} />
-                <p className="text-xs text-muted-foreground">{t("embed.contactUrlNote")}</p>
-              </div>
-            )}
-            {ctaTarget === "register" && (
-              <p className="text-xs text-muted-foreground">{t("embed.registerNote")}</p>
-            )}
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <Label>{t("embed.ctaTarget")}</Label>
+            <Select value={ctaTarget} onValueChange={(v) => setCtaTarget(v as "contact" | "register")}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="contact">{t("embed.ctaTargetContact")}</SelectItem>
+                <SelectItem value="register">{t("embed.ctaTargetRegister")}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        )}
+          {ctaTarget === "contact" && (
+            <div className="space-y-2">
+              <Label>{t("embed.contactUrl")}</Label>
+              <Input type="url" placeholder="https://yoursite.com/contact" value={contactUrl} onChange={(e) => setContactUrl(e.target.value)} />
+              <p className="text-xs text-muted-foreground">{t("embed.contactUrlNote")}</p>
+            </div>
+          )}
+          {ctaTarget === "register" && (
+            <p className="text-xs text-muted-foreground">{t("embed.registerNote")}</p>
+          )}
+        </div>
         <div className="flex flex-wrap gap-2">{WIDGET_TYPES.map((w) => <Badge key={w.value} variant={w.value === selectedType ? "default" : "outline"} className="cursor-pointer" onClick={() => setSelectedType(w.value)}>{w.label}</Badge>)}</div>
         <p className="text-sm text-muted-foreground">{widget.description}</p>
         {selectedUnit && (
