@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { canAccessRoute, permissions } from "@/lib/permissions";
 import { useTranslation } from "react-i18next";
@@ -12,6 +12,8 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children, requiredPath, guestOnly = false }: ProtectedRouteProps) => {
   const { t } = useTranslation();
   const { user, loading, role } = useAuth();
+  const [searchParams] = useSearchParams();
+  const isPreview = searchParams.get("preview") === "true";
 
   if (loading) {
     return (
@@ -28,6 +30,10 @@ const ProtectedRoute = ({ children, requiredPath, guestOnly = false }: Protected
   }
 
   if (guestOnly && permissions.isStaff(role)) {
+    // Allow admins to preview the guest portal
+    if (isPreview && role === "admin") {
+      return <>{children}</>;
+    }
     return <Navigate to="/" replace />;
   }
 

@@ -56,7 +56,8 @@
     "reports": "Reports",
     "messages": "Messages",
     "settings": "Settings",
-    "navigation": "Navigation"
+    "navigation": "Navigation",
+    "previewGuestPortal": "Preview Guest Portal"
   },
   "auth": {
     "signIn": "Sign in",
@@ -145,7 +146,20 @@
     "block": "Block",
     "cleaningBuffer": "Cleaning Buffer",
     "maintenance": "Maintenance",
-    "unavailable": "Unavailable"
+    "unavailable": "Unavailable",
+    "viewMode": {
+      "timeline": "Timeline",
+      "month": "Month",
+      "day": "Day"
+    },
+    "dayView": {
+      "occupied": "occupied",
+      "arriving": "arriving",
+      "departing": "departing",
+      "blocked": "blocked",
+      "checkIn": "Check-in",
+      "checkOut": "Check-out"
+    }
   },
   "units": {
     "title": "Units",
@@ -494,7 +508,8 @@
     "checkOutBy": "Check-out by",
     "weekendRate": "Weekend rate",
     "cleaningFee": "Cleaning fee",
-    "more": "+{{count}} more"
+    "more": "+{{count}} more",
+    "previewBanner": "You are previewing the Guest Portal as an admin. Guests see their own bookings only."
   },
   "notFound": {
     "title": "404",
