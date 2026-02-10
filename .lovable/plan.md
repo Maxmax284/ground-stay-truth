@@ -23,21 +23,27 @@
 | Embed Availability (includes maintenance blocks) | Done |
 | Phase 1 Reports (occupancy, revenue, state distribution, blocked vs bookable with maintenance) | Done |
 | Staff Messaging (internal notes + guest-visible toggle) | Done |
+| ID Document Upload (storage bucket, upload UI, check-in gating) | Done |
+| Automated Refund Calculation (tier display on cancellation) | Done |
 
 ## What is NOT STARTED
 
-### 1. ID Document Upload for Check-in
-The constitution requires uploaded ID documents before check-in can be completed. No storage bucket or upload UI exists.
-
-### 2. Automated Refund Calculation on Cancellation
-Policy tiers exist (free/partial/no-refund) but when cancelling a booking, no refund amount is calculated or displayed to staff.
+### iCal Sync
+Acknowledged in the constitution but explicitly deferred. No sync behavior or conflict resolution should be invented.
 
 ---
 
-## Recommended Next Phase
+## Constitution Compliance Summary
 
-### Step 1: ID Document Upload
-Create a `guest-documents` storage bucket, add upload UI to the booking detail sheet, and gate check-in completion on document presence.
-
-### Step 2: Automated Refund Calculation
-When staff cancels a booking, calculate and display the refund amount based on cancellation policy tiers (free/partial/no-refund) relative to check-in date.
+All items from the Ground Stay constitution are now implemented:
+- Booking state machine with 9 states, audit logging, and role-gated transitions
+- ID document upload required before check-in completion
+- Refund calculation displayed when cancelling (free/partial/no-refund tiers)
+- Full RBAC with 7 roles and permission checks
+- Policy settings for all configurable values
+- Calendar truth rules with maintenance blocks, buffers, and overlap prevention
+- Guest portal with messaging, listings, and cancellation policy display
+- Embed widgets with accurate availability including maintenance blocks
+- Phase 1 reports with occupancy, revenue, state distribution, and blocked vs bookable
+- Offline payments with full audit trail
+- Staff messaging with internal/guest-visible toggle
