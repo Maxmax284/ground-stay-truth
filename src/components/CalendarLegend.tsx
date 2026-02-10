@@ -1,40 +1,35 @@
-import { Badge } from "@/components/ui/badge";
-import { STATE_LABELS, type BookingState } from "@/lib/bookingStateMachine";
+import { useTranslation } from "react-i18next";
 import { CALENDAR_STATE_COLORS } from "@/components/CalendarGrid";
+import type { BookingState } from "@/lib/bookingStateMachine";
+
+const LEGEND_STATES: BookingState[] = [
+  "inquiry", "soft_hold", "pending_approval", "pending_deposit",
+  "confirmed", "checked_in", "completed", "cancelled", "no_show",
+];
 
 export function CalendarLegend() {
-  const legendItems: { state: BookingState; label: string }[] = [
-    { state: "inquiry", label: STATE_LABELS.inquiry },
-    { state: "soft_hold", label: STATE_LABELS.soft_hold },
-    { state: "pending_approval", label: STATE_LABELS.pending_approval },
-    { state: "pending_deposit", label: STATE_LABELS.pending_deposit },
-    { state: "confirmed", label: STATE_LABELS.confirmed },
-    { state: "checked_in", label: STATE_LABELS.checked_in },
-    { state: "completed", label: STATE_LABELS.completed },
-    { state: "cancelled", label: STATE_LABELS.cancelled },
-    { state: "no_show", label: STATE_LABELS.no_show },
-  ];
+  const { t } = useTranslation();
 
   return (
     <div className="flex flex-wrap items-center gap-3 text-xs">
-      {legendItems.map(({ state, label }) => (
+      {LEGEND_STATES.map((state) => (
         <div key={state} className="flex items-center gap-1.5">
           <div className={`h-3 w-6 rounded-sm ${CALENDAR_STATE_COLORS[state]}`} />
-          <span className="text-muted-foreground">{label}</span>
+          <span className="text-muted-foreground">{t(`states.${state}`)}</span>
         </div>
       ))}
       <div className="flex items-center gap-1.5">
         <div className="h-3 w-6 rounded-sm bg-muted" style={{
           backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 2px, hsl(var(--muted-foreground) / 0.15) 2px, hsl(var(--muted-foreground) / 0.15) 4px)"
         }} />
-        <span className="text-muted-foreground">Cleaning Buffer</span>
+        <span className="text-muted-foreground">{t("calendar.cleaningBuffer")}</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="h-3 w-6 rounded-sm" style={{
           backgroundImage: "repeating-linear-gradient(45deg, hsl(var(--destructive) / 0.15), hsl(var(--destructive) / 0.15) 2px, hsl(var(--destructive) / 0.05) 2px, hsl(var(--destructive) / 0.05) 4px)",
           border: "1px dashed hsl(var(--destructive) / 0.4)",
         }} />
-        <span className="text-muted-foreground">Maintenance</span>
+        <span className="text-muted-foreground">{t("calendar.maintenance")}</span>
       </div>
     </div>
   );
