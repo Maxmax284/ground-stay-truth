@@ -1,6 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface VerificationNotes {
+  document_type?: string;
+  issuing_country?: string;
+  expiry_date?: string | null;
+  is_expired?: boolean;
+  holder_name_readable?: boolean;
+  document_number_readable?: boolean;
+  quality_issues?: string[];
+  confidence?: "low" | "medium" | "high";
+  summary?: string;
+  error?: string;
+}
+
 export interface GuestDocument {
   id: string;
   booking_id: string;
@@ -8,6 +21,9 @@ export interface GuestDocument {
   file_path: string;
   uploaded_by: string | null;
   created_at: string;
+  verification_status: string | null;
+  verification_notes: VerificationNotes | null;
+  verified_at: string | null;
 }
 
 export function useGuestDocuments(bookingId: string | null) {
@@ -21,7 +37,7 @@ export function useGuestDocuments(bookingId: string | null) {
         .eq("booking_id", bookingId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as GuestDocument[];
+      return (data as unknown as GuestDocument[]);
     },
   });
 }
@@ -40,7 +56,7 @@ export function useUploadGuestDocument() {
         .upload(filePath, file);
       if (uploadError) throw uploadError;
 
-      // Record metadata
+      // Record metadata with pending verification status
       const { data, error } = await supabase
         .from("guest_documents")
         .insert({
@@ -48,11 +64,29 @@ export function useUploadGuestDocument() {
           file_name: file.name,
           file_path: filePath,
           uploaded_by: user?.id ?? null,
-        })
+        } as any)
         .select()
         .single();
       if (error) throw error;
-      return data;
+
+      // Fire-and-forget: trigger AI verification
+      const docData = data as unknown as GuestDocument;
+      supabase.functions
+        .invoke("verify-document", {
+          body: { documentId: docData.id, filePath },
+        })
+        .then(() => {
+          // Refetch after a short delay to pick up AI results
+          setTimeout(() => {
+            qc.invalidateQueries({ queryKey: ["guestDocuments", bookingId] });
+          }, 3000);
+          setTimeout(() => {
+            qc.invalidateQueries({ queryKey: ["guestDocuments", bookingId] });
+          }, 8000);
+        })
+        .catch((err) => console.error("Verification trigger failed:", err));
+
+      return docData;
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["guestDocuments", vars.bookingId] });
@@ -64,9 +98,7 @@ export function useDeleteGuestDocument() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, filePath, bookingId }: { id: string; filePath: string; bookingId: string }) => {
-      // Delete from storage
       await supabase.storage.from("guest-documents").remove([filePath]);
-      // Delete metadata
       const { error } = await supabase.from("guest_documents").delete().eq("id", id);
       if (error) throw error;
     },

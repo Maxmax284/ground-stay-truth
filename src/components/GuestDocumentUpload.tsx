@@ -3,15 +3,215 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useGuestDocuments, useUploadGuestDocument, useDeleteGuestDocument } from "@/hooks/useGuestDocuments";
+import {
+  useGuestDocuments,
+  useUploadGuestDocument,
+  useDeleteGuestDocument,
+  type GuestDocument,
+  type VerificationNotes,
+} from "@/hooks/useGuestDocuments";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 import { format } from "date-fns";
-import { Upload, FileText, Trash2, ShieldCheck, ShieldAlert } from "lucide-react";
+import {
+  Upload,
+  FileText,
+  Trash2,
+  ShieldCheck,
+  ShieldAlert,
+  Loader2,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import { useState } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-interface GuestDocumentUploadProps { bookingId: string; showRequirement?: boolean; }
+interface GuestDocumentUploadProps {
+  bookingId: string;
+  showRequirement?: boolean;
+}
 
-export function GuestDocumentUpload({ bookingId, showRequirement }: GuestDocumentUploadProps) {
+function VerificationBadge({
+  status,
+  isStaff,
+}: {
+  status: string | null;
+  isStaff: boolean;
+}) {
+  const { t } = useTranslation();
+
+  if (!status) return null;
+
+  switch (status) {
+    case "analyzing":
+      return (
+        <Badge variant="secondary" className="text-xs gap-1">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          {t("verification.analyzing")}
+        </Badge>
+      );
+    case "clear":
+      return (
+        <Badge className="text-xs bg-[hsl(var(--success))]/20 text-[hsl(var(--success))] border-0">
+          {isStaff ? t("verification.clear") : t("verification.reviewed")}
+        </Badge>
+      );
+    case "flagged":
+      return (
+        <Badge variant="outline" className="text-xs border-amber-400 text-amber-600 bg-amber-50">
+          <AlertTriangle className="h-3 w-3 mr-1" />
+          {isStaff ? t("verification.flagged") : t("verification.reviewed")}
+        </Badge>
+      );
+    case "error":
+      return (
+        <Badge variant="secondary" className="text-xs text-muted-foreground">
+          {t("verification.error")}
+        </Badge>
+      );
+    default:
+      return null;
+  }
+}
+
+function VerificationDetails({ notes }: { notes: VerificationNotes }) {
+  const { t } = useTranslation();
+
+  if (notes.error) {
+    return <p className="text-xs text-muted-foreground">{notes.error}</p>;
+  }
+
+  const docTypeLabels: Record<string, string> = {
+    passport: "Passport",
+    national_id: "National ID",
+    drivers_license: "Driver's License",
+    residence_permit: "Residence Permit",
+    unknown: "Unknown",
+  };
+
+  const confidenceColors: Record<string, string> = {
+    high: "text-[hsl(var(--success))]",
+    medium: "text-amber-600",
+    low: "text-destructive",
+  };
+
+  return (
+    <div className="space-y-1.5 text-xs pl-6">
+      {notes.summary && (
+        <p className="text-muted-foreground italic">{notes.summary}</p>
+      )}
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+        {notes.document_type && (
+          <>
+            <span className="text-muted-foreground">{t("verification.documentType")}</span>
+            <span>{docTypeLabels[notes.document_type] ?? notes.document_type}</span>
+          </>
+        )}
+        {notes.issuing_country && (
+          <>
+            <span className="text-muted-foreground">{t("verification.issuingCountry")}</span>
+            <span>{notes.issuing_country}</span>
+          </>
+        )}
+        {notes.expiry_date && (
+          <>
+            <span className="text-muted-foreground">{t("verification.expiryDate")}</span>
+            <span className={notes.is_expired ? "text-destructive font-medium" : ""}>
+              {notes.expiry_date}
+              {notes.is_expired && ` — ${t("verification.expired")}`}
+            </span>
+          </>
+        )}
+        {notes.confidence && (
+          <>
+            <span className="text-muted-foreground">{t("verification.confidence")}</span>
+            <span className={confidenceColors[notes.confidence] ?? ""}>
+              {notes.confidence.charAt(0).toUpperCase() + notes.confidence.slice(1)}
+            </span>
+          </>
+        )}
+      </div>
+      {notes.quality_issues && notes.quality_issues.length > 0 && (
+        <div>
+          <span className="text-muted-foreground">{t("verification.qualityIssues")}:</span>
+          <ul className="list-disc list-inside ml-2">
+            {notes.quality_issues.map((issue, i) => (
+              <li key={i}>{issue}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DocumentRow({
+  doc,
+  canDelete,
+  isStaff,
+  onDelete,
+  deleteDisabled,
+}: {
+  doc: GuestDocument;
+  canDelete: boolean;
+  isStaff: boolean;
+  onDelete: (doc: GuestDocument) => void;
+  deleteDisabled: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const hasNotes = isStaff && doc.verification_notes && !doc.verification_notes.error;
+  const isFlagged = doc.verification_status === "flagged";
+
+  return (
+    <div
+      className={`border rounded-md ${isFlagged && isStaff ? "border-amber-300 bg-amber-50/50" : ""}`}
+    >
+      <div className="flex items-center justify-between p-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="truncate text-sm">{doc.file_name}</span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <VerificationBadge status={doc.verification_status} isStaff={isStaff} />
+          <span className="text-xs text-muted-foreground">
+            {format(new Date(doc.created_at), "MMM d")}
+          </span>
+          {hasNotes && (
+            <Collapsible open={open} onOpenChange={setOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                </Button>
+              </CollapsibleTrigger>
+            </Collapsible>
+          )}
+          {canDelete && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={() => onDelete(doc)}
+              disabled={deleteDisabled}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+      </div>
+      {hasNotes && open && (
+        <div className="px-2 pb-2">
+          <VerificationDetails notes={doc.verification_notes!} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function GuestDocumentUpload({
+  bookingId,
+  showRequirement,
+}: GuestDocumentUploadProps) {
   const { t } = useTranslation();
   const { role } = useAuth();
   const { toast } = useToast();
@@ -21,37 +221,96 @@ export function GuestDocumentUpload({ bookingId, showRequirement }: GuestDocumen
   const deleteDoc = useDeleteGuestDocument();
   const canUpload = permissions.canUploadDocuments(role);
   const canDelete = permissions.canManageUnits(role);
+  const isStaff = permissions.isStaff(role);
   const hasDocuments = (documents?.length ?? 0) > 0;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
-    if (!allowedTypes.includes(file.type)) { toast({ title: t("documents.invalidFileType"), description: t("documents.invalidFileTypeDesc"), variant: "destructive" }); return; }
-    if (file.size > 10 * 1024 * 1024) { toast({ title: t("documents.fileTooLarge"), description: t("documents.fileTooLargeDesc"), variant: "destructive" }); return; }
-    try { await upload.mutateAsync({ bookingId, file }); toast({ title: t("documents.documentUploaded") }); } catch (err: any) { toast({ title: t("common.error"), description: err.message, variant: "destructive" }); }
+    if (!allowedTypes.includes(file.type)) {
+      toast({ title: t("documents.invalidFileType"), description: t("documents.invalidFileTypeDesc"), variant: "destructive" });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: t("documents.fileTooLarge"), description: t("documents.fileTooLargeDesc"), variant: "destructive" });
+      return;
+    }
+    try {
+      await upload.mutateAsync({ bookingId, file });
+      toast({ title: t("documents.documentUploaded") });
+    } catch (err: any) {
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+    }
     if (fileRef.current) fileRef.current.value = "";
   };
 
-  const handleDelete = async (doc: { id: string; file_path: string }) => {
-    try { await deleteDoc.mutateAsync({ id: doc.id, filePath: doc.file_path, bookingId }); toast({ title: t("documents.documentRemoved") }); } catch (err: any) { toast({ title: t("common.error"), description: err.message, variant: "destructive" }); }
+  const handleDelete = async (doc: GuestDocument) => {
+    try {
+      await deleteDoc.mutateAsync({ id: doc.id, filePath: doc.file_path, bookingId });
+      toast({ title: t("documents.documentRemoved") });
+    } catch (err: any) {
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+    }
   };
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold flex items-center gap-2">{hasDocuments ? <ShieldCheck className="h-4 w-4 text-[hsl(var(--success))]" /> : <ShieldAlert className="h-4 w-4 text-destructive" />}{t("documents.idDocuments")}</h4>
-        {showRequirement && !hasDocuments && <Badge variant="destructive" className="text-xs">{t("documents.requiredForCheckin")}</Badge>}
-        {showRequirement && hasDocuments && <Badge className="text-xs bg-success/20 text-[hsl(var(--success))]">{t("documents.verified")}</Badge>}
+        <h4 className="text-sm font-semibold flex items-center gap-2">
+          {hasDocuments ? (
+            <ShieldCheck className="h-4 w-4 text-[hsl(var(--success))]" />
+          ) : (
+            <ShieldAlert className="h-4 w-4 text-destructive" />
+          )}
+          {t("documents.idDocuments")}
+        </h4>
+        {showRequirement && !hasDocuments && (
+          <Badge variant="destructive" className="text-xs">{t("documents.requiredForCheckin")}</Badge>
+        )}
+        {showRequirement && hasDocuments && (
+          <Badge className="text-xs bg-success/20 text-[hsl(var(--success))]">{t("documents.verified")}</Badge>
+        )}
       </div>
-      {isLoading ? <p className="text-xs text-muted-foreground">{t("common.loading")}</p> : documents && documents.length > 0 ? (
-        <div className="space-y-2">{documents.map((doc) => (
-          <div key={doc.id} className="flex items-center justify-between text-sm border rounded-md p-2">
-            <div className="flex items-center gap-2 min-w-0"><FileText className="h-4 w-4 shrink-0 text-muted-foreground" /><span className="truncate">{doc.file_name}</span></div>
-            <div className="flex items-center gap-2 shrink-0"><span className="text-xs text-muted-foreground">{format(new Date(doc.created_at), "MMM d")}</span>{canDelete && <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDelete(doc)} disabled={deleteDoc.isPending}><Trash2 className="h-3 w-3" /></Button>}</div>
-          </div>
-        ))}</div>
-      ) : <p className="text-sm text-muted-foreground">{t("documents.noDocuments")}</p>}
-      {canUpload && (<><input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" className="hidden" onChange={handleFileChange} /><Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={upload.isPending} className="w-full"><Upload className="h-4 w-4 mr-2" />{upload.isPending ? t("common.uploading") : t("documents.uploadDocument")}</Button></>)}
+      {isLoading ? (
+        <p className="text-xs text-muted-foreground">{t("common.loading")}</p>
+      ) : documents && documents.length > 0 ? (
+        <div className="space-y-2">
+          {documents.map((doc) => (
+            <DocumentRow
+              key={doc.id}
+              doc={doc}
+              canDelete={canDelete}
+              isStaff={isStaff}
+              onDelete={handleDelete}
+              deleteDisabled={deleteDoc.isPending}
+            />
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">{t("documents.noDocuments")}</p>
+      )}
+      {canUpload && (
+        <>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,application/pdf"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fileRef.current?.click()}
+            disabled={upload.isPending}
+            className="w-full"
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            {upload.isPending ? t("common.uploading") : t("documents.uploadDocument")}
+          </Button>
+        </>
+      )}
     </div>
   );
 }
