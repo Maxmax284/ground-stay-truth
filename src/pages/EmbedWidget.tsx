@@ -204,9 +204,8 @@ function CalendarOnly({ unit, blocked, accent }: { unit: UnitData; blocked: Bloc
 
 // ── CTA Only ──
 function CTAOnly({ unit, accent, contactUrl }: { unit: UnitData; accent: string; contactUrl: string }) {
-  const ctaProps: React.HTMLAttributes<HTMLDivElement> & { as?: string } = contactUrl
-    ? {} 
-    : {};
+  // If contactUrl starts with the same origin or is a relative /auth path, it's a guest portal registration link
+  const ctaLabel = contactUrl.includes("/auth?register=true") ? "Book Now" : "Check Availability";
 
   return (
     <div style={{ ...styles.container, maxWidth: 280, padding: 16, textAlign: "center" as const }}>
@@ -231,7 +230,7 @@ function CTAOnly({ unit, accent, contactUrl }: { unit: UnitData; accent: string;
             textDecoration: "none",
           }}
         >
-          Check Availability
+          {ctaLabel}
         </a>
       ) : (
         <div
