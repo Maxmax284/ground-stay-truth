@@ -96,6 +96,10 @@ export const permissions = {
   canManageMaintenanceBlocks: (role: AppRole | null) =>
     !!role && ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.manager,
 
+  /** Can upload ID documents — Front Desk+ */
+  canUploadDocuments: (role: AppRole | null) =>
+    !!role && ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.front_desk,
+
   /** Is a staff member (not guest) */
   isStaff: (role: AppRole | null) =>
     !!role && role !== "guest",

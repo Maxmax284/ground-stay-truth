@@ -25,7 +25,8 @@ import {
 import { BookingStateTransition } from "@/components/BookingStateTransition";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { STATE_LABELS, STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
-import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User } from "lucide-react";
+import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText } from "lucide-react";
+import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 
 interface BookingDetailSheetProps {
   bookingId: string | null;
@@ -118,6 +119,8 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
             bookingId={booking.id}
             currentState={booking.state as BookingState}
             isAdmin={isAdmin}
+            checkInDate={booking.check_in}
+            totalPrice={booking.total_price}
           />
         </div>
 
@@ -126,6 +129,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
             <TabsTrigger value="history" className="flex-1"><History className="h-4 w-4 mr-1" /> History</TabsTrigger>
             <TabsTrigger value="payments" className="flex-1"><CreditCard className="h-4 w-4 mr-1" /> Payments</TabsTrigger>
             <TabsTrigger value="messages" className="flex-1"><MessageSquare className="h-4 w-4 mr-1" /> Notes</TabsTrigger>
+            <TabsTrigger value="documents" className="flex-1"><FileText className="h-4 w-4 mr-1" /> ID</TabsTrigger>
           </TabsList>
 
           <TabsContent value="history">
@@ -143,6 +147,15 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
 
           <TabsContent value="messages">
             <MessagesTab messages={messages ?? []} bookingId={booking.id} />
+          </TabsContent>
+
+          <TabsContent value="documents">
+            <div className="py-3">
+              <GuestDocumentUpload
+                bookingId={booking.id}
+                showRequirement={["confirmed", "checked_in"].includes(booking.state)}
+              />
+            </div>
           </TabsContent>
         </Tabs>
       </SheetContent>
