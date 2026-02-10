@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Trash2, Plus, Search } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Trash2, Plus, Search, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,12 @@ interface ProfileResult {
 export default function UserRoleManager() {
   const { roles, addRole, removeRole } = useUserRoles();
   const [newRole, setNewRole] = useState<AppRole>("viewer");
+
+  const supervisorCount = useMemo(
+    () => (roles.data ?? []).filter((r) => r.role === "front_desk_supervisor").length,
+    [roles.data]
+  );
+  const supervisorCapReached = newRole === "front_desk_supervisor" && supervisorCount >= 2;
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -157,13 +163,19 @@ export default function UserRoleManager() {
             <div className="flex items-end">
               <Button
                 onClick={handleAdd}
-                disabled={addRole.isPending || (useUuid ? !manualUuid.trim() : !selectedUser)}
+                disabled={addRole.isPending || (useUuid ? !manualUuid.trim() : !selectedUser) || supervisorCapReached}
                 size="sm"
               >
                 <Plus className="h-4 w-4 mr-1" /> Assign
               </Button>
             </div>
           </div>
+          {supervisorCapReached && (
+            <div className="flex items-center gap-2 text-sm text-warning-foreground bg-warning/10 rounded-md p-2">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <span>Maximum of 2 supervisors allowed. Remove an existing supervisor first.</span>
+            </div>
+          )}
         </div>
 
         {/* Existing roles */}

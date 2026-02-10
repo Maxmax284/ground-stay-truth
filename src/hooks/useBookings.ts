@@ -129,7 +129,7 @@ export function useTransitionBookingState() {
   });
 }
 
-// ── State log for a booking ──
+// ── State log for a booking (with actor name) ──
 export function useBookingStateLog(bookingId: string | null) {
   return useQuery({
     queryKey: ["bookingStateLog", bookingId],
@@ -141,7 +141,22 @@ export function useBookingStateLog(bookingId: string | null) {
         .eq("booking_id", bookingId!)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return data as BookingStateLog[];
+
+      // Resolve changed_by user names
+      const userIds = [...new Set((data ?? []).map((l) => l.changed_by).filter(Boolean))] as string[];
+      let profileMap = new Map<string, string>();
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", userIds);
+        profileMap = new Map((profiles ?? []).map((p) => [p.user_id, p.full_name ?? "Unknown"]));
+      }
+
+      return (data ?? []).map((log) => ({
+        ...log,
+        changed_by_name: log.changed_by ? (profileMap.get(log.changed_by) ?? null) : null,
+      }));
     },
   });
 }

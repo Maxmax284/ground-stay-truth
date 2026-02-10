@@ -59,7 +59,7 @@ export const permissions = {
 
   /** Can view payment amounts (Front Desk sees Paid/Unpaid only) */
   canViewPaymentAmounts: (role: AppRole | null) =>
-    !!role && ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.front_desk_supervisor,
+    !!role && ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.manager,
 
   /** Can record payments */
   canRecordPayment: (role: AppRole | null) =>
