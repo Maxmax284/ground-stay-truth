@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
@@ -45,8 +47,33 @@ const ROLE_LABELS: Record<string, string> = {
   guest: "Guest",
 };
 
+function usePendingUsersCount(isAdmin: boolean) {
+  return useQuery({
+    queryKey: ["pending-users-count"],
+    queryFn: async () => {
+      // Get all profiles
+      const { data: profiles, error: pErr } = await supabase
+        .from("profiles")
+        .select("user_id");
+      if (pErr) throw pErr;
+
+      // Get all assigned user_ids
+      const { data: roles, error: rErr } = await supabase
+        .from("user_roles")
+        .select("user_id");
+      if (rErr) throw rErr;
+
+      const assignedIds = new Set(roles.map((r) => r.user_id));
+      return profiles.filter((p) => !assignedIds.has(p.user_id)).length;
+    },
+    enabled: isAdmin,
+    refetchInterval: 60_000, // refresh every minute
+  });
+}
+
 export function AppSidebar() {
-  const { signOut, user, role } = useAuth();
+  const { signOut, user, role, isAdmin } = useAuth();
+  const { data: pendingCount } = usePendingUsersCount(isAdmin);
 
   const visibleNavItems = navItems.filter((item) => canAccessRoute(role, item.url));
 
@@ -75,6 +102,11 @@ export function AppSidebar() {
                     >
                       <item.icon className="mr-2 h-4 w-4" />
                       <span>{item.title}</span>
+                      {item.url === "/settings" && !!pendingCount && pendingCount > 0 && (
+                        <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-4 min-w-4 justify-center">
+                          {pendingCount}
+                        </Badge>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

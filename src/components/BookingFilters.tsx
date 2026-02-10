@@ -32,11 +32,11 @@ export function BookingFilters({
   };
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
+    <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-end gap-3">
       <div className="space-y-1">
         <label className="text-xs font-medium text-muted-foreground">State</label>
         <Select value={state ?? "all"} onValueChange={(v) => onStateChange(v === "all" ? null : v as BookingState)}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-full sm:w-[160px]">
             <SelectValue placeholder="All states" />
           </SelectTrigger>
           <SelectContent>
@@ -51,7 +51,7 @@ export function BookingFilters({
       <div className="space-y-1">
         <label className="text-xs font-medium text-muted-foreground">Unit</label>
         <Select value={unitId ?? "all"} onValueChange={(v) => onUnitChange(v === "all" ? null : v)}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="All units" />
           </SelectTrigger>
           <SelectContent>
@@ -67,7 +67,7 @@ export function BookingFilters({
         <label className="text-xs font-medium text-muted-foreground">From</label>
         <Input
           type="date"
-          className="w-[150px]"
+          className="w-full sm:w-[150px]"
           value={dateFrom ?? ""}
           onChange={(e) => onDateFromChange(e.target.value || null)}
         />
@@ -77,7 +77,7 @@ export function BookingFilters({
         <label className="text-xs font-medium text-muted-foreground">To</label>
         <Input
           type="date"
-          className="w-[150px]"
+          className="w-full sm:w-[150px]"
           value={dateTo ?? ""}
           onChange={(e) => onDateToChange(e.target.value || null)}
         />

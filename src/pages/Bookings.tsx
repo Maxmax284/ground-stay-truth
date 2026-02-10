@@ -6,7 +6,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, AlertTriangle } from "lucide-react";
+import { Plus, AlertTriangle, ChevronRight } from "lucide-react";
 import { format, differenceInHours } from "date-fns";
 import { useBookings } from "@/hooks/useBookings";
 import { useUnits } from "@/hooks/useUnits";
@@ -17,6 +17,7 @@ import { BookingFilters } from "@/components/BookingFilters";
 import { BookingFormDialog } from "@/components/BookingFormDialog";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { STATE_LABELS, STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 function BookingStatusBadge({ booking }: { booking: any }) {
   const { data: policies } = usePolicySettings();
@@ -62,9 +63,35 @@ function BookingStatusBadge({ booking }: { booking: any }) {
   );
 }
 
+function BookingCard({ booking, onClick }: { booking: any; onClick: () => void }) {
+  return (
+    <div
+      className="rounded-lg border bg-card p-4 cursor-pointer active:bg-accent/50 transition-colors"
+      onClick={onClick}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-foreground truncate">{booking.units?.name ?? "—"}</p>
+          <p className="text-sm text-muted-foreground truncate">{(booking as any).profiles?.full_name ?? "No guest"}</p>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <BookingStatusBadge booking={booking} />
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </div>
+      </div>
+      <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
+        <span>{format(new Date(booking.check_in), "MMM d")} – {format(new Date(booking.check_out), "MMM d")}</span>
+        <span>·</span>
+        <span>{booking.num_guests} guest{booking.num_guests !== 1 ? "s" : ""}</span>
+      </div>
+    </div>
+  );
+}
+
 const Bookings = () => {
   const { isAdmin, role } = useAuth();
   const { data: units } = useUnits();
+  const isMobile = useIsMobile();
 
   // Filters
   const [stateFilter, setStateFilter] = useState<BookingState | null>(null);
@@ -117,6 +144,12 @@ const Bookings = () => {
         ) : !bookings?.length ? (
           <div className="text-center py-16 text-muted-foreground">
             <p>No bookings found.</p>
+          </div>
+        ) : isMobile ? (
+          <div className="space-y-3">
+            {bookings.map((b) => (
+              <BookingCard key={b.id} booking={b} onClick={() => setSelectedBookingId(b.id)} />
+            ))}
           </div>
         ) : (
           <div className="rounded-lg border bg-card">

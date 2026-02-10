@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useUnits } from "@/hooks/useUnits";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,10 +24,12 @@ export function EmbedCodeGenerator() {
 
   const [selectedUnit, setSelectedUnit] = useState("");
   const [selectedType, setSelectedType] = useState("listing");
+  const [contactUrl, setContactUrl] = useState("");
 
   const baseUrl = window.location.origin;
   const widget = WIDGET_TYPES.find((w) => w.value === selectedType)!;
-  const embedUrl = `${baseUrl}/embed/${selectedType}/${selectedUnit}`;
+  const contactParam = contactUrl ? `&contact_url=${encodeURIComponent(contactUrl)}` : "";
+  const embedUrl = `${baseUrl}/embed/${selectedType}/${selectedUnit}${contactParam ? `?${contactParam.slice(1)}` : ""}`;
   const iframeCode = selectedUnit
     ? `<iframe src="${embedUrl}" width="100%" height="${widget.height}" style="border:none;border-radius:12px;overflow:hidden;" loading="lazy" title="Ground Stay - ${widget.label}"></iframe>`
     : "";
@@ -77,6 +80,21 @@ export function EmbedCodeGenerator() {
             </Select>
           </div>
         </div>
+
+        {selectedType === "cta" && (
+          <div className="space-y-2">
+            <Label>Contact / Booking URL</Label>
+            <Input
+              type="url"
+              placeholder="https://yoursite.com/contact"
+              value={contactUrl}
+              onChange={(e) => setContactUrl(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              The "Check Availability" button will link to this URL. Leave empty to show a disabled button.
+            </p>
+          </div>
+        )}
 
         {/* Widget type descriptions */}
         <div className="flex flex-wrap gap-2">

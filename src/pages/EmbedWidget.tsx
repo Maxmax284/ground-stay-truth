@@ -45,6 +45,7 @@ export default function EmbedWidget() {
   const { type, unitId } = useParams<{ type: string; unitId: string }>();
   const [searchParams] = useSearchParams();
   const accentColor = searchParams.get("accent") || "#9a5a30";
+  const contactUrl = searchParams.get("contact_url") || "";
 
   const [unit, setUnit] = useState<UnitData | null>(null);
   const [units, setUnits] = useState<UnitData[]>([]);
@@ -101,7 +102,7 @@ export default function EmbedWidget() {
     case "calendar":
       return unit ? <CalendarOnly unit={unit} blocked={blocked} accent={accentColor} /> : <p style={styles.muted}>Unit not found</p>;
     case "cta":
-      return unit ? <CTAOnly unit={unit} accent={accentColor} /> : <p style={styles.muted}>Unit not found</p>;
+      return unit ? <CTAOnly unit={unit} accent={accentColor} contactUrl={contactUrl} /> : <p style={styles.muted}>Unit not found</p>;
     default:
       return <p style={styles.muted}>Unknown widget type</p>;
   }
@@ -202,27 +203,53 @@ function CalendarOnly({ unit, blocked, accent }: { unit: UnitData; blocked: Bloc
 }
 
 // ── CTA Only ──
-function CTAOnly({ unit, accent }: { unit: UnitData; accent: string }) {
+function CTAOnly({ unit, accent, contactUrl }: { unit: UnitData; accent: string; contactUrl: string }) {
+  const ctaProps: React.HTMLAttributes<HTMLDivElement> & { as?: string } = contactUrl
+    ? {} 
+    : {};
+
   return (
     <div style={{ ...styles.container, maxWidth: 280, padding: 16, textAlign: "center" as const }}>
       <h3 style={{ fontSize: 16, fontWeight: 600, color: "#1f2937", margin: "0 0 4px" }}>{unit.name}</h3>
       <p style={{ ...styles.muted, fontSize: 13, marginBottom: 12 }}>
         From <strong style={{ color: "#1f2937" }}>${unit.base_price}/night</strong>
       </p>
-      <div
-        style={{
-          padding: "10px 20px",
-          background: accent,
-          color: "#fff",
-          borderRadius: 8,
-          fontWeight: 600,
-          fontSize: 14,
-          cursor: "pointer",
-          display: "inline-block",
-        }}
-      >
-        Check Availability
-      </div>
+      {contactUrl ? (
+        <a
+          href={contactUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            padding: "10px 20px",
+            background: accent,
+            color: "#fff",
+            borderRadius: 8,
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: "pointer",
+            display: "inline-block",
+            textDecoration: "none",
+          }}
+        >
+          Check Availability
+        </a>
+      ) : (
+        <div
+          style={{
+            padding: "10px 20px",
+            background: accent,
+            color: "#fff",
+            borderRadius: 8,
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: "default",
+            display: "inline-block",
+            opacity: 0.7,
+          }}
+        >
+          Check Availability
+        </div>
+      )}
     </div>
   );
 }
@@ -237,7 +264,7 @@ function MiniCalendar({ blocked, accent }: { blocked: BlockedRange[]; accent: st
     return eachDayOfInterval({ start, end });
   }, [month]);
 
-  const startDow = getDay(days[0]); // 0=Sun
+  const startDow = getDay(days[0]);
   const today = startOfDay(new Date());
 
   return (
@@ -259,7 +286,7 @@ function MiniCalendar({ blocked, accent }: { blocked: BlockedRange[]; accent: st
           const blockedDay = isDateBlocked(day, blocked);
           const todayDay = isToday(day);
 
-          let bg = "#dcfce7"; // available
+          let bg = "#dcfce7";
           let border = "1px solid #bbf7d0";
           let color = "#166534";
 
