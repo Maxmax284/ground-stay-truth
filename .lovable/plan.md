@@ -1,57 +1,223 @@
 
 
-# Admin Account Creation Feature
+# Full Internationalization (i18n) for Ground Stay
 
-## What This Does
+## Overview
 
-Adds the ability for Admins to create staff accounts directly from the Settings > Users & Roles tab -- complete with email, password, full name, and role assignment in one step. No email verification required for admin-created accounts (they're pre-trusted). The new staff member can log in immediately.
+Add multi-language support across the entire platform -- staff dashboard, guest portal, login page, and embeddable widgets. Every hardcoded English string will be replaced with translation keys. Users can switch languages from a persistent dropdown, and their preference is saved.
 
-## How It Works
+**Supported languages (9):** English (default), Thai, French, German, Russian, Chinese (Simplified), Japanese, Korean, Spanish
+
+## Architecture
+
+The system uses `react-i18next` with `i18next`, the standard React internationalization library. Translation files are bundled as JSON (not loaded over HTTP) since the language set is fixed and the strings are finite.
+
+**Language selector placement:**
+- Staff dashboard: In the sidebar footer, above "Sign out"
+- Guest portal: In the guest header bar
+- Auth/login page: Top-right corner
+- Embed widgets: Via a `lang` query parameter (e.g., `?lang=th`) -- no UI selector since embeds are controlled by the embedding site
+
+**Persistence:** Language preference stored in `localStorage` and optionally in the user's profile (so it follows them across devices).
+
+## Implementation Plan
+
+### Phase 1: i18n Foundation
+
+**New dependencies:** `i18next`, `react-i18next`
+
+**New files:**
+- `src/i18n/index.ts` -- i18n initialization, language list, fallback config
+- `src/i18n/locales/en.json` -- English translations (the master file, ~400 keys)
+- `src/i18n/locales/th.json` -- Thai
+- `src/i18n/locales/fr.json` -- French
+- `src/i18n/locales/de.json` -- German
+- `src/i18n/locales/ru.json` -- Russian
+- `src/i18n/locales/zh.json` -- Chinese (Simplified)
+- `src/i18n/locales/ja.json` -- Japanese
+- `src/i18n/locales/ko.json` -- Korean
+- `src/i18n/locales/es.json` -- Spanish
+- `src/components/LanguageSelector.tsx` -- Reusable dropdown component
+
+**Key config in `src/i18n/index.ts`:**
+- `fallbackLng: "en"`
+- `interpolation.escapeValue: false` (React handles XSS)
+- Resources bundled inline (no HTTP backend needed)
+- Reads from `localStorage` on init
+
+**Import in `src/main.tsx`:** Add `import "@/i18n"` before the app renders.
+
+### Phase 2: Extract All Hardcoded Strings
+
+Every file with user-facing text needs its strings replaced with `t("key")` calls. The translation keys will be organized by namespace/section:
+
+**Key structure (flat with dot notation in a single namespace):**
 
 ```text
-Admin fills form --> Edge Function (server-side) --> Creates auth user + profile + role --> Done
+common.signOut
+common.loading
+common.save
+common.cancel
+common.edit
+common.remove
+common.search
+common.today
+common.guest / common.guests
+
+nav.dashboard
+nav.units
+nav.bookings
+nav.calendar
+nav.pricing
+nav.reports
+nav.messages
+nav.settings
+
+auth.signIn
+auth.signUp
+auth.email
+auth.password
+auth.fullName
+auth.welcomeBack
+auth.createAccount
+auth.checkEmail
+auth.noAccount
+auth.haveAccount
+
+dashboard.welcome
+dashboard.todaysArrivals
+dashboard.todaysDepartures
+dashboard.activeBookings
+dashboard.activeUnits
+dashboard.quickActions
+dashboard.recentActivity
+dashboard.newBooking
+dashboard.viewCalendar
+dashboard.manageUnits
+dashboard.pricingPolicies
+
+bookings.title
+bookings.manageReservations
+bookings.newBooking
+bookings.noBookings
+bookings.unit
+bookings.guest
+bookings.checkIn
+bookings.checkOut
+bookings.guests
+bookings.state
+bookings.created
+
+states.inquiry
+states.soft_hold
+states.pending_approval
+states.pending_deposit
+states.confirmed
+states.checked_in
+states.completed
+states.cancelled
+states.no_show
+
+... (and so on for units, calendar, pricing, settings, guest portal, messages, embeds)
 ```
 
-The key constraint: creating users with passwords can only be done server-side using the service role key. So this requires a backend function that the admin calls from the UI.
+**Files requiring changes (all user-facing components):**
 
-## Implementation
+| File | Approximate string count |
+|------|--------------------------|
+| `src/pages/Auth.tsx` | ~15 |
+| `src/pages/Index.tsx` | ~25 |
+| `src/pages/Bookings.tsx` | ~20 |
+| `src/pages/CalendarView.tsx` | ~15 |
+| `src/pages/Units.tsx` | ~25 |
+| `src/pages/Pricing.tsx` | ~30 |
+| `src/pages/Reports.tsx` | ~20 |
+| `src/pages/Settings.tsx` | ~10 |
+| `src/pages/Messages.tsx` | ~15 |
+| `src/pages/GuestPortal.tsx` | ~40 |
+| `src/pages/EmbedWidget.tsx` | ~20 |
+| `src/pages/NotFound.tsx` | ~3 |
+| `src/components/AppSidebar.tsx` | ~15 |
+| `src/components/DashboardLayout.tsx` | ~10 |
+| `src/components/GuestLayout.tsx` | ~5 |
+| `src/components/BookingDetailSheet.tsx` | ~40 |
+| `src/components/BookingStateTransition.tsx` | ~20 |
+| `src/components/BookingFormDialog.tsx` | ~25 |
+| `src/components/BookingFilters.tsx` | ~10 |
+| `src/components/ProfileEditor.tsx` | ~10 |
+| `src/components/PolicySettingsForm.tsx` | ~10 |
+| `src/components/UserRoleManager.tsx` | ~15 |
+| `src/components/CreateStaffAccountForm.tsx` | ~10 |
+| `src/components/EmbedCodeGenerator.tsx` | ~15 |
+| `src/components/UnitFormDialog.tsx` | ~15 |
+| `src/components/UnitGroupManager.tsx` | ~10 |
+| `src/components/UnitPhotoUpload.tsx` | ~5 |
+| `src/components/GuestDocumentUpload.tsx` | ~10 |
+| `src/components/MaintenanceBlockDialog.tsx` | ~10 |
+| `src/components/EarlyCheckinApproval.tsx` | ~10 |
+| `src/components/CalendarLegend.tsx` | ~5 |
+| `src/components/ProtectedRoute.tsx` | ~5 |
+| `src/lib/bookingStateMachine.ts` | ~10 (STATE_LABELS) |
+| `src/lib/refundCalculator.ts` | ~5 |
 
-### 1. Backend Function: `create-staff-account`
+**Total: ~550+ strings across ~35 files**
 
-A new edge function at `supabase/functions/create-staff-account/index.ts` that:
+### Phase 3: State Labels and System Constants
 
-- Validates the caller is an admin (checks their JWT against `user_roles`)
-- Creates the auth user via `supabase.auth.admin.createUser()` with `email_confirm: true` (pre-verified)
-- The existing database trigger (`handle_new_user`) auto-creates the profile
-- Inserts the role into `user_roles`
-- Returns the new user ID on success
-- Input validation: email format, password min 6 chars, valid role enum, full name required
+`STATE_LABELS` in `bookingStateMachine.ts` are currently hardcoded English strings used everywhere. These need to become translation keys:
 
-### 2. UI: "Create Staff Account" section in UserRoleManager
+```typescript
+// Before
+export const STATE_LABELS: Record<BookingState, string> = {
+  inquiry: "Inquiry",
+  ...
+};
 
-Add a collapsible section or dialog above the existing "Assign Role" form with:
+// After -- create a helper function
+export function getStateLabel(state: BookingState, t: TFunction): string {
+  return t(`states.${state}`);
+}
+```
 
-- Full Name (required)
-- Email (required)
-- Password (required, min 6 characters)
-- Role dropdown (same as existing, excludes `guest`)
-- "Create Account" button
-- Same supervisor cap enforcement (blocks if selecting supervisor and cap reached)
-- Success feedback: "Account created. [Name] can now sign in with their credentials."
+Similar treatment for:
+- `ROLE_LABELS` in `AppSidebar.tsx`
+- `POLICY_LABELS` in `PolicySettingsForm.tsx`
+- `SOURCE_LABELS` in `BookingFormDialog.tsx`
+- Payment method labels
+- Refund tier labels
 
-### 3. Files Changed
+### Phase 4: Language Selector Component
 
-| File | Change |
-|------|--------|
-| `supabase/functions/create-staff-account/index.ts` | New edge function -- validates admin caller, creates user + role server-side |
-| `src/components/UserRoleManager.tsx` | Add "Create Staff Account" form section with email/password/name/role fields |
-| `src/hooks/useUserRoles.ts` | Add `createStaffAccount` mutation that calls the edge function |
+A compact dropdown showing language flag emoji + name:
+- English, ภาษาไทย, Francais, Deutsch, Русский, 中文, 日本語, 한국어, Espanol
+- Calls `i18n.changeLanguage(code)` and saves to `localStorage`
+- Placed in sidebar footer, guest header, and auth page
 
-### Security
+### Phase 5: Embed Widget i18n
 
-- Edge function verifies the caller's JWT and confirms they have the `admin` role before proceeding
-- Password is transmitted over HTTPS to the edge function, never stored client-side
-- The service role key (already configured as a secret) is only used server-side
-- Created accounts are immediately active -- no email verification step needed since an admin is vouching for them
-- Input validated both client-side (form) and server-side (edge function)
+Embed widgets don't use React context (they're standalone with inline styles). They will:
+- Read a `lang` query parameter from the URL
+- Import translations directly (no provider needed)
+- The embed code generator will add a language dropdown to the generated snippet options
+
+### Phase 6: Non-English Translations
+
+The initial deploy will include English as the complete master file. The other 8 language files will be generated using an AI translation pass to produce accurate translations for all keys. These are UI labels (short, contextual), not prose, so translation quality is high.
+
+## Technical Notes
+
+- `date-fns` locale support: Import locale objects for date formatting (`th`, `fr`, `de`, `ru`, `zhCN`, `ja`, `ko`, `es`) and pass to `format()` calls
+- Pluralization: i18next handles plural forms natively (e.g., `"1 guest"` vs `"2 guests"`) using `_one` / `_other` key suffixes
+- RTL: None of the 9 languages require RTL layout
+- Currency: Dollar amounts remain as-is (not locale-formatted) since the business operates in a single currency
+
+## Execution Strategy
+
+Due to the scope (~35 files, ~550 strings), this will be implemented in batches:
+1. Foundation + language selector + Auth page + sidebar/layout (proof of concept)
+2. Dashboard + Bookings + Calendar pages
+3. Units + Pricing + Reports + Settings pages
+4. Guest Portal + Messages
+5. Embed widgets
+6. All 8 non-English translation files
 
