@@ -464,6 +464,10 @@
     "widgetType": "Widget Type",
     "contactUrl": "Contact / Booking URL",
     "contactUrlNote": "The \"Check Availability\" button will link to this URL. Leave empty to show a disabled button.",
+    "ctaTarget": "CTA Button Action",
+    "ctaTargetContact": "Link to external URL",
+    "ctaTargetRegister": "Link to Guest Portal registration",
+    "registerNote": "The CTA will link to your Guest Portal sign-up page, allowing visitors to create an account and request bookings.",
     "embedCode": "Embed Code",
     "livePreview": "Live Preview",
     "copiedToClipboard": "Embed code copied to clipboard.",
@@ -485,10 +489,11 @@
   },
   "guestPortal": {
     "myStay": "My Stay",
-    "subtitle": "View your bookings and browse available accommodations.",
+    "subtitle": "View your bookings, send messages, and browse available accommodations.",
     "myBookings": "My Bookings",
     "listings": "Listings",
     "policies": "Policies",
+    "profile": "Profile",
     "currentlyCheckedIn": "Currently Checked In",
     "upcoming": "Upcoming",
     "pastStays": "Past Stays",
@@ -509,7 +514,15 @@
     "weekendRate": "Weekend rate",
     "cleaningFee": "Cleaning fee",
     "more": "+{{count}} more",
-    "previewBanner": "You are previewing the Guest Portal as an admin. Guests see their own bookings only."
+    "previewBanner": "You are previewing the Guest Portal as an admin. Guests see their own bookings only.",
+    "backToInbox": "Back to Inbox"
+  },
+  "guestBooking": {
+    "requestBooking": "Request Booking",
+    "requestSent": "Booking request sent",
+    "requestSentDesc": "Your inquiry has been submitted. You'll hear back from our team soon.",
+    "submitRequest": "Submit Request",
+    "notesPlaceholder": "Special requests, arrival time, questions…"
   },
   "notFound": {
     "title": "404",
