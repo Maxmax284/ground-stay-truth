@@ -11,6 +11,7 @@ import ProfileEditor from "@/components/ProfileEditor";
 import { CalendarMonthView } from "@/components/CalendarMonthView";
 import { GuestBookingRequestForm } from "@/components/GuestBookingRequestForm";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
+import { calculateRefund } from "@/lib/refundCalculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -19,9 +20,20 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   CalendarDays, ArrowRight, Home, Info, MessageCircle, Send,
   ChevronLeft, ChevronRight, Eye, CalendarPlus, User, Circle,
-  MessageSquare, FileText,
+  MessageSquare, FileText, XCircle,
 } from "lucide-react";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { toast } from "sonner";
@@ -179,9 +191,9 @@ const GuestPortal = () => {
                   {t("guestBooking.requestBooking")}
                 </Button>
               </div>
-              {activeBookings.length > 0 && <Section title={t("guestPortal.currentlyCheckedIn")}>{activeBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} />)}</Section>}
-              {upcomingBookings.length > 0 && <Section title={t("guestPortal.upcoming")}>{upcomingBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} />)}</Section>}
-              {pastBookings.length > 0 && <Section title={t("guestPortal.pastStays")}>{pastBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} />)}</Section>}
+              {activeBookings.length > 0 && <Section title={t("guestPortal.currentlyCheckedIn")}>{activeBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} />)}</Section>}
+              {upcomingBookings.length > 0 && <Section title={t("guestPortal.upcoming")}>{upcomingBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} />)}</Section>}
+              {pastBookings.length > 0 && <Section title={t("guestPortal.pastStays")}>{pastBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} />)}</Section>}
               {!isLoading && !bookings?.length && (
                 <div className="text-center py-16">
                   <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
@@ -399,13 +411,40 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function GuestBookingCard({ booking, messages, userId }: { booking: any; messages: any[]; userId?: string }) {
+function GuestBookingCard({ booking, messages, userId, policies }: { booking: any; messages: any[]; userId?: string; policies?: any[] }) {
   const { t } = useTranslation();
   const [showMessages, setShowMessages] = useState(false);
   const [reply, setReply] = useState("");
   const queryClient = useQueryClient();
   const state = booking.state as BookingState;
   const showDocUpload = ["confirmed", "pending_deposit", "pending_approval"].includes(state);
+  const cancellableStates: BookingState[] = ["inquiry", "soft_hold", "pending_approval", "pending_deposit", "confirmed"];
+  const canCancel = cancellableStates.includes(state);
+
+  const refundInfo = useMemo(() => {
+    if (!canCancel || !policies) return null;
+    return calculateRefund(booking.check_in, booking.total_price, policies);
+  }, [canCancel, policies, booking.check_in, booking.total_price]);
+
+  const cancelBooking = useMutation({
+    mutationFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from("bookings").update({ state: "cancelled" }).eq("id", booking.id);
+      if (error) throw error;
+      await supabase.from("booking_state_log").insert({
+        booking_id: booking.id,
+        from_state: state,
+        to_state: "cancelled",
+        changed_by: user?.id ?? null,
+        reason: "Cancelled by guest",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["guest-bookings"] });
+      toast.success(t("guestPortal.bookingCancelled"));
+    },
+    onError: () => toast.error(t("common.error")),
+  });
 
   const sendMessage = useMutation({
     mutationFn: async (content: string) => {
@@ -449,6 +488,48 @@ function GuestBookingCard({ booking, messages, userId }: { booking: any; message
           <div className="border rounded-md p-3">
             <GuestDocumentUpload bookingId={booking.id} showRequirement />
           </div>
+        )}
+
+        {/* Cancel booking */}
+        {canCancel && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10">
+                <XCircle className="h-3.5 w-3.5 mr-1.5" />
+                {t("guestPortal.cancelBooking")}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t("guestPortal.cancelBookingTitle")}</AlertDialogTitle>
+                <AlertDialogDescription className="space-y-2">
+                  <span>{t("guestPortal.cancelBookingDesc")}</span>
+                  {refundInfo && (
+                    <span className="block mt-2 font-medium">
+                      {refundInfo.tier === "free" && t("refund.fullRefund", { days: refundInfo.daysUntilCheckIn })}
+                      {refundInfo.tier === "partial" && t("refund.partialRefund", { pct: refundInfo.refundPercentage, days: refundInfo.daysUntilCheckIn })}
+                      {refundInfo.tier === "none" && t("refund.noRefund", { days: refundInfo.daysUntilCheckIn })}
+                      {refundInfo.refundAmount != null && booking.total_price != null && (
+                        <span className="block text-sm mt-1">
+                          {t("refund.refundAmount")}: ${refundInfo.refundAmount.toFixed(2)} {t("refund.ofTotal", { total: Number(booking.total_price).toFixed(2) })}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => cancelBooking.mutate()}
+                  disabled={cancelBooking.isPending}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {cancelBooking.isPending ? t("common.pleaseWait") : t("guestPortal.confirmCancel")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
 
         {/* Inline messages */}

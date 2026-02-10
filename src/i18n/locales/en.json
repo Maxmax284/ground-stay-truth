@@ -288,7 +288,14 @@
     "phonePlaceholder": "+1 555 000 0000",
     "yourName": "Your name",
     "saveChanges": "Save Changes",
-    "profileUpdated": "Profile updated"
+    "profileUpdated": "Profile updated",
+    "dangerZone": "Danger Zone",
+    "deleteAccount": "Delete Account",
+    "deleteAccountDesc": "Permanently delete your account and all associated data. This action cannot be undone.",
+    "deleteAccountConfirmTitle": "Delete your account?",
+    "deleteAccountConfirmDesc": "This will permanently delete your account, profile, bookings, messages, and all associated data. This action cannot be reversed.",
+    "deleteAccountConfirm": "Yes, delete my account",
+    "accountDeleted": "Your account has been deleted."
   },
   "userRoles": {
     "title": "User Roles",
@@ -515,7 +522,12 @@
     "cleaningFee": "Cleaning fee",
     "more": "+{{count}} more",
     "previewBanner": "You are previewing the Guest Portal as an admin. Guests see their own bookings only.",
-    "backToInbox": "Back to Inbox"
+    "backToInbox": "Back to Inbox",
+    "cancelBooking": "Cancel Booking",
+    "cancelBookingTitle": "Cancel this booking?",
+    "cancelBookingDesc": "Are you sure you want to cancel this booking? Please review the refund policy below.",
+    "confirmCancel": "Yes, cancel booking",
+    "bookingCancelled": "Booking cancelled"
   },
   "guestBooking": {
     "requestBooking": "Request Booking",
