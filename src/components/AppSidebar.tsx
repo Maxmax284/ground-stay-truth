@@ -27,39 +27,29 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 const navItems = [
-  { title: "Dashboard", url: "/dashboard", icon: Home },
-  { title: "Units", url: "/units", icon: Building2 },
-  { title: "Bookings", url: "/bookings", icon: BookOpen },
-  { title: "Calendar", url: "/calendar", icon: CalendarDays },
-  { title: "Pricing", url: "/pricing", icon: DollarSign },
-  { title: "Reports", url: "/reports", icon: BarChart3 },
-  { title: "Messages", url: "/messages", icon: MessageSquare },
-  { title: "Settings", url: "/settings", icon: Settings },
+  { titleKey: "nav.dashboard", url: "/dashboard", icon: Home },
+  { titleKey: "nav.units", url: "/units", icon: Building2 },
+  { titleKey: "nav.bookings", url: "/bookings", icon: BookOpen },
+  { titleKey: "nav.calendar", url: "/calendar", icon: CalendarDays },
+  { titleKey: "nav.pricing", url: "/pricing", icon: DollarSign },
+  { titleKey: "nav.reports", url: "/reports", icon: BarChart3 },
+  { titleKey: "nav.messages", url: "/messages", icon: MessageSquare },
+  { titleKey: "nav.settings", url: "/settings", icon: Settings },
 ];
-
-const ROLE_LABELS: Record<string, string> = {
-  admin: "Admin",
-  manager: "Manager",
-  front_desk_supervisor: "Supervisor",
-  front_desk: "Front Desk",
-  maintenance: "Maintenance",
-  viewer: "Viewer",
-  guest: "Guest",
-};
 
 function usePendingUsersCount(isAdmin: boolean) {
   return useQuery({
     queryKey: ["pending-users-count"],
     queryFn: async () => {
-      // Get all profiles
       const { data: profiles, error: pErr } = await supabase
         .from("profiles")
         .select("user_id");
       if (pErr) throw pErr;
 
-      // Get all assigned user_ids
       const { data: roles, error: rErr } = await supabase
         .from("user_roles")
         .select("user_id");
@@ -69,11 +59,12 @@ function usePendingUsersCount(isAdmin: boolean) {
       return profiles.filter((p) => !assignedIds.has(p.user_id)).length;
     },
     enabled: isAdmin,
-    refetchInterval: 60_000, // refresh every minute
+    refetchInterval: 60_000,
   });
 }
 
 export function AppSidebar() {
+  const { t } = useTranslation();
   const { signOut, user, role, isAdmin } = useAuth();
   const { data: pendingCount } = usePendingUsersCount(isAdmin);
 
@@ -85,16 +76,16 @@ export function AppSidebar() {
         <h2 className="text-lg font-bold text-sidebar-foreground" style={{ fontFamily: "'Playfair Display', serif" }}>
           Ground Stay
         </h2>
-        <p className="text-xs text-sidebar-foreground/60 mt-0.5">Property Management</p>
+        <p className="text-xs text-sidebar-foreground/60 mt-0.5">{t("common.propertyManagement")}</p>
       </div>
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("nav.navigation")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {visibleNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
@@ -103,7 +94,7 @@ export function AppSidebar() {
                       activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
                     >
                       <item.icon className="mr-2 h-4 w-4" />
-                      <span>{item.title}</span>
+                      <span>{t(item.titleKey)}</span>
                       {item.url === "/settings" && !!pendingCount && pendingCount > 0 && (
                         <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-4 min-w-4 justify-center">
                           {pendingCount}
@@ -125,9 +116,12 @@ export function AppSidebar() {
           </div>
           {role && (
             <Badge variant="outline" className="text-[10px] shrink-0">
-              {ROLE_LABELS[role] ?? role}
+              {t(`roles.${role}`)}
             </Badge>
           )}
+        </div>
+        <div className="px-1 mb-2">
+          <LanguageSelector compact />
         </div>
         <Button
           variant="ghost"
@@ -136,7 +130,7 @@ export function AppSidebar() {
           onClick={signOut}
         >
           <LogOut className="mr-2 h-4 w-4" />
-          Sign out
+          {t("common.signOut")}
         </Button>
       </SidebarFooter>
     </Sidebar>

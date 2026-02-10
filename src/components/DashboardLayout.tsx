@@ -2,16 +2,17 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { useLocation } from "react-router-dom";
 import { Menu } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
-const routeTitles: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/bookings": "Bookings",
-  "/calendar": "Calendar",
-  "/units": "Units",
-  "/pricing": "Pricing",
-  "/reports": "Reports",
-  "/settings": "Settings",
-  "/messages": "Messages",
+const routeTitleKeys: Record<string, string> = {
+  "/dashboard": "nav.dashboard",
+  "/bookings": "nav.bookings",
+  "/calendar": "nav.calendar",
+  "/units": "nav.units",
+  "/pricing": "nav.pricing",
+  "/reports": "nav.reports",
+  "/settings": "nav.settings",
+  "/messages": "nav.messages",
 };
 
 interface DashboardLayoutProps {
@@ -19,8 +20,9 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
+  const { t } = useTranslation();
   const location = useLocation();
-  const pageTitle = routeTitles[location.pathname] || "Dashboard";
+  const titleKey = routeTitleKeys[location.pathname] || "nav.dashboard";
 
   return (
     <SidebarProvider>
@@ -33,7 +35,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <span className="md:hidden">Menu</span>
             </SidebarTrigger>
             <span className="md:hidden text-sm font-semibold text-primary">Ground Stay</span>
-            <span className="ml-auto md:ml-0 text-sm font-medium text-muted-foreground">{pageTitle}</span>
+            <span className="ml-auto md:ml-0 text-sm font-medium text-muted-foreground">{t(titleKey)}</span>
           </header>
           <main className="flex-1 p-6 overflow-auto">
             {children}

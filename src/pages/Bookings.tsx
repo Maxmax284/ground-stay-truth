@@ -16,10 +16,12 @@ import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { BookingFilters } from "@/components/BookingFilters";
 import { BookingFormDialog } from "@/components/BookingFormDialog";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
-import { STATE_LABELS, STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
+import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTranslation } from "react-i18next";
 
 function BookingStatusBadge({ booking }: { booking: any }) {
+  const { t } = useTranslation();
   const { data: policies } = usePolicySettings();
   const state = booking.state as BookingState;
 
@@ -43,14 +45,14 @@ function BookingStatusBadge({ booking }: { booking: any }) {
     return (
       <div className="flex items-center gap-1.5">
         <Badge className={STATE_VARIANTS[state]}>
-          {STATE_LABELS[state]}
+          {t(`states.${state}`)}
         </Badge>
         {deadlineInfo.isExpired ? (
           <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-            <AlertTriangle className="h-3 w-3 mr-0.5" /> Expired
+            <AlertTriangle className="h-3 w-3 mr-0.5" /> {t("bookings.expired")}
           </Badge>
         ) : (
-          <span className="text-[10px] text-muted-foreground">{deadlineInfo.remaining}h left</span>
+          <span className="text-[10px] text-muted-foreground">{t("bookings.hoursLeft", { hours: deadlineInfo.remaining })}</span>
         )}
       </div>
     );
@@ -58,12 +60,13 @@ function BookingStatusBadge({ booking }: { booking: any }) {
 
   return (
     <Badge className={STATE_VARIANTS[state]}>
-      {STATE_LABELS[state]}
+      {t(`states.${state}`)}
     </Badge>
   );
 }
 
 function BookingCard({ booking, onClick }: { booking: any; onClick: () => void }) {
+  const { t } = useTranslation();
   return (
     <div
       className="rounded-lg border bg-card p-4 cursor-pointer active:bg-accent/50 transition-colors"
@@ -72,7 +75,7 @@ function BookingCard({ booking, onClick }: { booking: any; onClick: () => void }
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="font-medium text-foreground truncate">{booking.units?.name ?? "—"}</p>
-          <p className="text-sm text-muted-foreground truncate">{(booking as any).profiles?.full_name ?? "No guest"}</p>
+          <p className="text-sm text-muted-foreground truncate">{(booking as any).profiles?.full_name ?? t("bookings.noGuest")}</p>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <BookingStatusBadge booking={booking} />
@@ -82,18 +85,18 @@ function BookingCard({ booking, onClick }: { booking: any; onClick: () => void }
       <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
         <span>{format(new Date(booking.check_in), "MMM d")} – {format(new Date(booking.check_out), "MMM d")}</span>
         <span>·</span>
-        <span>{booking.num_guests} guest{booking.num_guests !== 1 ? "s" : ""}</span>
+        <span>{t("bookings.guestCount", { count: booking.num_guests })}</span>
       </div>
     </div>
   );
 }
 
 const Bookings = () => {
+  const { t } = useTranslation();
   const { isAdmin, role } = useAuth();
   const { data: units } = useUnits();
   const isMobile = useIsMobile();
 
-  // Filters
   const [stateFilter, setStateFilter] = useState<BookingState | null>(null);
   const [unitFilter, setUnitFilter] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState<string | null>(null);
@@ -106,7 +109,6 @@ const Bookings = () => {
     dateTo,
   });
 
-  // Dialogs
   const [showCreate, setShowCreate] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
 
@@ -115,12 +117,12 @@ const Bookings = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Bookings</h1>
-            <p className="text-muted-foreground mt-1">Manage reservations and booking states</p>
+            <h1 className="text-2xl font-bold text-foreground">{t("bookings.title")}</h1>
+            <p className="text-muted-foreground mt-1">{t("bookings.manageReservations")}</p>
           </div>
           {permissions.canCreateBooking(role) && (
             <Button onClick={() => setShowCreate(true)}>
-              <Plus className="h-4 w-4 mr-2" /> New Booking
+              <Plus className="h-4 w-4 mr-2" /> {t("bookings.newBooking")}
             </Button>
           )}
         </div>
@@ -143,7 +145,7 @@ const Bookings = () => {
           </div>
         ) : !bookings?.length ? (
           <div className="text-center py-16 text-muted-foreground">
-            <p>No bookings found.</p>
+            <p>{t("bookings.noBookings")}</p>
           </div>
         ) : isMobile ? (
           <div className="space-y-3">
@@ -156,13 +158,13 @@ const Bookings = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Unit</TableHead>
-                  <TableHead>Guest</TableHead>
-                  <TableHead>Check-in</TableHead>
-                  <TableHead>Check-out</TableHead>
-                  <TableHead>Guests</TableHead>
-                  <TableHead>State</TableHead>
-                  <TableHead>Created</TableHead>
+                  <TableHead>{t("bookings.unit")}</TableHead>
+                  <TableHead>{t("bookings.guest")}</TableHead>
+                  <TableHead>{t("bookings.checkIn")}</TableHead>
+                  <TableHead>{t("bookings.checkOut")}</TableHead>
+                  <TableHead>{t("bookings.numGuests")}</TableHead>
+                  <TableHead>{t("bookings.state")}</TableHead>
+                  <TableHead>{t("bookings.created")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
