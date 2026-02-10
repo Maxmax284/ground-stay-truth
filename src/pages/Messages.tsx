@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -93,13 +93,41 @@ function useInboxThreads() {
         (a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
       );
     },
-    refetchInterval: 30_000,
   });
+}
+
+/** Subscribe to realtime message changes and invalidate inbox + per-booking queries */
+function useMessagesRealtime() {
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("inbox-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "messages" },
+        (payload) => {
+          // Refresh the inbox thread list
+          qc.invalidateQueries({ queryKey: ["inbox-threads"] });
+          // Refresh the specific booking's messages if open
+          const bookingId = (payload.new as any)?.booking_id ?? (payload.old as any)?.booking_id;
+          if (bookingId) {
+            qc.invalidateQueries({ queryKey: ["bookingMessages", bookingId] });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [qc]);
 }
 
 const Messages = () => {
   const { isAdmin } = useAuth();
   const { data: threads, isLoading } = useInboxThreads();
+  useMessagesRealtime();
   const [search, setSearch] = useState("");
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
 
