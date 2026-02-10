@@ -44,7 +44,8 @@
     "you": "You",
     "staff": "Staff",
     "perNight": "/night",
-    "propertyManagement": "Property Management"
+    "propertyManagement": "Property Management",
+    "next": "Next"
   },
   "nav": {
     "dashboard": "Dashboard",

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { addDays, subDays, startOfDay, format, isSameDay, parseISO, isWithinInterval } from "date-fns";
+import { useTranslation } from "react-i18next";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,12 +18,13 @@ import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { permissions } from "@/lib/permissions";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ChevronLeft, ChevronRight, CalendarDays, Wrench } from "lucide-react";
-import { STATE_LABELS, STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
+import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 
 const DEFAULT_DAYS = 30;
 const MOBILE_DAYS = 7;
 
 const CalendarView = () => {
+  const { t } = useTranslation();
   const { isAdmin, role } = useAuth();
   const { data: units } = useUnits();
   const { data: policies } = usePolicySettings();
@@ -33,7 +35,6 @@ const CalendarView = () => {
   const [startDate, setStartDate] = useState(() => startOfDay(new Date()));
   const endDate = addDays(startDate, days);
 
-  // Mobile: selected unit
   const [mobileUnitId, setMobileUnitId] = useState<string>("");
   const selectedMobileUnit = useMemo(() => {
     if (!isMobile) return null;
@@ -41,7 +42,6 @@ const CalendarView = () => {
     return activeUnits.find((u) => u.id === id) ?? activeUnits[0] ?? null;
   }, [isMobile, mobileUnitId, activeUnits]);
 
-  // Fetch bookings within the visible range
   const { data: bookings } = useBookings({
     dateFrom: format(startDate, "yyyy-MM-dd"),
     dateTo: format(endDate, "yyyy-MM-dd"),
@@ -52,12 +52,9 @@ const CalendarView = () => {
     dateTo: format(endDate, "yyyy-MM-dd"),
   });
 
-  // Click-to-book state
   const [newBookingUnit, setNewBookingUnit] = useState<string | undefined>();
   const [newBookingDate, setNewBookingDate] = useState<string | undefined>();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-
-  // Detail sheet state
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [showMaintenanceDialog, setShowMaintenanceDialog] = useState(false);
 
@@ -81,26 +78,20 @@ const CalendarView = () => {
     return setting ? Number(setting.value) : 4;
   }, [policies]);
 
-  // Mobile: build day list for selected unit
   const mobileDays = useMemo(() => {
     if (!isMobile || !selectedMobileUnit) return [];
     const result = [];
     for (let i = 0; i < MOBILE_DAYS; i++) {
       const date = addDays(startDate, i);
       const dateStr = format(date, "yyyy-MM-dd");
-
-      // Find booking overlapping this day
       const booking = (bookings ?? []).find((b) => {
         if (b.unit_id !== selectedMobileUnit.id) return false;
         return dateStr >= b.check_in && dateStr < b.check_out;
       });
-
-      // Find maintenance block overlapping this day
       const maintenance = (maintenanceBlocks ?? []).find((mb) => {
         if (mb.unit_id !== selectedMobileUnit.id) return false;
         return dateStr >= mb.start_date && dateStr <= mb.end_date;
       });
-
       result.push({ date, dateStr, booking, maintenance });
     }
     return result;
@@ -111,9 +102,9 @@ const CalendarView = () => {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Calendar</h1>
+            <h1 className="text-2xl font-bold text-foreground">{t("calendar.title")}</h1>
             <p className="text-muted-foreground mt-1">
-              Visual overview of availability{isMobile ? "" : " across all units"}
+              {isMobile ? t("calendar.visualOverview") : t("calendar.visualOverviewAll")}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -121,7 +112,7 @@ const CalendarView = () => {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button variant="outline" size="sm" onClick={goToday}>
-              <CalendarDays className="h-4 w-4 mr-1" /> Today
+              <CalendarDays className="h-4 w-4 mr-1" /> {t("common.today")}
             </Button>
             <Button variant="outline" size="icon" onClick={goForward}>
               <ChevronRight className="h-4 w-4" />
@@ -131,19 +122,16 @@ const CalendarView = () => {
             </span>
             {permissions.canManageMaintenanceBlocks(role) && (
               <Button variant="outline" size="sm" onClick={() => setShowMaintenanceDialog(true)}>
-                <Wrench className="h-4 w-4 mr-1" /> Block
+                <Wrench className="h-4 w-4 mr-1" /> {t("calendar.block")}
               </Button>
             )}
           </div>
         </div>
 
         {isMobile && activeUnits.length > 0 && (
-          <Select
-            value={selectedMobileUnit?.id ?? ""}
-            onValueChange={setMobileUnitId}
-          >
+          <Select value={selectedMobileUnit?.id ?? ""} onValueChange={setMobileUnitId}>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select unit" />
+              <SelectValue placeholder={t("calendar.selectUnit")} />
             </SelectTrigger>
             <SelectContent>
               {activeUnits.map((u) => (
@@ -181,19 +169,19 @@ const CalendarView = () => {
                     <div>
                       <p className="font-medium text-sm text-foreground">
                         {format(date, "EEE, MMM d")}
-                        {isToday && <span className="text-primary ml-1 text-xs">(today)</span>}
+                        {isToday && <span className="text-primary ml-1 text-xs">({t("common.today")})</span>}
                       </p>
                     </div>
                     {maintenance ? (
                       <Badge variant="destructive" className="text-[10px]">
-                        <Wrench className="h-3 w-3 mr-0.5" /> Blocked
+                        <Wrench className="h-3 w-3 mr-0.5" /> {t("calendar.blocked")}
                       </Badge>
                     ) : booking ? (
                       <Badge className={STATE_VARIANTS[booking.state as BookingState] ?? ""}>
-                        {STATE_LABELS[booking.state as BookingState] ?? booking.state}
+                        {t(`states.${booking.state}`)}
                       </Badge>
                     ) : (
-                      <span className="text-xs text-muted-foreground">Available</span>
+                      <span className="text-xs text-muted-foreground">{t("calendar.available")}</span>
                     )}
                   </div>
                   {maintenance?.reason && (
@@ -201,7 +189,7 @@ const CalendarView = () => {
                   )}
                   {booking && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      {(booking as any).profiles?.full_name ?? "Guest"} · {format(new Date(booking.check_in), "MMM d")}–{format(new Date(booking.check_out), "MMM d")}
+                      {(booking as any).profiles?.full_name ?? t("common.guest")} · {format(new Date(booking.check_in), "MMM d")}–{format(new Date(booking.check_out), "MMM d")}
                     </p>
                   )}
                 </div>
