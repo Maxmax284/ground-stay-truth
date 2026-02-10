@@ -1,12 +1,15 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 interface GuestLayoutProps {
   children: React.ReactNode;
 }
 
 const GuestLayout = ({ children }: GuestLayoutProps) => {
+  const { t } = useTranslation();
   const { signOut, user } = useAuth();
 
   return (
@@ -19,6 +22,7 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
           Ground Stay
         </h1>
         <div className="flex items-center gap-3">
+          <LanguageSelector compact />
           <span className="text-sm text-muted-foreground hidden sm:inline">
             {user?.email}
           </span>
@@ -29,7 +33,7 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
             className="text-muted-foreground hover:text-foreground"
           >
             <LogOut className="h-4 w-4 mr-1" />
-            Sign out
+            {t("common.signOut")}
           </Button>
         </div>
       </header>

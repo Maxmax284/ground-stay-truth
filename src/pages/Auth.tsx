@@ -6,8 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 const Auth = () => {
+  const { t } = useTranslation();
   const { user, loading, signIn, signUp } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
@@ -19,7 +22,7 @@ const Auth = () => {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-muted-foreground">Loading…</p>
+        <p className="text-muted-foreground">{t("common.loading")}</p>
       </div>
     );
   }
@@ -35,11 +38,11 @@ const Auth = () => {
       : await signUp(email, password, fullName);
 
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } else if (!isLogin) {
       toast({
-        title: "Check your email",
-        description: "We've sent you a confirmation link. Please verify your email to sign in.",
+        title: t("auth.checkEmail"),
+        description: t("auth.checkEmailDesc"),
       });
     }
     setSubmitting(false);
@@ -47,74 +50,75 @@ const Auth = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="absolute top-4 right-4">
+        <LanguageSelector />
+      </div>
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-foreground">Ground Stay</h1>
+          <h1 className="text-3xl font-bold text-foreground">{t("auth.groundStay")}</h1>
           <p className="mt-2 text-muted-foreground">
-            {isLogin ? "Welcome back" : "Create your account"}
+            {isLogin ? t("auth.welcomeBack") : t("auth.createYourAccount")}
           </p>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle className="text-xl">
-              {isLogin ? "Sign in" : "Sign up"}
+              {isLogin ? t("auth.signIn") : t("auth.signUp")}
             </CardTitle>
             <CardDescription>
-              {isLogin
-                ? "Enter your credentials to access your dashboard"
-                : "Fill in your details to get started"}
+              {isLogin ? t("auth.enterCredentials") : t("auth.fillDetails")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (
                 <div className="space-y-2">
-                  <Label htmlFor="fullName">Full name</Label>
+                  <Label htmlFor="fullName">{t("auth.fullName")}</Label>
                   <Input
                     id="fullName"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Your name"
+                    placeholder={t("auth.yourName")}
                     required={!isLogin}
                   />
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("auth.email")}</Label>
                 <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
+                  placeholder={t("auth.emailPlaceholder")}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t("auth.password")}</Label>
                 <Input
                   id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder={t("auth.passwordPlaceholder")}
                   required
                   minLength={6}
                 />
               </div>
               <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? "Please wait…" : isLogin ? "Sign in" : "Create account"}
+                {submitting ? t("common.pleaseWait") : isLogin ? t("auth.signIn") : t("auth.createYourAccount")}
               </Button>
             </form>
             <div className="mt-4 text-center text-sm text-muted-foreground">
-              {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
+              {isLogin ? t("auth.noAccount") : t("auth.haveAccount")}{" "}
               <button
                 type="button"
                 onClick={() => setIsLogin(!isLogin)}
                 className="font-medium text-primary hover:underline"
               >
-                {isLogin ? "Sign up" : "Sign in"}
+                {isLogin ? t("auth.signUp") : t("auth.signIn")}
               </button>
             </div>
           </CardContent>
