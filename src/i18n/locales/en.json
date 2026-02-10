@@ -78,6 +78,21 @@
     "passwordPlaceholder": "••••••••",
     "groundStay": "Ground Stay"
   },
+  "staffAuth": {
+    "subtitle": "Staff Portal",
+    "welcomeBack": "Sign in to your staff account",
+    "enterCredentials": "Enter your credentials to access the dashboard",
+    "guestLink": "Are you a guest?",
+    "guestSignIn": "Sign in here"
+  },
+  "guestAuth": {
+    "subtitle": "Guest Portal",
+    "createAccount": "Create your guest account to manage bookings, message our team, and more",
+    "signInDesc": "Sign in to access your bookings and messages",
+    "signUpDesc": "Fill in your details to create a guest account",
+    "staffLink": "Staff member?",
+    "staffSignIn": "Staff sign-in"
+  },
   "dashboard": {
     "welcome": "Welcome to Ground Stay",
     "overview": "Here's an overview of your property today.",

@@ -9,6 +9,7 @@ import RoleRedirect from "@/components/RoleRedirect";
 import Index from "./pages/Index";
 import EmbedWidget from "./pages/EmbedWidget";
 import Auth from "./pages/Auth";
+import GuestAuth from "./pages/GuestAuth";
 import Units from "./pages/Units";
 import Bookings from "./pages/Bookings";
 import CalendarView from "./pages/CalendarView";
@@ -30,6 +31,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/guest" element={<GuestAuth />} />
 
             {/* Root redirects based on role */}
             <Route path="/" element={<ProtectedRoute><RoleRedirect /></ProtectedRoute>} />

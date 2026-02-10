@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,12 +11,9 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 
 const Auth = () => {
   const { t } = useTranslation();
-  const { user, loading, signIn, signUp } = useAuth();
-  const [searchParams] = useSearchParams();
-  const [isLogin, setIsLogin] = useState(searchParams.get("register") !== "true");
+  const { user, loading, signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -34,17 +31,10 @@ const Auth = () => {
     e.preventDefault();
     setSubmitting(true);
 
-    const { error } = isLogin
-      ? await signIn(email, password)
-      : await signUp(email, password, fullName);
+    const { error } = await signIn(email, password);
 
     if (error) {
       toast({ title: t("common.error"), description: error.message, variant: "destructive" });
-    } else if (!isLogin) {
-      toast({
-        title: t("auth.checkEmail"),
-        description: t("auth.checkEmailDesc"),
-      });
     }
     setSubmitting(false);
   };
@@ -56,35 +46,18 @@ const Auth = () => {
       </div>
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-foreground">{t("auth.groundStay")}</h1>
-          <p className="mt-2 text-muted-foreground">
-            {isLogin ? t("auth.welcomeBack") : t("auth.createYourAccount")}
-          </p>
+          <h1 className="font-serif text-3xl font-bold text-foreground">{t("auth.groundStay")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t("staffAuth.subtitle")}</p>
+          <p className="mt-2 text-muted-foreground">{t("staffAuth.welcomeBack")}</p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">
-              {isLogin ? t("auth.signIn") : t("auth.signUp")}
-            </CardTitle>
-            <CardDescription>
-              {isLogin ? t("auth.enterCredentials") : t("auth.fillDetails")}
-            </CardDescription>
+            <CardTitle className="text-xl">{t("auth.signIn")}</CardTitle>
+            <CardDescription>{t("staffAuth.enterCredentials")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">{t("auth.fullName")}</Label>
-                  <Input
-                    id="fullName"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder={t("auth.yourName")}
-                    required={!isLogin}
-                  />
-                </div>
-              )}
               <div className="space-y-2">
                 <Label htmlFor="email">{t("auth.email")}</Label>
                 <Input
@@ -109,18 +82,14 @@ const Auth = () => {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? t("common.pleaseWait") : isLogin ? t("auth.signIn") : t("auth.createYourAccount")}
+                {submitting ? t("common.pleaseWait") : t("auth.signIn")}
               </Button>
             </form>
-            <div className="mt-4 text-center text-sm text-muted-foreground">
-              {isLogin ? t("auth.noAccount") : t("auth.haveAccount")}{" "}
-              <button
-                type="button"
-                onClick={() => setIsLogin(!isLogin)}
-                className="font-medium text-primary hover:underline"
-              >
-                {isLogin ? t("auth.signUp") : t("auth.signIn")}
-              </button>
+            <div className="mt-4 text-center text-xs text-muted-foreground">
+              {t("staffAuth.guestLink")}{" "}
+              <a href="/auth/guest" className="font-medium text-primary hover:underline">
+                {t("staffAuth.guestSignIn")}
+              </a>
             </div>
           </CardContent>
         </Card>
