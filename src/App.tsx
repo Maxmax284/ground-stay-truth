@@ -33,14 +33,14 @@ const App = () => (
             {/* Root redirects based on role */}
             <Route path="/" element={<ProtectedRoute><RoleRedirect /></ProtectedRoute>} />
 
-            {/* Staff routes */}
-            <Route path="/dashboard" element={<ProtectedRoute staffOnly><Index /></ProtectedRoute>} />
-            <Route path="/units" element={<ProtectedRoute requireAdmin><Units /></ProtectedRoute>} />
-            <Route path="/bookings" element={<ProtectedRoute staffOnly><Bookings /></ProtectedRoute>} />
-            <Route path="/calendar" element={<ProtectedRoute staffOnly><CalendarView /></ProtectedRoute>} />
-            <Route path="/pricing" element={<ProtectedRoute requireAdmin><Pricing /></ProtectedRoute>} />
-            <Route path="/reports" element={<ProtectedRoute requireAdmin><Reports /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute staffOnly><Settings /></ProtectedRoute>} />
+            {/* Staff routes — each enforced by canAccessRoute */}
+            <Route path="/dashboard" element={<ProtectedRoute requiredPath="/dashboard"><Index /></ProtectedRoute>} />
+            <Route path="/units" element={<ProtectedRoute requiredPath="/units"><Units /></ProtectedRoute>} />
+            <Route path="/bookings" element={<ProtectedRoute requiredPath="/bookings"><Bookings /></ProtectedRoute>} />
+            <Route path="/calendar" element={<ProtectedRoute requiredPath="/calendar"><CalendarView /></ProtectedRoute>} />
+            <Route path="/pricing" element={<ProtectedRoute requiredPath="/pricing"><Pricing /></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute requiredPath="/reports"><Reports /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute requiredPath="/settings"><Settings /></ProtectedRoute>} />
 
             {/* Guest portal */}
             <Route path="/guest" element={<ProtectedRoute guestOnly><GuestPortal /></ProtectedRoute>} />
