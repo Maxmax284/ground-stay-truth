@@ -1,84 +1,146 @@
 
 
-# Calendar Enhancement + Guest Portal Preview
+# Guest Portal Overhaul -- Missing Features
 
-## Two Enhancements
+## What's Missing Today
 
-### 1. Enhanced Calendar Views
+Looking at the current Guest Portal (`/guest`), here is what a guest can actually do vs. what they should be able to do:
 
-The current calendar is a 30-day horizontal Gantt-style grid (desktop) or a 7-day vertical list (mobile). This adds two new view modes accessible via a toggle:
+| Feature | Current State | Needed |
+|---------|--------------|--------|
+| View own bookings | Yes | Yes |
+| Send messages on a booking | Yes (inline, collapsed) | Needs its own dedicated Messages tab |
+| Request/create a booking | No | Yes -- guests should be able to submit booking inquiries |
+| View listings | Yes | Yes |
+| View policies | Yes | Yes |
+| View calendar | Yes (own bookings) | Yes |
+| Upload ID documents | No | Yes -- guests need to upload their own ID for check-in |
+| Edit profile (name, phone) | No | Yes -- guests should manage their own profile |
+| Guest self-registration via embed | No | Yes -- embeds should link to sign-up |
+| Standalone Messages tab | No | Yes -- a proper inbox view, not just per-booking toggles |
 
-**Month View**: A traditional calendar grid (like Google Calendar) showing the full month with booking indicators in each day cell. Clicking a day shows the bookings for that day. Includes month navigation (prev/next arrows).
+## Plan
 
-**Day View**: A detailed single-day view showing all units and their status for that specific day -- who's checked in, who's arriving, who's departing, maintenance blocks, and available slots. Useful for front desk operations.
+### 1. Guest Booking Request Form
 
-**Where it appears:**
-- Staff dashboard calendar page (`/calendar`) -- all three views available via a toggle (Timeline | Month | Day)
-- Guest portal (`/guest`) -- a new "Calendar" tab showing a month view of their own bookings only (read-only, no booking creation)
+Add a "Request Booking" button on the Guest Portal (visible in the Listings tab on each unit card and as a floating action in the Bookings tab). This opens a simplified version of the staff BookingFormDialog tailored for guests:
 
-**View toggle**: Three buttons next to the existing navigation controls: "Timeline" (current default), "Month", and "Day". The Day view can also be reached by clicking a day cell in the Month view.
+- Guest selects a unit, check-in date, check-out date, number of guests, and optional notes
+- The booking is automatically created in `inquiry` state with the guest's own user ID as `guest_id`
+- No guest selection dropdown (it's always the logged-in user)
+- Shows pricing breakdown (reuses existing `calculatePricing` logic)
+- Validates minimum nights, capacity, maintenance conflicts
+- After submission, shows a confirmation and the booking appears in "My Bookings"
 
-### 2. Guest Portal Preview for Admins
+**Files:**
+- Create `src/components/GuestBookingRequestForm.tsx` -- simplified booking dialog for guests
+- Modify `src/pages/GuestPortal.tsx` -- add "Request Booking" buttons to unit cards and bookings tab
 
-Add a way for admins to see what the guest portal looks like without needing a guest account. This will be a simple link/button in the Settings page or sidebar that opens the guest portal in preview mode.
+### 2. Dedicated Messages Tab
 
-**Implementation**: Add a route parameter `/guest?preview=true` that, when accessed by an admin, renders the guest portal with sample/mock data instead of requiring a guest-role account. The `ProtectedRoute` component will be updated to allow admins through on the guest route when the preview flag is set.
+Replace the current inline per-booking message toggles with a proper **Messages** tab in the Guest Portal. This gives guests a single inbox view of all their booking conversations:
+
+- Tab shows list of booking threads (unit name + dates + unread indicator)
+- Clicking a thread opens the conversation with full message history
+- Guest can send replies
+- Uses Supabase Realtime for instant updates (same pattern as staff Messages page)
+- The per-booking inline messaging in the booking cards stays as a quick-access shortcut
+
+**Files:**
+- Modify `src/pages/GuestPortal.tsx` -- add "Messages" tab with inbox-style view
+
+### 3. Guest Profile Editor
+
+Add a **Profile** section (either as a tab or in the header dropdown) where guests can:
+
+- Edit their full name
+- Edit their phone number
+- View their email (read-only, since it's their auth email)
+
+This reuses the existing `useProfile` hook and `ProfileEditor` component, adapted for the guest layout.
+
+**Files:**
+- Modify `src/pages/GuestPortal.tsx` -- add Profile tab
+- Modify `src/components/ProfileEditor.tsx` -- ensure it works standalone outside DashboardLayout (it likely already does)
+
+### 4. Guest Document Upload
+
+Guests need to upload their ID documents for check-in (this is a requirement of the booking state machine -- ID upload is mandatory before check-in). Add a document upload section within each booking card:
+
+- Shows on bookings in `confirmed` or `pending_deposit` state
+- "Upload your ID" button opens the existing `GuestDocumentUpload` component
+- Shows upload status (uploaded/not uploaded) on the booking card
+
+**Files:**
+- Modify `src/pages/GuestPortal.tsx` -- integrate `GuestDocumentUpload` into booking cards
+
+### 5. Embed-to-Registration Flow
+
+Currently, embed widgets (listing cards, availability calendars, CTAs) on the external WordPress site have no path to account creation. The CTA widget just shows "Check Availability" with a configurable contact URL.
+
+Changes:
+- Add a new embed widget option: "Book Now" CTA that links directly to the Guest Portal sign-up page (`/auth?register=true`)
+- Update the existing CTA widget to optionally link to the guest portal registration
+- Add a `register` query param to the Auth page that defaults to the sign-up form instead of sign-in
+- The embed code generator gets a new option to choose between "Contact URL" and "Guest Portal Registration" as the CTA target
+
+**Files:**
+- Modify `src/pages/Auth.tsx` -- respect `?register=true` to default to sign-up mode
+- Modify `src/pages/EmbedWidget.tsx` -- add guest portal registration URL option to CTA widget
+- Modify `src/components/EmbedCodeGenerator.tsx` -- add CTA target option (contact URL vs guest portal)
+
+### 6. Translation Keys
+
+Add all new UI strings to `src/i18n/locales/en.json` for the new features.
 
 ---
 
-## Technical Plan
+## Technical Details
 
-### Files to Create
+### Guest Booking Request Form
 
-| File | Purpose |
-|------|---------|
-| `src/components/CalendarMonthView.tsx` | Month grid component -- 7-column grid, day cells with booking dots/bars, click-to-drill-down |
-| `src/components/CalendarDayView.tsx` | Day detail component -- lists all units with their booking status for a single day |
+The form is a simplified version of `BookingFormDialog`. Key differences from the staff version:
+- No guest selector (auto-assigns to current user)
+- No admin override for cleaning buffers
+- Uses the same `useCreateBooking` hook
+- Same pricing calculator and validation logic
+- RLS policy on `bookings` table already allows inserts where `guest_id = auth.uid()`
 
-### Files to Modify
+### Messages Tab Architecture
 
-| File | Change |
+The guest Messages tab reuses the same `messages` table. The existing RLS policies should already allow guests to read messages on their own bookings (where `booking_id` is in a booking with `guest_id = auth.uid()`). The tab will:
+1. Query all messages for the guest's booking IDs
+2. Group by booking
+3. Show unread indicators (messages not from the guest)
+4. Subscribe to realtime changes
+
+### Auth Registration Flow
+
+The Auth page currently defaults to login. Adding `?register=true` support:
+```typescript
+const [searchParams] = useSearchParams();
+const [isLogin, setIsLogin] = useState(searchParams.get("register") !== "true");
+```
+
+When a new user signs up, they get the `guest` role automatically (or no role, which shows "Pending Access"). The system should assign `guest` role on signup -- this may need a database trigger if not already in place.
+
+### File Change Summary
+
+| File | Action |
 |------|--------|
-| `src/pages/CalendarView.tsx` | Add view mode toggle (timeline/month/day), render the appropriate component based on selection |
-| `src/pages/GuestPortal.tsx` | Add a "Calendar" tab with a read-only month view of the guest's bookings |
-| `src/components/ProtectedRoute.tsx` | Allow admin users to access `/guest` route when `?preview=true` is in the URL |
-| `src/components/AppSidebar.tsx` | Add "Preview Guest Portal" link for admin users |
-| `src/i18n/locales/en.json` | Add translation keys for new calendar views and guest portal preview |
+| `src/components/GuestBookingRequestForm.tsx` | Create -- guest booking dialog |
+| `src/pages/GuestPortal.tsx` | Modify -- add Messages tab, Profile tab, booking request buttons, document upload integration |
+| `src/pages/Auth.tsx` | Modify -- support `?register=true` query param |
+| `src/pages/EmbedWidget.tsx` | Modify -- add guest portal registration CTA option |
+| `src/components/EmbedCodeGenerator.tsx` | Modify -- add CTA target toggle |
+| `src/i18n/locales/en.json` | Modify -- add new translation keys |
 
-### Month View Component Design
+### Execution Order
 
-- Standard 7-column calendar grid (Sun-Sat)
-- Each day cell shows:
-  - Day number (highlighted if today)
-  - Small colored dots or mini-bars for bookings (color-coded by state, same as existing legend)
-  - Hatched indicator for maintenance blocks
-  - Click a day to switch to Day View for that date
-- Month navigation arrows (same style as existing)
-- Weekend columns slightly shaded (consistent with timeline view)
-- Grayed-out cells for days outside the current month
+1. Guest Booking Request Form + buttons in portal
+2. Dedicated Messages tab
+3. Profile editor tab
+4. Document upload in booking cards
+5. Embed-to-registration flow
+6. Translation keys throughout
 
-### Day View Component Design
-
-- Header shows the selected date with prev/next day arrows
-- Table/list of all active units, each row showing:
-  - Unit name
-  - Status for that day: Available, Booked (with guest name + state badge), Maintenance (with reason), or Cleaning Buffer
-  - Click a booking to open the BookingDetailSheet (reuses existing component)
-  - Click an available slot to open the BookingFormDialog (reuses existing component)
-- Summary bar at top: "X of Y units occupied, Z arriving, W departing"
-
-### Guest Portal Calendar Tab
-
-- Simple month view (reuses CalendarMonthView with a `readOnly` prop)
-- Only shows the guest's own bookings (filtered by `guest_id`)
-- Day cells show check-in/check-out indicators for their stays
-- No click-to-create functionality
-- Consistent with the existing tab pattern (Bookings | Listings | Policies | Calendar)
-
-### Admin Guest Portal Preview
-
-- Admin clicks "Preview Guest Portal" in sidebar or settings
-- Opens `/guest?preview=true`
-- ProtectedRoute allows admin through without guest role requirement
-- GuestPortal detects preview mode and shows a banner: "You are previewing the Guest Portal as an admin"
-- Shows real data (units, policies) but bookings section shows empty state or sample bookings
