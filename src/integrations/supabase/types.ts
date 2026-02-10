@@ -170,6 +170,9 @@ export type Database = {
           file_path: string
           id: string
           uploaded_by: string | null
+          verification_notes: Json | null
+          verification_status: string | null
+          verified_at: string | null
         }
         Insert: {
           booking_id: string
@@ -178,6 +181,9 @@ export type Database = {
           file_path: string
           id?: string
           uploaded_by?: string | null
+          verification_notes?: Json | null
+          verification_status?: string | null
+          verified_at?: string | null
         }
         Update: {
           booking_id?: string
@@ -186,6 +192,9 @@ export type Database = {
           file_path?: string
           id?: string
           uploaded_by?: string | null
+          verification_notes?: Json | null
+          verification_status?: string | null
+          verified_at?: string | null
         }
         Relationships: [
           {

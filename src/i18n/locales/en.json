@@ -447,6 +447,20 @@
     "fileTooLarge": "File too large",
     "fileTooLargeDesc": "Maximum file size is 10 MB."
   },
+  "verification": {
+    "analyzing": "Analyzing…",
+    "clear": "Clear",
+    "flagged": "Flagged",
+    "error": "Analysis Error",
+    "reviewed": "Reviewed",
+    "documentType": "Document Type",
+    "issuingCountry": "Issuing Country",
+    "expiryDate": "Expiry Date",
+    "expired": "Expired",
+    "qualityIssues": "Quality Concerns",
+    "confidence": "Confidence",
+    "summary": "Summary"
+  },
   "maintenanceBlock": {
     "title": "Block Dates for Maintenance",
     "unit": "Unit",
