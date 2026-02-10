@@ -8,9 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useUserRoles } from "@/hooks/useUserRoles";
-import { Constants } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
+import { Constants } from "@/integrations/supabase/types";
 import type { Database } from "@/integrations/supabase/types";
+import CreateStaffAccountForm from "@/components/CreateStaffAccountForm";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -31,7 +32,7 @@ interface ProfileResult {
 }
 
 export default function UserRoleManager() {
-  const { roles, addRole, removeRole } = useUserRoles();
+  const { roles, addRole, removeRole, createStaffAccount } = useUserRoles();
   const [newRole, setNewRole] = useState<AppRole>("viewer");
 
   const supervisorCount = useMemo(
@@ -86,6 +87,11 @@ export default function UserRoleManager() {
   };
 
   return (
+    <div className="space-y-4">
+      <CreateStaffAccountForm
+        createStaffAccount={createStaffAccount}
+        existingRoles={roles.data}
+      />
     <Card>
       <CardHeader>
         <CardTitle className="text-lg">User Roles</CardTitle>
@@ -213,5 +219,6 @@ export default function UserRoleManager() {
         )}
       </CardContent>
     </Card>
+    </div>
   );
 }

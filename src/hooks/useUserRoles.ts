@@ -66,5 +66,39 @@ export function useUserRoles() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  return { roles, addRole, removeRole };
+  const createStaffAccount = useMutation({
+    mutationFn: async (payload: {
+      email: string;
+      password: string;
+      full_name: string;
+      role: AppRole;
+    }) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-staff-account`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Failed to create account");
+      return body;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["user-roles"] });
+      toast.success("Staff account created successfully");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return { roles, addRole, removeRole, createStaffAccount };
 }
