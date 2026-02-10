@@ -7,9 +7,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useDashboardStats } from "@/hooks/useDashboard";
 import { STATE_LABELS, type BookingState } from "@/lib/bookingStateMachine";
+import { canAccessRoute } from "@/lib/permissions";
+import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 
 const Index = () => {
+  const { role } = useAuth();
   const { arrivals, departures, activeBookings, unitCount, recentActivity } = useDashboardStats();
 
   const arrivalsCount = arrivals.data?.length ?? 0;
@@ -62,10 +65,18 @@ const Index = () => {
               <CardTitle className="text-lg">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <QuickAction to="/bookings" icon={Plus} label="New Booking" description="Create a new reservation" />
-              <QuickAction to="/calendar" icon={CalendarDays} label="View Calendar" description="See availability at a glance" />
-              <QuickAction to="/units" icon={Building2} label="Manage Units" description="Add or edit accommodation units" />
-              <QuickAction to="/pricing" icon={TrendingUp} label="Pricing & Policies" description="Configure rates and rules" />
+              {canAccessRoute(role, "/bookings") && (
+                <QuickAction to="/bookings" icon={Plus} label="New Booking" description="Create a new reservation" />
+              )}
+              {canAccessRoute(role, "/calendar") && (
+                <QuickAction to="/calendar" icon={CalendarDays} label="View Calendar" description="See availability at a glance" />
+              )}
+              {canAccessRoute(role, "/units") && (
+                <QuickAction to="/units" icon={Building2} label="Manage Units" description="Add or edit accommodation units" />
+              )}
+              {canAccessRoute(role, "/pricing") && (
+                <QuickAction to="/pricing" icon={TrendingUp} label="Pricing & Policies" description="Configure rates and rules" />
+              )}
             </CardContent>
           </Card>
 

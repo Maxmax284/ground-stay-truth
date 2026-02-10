@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { Constants } from "@/integrations/supabase/types";
+import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
@@ -23,15 +24,58 @@ const ROLE_LABELS: Record<AppRole, string> = {
   guest: "Guest",
 };
 
+interface ProfileResult {
+  user_id: string;
+  full_name: string | null;
+  email: string | null;
+}
+
 export default function UserRoleManager() {
   const { roles, addRole, removeRole } = useUserRoles();
-  const [newUserId, setNewUserId] = useState("");
   const [newRole, setNewRole] = useState<AppRole>("viewer");
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<ProfileResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<ProfileResult | null>(null);
+
+  // Fallback UUID mode
+  const [useUuid, setUseUuid] = useState(false);
+  const [manualUuid, setManualUuid] = useState("");
+
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    setSelectedUser(null);
+    if (query.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    setSearching(true);
+    const { data } = await supabase
+      .from("profiles")
+      .select("user_id, full_name, email")
+      .or(`full_name.ilike.%${query}%,email.ilike.%${query}%`)
+      .limit(10);
+    setSearchResults(data ?? []);
+    setSearching(false);
+  };
+
+  const handleSelectUser = (profile: ProfileResult) => {
+    setSelectedUser(profile);
+    setSearchQuery(profile.full_name || profile.email || profile.user_id);
+    setSearchResults([]);
+  };
+
   const handleAdd = () => {
-    if (!newUserId.trim()) return;
-    addRole.mutate({ user_id: newUserId.trim(), role: newRole }, {
-      onSuccess: () => setNewUserId(""),
+    const userId = useUuid ? manualUuid.trim() : selectedUser?.user_id;
+    if (!userId) return;
+    addRole.mutate({ user_id: userId, role: newRole }, {
+      onSuccess: () => {
+        setSelectedUser(null);
+        setSearchQuery("");
+        setManualUuid("");
+      },
     });
   };
 
@@ -42,34 +86,83 @@ export default function UserRoleManager() {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Add role form */}
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="flex-1 space-y-1">
-            <Label htmlFor="userId" className="text-xs">User ID</Label>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">{useUuid ? "User ID" : "Search User"}</Label>
+            <button
+              type="button"
+              className="text-xs text-muted-foreground underline"
+              onClick={() => { setUseUuid(!useUuid); setSelectedUser(null); setSearchQuery(""); setManualUuid(""); }}
+            >
+              {useUuid ? "Search by name" : "Enter UUID"}
+            </button>
+          </div>
+
+          {useUuid ? (
             <Input
-              id="userId"
-              value={newUserId}
-              onChange={(e) => setNewUserId(e.target.value)}
+              value={manualUuid}
+              onChange={(e) => setManualUuid(e.target.value)}
               placeholder="Paste user UUID"
               className="font-mono text-xs"
             />
-          </div>
-          <div className="w-full sm:w-48 space-y-1">
-            <Label className="text-xs">Role</Label>
-            <Select value={newRole} onValueChange={(v) => setNewRole(v as AppRole)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Constants.public.Enums.app_role.map((r) => (
-                  <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-end">
-            <Button onClick={handleAdd} disabled={addRole.isPending} size="sm">
-              <Plus className="h-4 w-4 mr-1" /> Assign
-            </Button>
+          ) : (
+            <div className="relative">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  placeholder="Search by name or email…"
+                  className="pl-8 text-sm"
+                />
+              </div>
+              {searchResults.length > 0 && (
+                <div className="absolute z-10 mt-1 w-full rounded-md border bg-popover shadow-md max-h-48 overflow-auto">
+                  {searchResults.map((p) => (
+                    <button
+                      key={p.user_id}
+                      type="button"
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent/50 transition-colors"
+                      onClick={() => handleSelectUser(p)}
+                    >
+                      <span className="font-medium">{p.full_name || "No name"}</span>
+                      {p.email && <span className="text-muted-foreground ml-2 text-xs">{p.email}</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {searching && <p className="text-xs text-muted-foreground mt-1">Searching…</p>}
+              {selectedUser && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Selected: <span className="font-mono">{selectedUser.user_id.slice(0, 8)}…</span>
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex-1 space-y-1">
+              <Label className="text-xs">Role</Label>
+              <Select value={newRole} onValueChange={(v) => setNewRole(v as AppRole)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Constants.public.Enums.app_role.map((r) => (
+                    <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end">
+              <Button
+                onClick={handleAdd}
+                disabled={addRole.isPending || (useUuid ? !manualUuid.trim() : !selectedUser)}
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-1" /> Assign
+              </Button>
+            </div>
           </div>
         </div>
 
