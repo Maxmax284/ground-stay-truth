@@ -33,6 +33,19 @@ export function useReports(monthOffset = 0) {
     },
   });
 
+  const maintenanceBlocks = useQuery({
+    queryKey: ["reports", "maintenance_blocks", rangeStart, rangeEnd],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("maintenance_blocks")
+        .select("id, unit_id, start_date, end_date")
+        .lte("start_date", rangeEnd)
+        .gte("end_date", rangeStart);
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Derived: occupancy per day
   const daysInRange = eachDayOfInterval({ start: startOfMonth(refDate), end: endOfMonth(refDate) });
   const totalUnitDays = (units.data?.length ?? 1) * daysInRange.length;
@@ -71,11 +84,13 @@ export function useReports(monthOffset = 0) {
     count,
   }));
 
-  // Derived: blocked vs bookable per unit
+  // Derived: blocked vs bookable per unit (now includes maintenance)
   const blockedVsBookable = (units.data ?? []).map((unit) => {
     const unitBookings = (bookings.data ?? []).filter((b) => b.unit_id === unit.id);
+    const unitMaintenance = (maintenanceBlocks.data ?? []).filter((m) => m.unit_id === unit.id);
     let bookedDays = 0;
     let blockedDays = 0;
+    let maintenanceDays = 0;
 
     daysInRange.forEach((day) => {
       const dayStr = format(day, "yyyy-MM-dd");
@@ -85,23 +100,33 @@ export function useReports(monthOffset = 0) {
           b.check_in <= dayStr &&
           b.check_out > dayStr
       );
-      const blocked = !booked && unitBookings.some(
+      if (booked) {
+        bookedDays++;
+        return;
+      }
+      const inMaintenance = unitMaintenance.some(
+        (m) => m.start_date <= dayStr && m.end_date >= dayStr
+      );
+      if (inMaintenance) {
+        maintenanceDays++;
+        return;
+      }
+      const blocked = unitBookings.some(
         (b) =>
           ["cancelled", "no_show"].includes(b.state) === false &&
           !BLOCKING_STATES.includes(b.state as BookingState) &&
           b.check_in <= dayStr &&
           b.check_out > dayStr
       );
-      if (booked) bookedDays++;
-      else if (blocked) blockedDays++;
+      if (blocked) blockedDays++;
     });
 
-    const availableDays = daysInRange.length - bookedDays - blockedDays;
-    return { name: unit.name, booked: bookedDays, blocked: blockedDays, available: availableDays };
+    const availableDays = daysInRange.length - bookedDays - blockedDays - maintenanceDays;
+    return { name: unit.name, booked: bookedDays, blocked: blockedDays, maintenance: maintenanceDays, available: availableDays };
   });
 
   return {
-    isLoading: bookings.isLoading || units.isLoading,
+    isLoading: bookings.isLoading || units.isLoading || maintenanceBlocks.isLoading,
     occupancyByDay,
     occupancyRate,
     revenueByUnit,

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,8 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarDays, ArrowRight, Home, Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { CalendarDays, ArrowRight, Home, Info, MessageCircle, Send } from "lucide-react";
 import { STATE_LABELS, STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
+import { toast } from "sonner";
 
 const GuestPortal = () => {
   const { user } = useAuth();
@@ -30,6 +33,33 @@ const GuestPortal = () => {
       return data;
     },
   });
+
+  // Fetch guest-visible messages for all guest bookings
+  const bookingIds = bookings?.map((b) => b.id) ?? [];
+  const { data: messages } = useQuery({
+    queryKey: ["guest-messages", bookingIds],
+    enabled: bookingIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("id, booking_id, content, created_at, sender_id, is_internal")
+        .in("booking_id", bookingIds)
+        .eq("is_internal", false)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Group messages by booking_id
+  const messagesByBooking = useMemo(() => {
+    const map = new Map<string, typeof messages>();
+    (messages ?? []).forEach((m) => {
+      if (!map.has(m.booking_id)) map.set(m.booking_id, []);
+      map.get(m.booking_id)!.push(m);
+    });
+    return map;
+  }, [messages]);
 
   // Fetch active units for browsing (with group info)
   const { data: units } = useQuery({
@@ -105,7 +135,7 @@ const GuestPortal = () => {
               {activeBookings.length > 0 && (
                 <Section title="Currently Checked In">
                   {activeBookings.map((b) => (
-                    <GuestBookingCard key={b.id} booking={b} />
+                    <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} />
                   ))}
                 </Section>
               )}
@@ -113,7 +143,7 @@ const GuestPortal = () => {
               {upcomingBookings.length > 0 && (
                 <Section title="Upcoming">
                   {upcomingBookings.map((b) => (
-                    <GuestBookingCard key={b.id} booking={b} />
+                    <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} />
                   ))}
                 </Section>
               )}
@@ -121,7 +151,7 @@ const GuestPortal = () => {
               {pastBookings.length > 0 && (
                 <Section title="Past Stays">
                   {pastBookings.map((b) => (
-                    <GuestBookingCard key={b.id} booking={b} />
+                    <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} />
                   ))}
                 </Section>
               )}
@@ -278,8 +308,36 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function GuestBookingCard({ booking }: { booking: any }) {
+function GuestBookingCard({ booking, messages, userId }: { booking: any; messages: any[]; userId?: string }) {
+  const [showMessages, setShowMessages] = useState(false);
+  const [reply, setReply] = useState("");
+  const queryClient = useQueryClient();
   const state = booking.state as BookingState;
+
+  const sendMessage = useMutation({
+    mutationFn: async (content: string) => {
+      const { error } = await supabase.from("messages").insert({
+        booking_id: booking.id,
+        content,
+        sender_id: userId!,
+        is_internal: false,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setReply("");
+      queryClient.invalidateQueries({ queryKey: ["guest-messages"] });
+      toast.success("Message sent");
+    },
+    onError: () => toast.error("Failed to send message"),
+  });
+
+  const handleSend = () => {
+    const trimmed = reply.trim();
+    if (!trimmed || !userId) return;
+    sendMessage.mutate(trimmed);
+  };
+
   return (
     <Card>
       <CardContent className="p-4">
@@ -309,6 +367,68 @@ function GuestBookingCard({ booking }: { booking: any }) {
         {booking.notes && (
           <p className="text-sm text-muted-foreground mt-2 italic">"{booking.notes}"</p>
         )}
+
+        {/* Messages toggle */}
+        <div className="mt-3">
+          <button
+            onClick={() => setShowMessages((v) => !v)}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+            Messages {messages.length > 0 && `(${messages.length})`}
+          </button>
+
+          {showMessages && (
+            <div className="mt-2 space-y-2">
+              {messages.length === 0 && (
+                <p className="text-xs text-muted-foreground">No messages yet.</p>
+              )}
+              {messages.map((m) => (
+                <div
+                  key={m.id}
+                  className={`text-sm p-2 rounded-md ${
+                    m.sender_id === userId
+                      ? "bg-primary/10 text-foreground ml-6"
+                      : "bg-muted text-foreground mr-6"
+                  }`}
+                >
+                  <p>{m.content}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {format(new Date(m.created_at), "MMM d, h:mm a")}
+                    {m.sender_id === userId ? " · You" : " · Staff"}
+                  </p>
+                </div>
+              ))}
+
+              {/* Reply input - only for non-terminal states */}
+              {!["completed", "cancelled", "no_show"].includes(booking.state) && userId && (
+                <div className="flex gap-2 mt-2">
+                  <Textarea
+                    value={reply}
+                    onChange={(e) => setReply(e.target.value)}
+                    placeholder="Type a message..."
+                    className="min-h-[60px] text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSend();
+                      }
+                    }}
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={handleSend}
+                    disabled={!reply.trim() || sendMessage.isPending}
+                    className="shrink-0 self-end"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
