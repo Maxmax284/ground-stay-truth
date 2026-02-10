@@ -179,6 +179,7 @@ const Reports = () => {
                   <Legend />
                   <Bar dataKey="booked" stackId="a" fill="hsl(150, 45%, 40%)" name="Booked" radius={[0, 0, 0, 0]} />
                   <Bar dataKey="blocked" stackId="a" fill="hsl(38, 55%, 65%)" name="Blocked" />
+                  <Bar dataKey="maintenance" stackId="a" fill="hsl(0, 65%, 50%)" name="Maintenance" />
                   <Bar dataKey="available" stackId="a" fill="hsl(30, 15%, 88%)" name="Available" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>

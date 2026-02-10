@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Get blocked dates (only dates, no booking details)
+      // Get blocked dates from bookings
       const { data: bookings } = await supabase
         .from("bookings")
         .select("check_in, check_out")
@@ -45,10 +45,17 @@ Deno.serve(async (req) => {
         .in("state", ["pending_approval", "pending_deposit", "confirmed", "checked_in"])
         .gte("check_out", new Date().toISOString().split("T")[0]);
 
-      const blockedRanges = (bookings ?? []).map((b) => ({
-        start: b.check_in,
-        end: b.check_out,
-      }));
+      // Get maintenance blocks
+      const { data: maintenance } = await supabase
+        .from("maintenance_blocks")
+        .select("start_date, end_date")
+        .eq("unit_id", unitId)
+        .gte("end_date", new Date().toISOString().split("T")[0]);
+
+      const blockedRanges = [
+        ...(bookings ?? []).map((b) => ({ start: b.check_in, end: b.check_out })),
+        ...(maintenance ?? []).map((m) => ({ start: m.start_date, end: m.end_date })),
+      ];
 
       return new Response(JSON.stringify({ unit, blockedRanges }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
