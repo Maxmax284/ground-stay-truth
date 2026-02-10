@@ -79,6 +79,9 @@ const Units = () => {
             {unit.is_active ? "Active" : "Inactive"}
           </Badge>
         </div>
+        {!unit.is_active && (
+          <p className="text-xs text-muted-foreground">Inactive units are hidden from guest views, embeds, and availability searches.</p>
+        )}
 
         {unit.description && (
           <p className="text-sm text-muted-foreground line-clamp-2">{unit.description}</p>

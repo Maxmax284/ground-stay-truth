@@ -62,8 +62,25 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
     return true;
   });
 
+  // Determine if transitions were filtered out due to insufficient role
+  const filteredCheckIn = rawTransitions.includes("checked_in") && !canCheckIn;
+  const filteredCheckOut = rawTransitions.includes("completed") && !canCheckOut;
+
   if (!permissions.canTransitionState(role)) return null;
-  if (validStates.length === 0 && !canOverride) return null;
+  if (validStates.length === 0 && !canOverride) {
+    // Show helper text if transitions exist but are gated
+    if (filteredCheckIn || filteredCheckOut) {
+      return (
+        <div className="rounded-lg border border-border p-4 text-sm text-muted-foreground flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          {filteredCheckIn
+            ? "A Supervisor must complete check-in for this booking."
+            : "A Supervisor must complete check-out for this booking."}
+        </div>
+      );
+    }
+    return null;
+  }
 
   // Check-in blocked without documents (unless admin override)
   const checkInBlocked = targetState === "checked_in" && !hasDocuments && !adminOverride;

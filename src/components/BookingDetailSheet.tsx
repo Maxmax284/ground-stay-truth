@@ -25,8 +25,9 @@ import {
 import { BookingStateTransition } from "@/components/BookingStateTransition";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { STATE_LABELS, STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
-import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText } from "lucide-react";
+import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText, Info } from "lucide-react";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
+import { useGuestDocuments } from "@/hooks/useGuestDocuments";
 
 interface BookingDetailSheetProps {
   bookingId: string | null;
@@ -42,6 +43,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
   const { data: payments } = useBookingPayments(bookingId);
   const { data: messages } = useBookingMessages(bookingId);
   const { data: policies } = usePolicySettings();
+  const { data: documents } = useGuestDocuments(bookingId ?? "");
 
   const canSeeAmounts = permissions.canViewPaymentAmounts(role);
   const canRecordPay = permissions.canRecordPayment(role);
@@ -61,6 +63,23 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
     const elapsed = differenceInHours(new Date(), new Date(booking.updated_at));
     return { isExpired: elapsed >= hours, remaining: hours - elapsed, hours };
   }, [booking, policies]);
+
+  const nextStep = useMemo(() => {
+    if (!booking) return null;
+    const state = booking.state as BookingState;
+    const hasDocuments = (documents?.length ?? 0) > 0;
+    const hasPaid = (payments?.length ?? 0) > 0;
+
+    switch (state) {
+      case "inquiry": return "Advance to Soft Hold or Pending Approval";
+      case "soft_hold": return softHoldInfo?.isExpired ? "Soft hold expired — cancel or advance" : "Confirm or cancel this hold";
+      case "pending_approval": return "Review and approve or decline";
+      case "pending_deposit": return depositDeadlineInfo?.isExpired ? "Deposit overdue — record payment or cancel" : hasPaid ? "Deposit recorded — advance to Confirmed" : "Record deposit payment";
+      case "confirmed": return !hasDocuments ? "Upload ID documents before check-in" : "Ready for check-in";
+      case "checked_in": return "Complete check-out when guest departs";
+      default: return null;
+    }
+  }, [booking, documents, payments, softHoldInfo, depositDeadlineInfo]);
 
   if (!booking) return null;
 
@@ -98,6 +117,12 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
                 ? "Deposit deadline has passed — cancel or record payment."
                 : `Deposit deadline in ${depositDeadlineInfo.remaining} hour${depositDeadlineInfo.remaining !== 1 ? "s" : ""}.`
               }
+            </div>
+          )}
+          {nextStep && (
+            <div className="flex items-center gap-2 text-sm text-primary bg-primary/5 rounded-md px-3 py-2">
+              <Info className="h-4 w-4 shrink-0" />
+              <span><strong>Next:</strong> {nextStep}</span>
             </div>
           )}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -170,26 +195,47 @@ function StateHistoryTab({ logs }: { logs: any[] }) {
   return (
     <ScrollArea className="max-h-[300px]">
       <div className="space-y-3 py-3">
-        {logs.map((log) => (
-          <div key={log.id} className="flex items-start gap-3 text-sm">
-            <div className="mt-1 h-2 w-2 rounded-full bg-primary shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1 flex-wrap">
-                {log.from_state && (
-                  <>
-                    <Badge variant="outline" className="text-xs">{STATE_LABELS[log.from_state as BookingState]}</Badge>
-                    <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                  </>
-                )}
-                <Badge variant="outline" className="text-xs">{STATE_LABELS[log.to_state as BookingState]}</Badge>
+        {logs.map((log) => {
+          const isSystem = !log.changed_by;
+          const isAdminOverride = log.reason?.startsWith("[ADMIN OVERRIDE]");
+          const dotColor = isAdminOverride
+            ? "bg-destructive"
+            : isSystem
+            ? "bg-muted-foreground"
+            : "bg-primary";
+
+          return (
+            <div key={log.id} className="flex items-start gap-3 text-sm">
+              <div className={`mt-1 h-2 w-2 rounded-full ${dotColor} shrink-0`} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1 flex-wrap">
+                  {log.from_state && (
+                    <>
+                      <Badge variant="outline" className="text-xs">{STATE_LABELS[log.from_state as BookingState]}</Badge>
+                      <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                    </>
+                  )}
+                  <Badge variant="outline" className="text-xs">{STATE_LABELS[log.to_state as BookingState]}</Badge>
+                  {isAdminOverride && (
+                    <Badge variant="destructive" className="text-xs ml-1">Admin Override</Badge>
+                  )}
+                  {isSystem && !isAdminOverride && (
+                    <Badge variant="secondary" className="text-xs ml-1">System</Badge>
+                  )}
+                </div>
+                {log.reason && <p className="text-muted-foreground mt-1">{log.reason}</p>}
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(log.created_at), "MMM d, yyyy 'at' h:mm a")}
+                  </p>
+                  {log.changed_by_name && (
+                    <span className="text-xs text-muted-foreground">— {log.changed_by_name}</span>
+                  )}
+                </div>
               </div>
-              {log.reason && <p className="text-muted-foreground mt-1">{log.reason}</p>}
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {format(new Date(log.created_at), "MMM d, yyyy 'at' h:mm a")}
-              </p>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </ScrollArea>
   );

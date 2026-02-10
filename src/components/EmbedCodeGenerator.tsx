@@ -50,6 +50,9 @@ export function EmbedCodeGenerator() {
           Generate embed codes to display listings, calendars, and CTAs on your WordPress or external site.
           Widgets auto-update from Ground Stay data.
         </p>
+        <p className="text-xs text-muted-foreground">
+          Embeds display availability from Ground Stay but do not accept bookings directly. All reservations are managed through Ground Stay.
+        </p>
       </CardHeader>
       <CardContent className="space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
