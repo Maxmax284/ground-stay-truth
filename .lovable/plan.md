@@ -1,146 +1,101 @@
 
 
-# Guest Portal Overhaul -- Missing Features
+# Guest Portal Completeness + Account Lifecycle
 
-## What's Missing Today
+## What's Missing
 
-Looking at the current Guest Portal (`/guest`), here is what a guest can actually do vs. what they should be able to do:
+After reviewing the full codebase, here are the gaps:
 
-| Feature | Current State | Needed |
-|---------|--------------|--------|
-| View own bookings | Yes | Yes |
-| Send messages on a booking | Yes (inline, collapsed) | Needs its own dedicated Messages tab |
-| Request/create a booking | No | Yes -- guests should be able to submit booking inquiries |
-| View listings | Yes | Yes |
-| View policies | Yes | Yes |
-| View calendar | Yes (own bookings) | Yes |
-| Upload ID documents | No | Yes -- guests need to upload their own ID for check-in |
-| Edit profile (name, phone) | No | Yes -- guests should manage their own profile |
-| Guest self-registration via embed | No | Yes -- embeds should link to sign-up |
-| Standalone Messages tab | No | Yes -- a proper inbox view, not just per-booking toggles |
+### 1. New signups get stuck in "Pending Access"
+The `handle_new_user()` database trigger only creates a profile row -- it does NOT assign the `guest` role in `user_roles`. So anyone who signs up via the Auth page (including from the embed "Book Now" CTA) sees the "Pending Access" screen and cannot reach the Guest Portal. This is the most critical blocker.
 
-## Plan
+**Fix:** Update the `handle_new_user()` trigger to also insert a `guest` role into `user_roles` for every new signup. Staff accounts created via the admin edge function already get their role assigned separately, so this won't conflict -- the admin flow can upgrade the role after.
 
-### 1. Guest Booking Request Form
+### 2. No account deletion
+Guests currently have no way to delete their account. The Profile tab shows name/phone/email but no delete option. GDPR and general user respect require a "Delete my account" action.
 
-Add a "Request Booking" button on the Guest Portal (visible in the Listings tab on each unit card and as a floating action in the Bookings tab). This opens a simplified version of the staff BookingFormDialog tailored for guests:
+**Fix:** Add a "Delete Account" button to the Profile tab (inside `ProfileEditor` or the Guest Portal profile section). This calls `supabase.rpc('delete_own_account')` -- a new database function (SECURITY DEFINER) that:
+- Deletes the user's profile, roles, messages, documents, and bookings (or the cascade handles it)
+- Calls `auth.admin_delete_user()` or simply deletes from `auth.users` (cascade handles the rest)
+- Signs the user out client-side
 
-- Guest selects a unit, check-in date, check-out date, number of guests, and optional notes
-- The booking is automatically created in `inquiry` state with the guest's own user ID as `guest_id`
-- No guest selection dropdown (it's always the logged-in user)
-- Shows pricing breakdown (reuses existing `calculatePricing` logic)
-- Validates minimum nights, capacity, maintenance conflicts
-- After submission, shows a confirmation and the booking appears in "My Bookings"
+Alternative: Use an edge function with the service role key to call `supabase.auth.admin.deleteUser(userId)` since deleting from `auth.users` directly requires admin privileges.
 
-**Files:**
-- Create `src/components/GuestBookingRequestForm.tsx` -- simplified booking dialog for guests
-- Modify `src/pages/GuestPortal.tsx` -- add "Request Booking" buttons to unit cards and bookings tab
+### 3. Embed widgets don't show a "Create Account" / "Sign Up" link
+The listing, compact, and calendar embed types have no path to the Guest Portal. Only the CTA widget type supports a registration link. The other widget types should include a small "Create an account to book" link or a "Book Now" button that links to `/auth?register=true`.
 
-### 2. Dedicated Messages Tab
+**Fix:** Add an optional registration link/button to the FullListing and CompactCard embed widgets, pulling the same `contact_url` parameter. The EmbedCodeGenerator should also include the CTA target option for all widget types, not just the CTA type.
 
-Replace the current inline per-booking message toggles with a proper **Messages** tab in the Guest Portal. This gives guests a single inbox view of all their booking conversations:
+### 4. No "general inquiry" messaging
+Currently, messages are tied to bookings. A guest with no bookings cannot send a message to staff. The Messages tab shows nothing if there are no booking threads.
 
-- Tab shows list of booking threads (unit name + dates + unread indicator)
-- Clicking a thread opens the conversation with full message history
-- Guest can send replies
-- Uses Supabase Realtime for instant updates (same pattern as staff Messages page)
-- The per-booking inline messaging in the booking cards stays as a quick-access shortcut
+**Fix:** Add a "New Message" / "Contact Us" button in the Messages tab that creates a message without a booking association -- or creates a lightweight "general inquiry" booking placeholder. Given the current schema ties messages to `booking_id`, the simpler approach is to allow guests to send a message that automatically creates an `inquiry` booking (or a dedicated "general" thread). For now, we'll add a "Send a message" prompt that guides guests to create a booking request first, keeping the data model clean.
 
-**Files:**
-- Modify `src/pages/GuestPortal.tsx` -- add "Messages" tab with inbox-style view
+### 5. Booking cancellation by guests
+Guests can see their bookings but cannot cancel them. The booking state machine supports cancellation, but there's no cancel button in the guest booking cards.
 
-### 3. Guest Profile Editor
-
-Add a **Profile** section (either as a tab or in the header dropdown) where guests can:
-
-- Edit their full name
-- Edit their phone number
-- View their email (read-only, since it's their auth email)
-
-This reuses the existing `useProfile` hook and `ProfileEditor` component, adapted for the guest layout.
-
-**Files:**
-- Modify `src/pages/GuestPortal.tsx` -- add Profile tab
-- Modify `src/components/ProfileEditor.tsx` -- ensure it works standalone outside DashboardLayout (it likely already does)
-
-### 4. Guest Document Upload
-
-Guests need to upload their ID documents for check-in (this is a requirement of the booking state machine -- ID upload is mandatory before check-in). Add a document upload section within each booking card:
-
-- Shows on bookings in `confirmed` or `pending_deposit` state
-- "Upload your ID" button opens the existing `GuestDocumentUpload` component
-- Shows upload status (uploaded/not uploaded) on the booking card
-
-**Files:**
-- Modify `src/pages/GuestPortal.tsx` -- integrate `GuestDocumentUpload` into booking cards
-
-### 5. Embed-to-Registration Flow
-
-Currently, embed widgets (listing cards, availability calendars, CTAs) on the external WordPress site have no path to account creation. The CTA widget just shows "Check Availability" with a configurable contact URL.
-
-Changes:
-- Add a new embed widget option: "Book Now" CTA that links directly to the Guest Portal sign-up page (`/auth?register=true`)
-- Update the existing CTA widget to optionally link to the guest portal registration
-- Add a `register` query param to the Auth page that defaults to the sign-up form instead of sign-in
-- The embed code generator gets a new option to choose between "Contact URL" and "Guest Portal Registration" as the CTA target
-
-**Files:**
-- Modify `src/pages/Auth.tsx` -- respect `?register=true` to default to sign-up mode
-- Modify `src/pages/EmbedWidget.tsx` -- add guest portal registration URL option to CTA widget
-- Modify `src/components/EmbedCodeGenerator.tsx` -- add CTA target option (contact URL vs guest portal)
-
-### 6. Translation Keys
-
-Add all new UI strings to `src/i18n/locales/en.json` for the new features.
+**Fix:** Add a "Cancel Booking" button on guest booking cards for eligible states (inquiry, soft_hold, pending_approval, pending_deposit, confirmed). This transitions the booking to `cancelled` state and follows the existing refund calculation logic to show the guest what refund tier applies before confirming.
 
 ---
 
-## Technical Details
+## Implementation Plan
 
-### Guest Booking Request Form
+### Database Changes
 
-The form is a simplified version of `BookingFormDialog`. Key differences from the staff version:
-- No guest selector (auto-assigns to current user)
-- No admin override for cleaning buffers
-- Uses the same `useCreateBooking` hook
-- Same pricing calculator and validation logic
-- RLS policy on `bookings` table already allows inserts where `guest_id = auth.uid()`
+**Migration 1 -- Auto-assign guest role on signup:**
+```sql
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.profiles (user_id, email, full_name)
+  VALUES (NEW.id, NEW.email, COALESCE(NEW.raw_user_meta_data->>'full_name', ''));
 
-### Messages Tab Architecture
+  INSERT INTO public.user_roles (user_id, role)
+  VALUES (NEW.id, 'guest');
 
-The guest Messages tab reuses the same `messages` table. The existing RLS policies should already allow guests to read messages on their own bookings (where `booking_id` is in a booking with `guest_id = auth.uid()`). The tab will:
-1. Query all messages for the guest's booking IDs
-2. Group by booking
-3. Show unread indicators (messages not from the guest)
-4. Subscribe to realtime changes
-
-### Auth Registration Flow
-
-The Auth page currently defaults to login. Adding `?register=true` support:
-```typescript
-const [searchParams] = useSearchParams();
-const [isLogin, setIsLogin] = useState(searchParams.get("register") !== "true");
+  RETURN NEW;
+END;
+$$;
 ```
 
-When a new user signs up, they get the `guest` role automatically (or no role, which shows "Pending Access"). The system should assign `guest` role on signup -- this may need a database trigger if not already in place.
+**Migration 2 -- Account deletion function (or handled via edge function instead):**
+An edge function `delete-account` will use the service role key to call `supabase.auth.admin.deleteUser(userId)`. The cascade on `auth.users` handles cleanup of profiles, roles, etc.
 
-### File Change Summary
+### Edge Function
 
-| File | Action |
+**`supabase/functions/delete-account/index.ts`:**
+- Validates the requesting user's JWT matches the account being deleted
+- Calls `supabase.auth.admin.deleteUser(userId)` with the service role key
+- Returns success
+
+### Frontend Changes
+
+| File | Change |
 |------|--------|
-| `src/components/GuestBookingRequestForm.tsx` | Create -- guest booking dialog |
-| `src/pages/GuestPortal.tsx` | Modify -- add Messages tab, Profile tab, booking request buttons, document upload integration |
-| `src/pages/Auth.tsx` | Modify -- support `?register=true` query param |
-| `src/pages/EmbedWidget.tsx` | Modify -- add guest portal registration CTA option |
-| `src/components/EmbedCodeGenerator.tsx` | Modify -- add CTA target toggle |
-| `src/i18n/locales/en.json` | Modify -- add new translation keys |
+| `src/pages/GuestPortal.tsx` | Add cancel booking button to `GuestBookingCard`; add "Contact us" guidance in empty Messages tab |
+| `src/components/ProfileEditor.tsx` | Add "Delete Account" section with confirmation dialog |
+| `src/pages/EmbedWidget.tsx` | Add optional "Book Now" link to FullListing and CompactCard widgets |
+| `src/components/EmbedCodeGenerator.tsx` | Show CTA target option for all widget types, not just CTA |
+| `src/i18n/locales/en.json` | Add translation keys for cancellation, account deletion, embed registration links |
+
+### Booking Cancellation Flow (Guest Side)
+
+- "Cancel Booking" button visible on cards with state: inquiry, soft_hold, pending_approval, pending_deposit, confirmed
+- Clicking opens a confirmation dialog showing:
+  - The refund tier (full / partial / no refund) based on `refundCalculator.ts`
+  - A confirm/cancel action pair
+- On confirm: calls a mutation that updates booking state to `cancelled` and logs it in `booking_state_log`
 
 ### Execution Order
 
-1. Guest Booking Request Form + buttons in portal
-2. Dedicated Messages tab
-3. Profile editor tab
-4. Document upload in booking cards
-5. Embed-to-registration flow
-6. Translation keys throughout
-
+1. Database migration: auto-assign `guest` role on signup
+2. Edge function: `delete-account`
+3. Profile editor: add delete account button + confirmation
+4. Guest booking cards: add cancel booking button + confirmation dialog
+5. Embed widgets: add registration links to listing/compact types
+6. Embed code generator: expose CTA target for all widget types
+7. Translation keys for all new strings
