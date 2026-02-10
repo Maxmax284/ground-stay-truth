@@ -31,7 +31,7 @@ export function EmbedCodeGenerator() {
 
   const baseUrl = window.location.origin;
   const widget = WIDGET_TYPES.find((w) => w.value === selectedType)!;
-  const resolvedContactUrl = ctaTarget === "register" ? `${baseUrl}/auth?register=true` : contactUrl;
+  const resolvedContactUrl = ctaTarget === "register" ? `${baseUrl}/auth/guest` : contactUrl;
   const contactParam = resolvedContactUrl ? `&contact_url=${encodeURIComponent(resolvedContactUrl)}` : "";
   const embedUrl = `${baseUrl}/embed/${selectedType}/${selectedUnit}${contactParam ? `?${contactParam.slice(1)}` : ""}`;
   const iframeCode = selectedUnit ? `<iframe src="${embedUrl}" width="100%" height="${widget.height}" style="border:none;border-radius:12px;overflow:hidden;" loading="lazy" title="Ground Stay - ${widget.label}"></iframe>` : "";

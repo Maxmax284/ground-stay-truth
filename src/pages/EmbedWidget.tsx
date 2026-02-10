@@ -152,7 +152,7 @@ function FullListing({ unit, blocked, accent, contactUrl }: { unit: UnitData; bl
       {contactUrl && (
         <div style={{ marginTop: 16, textAlign: "center" as const }}>
           <a href={contactUrl} target="_blank" rel="noopener noreferrer" style={{ padding: "10px 20px", background: accent, color: "#fff", borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "inline-block", textDecoration: "none" }}>
-            {contactUrl.includes("/auth?register=true") ? "Book Now" : "Check Availability"}
+            {contactUrl.includes("/auth/guest") ? "Book Now" : "Check Availability"}
           </a>
         </div>
       )}
@@ -186,7 +186,7 @@ function CompactCard({ unit, accent, contactUrl }: { unit: UnitData; accent: str
       {contactUrl && (
         <div style={{ marginTop: 12, textAlign: "center" as const }}>
           <a href={contactUrl} target="_blank" rel="noopener noreferrer" style={{ padding: "8px 16px", background: accent, color: "#fff", borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: "pointer", display: "inline-block", textDecoration: "none", width: "100%" }}>
-            {contactUrl.includes("/auth?register=true") ? "Book Now" : "Check Availability"}
+            {contactUrl.includes("/auth/guest") ? "Book Now" : "Check Availability"}
           </a>
         </div>
       )}
@@ -216,7 +216,7 @@ function CalendarOnly({ unit, blocked, accent, contactUrl }: { unit: UnitData; b
       {contactUrl && (
         <div style={{ marginTop: 12, textAlign: "center" as const }}>
           <a href={contactUrl} target="_blank" rel="noopener noreferrer" style={{ padding: "8px 16px", background: accent, color: "#fff", borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: "pointer", display: "inline-block", textDecoration: "none" }}>
-            {contactUrl.includes("/auth?register=true") ? "Book Now" : "Check Availability"}
+            {contactUrl.includes("/auth/guest") ? "Book Now" : "Check Availability"}
           </a>
         </div>
       )}
@@ -227,7 +227,7 @@ function CalendarOnly({ unit, blocked, accent, contactUrl }: { unit: UnitData; b
 // ── CTA Only ──
 function CTAOnly({ unit, accent, contactUrl }: { unit: UnitData; accent: string; contactUrl: string }) {
   // If contactUrl starts with the same origin or is a relative /auth path, it's a guest portal registration link
-  const ctaLabel = contactUrl.includes("/auth?register=true") ? "Book Now" : "Check Availability";
+  const ctaLabel = contactUrl.includes("/auth/guest") ? "Book Now" : "Check Availability";
 
   return (
     <div style={{ ...styles.container, maxWidth: 280, padding: 16, textAlign: "center" as const }}>
