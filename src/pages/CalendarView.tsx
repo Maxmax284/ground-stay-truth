@@ -1,30 +1,45 @@
 import { useState, useMemo } from "react";
-import { addDays, subDays, startOfDay, format } from "date-fns";
+import { addDays, subDays, startOfDay, format, isSameDay, parseISO, isWithinInterval } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { CalendarGrid } from "@/components/CalendarGrid";
 import { CalendarLegend } from "@/components/CalendarLegend";
 import { BookingFormDialog } from "@/components/BookingFormDialog";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { MaintenanceBlockDialog } from "@/components/MaintenanceBlockDialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUnits } from "@/hooks/useUnits";
 import { useBookings } from "@/hooks/useBookings";
 import { useMaintenanceBlocks } from "@/hooks/useMaintenanceBlocks";
 import { useAuth } from "@/hooks/useAuth";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { permissions } from "@/lib/permissions";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ChevronLeft, ChevronRight, CalendarDays, Wrench } from "lucide-react";
+import { STATE_LABELS, STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 
 const DEFAULT_DAYS = 30;
+const MOBILE_DAYS = 7;
 
 const CalendarView = () => {
   const { isAdmin, role } = useAuth();
   const { data: units } = useUnits();
   const { data: policies } = usePolicySettings();
+  const isMobile = useIsMobile();
   const activeUnits = useMemo(() => (units ?? []).filter((u) => u.is_active), [units]);
 
+  const days = isMobile ? MOBILE_DAYS : DEFAULT_DAYS;
   const [startDate, setStartDate] = useState(() => startOfDay(new Date()));
-  const endDate = addDays(startDate, DEFAULT_DAYS);
+  const endDate = addDays(startDate, days);
+
+  // Mobile: selected unit
+  const [mobileUnitId, setMobileUnitId] = useState<string>("");
+  const selectedMobileUnit = useMemo(() => {
+    if (!isMobile) return null;
+    const id = mobileUnitId || activeUnits[0]?.id;
+    return activeUnits.find((u) => u.id === id) ?? activeUnits[0] ?? null;
+  }, [isMobile, mobileUnitId, activeUnits]);
 
   // Fetch bookings within the visible range
   const { data: bookings } = useBookings({
@@ -56,14 +71,40 @@ const CalendarView = () => {
     setSelectedBookingId(bookingId);
   };
 
-  const goBack = () => setStartDate((d) => subDays(d, 7));
-  const goForward = () => setStartDate((d) => addDays(d, 7));
+  const stepSize = isMobile ? 3 : 7;
+  const goBack = () => setStartDate((d) => subDays(d, stepSize));
+  const goForward = () => setStartDate((d) => addDays(d, stepSize));
   const goToday = () => setStartDate(startOfDay(new Date()));
 
   const cleaningBufferHours = useMemo(() => {
     const setting = policies?.find((p) => p.key === "cleaning_buffer_hours");
     return setting ? Number(setting.value) : 4;
   }, [policies]);
+
+  // Mobile: build day list for selected unit
+  const mobileDays = useMemo(() => {
+    if (!isMobile || !selectedMobileUnit) return [];
+    const result = [];
+    for (let i = 0; i < MOBILE_DAYS; i++) {
+      const date = addDays(startDate, i);
+      const dateStr = format(date, "yyyy-MM-dd");
+
+      // Find booking overlapping this day
+      const booking = (bookings ?? []).find((b) => {
+        if (b.unit_id !== selectedMobileUnit.id) return false;
+        return dateStr >= b.check_in && dateStr < b.check_out;
+      });
+
+      // Find maintenance block overlapping this day
+      const maintenance = (maintenanceBlocks ?? []).find((mb) => {
+        if (mb.unit_id !== selectedMobileUnit.id) return false;
+        return dateStr >= mb.start_date && dateStr <= mb.end_date;
+      });
+
+      result.push({ date, dateStr, booking, maintenance });
+    }
+    return result;
+  }, [isMobile, selectedMobileUnit, startDate, bookings, maintenanceBlocks]);
 
   return (
     <DashboardLayout>
@@ -72,10 +113,10 @@ const CalendarView = () => {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Calendar</h1>
             <p className="text-muted-foreground mt-1">
-              Visual overview of availability across all units
+              Visual overview of availability{isMobile ? "" : " across all units"}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button variant="outline" size="icon" onClick={goBack}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -85,29 +126,100 @@ const CalendarView = () => {
             <Button variant="outline" size="icon" onClick={goForward}>
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-muted-foreground ml-2">
-              {format(startDate, "MMM d")} – {format(addDays(startDate, DEFAULT_DAYS - 1), "MMM d, yyyy")}
+            <span className="text-sm text-muted-foreground">
+              {format(startDate, "MMM d")} – {format(addDays(startDate, days - 1), "MMM d")}
             </span>
             {permissions.canManageMaintenanceBlocks(role) && (
-              <Button variant="outline" size="sm" onClick={() => setShowMaintenanceDialog(true)} className="ml-2">
-                <Wrench className="h-4 w-4 mr-1" /> Block Dates
+              <Button variant="outline" size="sm" onClick={() => setShowMaintenanceDialog(true)}>
+                <Wrench className="h-4 w-4 mr-1" /> Block
               </Button>
             )}
           </div>
         </div>
 
+        {isMobile && activeUnits.length > 0 && (
+          <Select
+            value={selectedMobileUnit?.id ?? ""}
+            onValueChange={setMobileUnitId}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select unit" />
+            </SelectTrigger>
+            <SelectContent>
+              {activeUnits.map((u) => (
+                <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
         <CalendarLegend />
 
-        <CalendarGrid
-          units={activeUnits}
-          bookings={bookings ?? []}
-          maintenanceBlocks={maintenanceBlocks ?? []}
-          startDate={startDate}
-          days={DEFAULT_DAYS}
-          cleaningBufferHours={cleaningBufferHours}
-          onCellClick={handleCellClick}
-          onBookingClick={handleBookingClick}
-        />
+        {isMobile ? (
+          <div className="space-y-2">
+            {mobileDays.map(({ date, dateStr, booking, maintenance }) => {
+              const isToday = isSameDay(date, new Date());
+              return (
+                <div
+                  key={dateStr}
+                  className={`rounded-lg border p-3 ${
+                    maintenance
+                      ? "bg-destructive/10 border-destructive/30"
+                      : booking
+                        ? "bg-primary/5 border-primary/20"
+                        : "bg-card cursor-pointer active:bg-accent/50"
+                  } ${isToday ? "ring-2 ring-primary/40" : ""}`}
+                  onClick={() => {
+                    if (booking) {
+                      handleBookingClick(booking.id);
+                    } else if (!maintenance && selectedMobileUnit) {
+                      handleCellClick(selectedMobileUnit.id, dateStr);
+                    }
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-sm text-foreground">
+                        {format(date, "EEE, MMM d")}
+                        {isToday && <span className="text-primary ml-1 text-xs">(today)</span>}
+                      </p>
+                    </div>
+                    {maintenance ? (
+                      <Badge variant="destructive" className="text-[10px]">
+                        <Wrench className="h-3 w-3 mr-0.5" /> Blocked
+                      </Badge>
+                    ) : booking ? (
+                      <Badge className={STATE_VARIANTS[booking.state as BookingState] ?? ""}>
+                        {STATE_LABELS[booking.state as BookingState] ?? booking.state}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Available</span>
+                    )}
+                  </div>
+                  {maintenance?.reason && (
+                    <p className="text-xs text-muted-foreground mt-1">{maintenance.reason}</p>
+                  )}
+                  {booking && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {(booking as any).profiles?.full_name ?? "Guest"} · {format(new Date(booking.check_in), "MMM d")}–{format(new Date(booking.check_out), "MMM d")}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <CalendarGrid
+            units={activeUnits}
+            bookings={bookings ?? []}
+            maintenanceBlocks={maintenanceBlocks ?? []}
+            startDate={startDate}
+            days={DEFAULT_DAYS}
+            cleaningBufferHours={cleaningBufferHours}
+            onCellClick={handleCellClick}
+            onBookingClick={handleBookingClick}
+          />
+        )}
       </div>
 
       <BookingFormDialog
