@@ -8,6 +8,7 @@ import {
   Settings,
   LogOut,
   MessageSquare,
+  Eye,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
@@ -120,6 +122,12 @@ export function AppSidebar() {
             </Badge>
           )}
         </div>
+        {isAdmin && (
+          <Link to="/guest?preview=true" className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+            <Eye className="h-3.5 w-3.5" />
+            {t("nav.previewGuestPortal")}
+          </Link>
+        )}
         <div className="px-1 mb-2">
           <LanguageSelector compact />
         </div>

@@ -1,25 +1,32 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { format, startOfMonth, addMonths, subMonths } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
+import { useSearchParams } from "react-router-dom";
 import GuestLayout from "@/components/GuestLayout";
+import { CalendarMonthView } from "@/components/CalendarMonthView";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { CalendarDays, ArrowRight, Home, Info, MessageCircle, Send } from "lucide-react";
+import { CalendarDays, ArrowRight, Home, Info, MessageCircle, Send, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { toast } from "sonner";
 
 const GuestPortal = () => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const { data: policies } = usePolicySettings();
+  const [searchParams] = useSearchParams();
+  const isPreview = searchParams.get("preview") === "true" && role === "admin";
+
+  // Month view state for Calendar tab
+  const [calMonth, setCalMonth] = useState(() => startOfMonth(new Date()));
 
   const { data: bookings, isLoading } = useQuery({
     queryKey: ["guest-bookings", user?.id], enabled: !!user,
@@ -80,6 +87,12 @@ const GuestPortal = () => {
   return (
     <GuestLayout>
       <div className="space-y-6">
+        {isPreview && (
+          <div className="flex items-center gap-2 bg-warning/10 border border-warning/30 text-warning-foreground rounded-lg px-4 py-2 text-sm">
+            <Eye className="h-4 w-4 shrink-0" />
+            {t("guestPortal.previewBanner")}
+          </div>
+        )}
         <div>
           <h1 className="text-2xl font-bold text-foreground">{t("guestPortal.myStay")}</h1>
           <p className="text-muted-foreground mt-1">{t("guestPortal.subtitle")}</p>
@@ -90,6 +103,7 @@ const GuestPortal = () => {
             <TabsTrigger value="bookings">{t("guestPortal.myBookings")}</TabsTrigger>
             <TabsTrigger value="listings">{t("guestPortal.listings")}</TabsTrigger>
             <TabsTrigger value="policies">{t("guestPortal.policies")}</TabsTrigger>
+            <TabsTrigger value="calendar">{t("nav.calendar")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="bookings">
@@ -184,6 +198,38 @@ const GuestPortal = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="calendar">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                  {format(calMonth, "MMMM yyyy")}
+                </h3>
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setCalMonth((m) => subMonths(m, 1))}>
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setCalMonth(startOfMonth(new Date()))}>
+                    {t("common.today")}
+                  </Button>
+                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setCalMonth((m) => addMonths(m, 1))}>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+              <CalendarMonthView
+                currentMonth={calMonth}
+                bookings={bookings ?? []}
+                readOnly
+                guestId={isPreview ? undefined : user?.id}
+              />
+              {!bookings?.length && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  {t("guestPortal.noBookings")}
+                </p>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </div>
