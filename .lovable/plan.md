@@ -1,101 +1,87 @@
 
 
-# Guest Portal Completeness + Account Lifecycle
+# Separate Guest and Staff Authentication Pages
 
-## What's Missing
+## Overview
 
-After reviewing the full codebase, here are the gaps:
+Create a dedicated guest-facing login/signup page at `/auth/guest` with warm, hospitality-focused branding, and restrict the existing `/auth` page to staff-only login (no signup option for staff -- accounts are created by admins). Update all embed widgets and routing to point guests to the new page.
 
-### 1. New signups get stuck in "Pending Access"
-The `handle_new_user()` database trigger only creates a profile row -- it does NOT assign the `guest` role in `user_roles`. So anyone who signs up via the Auth page (including from the embed "Book Now" CTA) sees the "Pending Access" screen and cannot reach the Guest Portal. This is the most critical blocker.
+## Changes
 
-**Fix:** Update the `handle_new_user()` trigger to also insert a `guest` role into `user_roles` for every new signup. Staff accounts created via the admin edge function already get their role assigned separately, so this won't conflict -- the admin flow can upgrade the role after.
+### 1. New Guest Auth Page (`src/pages/GuestAuth.tsx`)
 
-### 2. No account deletion
-Guests currently have no way to delete their account. The Profile tab shows name/phone/email but no delete option. GDPR and general user respect require a "Delete my account" action.
+A new page at `/auth/guest` designed specifically for guests:
 
-**Fix:** Add a "Delete Account" button to the Profile tab (inside `ProfileEditor` or the Guest Portal profile section). This calls `supabase.rpc('delete_own_account')` -- a new database function (SECURITY DEFINER) that:
-- Deletes the user's profile, roles, messages, documents, and bookings (or the cascade handles it)
-- Calls `auth.admin_delete_user()` or simply deletes from `auth.users` (cascade handles the rest)
-- Signs the user out client-side
+- Warm branding: "Welcome to Ground Stay" with guest-oriented copy ("Create your guest account to manage bookings, message our team, and more")
+- Defaults to **sign-up mode** (since most guests arriving from embeds are new)
+- Toggle to switch to sign-in for returning guests
+- After login/signup, redirects to `/guest` (not `/` which would go through RoleRedirect)
+- Uses the same `useAuth` hooks and Supabase auth -- just different UI and redirect target
+- If already logged in as a guest, redirects to `/guest`; if logged in as staff, redirects to `/dashboard`
 
-Alternative: Use an edge function with the service role key to call `supabase.auth.admin.deleteUser(userId)` since deleting from `auth.users` directly requires admin privileges.
+### 2. Staff Auth Page Updates (`src/pages/Auth.tsx`)
 
-### 3. Embed widgets don't show a "Create Account" / "Sign Up" link
-The listing, compact, and calendar embed types have no path to the Guest Portal. Only the CTA widget type supports a registration link. The other widget types should include a small "Create an account to book" link or a "Book Now" button that links to `/auth?register=true`.
+- Remove signup option entirely -- staff accounts are created by admins via the edge function
+- Update copy: "Staff Login" / "Sign in to your staff account"
+- After login, redirects to `/dashboard` (not `/`)
+- Add a small link at the bottom: "Are you a guest? Sign in here" pointing to `/auth/guest`
 
-**Fix:** Add an optional registration link/button to the FullListing and CompactCard embed widgets, pulling the same `contact_url` parameter. The EmbedCodeGenerator should also include the CTA target option for all widget types, not just the CTA type.
+### 3. Routing Updates (`src/App.tsx`)
 
-### 4. No "general inquiry" messaging
-Currently, messages are tied to bookings. A guest with no bookings cannot send a message to staff. The Messages tab shows nothing if there are no booking threads.
+- Add route: `/auth/guest` renders `GuestAuth`
+- Keep `/auth` for staff login
+- Both are public routes (no `ProtectedRoute` wrapper)
 
-**Fix:** Add a "New Message" / "Contact Us" button in the Messages tab that creates a message without a booking association -- or creates a lightweight "general inquiry" booking placeholder. Given the current schema ties messages to `booking_id`, the simpler approach is to allow guests to send a message that automatically creates an `inquiry` booking (or a dedicated "general" thread). For now, we'll add a "Send a message" prompt that guides guests to create a booking request first, keeping the data model clean.
+### 4. Embed Updates (`src/pages/EmbedWidget.tsx` + `src/components/EmbedCodeGenerator.tsx`)
 
-### 5. Booking cancellation by guests
-Guests can see their bookings but cannot cancel them. The booking state machine supports cancellation, but there's no cancel button in the guest booking cards.
+- Change the registration link from `/auth?register=true` to `/auth/guest`
+- Update the `EmbedCodeGenerator` so the "Guest Portal Registration" CTA target points to `/auth/guest`
+- Update the button label detection in all embed widget types
 
-**Fix:** Add a "Cancel Booking" button on guest booking cards for eligible states (inquiry, soft_hold, pending_approval, pending_deposit, confirmed). This transitions the booking to `cancelled` state and follows the existing refund calculation logic to show the guest what refund tier applies before confirming.
+### 5. RoleRedirect Update (`src/components/RoleRedirect.tsx`)
+
+- No changes needed -- it already routes guests to `/guest` and staff to `/dashboard`
+
+### 6. Translation Keys (`src/i18n/locales/en.json`)
+
+Add keys for the new guest auth page and update staff auth copy.
 
 ---
 
-## Implementation Plan
+## Technical Details
 
-### Database Changes
+### File Summary
 
-**Migration 1 -- Auto-assign guest role on signup:**
-```sql
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-  INSERT INTO public.profiles (user_id, email, full_name)
-  VALUES (NEW.id, NEW.email, COALESCE(NEW.raw_user_meta_data->>'full_name', ''));
-
-  INSERT INTO public.user_roles (user_id, role)
-  VALUES (NEW.id, 'guest');
-
-  RETURN NEW;
-END;
-$$;
-```
-
-**Migration 2 -- Account deletion function (or handled via edge function instead):**
-An edge function `delete-account` will use the service role key to call `supabase.auth.admin.deleteUser(userId)`. The cascade on `auth.users` handles cleanup of profiles, roles, etc.
-
-### Edge Function
-
-**`supabase/functions/delete-account/index.ts`:**
-- Validates the requesting user's JWT matches the account being deleted
-- Calls `supabase.auth.admin.deleteUser(userId)` with the service role key
-- Returns success
-
-### Frontend Changes
-
-| File | Change |
+| File | Action |
 |------|--------|
-| `src/pages/GuestPortal.tsx` | Add cancel booking button to `GuestBookingCard`; add "Contact us" guidance in empty Messages tab |
-| `src/components/ProfileEditor.tsx` | Add "Delete Account" section with confirmation dialog |
-| `src/pages/EmbedWidget.tsx` | Add optional "Book Now" link to FullListing and CompactCard widgets |
-| `src/components/EmbedCodeGenerator.tsx` | Show CTA target option for all widget types, not just CTA |
-| `src/i18n/locales/en.json` | Add translation keys for cancellation, account deletion, embed registration links |
+| `src/pages/GuestAuth.tsx` | **Create** -- dedicated guest login/signup page |
+| `src/pages/Auth.tsx` | **Modify** -- staff-only login, no signup, add link to guest auth |
+| `src/App.tsx` | **Modify** -- add `/auth/guest` route |
+| `src/pages/EmbedWidget.tsx` | **Modify** -- update registration URL from `/auth?register=true` to `/auth/guest` |
+| `src/components/EmbedCodeGenerator.tsx` | **Modify** -- update registration URL |
+| `src/i18n/locales/en.json` | **Modify** -- add guest auth translation keys |
 
-### Booking Cancellation Flow (Guest Side)
+### Guest Auth Page Design
 
-- "Cancel Booking" button visible on cards with state: inquiry, soft_hold, pending_approval, pending_deposit, confirmed
-- Clicking opens a confirmation dialog showing:
-  - The refund tier (full / partial / no refund) based on `refundCalculator.ts`
-  - A confirm/cancel action pair
-- On confirm: calls a mutation that updates booking state to `cancelled` and logs it in `booking_state_log`
+- Same card-based layout as current Auth page
+- Header: "Ground Stay" in Playfair Display
+- Subheading: "Your guest portal" or "Welcome, guest"
+- Default mode: Sign Up (name, email, password)
+- Toggle: "Already have an account? Sign in"
+- After successful signup: shows email verification toast
+- After successful login: `Navigate` to `/guest`
+- Language selector in top-right corner (same as current)
 
-### Execution Order
+### Staff Auth Page Changes
 
-1. Database migration: auto-assign `guest` role on signup
-2. Edge function: `delete-account`
-3. Profile editor: add delete account button + confirmation
-4. Guest booking cards: add cancel booking button + confirmation dialog
-5. Embed widgets: add registration links to listing/compact types
-6. Embed code generator: expose CTA target for all widget types
-7. Translation keys for all new strings
+- Title stays "Ground Stay"
+- Subheading: "Staff Portal"
+- Only sign-in form (email + password, no full name field)
+- No signup toggle/button
+- Small text at bottom: "Are you a guest? Sign in here" linking to `/auth/guest`
+- After login: `Navigate` to `/` (RoleRedirect handles routing)
+
+### Embed URL Change
+
+All embed widget types currently check `contactUrl.includes("/auth?register=true")` to decide between "Book Now" and "Check Availability" labels. This changes to check for `/auth/guest` instead.
+
