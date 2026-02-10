@@ -11,6 +11,7 @@ const routeTitles: Record<string, string> = {
   "/pricing": "Pricing",
   "/reports": "Reports",
   "/settings": "Settings",
+  "/messages": "Messages",
 };
 
 interface DashboardLayoutProps {

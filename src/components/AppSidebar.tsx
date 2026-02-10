@@ -7,6 +7,7 @@ import {
   BarChart3,
   Settings,
   LogOut,
+  MessageSquare,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -34,6 +35,7 @@ const navItems = [
   { title: "Calendar", url: "/calendar", icon: CalendarDays },
   { title: "Pricing", url: "/pricing", icon: DollarSign },
   { title: "Reports", url: "/reports", icon: BarChart3 },
+  { title: "Messages", url: "/messages", icon: MessageSquare },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
