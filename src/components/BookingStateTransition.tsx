@@ -12,6 +12,8 @@ import { permissions } from "@/lib/permissions";
 import { useGuestDocuments } from "@/hooks/useGuestDocuments";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { calculateRefund } from "@/lib/refundCalculator";
+import { useBufferViolation, useEarlyCheckinRequest } from "@/hooks/useEarlyCheckin";
+import { EarlyCheckinApproval } from "@/components/EarlyCheckinApproval";
 import {
   getValidTransitions,
   getAllTransitions,
@@ -26,9 +28,10 @@ interface BookingStateTransitionProps {
   isAdmin: boolean;
   checkInDate?: string;
   totalPrice?: number | null;
+  unitId?: string;
 }
 
-export function BookingStateTransition({ bookingId, currentState, isAdmin, checkInDate, totalPrice }: BookingStateTransitionProps) {
+export function BookingStateTransition({ bookingId, currentState, isAdmin, checkInDate, totalPrice, unitId }: BookingStateTransitionProps) {
   const { toast } = useToast();
   const { role } = useAuth();
   const transition = useTransitionBookingState();
@@ -44,6 +47,26 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
   const canCheckOut = permissions.canCompleteCheckOut(role);
 
   const hasDocuments = (documents?.length ?? 0) > 0;
+
+  // Get cleaning buffer hours from policy settings
+  const cleaningBufferHours = useMemo(() => {
+    const setting = policies?.find((p) => p.key === "cleaning_buffer_hours");
+    return setting ? Number(setting.value) : 4;
+  }, [policies]);
+
+  // Buffer violation detection
+  const { data: bufferViolation } = useBufferViolation(
+    unitId ?? null,
+    bookingId,
+    checkInDate ?? null,
+    cleaningBufferHours
+  );
+
+  // Early check-in request status
+  const { data: earlyCheckinRequest } = useEarlyCheckinRequest(bookingId);
+
+  const bufferViolated = bufferViolation?.violated ?? false;
+  const earlyCheckinApproved = earlyCheckinRequest?.status === "approved";
 
   // Refund calculation when cancelling
   const refundInfo = useMemo(() => {
@@ -68,14 +91,23 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
 
   if (!permissions.canTransitionState(role)) return null;
   if (validStates.length === 0 && !canOverride) {
-    // Show helper text if transitions exist but are gated
     if (filteredCheckIn || filteredCheckOut) {
       return (
-        <div className="rounded-lg border border-border p-4 text-sm text-muted-foreground flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 shrink-0" />
-          {filteredCheckIn
-            ? "A Supervisor must complete check-in for this booking."
-            : "A Supervisor must complete check-out for this booking."}
+        <div className="space-y-3">
+          <div className="rounded-lg border border-border p-4 text-sm text-muted-foreground flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            {filteredCheckIn
+              ? "A Supervisor must complete check-in for this booking."
+              : "A Supervisor must complete check-out for this booking."}
+          </div>
+          {/* Show buffer violation even when user can't check in */}
+          {filteredCheckIn && bufferViolated && (
+            <EarlyCheckinApproval
+              bookingId={bookingId}
+              hoursShort={bufferViolation?.hoursShort ?? 0}
+              isViolated={bufferViolated}
+            />
+          )}
         </div>
       );
     }
@@ -84,6 +116,9 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
 
   // Check-in blocked without documents (unless admin override)
   const checkInBlocked = targetState === "checked_in" && !hasDocuments && !adminOverride;
+
+  // Check-in blocked by buffer violation (unless admin override or approved)
+  const checkInBufferBlocked = targetState === "checked_in" && bufferViolated && !earlyCheckinApproved && !adminOverride;
 
   const handleTransition = async () => {
     if (!targetState) return;
@@ -95,10 +130,15 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
       toast({ title: "Documents required", description: "Upload ID documents before completing check-in.", variant: "destructive" });
       return;
     }
+    if (checkInBufferBlocked) {
+      toast({ title: "Buffer violation", description: "Manager approval required for early check-in.", variant: "destructive" });
+      return;
+    }
 
     try {
       const reasonText = [
         adminOverride ? "[ADMIN OVERRIDE]" : "",
+        earlyCheckinApproved && targetState === "checked_in" ? "[EARLY CHECK-IN APPROVED]" : "",
         reason,
         refundInfo ? `[Refund: ${refundInfo.label}${refundInfo.refundAmount != null ? ` — $${refundInfo.refundAmount.toFixed(2)}` : ""}]` : "",
       ].filter(Boolean).join(" ");
@@ -137,6 +177,15 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
         )}
       </div>
 
+      {/* Buffer violation warning — always visible when applicable */}
+      {bufferViolated && currentState === "confirmed" && (
+        <EarlyCheckinApproval
+          bookingId={bookingId}
+          hoursShort={bufferViolation?.hoursShort ?? 0}
+          isViolated={bufferViolated}
+        />
+      )}
+
       {(validStates.length > 0) && (
         <>
           <Select value={targetState} onValueChange={(v) => setTargetState(v as BookingState)}>
@@ -155,6 +204,14 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
             <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-md p-3">
               <ShieldAlert className="h-4 w-4 shrink-0" />
               <span>ID documents must be uploaded before check-in can be completed.</span>
+            </div>
+          )}
+
+          {/* Check-in buffer violation warning when target is checked_in */}
+          {targetState === "checked_in" && checkInBufferBlocked && (
+            <div className="flex items-center gap-2 text-sm text-warning-foreground bg-warning/10 rounded-md p-3">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <span>Manager approval required — cleaning buffer not satisfied.</span>
             </div>
           )}
 
@@ -190,7 +247,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
 
           <Button
             onClick={handleTransition}
-            disabled={!targetState || !reason.trim() || transition.isPending || checkInBlocked}
+            disabled={!targetState || !reason.trim() || transition.isPending || checkInBlocked || checkInBufferBlocked}
             size="sm"
             className="w-full"
           >
