@@ -461,6 +461,19 @@
     "confidence": "Confidence",
     "summary": "Summary"
   },
+  "approval": {
+    "queueTitle": "Pending Approvals",
+    "noItems": "No bookings waiting for approval.",
+    "waiting": "waiting",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approved": "Booking approved",
+    "rejected": "Booking rejected",
+    "actionFailed": "Action failed",
+    "rejectTitle": "Reject Booking",
+    "reasonPlaceholder": "Reason for rejection…",
+    "confirmReject": "Confirm Reject"
+  },
   "maintenanceBlock": {
     "title": "Block Dates for Maintenance",
     "unit": "Unit",

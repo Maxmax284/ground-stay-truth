@@ -69,5 +69,18 @@ export function useDashboardStats() {
     },
   });
 
-  return { arrivals, departures, activeBookings, unitCount, recentActivity };
+  const pendingApproval = useQuery({
+    queryKey: ["dashboard", "pendingApproval"],
+    queryFn: async () => {
+      const { data, error } = await (supabase
+        .from("bookings")
+        .select("id, unit_id, check_in, check_out, num_guests, state, guest_id, created_at, units(name), profiles!bookings_guest_id_profiles_fkey(full_name)")
+        .eq("state", "pending_approval")
+        .order("created_at", { ascending: true })) as any;
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  return { arrivals, departures, activeBookings, unitCount, recentActivity, pendingApproval };
 }

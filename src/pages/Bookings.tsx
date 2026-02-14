@@ -2,13 +2,15 @@ import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, AlertTriangle, ChevronRight } from "lucide-react";
+import { Plus, AlertTriangle, ChevronRight, Check, X } from "lucide-react";
+import { toast } from "sonner";
 import { format, differenceInHours } from "date-fns";
-import { useBookings } from "@/hooks/useBookings";
+import { useBookings, useTransitionBookingState } from "@/hooks/useBookings";
 import { useUnits } from "@/hooks/useUnits";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
@@ -96,11 +98,15 @@ const Bookings = () => {
   const { isAdmin, role } = useAuth();
   const { data: units } = useUnits();
   const isMobile = useIsMobile();
+  const transition = useTransitionBookingState();
+  const canApprove = permissions.canApproveBooking(role);
 
   const [stateFilter, setStateFilter] = useState<BookingState | null>(null);
   const [unitFilter, setUnitFilter] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState<string | null>(null);
   const [dateTo, setDateTo] = useState<string | null>(null);
+  const [rejectId, setRejectId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   const { data: bookings, isLoading } = useBookings({
     state: stateFilter,
@@ -111,6 +117,23 @@ const Bookings = () => {
 
   const [showCreate, setShowCreate] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+
+  const handleQuickApprove = async (e: React.MouseEvent, bookingId: string) => {
+    e.stopPropagation();
+    try {
+      await transition.mutateAsync({ bookingId, fromState: "pending_approval", toState: "pending_deposit", reason: "Booking approved" });
+      toast.success(t("approval.approved"));
+    } catch { toast.error(t("approval.actionFailed")); }
+  };
+
+  const handleQuickReject = async () => {
+    if (!rejectId || !rejectReason.trim()) return;
+    try {
+      await transition.mutateAsync({ bookingId: rejectId, fromState: "pending_approval", toState: "cancelled", reason: rejectReason });
+      toast.success(t("approval.rejected"));
+    } catch { toast.error(t("approval.actionFailed")); }
+    finally { setRejectId(null); setRejectReason(""); }
+  };
 
   return (
     <DashboardLayout>
@@ -165,6 +188,7 @@ const Bookings = () => {
                   <TableHead>{t("bookings.numGuests")}</TableHead>
                   <TableHead>{t("bookings.state")}</TableHead>
                   <TableHead>{t("bookings.created")}</TableHead>
+                  {canApprove && <TableHead></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -185,6 +209,20 @@ const Bookings = () => {
                     <TableCell className="text-muted-foreground text-sm">
                       {format(new Date(b.created_at), "MMM d")}
                     </TableCell>
+                    {canApprove && (
+                      <TableCell>
+                        {b.state === "pending_approval" && (
+                          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                            <Button size="sm" variant="default" className="h-7 px-2 text-xs" onClick={(e) => handleQuickApprove(e, b.id)} disabled={transition.isPending}>
+                              <Check className="h-3 w-3 mr-1" /> {t("approval.approve")}
+                            </Button>
+                            <Button size="sm" variant="destructive" className="h-7 px-2 text-xs" onClick={(e) => { e.stopPropagation(); setRejectId(b.id); }} disabled={transition.isPending}>
+                              <X className="h-3 w-3 mr-1" /> {t("approval.reject")}
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -200,6 +238,25 @@ const Bookings = () => {
         onOpenChange={(open) => !open && setSelectedBookingId(null)}
         isAdmin={isAdmin}
       />
+
+      {/* Reject dialog */}
+      {rejectId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80">
+          <div className="bg-card border rounded-lg p-6 w-full max-w-md space-y-4 shadow-lg">
+            <h3 className="text-lg font-semibold">{t("approval.rejectTitle")}</h3>
+            <Input
+              placeholder={t("approval.reasonPlaceholder")}
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => { setRejectId(null); setRejectReason(""); }}>{t("common.cancel")}</Button>
+              <Button variant="destructive" disabled={!rejectReason.trim() || transition.isPending} onClick={handleQuickReject}>{t("approval.confirmReject")}</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 };
