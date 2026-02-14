@@ -1,127 +1,112 @@
 
 
-# AI-Powered ID Document Verification
+# Role-Tailored Dashboards and Approval Workflow
 
-## What This Does
+## The Problem
 
-When a guest uploads an identification document (passport, national ID, driver's license), the system automatically sends the image to an AI model that analyzes it and returns structured feedback. This feedback is displayed as advisory notes to staff -- the AI never makes a final accept/reject decision.
+Right now, every staff role lands on the exact same dashboard. A booking sitting at "Pending Approval" requires you to: open the bookings page, find the booking, click it, scroll to the state transition section, pick "Pending Deposit" from a dropdown, type a reason, and confirm. There is no approval queue, no "Approve" button, and no role-specific experience.
 
-### What the AI checks for:
-- **Document type recognition** -- passport, national ID, driver's license, etc.
-- **Expiry date extraction** -- flags if the document appears expired
-- **Country of issue** -- identifies the issuing country
-- **Visual quality concerns** -- blurry text, low resolution, signs of digital editing
-- **Data readability** -- whether key fields (name, date of birth, document number) are legible
-- **Overall confidence level** -- low / medium / high confidence that the document appears genuine
+## What Changes
 
-### What it does NOT do:
-- No accept/reject decisions -- purely advisory
-- No biometric matching
-- No government database lookups
-- No storing of extracted personal data (analysis results are just text notes)
+### 1. Booking Approval Queue on the Dashboard (Admin + Manager)
 
-## How It Works
+Add a new card to the main dashboard that shows bookings waiting for action. For Admin/Manager, this prominently displays any "pending_approval" bookings with one-click approve (transitions to "pending_deposit") and a reject button (transitions to "cancelled"). Each item shows the unit name, guest name, dates, and how long it has been waiting.
 
-1. Guest uploads an ID document (existing flow, unchanged)
-2. After successful upload, the system sends the image to a backend function for analysis
-3. The backend function calls Lovable AI (Gemini with vision) with the document image
-4. Structured feedback is saved to a new `verification_status`, `verification_notes`, and `verified_at` columns on the `guest_documents` table
-5. Staff see the AI feedback inline next to each document -- color-coded badges and expandable notes
-6. Guests see a simple status indicator (analyzing, reviewed, flagged)
+This card also shows:
+- Soft holds that are about to expire
+- Deposit deadlines approaching
+- Bookings ready for check-in today
 
-## Changes
+### 2. Role-Aware Dashboard Sections
 
-### 1. Database Migration
+Adjust the dashboard so different roles see relevant content:
 
-Add three columns to `guest_documents`:
+- **Admin**: Full stats + approval queue + pending users alert + all quick actions
+- **Manager**: Full stats + approval queue + quick actions (no user management)
+- **Front Desk / Supervisor**: Today's arrivals/departures prominently, active bookings, messages needing attention
+- **Maintenance**: Calendar-focused view showing upcoming maintenance blocks and units currently occupied (so they know when they can do work)
+- **Viewer**: Read-only stats and recent activity only (no quick action buttons)
 
-- `verification_status` (text, nullable) -- values: `pending`, `analyzing`, `clear`, `flagged`, `error`
-- `verification_notes` (jsonb, nullable) -- structured AI output (document type, expiry, confidence, flags)
-- `verified_at` (timestamptz, nullable) -- when the AI analysis completed
+### 3. Quick Approve/Reject from Bookings List
 
-### 2. New Edge Function: `verify-document`
+Add inline action buttons directly on the bookings table for "pending_approval" bookings. Admin and Manager see "Approve" and "Reject" buttons right in the row without needing to open the detail sheet. A small reason input pops up on click.
 
-**File: `supabase/functions/verify-document/index.ts`**
+### 4. Fix Maintenance Role Usefulness
 
-- Receives: `{ documentId, filePath }`
-- Downloads the image from the `guest-documents` storage bucket using the service role
-- Converts to base64 and sends to Lovable AI Gateway using `google/gemini-2.5-flash` (vision-capable, cost-efficient)
-- Uses tool calling to extract structured output:
-  - `document_type`: string (passport, national_id, drivers_license, unknown)
-  - `issuing_country`: string
-  - `expiry_date`: string or null
-  - `is_expired`: boolean
-  - `holder_name_readable`: boolean
-  - `document_number_readable`: boolean
-  - `quality_issues`: string[] (e.g., "blurry text", "low resolution", "possible digital alteration")
-  - `confidence`: "low" | "medium" | "high"
-  - `summary`: string (one-line human-readable summary)
-- Updates the `guest_documents` row with `verification_status` (clear/flagged), `verification_notes` (the JSON), and `verified_at`
-- System prompt emphasizes: "You are an advisory document reviewer. Flag concerns but never make accept/reject decisions."
+Currently maintenance staff can see the calendar but cannot create or manage maintenance blocks (requires Manager+). Add the ability for maintenance staff to *request* maintenance blocks that a Manager/Admin can then approve. Also show them which units are currently occupied vs available on their dashboard.
 
-### 3. Upload Flow Update (`src/hooks/useGuestDocuments.ts`)
+### 5. Notification Badges on Sidebar
 
-After a successful document upload and metadata insert:
-- Set `verification_status` to `analyzing` on the new row
-- Fire-and-forget call to the `verify-document` edge function (don't block the upload UX)
-- The query will re-fetch and show the updated status once analysis completes
+Extend the existing pending-users badge pattern to show:
+- Number of bookings pending approval (on Bookings nav item) -- visible to Admin/Manager
+- Unread messages count (on Messages nav item) -- visible to anyone with message access
 
-### 4. UI Updates (`src/components/GuestDocumentUpload.tsx`)
-
-**For staff view** (when role is manager/front_desk):
-- Show a small badge next to each document: "Analyzing..." (spinner), "Clear" (green), "Flagged" (amber), "Error" (gray)
-- Expandable section showing the AI notes: document type, issuing country, expiry status, quality concerns, confidence level
-- Flagged items get a subtle amber border to draw attention without being alarming
-
-**For guest view**:
-- Simple status only: "Analyzing...", "Reviewed" (no detailed AI notes exposed to guests)
-- No color-coded flags visible to guests -- just confirmation their document was received and reviewed
-
-### 5. Translation Keys (`src/i18n/locales/en.json`)
-
-Add keys under a `verification` namespace:
-- `verification.analyzing`, `verification.clear`, `verification.flagged`, `verification.error`
-- `verification.documentType`, `verification.issuingCountry`, `verification.expiryDate`
-- `verification.expired`, `verification.qualityIssues`, `verification.confidence`
-- `verification.summary`, `verification.reviewed`
-
-### 6. Config Update (`supabase/config.toml`)
-
-Register the new `verify-document` function with `verify_jwt = true`.
+---
 
 ## Technical Details
 
-### File Summary
+### Files to Create
 
-| File | Action |
-|------|--------|
-| `supabase/functions/verify-document/index.ts` | **Create** -- AI document analysis edge function |
-| `src/hooks/useGuestDocuments.ts` | **Modify** -- trigger verification after upload, expose verification data |
-| `src/components/GuestDocumentUpload.tsx` | **Modify** -- show verification status/notes per role |
-| `src/i18n/locales/en.json` | **Modify** -- add verification translation keys |
-| Database migration | **Add columns** -- verification_status, verification_notes, verified_at on guest_documents |
+| File | Purpose |
+|------|---------|
+| `src/components/ApprovalQueue.tsx` | Dashboard card showing pending-approval bookings with approve/reject actions |
+| `src/components/DashboardRoleSection.tsx` | Wrapper that renders different dashboard content based on the user's role |
 
-### AI Prompt Design
+### Files to Modify
 
-The system prompt for the edge function will instruct the model to:
-- Identify the document type and issuing country
-- Extract any visible expiry date and flag if expired
-- Assess image quality and readability of key fields
-- Note any visual anomalies (without making accusations)
-- Return a confidence level and one-line summary
-- Explicitly state it is advisory only
+| File | Changes |
+|------|---------|
+| `src/pages/Index.tsx` | Import and render `ApprovalQueue` for admin/manager roles; render role-specific sections |
+| `src/pages/Bookings.tsx` | Add inline approve/reject buttons on pending_approval rows for admin/manager |
+| `src/components/AppSidebar.tsx` | Add pending-approval count badge on Bookings nav item, unread messages badge on Messages |
+| `src/hooks/useBookings.ts` | Add a `usePendingApprovalCount` query and a `useQuickApprove` mutation |
+| `src/hooks/useDashboard.ts` | Add query for pending-approval bookings list |
+| `src/lib/permissions.ts` | Add `canApproveBooking` permission (Manager+) |
+| `src/i18n/locales/en.json` | Add translation keys for approval queue, quick actions, role-specific labels |
 
-### Cost and Performance
+### Database Changes
 
-- Uses `google/gemini-2.5-flash` -- fast and inexpensive for image analysis
-- Analysis runs asynchronously after upload -- guests see instant upload confirmation
-- Typical analysis time: 2-5 seconds
-- Results cached in the database -- no re-analysis needed
+None required. The booking state transitions and RLS policies already support this -- admin can already transition any booking. We are just adding UI shortcuts for what is already possible in the backend.
 
-### Security Considerations
+### Approval Flow Logic
 
-- Document images never leave the backend -- the edge function fetches from storage server-side
-- AI analysis results contain no extracted PII (no document numbers, names, or dates stored in notes -- only metadata like "name is readable: yes/no")
-- Only staff with appropriate roles see detailed AI feedback
-- Guests only see a generic "Reviewed" status
+The "Approve" action:
+1. Updates booking state from `pending_approval` to `pending_deposit`
+2. Logs the transition in `booking_state_log` with reason "Booking approved"
+3. Invalidates relevant queries to refresh the UI
+
+The "Reject" action:
+1. Prompts for a reason (required)
+2. Updates booking state from `pending_approval` to `cancelled`
+3. Logs the transition with the provided reason
+
+### Sidebar Badge Queries
+
+- **Pending approvals**: `SELECT count(*) FROM bookings WHERE state = 'pending_approval'` (admin/manager only, polls every 60 seconds)
+- **Unread messages**: Not tracking read status currently -- this would need a `last_read_at` column on a new `message_reads` table, so we will skip this for now and revisit later
+
+### Role-Specific Dashboard Layout
+
+The `Index.tsx` page will use conditional rendering based on `role`:
+
+```text
+Admin/Manager:
+  [Stats Row]
+  [Approval Queue]    [Recent Activity]
+  [Arrivals Today]    [Departures Today]
+  [Quick Actions]
+
+Front Desk/Supervisor:
+  [Stats Row]
+  [Arrivals Today]    [Departures Today]
+  [Recent Activity]   [Quick Actions]
+
+Maintenance:
+  [Occupied Units]    [Upcoming Maintenance]
+  [Calendar Link]
+
+Viewer:
+  [Stats Row]
+  [Recent Activity]
+```
 
