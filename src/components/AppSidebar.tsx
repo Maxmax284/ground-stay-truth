@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   Home,
   Building2,
@@ -12,7 +13,7 @@ import {
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
-import { canAccessRoute } from "@/lib/permissions";
+import { canAccessRoute, permissions } from "@/lib/permissions";
 import {
   Sidebar,
   SidebarContent,
@@ -65,10 +66,28 @@ function usePendingUsersCount(isAdmin: boolean) {
   });
 }
 
+function usePendingApprovalCount(canApprove: boolean) {
+  return useQuery({
+    queryKey: ["pending-approval-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("bookings")
+        .select("*", { count: "exact", head: true })
+        .eq("state", "pending_approval");
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: canApprove,
+    refetchInterval: 60_000,
+  });
+}
+
 export function AppSidebar() {
   const { t } = useTranslation();
   const { signOut, user, role, isAdmin } = useAuth();
+  const canApprove = permissions.canApproveBooking(role);
   const { data: pendingCount } = usePendingUsersCount(isAdmin);
+  const { data: approvalCount } = usePendingApprovalCount(canApprove);
 
   const visibleNavItems = navItems.filter((item) => canAccessRoute(role, item.url));
 
@@ -100,6 +119,11 @@ export function AppSidebar() {
                       {item.url === "/settings" && !!pendingCount && pendingCount > 0 && (
                         <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-4 min-w-4 justify-center">
                           {pendingCount}
+                        </Badge>
+                      )}
+                      {item.url === "/bookings" && !!approvalCount && approvalCount > 0 && (
+                        <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-4 min-w-4 justify-center">
+                          {approvalCount}
                         </Badge>
                       )}
                     </NavLink>
