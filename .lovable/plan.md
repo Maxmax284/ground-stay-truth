@@ -1,266 +1,262 @@
 
 
-# Stay Support Module -- Maintenance Requests and Laundry Tracking
+# AI Assistant + Notifications + Multilingual Enhancement
 
-## Overview
+## Scope Assessment
 
-This adds a "During Stay" lifecycle layer to Ground Stay. Two new features -- room issue reporting and laundry workflow tracking -- are available only when a booking is in the `checked_in` state. They integrate into the existing guest portal, booking detail sheet, staff dashboard, and audit system without touching the booking state machine.
+This is a 9-phase request. Some phases are immediately buildable, others need incremental rollout. Here is the complete plan broken into implementable chunks, respecting Ground Stay's constitutional boundaries.
 
 ---
 
-## 1. Database Schema
+## Phase 1 -- AI Circuit Breaker System
 
-### New Tables
+### What It Does
+Adds toggle settings to `policy_settings` so AI features can be disabled globally or per-role.
 
-**`maintenance_requests`**
+### Database Changes
+Insert 6 new rows into `policy_settings`:
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| ai_assistant_enabled | true | Global AI kill switch |
+| ai_guest_enabled | true | AI for guest role |
+| ai_front_desk_enabled | true | AI for front desk role |
+| ai_supervisor_enabled | true | AI for supervisor role |
+| ai_manager_enabled | true | AI for manager role |
+| ai_admin_enabled | true | AI for admin role |
+
+### Code Changes
+- Create `src/hooks/useAISettings.ts` -- reads policy_settings, computes `isAIEnabled(role)` by checking global toggle AND per-role toggle
+- Update `PolicySettingsForm.tsx` to render boolean toggles (Switch) for ai_* keys instead of plain text inputs
+- All AI components will check `isAIEnabled` before rendering
+
+---
+
+## Phase 2 -- Real-Time Notification Infrastructure
+
+### Database Changes
+Create `notifications` table:
 
 | Column | Type | Notes |
 |--------|------|-------|
 | id | uuid PK | gen_random_uuid() |
-| booking_id | uuid NOT NULL | FK to bookings |
-| unit_id | uuid NOT NULL | FK to units |
-| category | text NOT NULL | One of: plumbing, electrical, appliance, cleanliness, other |
-| description | text NOT NULL | |
-| photo_url | text | Optional, storage path in a new `maintenance-photos` bucket |
-| status | text NOT NULL DEFAULT 'open' | One of: open, in_progress, resolved |
-| priority | text NOT NULL DEFAULT 'normal' | normal or urgent |
-| created_by | uuid | FK to auth.users -- the guest or staff who reported |
-| resolved_by | uuid | FK to auth.users -- staff who resolved |
-| resolution_note | text | Required when marking resolved |
-| created_at | timestamptz DEFAULT now() |
-| updated_at | timestamptz DEFAULT now() |
+| user_id | uuid NOT NULL | Recipient |
+| type | text NOT NULL | booking, payment, maintenance, laundry, override |
+| reference_id | uuid | FK to the relevant record |
+| message | text NOT NULL | Short operational description |
+| read | boolean DEFAULT false | |
+| created_at | timestamptz DEFAULT now() | |
 
-**`laundry_requests`**
+RLS: Users can read/update own notifications. Admins can manage all. Enable realtime on this table.
 
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid PK | gen_random_uuid() |
-| booking_id | uuid NOT NULL | FK to bookings |
-| unit_id | uuid NOT NULL | FK to units |
-| bag_count | integer | Optional |
-| note | text | Optional guest note |
-| status | text NOT NULL DEFAULT 'received' | One of: received, in_progress, ready_for_pickup, collected |
-| created_by | uuid | FK to auth.users |
-| updated_by | uuid | FK to auth.users -- last staff who changed status |
-| created_at | timestamptz DEFAULT now() |
-| updated_at | timestamptz DEFAULT now() |
+Create a database function `notify_user(user_id, type, reference_id, message)` that inserts into notifications. Use this in application code when events occur.
 
-**`stay_support_log`** (audit table for both features)
+### Code Changes
 
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid PK | gen_random_uuid() |
-| booking_id | uuid NOT NULL | FK to bookings |
-| request_type | text NOT NULL | 'maintenance' or 'laundry' |
-| request_id | uuid NOT NULL | ID of the maintenance_request or laundry_request |
-| action | text NOT NULL | e.g. 'created', 'status_changed', 'resolved', 'note_added' |
-| from_status | text | Previous status |
-| to_status | text | New status |
-| changed_by | uuid | FK to auth.users |
-| note | text | Optional context |
-| created_at | timestamptz DEFAULT now() |
+**New Files:**
+- `src/hooks/useNotifications.ts` -- query notifications for current user, mark-as-read mutation, realtime subscription, unread count
+- `src/components/NotificationBell.tsx` -- bell icon with badge count, dropdown panel listing recent notifications, mark-as-read on click
 
-All three tables get an `updated_at` trigger using the existing `update_updated_at_column()` function.
+**Modified Files:**
+- `src/components/DashboardLayout.tsx` -- add NotificationBell to the header bar (top-right)
+- `src/components/GuestLayout.tsx` -- add NotificationBell to guest header
+- `src/hooks/useBookings.ts` -- after booking state transitions, insert notification for relevant users (guest + assigned staff)
+- `src/hooks/useMaintenanceRequests.ts` -- on create/status change, insert notifications
+- `src/hooks/useLaundryRequests.ts` -- on status change, insert notifications
 
-### New Storage Bucket
+### Notification Triggers (in application code, not DB triggers)
+- Booking created -> notify admin/manager
+- Booking state change -> notify guest + relevant staff
+- Maintenance request created -> notify maintenance + manager
+- Maintenance urgent -> notify admin
+- Laundry status = ready_for_pickup -> notify guest
+- Deposit deadline approaching -> notify front desk (checked via polling)
 
-- `maintenance-photos` -- public: false (staff + owner access only)
+### Mobile Placement
+- Bell icon in header bar (not floating)
+- Dropdown panel slides down on tap
+- No overlap with navigation
 
 ---
 
-## 2. RLS Policies
+## Phase 3 -- AI Assistant Layer
 
-### maintenance_requests
+### Backend
+Create edge function `supabase/functions/ai-assistant/index.ts`:
+- Uses Lovable AI gateway (google/gemini-3-flash-preview)
+- Accepts `{ mode, context, messages }` where mode is one of: explain, summarize, validate, draft, digest
+- System prompt enforces read-only behavior: "You are an operational assistant for Ground Stay. You NEVER execute actions. You only explain, summarize, and suggest."
+- Reads from: bookings, booking_state_log, maintenance_requests, laundry_requests, payments, notifications (via Supabase service role client)
+- Returns streamed response
+- Checks AI circuit breaker settings before processing
 
-- **Guests can create** -- WHERE `created_by = auth.uid()` AND booking is theirs AND booking state = 'checked_in'
-- **Guests can read own** -- WHERE EXISTS (SELECT 1 FROM bookings WHERE bookings.id = maintenance_requests.booking_id AND bookings.guest_id = auth.uid())
-- **Staff can read all** -- `has_role(auth.uid(), 'front_desk')` (covers front_desk, supervisor, manager, admin, maintenance via hierarchy)
-- **Maintenance can update** -- `has_role(auth.uid(), 'maintenance')` (mark in_progress, resolved)
-- **Manager/Admin full control** -- `has_role(auth.uid(), 'manager')` or `has_role(auth.uid(), 'admin')`
+### Frontend
 
-### laundry_requests
+**New Files:**
+- `src/components/AIAssistantPanel.tsx` -- collapsible chat panel, bottom-right on desktop, floating button on mobile
+- `src/hooks/useAIAssistant.ts` -- manages conversation state, sends to edge function, handles streaming
 
-- **Guests can create** -- same pattern as maintenance (own booking, checked_in state)
-- **Guests can read own** -- same pattern
-- **Staff can read all** -- `has_role(auth.uid(), 'front_desk')`
-- **Staff can update status** -- `has_role(auth.uid(), 'front_desk')` (front desk, supervisor, maintenance, manager, admin can all update)
-- **Manager/Admin full control** -- ALL policy
+**Modes:**
+- **Explain**: User selects a booking/request, asks "What's going on here?" -- AI reads context and explains
+- **Summarize**: Dashboard summary of current operational state
+- **Validate Action**: Before risky transitions, AI flags warnings (buffer violation, missing docs, payment gaps)
+- **Prepare Draft**: In messages tab, "Draft with AI" button generates a reply suggestion
+- **Daily Digest**: On-demand summary of arrivals, departures, open issues, deadlines
 
-### stay_support_log
+**Constraints enforced in system prompt:**
+- Never use phrases like "I have completed" or "Done"
+- Always use "Recommended:", "Option:", "Manager Required:"
+- Never imply execution capability
+- Respect payment visibility (role passed to edge function, amounts excluded for front_desk)
 
-- **Staff can read** -- `has_role(auth.uid(), 'front_desk')`
-- **Guests can read own** -- via booking ownership join
-- **Insert** -- any authenticated user (system logs on actions)
-- **Admin full control** -- ALL policy
-
-### maintenance-photos bucket (storage.objects)
-
-- **Guests can upload** to their booking path -- `auth.uid()` matches booking guest_id
-- **Staff can read** -- `has_role(auth.uid(), 'front_desk')`
-
----
-
-## 3. Permission Checks (permissions.ts)
-
-Add these to the existing permissions object:
-
-```
-canCreateMaintenanceRequest -- Guest (own booking) or Front Desk+
-canResolveMaintenanceRequest -- Maintenance role or Manager+
-canUpdateMaintenanceStatus -- Maintenance role or Manager+
-canViewMaintenanceRequests -- Front Desk+ (all) or Guest (own)
-canCreateLaundryRequest -- Guest (own booking) or Front Desk+
-canUpdateLaundryStatus -- Front Desk+ (all staff)
-canViewLaundryRequests -- Front Desk+ (all) or Guest (own)
-```
+### Mobile UX
+- Floating assistant button: 56px, bottom-right, 16px above bottom nav / safe area
+- Opens a bottom sheet (not full screen)
+- Collapsible with swipe-down gesture
+- Does not overlap navigation or notification bell
 
 ---
 
-## 4. New Files
+## Phase 4 -- Multilingual Inbox Translation
 
-### Hooks
+### What Changes
+The existing i18n system handles UI translation. This phase adds message-level translation for the inbox.
 
-| File | Purpose |
-|------|---------|
-| `src/hooks/useMaintenanceRequests.ts` | CRUD + status transitions for maintenance_requests, audit logging |
-| `src/hooks/useLaundryRequests.ts` | CRUD + status transitions for laundry_requests, audit logging |
-| `src/hooks/useStaySupportLog.ts` | Read audit log for a booking's stay support actions |
+### Backend
+Create edge function `supabase/functions/translate-message/index.ts`:
+- Uses Lovable AI (google/gemini-3-flash-preview) for translation
+- Accepts `{ text, target_language }`
+- Returns `{ translated_text, source_language }`
+- Stateless -- no storage of translations (computed on-demand, cached client-side)
 
-### Guest Portal Components
+### Database Changes
+Add `preferred_language` column to `profiles` table (text, default 'en').
 
-| File | Purpose |
-|------|---------|
-| `src/components/GuestStaySupport.tsx` | "Stay Support" tab content for guest portal -- shows maintenance request form, laundry drop-off form, and lists of existing requests with status badges |
+### Frontend Changes
 
-### Staff Components
+**Modified Files:**
+- `src/components/ProfileEditor.tsx` -- add language preference selector (using existing LanguageSelector pattern)
+- `src/pages/Messages.tsx` -- for each message, if sender language differs from viewer preference, show "Translate" button. On click, call translate edge function and show inline translation with "View Original" toggle
+- `src/pages/GuestPortal.tsx` (messages section) -- same translate button pattern
 
-| File | Purpose |
-|------|---------|
-| `src/components/MaintenanceQueue.tsx` | Staff panel showing all open/in-progress maintenance requests across units, with action buttons |
-| `src/components/LaundryPanel.tsx` | Staff panel showing all laundry requests with status progression buttons |
-| `src/components/StaySupportBadge.tsx` | Small icon badge component for booking headers indicating active maintenance/laundry |
+**New Files:**
+- `src/hooks/useMessageTranslation.ts` -- calls translate-message edge function, caches results in React Query
 
----
+### Supported Languages (Phase 4)
+English, Thai, German (minimum). Extensible to all 9 existing UI languages.
 
-## 5. Modified Files
-
-### `src/pages/GuestPortal.tsx`
-
-- Add a "Stay Support" tab to the TabsList -- only visible when the guest has at least one `checked_in` booking
-- Tab content renders `GuestStaySupport` component, scoped to checked-in bookings only
-- Uses the existing tab pattern (Bookings, Listings, Messages, Calendar, Policies, Profile -- now adds Stay Support between Messages and Calendar)
-
-### `src/components/BookingDetailSheet.tsx`
-
-- Add a "Support" tab to the existing Tabs (History, Payments, Notes, Documents -- now adds Support)
-- Tab only appears when booking state is `checked_in`
-- Shows maintenance requests and laundry requests for this booking
-- Staff can take actions directly from this tab (mark in progress, resolve, update laundry status)
-- The "Next Step" banner updates to reflect:
-  - "X open maintenance request(s)" if any exist
-  - "Laundry ready for pickup" if applicable
-
-### `src/pages/Index.tsx` (Dashboard)
-
-- For Maintenance role: Add a "Maintenance Requests" card showing open/in-progress requests with action buttons
-- For Manager/Admin: Add a summary card showing count of open maintenance requests and pending laundry
-- For Front Desk/Supervisor: Add a small indicator showing active stay support items
-
-### `src/components/AppSidebar.tsx`
-
-- No new nav items needed -- stay support lives inside existing pages (dashboard, booking detail)
-- Add a badge count on Dashboard nav item for maintenance role showing open request count
-
-### `src/lib/permissions.ts`
-
-- Add the 7 new permission checks listed in section 3
-
-### `src/i18n/locales/en.json`
-
-- Add `staySupport` namespace with keys for:
-  - Tab labels, form labels, category names
-  - Status labels (open, in_progress, resolved, received, ready_for_pickup, collected)
-  - Action buttons (report issue, drop off laundry, mark in progress, mark resolved, mark ready, mark collected)
-  - Validation messages
-  - Next step messages
+### Constraints
+- Original message is never modified
+- Translation is display-only, cached in memory
+- "View Original" always available
+- No auto-rewriting, no tone editing
 
 ---
 
-## 6. Audit Integration
+## Phase 5 -- AI Message Draft Assistant
 
-Every action writes to `stay_support_log`:
+### What Changes
+Add "Draft with AI" button to the message compose area in staff inbox.
 
-- Guest creates maintenance request -> `action: 'created', request_type: 'maintenance'`
-- Staff marks in_progress -> `action: 'status_changed', from_status: 'open', to_status: 'in_progress'`
-- Staff resolves with note -> `action: 'resolved', to_status: 'resolved', note: resolution_note`
-- Guest creates laundry request -> `action: 'created', request_type: 'laundry'`
-- Staff updates laundry status -> `action: 'status_changed'` with from/to
+### Frontend Changes
 
-The BookingDetailSheet's History tab will also query and display stay_support_log entries alongside booking_state_log, so all activity appears in one timeline.
+**Modified Files:**
+- `src/components/BookingDetailSheet.tsx` (MessagesTab) -- add "Draft with AI" button next to the send button
+- `src/pages/Messages.tsx` -- same pattern if a thread detail view is open
 
----
+### Flow
+1. Staff clicks "Draft with AI"
+2. Hook sends booking context + last 5 messages to AI assistant edge function with mode = "draft"
+3. AI returns suggested reply
+4. Text is inserted into the textarea (not sent)
+5. Staff can edit, send, or discard
 
-## 7. UI/UX Details
-
-### Guest Stay Support Tab
-
-- Two sections: "Room Issues" and "Laundry"
-- "Report Room Issue" button opens an inline form (not a dialog) with:
-  - Category dropdown (Plumbing, Electrical, Appliance, Cleanliness, Other)
-  - Description textarea (required, max 500 chars)
-  - Optional photo upload button
-  - Submit button
-- "Laundry Drop-Off" button opens inline form:
-  - Bag count (optional number input)
-  - Note (optional textarea)
-  - Confirm button
-- Below each form: list of existing requests with status badges
-- Status badges use existing design language:
-  - Open: warning style (amber)
-  - In Progress: info style (blue)
-  - Resolved: success style (green)
-  - Received: muted
-  - Ready for Pickup: info with highlight
-  - Collected: success
-
-### Staff Maintenance Queue
-
-- Table/card layout showing: Unit name, Guest name, Category badge, Description preview (truncated), Status badge, Time since created, Priority
-- Action buttons inline: "Start" (open -> in_progress), "Resolve" (requires note textarea)
-- Resolved items can be filtered out (default: show open + in_progress)
-
-### Staff Laundry Panel
-
-- Simpler table: Guest, Unit, Drop-off time, Bag count, Status
-- Linear status progression buttons: Received -> In Progress -> Ready -> Collected
-- Each click advances to next status
-
-### Booking Detail Sheet Support Tab
-
-- Shows maintenance requests and laundry requests for this specific booking
-- Staff can take actions from here too
-- Compact card layout matching existing tab styles
+AI never auto-sends. The draft is just text in the input field.
 
 ---
 
-## 8. Edge Cases
+## Phase 6 -- Pre-Flight Decision Checker
 
-- **Guest checks out with open maintenance request**: Request stays open, staff can still resolve it. No auto-close.
-- **Multiple checked-in bookings**: Guest sees requests scoped per booking. The Stay Support tab shows a booking selector if multiple are checked in.
-- **Photo upload fails**: Maintenance request still creates without photo. Toast error for the photo failure.
-- **Concurrent status updates**: Last write wins (standard optimistic update with refetch). The audit log captures all attempts.
-- **Guest tries to create request on non-checked-in booking**: RLS blocks it. UI doesn't show the form.
-- **No deletion**: Neither guests nor staff can delete requests. Only status changes are allowed.
+### What Changes
+Before risky state transitions, an AI warning panel appears.
+
+### Frontend Changes
+
+**Modified Files:**
+- `src/components/BookingStateTransition.tsx` -- when a target state is selected, if AI is enabled, call a validation endpoint that checks:
+  - Buffer violations
+  - Missing documents
+  - Payment gaps
+  - Supervisor cap (if applicable)
+- Display warnings in a yellow info panel above the confirm button
+- Warnings are informational only -- staff can still proceed
+
+### Backend
+Reuse the existing AI assistant edge function with mode = "validate" and pass the transition context.
 
 ---
 
-## 9. Migration Strategy
+## Phase 7 -- Mobile UX Optimization
 
-1. Run migration adding all three tables + triggers + RLS policies + storage bucket (single migration file)
-2. Add permission checks to `permissions.ts`
-3. Create hooks (useMaintenanceRequests, useLaundryRequests, useStaySupportLog)
-4. Create UI components (GuestStaySupport, MaintenanceQueue, LaundryPanel, StaySupportBadge)
-5. Integrate into GuestPortal, BookingDetailSheet, Index dashboard
-6. Add translation keys
-7. All changes are additive -- no existing tables, state machine logic, or RLS policies are modified
+### What Changes
+Ensure all new components work on small screens.
+
+- NotificationBell: dropdown becomes a bottom sheet on mobile
+- AIAssistantPanel: bottom sheet with safe area padding
+- Translate buttons: inline, no layout shift
+- All new cards: responsive grid (1 col on mobile, 2 on desktop)
+
+### Testing Targets
+- 360x800 (small Android)
+- 390x844 (iPhone 14)
+- 768x1024 (tablet)
+
+---
+
+## Phase 8 -- Security + Role Enforcement
+
+Built into every phase above:
+- AI edge function receives user role and enforces visibility
+- Payment amounts excluded from AI context for front_desk role
+- Internal notes never sent to guest-facing AI
+- Audit trail details not exposed to guests
+- All RLS policies enforced at database level
+- AI settings checked before any AI feature renders
+
+---
+
+## Phase 9 -- Failsafe Behavior
+
+### What Changes
+- `useAISettings` hook returns `{ isAIAvailable }` -- if the edge function is unreachable or disabled, all AI features hide gracefully
+- Notifications continue working independently of AI
+- Translation falls back to showing original text
+- No loading spinners that block core UI
+- Error boundary wraps AI panel so crashes don't affect the rest of the app
+
+---
+
+## Implementation Order
+
+| Step | Phase | Estimated Changes |
+|------|-------|-------------------|
+| 1 | Phase 1: Circuit Breaker | 1 migration, 2 files |
+| 2 | Phase 2: Notifications | 1 migration, 4 new files, 4 modified files |
+| 3 | Phase 3: AI Assistant | 1 edge function, 2 new files, 2 modified files |
+| 4 | Phase 4: Translation | 1 edge function, 1 migration, 2 new files, 3 modified files |
+| 5 | Phase 5: Draft Assistant | 2 modified files |
+| 6 | Phase 6: Pre-Flight Checker | 1 modified file |
+| 7 | Phase 7-9: Polish | Mobile fixes, error boundaries, failsafe wiring |
+
+Total: ~3 migrations, 2 edge functions, ~10 new files, ~12 modified files.
+
+---
+
+## Technical Notes
+
+- **AI Gateway**: Uses Lovable AI at `https://ai.gateway.lovable.dev/v1/chat/completions` with `LOVABLE_API_KEY` (already configured)
+- **Model**: `google/gemini-3-flash-preview` for all AI features (fast, cost-effective)
+- **Streaming**: AI assistant uses SSE streaming for chat; translation and validation use non-streaming calls
+- **No push notifications in first pass**: The prompt requests service worker + push. This requires PWA setup which is a separate concern. Phase 2 delivers in-app notifications with realtime. Push can be added later as a PWA enhancement.
+- **No database triggers**: All notifications are created in application code (hooks) to maintain explicit control and avoid reserved schema modifications
 
