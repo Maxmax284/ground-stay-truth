@@ -3,6 +3,8 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { useLocation } from "react-router-dom";
 import { Menu } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { NotificationBell } from "@/components/NotificationBell";
+import { AIAssistantPanel } from "@/components/AIAssistantPanel";
 
 const routeTitleKeys: Record<string, string> = {
   "/dashboard": "nav.dashboard",
@@ -35,13 +37,17 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <span className="md:hidden">Menu</span>
             </SidebarTrigger>
             <span className="md:hidden text-sm font-semibold text-primary">Ground Stay</span>
-            <span className="ml-auto md:ml-0 text-sm font-medium text-muted-foreground">{t(titleKey)}</span>
+            <span className="md:ml-0 text-sm font-medium text-muted-foreground">{t(titleKey)}</span>
+            <div className="ml-auto">
+              <NotificationBell />
+            </div>
           </header>
           <main className="flex-1 p-6 overflow-auto">
             {children}
           </main>
         </div>
       </div>
+      <AIAssistantPanel />
     </SidebarProvider>
   );
 };

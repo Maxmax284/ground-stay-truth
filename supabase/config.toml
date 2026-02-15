@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.verify-document]
 verify_jwt = false
+
+[functions.ai-assistant]
+verify_jwt = false
+
+[functions.translate-message]
+verify_jwt = false

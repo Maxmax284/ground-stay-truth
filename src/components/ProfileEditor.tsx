@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +25,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 
+const LANGUAGES = [
+  { code: "en", label: "English" },
+  { code: "th", label: "ภาษาไทย" },
+  { code: "de", label: "Deutsch" },
+  { code: "fr", label: "Français" },
+  { code: "ru", label: "Русский" },
+  { code: "zh", label: "中文" },
+  { code: "ja", label: "日本語" },
+  { code: "ko", label: "한국어" },
+  { code: "es", label: "Español" },
+];
+
 export default function ProfileEditor() {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
@@ -31,13 +44,15 @@ export default function ProfileEditor() {
   const { profile, updateProfile } = useProfile();
   const [fullName, setFullName] = useState<string | null>(null);
   const [phone, setPhone] = useState<string | null>(null);
+  const [preferredLang, setPreferredLang] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const currentName = fullName ?? profile.data?.full_name ?? "";
   const currentPhone = phone ?? profile.data?.phone ?? "";
+  const currentLang = preferredLang ?? profile.data?.preferred_language ?? "en";
 
   const handleSave = () => {
-    updateProfile.mutate({ full_name: currentName, phone: currentPhone });
+    updateProfile.mutate({ full_name: currentName, phone: currentPhone, preferred_language: currentLang });
   };
 
   const handleDeleteAccount = async () => {
@@ -105,6 +120,17 @@ export default function ProfileEditor() {
           <div className="space-y-2">
             <Label htmlFor="phone">{t("profile.phone")}</Label>
             <Input id="phone" value={currentPhone} onChange={(e) => setPhone(e.target.value)} placeholder={t("profile.phonePlaceholder")} />
+          </div>
+          <div className="space-y-2">
+            <Label>{t("profile.preferredLanguage")}</Label>
+            <Select value={currentLang} onValueChange={setPreferredLang}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {LANGUAGES.map((l) => (
+                  <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <Button onClick={handleSave} disabled={updateProfile.isPending}>
             {updateProfile.isPending ? t("common.saving") : t("profile.saveChanges")}

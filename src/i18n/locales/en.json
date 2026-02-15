@@ -270,7 +270,13 @@
     "partial_refund_percentage": "Partial Refund Percentage (%)",
     "checkout_time": "Check-out Time",
     "cleaning_buffer_hours": "Cleaning Buffer (hours)",
-    "earliest_checkin_time": "Earliest Check-in Time"
+    "earliest_checkin_time": "Earliest Check-in Time",
+    "ai_assistant_enabled": "AI Assistant (Global)",
+    "ai_guest_enabled": "AI for Guests",
+    "ai_front_desk_enabled": "AI for Front Desk",
+    "ai_supervisor_enabled": "AI for Supervisors",
+    "ai_manager_enabled": "AI for Managers",
+    "ai_admin_enabled": "AI for Admins"
   },
   "reports": {
     "title": "Reports",
@@ -692,5 +698,38 @@
     "openMaintenanceCount": "{{count}} open maintenance request",
     "openMaintenanceCount_other": "{{count}} open maintenance requests",
     "laundryReady": "Laundry ready for pickup"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet.",
+    "markAllRead": "Mark all read"
+  },
+  "ai": {
+    "title": "AI Assistant",
+    "assistOnly": "Assist Only",
+    "openAssistant": "Open AI Assistant",
+    "clearChat": "Clear chat",
+    "welcomeMessage": "Ask me about bookings, operations, or request a daily digest.",
+    "disclaimer": "I can only read and suggest — I never take actions.",
+    "inputPlaceholder": "Ask about operations…",
+    "modes": {
+      "explain": "Explain",
+      "summarize": "Summary",
+      "validate": "Validate",
+      "draft": "Draft",
+      "digest": "Digest"
+    },
+    "draftWithAI": "Draft with AI",
+    "drafting": "Drafting…",
+    "preFlightTitle": "AI Pre-Flight Check",
+    "preFlightLoading": "Checking…"
+  },
+  "translation": {
+    "translate": "Translate",
+    "viewOriginal": "View Original",
+    "translating": "Translating…"
+  },
+  "profile": {
+    "preferredLanguage": "Preferred Language"
   }
 }

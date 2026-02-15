@@ -22,7 +22,7 @@ export function useProfile() {
   });
 
   const updateProfile = useMutation({
-    mutationFn: async (updates: { full_name?: string; phone?: string }) => {
+    mutationFn: async (updates: { full_name?: string; phone?: string; preferred_language?: string }) => {
       const { error } = await supabase
         .from("profiles")
         .update(updates)

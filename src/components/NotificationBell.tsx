@@ -1,0 +1,89 @@
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Bell, Check, CheckCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from "@/hooks/useNotifications";
+import { formatDistanceToNow } from "date-fns";
+
+const TYPE_ICONS: Record<string, string> = {
+  booking: "📋",
+  payment: "💳",
+  maintenance: "🔧",
+  laundry: "👕",
+  override: "⚠️",
+};
+
+export function NotificationBell() {
+  const { t } = useTranslation();
+  const { data: notifications, unreadCount } = useNotifications();
+  const markRead = useMarkNotificationRead();
+  const markAllRead = useMarkAllNotificationsRead();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative h-9 w-9">
+          <Bell className="h-4 w-4" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-0" align="end">
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <h4 className="text-sm font-semibold">{t("notifications.title")}</h4>
+          {unreadCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => markAllRead.mutate()}
+              disabled={markAllRead.isPending}
+            >
+              <CheckCheck className="h-3 w-3 mr-1" />
+              {t("notifications.markAllRead")}
+            </Button>
+          )}
+        </div>
+        <ScrollArea className="max-h-80">
+          {(!notifications || notifications.length === 0) ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              {t("notifications.empty")}
+            </div>
+          ) : (
+            <div className="divide-y">
+              {notifications.map((n) => (
+                <button
+                  key={n.id}
+                  className={`w-full text-left px-4 py-3 hover:bg-accent/40 transition-colors flex items-start gap-3 ${!n.read ? "bg-primary/5" : ""}`}
+                  onClick={() => {
+                    if (!n.read) markRead.mutate(n.id);
+                  }}
+                >
+                  <span className="text-base shrink-0 mt-0.5">{TYPE_ICONS[n.type] ?? "📌"}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm leading-snug ${!n.read ? "font-medium text-foreground" : "text-muted-foreground"}`}>
+                      {n.message}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                    </p>
+                  </div>
+                  {!n.read && (
+                    <div className="mt-1.5 h-2 w-2 rounded-full bg-primary shrink-0" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </PopoverContent>
+    </Popover>
+  );
+}
