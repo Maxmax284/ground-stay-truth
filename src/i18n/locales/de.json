@@ -197,6 +197,7 @@
     "unitRemoved": "Unterkunft entfernt",
     "unitActivated": "Unterkunft aktiviert",
     "unitDeactivated": "Unterkunft deaktiviert",
+    "cannotRemove": "Diese Unterkunft hat Buchungshistorie und kann nicht entfernt werden. Deaktivieren Sie sie stattdessen, um sie für Gäste zu verbergen.",
     "removeConfirm": "\"{{name}}\" entfernen? Dies kann nicht rückgängig gemacht werden.",
     "saveChanges": "Änderungen speichern",
     "hero": "Hauptbild",

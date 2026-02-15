@@ -57,7 +57,11 @@ const Units = () => {
       await deleteUnit.mutateAsync(unit.id);
       toast({ title: t("units.unitRemoved") });
     } catch (err: any) {
-      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+      if (err.message === "UNIT_HAS_HISTORY") {
+        toast({ title: t("units.cannotRemove"), variant: "destructive" });
+      } else {
+        toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+      }
     }
   };
 
