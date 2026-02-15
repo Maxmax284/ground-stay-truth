@@ -103,6 +103,22 @@ export function useCreateLaundryRequest() {
         to_status: "received",
       });
 
+      // Notify staff about new laundry request
+      const { data: staff } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .in("role", ["admin", "manager", "front_desk", "front_desk_supervisor"]);
+      for (const s of staff ?? []) {
+        if (s.user_id !== user?.id) {
+          await createNotification({
+            user_id: s.user_id,
+            type: "laundry",
+            reference_id: data.id,
+            message: `New laundry request submitted (${req.bag_count ?? 1} bag${(req.bag_count ?? 1) > 1 ? "s" : ""})`,
+          });
+        }
+      }
+
       return data;
     },
     onSuccess: (_, vars) => {
