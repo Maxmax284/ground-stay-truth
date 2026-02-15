@@ -1,262 +1,187 @@
 
+# Gap Analysis: AI + Notifications + Multilingual -- What Is Missing
 
-# AI Assistant + Notifications + Multilingual Enhancement
+## Summary
 
-## Scope Assessment
-
-This is a 9-phase request. Some phases are immediately buildable, others need incremental rollout. Here is the complete plan broken into implementable chunks, respecting Ground Stay's constitutional boundaries.
-
----
-
-## Phase 1 -- AI Circuit Breaker System
-
-### What It Does
-Adds toggle settings to `policy_settings` so AI features can be disabled globally or per-role.
-
-### Database Changes
-Insert 6 new rows into `policy_settings`:
-
-| Key | Default | Description |
-|-----|---------|-------------|
-| ai_assistant_enabled | true | Global AI kill switch |
-| ai_guest_enabled | true | AI for guest role |
-| ai_front_desk_enabled | true | AI for front desk role |
-| ai_supervisor_enabled | true | AI for supervisor role |
-| ai_manager_enabled | true | AI for manager role |
-| ai_admin_enabled | true | AI for admin role |
-
-### Code Changes
-- Create `src/hooks/useAISettings.ts` -- reads policy_settings, computes `isAIEnabled(role)` by checking global toggle AND per-role toggle
-- Update `PolicySettingsForm.tsx` to render boolean toggles (Switch) for ai_* keys instead of plain text inputs
-- All AI components will check `isAIEnabled` before rendering
+Most of the 9 phases are implemented. However, there are **5 concrete gaps** where planned functionality was not wired in. Below is a phase-by-phase status and what needs to be added.
 
 ---
 
-## Phase 2 -- Real-Time Notification Infrastructure
+## Phase 1: AI Circuit Breaker -- COMPLETE
 
-### Database Changes
-Create `notifications` table:
-
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid PK | gen_random_uuid() |
-| user_id | uuid NOT NULL | Recipient |
-| type | text NOT NULL | booking, payment, maintenance, laundry, override |
-| reference_id | uuid | FK to the relevant record |
-| message | text NOT NULL | Short operational description |
-| read | boolean DEFAULT false | |
-| created_at | timestamptz DEFAULT now() | |
-
-RLS: Users can read/update own notifications. Admins can manage all. Enable realtime on this table.
-
-Create a database function `notify_user(user_id, type, reference_id, message)` that inserts into notifications. Use this in application code when events occur.
-
-### Code Changes
-
-**New Files:**
-- `src/hooks/useNotifications.ts` -- query notifications for current user, mark-as-read mutation, realtime subscription, unread count
-- `src/components/NotificationBell.tsx` -- bell icon with badge count, dropdown panel listing recent notifications, mark-as-read on click
-
-**Modified Files:**
-- `src/components/DashboardLayout.tsx` -- add NotificationBell to the header bar (top-right)
-- `src/components/GuestLayout.tsx` -- add NotificationBell to guest header
-- `src/hooks/useBookings.ts` -- after booking state transitions, insert notification for relevant users (guest + assigned staff)
-- `src/hooks/useMaintenanceRequests.ts` -- on create/status change, insert notifications
-- `src/hooks/useLaundryRequests.ts` -- on status change, insert notifications
-
-### Notification Triggers (in application code, not DB triggers)
-- Booking created -> notify admin/manager
-- Booking state change -> notify guest + relevant staff
-- Maintenance request created -> notify maintenance + manager
-- Maintenance urgent -> notify admin
-- Laundry status = ready_for_pickup -> notify guest
-- Deposit deadline approaching -> notify front desk (checked via polling)
-
-### Mobile Placement
-- Bell icon in header bar (not floating)
-- Dropdown panel slides down on tap
-- No overlap with navigation
+- 6 toggle keys inserted into `policy_settings`
+- `useAISettings.ts` hook correctly checks global + per-role toggles
+- `PolicySettingsForm.tsx` renders Switch toggles for boolean keys
+- Edge function checks circuit breaker before processing
+- No gaps.
 
 ---
 
-## Phase 3 -- AI Assistant Layer
+## Phase 2: Notifications -- COMPLETE
 
-### Backend
-Create edge function `supabase/functions/ai-assistant/index.ts`:
-- Uses Lovable AI gateway (google/gemini-3-flash-preview)
-- Accepts `{ mode, context, messages }` where mode is one of: explain, summarize, validate, draft, digest
-- System prompt enforces read-only behavior: "You are an operational assistant for Ground Stay. You NEVER execute actions. You only explain, summarize, and suggest."
-- Reads from: bookings, booking_state_log, maintenance_requests, laundry_requests, payments, notifications (via Supabase service role client)
-- Returns streamed response
-- Checks AI circuit breaker settings before processing
-
-### Frontend
-
-**New Files:**
-- `src/components/AIAssistantPanel.tsx` -- collapsible chat panel, bottom-right on desktop, floating button on mobile
-- `src/hooks/useAIAssistant.ts` -- manages conversation state, sends to edge function, handles streaming
-
-**Modes:**
-- **Explain**: User selects a booking/request, asks "What's going on here?" -- AI reads context and explains
-- **Summarize**: Dashboard summary of current operational state
-- **Validate Action**: Before risky transitions, AI flags warnings (buffer violation, missing docs, payment gaps)
-- **Prepare Draft**: In messages tab, "Draft with AI" button generates a reply suggestion
-- **Daily Digest**: On-demand summary of arrivals, departures, open issues, deadlines
-
-**Constraints enforced in system prompt:**
-- Never use phrases like "I have completed" or "Done"
-- Always use "Recommended:", "Option:", "Manager Required:"
-- Never imply execution capability
-- Respect payment visibility (role passed to edge function, amounts excluded for front_desk)
-
-### Mobile UX
-- Floating assistant button: 56px, bottom-right, 16px above bottom nav / safe area
-- Opens a bottom sheet (not full screen)
-- Collapsible with swipe-down gesture
-- Does not overlap navigation or notification bell
+- `notifications` table created with RLS + Realtime enabled
+- `useNotifications.ts` hook with realtime subscription, mark-as-read, mark-all-read
+- `NotificationBell.tsx` integrated into both `DashboardLayout.tsx` and `GuestLayout.tsx`
+- Notification triggers added to `useBookings.ts`, `useMaintenanceRequests.ts`, `useLaundryRequests.ts`
+- No gaps.
 
 ---
 
-## Phase 4 -- Multilingual Inbox Translation
+## Phase 3: AI Assistant Layer -- COMPLETE
 
-### What Changes
-The existing i18n system handles UI translation. This phase adds message-level translation for the inbox.
-
-### Backend
-Create edge function `supabase/functions/translate-message/index.ts`:
-- Uses Lovable AI (google/gemini-3-flash-preview) for translation
-- Accepts `{ text, target_language }`
-- Returns `{ translated_text, source_language }`
-- Stateless -- no storage of translations (computed on-demand, cached client-side)
-
-### Database Changes
-Add `preferred_language` column to `profiles` table (text, default 'en').
-
-### Frontend Changes
-
-**Modified Files:**
-- `src/components/ProfileEditor.tsx` -- add language preference selector (using existing LanguageSelector pattern)
-- `src/pages/Messages.tsx` -- for each message, if sender language differs from viewer preference, show "Translate" button. On click, call translate edge function and show inline translation with "View Original" toggle
-- `src/pages/GuestPortal.tsx` (messages section) -- same translate button pattern
-
-**New Files:**
-- `src/hooks/useMessageTranslation.ts` -- calls translate-message edge function, caches results in React Query
-
-### Supported Languages (Phase 4)
-English, Thai, German (minimum). Extensible to all 9 existing UI languages.
-
-### Constraints
-- Original message is never modified
-- Translation is display-only, cached in memory
-- "View Original" always available
-- No auto-rewriting, no tone editing
+- Edge function `ai-assistant/index.ts` implemented with Lovable AI gateway, streaming, circuit breaker, role-based content filtering
+- `useAIAssistant.ts` handles streaming SSE, abort, conversation state
+- `AIAssistantPanel.tsx` with 5 modes (explain, summarize, validate, draft, digest), error boundary, mobile placement
+- Integrated into `DashboardLayout.tsx` and `GuestLayout.tsx`
+- No gaps.
 
 ---
 
-## Phase 5 -- AI Message Draft Assistant
+## Phase 4: Multilingual Inbox Translation -- MOSTLY COMPLETE, 1 GAP
 
-### What Changes
-Add "Draft with AI" button to the message compose area in staff inbox.
+**Implemented:**
+- Edge function `translate-message/index.ts` with structured JSON output
+- `useMessageTranslation.ts` hook with client-side cache
+- `ProfileEditor.tsx` includes preferred language selector with all 9 languages
+- `preferred_language` column on profiles table
 
-### Frontend Changes
+**GAP: Translate buttons not wired into message views.**
 
-**Modified Files:**
-- `src/components/BookingDetailSheet.tsx` (MessagesTab) -- add "Draft with AI" button next to the send button
-- `src/pages/Messages.tsx` -- same pattern if a thread detail view is open
+The `useMessageTranslation` hook exists but is never used in the actual message UI. Neither `MessagesTab` inside `BookingDetailSheet.tsx` (lines 256-302) nor the `Messages.tsx` page renders a "Translate" / "View Original" button on individual messages. The plan specified:
 
-### Flow
-1. Staff clicks "Draft with AI"
-2. Hook sends booking context + last 5 messages to AI assistant edge function with mode = "draft"
-3. AI returns suggested reply
-4. Text is inserted into the textarea (not sent)
-5. Staff can edit, send, or discard
+> "For each message, if sender language differs from viewer preference, show 'Translate' button. On click, call translate edge function and show inline translation with 'View Original' toggle."
 
-AI never auto-sends. The draft is just text in the input field.
+**Fix needed:**
+- In `BookingDetailSheet.tsx` `MessagesTab`, import `useMessageTranslation` and `useProfile`, and for each message render a small "Translate" button that calls `translate()`. When translation exists, show the translated text with a "View Original" toggle.
+- Same pattern in `Messages.tsx` if thread detail messages are shown (currently they open `BookingDetailSheet`, so `MessagesTab` is the primary location).
 
 ---
 
-## Phase 6 -- Pre-Flight Decision Checker
+## Phase 5: AI Message Draft Assistant -- NOT IMPLEMENTED
 
-### What Changes
-Before risky state transitions, an AI warning panel appears.
+The plan specified:
 
-### Frontend Changes
+> "Add 'Draft with AI' button to the message compose area in staff inbox."
 
-**Modified Files:**
-- `src/components/BookingStateTransition.tsx` -- when a target state is selected, if AI is enabled, call a validation endpoint that checks:
-  - Buffer violations
-  - Missing documents
-  - Payment gaps
-  - Supervisor cap (if applicable)
-- Display warnings in a yellow info panel above the confirm button
+**Current state:** The `MessagesTab` in `BookingDetailSheet.tsx` (lines 279-301) has a Textarea and Send button, but **no "Draft with AI" button**. The `Messages.tsx` page opens `BookingDetailSheet` for thread detail, so the same gap applies.
+
+**Fix needed:**
+- Add a "Draft with AI" button next to the Send button in `MessagesTab`
+- On click, gather the last ~5 messages + booking context, call `sendMessage` from `useAIAssistant` with mode = "draft"
+- Insert the AI response into the textarea (not auto-send)
+- The user can edit, send, or discard
+
+---
+
+## Phase 6: Pre-Flight Decision Checker -- NOT IMPLEMENTED
+
+The plan specified:
+
+> "Before risky state transitions, an AI warning panel appears."
+
+**Current state:** `BookingStateTransition.tsx` has existing non-AI warnings (buffer violations, missing documents, refund info) but **no AI-powered pre-flight check**. The plan called for:
+
+> "When a target state is selected, if AI is enabled, call a validation endpoint... Display warnings in a yellow info panel above the confirm button."
+
+**Fix needed:**
+- In `BookingStateTransition.tsx`, when `targetState` changes, if AI is enabled (`useAISettings`), call the AI assistant edge function with `mode: "validate"` and context including: current state, target state, buffer status, document status, payment status
+- Display the AI's warnings in an info panel above the Confirm button
 - Warnings are informational only -- staff can still proceed
 
-### Backend
-Reuse the existing AI assistant edge function with mode = "validate" and pass the transition context.
+---
+
+## Phase 7: Mobile UX Optimization -- PARTIALLY DONE
+
+**Implemented:**
+- AI panel has `bottom-20` on mobile to avoid nav overlap
+- NotificationBell uses Popover (works on mobile)
+- Responsive layouts exist
+
+**Minor gap:** The plan mentioned the notification dropdown should become a "bottom sheet on mobile" instead of a popover. Currently it uses `PopoverContent` which can be awkward on very small screens. This is a polish item, not blocking.
 
 ---
 
-## Phase 7 -- Mobile UX Optimization
+## Phase 8: Security + Role Enforcement -- COMPLETE
 
-### What Changes
-Ensure all new components work on small screens.
-
-- NotificationBell: dropdown becomes a bottom sheet on mobile
-- AIAssistantPanel: bottom sheet with safe area padding
-- Translate buttons: inline, no layout shift
-- All new cards: responsive grid (1 col on mobile, 2 on desktop)
-
-### Testing Targets
-- 360x800 (small Android)
-- 390x844 (iPhone 14)
-- 768x1024 (tablet)
+- AI edge function filters content by role (no payment amounts for front_desk, no internal notes for guests)
+- RLS policies enforce database-level access
+- Circuit breaker checked server-side
+- No gaps.
 
 ---
 
-## Phase 8 -- Security + Role Enforcement
+## Phase 9: Failsafe Behavior -- COMPLETE
 
-Built into every phase above:
-- AI edge function receives user role and enforces visibility
-- Payment amounts excluded from AI context for front_desk role
-- Internal notes never sent to guest-facing AI
-- Audit trail details not exposed to guests
-- All RLS policies enforced at database level
-- AI settings checked before any AI feature renders
+- `AIErrorBoundary` wraps the AI panel
+- `useAISettings` returns `isAIEnabled: false` when loading or disabled, hiding the panel
+- Notifications work independently of AI
+- Translation hook handles errors gracefully
+- No gaps.
 
 ---
 
-## Phase 9 -- Failsafe Behavior
+## Implementation Plan for Missing Items
 
-### What Changes
-- `useAISettings` hook returns `{ isAIAvailable }` -- if the edge function is unreachable or disabled, all AI features hide gracefully
-- Notifications continue working independently of AI
-- Translation falls back to showing original text
-- No loading spinners that block core UI
-- Error boundary wraps AI panel so crashes don't affect the rest of the app
+### Step 1: Wire translate buttons into MessagesTab (Phase 4 gap)
+
+**File:** `src/components/BookingDetailSheet.tsx`
+
+- Import `useMessageTranslation` and `useProfile`
+- In the `MessagesTab` component, call `useMessageTranslation()` and get the user's `preferred_language` from their profile
+- For each message in the list, add a small "Translate" button (Globe icon)
+- When clicked, call `translate(messageId, messageContent, preferredLanguage)`
+- If a translation exists for that message, show it below the original with a "View Original" toggle button
+- Keep original content always accessible
+
+### Step 2: Add "Draft with AI" button to MessagesTab (Phase 5)
+
+**File:** `src/components/BookingDetailSheet.tsx`
+
+- Import `useAIAssistant` and `useAISettings`
+- In `MessagesTab`, add a "Draft with AI" button (Sparkles icon) next to the Send button
+- Only show when AI is enabled for the user's role
+- On click:
+  1. Gather the last 5 messages as context
+  2. Call `sendMessage` with mode "draft" and the booking context
+  3. When the AI response arrives, insert it into the textarea's `content` state
+  4. The user can then edit and send normally
+- Show a loading indicator while the AI is generating
+
+### Step 3: Add AI pre-flight checker to BookingStateTransition (Phase 6)
+
+**File:** `src/components/BookingStateTransition.tsx`
+
+- Import `useAISettings` and add a state for AI validation warnings
+- When `targetState` changes to a non-empty value, if AI is enabled:
+  1. Call the AI assistant edge function with `mode: "validate"` and context: `{ currentState, targetState, hasDocuments, hasPaid, bufferViolated, bookingId }`
+  2. Store the response as a validation message
+  3. Display it in a yellow/amber info panel above the Confirm button
+- The validation is advisory only -- the Confirm button remains enabled regardless
+- If AI is disabled or the call fails, skip silently (no blocking)
 
 ---
 
-## Implementation Order
+## Technical Details
 
-| Step | Phase | Estimated Changes |
-|------|-------|-------------------|
-| 1 | Phase 1: Circuit Breaker | 1 migration, 2 files |
-| 2 | Phase 2: Notifications | 1 migration, 4 new files, 4 modified files |
-| 3 | Phase 3: AI Assistant | 1 edge function, 2 new files, 2 modified files |
-| 4 | Phase 4: Translation | 1 edge function, 1 migration, 2 new files, 3 modified files |
-| 5 | Phase 5: Draft Assistant | 2 modified files |
-| 6 | Phase 6: Pre-Flight Checker | 1 modified file |
-| 7 | Phase 7-9: Polish | Mobile fixes, error boundaries, failsafe wiring |
+### Dependencies
+- No new packages needed
+- No database changes needed
+- No new edge functions needed (reuses existing `ai-assistant` and `translate-message`)
 
-Total: ~3 migrations, 2 edge functions, ~10 new files, ~12 modified files.
+### Files to Create
+None.
 
----
+### Files to Modify
+| File | Change |
+|------|--------|
+| `src/components/BookingDetailSheet.tsx` | Add translate buttons to MessagesTab, add "Draft with AI" button |
+| `src/components/BookingStateTransition.tsx` | Add AI pre-flight validation panel |
 
-## Technical Notes
-
-- **AI Gateway**: Uses Lovable AI at `https://ai.gateway.lovable.dev/v1/chat/completions` with `LOVABLE_API_KEY` (already configured)
-- **Model**: `google/gemini-3-flash-preview` for all AI features (fast, cost-effective)
-- **Streaming**: AI assistant uses SSE streaming for chat; translation and validation use non-streaming calls
-- **No push notifications in first pass**: The prompt requests service worker + push. This requires PWA setup which is a separate concern. Phase 2 delivers in-app notifications with realtime. Push can be added later as a PWA enhancement.
-- **No database triggers**: All notifications are created in application code (hooks) to maintain explicit control and avoid reserved schema modifications
+### Translation Keys to Add (en.json)
+- `messages.translate` -- "Translate"
+- `messages.viewOriginal` -- "View Original"
+- `messages.draftWithAI` -- "Draft with AI"
+- `messages.drafting` -- "Drafting..."
+- `stateTransition.aiValidation` -- "AI Check"
+- `stateTransition.aiChecking` -- "Checking..."
 
