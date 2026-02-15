@@ -296,8 +296,8 @@ export function useMarkMessagesRead() {
         .from("messages")
         .update({ read_at: new Date().toISOString() } as any)
         .eq("booking_id", bookingId)
-        .neq("sender_id", user.id)
-        .is("read_at", null);
+        .is("read_at", null)
+        .or(`sender_id.neq.${user.id},sender_id.is.null`);
       if (error) throw error;
     },
     onSuccess: (_, bookingId) => {
