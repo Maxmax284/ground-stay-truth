@@ -1,187 +1,287 @@
 
-# Gap Analysis: AI + Notifications + Multilingual -- What Is Missing
 
-## Summary
+# Muay Thai Aesthetic and Animation Overhaul for Ground Stay
 
-Most of the 9 phases are implemented. However, there are **5 concrete gaps** where planned functionality was not wired in. Below is a phase-by-phase status and what needs to be added.
+## The Vision
 
----
-
-## Phase 1: AI Circuit Breaker -- COMPLETE
-
-- 6 toggle keys inserted into `policy_settings`
-- `useAISettings.ts` hook correctly checks global + per-role toggles
-- `PolicySettingsForm.tsx` renders Switch toggles for boolean keys
-- Edge function checks circuit breaker before processing
-- No gaps.
+Ground Stay serves a competitive Muay Thai gym. Right now the UI is functional but static -- warm hospitality tones with zero motion. This plan injects the energy of a fight camp into the experience while keeping the operational clarity intact. Think: disciplined power, not flashy chaos.
 
 ---
 
-## Phase 2: Notifications -- COMPLETE
+## Design Language: "Camp Ready"
 
-- `notifications` table created with RLS + Realtime enabled
-- `useNotifications.ts` hook with realtime subscription, mark-as-read, mark-all-read
-- `NotificationBell.tsx` integrated into both `DashboardLayout.tsx` and `GuestLayout.tsx`
-- Notification triggers added to `useBookings.ts`, `useMaintenanceRequests.ts`, `useLaundryRequests.ts`
-- No gaps.
+### Color Accent Additions
 
----
+Keep the existing warm earth palette as the base (it works for hospitality), but introduce a **fight accent system** layered on top:
 
-## Phase 3: AI Assistant Layer -- COMPLETE
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--fight-red` | Deep crimson red | State transitions, urgent badges, CTA pulses |
+| `--fight-gold` | Championship gold | Success states, achievement moments, stat highlights |
+| `--fight-dark` | Near-black charcoal | Hero sections, auth backgrounds |
 
-- Edge function `ai-assistant/index.ts` implemented with Lovable AI gateway, streaming, circuit breaker, role-based content filtering
-- `useAIAssistant.ts` handles streaming SSE, abort, conversation state
-- `AIAssistantPanel.tsx` with 5 modes (explain, summarize, validate, draft, digest), error boundary, mobile placement
-- Integrated into `DashboardLayout.tsx` and `GuestLayout.tsx`
-- No gaps.
+These supplement -- not replace -- the existing design tokens.
 
----
+### Typography Accent
 
-## Phase 4: Multilingual Inbox Translation -- MOSTLY COMPLETE, 1 GAP
-
-**Implemented:**
-- Edge function `translate-message/index.ts` with structured JSON output
-- `useMessageTranslation.ts` hook with client-side cache
-- `ProfileEditor.tsx` includes preferred language selector with all 9 languages
-- `preferred_language` column on profiles table
-
-**GAP: Translate buttons not wired into message views.**
-
-The `useMessageTranslation` hook exists but is never used in the actual message UI. Neither `MessagesTab` inside `BookingDetailSheet.tsx` (lines 256-302) nor the `Messages.tsx` page renders a "Translate" / "View Original" button on individual messages. The plan specified:
-
-> "For each message, if sender language differs from viewer preference, show 'Translate' button. On click, call translate edge function and show inline translation with 'View Original' toggle."
-
-**Fix needed:**
-- In `BookingDetailSheet.tsx` `MessagesTab`, import `useMessageTranslation` and `useProfile`, and for each message render a small "Translate" button that calls `translate()`. When translation exists, show the translated text with a "View Original" toggle.
-- Same pattern in `Messages.tsx` if thread detail messages are shown (currently they open `BookingDetailSheet`, so `MessagesTab` is the primary location).
+Add a display-weight condensed font (like **Oswald** or **Barlow Condensed**) for stat numbers, page headers on the dashboard, and hero text on auth screens. The existing Playfair Display stays for section headers, Source Sans 3 for body text.
 
 ---
 
-## Phase 5: AI Message Draft Assistant -- NOT IMPLEMENTED
+## Phase 1: Page Transition System
 
-The plan specified:
+### What Changes
+Wrap the router's page content in an animated container so navigating between pages feels like movement, not teleportation.
 
-> "Add 'Draft with AI' button to the message compose area in staff inbox."
+- Use CSS `@keyframes` with a fade-up-in effect (opacity 0 to 1, translateY 12px to 0)
+- Each page's root `<div>` gets `animate-fade-in` on mount
+- Duration: 300ms ease-out (fast enough to not feel sluggish)
+- No external animation library needed -- pure CSS + Tailwind keyframes
 
-**Current state:** The `MessagesTab` in `BookingDetailSheet.tsx` (lines 279-301) has a Textarea and Send button, but **no "Draft with AI" button**. The `Messages.tsx` page opens `BookingDetailSheet` for thread detail, so the same gap applies.
-
-**Fix needed:**
-- Add a "Draft with AI" button next to the Send button in `MessagesTab`
-- On click, gather the last ~5 messages + booking context, call `sendMessage` from `useAIAssistant` with mode = "draft"
-- Insert the AI response into the textarea (not auto-send)
-- The user can edit, send, or discard
-
----
-
-## Phase 6: Pre-Flight Decision Checker -- NOT IMPLEMENTED
-
-The plan specified:
-
-> "Before risky state transitions, an AI warning panel appears."
-
-**Current state:** `BookingStateTransition.tsx` has existing non-AI warnings (buffer violations, missing documents, refund info) but **no AI-powered pre-flight check**. The plan called for:
-
-> "When a target state is selected, if AI is enabled, call a validation endpoint... Display warnings in a yellow info panel above the confirm button."
-
-**Fix needed:**
-- In `BookingStateTransition.tsx`, when `targetState` changes, if AI is enabled (`useAISettings`), call the AI assistant edge function with `mode: "validate"` and context including: current state, target state, buffer status, document status, payment status
-- Display the AI's warnings in an info panel above the Confirm button
-- Warnings are informational only -- staff can still proceed
+### Files Modified
+- `tailwind.config.ts` -- add new keyframes and animation utilities
+- `src/index.css` -- add new utility classes
+- `src/components/DashboardLayout.tsx` -- animate `<main>` children
+- `src/components/GuestLayout.tsx` -- same pattern
 
 ---
 
-## Phase 7: Mobile UX Optimization -- PARTIALLY DONE
+## Phase 2: Auth Screens -- "Enter the Camp"
 
-**Implemented:**
-- AI panel has `bottom-20` on mobile to avoid nav overlap
-- NotificationBell uses Popover (works on mobile)
-- Responsive layouts exist
+### Staff Login (`/auth`)
+- Dark gradient background (charcoal to deep warm brown) instead of plain `bg-background`
+- Subtle animated background pattern: faint diagonal lines or a very low-opacity repeating Thai boxing ring rope pattern using CSS gradients
+- "Ground Stay" title scales in on load with a slight bounce
+- Login card fades up from below
+- A subtle tagline below the title: gym-focused energy (e.g., "Train. Stay. Compete.")
 
-**Minor gap:** The plan mentioned the notification dropdown should become a "bottom sheet on mobile" instead of a popover. Currently it uses `PopoverContent` which can be awkward on very small screens. This is a polish item, not blocking.
+### Guest Auth (`/auth/guest`)
+- Same dark hero treatment but warmer (more terracotta undertones)
+- Sign-up card slides in from right on initial load
+- Toggle between Login/Register has a smooth crossfade instead of instant swap
+- Optional: a faint silhouette or SVG of a Muay Thai stance as a watermark behind the card (CSS background, not an image dependency)
 
----
-
-## Phase 8: Security + Role Enforcement -- COMPLETE
-
-- AI edge function filters content by role (no payment amounts for front_desk, no internal notes for guests)
-- RLS policies enforce database-level access
-- Circuit breaker checked server-side
-- No gaps.
-
----
-
-## Phase 9: Failsafe Behavior -- COMPLETE
-
-- `AIErrorBoundary` wraps the AI panel
-- `useAISettings` returns `isAIEnabled: false` when loading or disabled, hiding the panel
-- Notifications work independently of AI
-- Translation hook handles errors gracefully
-- No gaps.
+### Files Modified
+- `src/pages/Auth.tsx`
+- `src/pages/GuestAuth.tsx`
+- `src/index.css` -- new background pattern classes
 
 ---
 
-## Implementation Plan for Missing Items
+## Phase 3: Dashboard -- "The War Room"
 
-### Step 1: Wire translate buttons into MessagesTab (Phase 4 gap)
+### Stat Cards
+- Numbers count up from 0 to their value on first render (a simple counter animation using requestAnimationFrame)
+- Cards stagger their entrance: first card fades in at 0ms, second at 100ms, third at 200ms, fourth at 300ms
+- On hover, cards lift slightly with a shadow increase (already partially done with `hover-scale`, but refine to include shadow elevation)
 
-**File:** `src/components/BookingDetailSheet.tsx`
+### Approval Queue
+- Pending approval items pulse gently with a soft border glow (using `animate-pulse` variant with a ring color)
+- Approve/Reject buttons have micro-animations: approve grows slightly on hover (scale 1.05), reject shakes subtly
 
-- Import `useMessageTranslation` and `useProfile`
-- In the `MessagesTab` component, call `useMessageTranslation()` and get the user's `preferred_language` from their profile
-- For each message in the list, add a small "Translate" button (Globe icon)
-- When clicked, call `translate(messageId, messageContent, preferredLanguage)`
-- If a translation exists for that message, show it below the original with a "View Original" toggle button
-- Keep original content always accessible
+### Quick Action Links
+- Arrow icon slides right on hover (translateX transition)
+- Icon background has a subtle color shift on hover
 
-### Step 2: Add "Draft with AI" button to MessagesTab (Phase 5)
+### Recent Activity Timeline
+- Timeline dots pulse once on initial render
+- Each activity item staggers in with a 50ms delay
 
-**File:** `src/components/BookingDetailSheet.tsx`
-
-- Import `useAIAssistant` and `useAISettings`
-- In `MessagesTab`, add a "Draft with AI" button (Sparkles icon) next to the Send button
-- Only show when AI is enabled for the user's role
-- On click:
-  1. Gather the last 5 messages as context
-  2. Call `sendMessage` with mode "draft" and the booking context
-  3. When the AI response arrives, insert it into the textarea's `content` state
-  4. The user can then edit and send normally
-- Show a loading indicator while the AI is generating
-
-### Step 3: Add AI pre-flight checker to BookingStateTransition (Phase 6)
-
-**File:** `src/components/BookingStateTransition.tsx`
-
-- Import `useAISettings` and add a state for AI validation warnings
-- When `targetState` changes to a non-empty value, if AI is enabled:
-  1. Call the AI assistant edge function with `mode: "validate"` and context: `{ currentState, targetState, hasDocuments, hasPaid, bufferViolated, bookingId }`
-  2. Store the response as a validation message
-  3. Display it in a yellow/amber info panel above the Confirm button
-- The validation is advisory only -- the Confirm button remains enabled regardless
-- If AI is disabled or the call fails, skip silently (no blocking)
+### Files Modified
+- `src/pages/Index.tsx` -- add animation classes and counter logic
+- New utility: `src/hooks/useCountUp.ts` -- animated number hook
 
 ---
 
-## Technical Details
+## Phase 4: Sidebar -- "Corner Team"
+
+### Current State
+Plain dark sidebar with text links and badges.
+
+### Enhancements
+- Active nav item gets a left border accent (3px solid primary) with a slide-in transition
+- Nav items have a subtle translateX hover (shift 4px right)
+- Badge counts use a brief scale-bounce animation when their value changes
+- "Ground Stay" logo area: add a very subtle CSS-only Muay Thai glove icon or a small decorative element (using a before/after pseudo-element or a tiny inline SVG)
+- Sidebar open/close transition is already handled by shadcn -- just ensure it's smooth
+
+### Files Modified
+- `src/components/AppSidebar.tsx` -- add hover/active transitions
+- `src/components/NavLink.tsx` -- active state animation
+- `src/index.css` -- sidebar animation utilities
+
+---
+
+## Phase 5: Cards and Interactive Elements -- "Fight-Ready"
+
+### Global Card Enhancements
+- All cards get a subtle `hover:shadow-md` with `transition-shadow duration-200`
+- Booking cards in the mobile list view: swipe-hint animation on first visit (a tiny horizontal wiggle to suggest interactivity)
+- Selected/active cards get a left accent border that animates in
+
+### Buttons
+- Primary buttons: on hover, a subtle inner glow effect (box-shadow inset)
+- Destructive buttons: slight shake on hover (a 2-frame wiggle keyframe)
+- Ghost buttons: underline slides in from left on hover (like the existing `.story-link` pattern)
+
+### Badges / State Indicators
+- Booking state badges: when state changes, the new badge scales in (scale 0.8 to 1.0 with opacity)
+- "Expired" badges pulse with a red glow
+
+### Tables
+- Table rows fade in with staggered delays on initial load
+- Hover state: row background transitions smoothly
+
+### Files Modified
+- `src/index.css` -- global card and button animation utilities
+- `tailwind.config.ts` -- additional keyframes
+- `src/components/ui/card.tsx` -- add default hover shadow transition
+- `src/components/ui/button.tsx` -- add hover micro-interactions via CSS
+
+---
+
+## Phase 6: Guest Portal -- "Fighter's Lounge"
+
+### Header
+- "Ground Stay" text has a subtle letter-spacing animation on load (tracking widens slightly)
+- Tab switches have a smooth indicator slide (the active tab underline glides left/right instead of jumping)
+
+### Booking Cards
+- Guest booking cards stagger in when the tab loads
+- State badge has a subtle entrance animation
+- Cancel button has a confirmation shake pattern
+
+### Listings Tab
+- Unit cards animate in with a grid-reveal pattern (staggered from top-left to bottom-right)
+- Unit photos have a Ken Burns effect on hover (very slight zoom + pan, 5s duration)
+- "Book Now" button has a pulse ring animation to draw attention
+
+### Messages Tab
+- New messages slide in from the bottom
+- Thread selection: selected thread card gets a left accent border that slides in
+- Translate button has a globe spin on hover
+
+### Stay Support Tab
+- Maintenance request cards have a priority-based color pulse (urgent = red pulse)
+
+### Files Modified
+- `src/pages/GuestPortal.tsx` -- stagger and entrance animations
+- `src/components/GuestLayout.tsx` -- header animations
+
+---
+
+## Phase 7: Muay Thai Decorative Elements
+
+### CSS-Only Decorative Patterns
+No image files needed -- all done with CSS:
+
+- **Ring rope pattern**: Thin horizontal lines (2px) at the very top of the dashboard area, using repeating-linear-gradient. Subtle, barely visible, but adds texture.
+- **Corner accent**: On auth pages, a diagonal stripe pattern in the top-right corner using CSS gradients (red and gold stripes, low opacity).
+- **Section dividers**: Instead of plain `<Separator>`, key sections use a styled divider with a tiny diamond shape in the center (CSS pseudo-elements).
+
+### Micro-Illustrations (CSS/SVG inline)
+- A small inline SVG of boxing gloves icon next to "Ground Stay" in the sidebar
+- Optional: A Thai flag color accent stripe (red-white-blue-white-red) as a 4px decorative bar above the main content area on the dashboard
+
+### Files Modified
+- `src/index.css` -- decorative CSS classes
+- `src/components/AppSidebar.tsx` -- glove icon
+- `src/components/DashboardLayout.tsx` -- decorative bar
+
+---
+
+## Phase 8: Loading and Empty States
+
+### Skeleton Enhancements
+- Skeletons pulse with a warm shimmer (gradient sweep from warm-gray to warm-white) instead of the default gray pulse
+
+### Empty States
+- "No bookings" empty state: add a subtle illustrated icon (using Lucide icons composed together) with a fade-in animation
+- Loading spinner: replace generic spinner with a CSS-animated circular motion (like a roundhouse kick arc -- a quarter-circle that rotates)
+
+### Toast Notifications
+- Success toasts slide in with the fight-gold accent
+- Error toasts shake briefly on entry
+
+### Files Modified
+- `src/index.css` -- custom shimmer animation
+- `src/components/ui/skeleton.tsx` -- warm shimmer class
+- `src/components/ui/sonner.tsx` -- toast entrance tweaks
+
+---
+
+## Phase 9: Notification Bell and AI Panel Polish
+
+### Notification Dropdown
+- Unread count badge bounces on update
+- Notification items slide in from right when dropdown opens
+- Mark-as-read: item fades to muted smoothly
+
+### AI Assistant Panel
+- Panel slides up from bottom with a spring-like easing
+- Messages appear with a typing-indicator style fade
+- Mode selector tabs have the same smooth indicator slide as the guest portal tabs
+
+### Files Modified
+- `src/components/NotificationBell.tsx` -- entrance animations
+- `src/components/AIAssistantPanel.tsx` -- panel and message animations
+
+---
+
+## Technical Implementation Summary
+
+### New Tailwind Keyframes to Add
+```
+fade-in, fade-up, scale-in, slide-up, slide-right,
+stagger-in, count-up, pulse-glow, shake-subtle,
+shimmer-warm, bounce-badge, ken-burns
+```
+
+### New CSS Utility Classes
+```
+.animate-stagger-1 through .animate-stagger-8
+.hover-lift (translateY + shadow)
+.hover-slide-right (translateX)
+.ring-rope-pattern
+.corner-accent
+.fight-divider
+.warm-shimmer
+```
+
+### New Hook
+- `src/hooks/useCountUp.ts` -- takes a target number, returns the current animated value (for dashboard stat cards)
+
+### Files Created
+| File | Purpose |
+|------|---------|
+| `src/hooks/useCountUp.ts` | Animated number counter hook |
+
+### Files Modified (Summary)
+| File | Changes |
+|------|---------|
+| `tailwind.config.ts` | New keyframes, animations, font family |
+| `src/index.css` | New utility classes, patterns, decorative elements, fonts |
+| `src/pages/Auth.tsx` | Dark hero background, entrance animations |
+| `src/pages/GuestAuth.tsx` | Dark hero background, form transitions |
+| `src/pages/Index.tsx` | Stat counter animation, staggered cards, timeline animation |
+| `src/pages/GuestPortal.tsx` | Tab transitions, card stagger, Ken Burns on photos |
+| `src/components/DashboardLayout.tsx` | Page transition wrapper, decorative bar |
+| `src/components/GuestLayout.tsx` | Header animation, page transitions |
+| `src/components/AppSidebar.tsx` | Nav hover effects, glove icon, active state |
+| `src/components/NavLink.tsx` | Active border animation |
+| `src/components/NotificationBell.tsx` | Badge bounce, dropdown animations |
+| `src/components/AIAssistantPanel.tsx` | Panel slide, message fade |
+| `src/components/ui/card.tsx` | Default hover shadow transition |
+| `src/components/ui/button.tsx` | Hover micro-interactions |
+| `src/components/ui/skeleton.tsx` | Warm shimmer effect |
 
 ### Dependencies
-- No new packages needed
-- No database changes needed
-- No new edge functions needed (reuses existing `ai-assistant` and `translate-message`)
+- One Google Font addition: **Oswald** (or Barlow Condensed) for display numbers -- added via the existing `@import url()` in `index.css`
+- No animation libraries (no Framer Motion, no GSAP) -- everything is CSS keyframes + Tailwind utilities + one small React hook
 
-### Files to Create
-None.
-
-### Files to Modify
-| File | Change |
-|------|--------|
-| `src/components/BookingDetailSheet.tsx` | Add translate buttons to MessagesTab, add "Draft with AI" button |
-| `src/components/BookingStateTransition.tsx` | Add AI pre-flight validation panel |
-
-### Translation Keys to Add (en.json)
-- `messages.translate` -- "Translate"
-- `messages.viewOriginal` -- "View Original"
-- `messages.draftWithAI` -- "Draft with AI"
-- `messages.drafting` -- "Drafting..."
-- `stateTransition.aiValidation` -- "AI Check"
-- `stateTransition.aiChecking` -- "Checking..."
+### Performance Notes
+- All animations use `transform` and `opacity` only (GPU-accelerated, no layout thrashing)
+- `prefers-reduced-motion` media query will disable all animations for accessibility
+- Stagger delays use CSS `animation-delay`, not JavaScript timeouts
+- Ken Burns effect only activates on hover (no idle GPU cost)
 
