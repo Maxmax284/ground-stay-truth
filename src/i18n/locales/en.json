@@ -706,13 +706,14 @@
     "markAllRead": "Mark all read"
   },
   "ai": {
-    "title": "AI Assistant",
-    "assistOnly": "Assist Only",
-    "openAssistant": "Open AI Assistant",
+    "title": "Kru",
+    "assistOnly": "Advisory",
+    "openAssistant": "Ask Kru",
     "clearChat": "Clear chat",
-    "welcomeMessage": "Ask me about bookings, operations, or request a daily digest.",
-    "disclaimer": "I can only read and suggest — I never take actions.",
-    "inputPlaceholder": "Ask about operations…",
+    "welcomeMessage": "Hey — I'm Kru, your camp advisor. Ask me anything about the property, bookings, or ops.",
+    "disclaimer": "I only advise — I never take actions.",
+    "inputPlaceholder": "Ask Kru anything…",
+    "language": "Response Language",
     "modes": {
       "explain": "Explain",
       "summarize": "Summary",

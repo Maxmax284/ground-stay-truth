@@ -1,13 +1,19 @@
-import { useState, useRef, useEffect, type ErrorInfo } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Bot, X, Send, Trash2, Sparkles, AlertTriangle } from "lucide-react";
+import { Swords, X, Send, Trash2, Sparkles, AlertTriangle, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAIAssistant, type AIMode } from "@/hooks/useAIAssistant";
 import { useAISettings } from "@/hooks/useAISettings";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import React from "react";
 
 const MODE_LABELS: Record<AIMode, string> = {
@@ -17,6 +23,23 @@ const MODE_LABELS: Record<AIMode, string> = {
   draft: "ai.modes.draft",
   digest: "ai.modes.digest",
 };
+
+const LANGUAGES = [
+  { code: "en", label: "English" },
+  { code: "th", label: "ภาษาไทย", name: "Thai" },
+  { code: "fr", label: "Français", name: "French" },
+  { code: "de", label: "Deutsch", name: "German" },
+  { code: "ru", label: "Русский", name: "Russian" },
+  { code: "zh", label: "中文", name: "Chinese" },
+  { code: "ja", label: "日本語", name: "Japanese" },
+  { code: "ko", label: "한국어", name: "Korean" },
+  { code: "es", label: "Español", name: "Spanish" },
+];
+
+function langCodeToName(code: string): string {
+  const found = LANGUAGES.find((l) => l.code === code);
+  return found?.name || found?.label || "English";
+}
 
 // Error boundary wrapper
 class AIErrorBoundary extends React.Component<
@@ -31,12 +54,21 @@ class AIErrorBoundary extends React.Component<
 function AIAssistantPanelInner() {
   const { t } = useTranslation();
   const { role } = useAuth();
+  const { profile } = useProfile();
   const { isAIEnabled, isLoading: settingsLoading } = useAISettings(role);
   const { messages, isStreaming, error, sendMessage, cancel, clearChat } = useAIAssistant();
   const [input, setInput] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<AIMode>("explain");
+  const [language, setLanguage] = useState<string>("en");
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Set default language from profile
+  useEffect(() => {
+    if (profile.data?.preferred_language) {
+      setLanguage(profile.data.preferred_language);
+    }
+  }, [profile.data?.preferred_language]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -50,7 +82,7 @@ function AIAssistantPanelInner() {
     const trimmed = input.trim();
     if (!trimmed || isStreaming) return;
     setInput("");
-    sendMessage(trimmed, mode);
+    sendMessage(trimmed, mode, undefined, langCodeToName(language));
   };
 
   if (!isOpen) {
@@ -70,11 +102,29 @@ function AIAssistantPanelInner() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div className="flex items-center gap-2">
-          <Bot className="h-4 w-4 text-primary" />
+          <Swords className="h-4 w-4 text-primary" />
           <span className="text-sm font-semibold">{t("ai.title")}</span>
           <Badge variant="secondary" className="text-[10px]">{t("ai.assistOnly")}</Badge>
         </div>
         <div className="flex items-center gap-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7" title={t("ai.language")}>
+                <Globe className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="z-[60]">
+              {LANGUAGES.map((lang) => (
+                <DropdownMenuItem
+                  key={lang.code}
+                  onClick={() => setLanguage(lang.code)}
+                  className={language === lang.code ? "bg-accent" : ""}
+                >
+                  {lang.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={clearChat} title={t("ai.clearChat")}>
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
@@ -99,9 +149,9 @@ function AIAssistantPanelInner() {
         ))}
       </div>
 
-      {/* Messages */}
-      <ScrollArea className="flex-1 min-h-0">
-        <div ref={scrollRef} className="px-4 py-3 space-y-3">
+      {/* Messages - fixed scroll */}
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
+        <div className="px-4 py-3 space-y-3">
           {messages.length === 0 && (
             <div className="text-center py-8 animate-fade-up">
               <Sparkles className="h-8 w-8 mx-auto text-muted-foreground/40 mb-3" />
@@ -138,7 +188,7 @@ function AIAssistantPanelInner() {
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Input */}
       <div className="border-t px-3 py-2">
