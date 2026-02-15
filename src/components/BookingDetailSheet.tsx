@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 import { format, differenceInHours } from "date-fns";
-import { useBooking, useBookingStateLog, useBookingPayments, useBookingMessages, useCreatePayment, useCreateMessage } from "@/hooks/useBookings";
+import { useBooking, useBookingStateLog, useBookingPayments, useBookingMessages, useCreatePayment, useCreateMessage, useMarkMessagesRead } from "@/hooks/useBookings";
 import { BookingStateTransition } from "@/components/BookingStateTransition";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
@@ -42,6 +42,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
   const { data: messages } = useBookingMessages(bookingId);
   const { data: policies } = usePolicySettings();
   const { data: documents } = useGuestDocuments(bookingId ?? "");
+  const markRead = useMarkMessagesRead();
 
   const canSeeAmounts = permissions.canViewPaymentAmounts(role);
   const canRecordPay = permissions.canRecordPayment(role);
@@ -134,7 +135,11 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
         </SheetHeader>
         <Separator />
         <div className="py-4"><BookingStateTransition bookingId={booking.id} currentState={booking.state as BookingState} isAdmin={isAdmin} checkInDate={booking.check_in} totalPrice={booking.total_price} unitId={booking.unit_id} /></div>
-        <Tabs defaultValue="history" className="mt-2">
+        <Tabs defaultValue="history" className="mt-2" onValueChange={(val) => {
+          if (val === "messages" && bookingId) {
+            markRead.mutate(bookingId);
+          }
+        }}>
           <TabsList className="w-full">
             <TabsTrigger value="history" className="flex-1"><History className="h-4 w-4 mr-1" /> {t("bookingDetail.historyTab")}</TabsTrigger>
             <TabsTrigger value="payments" className="flex-1"><CreditCard className="h-4 w-4 mr-1" /> {t("bookingDetail.paymentsTab")}</TabsTrigger>

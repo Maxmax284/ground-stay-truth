@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMarkMessagesRead } from "@/hooks/useBookings";
 import { format, startOfMonth, addMonths, subMonths, formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -54,6 +55,12 @@ const GuestPortal = () => {
   const [bookingFormUnitId, setBookingFormUnitId] = useState<string | undefined>();
   // Messages tab state
   const [selectedThread, setSelectedThread] = useState<string | null>(null);
+  const markRead = useMarkMessagesRead();
+
+  const handleOpenThread = (bookingId: string) => {
+    setSelectedThread(bookingId);
+    markRead.mutate(bookingId);
+  };
 
   const { data: bookings, isLoading } = useQuery({
     queryKey: ["guest-bookings", user?.id], enabled: !!user,
@@ -97,7 +104,7 @@ const GuestPortal = () => {
       .map((b) => {
         const msgs = messagesByBooking.get(b.id) ?? [];
         const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
-        const unread = msgs.filter((m) => m.sender_id !== user?.id).length;
+        const unread = msgs.filter((m) => m.sender_id !== user?.id && !(m as any).read_at).length;
         return {
           booking_id: b.id,
           unit_name: b.units?.name ?? "—",
@@ -304,7 +311,7 @@ const GuestPortal = () => {
                     <ScrollArea className="max-h-[calc(100vh-16rem)]">
                       <div className="space-y-2">
                         {inboxThreads.map((thread) => (
-                          <Card key={thread.booking_id} className="p-4 cursor-pointer hover:bg-accent/40 transition-colors" onClick={() => setSelectedThread(thread.booking_id)}>
+                          <Card key={thread.booking_id} className="p-4 cursor-pointer hover:bg-accent/40 transition-colors" onClick={() => handleOpenThread(thread.booking_id)}>
                             <div className="flex items-start gap-3">
                               <div className="pt-1.5 shrink-0">
                                 {thread.unread_count > 0 ? <Circle className="h-2.5 w-2.5 fill-primary text-primary" /> : <Circle className="h-2.5 w-2.5 text-transparent" />}
