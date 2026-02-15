@@ -32,6 +32,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
 
 const navItems = [
   { titleKey: "nav.dashboard", url: "/dashboard", icon: Home },
@@ -86,8 +87,10 @@ export function AppSidebar() {
   const { t } = useTranslation();
   const { signOut, user, role, isAdmin } = useAuth();
   const canApprove = permissions.canApproveBooking(role);
+  const isMaintenance = role === "maintenance";
   const { data: pendingCount } = usePendingUsersCount(isAdmin);
   const { data: approvalCount } = usePendingApprovalCount(canApprove);
+  const { data: maintenanceCount } = useOpenMaintenanceCount();
 
   const visibleNavItems = navItems.filter((item) => canAccessRoute(role, item.url));
 
@@ -124,6 +127,11 @@ export function AppSidebar() {
                       {item.url === "/bookings" && !!approvalCount && approvalCount > 0 && (
                         <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-4 min-w-4 justify-center">
                           {approvalCount}
+                        </Badge>
+                      )}
+                      {item.url === "/dashboard" && isMaintenance && !!maintenanceCount && maintenanceCount > 0 && (
+                        <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-4 min-w-4 justify-center">
+                          {maintenanceCount}
                         </Badge>
                       )}
                     </NavLink>

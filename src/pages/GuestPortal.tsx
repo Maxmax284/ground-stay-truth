@@ -33,8 +33,9 @@ import {
 import {
   CalendarDays, ArrowRight, Home, Info, MessageCircle, Send,
   ChevronLeft, ChevronRight, Eye, CalendarPlus, User, Circle,
-  MessageSquare, FileText, XCircle,
+  MessageSquare, FileText, XCircle, Wrench,
 } from "lucide-react";
+import { GuestStaySupport } from "@/components/GuestStaySupport";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { toast } from "sonner";
 
@@ -177,6 +178,12 @@ const GuestPortal = () => {
                 <Circle className="h-2 w-2 fill-primary text-primary" />
               )}
             </TabsTrigger>
+            {activeBookings.length > 0 && (
+              <TabsTrigger value="stay-support" className="flex items-center gap-1.5">
+                <Wrench className="h-3.5 w-3.5" />
+                {t("staySupport.tabLabel")}
+              </TabsTrigger>
+            )}
             <TabsTrigger value="calendar">{t("nav.calendar")}</TabsTrigger>
             <TabsTrigger value="policies">{t("guestPortal.policies")}</TabsTrigger>
             <TabsTrigger value="profile">{t("guestPortal.profile")}</TabsTrigger>
@@ -261,6 +268,19 @@ const GuestPortal = () => {
               {!units?.length && <p className="text-sm text-muted-foreground text-center py-8">{t("guestPortal.noListings")}</p>}
             </div>
           </TabsContent>
+
+          {/* ── Stay Support Tab ── */}
+          {activeBookings.length > 0 && (
+            <TabsContent value="stay-support">
+              <GuestStaySupport
+                bookings={activeBookings.map((b) => ({
+                  id: b.id,
+                  unit_id: b.unit_id,
+                  units: b.units ? { name: b.units.name } : null,
+                }))}
+              />
+            </TabsContent>
+          )}
 
           {/* ── Messages Tab ── */}
           <TabsContent value="messages">
