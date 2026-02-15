@@ -1,112 +1,266 @@
 
 
-# Role-Tailored Dashboards and Approval Workflow
+# Stay Support Module -- Maintenance Requests and Laundry Tracking
 
-## The Problem
+## Overview
 
-Right now, every staff role lands on the exact same dashboard. A booking sitting at "Pending Approval" requires you to: open the bookings page, find the booking, click it, scroll to the state transition section, pick "Pending Deposit" from a dropdown, type a reason, and confirm. There is no approval queue, no "Approve" button, and no role-specific experience.
-
-## What Changes
-
-### 1. Booking Approval Queue on the Dashboard (Admin + Manager)
-
-Add a new card to the main dashboard that shows bookings waiting for action. For Admin/Manager, this prominently displays any "pending_approval" bookings with one-click approve (transitions to "pending_deposit") and a reject button (transitions to "cancelled"). Each item shows the unit name, guest name, dates, and how long it has been waiting.
-
-This card also shows:
-- Soft holds that are about to expire
-- Deposit deadlines approaching
-- Bookings ready for check-in today
-
-### 2. Role-Aware Dashboard Sections
-
-Adjust the dashboard so different roles see relevant content:
-
-- **Admin**: Full stats + approval queue + pending users alert + all quick actions
-- **Manager**: Full stats + approval queue + quick actions (no user management)
-- **Front Desk / Supervisor**: Today's arrivals/departures prominently, active bookings, messages needing attention
-- **Maintenance**: Calendar-focused view showing upcoming maintenance blocks and units currently occupied (so they know when they can do work)
-- **Viewer**: Read-only stats and recent activity only (no quick action buttons)
-
-### 3. Quick Approve/Reject from Bookings List
-
-Add inline action buttons directly on the bookings table for "pending_approval" bookings. Admin and Manager see "Approve" and "Reject" buttons right in the row without needing to open the detail sheet. A small reason input pops up on click.
-
-### 4. Fix Maintenance Role Usefulness
-
-Currently maintenance staff can see the calendar but cannot create or manage maintenance blocks (requires Manager+). Add the ability for maintenance staff to *request* maintenance blocks that a Manager/Admin can then approve. Also show them which units are currently occupied vs available on their dashboard.
-
-### 5. Notification Badges on Sidebar
-
-Extend the existing pending-users badge pattern to show:
-- Number of bookings pending approval (on Bookings nav item) -- visible to Admin/Manager
-- Unread messages count (on Messages nav item) -- visible to anyone with message access
+This adds a "During Stay" lifecycle layer to Ground Stay. Two new features -- room issue reporting and laundry workflow tracking -- are available only when a booking is in the `checked_in` state. They integrate into the existing guest portal, booking detail sheet, staff dashboard, and audit system without touching the booking state machine.
 
 ---
 
-## Technical Details
+## 1. Database Schema
 
-### Files to Create
+### New Tables
+
+**`maintenance_requests`**
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | gen_random_uuid() |
+| booking_id | uuid NOT NULL | FK to bookings |
+| unit_id | uuid NOT NULL | FK to units |
+| category | text NOT NULL | One of: plumbing, electrical, appliance, cleanliness, other |
+| description | text NOT NULL | |
+| photo_url | text | Optional, storage path in a new `maintenance-photos` bucket |
+| status | text NOT NULL DEFAULT 'open' | One of: open, in_progress, resolved |
+| priority | text NOT NULL DEFAULT 'normal' | normal or urgent |
+| created_by | uuid | FK to auth.users -- the guest or staff who reported |
+| resolved_by | uuid | FK to auth.users -- staff who resolved |
+| resolution_note | text | Required when marking resolved |
+| created_at | timestamptz DEFAULT now() |
+| updated_at | timestamptz DEFAULT now() |
+
+**`laundry_requests`**
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | gen_random_uuid() |
+| booking_id | uuid NOT NULL | FK to bookings |
+| unit_id | uuid NOT NULL | FK to units |
+| bag_count | integer | Optional |
+| note | text | Optional guest note |
+| status | text NOT NULL DEFAULT 'received' | One of: received, in_progress, ready_for_pickup, collected |
+| created_by | uuid | FK to auth.users |
+| updated_by | uuid | FK to auth.users -- last staff who changed status |
+| created_at | timestamptz DEFAULT now() |
+| updated_at | timestamptz DEFAULT now() |
+
+**`stay_support_log`** (audit table for both features)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | gen_random_uuid() |
+| booking_id | uuid NOT NULL | FK to bookings |
+| request_type | text NOT NULL | 'maintenance' or 'laundry' |
+| request_id | uuid NOT NULL | ID of the maintenance_request or laundry_request |
+| action | text NOT NULL | e.g. 'created', 'status_changed', 'resolved', 'note_added' |
+| from_status | text | Previous status |
+| to_status | text | New status |
+| changed_by | uuid | FK to auth.users |
+| note | text | Optional context |
+| created_at | timestamptz DEFAULT now() |
+
+All three tables get an `updated_at` trigger using the existing `update_updated_at_column()` function.
+
+### New Storage Bucket
+
+- `maintenance-photos` -- public: false (staff + owner access only)
+
+---
+
+## 2. RLS Policies
+
+### maintenance_requests
+
+- **Guests can create** -- WHERE `created_by = auth.uid()` AND booking is theirs AND booking state = 'checked_in'
+- **Guests can read own** -- WHERE EXISTS (SELECT 1 FROM bookings WHERE bookings.id = maintenance_requests.booking_id AND bookings.guest_id = auth.uid())
+- **Staff can read all** -- `has_role(auth.uid(), 'front_desk')` (covers front_desk, supervisor, manager, admin, maintenance via hierarchy)
+- **Maintenance can update** -- `has_role(auth.uid(), 'maintenance')` (mark in_progress, resolved)
+- **Manager/Admin full control** -- `has_role(auth.uid(), 'manager')` or `has_role(auth.uid(), 'admin')`
+
+### laundry_requests
+
+- **Guests can create** -- same pattern as maintenance (own booking, checked_in state)
+- **Guests can read own** -- same pattern
+- **Staff can read all** -- `has_role(auth.uid(), 'front_desk')`
+- **Staff can update status** -- `has_role(auth.uid(), 'front_desk')` (front desk, supervisor, maintenance, manager, admin can all update)
+- **Manager/Admin full control** -- ALL policy
+
+### stay_support_log
+
+- **Staff can read** -- `has_role(auth.uid(), 'front_desk')`
+- **Guests can read own** -- via booking ownership join
+- **Insert** -- any authenticated user (system logs on actions)
+- **Admin full control** -- ALL policy
+
+### maintenance-photos bucket (storage.objects)
+
+- **Guests can upload** to their booking path -- `auth.uid()` matches booking guest_id
+- **Staff can read** -- `has_role(auth.uid(), 'front_desk')`
+
+---
+
+## 3. Permission Checks (permissions.ts)
+
+Add these to the existing permissions object:
+
+```
+canCreateMaintenanceRequest -- Guest (own booking) or Front Desk+
+canResolveMaintenanceRequest -- Maintenance role or Manager+
+canUpdateMaintenanceStatus -- Maintenance role or Manager+
+canViewMaintenanceRequests -- Front Desk+ (all) or Guest (own)
+canCreateLaundryRequest -- Guest (own booking) or Front Desk+
+canUpdateLaundryStatus -- Front Desk+ (all staff)
+canViewLaundryRequests -- Front Desk+ (all) or Guest (own)
+```
+
+---
+
+## 4. New Files
+
+### Hooks
 
 | File | Purpose |
 |------|---------|
-| `src/components/ApprovalQueue.tsx` | Dashboard card showing pending-approval bookings with approve/reject actions |
-| `src/components/DashboardRoleSection.tsx` | Wrapper that renders different dashboard content based on the user's role |
+| `src/hooks/useMaintenanceRequests.ts` | CRUD + status transitions for maintenance_requests, audit logging |
+| `src/hooks/useLaundryRequests.ts` | CRUD + status transitions for laundry_requests, audit logging |
+| `src/hooks/useStaySupportLog.ts` | Read audit log for a booking's stay support actions |
 
-### Files to Modify
+### Guest Portal Components
 
-| File | Changes |
+| File | Purpose |
 |------|---------|
-| `src/pages/Index.tsx` | Import and render `ApprovalQueue` for admin/manager roles; render role-specific sections |
-| `src/pages/Bookings.tsx` | Add inline approve/reject buttons on pending_approval rows for admin/manager |
-| `src/components/AppSidebar.tsx` | Add pending-approval count badge on Bookings nav item, unread messages badge on Messages |
-| `src/hooks/useBookings.ts` | Add a `usePendingApprovalCount` query and a `useQuickApprove` mutation |
-| `src/hooks/useDashboard.ts` | Add query for pending-approval bookings list |
-| `src/lib/permissions.ts` | Add `canApproveBooking` permission (Manager+) |
-| `src/i18n/locales/en.json` | Add translation keys for approval queue, quick actions, role-specific labels |
+| `src/components/GuestStaySupport.tsx` | "Stay Support" tab content for guest portal -- shows maintenance request form, laundry drop-off form, and lists of existing requests with status badges |
 
-### Database Changes
+### Staff Components
 
-None required. The booking state transitions and RLS policies already support this -- admin can already transition any booking. We are just adding UI shortcuts for what is already possible in the backend.
+| File | Purpose |
+|------|---------|
+| `src/components/MaintenanceQueue.tsx` | Staff panel showing all open/in-progress maintenance requests across units, with action buttons |
+| `src/components/LaundryPanel.tsx` | Staff panel showing all laundry requests with status progression buttons |
+| `src/components/StaySupportBadge.tsx` | Small icon badge component for booking headers indicating active maintenance/laundry |
 
-### Approval Flow Logic
+---
 
-The "Approve" action:
-1. Updates booking state from `pending_approval` to `pending_deposit`
-2. Logs the transition in `booking_state_log` with reason "Booking approved"
-3. Invalidates relevant queries to refresh the UI
+## 5. Modified Files
 
-The "Reject" action:
-1. Prompts for a reason (required)
-2. Updates booking state from `pending_approval` to `cancelled`
-3. Logs the transition with the provided reason
+### `src/pages/GuestPortal.tsx`
 
-### Sidebar Badge Queries
+- Add a "Stay Support" tab to the TabsList -- only visible when the guest has at least one `checked_in` booking
+- Tab content renders `GuestStaySupport` component, scoped to checked-in bookings only
+- Uses the existing tab pattern (Bookings, Listings, Messages, Calendar, Policies, Profile -- now adds Stay Support between Messages and Calendar)
 
-- **Pending approvals**: `SELECT count(*) FROM bookings WHERE state = 'pending_approval'` (admin/manager only, polls every 60 seconds)
-- **Unread messages**: Not tracking read status currently -- this would need a `last_read_at` column on a new `message_reads` table, so we will skip this for now and revisit later
+### `src/components/BookingDetailSheet.tsx`
 
-### Role-Specific Dashboard Layout
+- Add a "Support" tab to the existing Tabs (History, Payments, Notes, Documents -- now adds Support)
+- Tab only appears when booking state is `checked_in`
+- Shows maintenance requests and laundry requests for this booking
+- Staff can take actions directly from this tab (mark in progress, resolve, update laundry status)
+- The "Next Step" banner updates to reflect:
+  - "X open maintenance request(s)" if any exist
+  - "Laundry ready for pickup" if applicable
 
-The `Index.tsx` page will use conditional rendering based on `role`:
+### `src/pages/Index.tsx` (Dashboard)
 
-```text
-Admin/Manager:
-  [Stats Row]
-  [Approval Queue]    [Recent Activity]
-  [Arrivals Today]    [Departures Today]
-  [Quick Actions]
+- For Maintenance role: Add a "Maintenance Requests" card showing open/in-progress requests with action buttons
+- For Manager/Admin: Add a summary card showing count of open maintenance requests and pending laundry
+- For Front Desk/Supervisor: Add a small indicator showing active stay support items
 
-Front Desk/Supervisor:
-  [Stats Row]
-  [Arrivals Today]    [Departures Today]
-  [Recent Activity]   [Quick Actions]
+### `src/components/AppSidebar.tsx`
 
-Maintenance:
-  [Occupied Units]    [Upcoming Maintenance]
-  [Calendar Link]
+- No new nav items needed -- stay support lives inside existing pages (dashboard, booking detail)
+- Add a badge count on Dashboard nav item for maintenance role showing open request count
 
-Viewer:
-  [Stats Row]
-  [Recent Activity]
-```
+### `src/lib/permissions.ts`
+
+- Add the 7 new permission checks listed in section 3
+
+### `src/i18n/locales/en.json`
+
+- Add `staySupport` namespace with keys for:
+  - Tab labels, form labels, category names
+  - Status labels (open, in_progress, resolved, received, ready_for_pickup, collected)
+  - Action buttons (report issue, drop off laundry, mark in progress, mark resolved, mark ready, mark collected)
+  - Validation messages
+  - Next step messages
+
+---
+
+## 6. Audit Integration
+
+Every action writes to `stay_support_log`:
+
+- Guest creates maintenance request -> `action: 'created', request_type: 'maintenance'`
+- Staff marks in_progress -> `action: 'status_changed', from_status: 'open', to_status: 'in_progress'`
+- Staff resolves with note -> `action: 'resolved', to_status: 'resolved', note: resolution_note`
+- Guest creates laundry request -> `action: 'created', request_type: 'laundry'`
+- Staff updates laundry status -> `action: 'status_changed'` with from/to
+
+The BookingDetailSheet's History tab will also query and display stay_support_log entries alongside booking_state_log, so all activity appears in one timeline.
+
+---
+
+## 7. UI/UX Details
+
+### Guest Stay Support Tab
+
+- Two sections: "Room Issues" and "Laundry"
+- "Report Room Issue" button opens an inline form (not a dialog) with:
+  - Category dropdown (Plumbing, Electrical, Appliance, Cleanliness, Other)
+  - Description textarea (required, max 500 chars)
+  - Optional photo upload button
+  - Submit button
+- "Laundry Drop-Off" button opens inline form:
+  - Bag count (optional number input)
+  - Note (optional textarea)
+  - Confirm button
+- Below each form: list of existing requests with status badges
+- Status badges use existing design language:
+  - Open: warning style (amber)
+  - In Progress: info style (blue)
+  - Resolved: success style (green)
+  - Received: muted
+  - Ready for Pickup: info with highlight
+  - Collected: success
+
+### Staff Maintenance Queue
+
+- Table/card layout showing: Unit name, Guest name, Category badge, Description preview (truncated), Status badge, Time since created, Priority
+- Action buttons inline: "Start" (open -> in_progress), "Resolve" (requires note textarea)
+- Resolved items can be filtered out (default: show open + in_progress)
+
+### Staff Laundry Panel
+
+- Simpler table: Guest, Unit, Drop-off time, Bag count, Status
+- Linear status progression buttons: Received -> In Progress -> Ready -> Collected
+- Each click advances to next status
+
+### Booking Detail Sheet Support Tab
+
+- Shows maintenance requests and laundry requests for this specific booking
+- Staff can take actions from here too
+- Compact card layout matching existing tab styles
+
+---
+
+## 8. Edge Cases
+
+- **Guest checks out with open maintenance request**: Request stays open, staff can still resolve it. No auto-close.
+- **Multiple checked-in bookings**: Guest sees requests scoped per booking. The Stay Support tab shows a booking selector if multiple are checked in.
+- **Photo upload fails**: Maintenance request still creates without photo. Toast error for the photo failure.
+- **Concurrent status updates**: Last write wins (standard optimistic update with refetch). The audit log captures all attempts.
+- **Guest tries to create request on non-checked-in booking**: RLS blocks it. UI doesn't show the form.
+- **No deletion**: Neither guests nor staff can delete requests. Only status changes are allowed.
+
+---
+
+## 9. Migration Strategy
+
+1. Run migration adding all three tables + triggers + RLS policies + storage bucket (single migration file)
+2. Add permission checks to `permissions.ts`
+3. Create hooks (useMaintenanceRequests, useLaundryRequests, useStaySupportLog)
+4. Create UI components (GuestStaySupport, MaintenanceQueue, LaundryPanel, StaySupportBadge)
+5. Integrate into GuestPortal, BookingDetailSheet, Index dashboard
+6. Add translation keys
+7. All changes are additive -- no existing tables, state machine logic, or RLS policies are modified
 
