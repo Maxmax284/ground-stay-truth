@@ -208,6 +208,7 @@
     "unitRemoved": "Unit removed",
     "unitActivated": "Unit activated",
     "unitDeactivated": "Unit deactivated",
+    "cannotRemove": "This unit has booking history and cannot be removed. Deactivate it instead to hide it from guests.",
     "removeConfirm": "Remove \"{{name}}\"? This cannot be undone.",
     "saveChanges": "Save Changes",
     "hero": "Hero",

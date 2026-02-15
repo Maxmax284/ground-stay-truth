@@ -208,6 +208,7 @@
     "unitRemoved": "객실 삭제됨",
     "unitActivated": "객실 활성화됨",
     "unitDeactivated": "객실 비활성화됨",
+    "cannotRemove": "이 객실에는 예약 이력이 있어 삭제할 수 없습니다. 대신 비활성화하여 게스트에게 숨기세요.",
     "removeConfirm": "\"{{name}}\"을(를) 삭제하시겠습니까? 되돌릴 수 없습니다.",
     "saveChanges": "변경사항 저장",
     "hero": "대표",

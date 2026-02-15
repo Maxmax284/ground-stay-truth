@@ -44,10 +44,23 @@ export function useUpdateUnit() {
   });
 }
 
+export async function checkUnitHasLinkedRecords(id: string): Promise<boolean> {
+  const [bookings, maintenance, laundry] = await Promise.all([
+    supabase.from("bookings").select("id", { count: "exact", head: true }).eq("unit_id", id),
+    supabase.from("maintenance_requests").select("id", { count: "exact", head: true }).eq("unit_id", id),
+    supabase.from("laundry_requests").select("id", { count: "exact", head: true }).eq("unit_id", id),
+  ]);
+  return (bookings.count ?? 0) > 0 || (maintenance.count ?? 0) > 0 || (laundry.count ?? 0) > 0;
+}
+
 export function useDeleteUnit() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      const hasLinked = await checkUnitHasLinkedRecords(id);
+      if (hasLinked) {
+        throw new Error("UNIT_HAS_HISTORY");
+      }
       const { error } = await supabase.from("units").delete().eq("id", id);
       if (error) throw error;
     },

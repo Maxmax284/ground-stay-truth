@@ -208,6 +208,7 @@
     "unitRemoved": "Logement supprimé",
     "unitActivated": "Logement activé",
     "unitDeactivated": "Logement désactivé",
+    "cannotRemove": "Ce logement a un historique de réservations et ne peut pas être supprimé. Désactivez-le pour le masquer aux invités.",
     "removeConfirm": "Supprimer \"{{name}}\" ? Cette action est irréversible.",
     "saveChanges": "Enregistrer les modifications",
     "hero": "Image principale",
