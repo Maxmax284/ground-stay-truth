@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { createNotification } from "@/hooks/useNotifications";
 
 export interface LaundryRequest {
   id: string;
@@ -143,6 +144,23 @@ export function useAdvanceLaundryStatus() {
         from_status: params.current_status,
         to_status: nextStatus,
       });
+
+      // Notify guest when laundry is ready for pickup
+      if (nextStatus === "ready_for_pickup") {
+        const { data: booking } = await supabase
+          .from("bookings")
+          .select("guest_id")
+          .eq("id", params.booking_id)
+          .single();
+        if (booking?.guest_id) {
+          await createNotification({
+            user_id: booking.guest_id,
+            type: "laundry",
+            reference_id: params.id,
+            message: "Your laundry is ready for pickup!",
+          });
+        }
+      }
 
       return data;
     },
