@@ -39,5 +39,6 @@
   "notifications": { "title": "通知", "empty": "暂无通知。", "markAllRead": "全部标为已读" },
   "ai": { "title": "Kru", "assistOnly": "咨询", "openAssistant": "问 Kru", "clearChat": "清除聊天", "welcomeMessage": "你好 — 我是 Kru，您的顾问。可以问我关于物业、预订或运营的问题。", "disclaimer": "我只提供建议 — 不执行操作。", "inputPlaceholder": "问 Kru 任何问题…", "language": "回复语言", "modes": { "explain": "解释", "summarize": "摘要", "validate": "验证", "draft": "草拟", "digest": "概要" }, "draftWithAI": "AI 草拟", "drafting": "草拟中…", "preFlightTitle": "预检查", "preFlightLoading": "检查中…" },
   "translation": { "translate": "翻译", "viewOriginal": "查看原文", "translating": "翻译中…" },
-  "legal": { "privacyPolicy": "隐私政策", "termsOfService": "服务条款", "bySigningUp": "注册即表示您同意我们的", "and": "和", "reviewOur": "查看我们的", "forDataDetails": "了解您的数据如何被处理。" }
+  "legal": { "privacyPolicy": "隐私政策", "termsOfService": "服务条款", "bySigningUp": "注册即表示您同意我们的", "and": "和", "reviewOur": "查看我们的", "forDataDetails": "了解您的数据如何被处理。" },
+  "deposit": { "collectPrompt": "已收取押金了吗？", "requiredAmount": "所需押金：${{amount}}（总额的{{percentage}}%）", "recordAndConfirm": "记录押金并确认", "guestTitle": "需要押金", "guestInstructions": "需要支付押金以确认您的预订。您可以在前台亲自支付（接受现金或刷卡），或联系工作人员获取银行转账信息。", "guestAmount": "押金金额：${{amount}}" }
 }

@@ -237,6 +237,39 @@ export function useCreatePayment() {
         .select()
         .single();
       if (error) throw error;
+
+      // If the booking is in pending_deposit, notify guest about deposit receipt
+      const { data: booking } = await supabase
+        .from("bookings")
+        .select("state, guest_id")
+        .eq("id", payment.booking_id)
+        .single();
+
+      if (booking?.state === "pending_deposit" && booking.guest_id && booking.guest_id !== user?.id) {
+        await createNotification({
+          user_id: booking.guest_id,
+          type: "booking",
+          reference_id: payment.booking_id,
+          message: `Your deposit of $${payment.amount.toFixed(2)} (${payment.method}) has been received. Your booking will be confirmed shortly.`,
+        });
+      }
+
+      // Notify admins/managers about deposit recorded
+      const { data: admins } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .in("role", ["admin", "manager"]);
+      for (const admin of admins ?? []) {
+        if (admin.user_id !== user?.id) {
+          await createNotification({
+            user_id: admin.user_id,
+            type: "booking",
+            reference_id: payment.booking_id,
+            message: `Deposit of $${payment.amount.toFixed(2)} recorded via ${payment.method}`,
+          });
+        }
+      }
+
       return data;
     },
     onSuccess: (_, vars) => {

@@ -91,7 +91,15 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
       case "inquiry": return t("bookingDetail.nextSteps.inquiry");
       case "soft_hold": return softHoldInfo?.isExpired ? t("bookingDetail.nextSteps.softHoldExpired") : t("bookingDetail.nextSteps.softHold");
       case "pending_approval": return t("bookingDetail.nextSteps.pendingApproval");
-      case "pending_deposit": return depositDeadlineInfo?.isExpired ? t("bookingDetail.nextSteps.depositExpired") : hasPaid ? t("bookingDetail.nextSteps.depositPaid") : t("bookingDetail.nextSteps.depositNeeded");
+      case "pending_deposit": {
+        const depositPct = policies?.find((p) => p.key === "deposit_percentage");
+        const pct = depositPct ? Number(depositPct.value) : 100;
+        const depositAmt = booking.total_price ? (Number(booking.total_price) * pct / 100) : null;
+        const amountStr = depositAmt != null ? ` ($${depositAmt.toFixed(2)})` : "";
+        if (depositDeadlineInfo?.isExpired) return t("bookingDetail.nextSteps.depositExpired");
+        if (hasPaid) return t("bookingDetail.nextSteps.depositPaid");
+        return `${t("bookingDetail.nextSteps.depositNeeded")}${amountStr}`;
+      }
       case "confirmed": return !hasDocuments ? t("bookingDetail.nextSteps.docsNeeded") : t("bookingDetail.nextSteps.readyCheckin");
       case "checked_in": {
         const base = t("bookingDetail.nextSteps.checkout");
@@ -208,7 +216,7 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord }: { paymen
   const { toast } = useToast();
   const createPayment = useCreatePayment();
   const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState("offline");
+  const [method, setMethod] = useState("cash");
   const [notes, setNotes] = useState("");
 
   const handleRecord = async () => {
@@ -246,10 +254,10 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord }: { paymen
             <div className="space-y-1"><Label className="text-xs">{t("payments.method")}</Label>
               <Select value={method} onValueChange={setMethod}><SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="offline">{t("payments.methods.offline")}</SelectItem>
-                  <SelectItem value="bank_transfer">{t("payments.methods.bank_transfer")}</SelectItem>
                   <SelectItem value="cash">{t("payments.methods.cash")}</SelectItem>
                   <SelectItem value="card">{t("payments.methods.card")}</SelectItem>
+                  <SelectItem value="bank_transfer">{t("payments.methods.bank_transfer")}</SelectItem>
+                  <SelectItem value="in_person">{t("payments.methods.in_person")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

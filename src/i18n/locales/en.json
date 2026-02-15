@@ -277,7 +277,8 @@
     "ai_front_desk_enabled": "Kru for Front Desk",
     "ai_supervisor_enabled": "Kru for Supervisors",
     "ai_manager_enabled": "Kru for Managers",
-    "ai_admin_enabled": "Kru for Admins"
+    "ai_admin_enabled": "Kru for Admins",
+    "deposit_percentage": "Deposit Percentage (%)"
   },
   "reports": {
     "title": "Reports",
@@ -418,6 +419,7 @@
     "enterValidAmount": "Enter a valid amount",
     "methods": {
       "offline": "Offline",
+      "in_person": "In Person",
       "bank_transfer": "Bank Transfer",
       "cash": "Cash",
       "card": "Card"
@@ -765,5 +767,13 @@
     "and": "and",
     "reviewOur": "Review our",
     "forDataDetails": "to learn how your data is handled."
+  },
+  "deposit": {
+    "collectPrompt": "Has the deposit been collected?",
+    "requiredAmount": "Required deposit: ${{amount}} ({{percentage}}% of total)",
+    "recordAndConfirm": "Record Deposit & Confirm",
+    "guestTitle": "Deposit Required",
+    "guestInstructions": "A deposit is required to confirm your booking. You can pay in person at the front desk (cash or card accepted), or contact staff for bank transfer details.",
+    "guestAmount": "Deposit amount: ${{amount}}"
   }
 }
