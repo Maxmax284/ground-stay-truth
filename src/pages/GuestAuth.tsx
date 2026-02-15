@@ -13,7 +13,7 @@ const GuestAuth = () => {
   const { t } = useTranslation();
   const { user, role, loading, signIn, signUp } = useAuth();
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState(false); // default to sign-up
+  const [isLogin, setIsLogin] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -22,8 +22,8 @@ const GuestAuth = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-muted-foreground">{t("common.loading")}</p>
+      <div className="flex min-h-screen items-center justify-center auth-hero-bg-guest">
+        <div className="roundhouse-spinner" />
       </div>
     );
   }
@@ -53,20 +53,26 @@ const GuestAuth = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="absolute top-4 right-4">
+    <div className="flex min-h-screen items-center justify-center auth-hero-bg-guest px-4 relative overflow-hidden corner-accent">
+      <div className="absolute top-4 right-4 z-10">
         <LanguageSelector />
       </div>
-      <div className="w-full max-w-md space-y-6">
+      <div className="w-full max-w-md space-y-6 relative z-10">
         <div className="text-center">
-          <h1 className="font-serif text-3xl font-bold text-foreground">{t("auth.groundStay")}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t("guestAuth.subtitle")}</p>
-          <p className="mt-2 text-muted-foreground">
+          <h1
+            className="font-serif text-3xl font-bold text-primary-foreground animate-title-in"
+          >
+            {t("auth.groundStay")}
+          </h1>
+          <p className="mt-1 text-sm text-primary-foreground/60 font-stat tracking-wider uppercase animate-fade-up animate-stagger-2">
+            Fighter's Quarters
+          </p>
+          <p className="mt-3 text-primary-foreground/70 animate-fade-up animate-stagger-3">
             {isLogin ? t("auth.welcomeBack") : t("guestAuth.createAccount")}
           </p>
         </div>
 
-        <Card>
+        <Card className="animate-slide-up animate-stagger-3 border-border/50 shadow-2xl">
           <CardHeader>
             <CardTitle className="text-xl">
               {isLogin ? t("auth.signIn") : t("auth.signUp")}

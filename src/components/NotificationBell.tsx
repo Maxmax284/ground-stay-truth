@@ -29,7 +29,7 @@ export function NotificationBell() {
         <Button variant="ghost" size="icon" className="relative h-9 w-9">
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+            <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground animate-bounce-badge">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
@@ -53,15 +53,16 @@ export function NotificationBell() {
         </div>
         <ScrollArea className="max-h-80">
           {(!notifications || notifications.length === 0) ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">
+            <div className="py-8 text-center text-sm text-muted-foreground animate-fade-up">
               {t("notifications.empty")}
             </div>
           ) : (
             <div className="divide-y">
-              {notifications.map((n) => (
+              {notifications.map((n, i) => (
                 <button
                   key={n.id}
-                  className={`w-full text-left px-4 py-3 hover:bg-accent/40 transition-colors flex items-start gap-3 ${!n.read ? "bg-primary/5" : ""}`}
+                  className={`w-full text-left px-4 py-3 hover:bg-accent/40 transition-colors flex items-start gap-3 animate-slide-in-right ${!n.read ? "bg-primary/5" : ""}`}
+                  style={{ animationDelay: `${i * 40}ms` }}
                   onClick={() => {
                     if (!n.read) markRead.mutate(n.id);
                   }}
