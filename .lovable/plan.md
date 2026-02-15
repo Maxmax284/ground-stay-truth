@@ -1,81 +1,77 @@
 
 
-# Complete Remaining Gaps: Staff Dashboard Panels, Sidebar Badges, i18n Hardcoded Strings, and Translation Files
+# Add Privacy Policy and Terms of Service for Compliance
 
-Everything from the RLS fixes, notification expansion, and message read tracking is done. What's left are items from the previous dark mode/i18n/role-visibility plan that didn't get finished due to interruptions.
-
----
-
-## 1. Show MaintenanceQueue and LaundryPanel for All Staff on Dashboard
-
-Right now, only the `maintenance` role sees these panels on the dashboard. Front Desk, Supervisors, Managers, and Admins should also see them since they receive notifications about these requests and need visibility.
-
-### File: `src/pages/Index.tsx`
-
-After the Quick Actions card (around line 119), add a section that renders `<MaintenanceQueue />` and `<LaundryPanel />` for any non-viewer, non-maintenance staff role. (Maintenance already has its own dedicated dashboard with these panels.)
+The platform currently has no privacy policy, terms of service, or data handling disclosure anywhere. For compliance (GDPR, Thai PDPA, general hospitality best practices), these need to be visible and easily accessible from multiple places.
 
 ---
 
-## 2. Expand Sidebar Maintenance Badge to All Staff
+## What Gets Built
 
-Currently the maintenance count badge on the Dashboard nav item only shows when `role === "maintenance"`. It should show for front_desk, supervisor, manager, and admin too.
-
-### File: `src/components/AppSidebar.tsx`
-
-Change the condition on line 138 from `isMaintenance` to a broader check that includes all staff roles that can view maintenance requests.
+A single public page at `/legal` with two sections: **Privacy Policy** and **Terms of Service**, written specifically for a hospitality/property management platform. The page will be accessible without logging in.
 
 ---
 
-## 3. Replace Hardcoded Strings with i18n Keys
+## Where Links Will Appear
 
-Four places still have hardcoded English text instead of translation calls:
+Links to the legal page will be placed in **4 locations** so it's always easy to find:
 
-| File | Text | Replacement |
-|------|------|-------------|
-| `src/components/AppSidebar.tsx` line 105 | `"Ground Stay"` | `t("auth.groundStay")` |
-| `src/components/DashboardLayout.tsx` line 39 | `"Menu"` | `t("common.menu")` |
-| `src/components/DashboardLayout.tsx` line 41 | `"Ground Stay"` | `t("auth.groundStay")` |
-| `src/components/GuestLayout.tsx` line 27 | `"Ground Stay"` | `t("auth.groundStay")` |
-
-New keys to add to `en.json`:
-- `"common.menu": "Menu"` (if not already there)
-- `"auth.groundStay": "Ground Stay"` (if not already there)
+1. **Guest registration page** (`GuestAuth.tsx`) -- "By signing up, you agree to our Terms of Service and Privacy Policy" text below the sign-up button
+2. **Staff login page** (`Auth.tsx`) -- Same treatment
+3. **Guest portal footer** (`GuestLayout.tsx`) -- Small footer with Privacy Policy and Terms links
+4. **Profile / Account page** (`ProfileEditor.tsx`) -- Link near the Danger Zone / account deletion section, so users reviewing their account can easily find the data policy
 
 ---
 
-## 4. Create All Missing Translation Files
+## Privacy Policy Content Highlights
 
-The locale directory currently only contains `en.json`. All 7 other language files need to be created (skipping Korean per your request):
+The privacy policy will cover:
+- What personal data is collected (name, email, phone, ID documents, booking history)
+- How data is used (booking management, communication, identity verification)
+- Data retention periods
+- Guest rights (access, correction, deletion -- linking to the existing account deletion feature)
+- Third-party data sharing (AI services for translation/verification)
+- Cookie/local storage usage
+- Contact information for data requests
 
-| File | Language |
-|------|----------|
-| `src/i18n/locales/th.json` | Thai |
-| `src/i18n/locales/fr.json` | French |
-| `src/i18n/locales/de.json` | German |
-| `src/i18n/locales/ru.json` | Russian |
-| `src/i18n/locales/zh.json` | Chinese (Simplified) |
-| `src/i18n/locales/ja.json` | Japanese |
-| `src/i18n/locales/es.json` | Spanish |
+## Terms of Service Content Highlights
 
-Each file will mirror the full `en.json` structure with properly translated values. The language selector and lazy-loading system are already in place -- these files just need to exist.
+- Booking and cancellation policies (referencing the configurable policy settings)
+- Guest responsibilities during stay
+- Liability limitations
+- Account termination rights
+- Dispute resolution
+
+---
+
+## Technical Details
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `src/pages/Legal.tsx` | Public page with Privacy Policy and Terms of Service sections, using tabs or anchor links. Styled consistently with the rest of the app. Wrapped in a minimal layout (not requiring auth). |
+
+### Modified Files
+| File | Change |
+|------|--------|
+| `src/App.tsx` | Add public route: `/legal` |
+| `src/pages/GuestAuth.tsx` | Add "By signing up you agree to..." text with links below sign-up form |
+| `src/pages/Auth.tsx` | Same treatment for staff auth |
+| `src/components/GuestLayout.tsx` | Add small footer with Privacy and Terms links |
+| `src/components/ProfileEditor.tsx` | Add a link to Privacy Policy near the Danger Zone section |
+| `src/i18n/locales/en.json` | Add translation keys for legal page content and link text |
+| All other locale files (th, fr, de, ru, zh, ja, es) | Add translated legal link text (the full legal content will remain in English as the canonical version, with a note that translations are for convenience) |
+
+### Route Configuration
+- `/legal` -- public, no auth required
+- `/legal#privacy` -- jumps to Privacy Policy section
+- `/legal#terms` -- jumps to Terms of Service section
+
+### No database changes needed
 
 ---
 
 ## Summary
 
-| File | Change |
-|------|--------|
-| `src/pages/Index.tsx` | Add MaintenanceQueue + LaundryPanel for all staff roles |
-| `src/components/AppSidebar.tsx` | Expand badge to all staff + replace "Ground Stay" with `t()` |
-| `src/components/DashboardLayout.tsx` | Replace "Menu" and "Ground Stay" with `t()` |
-| `src/components/GuestLayout.tsx` | Replace "Ground Stay" with `t()` |
-| `src/i18n/locales/en.json` | Add `common.menu` and `auth.groundStay` keys if missing |
-| `src/i18n/locales/th.json` | NEW -- full Thai translation |
-| `src/i18n/locales/fr.json` | NEW -- full French translation |
-| `src/i18n/locales/de.json` | NEW -- full German translation |
-| `src/i18n/locales/ru.json` | NEW -- full Russian translation |
-| `src/i18n/locales/zh.json` | NEW -- full Chinese translation |
-| `src/i18n/locales/ja.json` | NEW -- full Japanese translation |
-| `src/i18n/locales/es.json` | NEW -- full Spanish translation |
+This adds the compliance foundation the platform is missing. The legal page is public, linkable, and accessible from every key touchpoint: sign-up, login, guest portal, and account settings. The existing account deletion feature will be referenced in the privacy policy as the mechanism for exercising data deletion rights.
 
-No database changes needed. No new dependencies needed.
