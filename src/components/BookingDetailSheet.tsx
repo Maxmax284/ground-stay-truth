@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { toast as sonnerToast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -20,12 +20,16 @@ import { useBooking, useBookingStateLog, useBookingPayments, useBookingMessages,
 import { BookingStateTransition } from "@/components/BookingStateTransition";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
-import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText, Info, Wrench, Shirt } from "lucide-react";
+import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText, Info, Wrench, Shirt, Globe, Sparkles } from "lucide-react";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { useGuestDocuments } from "@/hooks/useGuestDocuments";
 import { useMaintenanceRequests, useUpdateMaintenanceStatus } from "@/hooks/useMaintenanceRequests";
 import { useLaundryRequests, useAdvanceLaundryStatus, getNextLaundryStatus } from "@/hooks/useLaundryRequests";
 import { StaySupportBadge } from "@/components/StaySupportBadge";
+import { useMessageTranslation } from "@/hooks/useMessageTranslation";
+import { useProfile } from "@/hooks/useProfile";
+import { useAIAssistant } from "@/hooks/useAIAssistant";
+import { useAISettings } from "@/hooks/useAISettings";
 
 interface BookingDetailSheetProps { bookingId: string | null; open: boolean; onOpenChange: (open: boolean) => void; isAdmin: boolean; }
 
@@ -253,6 +257,31 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord }: { paymen
   );
 }
 
+function MessageBubble({ msg, translate, clearTranslation, translations, isTranslating, preferredLang }: { msg: any; translate: any; clearTranslation: any; translations: Record<string, any>; isTranslating: boolean; preferredLang: string }) {
+  const { t } = useTranslation();
+  const translation = translations[msg.id];
+  return (
+    <div className="text-sm space-y-1">
+      <div className="flex items-center gap-2">
+        <Badge variant={msg.is_internal ? "secondary" : "outline"} className="text-xs">{msg.is_internal ? t("messages.internal") : t("messages.guestVisible")}</Badge>
+        <span className="text-xs text-muted-foreground">{format(new Date(msg.created_at), "MMM d, h:mm a")}</span>
+        {!translation && (
+          <Button variant="ghost" size="sm" className="h-5 px-1.5 text-xs gap-1 text-muted-foreground" onClick={() => translate(msg.id, msg.content, preferredLang)} disabled={isTranslating}>
+            <Globe className="h-3 w-3" />{t("translation.translate")}
+          </Button>
+        )}
+        {translation && (
+          <Button variant="ghost" size="sm" className="h-5 px-1.5 text-xs gap-1 text-muted-foreground" onClick={() => clearTranslation(msg.id)}>
+            {t("translation.viewOriginal")}
+          </Button>
+        )}
+      </div>
+      <p className="text-foreground">{translation ? translation.translated_text : msg.content}</p>
+      {translation && <p className="text-xs text-muted-foreground italic">{msg.content}</p>}
+    </div>
+  );
+}
+
 function MessagesTab({ messages, bookingId }: { messages: any[]; bookingId: string }) {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -260,16 +289,34 @@ function MessagesTab({ messages, bookingId }: { messages: any[]; bookingId: stri
   const createMessage = useCreateMessage();
   const [content, setContent] = useState("");
   const [isInternal, setIsInternal] = useState(true);
+  const { translations, translate, clearTranslation, isTranslating } = useMessageTranslation();
+  const { profile: { data: profileData } } = useProfile();
+  const preferredLang = profileData?.preferred_language ?? "en";
+  const { isAIEnabled } = useAISettings(role);
+  const aiAssistant = useAIAssistant();
+
+  const handleDraftWithAI = async () => {
+    const lastMessages = messages.slice(-5).map((m: any) => `[${m.is_internal ? "internal" : "guest"}] ${m.content}`).join("\n");
+    const ctx = { bookingId, recentMessages: lastMessages };
+    await aiAssistant.sendMessage("Draft a professional reply to the guest based on the recent conversation.", "draft", ctx);
+    const lastAI = aiAssistant.messages[aiAssistant.messages.length - 1];
+    if (lastAI?.role === "assistant") setContent(lastAI.content);
+  };
+
+  // Sync AI draft into textarea when streaming completes
+  const lastAIMsg = aiAssistant.messages[aiAssistant.messages.length - 1];
+  const prevStreamingRef = useRef(false);
+  if (prevStreamingRef.current && !aiAssistant.isStreaming && lastAIMsg?.role === "assistant" && content === "") {
+    setContent(lastAIMsg.content);
+  }
+  prevStreamingRef.current = aiAssistant.isStreaming;
 
   if (!permissions.canSendMessages(role)) {
     return (
       <div className="py-3">
         {messages.length > 0 ? (
           <ScrollArea className="max-h-[250px]"><div className="space-y-3">{messages.map((m) => (
-            <div key={m.id} className="text-sm space-y-1">
-              <div className="flex items-center gap-2"><Badge variant={m.is_internal ? "secondary" : "outline"} className="text-xs">{m.is_internal ? t("messages.internal") : t("messages.guestVisible")}</Badge><span className="text-xs text-muted-foreground">{format(new Date(m.created_at), "MMM d, h:mm a")}</span></div>
-              <p className="text-foreground">{m.content}</p>
-            </div>
+            <MessageBubble key={m.id} msg={m} translate={translate} clearTranslation={clearTranslation} translations={translations} isTranslating={isTranslating} preferredLang={preferredLang} />
           ))}</div></ScrollArea>
         ) : <p className="text-sm text-muted-foreground">{t("messages.noMessages")}</p>}
       </div>
@@ -286,17 +333,21 @@ function MessagesTab({ messages, bookingId }: { messages: any[]; bookingId: stri
     <div className="space-y-4 py-3">
       {messages.length > 0 ? (
         <ScrollArea className="max-h-[250px]"><div className="space-y-3">{messages.map((m) => (
-          <div key={m.id} className="text-sm space-y-1">
-            <div className="flex items-center gap-2"><Badge variant={m.is_internal ? "secondary" : "outline"} className="text-xs">{m.is_internal ? t("messages.internal") : t("messages.guestVisible")}</Badge><span className="text-xs text-muted-foreground">{format(new Date(m.created_at), "MMM d, h:mm a")}</span></div>
-            <p className="text-foreground">{m.content}</p>
-          </div>
+          <MessageBubble key={m.id} msg={m} translate={translate} clearTranslation={clearTranslation} translations={translations} isTranslating={isTranslating} preferredLang={preferredLang} />
         ))}</div></ScrollArea>
       ) : <p className="text-sm text-muted-foreground">{t("messages.noMessages")}</p>}
       <Separator />
       <Textarea placeholder={t("messages.writeNote")} value={content} onChange={(e) => setContent(e.target.value)} rows={2} />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2"><Switch id="is_internal" checked={isInternal} onCheckedChange={setIsInternal} /><Label htmlFor="is_internal" className="text-xs text-muted-foreground">{isInternal ? t("messages.internalNote") : t("messages.guestVisible")}</Label></div>
-        <Button size="sm" onClick={handleSend} disabled={!content.trim() || createMessage.isPending}>{t("messages.send")}</Button>
+        <div className="flex items-center gap-2">
+          {isAIEnabled && (
+            <Button variant="outline" size="sm" onClick={handleDraftWithAI} disabled={aiAssistant.isStreaming}>
+              <Sparkles className="h-3.5 w-3.5 mr-1" />{aiAssistant.isStreaming ? t("ai.drafting") : t("ai.draftWithAI")}
+            </Button>
+          )}
+          <Button size="sm" onClick={handleSend} disabled={!content.trim() || createMessage.isPending}>{t("messages.send")}</Button>
+        </div>
       </div>
     </div>
   );

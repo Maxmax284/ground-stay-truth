@@ -316,7 +316,8 @@
     "deleteAccountConfirmTitle": "Delete your account?",
     "deleteAccountConfirmDesc": "This will permanently delete your account, profile, bookings, messages, and all associated data. This action cannot be reversed.",
     "deleteAccountConfirm": "Yes, delete my account",
-    "accountDeleted": "Your account has been deleted."
+    "accountDeleted": "Your account has been deleted.",
+    "preferredLanguage": "Preferred Language"
   },
   "userRoles": {
     "title": "User Roles",
@@ -728,8 +729,5 @@
     "translate": "Translate",
     "viewOriginal": "View Original",
     "translating": "Translating…"
-  },
-  "profile": {
-    "preferredLanguage": "Preferred Language"
   }
 }
