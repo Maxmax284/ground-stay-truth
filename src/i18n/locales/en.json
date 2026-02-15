@@ -271,12 +271,12 @@
     "checkout_time": "Check-out Time",
     "cleaning_buffer_hours": "Cleaning Buffer (hours)",
     "earliest_checkin_time": "Earliest Check-in Time",
-    "ai_assistant_enabled": "AI Assistant (Global)",
-    "ai_guest_enabled": "AI for Guests",
-    "ai_front_desk_enabled": "AI for Front Desk",
-    "ai_supervisor_enabled": "AI for Supervisors",
-    "ai_manager_enabled": "AI for Managers",
-    "ai_admin_enabled": "AI for Admins"
+    "ai_assistant_enabled": "Kru (Global Kill Switch)",
+    "ai_guest_enabled": "Kru for Guests",
+    "ai_front_desk_enabled": "Kru for Front Desk",
+    "ai_supervisor_enabled": "Kru for Supervisors",
+    "ai_manager_enabled": "Kru for Managers",
+    "ai_admin_enabled": "Kru for Admins"
   },
   "reports": {
     "title": "Reports",
