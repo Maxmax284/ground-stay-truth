@@ -765,5 +765,13 @@
     "and": "및",
     "reviewOur": "확인하세요",
     "forDataDetails": "에서 데이터 처리 방법을 알아보세요."
+  },
+  "deposit": {
+    "collectPrompt": "보증금을 수령하셨습니까?",
+    "requiredAmount": "필요 보증금: ${{amount}} (총액의 {{percentage}}%)",
+    "recordAndConfirm": "보증금 기록 및 확정",
+    "guestTitle": "보증금 필요",
+    "guestInstructions": "예약을 확정하려면 보증금이 필요합니다. 프론트 데스크에서 현금 또는 카드로 직접 결제하거나 은행 송금에 대해 직원에게 문의하세요.",
+    "guestAmount": "보증금 금액: ${{amount}}"
   }
 }

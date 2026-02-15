@@ -448,6 +448,17 @@ function GuestBookingCard({ booking, messages, userId, policies }: { booking: an
   const cancellableStates: BookingState[] = ["inquiry", "soft_hold", "pending_approval", "pending_deposit", "confirmed"];
   const canCancel = cancellableStates.includes(state);
 
+  // Deposit info for pending_deposit state
+  const depositPercentage = useMemo(() => {
+    const setting = policies?.find((p: any) => p.key === "deposit_percentage");
+    return setting ? Number(setting.value) : 100;
+  }, [policies]);
+
+  const depositAmount = useMemo(() => {
+    if (!booking.total_price) return null;
+    return (Number(booking.total_price) * depositPercentage) / 100;
+  }, [booking.total_price, depositPercentage]);
+
   const refundInfo = useMemo(() => {
     if (!canCancel || !policies) return null;
     return calculateRefund(booking.check_in, booking.total_price, policies);
@@ -509,6 +520,22 @@ function GuestBookingCard({ booking, messages, userId, policies }: { booking: an
           )}
         </div>
         {booking.notes && <p className="text-sm text-muted-foreground italic">"{booking.notes}"</p>}
+
+        {/* Deposit info banner for pending_deposit */}
+        {state === "pending_deposit" && (
+          <div className="rounded-md border border-primary/20 bg-primary/5 p-3 space-y-1.5">
+            <div className="flex items-center gap-2 text-sm font-medium text-primary">
+              <Info className="h-4 w-4 shrink-0" />
+              {t("deposit.guestTitle")}
+            </div>
+            <p className="text-sm text-muted-foreground">{t("deposit.guestInstructions")}</p>
+            {depositAmount != null && (
+              <p className="text-sm font-medium text-foreground">
+                {t("deposit.guestAmount", { amount: depositAmount.toFixed(2) })}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Document Upload for applicable states */}
         {showDocUpload && (

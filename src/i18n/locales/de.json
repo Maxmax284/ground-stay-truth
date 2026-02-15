@@ -725,5 +725,13 @@
     "and": "und",
     "reviewOur": "Lesen Sie unsere",
     "forDataDetails": "um zu erfahren, wie Ihre Daten verarbeitet werden."
+  },
+  "deposit": {
+    "collectPrompt": "Wurde die Kaution eingezogen?",
+    "requiredAmount": "Erforderliche Kaution: ${{amount}} ({{percentage}}% des Gesamtbetrags)",
+    "recordAndConfirm": "Kaution erfassen und bestätigen",
+    "guestTitle": "Kaution erforderlich",
+    "guestInstructions": "Eine Kaution ist erforderlich, um Ihre Buchung zu bestätigen. Sie können vor Ort an der Rezeption bezahlen (Bargeld oder Karte), oder kontaktieren Sie das Personal für Banküberweisung.",
+    "guestAmount": "Kautionsbetrag: ${{amount}}"
   }
 }

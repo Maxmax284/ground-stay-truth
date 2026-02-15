@@ -1,13 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useTransitionBookingState } from "@/hooks/useBookings";
+import { useTransitionBookingState, useBookingPayments, useCreatePayment } from "@/hooks/useBookings";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 import { useGuestDocuments } from "@/hooks/useGuestDocuments";
@@ -16,7 +17,7 @@ import { calculateRefund } from "@/lib/refundCalculator";
 import { useBufferViolation, useEarlyCheckinRequest } from "@/hooks/useEarlyCheckin";
 import { EarlyCheckinApproval } from "@/components/EarlyCheckinApproval";
 import { getValidTransitions, getAllTransitions, type BookingState } from "@/lib/bookingStateMachine";
-import { AlertTriangle, ShieldAlert, DollarSign, Sparkles, Loader2 } from "lucide-react";
+import { AlertTriangle, ShieldAlert, DollarSign, Sparkles, Loader2, CreditCard } from "lucide-react";
 import { useAISettings } from "@/hooks/useAISettings";
 import { useAIAssistant } from "@/hooks/useAIAssistant";
 
@@ -32,16 +33,47 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
   const { isAIEnabled } = useAISettings(role);
   const aiAssistant = useAIAssistant();
 
+  const { data: existingPayments } = useBookingPayments(bookingId);
+  const createPayment = useCreatePayment();
+
   const [adminOverride, setAdminOverride] = useState(false);
   const [targetState, setTargetState] = useState<BookingState | "">("");
   const [reason, setReason] = useState("");
   const [aiValidation, setAiValidation] = useState<string | null>(null);
   const [aiChecking, setAiChecking] = useState(false);
 
+  // Deposit form state
+  const [depositAmount, setDepositAmount] = useState("");
+  const [depositMethod, setDepositMethod] = useState("cash");
+  const [depositNotes, setDepositNotes] = useState("");
+
   const canOverride = permissions.canAdminOverride(role);
   const canCheckIn = permissions.canCompleteCheckIn(role);
   const canCheckOut = permissions.canCompleteCheckOut(role);
+  const canRecordPay = permissions.canRecordPayment(role);
   const hasDocuments = (documents?.length ?? 0) > 0;
+  const hasPayments = (existingPayments?.length ?? 0) > 0;
+
+  // Deposit calculation
+  const depositPercentage = useMemo(() => {
+    const setting = policies?.find((p) => p.key === "deposit_percentage");
+    return setting ? Number(setting.value) : 100;
+  }, [policies]);
+
+  const requiredDeposit = useMemo(() => {
+    if (!totalPrice) return null;
+    return (totalPrice * depositPercentage) / 100;
+  }, [totalPrice, depositPercentage]);
+
+  // Show inline deposit form when transitioning from pending_deposit to confirmed and no payment exists
+  const showDepositForm = currentState === "pending_deposit" && targetState === "confirmed" && !hasPayments && canRecordPay;
+
+  // Pre-fill deposit amount
+  useEffect(() => {
+    if (showDepositForm && requiredDeposit != null && !depositAmount) {
+      setDepositAmount(requiredDeposit.toFixed(2));
+    }
+  }, [showDepositForm, requiredDeposit]);
 
   const cleaningBufferHours = useMemo(() => {
     const setting = policies?.find((p) => p.key === "cleaning_buffer_hours");
@@ -146,16 +178,38 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
     if (!reason.trim()) { toast({ title: t("stateTransition.reasonRequired"), description: t("stateTransition.reasonDesc"), variant: "destructive" }); return; }
     if (checkInBlocked) { toast({ title: t("documents.idDocuments"), description: t("stateTransition.docsRequired"), variant: "destructive" }); return; }
     if (checkInBufferBlocked) { toast({ title: t("earlyCheckin.cleaningViolation"), description: t("stateTransition.bufferBlocked"), variant: "destructive" }); return; }
+
+    // If deposit form is showing, record payment first
+    if (showDepositForm) {
+      if (!depositAmount || Number(depositAmount) <= 0) {
+        toast({ title: t("payments.enterValidAmount"), variant: "destructive" });
+        return;
+      }
+      try {
+        await createPayment.mutateAsync({
+          booking_id: bookingId,
+          amount: Number(depositAmount),
+          method: depositMethod,
+          notes: depositNotes || undefined,
+        });
+      } catch (err: any) {
+        toast({ title: t("stateTransition.transitionFailed"), description: err.message, variant: "destructive" });
+        return;
+      }
+    }
+
     try {
       const reasonText = [
         adminOverride ? "[ADMIN OVERRIDE]" : "",
         earlyCheckinApproved && targetState === "checked_in" ? "[EARLY CHECK-IN APPROVED]" : "",
+        showDepositForm ? `[DEPOSIT: $${Number(depositAmount).toFixed(2)} via ${depositMethod}]` : "",
         reason,
         refundInfo ? `[Refund: ${refundInfo.label}${refundInfo.refundAmount != null ? ` — $${refundInfo.refundAmount.toFixed(2)}` : ""}]` : "",
       ].filter(Boolean).join(" ");
       await transition.mutateAsync({ bookingId, fromState: currentState, toState: targetState as BookingState, reason: reasonText });
       toast({ title: t("stateTransition.stateUpdated"), description: t("stateTransition.movedTo", { state: t(`states.${targetState}`) }) });
       setTargetState(""); setReason(""); setAdminOverride(false);
+      setDepositAmount(""); setDepositMethod("cash"); setDepositNotes("");
     } catch (err: any) { toast({ title: t("stateTransition.transitionFailed"), description: err.message, variant: "destructive" }); }
   };
 
@@ -206,9 +260,41 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
               </div>
             </div>
           )}
+          {/* Inline deposit form */}
+          {showDepositForm && (
+            <div className="space-y-3 rounded-md border border-primary/20 bg-primary/5 p-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                <CreditCard className="h-4 w-4" />
+                {t("deposit.collectPrompt")}
+              </div>
+              {requiredDeposit != null && (
+                <p className="text-xs text-muted-foreground">
+                  {t("deposit.requiredAmount", { amount: requiredDeposit.toFixed(2), percentage: depositPercentage })}
+                </p>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">{t("payments.amount")} *</Label>
+                  <Input type="number" step="0.01" min="0" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">{t("payments.method")}</Label>
+                  <Select value={depositMethod} onValueChange={setDepositMethod}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">{t("payments.methods.cash")}</SelectItem>
+                      <SelectItem value="card">{t("payments.methods.card")}</SelectItem>
+                      <SelectItem value="bank_transfer">{t("payments.methods.bank_transfer")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Textarea placeholder={t("payments.paymentNotes")} value={depositNotes} onChange={(e) => setDepositNotes(e.target.value)} rows={1} />
+            </div>
+          )}
           <div className="space-y-1"><Label className="text-xs">{t("stateTransition.reasonLabel")} *</Label><Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("stateTransition.reasonPlaceholder")} rows={2} /></div>
-          <Button onClick={handleTransition} disabled={!targetState || !reason.trim() || transition.isPending || checkInBlocked || checkInBufferBlocked} size="sm" className="w-full">
-            {transition.isPending ? t("common.updating") : t("stateTransition.confirmTransition")}
+          <Button onClick={handleTransition} disabled={!targetState || !reason.trim() || transition.isPending || createPayment.isPending || checkInBlocked || checkInBufferBlocked} size="sm" className="w-full">
+            {(transition.isPending || createPayment.isPending) ? t("common.updating") : showDepositForm ? t("deposit.recordAndConfirm") : t("stateTransition.confirmTransition")}
           </Button>
         </>
       )}

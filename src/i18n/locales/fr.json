@@ -765,5 +765,13 @@
     "and": "et",
     "reviewOur": "Consultez notre",
     "forDataDetails": "pour savoir comment vos données sont traitées."
+  },
+  "deposit": {
+    "collectPrompt": "Le dépôt a-t-il été encaissé ?",
+    "requiredAmount": "Dépôt requis : ${{amount}} ({{percentage}}% du total)",
+    "recordAndConfirm": "Enregistrer le dépôt et confirmer",
+    "guestTitle": "Dépôt requis",
+    "guestInstructions": "Un dépôt est nécessaire pour confirmer votre réservation. Vous pouvez payer en personne à la réception (espèces ou carte acceptées), ou contacter le personnel pour les détails de virement bancaire.",
+    "guestAmount": "Montant du dépôt : ${{amount}}"
   }
 }
