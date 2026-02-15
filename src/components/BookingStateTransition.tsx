@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 import { useGuestDocuments } from "@/hooks/useGuestDocuments";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
+import { getDepositPolicy } from "@/lib/depositPolicy";
 import { calculateRefund } from "@/lib/refundCalculator";
 import { useBufferViolation, useEarlyCheckinRequest } from "@/hooks/useEarlyCheckin";
 import { EarlyCheckinApproval } from "@/components/EarlyCheckinApproval";
@@ -20,6 +21,8 @@ import { getValidTransitions, getAllTransitions, type BookingState } from "@/lib
 import { AlertTriangle, ShieldAlert, DollarSign, Sparkles, Loader2, CreditCard } from "lucide-react";
 import { useAISettings } from "@/hooks/useAISettings";
 import { useAIAssistant } from "@/hooks/useAIAssistant";
+import { createNotification } from "@/hooks/useNotifications";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BookingStateTransitionProps { bookingId: string; currentState: BookingState; isAdmin: boolean; checkInDate?: string; totalPrice?: number | null; unitId?: string; }
 
@@ -37,6 +40,8 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
   const createPayment = useCreatePayment();
 
   const [adminOverride, setAdminOverride] = useState(false);
+  const [depositOverride, setDepositOverride] = useState(false);
+  const [depositOverrideReason, setDepositOverrideReason] = useState("");
   const [targetState, setTargetState] = useState<BookingState | "">("");
   const [reason, setReason] = useState("");
   const [aiValidation, setAiValidation] = useState<string | null>(null);
@@ -51,8 +56,12 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
   const canCheckIn = permissions.canCompleteCheckIn(role);
   const canCheckOut = permissions.canCompleteCheckOut(role);
   const canRecordPay = permissions.canRecordPayment(role);
+  const canDepositOverride = permissions.canOverrideDeposit(role);
   const hasDocuments = (documents?.length ?? 0) > 0;
   const hasPayments = (existingPayments?.length ?? 0) > 0;
+
+  // Deposit policy
+  const depositPolicy = useMemo(() => getDepositPolicy(policies), [policies]);
 
   // Deposit calculation
   const depositPercentage = useMemo(() => {
@@ -65,8 +74,13 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
     return (totalPrice * depositPercentage) / 100;
   }, [totalPrice, depositPercentage]);
 
-  // Show inline deposit form when transitioning from pending_deposit to confirmed and no payment exists
-  const showDepositForm = currentState === "pending_deposit" && targetState === "confirmed" && !hasPayments && canRecordPay;
+  // Determine if manual deposit form should show
+  const isPendingDepositToConfirmed = currentState === "pending_deposit" && targetState === "confirmed";
+  const manualAllowed = depositPolicy.effectiveMode !== "online_required" || depositOverride;
+  const showDepositForm = isPendingDepositToConfirmed && !hasPayments && canRecordPay && manualAllowed;
+
+  // Show override toggle when online is required and user has permission
+  const showDepositOverrideToggle = isPendingDepositToConfirmed && depositPolicy.effectiveMode === "online_required" && canDepositOverride && !hasPayments;
 
   // Pre-fill deposit amount
   useEffect(() => {
@@ -102,7 +116,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
       setAiChecking(true);
       setAiValidation(null);
       try {
-        const ctx = { bookingId, currentState, targetState, hasDocuments, bufferViolated, checkInDate };
+        const ctx = { bookingId, currentState, targetState, hasDocuments, bufferViolated, checkInDate, depositPolicy: depositPolicy.effectiveMode };
         const { data: { session: s } } = await (await import("@/integrations/supabase/client")).supabase.auth.getSession();
         const token = s?.access_token ?? "";
         const resp = await fetch(
@@ -110,7 +124,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
           {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
-            body: JSON.stringify({ mode: "validate", role, messages: [{ role: "user", content: `Validate transition from ${currentState} to ${targetState}. Documents uploaded: ${hasDocuments}. Buffer violated: ${bufferViolated}. Check-in date: ${checkInDate ?? "N/A"}.` }], context: ctx }),
+            body: JSON.stringify({ mode: "validate", role, messages: [{ role: "user", content: `Validate transition from ${currentState} to ${targetState}. Documents uploaded: ${hasDocuments}. Buffer violated: ${bufferViolated}. Check-in date: ${checkInDate ?? "N/A"}. Deposit policy: ${depositPolicy.effectiveMode}. Payments recorded: ${hasPayments}.` }], context: ctx }),
           }
         );
         if (!resp.ok || !resp.body) { setAiChecking(false); return; }
@@ -173,11 +187,20 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
   const checkInBlocked = targetState === "checked_in" && !hasDocuments && !adminOverride;
   const checkInBufferBlocked = targetState === "checked_in" && bufferViolated && !earlyCheckinApproved && !adminOverride;
 
+  // Block confirmation if online required, no payment, and no override
+  const depositBlocked = isPendingDepositToConfirmed && depositPolicy.effectiveMode === "online_required" && !hasPayments && !depositOverride;
+
   const handleTransition = async () => {
     if (!targetState) return;
     if (!reason.trim()) { toast({ title: t("stateTransition.reasonRequired"), description: t("stateTransition.reasonDesc"), variant: "destructive" }); return; }
     if (checkInBlocked) { toast({ title: t("documents.idDocuments"), description: t("stateTransition.docsRequired"), variant: "destructive" }); return; }
     if (checkInBufferBlocked) { toast({ title: t("earlyCheckin.cleaningViolation"), description: t("stateTransition.bufferBlocked"), variant: "destructive" }); return; }
+
+    // Validate deposit override reason
+    if (depositOverride && !depositOverrideReason.trim()) {
+      toast({ title: t("deposit.overrideReasonRequired"), variant: "destructive" });
+      return;
+    }
 
     // If deposit form is showing, record payment first
     if (showDepositForm) {
@@ -186,12 +209,30 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
         return;
       }
       try {
+        const sourceChannel = depositOverride ? "supervisor_override" : "front_desk";
         await createPayment.mutateAsync({
           booking_id: bookingId,
           amount: Number(depositAmount),
           method: depositMethod,
           notes: depositNotes || undefined,
+          source_channel: sourceChannel,
         });
+
+        // If override was used, notify admins
+        if (depositOverride) {
+          const { data: { user } } = await supabase.auth.getUser();
+          const { data: admins } = await supabase.from("user_roles").select("user_id").in("role", ["admin"]);
+          for (const admin of admins ?? []) {
+            if (admin.user_id !== user?.id) {
+              await createNotification({
+                user_id: admin.user_id,
+                type: "booking",
+                reference_id: bookingId,
+                message: `Manager deposit override used. Reason: ${depositOverrideReason}`,
+              });
+            }
+          }
+        }
       } catch (err: any) {
         toast({ title: t("stateTransition.transitionFailed"), description: err.message, variant: "destructive" });
         return;
@@ -201,6 +242,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
     try {
       const reasonText = [
         adminOverride ? "[ADMIN OVERRIDE]" : "",
+        depositOverride ? `[MANAGER DEPOSIT OVERRIDE] ${depositOverrideReason}` : "",
         earlyCheckinApproved && targetState === "checked_in" ? "[EARLY CHECK-IN APPROVED]" : "",
         showDepositForm ? `[DEPOSIT: $${Number(depositAmount).toFixed(2)} via ${depositMethod}]` : "",
         reason,
@@ -208,7 +250,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
       ].filter(Boolean).join(" ");
       await transition.mutateAsync({ bookingId, fromState: currentState, toState: targetState as BookingState, reason: reasonText });
       toast({ title: t("stateTransition.stateUpdated"), description: t("stateTransition.movedTo", { state: t(`states.${targetState}`) }) });
-      setTargetState(""); setReason(""); setAdminOverride(false);
+      setTargetState(""); setReason(""); setAdminOverride(false); setDepositOverride(false); setDepositOverrideReason("");
       setDepositAmount(""); setDepositMethod("cash"); setDepositNotes("");
     } catch (err: any) { toast({ title: t("stateTransition.transitionFailed"), description: err.message, variant: "destructive" }); }
   };
@@ -247,6 +289,13 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
               </div>
             </div>
           )}
+          {/* Online deposit required warning */}
+          {isPendingDepositToConfirmed && depositPolicy.effectiveMode === "online_required" && !hasPayments && !depositOverride && (
+            <div className="flex items-center gap-2 text-sm text-warning-foreground bg-warning/10 rounded-md p-3">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <span>{t("deposit.onlineRequired")}</span>
+            </div>
+          )}
           {(aiChecking || aiValidation) && (
             <div className="flex items-start gap-2 text-sm rounded-md p-3 bg-accent/50 text-accent-foreground border border-accent">
               <Sparkles className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
@@ -258,6 +307,27 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
                   <p className="text-xs whitespace-pre-wrap">{aiValidation}</p>
                 )}
               </div>
+            </div>
+          )}
+          {/* Manager deposit override toggle */}
+          {showDepositOverrideToggle && (
+            <div className="space-y-2 rounded-md border border-warning/30 bg-warning/5 p-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="deposit-override" className="text-sm font-medium">{t("deposit.managerOverride")}</Label>
+                <Switch id="deposit-override" checked={depositOverride} onCheckedChange={setDepositOverride} />
+              </div>
+              <p className="text-xs text-muted-foreground">{t("deposit.managerOverrideDesc")}</p>
+              {depositOverride && (
+                <div className="space-y-1">
+                  <Label className="text-xs">{t("deposit.overrideReason")} *</Label>
+                  <Textarea
+                    value={depositOverrideReason}
+                    onChange={(e) => setDepositOverrideReason(e.target.value)}
+                    placeholder={t("deposit.overrideReasonPlaceholder")}
+                    rows={2}
+                  />
+                </div>
+              )}
             </div>
           )}
           {/* Inline deposit form */}
@@ -293,7 +363,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
             </div>
           )}
           <div className="space-y-1"><Label className="text-xs">{t("stateTransition.reasonLabel")} *</Label><Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("stateTransition.reasonPlaceholder")} rows={2} /></div>
-          <Button onClick={handleTransition} disabled={!targetState || !reason.trim() || transition.isPending || createPayment.isPending || checkInBlocked || checkInBufferBlocked} size="sm" className="w-full">
+          <Button onClick={handleTransition} disabled={!targetState || !reason.trim() || transition.isPending || createPayment.isPending || checkInBlocked || checkInBufferBlocked || depositBlocked} size="sm" className="w-full">
             {(transition.isPending || createPayment.isPending) ? t("common.updating") : showDepositForm ? t("deposit.recordAndConfirm") : t("stateTransition.confirmTransition")}
           </Button>
         </>

@@ -278,7 +278,11 @@
     "ai_front_desk_enabled": "Kru สำหรับพนักงานต้อนรับ",
     "ai_supervisor_enabled": "Kru สำหรับหัวหน้างาน",
     "ai_manager_enabled": "Kru สำหรับผู้จัดการ",
-    "ai_admin_enabled": "Kru สำหรับผู้ดูแลระบบ"
+    "ai_admin_enabled": "Kru สำหรับผู้ดูแลระบบ",
+    "deposit_percentage": "เปอร์เซ็นต์มัดจำ (%)",
+    "deposits_online_enabled": "มัดจำออนไลน์",
+    "deposits_manual_enabled": "มัดจำด้วยตนเอง (เงินสด/บัตร)",
+    "deposits_require_online_when_enabled": "ต้องชำระมัดจำออนไลน์"
   },
   "reports": {
     "title": "รายงาน",
@@ -773,6 +777,21 @@
     "recordAndConfirm": "บันทึกเงินมัดจำและยืนยัน",
     "guestTitle": "ต้องชำระเงินมัดจำ",
     "guestInstructions": "ต้องชำระเงินมัดจำเพื่อยืนยันการจอง คุณสามารถชำระเงินด้วยตนเองที่แผนกต้อนรับ (รับเงินสดและบัตร) หรือติดต่อเจ้าหน้าที่สำหรับรายละเอียดการโอนเงิน",
-    "guestAmount": "จำนวนเงินมัดจำ: ${{amount}}"
+    "guestAmount": "จำนวนเงินมัดจำ: ${{amount}}",
+    "guestInstructionsOnlineOptional": "คุณสามารถชำระเงินมัดจำออนไลน์หรือด้วยตนเองที่แผนกต้อนรับ",
+    "guestInstructionsOnlineRequired": "ต้องชำระเงินมัดจำออนไลน์เพื่อยืนยันการจอง",
+    "onlineComingSoon": "การชำระเงินออนไลน์จะเปิดให้บริการเร็วๆ นี้ กรุณาติดต่อเจ้าหน้าที่",
+    "managerOverride": "การอนุมัติพิเศษจากผู้จัดการ",
+    "managerOverrideDesc": "ต้องชำระเงินมัดจำออนไลน์ ใช้การอนุมัติพิเศษเพื่อบันทึกมัดจำด้วยตนเอง",
+    "overrideReason": "เหตุผลการอนุมัติพิเศษ",
+    "overrideReasonPlaceholder": "อธิบายเหตุผลที่รับมัดจำด้วยตนเอง…",
+    "overrideReasonRequired": "ต้องระบุเหตุผลสำหรับการอนุมัติพิเศษ",
+    "onlineRequired": "ต้องชำระเงินมัดจำออนไลน์",
+    "sourceChannel": "แหล่งที่มา",
+    "channels": {
+      "front_desk": "แผนกต้อนรับ",
+      "guest_portal": "พอร์ทัลผู้เข้าพัก",
+      "supervisor_override": "การอนุมัติพิเศษ"
+    }
   }
 }

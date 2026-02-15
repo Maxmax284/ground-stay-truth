@@ -279,7 +279,10 @@
     "ai_supervisor_enabled": "Kru for Supervisors",
     "ai_manager_enabled": "Kru for Managers",
     "ai_admin_enabled": "Kru for Admins",
-    "deposit_percentage": "Deposit Percentage (%)"
+    "deposit_percentage": "Deposit Percentage (%)",
+    "deposits_online_enabled": "Online Deposits",
+    "deposits_manual_enabled": "Manual Deposits (Cash/Card)",
+    "deposits_require_online_when_enabled": "Require Online Deposit"
   },
   "reports": {
     "title": "Reports",
@@ -775,6 +778,21 @@
     "recordAndConfirm": "Record Deposit & Confirm",
     "guestTitle": "Deposit Required",
     "guestInstructions": "A deposit is required to confirm your booking. You can pay in person at the front desk (cash or card accepted), or contact staff for bank transfer details.",
-    "guestAmount": "Deposit amount: ${{amount}}"
+    "guestAmount": "Deposit amount: ${{amount}}",
+    "guestInstructionsOnlineOptional": "You can pay your deposit online or in person at the front desk.",
+    "guestInstructionsOnlineRequired": "Online deposit payment is required to confirm your booking.",
+    "onlineComingSoon": "Online payments coming soon. Please contact staff for instructions.",
+    "managerOverride": "Manager Override",
+    "managerOverrideDesc": "Online deposit is required. Use override to record a manual deposit instead.",
+    "overrideReason": "Override reason",
+    "overrideReasonPlaceholder": "Explain why manual deposit is being accepted…",
+    "overrideReasonRequired": "A reason is required for manager deposit override.",
+    "onlineRequired": "Online deposit required",
+    "sourceChannel": "Source",
+    "channels": {
+      "front_desk": "Front Desk",
+      "guest_portal": "Guest Portal",
+      "supervisor_override": "Manager Override"
+    }
   }
 }

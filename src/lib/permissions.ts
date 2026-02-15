@@ -131,6 +131,10 @@ export const permissions = {
   canCreateLaundryRequest: (role: AppRole | null) =>
     !!role && (role === "guest" || ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.front_desk),
 
+  /** Can override deposit requirement (manual when online required) — Manager+ */
+  canOverrideDeposit: (role: AppRole | null) =>
+    !!role && ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.manager,
+
   /** Can update laundry status — Front Desk+ (all staff) */
   canUpdateLaundryStatus: (role: AppRole | null) =>
     !!role && ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.front_desk,

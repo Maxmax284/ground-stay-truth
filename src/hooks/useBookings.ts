@@ -229,11 +229,13 @@ export function useCreatePayment() {
       amount: number;
       method: string;
       notes?: string;
+      source_channel?: string;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
+      const { source_channel, ...rest } = payment;
       const { data, error } = await supabase
         .from("payments")
-        .insert({ ...payment, recorded_by: user?.id ?? null })
+        .insert({ ...rest, recorded_by: user?.id ?? null, source_channel: source_channel ?? "front_desk" } as any)
         .select()
         .single();
       if (error) throw error;

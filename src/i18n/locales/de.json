@@ -262,7 +262,11 @@
     "ai_front_desk_enabled": "Kru für Rezeption",
     "ai_supervisor_enabled": "Kru für Supervisoren",
     "ai_manager_enabled": "Kru für Manager",
-    "ai_admin_enabled": "Kru für Administratoren"
+    "ai_admin_enabled": "Kru für Administratoren",
+    "deposit_percentage": "Kautionsprozent (%)",
+    "deposits_online_enabled": "Online-Kaution",
+    "deposits_manual_enabled": "Manuelle Kaution (Bar/Karte)",
+    "deposits_require_online_when_enabled": "Online-Kaution erforderlich"
   },
   "reports": {
     "title": "Berichte",
@@ -733,6 +737,21 @@
     "recordAndConfirm": "Kaution erfassen und bestätigen",
     "guestTitle": "Kaution erforderlich",
     "guestInstructions": "Eine Kaution ist erforderlich, um Ihre Buchung zu bestätigen. Sie können vor Ort an der Rezeption bezahlen (Bargeld oder Karte), oder kontaktieren Sie das Personal für Banküberweisung.",
-    "guestAmount": "Kautionsbetrag: ${{amount}}"
+    "guestAmount": "Kautionsbetrag: ${{amount}}",
+    "guestInstructionsOnlineOptional": "Sie können Ihre Kaution online oder vor Ort an der Rezeption bezahlen.",
+    "guestInstructionsOnlineRequired": "Online-Zahlung der Kaution ist erforderlich, um Ihre Buchung zu bestätigen.",
+    "onlineComingSoon": "Online-Zahlungen kommen bald. Bitte kontaktieren Sie das Personal.",
+    "managerOverride": "Manager-Überschreibung",
+    "managerOverrideDesc": "Online-Kaution ist erforderlich. Verwenden Sie die Überschreibung für manuelle Kaution.",
+    "overrideReason": "Grund der Überschreibung",
+    "overrideReasonPlaceholder": "Erklären Sie, warum manuelle Kaution akzeptiert wird…",
+    "overrideReasonRequired": "Ein Grund ist für die Überschreibung erforderlich.",
+    "onlineRequired": "Online-Kaution erforderlich",
+    "sourceChannel": "Quelle",
+    "channels": {
+      "front_desk": "Rezeption",
+      "guest_portal": "Gästeportal",
+      "supervisor_override": "Manager-Überschreibung"
+    }
   }
 }

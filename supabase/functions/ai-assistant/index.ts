@@ -117,11 +117,12 @@ serve(async (req) => {
     }
 
     // Always fetch baseline snapshot for accuracy
-    const [unitsRes, bookingsRes, maintenanceRes, laundryRes] = await Promise.all([
+    const [unitsRes, bookingsRes, maintenanceRes, laundryRes, depositPoliciesRes] = await Promise.all([
       adminClient.from("units").select("name, is_active"),
       adminClient.from("bookings").select("state").in("state", ["pending_approval", "pending_deposit", "confirmed", "checked_in"]),
       adminClient.from("maintenance_requests").select("status").in("status", ["open", "in_progress"]),
       adminClient.from("laundry_requests").select("status").neq("status", "collected"),
+      adminClient.from("policy_settings").select("key, value").in("key", ["deposits_online_enabled", "deposits_manual_enabled", "deposits_require_online_when_enabled"]),
     ]);
 
     const units = unitsRes.data ?? [];
@@ -131,11 +132,18 @@ serve(async (req) => {
       return acc;
     }, {});
 
+    // Compute deposit policy mode
+    const dpMap = new Map((depositPoliciesRes.data ?? []).map((p: any) => [p.key, String(p.value)]));
+    const onlineEnabled = dpMap.get("deposits_online_enabled") === "true";
+    const requireOnline = dpMap.get("deposits_require_online_when_enabled") === "true";
+    const depositMode = onlineEnabled && requireOnline ? "online_required" : onlineEnabled ? "online_optional" : "manual_only";
+
     let contextData = `PROPERTY SNAPSHOT (source of truth — do not contradict):
 Units: ${units.length} total (${activeUnits.length} active). Names: ${activeUnits.map((u: any) => u.name).join(", ") || "none"}.
 Active bookings: ${bookingStates["confirmed"] || 0} confirmed, ${bookingStates["checked_in"] || 0} checked_in, ${bookingStates["pending_approval"] || 0} pending_approval, ${bookingStates["pending_deposit"] || 0} pending_deposit.
 Open maintenance requests: ${(maintenanceRes.data ?? []).length}.
-Active laundry requests: ${(laundryRes.data ?? []).length}.`;
+Active laundry requests: ${(laundryRes.data ?? []).length}.
+Deposit policy: ${depositMode}. Manual deposits: ${dpMap.get("deposits_manual_enabled") !== "false" ? "enabled" : "disabled"}. Online deposits: ${onlineEnabled ? "enabled" : "disabled"}.`;
 
     if (mode === "digest" || mode === "summarize") {
       const { data: detailedBookings } = await adminClient
