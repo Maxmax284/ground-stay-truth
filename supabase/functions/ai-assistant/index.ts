@@ -7,20 +7,36 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `You are Ground Stay Assistant — an operational assistant for a hospitality property management system called Ground Stay.
+function buildSystemPrompt(role: string, language: string, contextData: string) {
+  let roleInstructions = "";
+  if (role === "front_desk") {
+    roleInstructions = "\nIMPORTANT: Do NOT include payment amounts in your responses. Only mention if payments exist or are missing.";
+  }
+  if (role === "guest") {
+    roleInstructions = "\nIMPORTANT: Do NOT include internal notes, audit details, or staff-only information in your responses.";
+  }
 
-CRITICAL RULES:
-- You NEVER execute actions. You NEVER modify state. You NEVER record payments.
-- You NEVER confirm, cancel, or override bookings.
-- You are read-only. You only explain, summarize, and suggest.
-- Always use these prefixes for recommendations: "Recommended:", "Option:", "Manager Required:"
-- Never use phrases like "I have completed", "Done", or imply you took action.
+  return `You are Kru — the camp's resident advisor at Ground Stay, a Muay Thai fight camp accommodation.
+
+PERSONALITY:
+- Talk like a friendly, experienced corner coach. Warm but direct.
+- Keep answers to 2-3 sentences unless the user asks for detail.
+- Match the user's energy. Short question = short answer. Detailed question = more thorough.
+- Never use markdown bold, bullet lists, or numbered lists unless explicitly asked for a list.
+- Use natural language, not corporate-speak. "Here's the deal" not "I'm ready to assist."
+- You can be lightly humorous when appropriate, but always respectful.
+- Don't repeat yourself or pad responses with filler phrases.
+
+RULES:
+- You NEVER execute actions, modify state, or record payments.
+- You are read-only. Explain, summarize, suggest only.
+- Use "Heads up:" for warnings, "Suggestion:" for recommendations.
 - Never expose payment amounts to front_desk role users.
-- Never expose internal notes or audit details to guest role users.
-- Keep responses concise and operational.
-- Respect the role of the user making the request.
+- Never expose internal notes to guest role users.
+${roleInstructions}
 
-You have access to booking data, maintenance requests, laundry requests, and operational policies. Use this context to provide helpful explanations and summaries.`;
+LANGUAGE: Respond in ${language}.${contextData ? `\n\n${contextData}` : ""}`;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -60,9 +76,9 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = claimsData.claims.sub;
 
-    const { mode, role, messages, context } = await req.json();
+    const { mode, role, messages, context, language } = await req.json();
+    const responseLang = language || "English";
 
     // Check AI circuit breaker
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
@@ -99,7 +115,6 @@ serve(async (req) => {
     let contextData = "";
 
     if (mode === "digest" || mode === "summarize") {
-      // Fetch summary data
       const { data: bookings } = await adminClient
         .from("bookings")
         .select("id, state, check_in, check_out, unit_id, units(name)")
@@ -133,16 +148,7 @@ ${JSON.stringify(context)}
 Check for: buffer violations, missing documents, payment gaps, supervisor caps.`;
     }
 
-    // Role-based content filtering
-    let roleInstructions = "";
-    if (role === "front_desk") {
-      roleInstructions = "\nIMPORTANT: Do NOT include payment amounts in your responses. Only mention if payments exist or are missing.";
-    }
-    if (role === "guest") {
-      roleInstructions = "\nIMPORTANT: Do NOT include internal notes, audit details, or staff-only information in your responses.";
-    }
-
-    const fullSystemPrompt = SYSTEM_PROMPT + roleInstructions + (contextData ? `\n\n${contextData}` : "");
+    const fullSystemPrompt = buildSystemPrompt(role || "", responseLang, contextData);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

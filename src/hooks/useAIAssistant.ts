@@ -16,7 +16,7 @@ export function useAIAssistant() {
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  const sendMessage = useCallback(async (input: string, mode: AIMode = "explain", context?: Record<string, any>) => {
+  const sendMessage = useCallback(async (input: string, mode: AIMode = "explain", context?: Record<string, any>, language?: string) => {
     if (!session) return;
 
     const userMsg: AIMessage = { role: "user", content: input };
@@ -43,6 +43,7 @@ export function useAIAssistant() {
             role,
             messages: [...messages, userMsg].map((m) => ({ role: m.role, content: m.content })),
             context,
+            language,
           }),
           signal: controller.signal,
         }
