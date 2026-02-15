@@ -1,80 +1,90 @@
 
 
-# Fix Kru's Data Accuracy -- Always Ground Responses in Real Data
+# Full Multi-Language Support: Translation Files + Hardcoded String Cleanup
 
 ## The Problem
 
-The edge function (`supabase/functions/ai-assistant/index.ts`) only fetches real database context for two modes:
-- `digest` / `summarize` -- queries bookings, maintenance, laundry
-- `validate` -- uses the transition context passed from the client
+Right now, only `en.json` exists in `src/i18n/locales/`. When you switch to Thai, French, or any other language, the system falls back to English for every single string because there are no translation files for those languages. On top of that, several strings are hardcoded directly in components and never go through the translation system at all.
 
-The other three modes (`explain`, `draft`, and any general conversation) send **no operational data at all**. The AI has zero context about the actual property, so it invents facts. Your database has 1 unit called "Testing" -- Kru said 6 because it was guessing.
+---
 
-## The Fix
+## Part 1: Create All 8 Missing Locale Files
 
-Fetch a **baseline context snapshot** for EVERY request, regardless of mode. This gives Kru a grounded picture of the property at all times. Then layer mode-specific data on top.
+Create complete translation files for all 8 non-English languages:
 
-### Baseline Context (fetched on every request)
+| File | Language |
+|------|----------|
+| `src/i18n/locales/th.json` | Thai |
+| `src/i18n/locales/fr.json` | French |
+| `src/i18n/locales/de.json` | German |
+| `src/i18n/locales/ru.json` | Russian |
+| `src/i18n/locales/zh.json` | Chinese (Simplified) |
+| `src/i18n/locales/ja.json` | Japanese |
+| `src/i18n/locales/ko.json` | Korean |
+| `src/i18n/locales/es.json` | Spanish |
 
-Query the database for a compact snapshot:
-- **Units:** count, names, active status
-- **Active bookings:** count by state
-- **Open maintenance:** count
-- **Active laundry:** count
+Each file mirrors the exact structure of `en.json` (all 730+ lines) with every value properly translated. The keys stay in English -- only the values change.
 
-This gets injected into the system prompt as a "PROPERTY SNAPSHOT" section so Kru always knows the real state of affairs.
+---
 
-### Mode-Specific Context (layered on top)
+## Part 2: Fix Hardcoded Strings
 
-- `digest` / `summarize`: Add the detailed booking/maintenance/laundry records (already implemented)
-- `validate`: Add the transition context (already implemented)
-- `explain` / `draft`: No extra data needed beyond the baseline
+Several strings bypass the translation system entirely. These need to be moved into `en.json` (and all locale files) and replaced with `t()` calls:
 
-### System Prompt Addition
+| Location | Hardcoded String | Fix |
+|----------|-----------------|-----|
+| `src/pages/Auth.tsx` line 55 | `"Train. Stay. Compete."` | Add `auth.tagline` key |
+| `src/pages/GuestAuth.tsx` line 68 | `"Fighter's Quarters"` | Add `guestAuth.tagline` key |
+| `src/components/DashboardLayout.tsx` line 39 | `"Menu"` | Add `common.menu` key |
+| `src/components/DashboardLayout.tsx` line 41 | `"Ground Stay"` | Use existing `auth.groundStay` key |
+| `src/components/GuestLayout.tsx` line 27 | `"Ground Stay"` | Use existing `auth.groundStay` key |
+| `src/components/AppSidebar.tsx` line 105 | `"Ground Stay"` | Use existing `auth.groundStay` key |
 
-Add a hard rule to the prompt:
+---
 
-```
-ACCURACY:
-- ONLY reference data provided in the PROPERTY SNAPSHOT below. 
-- If you don't have data to answer a question, say so. Never guess or invent numbers.
-- "I don't have that info right now" is always better than a wrong answer.
-```
+## Part 3: Language Selector Visibility
 
-## Technical Changes
+The language selector is already present on:
+- Auth pages (top-right corner) -- visible to everyone
+- Sidebar footer (staff dashboard) -- visible to staff
+- Guest layout header -- visible to guests
 
-### File: `supabase/functions/ai-assistant/index.ts`
+This covers all user types. No changes needed here -- the selector is already accessible everywhere.
 
-1. Move database queries BEFORE the mode switch so a baseline always runs
-2. Query a compact snapshot:
-   - `units` table: select name, is_active (all units)
-   - `bookings` table: count by state for active states
-   - `maintenance_requests`: count open/in_progress
-   - `laundry_requests`: count not collected
-3. Build a `PROPERTY SNAPSHOT` string injected into every system prompt
-4. Keep the existing detailed queries for digest/summarize as additional context
-5. Add the accuracy rule to `buildSystemPrompt`
+---
 
-### File: `src/components/AIAssistantPanel.tsx`
+## Technical Details
 
-No changes needed -- the client already passes `mode` correctly.
-
-### Example of the baseline context injected into the prompt
-
-```
-PROPERTY SNAPSHOT (source of truth -- do not contradict):
-Units: 1 total (1 active). Names: Testing.
-Active bookings: 0 confirmed, 0 checked_in, 0 pending_approval.
-Open maintenance requests: 0.
-Active laundry requests: 0.
+### New Keys Added to `en.json`
+```json
+"auth.tagline": "Train. Stay. Compete.",
+"guestAuth.tagline": "Fighter's Quarters",
+"common.menu": "Menu"
 ```
 
-This is compact (a few lines) so it doesn't bloat the prompt, but it prevents Kru from ever making up unit counts, booking numbers, or property details again.
+### Files Created (8 new)
+| File | Content |
+|------|---------|
+| `src/i18n/locales/th.json` | Full Thai translation |
+| `src/i18n/locales/fr.json` | Full French translation |
+| `src/i18n/locales/de.json` | Full German translation |
+| `src/i18n/locales/ru.json` | Full Russian translation |
+| `src/i18n/locales/zh.json` | Full Chinese translation |
+| `src/i18n/locales/ja.json` | Full Japanese translation |
+| `src/i18n/locales/ko.json` | Full Korean translation |
+| `src/i18n/locales/es.json` | Full Spanish translation |
 
-## Files Modified
-
+### Files Modified (5)
 | File | Change |
 |------|--------|
-| `supabase/functions/ai-assistant/index.ts` | Add baseline data fetch for all modes, add accuracy rules to system prompt |
+| `src/i18n/locales/en.json` | Add 3 new keys (tagline, menu) |
+| `src/pages/Auth.tsx` | Replace hardcoded tagline with `t("auth.tagline")` |
+| `src/pages/GuestAuth.tsx` | Replace hardcoded tagline with `t("guestAuth.tagline")` |
+| `src/components/DashboardLayout.tsx` | Replace hardcoded "Menu" and "Ground Stay" with `t()` calls |
+| `src/components/GuestLayout.tsx` | Replace hardcoded "Ground Stay" with `t("auth.groundStay")` |
+| `src/components/AppSidebar.tsx` | Replace hardcoded "Ground Stay" with `t("auth.groundStay")` |
 
-No new files. No new dependencies. Just making the existing edge function always query the real data before responding.
+### No new dependencies needed
+
+The lazy-loading system in `src/i18n/index.ts` already handles dynamic imports of locale files -- no changes needed there.
+
