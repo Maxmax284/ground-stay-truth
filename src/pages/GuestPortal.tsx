@@ -6,6 +6,7 @@ import { format, startOfMonth, addMonths, subMonths, formatDistanceToNow } from 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
+import { getDepositPolicy } from "@/lib/depositPolicy";
 import { useSearchParams } from "react-router-dom";
 import GuestLayout from "@/components/GuestLayout";
 import ProfileEditor from "@/components/ProfileEditor";
@@ -429,6 +430,36 @@ const GuestPortal = () => {
 
 /* ── Helper Components ── */
 
+function DepositBanner({ policies, depositAmount }: { policies?: any[]; depositAmount: number | null }) {
+  const { t } = useTranslation();
+  const depositPol = getDepositPolicy(policies ?? []);
+
+  let instructions = t("deposit.guestInstructions"); // default: pay in person
+  if (depositPol.effectiveMode === "online_required") {
+    instructions = t("deposit.guestInstructionsOnlineRequired");
+  } else if (depositPol.effectiveMode === "online_optional") {
+    instructions = t("deposit.guestInstructionsOnlineOptional");
+  }
+
+  return (
+    <div className="rounded-md border border-primary/20 bg-primary/5 p-3 space-y-1.5">
+      <div className="flex items-center gap-2 text-sm font-medium text-primary">
+        <Info className="h-4 w-4 shrink-0" />
+        {t("deposit.guestTitle")}
+      </div>
+      <p className="text-sm text-muted-foreground">{instructions}</p>
+      {depositAmount != null && (
+        <p className="text-sm font-medium text-foreground">
+          {t("deposit.guestAmount", { amount: depositAmount.toFixed(2) })}
+        </p>
+      )}
+      {depositPol.onlineEnabled && (
+        <p className="text-xs text-muted-foreground italic">{t("deposit.onlineComingSoon")}</p>
+      )}
+    </div>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-3">
@@ -523,18 +554,7 @@ function GuestBookingCard({ booking, messages, userId, policies }: { booking: an
 
         {/* Deposit info banner for pending_deposit */}
         {state === "pending_deposit" && (
-          <div className="rounded-md border border-primary/20 bg-primary/5 p-3 space-y-1.5">
-            <div className="flex items-center gap-2 text-sm font-medium text-primary">
-              <Info className="h-4 w-4 shrink-0" />
-              {t("deposit.guestTitle")}
-            </div>
-            <p className="text-sm text-muted-foreground">{t("deposit.guestInstructions")}</p>
-            {depositAmount != null && (
-              <p className="text-sm font-medium text-foreground">
-                {t("deposit.guestAmount", { amount: depositAmount.toFixed(2) })}
-              </p>
-            )}
-          </div>
+          <DepositBanner policies={policies} depositAmount={depositAmount} />
         )}
 
         {/* Document Upload for applicable states */}

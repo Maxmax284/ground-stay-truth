@@ -278,7 +278,11 @@
     "ai_front_desk_enabled": "Kru pour la réception",
     "ai_supervisor_enabled": "Kru pour les superviseurs",
     "ai_manager_enabled": "Kru pour les managers",
-    "ai_admin_enabled": "Kru pour les administrateurs"
+    "ai_admin_enabled": "Kru pour les administrateurs",
+    "deposit_percentage": "Pourcentage de dépôt (%)",
+    "deposits_online_enabled": "Dépôts en ligne",
+    "deposits_manual_enabled": "Dépôts manuels (espèces/carte)",
+    "deposits_require_online_when_enabled": "Exiger le dépôt en ligne"
   },
   "reports": {
     "title": "Rapports",
@@ -773,6 +777,21 @@
     "recordAndConfirm": "Enregistrer le dépôt et confirmer",
     "guestTitle": "Dépôt requis",
     "guestInstructions": "Un dépôt est nécessaire pour confirmer votre réservation. Vous pouvez payer en personne à la réception (espèces ou carte acceptées), ou contacter le personnel pour les détails de virement bancaire.",
-    "guestAmount": "Montant du dépôt : ${{amount}}"
+    "guestAmount": "Montant du dépôt : ${{amount}}",
+    "guestInstructionsOnlineOptional": "Vous pouvez payer votre dépôt en ligne ou en personne à la réception.",
+    "guestInstructionsOnlineRequired": "Le paiement en ligne du dépôt est requis pour confirmer votre réservation.",
+    "onlineComingSoon": "Les paiements en ligne arrivent bientôt. Veuillez contacter le personnel.",
+    "managerOverride": "Dérogation du manager",
+    "managerOverrideDesc": "Le dépôt en ligne est requis. Utilisez la dérogation pour enregistrer un dépôt manuel.",
+    "overrideReason": "Raison de la dérogation",
+    "overrideReasonPlaceholder": "Expliquez pourquoi le dépôt manuel est accepté…",
+    "overrideReasonRequired": "Une raison est requise pour la dérogation.",
+    "onlineRequired": "Dépôt en ligne requis",
+    "sourceChannel": "Source",
+    "channels": {
+      "front_desk": "Réception",
+      "guest_portal": "Portail invité",
+      "supervisor_override": "Dérogation manager"
+    }
   }
 }

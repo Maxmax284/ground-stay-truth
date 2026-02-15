@@ -17,6 +17,9 @@ const BOOLEAN_KEYS = new Set([
   "ai_supervisor_enabled",
   "ai_manager_enabled",
   "ai_admin_enabled",
+  "deposits_online_enabled",
+  "deposits_manual_enabled",
+  "deposits_require_online_when_enabled",
 ]);
 
 export function PolicySettingsForm() {

@@ -237,6 +237,9 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord }: { paymen
                 <div>
                   {canSeeAmounts ? <span className="font-medium">${Number(p.amount).toFixed(2)}</span> : <Badge variant="outline" className="text-xs">{Number(p.amount) > 0 ? t("payments.paid") : t("payments.unpaid")}</Badge>}
                   {canSeeAmounts && <span className="text-muted-foreground ml-2">({t(`payments.methods.${p.method}`)})</span>}
+                  {canSeeAmounts && p.source_channel && p.source_channel !== "front_desk" && (
+                    <Badge variant="secondary" className="text-[10px] ml-2">{t(`deposit.channels.${p.source_channel}`, { defaultValue: p.source_channel })}</Badge>
+                  )}
                   {p.notes && canSeeAmounts && <p className="text-xs text-muted-foreground">{p.notes}</p>}
                 </div>
                 <span className="text-xs text-muted-foreground">{format(new Date(p.created_at), "MMM d")}</span>

@@ -438,6 +438,7 @@ export type Database = {
           method: string
           notes: string | null
           recorded_by: string | null
+          source_channel: string
           status: string
         }
         Insert: {
@@ -448,6 +449,7 @@ export type Database = {
           method?: string
           notes?: string | null
           recorded_by?: string | null
+          source_channel?: string
           status?: string
         }
         Update: {
@@ -458,6 +460,7 @@ export type Database = {
           method?: string
           notes?: string | null
           recorded_by?: string | null
+          source_channel?: string
           status?: string
         }
         Relationships: [

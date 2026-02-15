@@ -278,7 +278,11 @@
     "ai_front_desk_enabled": "프론트 데스크용 Kru",
     "ai_supervisor_enabled": "슈퍼바이저용 Kru",
     "ai_manager_enabled": "매니저용 Kru",
-    "ai_admin_enabled": "관리자용 Kru"
+    "ai_admin_enabled": "관리자용 Kru",
+    "deposit_percentage": "보증금 비율 (%)",
+    "deposits_online_enabled": "온라인 보증금",
+    "deposits_manual_enabled": "수동 보증금 (현금/카드)",
+    "deposits_require_online_when_enabled": "온라인 보증금 필수"
   },
   "reports": {
     "title": "보고서",
@@ -773,6 +777,21 @@
     "recordAndConfirm": "보증금 기록 및 확정",
     "guestTitle": "보증금 필요",
     "guestInstructions": "예약을 확정하려면 보증금이 필요합니다. 프론트 데스크에서 현금 또는 카드로 직접 결제하거나 은행 송금에 대해 직원에게 문의하세요.",
-    "guestAmount": "보증금 금액: ${{amount}}"
+    "guestAmount": "보증금 금액: ${{amount}}",
+    "guestInstructionsOnlineOptional": "온라인 또는 프론트 데스크에서 직접 보증금을 결제할 수 있습니다.",
+    "guestInstructionsOnlineRequired": "예약을 확정하려면 온라인 보증금 결제가 필요합니다.",
+    "onlineComingSoon": "온라인 결제가 곧 제공됩니다. 직원에게 문의해 주세요.",
+    "managerOverride": "매니저 오버라이드",
+    "managerOverrideDesc": "온라인 보증금이 필요합니다. 수동 보증금을 기록하려면 오버라이드를 사용하세요.",
+    "overrideReason": "오버라이드 사유",
+    "overrideReasonPlaceholder": "수동 보증금을 수락하는 이유를 설명하세요…",
+    "overrideReasonRequired": "매니저 오버라이드에는 사유가 필요합니다.",
+    "onlineRequired": "온라인 보증금 필수",
+    "sourceChannel": "출처",
+    "channels": {
+      "front_desk": "프론트 데스크",
+      "guest_portal": "게스트 포털",
+      "supervisor_override": "매니저 오버라이드"
+    }
   }
 }
