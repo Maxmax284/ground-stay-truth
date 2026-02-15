@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import type { BookingState } from "@/lib/bookingStateMachine";
+import { createNotification } from "@/hooks/useNotifications";
 
 export type Booking = Tables<"bookings">;
 export type BookingInsert = TablesInsert<"bookings">;
@@ -76,6 +77,22 @@ export function useCreateBooking() {
         reason: "Booking created",
       });
 
+      // Notify admins/managers about new booking
+      const { data: admins } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .in("role", ["admin", "manager"]);
+      for (const admin of admins ?? []) {
+        if (admin.user_id !== user?.id) {
+          await createNotification({
+            user_id: admin.user_id,
+            type: "booking",
+            reference_id: data.id,
+            message: `New booking created for ${booking.check_in} – ${booking.check_out}`,
+          });
+        }
+      }
+
       return data;
     },
     onSuccess: () => {
@@ -118,6 +135,32 @@ export function useTransitionBookingState() {
         changed_by: user?.id ?? null,
         reason,
       });
+
+      // Notify guest about state change
+      if (data.guest_id && data.guest_id !== user?.id) {
+        await createNotification({
+          user_id: data.guest_id,
+          type: "booking",
+          reference_id: bookingId,
+          message: `Your booking status changed to ${toState}`,
+        });
+      }
+
+      // Notify admins/managers
+      const { data: admins } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .in("role", ["admin", "manager"]);
+      for (const admin of admins ?? []) {
+        if (admin.user_id !== user?.id) {
+          await createNotification({
+            user_id: admin.user_id,
+            type: "booking",
+            reference_id: bookingId,
+            message: `Booking transitioned from ${fromState} to ${toState}`,
+          });
+        }
+      }
 
       return data;
     },

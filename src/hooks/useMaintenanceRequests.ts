@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { createNotification } from "@/hooks/useNotifications";
 
 export interface MaintenanceRequest {
   id: string;
@@ -123,6 +124,22 @@ export function useCreateMaintenanceRequest() {
         action: "created",
         to_status: "open",
       });
+
+      // Notify maintenance staff + managers
+      const { data: staff } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .in("role", ["admin", "manager", "maintenance"]);
+      for (const s of staff ?? []) {
+        if (s.user_id !== user?.id) {
+          await createNotification({
+            user_id: s.user_id,
+            type: "maintenance",
+            reference_id: data.id,
+            message: `New ${req.category} maintenance request created`,
+          });
+        }
+      }
 
       return data;
     },
