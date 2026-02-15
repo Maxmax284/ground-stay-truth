@@ -57,7 +57,7 @@ function AIAssistantPanelInner() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all flex items-center justify-center hover:scale-105 md:bottom-6 bottom-20"
+        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all flex items-center justify-center hover:scale-105 md:bottom-6 bottom-20 animate-pulse-ring"
         aria-label={t("ai.openAssistant")}
       >
         <Sparkles className="h-6 w-6" />
@@ -66,7 +66,7 @@ function AIAssistantPanelInner() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] bg-card border border-border rounded-2xl shadow-2xl flex flex-col md:bottom-6 bottom-20 max-h-[min(32rem,calc(100vh-8rem))]">
+    <div className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] bg-card border border-border rounded-2xl shadow-2xl flex flex-col md:bottom-6 bottom-20 max-h-[min(32rem,calc(100vh-8rem))] animate-slide-up">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div className="flex items-center gap-2">
@@ -90,8 +90,8 @@ function AIAssistantPanelInner() {
           <button
             key={m}
             onClick={() => setMode(m)}
-            className={`text-[11px] px-2 py-1 rounded-md whitespace-nowrap transition-colors ${
-              mode === m ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"
+            className={`text-[11px] px-2 py-1 rounded-md whitespace-nowrap transition-all duration-200 ${
+              mode === m ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-accent"
             }`}
           >
             {t(MODE_LABELS[m])}
@@ -103,14 +103,14 @@ function AIAssistantPanelInner() {
       <ScrollArea className="flex-1 min-h-0">
         <div ref={scrollRef} className="px-4 py-3 space-y-3">
           {messages.length === 0 && (
-            <div className="text-center py-8">
+            <div className="text-center py-8 animate-fade-up">
               <Sparkles className="h-8 w-8 mx-auto text-muted-foreground/40 mb-3" />
               <p className="text-sm text-muted-foreground">{t("ai.welcomeMessage")}</p>
               <p className="text-xs text-muted-foreground mt-1">{t("ai.disclaimer")}</p>
             </div>
           )}
           {messages.map((msg, i) => (
-            <div key={i} className={`text-sm ${msg.role === "user" ? "ml-8" : "mr-4"}`}>
+            <div key={i} className={`text-sm animate-fade-up ${msg.role === "user" ? "ml-8" : "mr-4"}`}>
               <div className={`rounded-lg px-3 py-2 ${
                 msg.role === "user"
                   ? "bg-primary/10 text-foreground"
@@ -132,7 +132,7 @@ function AIAssistantPanelInner() {
             </div>
           )}
           {error && (
-            <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
+            <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2 animate-shake-subtle">
               <AlertTriangle className="h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>

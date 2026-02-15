@@ -31,6 +31,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
+          {/* Thai flag accent stripe */}
+          <div className="thai-stripe" />
           <header className="h-14 flex items-center border-b border-border px-4 bg-card gap-3">
             <SidebarTrigger className="h-10 w-auto px-3 flex items-center gap-2 text-sm font-medium">
               <Menu className="h-5 w-5" />
@@ -42,8 +44,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <NotificationBell />
             </div>
           </header>
-          <main className="flex-1 p-6 overflow-auto">
-            {children}
+          <main className="flex-1 p-6 overflow-auto ring-rope-pattern">
+            <div key={location.pathname} className="animate-page-entry">
+              {children}
+            </div>
           </main>
         </div>
       </div>

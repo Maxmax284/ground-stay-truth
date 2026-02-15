@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -13,9 +14,11 @@ interface GuestLayoutProps {
 const GuestLayout = ({ children }: GuestLayoutProps) => {
   const { t } = useTranslation();
   const { signOut, user } = useAuth();
+  const location = useLocation();
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <div className="thai-stripe" />
       <header className="h-14 flex items-center justify-between border-b border-border px-6 bg-card">
         <h1
           className="text-lg font-bold text-foreground"
@@ -41,7 +44,9 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
         </div>
       </header>
       <main className="flex-1 p-6 max-w-5xl mx-auto w-full">
-        {children}
+        <div key={location.pathname} className="animate-page-entry">
+          {children}
+        </div>
       </main>
       <AIAssistantPanel />
     </div>

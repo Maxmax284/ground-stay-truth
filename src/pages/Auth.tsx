@@ -19,8 +19,8 @@ const Auth = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-muted-foreground">{t("common.loading")}</p>
+      <div className="flex min-h-screen items-center justify-center auth-hero-bg">
+        <div className="roundhouse-spinner" />
       </div>
     );
   }
@@ -40,18 +40,24 @@ const Auth = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="absolute top-4 right-4">
+    <div className="flex min-h-screen items-center justify-center auth-hero-bg px-4 relative overflow-hidden corner-accent">
+      <div className="absolute top-4 right-4 z-10">
         <LanguageSelector />
       </div>
-      <div className="w-full max-w-md space-y-6">
+      <div className="w-full max-w-md space-y-6 relative z-10">
         <div className="text-center">
-          <h1 className="font-serif text-3xl font-bold text-foreground">{t("auth.groundStay")}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t("staffAuth.subtitle")}</p>
-          <p className="mt-2 text-muted-foreground">{t("staffAuth.welcomeBack")}</p>
+          <h1
+            className="font-serif text-3xl font-bold text-primary-foreground animate-title-in"
+          >
+            {t("auth.groundStay")}
+          </h1>
+          <p className="mt-1 text-sm text-primary-foreground/60 font-stat tracking-wider uppercase animate-fade-up animate-stagger-2">
+            Train. Stay. Compete.
+          </p>
+          <p className="mt-3 text-primary-foreground/70 animate-fade-up animate-stagger-3">{t("staffAuth.welcomeBack")}</p>
         </div>
 
-        <Card>
+        <Card className="animate-slide-up animate-stagger-3 border-border/50 shadow-2xl">
           <CardHeader>
             <CardTitle className="text-xl">{t("auth.signIn")}</CardTitle>
             <CardDescription>{t("staffAuth.enterCredentials")}</CardDescription>

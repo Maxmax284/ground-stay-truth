@@ -10,6 +10,7 @@ import {
   LogOut,
   MessageSquare,
   Eye,
+  Swords,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -97,10 +98,15 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <div className="p-4 border-b border-sidebar-border">
-        <h2 className="text-lg font-bold text-sidebar-foreground" style={{ fontFamily: "'Playfair Display', serif" }}>
-          Ground Stay
-        </h2>
-        <p className="text-xs text-sidebar-foreground/60 mt-0.5">{t("common.propertyManagement")}</p>
+        <div className="flex items-center gap-2">
+          <Swords className="h-5 w-5 text-sidebar-primary shrink-0" />
+          <div>
+            <h2 className="text-lg font-bold text-sidebar-foreground" style={{ fontFamily: "'Playfair Display', serif" }}>
+              Ground Stay
+            </h2>
+            <p className="text-xs text-sidebar-foreground/60 mt-0.5">{t("common.propertyManagement")}</p>
+          </div>
+        </div>
       </div>
 
       <SidebarContent>
@@ -114,23 +120,23 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end={item.url === "/dashboard"}
-                      className="hover:bg-sidebar-accent/50"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                      className="hover:bg-sidebar-accent/50 hover-slide-right"
+                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium border-l-[3px] border-sidebar-primary"
                     >
                       <item.icon className="mr-2 h-4 w-4" />
                       <span>{t(item.titleKey)}</span>
                       {item.url === "/settings" && !!pendingCount && pendingCount > 0 && (
-                        <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-4 min-w-4 justify-center">
+                        <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-4 min-w-4 justify-center animate-bounce-badge">
                           {pendingCount}
                         </Badge>
                       )}
                       {item.url === "/bookings" && !!approvalCount && approvalCount > 0 && (
-                        <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-4 min-w-4 justify-center">
+                        <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-4 min-w-4 justify-center animate-bounce-badge">
                           {approvalCount}
                         </Badge>
                       )}
                       {item.url === "/dashboard" && isMaintenance && !!maintenanceCount && maintenanceCount > 0 && (
-                        <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-4 min-w-4 justify-center">
+                        <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-4 min-w-4 justify-center animate-bounce-badge">
                           {maintenanceCount}
                         </Badge>
                       )}
