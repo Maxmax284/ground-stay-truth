@@ -24,7 +24,7 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
           className="text-lg font-bold text-foreground"
           style={{ fontFamily: "'Playfair Display', serif" }}
         >
-          Ground Stay
+          {t("auth.groundStay")}
         </h1>
         <div className="flex items-center gap-3">
           <LanguageSelector compact />

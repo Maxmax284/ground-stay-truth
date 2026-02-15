@@ -117,6 +117,14 @@ const Index = () => {
                 </Card>
               )}
             </div>
+
+            {/* Maintenance & Laundry panels for all non-viewer, non-maintenance staff */}
+            {!isViewer && !isMaintenance && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <MaintenanceQueue />
+                <LaundryPanel />
+              </div>
+            )}
           </>
         )}
       </div>

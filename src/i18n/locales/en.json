@@ -45,7 +45,8 @@
     "staff": "Staff",
     "perNight": "/night",
     "propertyManagement": "Property Management",
-    "next": "Next"
+    "next": "Next",
+    "menu": "Menu"
   },
   "nav": {
     "dashboard": "Dashboard",
