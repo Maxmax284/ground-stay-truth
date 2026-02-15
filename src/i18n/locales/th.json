@@ -731,5 +731,13 @@
     "translate": "แปล",
     "viewOriginal": "ดูต้นฉบับ",
     "translating": "กำลังแปล…"
+  },
+  "legal": {
+    "privacyPolicy": "นโยบายความเป็นส่วนตัว",
+    "termsOfService": "เงื่อนไขการให้บริการ",
+    "bySigningUp": "การสมัครสมาชิกหมายความว่าคุณยอมรับ",
+    "and": "และ",
+    "reviewOur": "ตรวจสอบ",
+    "forDataDetails": "เพื่อเรียนรู้เกี่ยวกับการจัดการข้อมูลของคุณ"
   }
 }

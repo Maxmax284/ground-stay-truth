@@ -144,6 +144,11 @@ export default function ProfileEditor() {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">{t("profile.deleteAccountDesc")}</p>
+          <p className="text-sm text-muted-foreground">
+            {t("legal.reviewOur")}{" "}
+            <a href="/legal#privacy" className="font-medium text-primary hover:underline">{t("legal.privacyPolicy")}</a>
+            {" "}{t("legal.forDataDetails")}
+          </p>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="sm">
