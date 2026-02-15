@@ -284,3 +284,26 @@ export function useCreateMessage() {
     },
   });
 }
+
+// ── Mark messages as read ──
+export function useMarkMessagesRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (bookingId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { error } = await supabase
+        .from("messages")
+        .update({ read_at: new Date().toISOString() } as any)
+        .eq("booking_id", bookingId)
+        .neq("sender_id", user.id)
+        .is("read_at", null);
+      if (error) throw error;
+    },
+    onSuccess: (_, bookingId) => {
+      qc.invalidateQueries({ queryKey: ["bookingMessages", bookingId] });
+      qc.invalidateQueries({ queryKey: ["inbox-threads"] });
+      qc.invalidateQueries({ queryKey: ["guest-messages"] });
+    },
+  });
+}

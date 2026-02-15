@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMarkMessagesRead } from "@/hooks/useBookings";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -36,7 +37,7 @@ function useInboxThreads() {
     queryFn: async () => {
       const { data: messages, error: mErr } = await supabase
         .from("messages")
-        .select("id, booking_id, content, is_internal, sender_id, created_at")
+        .select("id, booking_id, content, is_internal, sender_id, created_at, read_at")
         .order("created_at", { ascending: false });
       if (mErr) throw mErr;
       if (!messages || messages.length === 0) return [];
@@ -53,7 +54,7 @@ function useInboxThreads() {
         if (threadMap.has(msg.booking_id)) {
           const t = threadMap.get(msg.booking_id)!;
           t.total_messages++;
-          if (msg.sender_id !== user?.id) t.unread_count++;
+          if (msg.sender_id !== user?.id && !(msg as any).read_at) t.unread_count++;
           continue;
         }
         const booking = bookingMap.get(msg.booking_id);
@@ -64,7 +65,7 @@ function useInboxThreads() {
           check_in: booking.check_in, check_out: booking.check_out,
           last_message_at: msg.created_at, last_message_content: msg.content,
           last_message_is_internal: msg.is_internal, total_messages: 1,
-          unread_count: msg.sender_id !== user?.id ? 1 : 0,
+          unread_count: (msg.sender_id !== user?.id && !(msg as any).read_at) ? 1 : 0,
         });
       }
       return Array.from(threadMap.values()).sort(
@@ -96,6 +97,12 @@ const Messages = () => {
   useMessagesRealtime();
   const [search, setSearch] = useState("");
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const markRead = useMarkMessagesRead();
+
+  const handleOpenThread = (bookingId: string) => {
+    setSelectedBookingId(bookingId);
+    markRead.mutate(bookingId);
+  };
 
   const filtered = (threads ?? []).filter((th) => {
     if (!search) return true;
@@ -132,7 +139,7 @@ const Messages = () => {
           <ScrollArea className="max-h-[calc(100vh-14rem)]">
             <div className="space-y-2">
               {filtered.map((thread) => (
-                <Card key={thread.booking_id} className="p-4 cursor-pointer hover:bg-accent/40 transition-colors" onClick={() => setSelectedBookingId(thread.booking_id)}>
+                <Card key={thread.booking_id} className="p-4 cursor-pointer hover:bg-accent/40 transition-colors" onClick={() => handleOpenThread(thread.booking_id)}>
                   <div className="flex items-start gap-3">
                     <div className="pt-1.5 shrink-0">
                       {thread.unread_count > 0 ? <Circle className="h-2.5 w-2.5 fill-primary text-primary" /> : <Circle className="h-2.5 w-2.5 text-transparent" />}

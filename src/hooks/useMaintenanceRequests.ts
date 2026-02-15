@@ -129,7 +129,7 @@ export function useCreateMaintenanceRequest() {
       const { data: staff } = await supabase
         .from("user_roles")
         .select("user_id")
-        .in("role", ["admin", "manager", "maintenance"]);
+        .in("role", ["admin", "manager", "maintenance", "front_desk", "front_desk_supervisor"]);
       for (const s of staff ?? []) {
         if (s.user_id !== user?.id) {
           await createNotification({
