@@ -27,6 +27,11 @@ PERSONALITY:
 - You can be lightly humorous when appropriate, but always respectful.
 - Don't repeat yourself or pad responses with filler phrases.
 
+ACCURACY:
+- ONLY reference data provided in the PROPERTY SNAPSHOT below. This is your single source of truth.
+- If you don't have data to answer a question, say "I don't have that info right now." Never guess or invent numbers.
+- Never make up unit names, counts, booking details, or any operational data.
+
 RULES:
 - You NEVER execute actions, modify state, or record payments.
 - You are read-only. Explain, summarize, suggest only.
@@ -111,38 +116,58 @@ serve(async (req) => {
       });
     }
 
-    // Build context based on mode
-    let contextData = "";
+    // Always fetch baseline snapshot for accuracy
+    const [unitsRes, bookingsRes, maintenanceRes, laundryRes] = await Promise.all([
+      adminClient.from("units").select("name, is_active"),
+      adminClient.from("bookings").select("state").in("state", ["pending_approval", "pending_deposit", "confirmed", "checked_in"]),
+      adminClient.from("maintenance_requests").select("status").in("status", ["open", "in_progress"]),
+      adminClient.from("laundry_requests").select("status").neq("status", "collected"),
+    ]);
+
+    const units = unitsRes.data ?? [];
+    const activeUnits = units.filter((u: any) => u.is_active);
+    const bookingStates = (bookingsRes.data ?? []).reduce((acc: Record<string, number>, b: any) => {
+      acc[b.state] = (acc[b.state] || 0) + 1;
+      return acc;
+    }, {});
+
+    let contextData = `PROPERTY SNAPSHOT (source of truth — do not contradict):
+Units: ${units.length} total (${activeUnits.length} active). Names: ${activeUnits.map((u: any) => u.name).join(", ") || "none"}.
+Active bookings: ${bookingStates["confirmed"] || 0} confirmed, ${bookingStates["checked_in"] || 0} checked_in, ${bookingStates["pending_approval"] || 0} pending_approval, ${bookingStates["pending_deposit"] || 0} pending_deposit.
+Open maintenance requests: ${(maintenanceRes.data ?? []).length}.
+Active laundry requests: ${(laundryRes.data ?? []).length}.`;
 
     if (mode === "digest" || mode === "summarize") {
-      const { data: bookings } = await adminClient
+      const { data: detailedBookings } = await adminClient
         .from("bookings")
         .select("id, state, check_in, check_out, unit_id, units(name)")
         .in("state", ["confirmed", "checked_in", "pending_approval", "pending_deposit"])
         .order("check_in", { ascending: true })
         .limit(20);
 
-      const { data: maintenance } = await adminClient
+      const { data: detailedMaintenance } = await adminClient
         .from("maintenance_requests")
         .select("id, category, status, priority, unit_id, units(name)")
         .in("status", ["open", "in_progress"])
         .limit(20);
 
-      const { data: laundry } = await adminClient
+      const { data: detailedLaundry } = await adminClient
         .from("laundry_requests")
         .select("id, status, unit_id, units(name)")
         .neq("status", "collected")
         .limit(20);
 
-      contextData = `
-CURRENT OPERATIONAL STATE:
-Active bookings: ${JSON.stringify(bookings ?? [])}
-Open maintenance: ${JSON.stringify(maintenance ?? [])}
-Active laundry: ${JSON.stringify(laundry ?? [])}`;
+      contextData += `
+
+DETAILED OPERATIONAL STATE:
+Active bookings: ${JSON.stringify(detailedBookings ?? [])}
+Open maintenance: ${JSON.stringify(detailedMaintenance ?? [])}
+Active laundry: ${JSON.stringify(detailedLaundry ?? [])}`;
     }
 
     if (mode === "validate" && context) {
-      contextData = `
+      contextData += `
+
 TRANSITION CONTEXT:
 ${JSON.stringify(context)}
 Check for: buffer violations, missing documents, payment gaps, supervisor caps.`;
