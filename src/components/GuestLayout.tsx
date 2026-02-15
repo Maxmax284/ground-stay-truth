@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { NotificationBell } from "@/components/NotificationBell";
+import { AIAssistantPanel } from "@/components/AIAssistantPanel";
 
 interface GuestLayoutProps {
   children: React.ReactNode;
@@ -23,6 +25,7 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
         </h1>
         <div className="flex items-center gap-3">
           <LanguageSelector compact />
+          <NotificationBell />
           <span className="text-sm text-muted-foreground hidden sm:inline">
             {user?.email}
           </span>
@@ -40,6 +43,7 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
       <main className="flex-1 p-6 max-w-5xl mx-auto w-full">
         {children}
       </main>
+      <AIAssistantPanel />
     </div>
   );
 };

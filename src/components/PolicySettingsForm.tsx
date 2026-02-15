@@ -4,10 +4,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { usePolicySettings, useUpdatePolicySetting, type PolicySetting } from "@/hooks/usePolicySettings";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Save } from "lucide-react";
+
+const BOOLEAN_KEYS = new Set([
+  "ai_assistant_enabled",
+  "ai_guest_enabled",
+  "ai_front_desk_enabled",
+  "ai_supervisor_enabled",
+  "ai_manager_enabled",
+  "ai_admin_enabled",
+]);
 
 export function PolicySettingsForm() {
   const { t } = useTranslation();
@@ -29,9 +39,18 @@ export function PolicySettingsForm() {
     } catch (err: any) { toast({ title: t("common.error"), description: err.message, variant: "destructive" }); }
   };
 
+  const handleBoolToggle = async (setting: PolicySetting, checked: boolean) => {
+    try {
+      await updateSetting.mutateAsync({ id: setting.id, value: String(checked) });
+      toast({ title: t("pricing.policyUpdated"), description: `${setting.key} saved.` });
+    } catch (err: any) { toast({ title: t("common.error"), description: err.message, variant: "destructive" }); }
+  };
+
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {settings.map((s) => {
+        const isBool = BOOLEAN_KEYS.has(s.key);
+        const boolValue = String(s.value) === "true";
         const currentValue = editValues[s.id] ?? String(typeof s.value === "object" ? JSON.stringify(s.value) : s.value);
         const isDirty = editValues[s.id] !== undefined;
         const label = t(`policyLabels.${s.key}`, { defaultValue: s.key });
@@ -40,10 +59,23 @@ export function PolicySettingsForm() {
             <CardContent className="pt-5 pb-4 space-y-2">
               <Label className="text-sm font-medium">{label}</Label>
               {s.description && <p className="text-xs text-muted-foreground">{s.description}</p>}
-              <div className="flex items-center gap-2">
-                <Input value={currentValue} onChange={(e) => setEditValues((prev) => ({ ...prev, [s.id]: e.target.value }))} className="flex-1" />
-                {isDirty && <Button size="icon" variant="outline" onClick={() => handleSave(s)} disabled={updateSetting.isPending}><Save className="h-4 w-4" /></Button>}
-              </div>
+              {isBool ? (
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={boolValue}
+                    onCheckedChange={(checked) => handleBoolToggle(s, checked)}
+                    disabled={updateSetting.isPending}
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    {boolValue ? t("common.yes") : t("common.no")}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Input value={currentValue} onChange={(e) => setEditValues((prev) => ({ ...prev, [s.id]: e.target.value }))} className="flex-1" />
+                  {isDirty && <Button size="icon" variant="outline" onClick={() => handleSave(s)} disabled={updateSetting.isPending}><Save className="h-4 w-4" /></Button>}
+                </div>
+              )}
             </CardContent>
           </Card>
         );
