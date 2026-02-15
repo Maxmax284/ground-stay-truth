@@ -731,5 +731,13 @@
     "translate": "Traduire",
     "viewOriginal": "Voir l'original",
     "translating": "Traduction…"
+  },
+  "legal": {
+    "privacyPolicy": "Politique de confidentialité",
+    "termsOfService": "Conditions d'utilisation",
+    "bySigningUp": "En vous inscrivant, vous acceptez nos",
+    "and": "et",
+    "reviewOur": "Consultez notre",
+    "forDataDetails": "pour savoir comment vos données sont traitées."
   }
 }

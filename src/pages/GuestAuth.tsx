@@ -122,6 +122,14 @@ const GuestAuth = () => {
                 {submitting ? t("common.pleaseWait") : isLogin ? t("auth.signIn") : t("guestAuth.createAccount")}
               </Button>
             </form>
+            {!isLogin && (
+              <p className="mt-3 text-center text-xs text-muted-foreground">
+                {t("legal.bySigningUp")}{" "}
+                <a href="/legal#terms" className="font-medium text-primary hover:underline">{t("legal.termsOfService")}</a>
+                {" "}{t("legal.and")}{" "}
+                <a href="/legal#privacy" className="font-medium text-primary hover:underline">{t("legal.privacyPolicy")}</a>.
+              </p>
+            )}
             <div className="mt-4 text-center text-sm text-muted-foreground">
               {isLogin ? t("auth.noAccount") : t("auth.haveAccount")}{" "}
               <button

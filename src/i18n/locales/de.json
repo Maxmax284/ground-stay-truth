@@ -691,5 +691,13 @@
     "translate": "Übersetzen",
     "viewOriginal": "Original anzeigen",
     "translating": "Übersetzen…"
+  },
+  "legal": {
+    "privacyPolicy": "Datenschutzrichtlinie",
+    "termsOfService": "Nutzungsbedingungen",
+    "bySigningUp": "Mit der Registrierung stimmen Sie unseren",
+    "and": "und",
+    "reviewOur": "Lesen Sie unsere",
+    "forDataDetails": "um zu erfahren, wie Ihre Daten verarbeitet werden."
   }
 }

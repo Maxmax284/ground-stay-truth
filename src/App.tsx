@@ -19,6 +19,7 @@ import Settings from "./pages/Settings";
 import GuestPortal from "./pages/GuestPortal";
 import Messages from "./pages/Messages";
 import NotFound from "./pages/NotFound";
+import Legal from "./pages/Legal";
 
 const queryClient = new QueryClient();
 
@@ -49,8 +50,9 @@ const App = () => (
             {/* Guest portal */}
             <Route path="/guest" element={<ProtectedRoute guestOnly><GuestPortal /></ProtectedRoute>} />
 
-            {/* Public embed widgets — no auth required */}
+            {/* Public pages — no auth required */}
             <Route path="/embed/:type/:unitId" element={<EmbedWidget />} />
+            <Route path="/legal" element={<Legal />} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
