@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { toast as sonnerToast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -19,9 +20,12 @@ import { useBooking, useBookingStateLog, useBookingPayments, useBookingMessages,
 import { BookingStateTransition } from "@/components/BookingStateTransition";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
-import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText, Info } from "lucide-react";
+import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText, Info, Wrench, Shirt } from "lucide-react";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { useGuestDocuments } from "@/hooks/useGuestDocuments";
+import { useMaintenanceRequests, useUpdateMaintenanceStatus } from "@/hooks/useMaintenanceRequests";
+import { useLaundryRequests, useAdvanceLaundryStatus, getNextLaundryStatus } from "@/hooks/useLaundryRequests";
+import { StaySupportBadge } from "@/components/StaySupportBadge";
 
 interface BookingDetailSheetProps { bookingId: string | null; open: boolean; onOpenChange: (open: boolean) => void; isAdmin: boolean; }
 
@@ -54,21 +58,43 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
     return { isExpired: elapsed >= hours, remaining: hours - elapsed, hours };
   }, [booking, policies]);
 
+  const { data: maintenanceReqs } = useMaintenanceRequests(bookingId);
+  const { data: laundryReqs } = useLaundryRequests(bookingId);
+
+  const openMaintenanceCount = (maintenanceReqs ?? []).filter((r) => r.status !== "resolved").length;
+  const laundryReadyCount = (laundryReqs ?? []).filter((r) => r.status === "ready_for_pickup").length;
+  const isCheckedIn = booking?.state === "checked_in";
+
   const nextStep = useMemo(() => {
     if (!booking) return null;
     const state = booking.state as BookingState;
     const hasDocuments = (documents?.length ?? 0) > 0;
     const hasPaid = (payments?.length ?? 0) > 0;
+
+    // Stay support alerts for checked-in bookings
+    const supportAlerts: string[] = [];
+    if (state === "checked_in") {
+      if (openMaintenanceCount > 0) {
+        supportAlerts.push(t("staySupport.openMaintenanceCount", { count: openMaintenanceCount }));
+      }
+      if (laundryReadyCount > 0) {
+        supportAlerts.push(t("staySupport.laundryReady"));
+      }
+    }
+
     switch (state) {
       case "inquiry": return t("bookingDetail.nextSteps.inquiry");
       case "soft_hold": return softHoldInfo?.isExpired ? t("bookingDetail.nextSteps.softHoldExpired") : t("bookingDetail.nextSteps.softHold");
       case "pending_approval": return t("bookingDetail.nextSteps.pendingApproval");
       case "pending_deposit": return depositDeadlineInfo?.isExpired ? t("bookingDetail.nextSteps.depositExpired") : hasPaid ? t("bookingDetail.nextSteps.depositPaid") : t("bookingDetail.nextSteps.depositNeeded");
       case "confirmed": return !hasDocuments ? t("bookingDetail.nextSteps.docsNeeded") : t("bookingDetail.nextSteps.readyCheckin");
-      case "checked_in": return t("bookingDetail.nextSteps.checkout");
+      case "checked_in": {
+        const base = t("bookingDetail.nextSteps.checkout");
+        return supportAlerts.length > 0 ? `${base} · ${supportAlerts.join(" · ")}` : base;
+      }
       default: return null;
     }
-  }, [booking, documents, payments, softHoldInfo, depositDeadlineInfo, t]);
+  }, [booking, documents, payments, softHoldInfo, depositDeadlineInfo, openMaintenanceCount, laundryReadyCount, t]);
 
   if (!booking) return null;
   const guestName = (booking as any).profiles?.full_name;
@@ -80,6 +106,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
           <SheetTitle className="flex items-center gap-3">
             <span>{booking.units?.name ?? t("bookingDetail.unknownUnit")}</span>
             <Badge className={STATE_VARIANTS[booking.state as BookingState]}>{t(`states.${booking.state}`)}</Badge>
+            {isCheckedIn && <StaySupportBadge bookingId={booking.id} />}
           </SheetTitle>
           {guestName && <div className="flex items-center gap-2 text-sm text-foreground"><User className="h-4 w-4 text-muted-foreground" /><span className="font-medium">{guestName}</span></div>}
           {softHoldInfo && (
@@ -109,11 +136,24 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
             <TabsTrigger value="payments" className="flex-1"><CreditCard className="h-4 w-4 mr-1" /> {t("bookingDetail.paymentsTab")}</TabsTrigger>
             <TabsTrigger value="messages" className="flex-1"><MessageSquare className="h-4 w-4 mr-1" /> {t("bookingDetail.notesTab")}</TabsTrigger>
             <TabsTrigger value="documents" className="flex-1"><FileText className="h-4 w-4 mr-1" /> {t("bookingDetail.documentsTab")}</TabsTrigger>
+            {isCheckedIn && (
+              <TabsTrigger value="support" className="flex-1"><Wrench className="h-4 w-4 mr-1" /> {t("staySupport.tabLabel")}</TabsTrigger>
+            )}
           </TabsList>
           <TabsContent value="history"><StateHistoryTab logs={stateLog ?? []} /></TabsContent>
           <TabsContent value="payments"><PaymentsTab payments={payments ?? []} bookingId={booking.id} canSeeAmounts={canSeeAmounts} canRecord={canRecordPay} /></TabsContent>
           <TabsContent value="messages"><MessagesTab messages={messages ?? []} bookingId={booking.id} /></TabsContent>
           <TabsContent value="documents"><div className="py-3"><GuestDocumentUpload bookingId={booking.id} showRequirement={["confirmed", "checked_in"].includes(booking.state)} /></div></TabsContent>
+          {isCheckedIn && (
+            <TabsContent value="support">
+              <BookingSupportTab
+                bookingId={booking.id}
+                maintenanceRequests={maintenanceReqs ?? []}
+                laundryRequests={laundryReqs ?? []}
+                role={role}
+              />
+            </TabsContent>
+          )}
         </Tabs>
       </SheetContent>
     </Sheet>
@@ -258,6 +298,111 @@ function MessagesTab({ messages, bookingId }: { messages: any[]; bookingId: stri
         <div className="flex items-center gap-2"><Switch id="is_internal" checked={isInternal} onCheckedChange={setIsInternal} /><Label htmlFor="is_internal" className="text-xs text-muted-foreground">{isInternal ? t("messages.internalNote") : t("messages.guestVisible")}</Label></div>
         <Button size="sm" onClick={handleSend} disabled={!content.trim() || createMessage.isPending}>{t("messages.send")}</Button>
       </div>
+    </div>
+  );
+}
+
+function BookingSupportTab({ bookingId, maintenanceRequests, laundryRequests, role }: {
+  bookingId: string;
+  maintenanceRequests: any[];
+  laundryRequests: any[];
+  role: any;
+}) {
+  const { t } = useTranslation();
+  const updateMaintenance = useUpdateMaintenanceStatus();
+  const advanceLaundry = useAdvanceLaundryStatus();
+  const canResolve = permissions.canResolveMaintenanceRequest(role);
+  const canUpdateMaintenance = permissions.canUpdateMaintenanceStatus(role);
+  const canUpdateLaundry = permissions.canUpdateLaundryStatus(role);
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [resolutionNote, setResolutionNote] = useState("");
+
+  const handleStart = async (req: any) => {
+    try {
+      await updateMaintenance.mutateAsync({ id: req.id, booking_id: bookingId, from_status: "open", to_status: "in_progress" });
+    } catch (err: any) { sonnerToast.error(err.message); }
+  };
+
+  const handleResolve = async (req: any) => {
+    if (!resolutionNote.trim()) return;
+    try {
+      await updateMaintenance.mutateAsync({ id: req.id, booking_id: bookingId, from_status: req.status, to_status: "resolved", resolution_note: resolutionNote.trim() });
+      setResolvingId(null); setResolutionNote("");
+    } catch (err: any) { sonnerToast.error(err.message); }
+  };
+
+  const handleAdvanceLaundry = async (req: any) => {
+    try {
+      await advanceLaundry.mutateAsync({ id: req.id, booking_id: bookingId, current_status: req.status });
+    } catch (err: any) { sonnerToast.error(err.message); }
+  };
+
+  return (
+    <div className="space-y-4 py-3">
+      <h4 className="text-sm font-semibold flex items-center gap-2"><Wrench className="h-4 w-4" /> {t("staySupport.roomIssues")}</h4>
+      {maintenanceRequests.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("staySupport.noIssues")}</p>
+      ) : (
+        <div className="space-y-2">
+          {maintenanceRequests.map((req) => (
+            <div key={req.id} className="border rounded-md p-2 space-y-1 text-sm">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="outline" className="text-xs">{t(`staySupport.categories.${req.category}`)}</Badge>
+                <Badge className={`text-xs ${req.status === "open" ? "bg-amber-100 text-amber-800" : req.status === "in_progress" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"}`}>
+                  {t(`staySupport.statuses.${req.status}`)}
+                </Badge>
+              </div>
+              <p className="text-foreground line-clamp-2">{req.description}</p>
+              {canUpdateMaintenance && req.status === "open" && (
+                <Button size="sm" variant="outline" onClick={() => handleStart(req)} className="text-xs h-7">{t("staySupport.start")}</Button>
+              )}
+              {canResolve && req.status === "in_progress" && resolvingId !== req.id && (
+                <Button size="sm" variant="outline" onClick={() => setResolvingId(req.id)} className="text-xs h-7">{t("staySupport.resolve")}</Button>
+              )}
+              {resolvingId === req.id && (
+                <div className="space-y-1">
+                  <Textarea value={resolutionNote} onChange={(e) => setResolutionNote(e.target.value)} placeholder={t("staySupport.resolutionPlaceholder")} rows={2} />
+                  <div className="flex gap-1">
+                    <Button size="sm" onClick={() => handleResolve(req)} className="text-xs h-7">{t("staySupport.confirmResolve")}</Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setResolvingId(null); setResolutionNote(""); }} className="text-xs h-7">{t("common.cancel")}</Button>
+                  </div>
+                </div>
+              )}
+              {req.status === "resolved" && req.resolution_note && (
+                <p className="text-xs text-muted-foreground italic">{t("staySupport.resolution")}: {req.resolution_note}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Separator />
+
+      <h4 className="text-sm font-semibold flex items-center gap-2"><Shirt className="h-4 w-4" /> {t("staySupport.laundry")}</h4>
+      {laundryRequests.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("staySupport.noLaundry")}</p>
+      ) : (
+        <div className="space-y-2">
+          {laundryRequests.map((req) => {
+            const nextStatus = getNextLaundryStatus(req.status);
+            return (
+              <div key={req.id} className="flex items-center justify-between border rounded-md p-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <Badge className={`text-xs ${req.status === "ready_for_pickup" ? "bg-blue-100 text-blue-800" : req.status === "collected" ? "bg-green-100 text-green-800" : "bg-muted text-muted-foreground"}`}>
+                    {t(`staySupport.statuses.${req.status}`)}
+                  </Badge>
+                  {req.bag_count && <span className="text-xs text-muted-foreground">{req.bag_count} {t("staySupport.bags")}</span>}
+                </div>
+                {canUpdateLaundry && nextStatus && (
+                  <Button size="sm" variant="outline" onClick={() => handleAdvanceLaundry(req)} className="text-xs h-7">
+                    <ArrowRight className="h-3 w-3 mr-1" /> {t(`staySupport.statuses.${nextStatus}`)}
+                  </Button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

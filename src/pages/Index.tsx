@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Building2, BookOpen, CalendarDays, TrendingUp, ArrowRight, Plus, LogIn, LogOut, Wrench } from "lucide-react";
+import { Building2, BookOpen, CalendarDays, TrendingUp, ArrowRight, Plus, LogIn, LogOut, Wrench, Shirt } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,9 @@ import { type BookingState } from "@/lib/bookingStateMachine";
 import { canAccessRoute, permissions } from "@/lib/permissions";
 import { useAuth } from "@/hooks/useAuth";
 import { ApprovalQueue } from "@/components/ApprovalQueue";
+import { MaintenanceQueue } from "@/components/MaintenanceQueue";
+import { LaundryPanel } from "@/components/LaundryPanel";
+import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 
@@ -118,12 +121,14 @@ const Index = () => {
 
 function MaintenanceDashboard({ t }: { t: any }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div className="space-y-4">
+      <MaintenanceQueue />
+      <LaundryPanel />
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <Wrench className="h-5 w-5 text-muted-foreground" />
-            Maintenance Overview
+            <CalendarDays className="h-5 w-5 text-muted-foreground" />
+            {t("dashboard.viewCalendar")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">

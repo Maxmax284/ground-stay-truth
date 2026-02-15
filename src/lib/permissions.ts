@@ -108,4 +108,34 @@ export const permissions = {
   /** Is a staff member (not guest) */
   isStaff: (role: AppRole | null) =>
     !!role && role !== "guest",
+
+  // ── Stay Support permissions ──
+
+  /** Can create maintenance requests — Guest (own booking) or Front Desk+ */
+  canCreateMaintenanceRequest: (role: AppRole | null) =>
+    !!role && (role === "guest" || ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.front_desk),
+
+  /** Can resolve maintenance requests — Maintenance role or Manager+ */
+  canResolveMaintenanceRequest: (role: AppRole | null) =>
+    !!role && (role === "maintenance" || ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.manager),
+
+  /** Can update maintenance status (start) — Maintenance role or Manager+ */
+  canUpdateMaintenanceStatus: (role: AppRole | null) =>
+    !!role && (role === "maintenance" || ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.manager),
+
+  /** Can view maintenance requests — Front Desk+ (all) or Guest (own) */
+  canViewMaintenanceRequests: (role: AppRole | null) =>
+    !!role && (role === "guest" || ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.front_desk),
+
+  /** Can create laundry requests — Guest (own booking) or Front Desk+ */
+  canCreateLaundryRequest: (role: AppRole | null) =>
+    !!role && (role === "guest" || ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.front_desk),
+
+  /** Can update laundry status — Front Desk+ (all staff) */
+  canUpdateLaundryStatus: (role: AppRole | null) =>
+    !!role && ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.front_desk,
+
+  /** Can view laundry requests — Front Desk+ (all) or Guest (own) */
+  canViewLaundryRequests: (role: AppRole | null) =>
+    !!role && (role === "guest" || ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.front_desk),
 } as const;

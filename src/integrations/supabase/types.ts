@@ -206,6 +206,60 @@ export type Database = {
           },
         ]
       }
+      laundry_requests: {
+        Row: {
+          bag_count: number | null
+          booking_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          status: string
+          unit_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          bag_count?: number | null
+          booking_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          status?: string
+          unit_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          bag_count?: number | null
+          booking_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          status?: string
+          unit_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "laundry_requests_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "laundry_requests_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_blocks: {
         Row: {
           created_at: string
@@ -237,6 +291,69 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "maintenance_blocks_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_requests: {
+        Row: {
+          booking_id: string
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          photo_url: string | null
+          priority: string
+          resolution_note: string | null
+          resolved_by: string | null
+          status: string
+          unit_id: string
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          category: string
+          created_at?: string
+          created_by?: string | null
+          description: string
+          id?: string
+          photo_url?: string | null
+          priority?: string
+          resolution_note?: string | null
+          resolved_by?: string | null
+          status?: string
+          unit_id: string
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          photo_url?: string | null
+          priority?: string
+          resolution_note?: string | null
+          resolved_by?: string | null
+          status?: string
+          unit_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_requests_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_requests_unit_id_fkey"
             columns: ["unit_id"]
             isOneToOne: false
             referencedRelation: "units"
@@ -417,6 +534,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      stay_support_log: {
+        Row: {
+          action: string
+          booking_id: string
+          changed_by: string | null
+          created_at: string
+          from_status: string | null
+          id: string
+          note: string | null
+          request_id: string
+          request_type: string
+          to_status: string | null
+        }
+        Insert: {
+          action: string
+          booking_id: string
+          changed_by?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          note?: string | null
+          request_id: string
+          request_type: string
+          to_status?: string | null
+        }
+        Update: {
+          action?: string
+          booking_id?: string
+          changed_by?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          note?: string | null
+          request_id?: string
+          request_type?: string
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stay_support_log_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       unit_groups: {
         Row: {
