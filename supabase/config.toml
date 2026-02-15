@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.translate-message]
 verify_jwt = false
+
+[functions.account-census]
+verify_jwt = false
