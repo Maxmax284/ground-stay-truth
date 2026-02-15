@@ -36,9 +36,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <header className="h-14 flex items-center border-b border-border px-4 bg-card gap-3">
             <SidebarTrigger className="h-10 w-auto px-3 flex items-center gap-2 text-sm font-medium">
               <Menu className="h-5 w-5" />
-              <span className="md:hidden">Menu</span>
+              <span className="md:hidden">{t("common.menu")}</span>
             </SidebarTrigger>
-            <span className="md:hidden text-sm font-semibold text-primary">Ground Stay</span>
+            <span className="md:hidden text-sm font-semibold text-primary">{t("auth.groundStay")}</span>
             <span className="md:ml-0 text-sm font-medium text-muted-foreground">{t(titleKey)}</span>
             <div className="ml-auto">
               <NotificationBell />

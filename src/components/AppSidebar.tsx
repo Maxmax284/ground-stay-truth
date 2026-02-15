@@ -89,6 +89,7 @@ export function AppSidebar() {
   const { signOut, user, role, isAdmin } = useAuth();
   const canApprove = permissions.canApproveBooking(role);
   const isMaintenance = role === "maintenance";
+  const isViewer = role === "viewer";
   const { data: pendingCount } = usePendingUsersCount(isAdmin);
   const { data: approvalCount } = usePendingApprovalCount(canApprove);
   const { data: maintenanceCount } = useOpenMaintenanceCount();
@@ -102,7 +103,7 @@ export function AppSidebar() {
           <Swords className="h-5 w-5 text-sidebar-primary shrink-0" />
           <div>
             <h2 className="text-lg font-bold text-sidebar-foreground" style={{ fontFamily: "'Playfair Display', serif" }}>
-              Ground Stay
+              {t("auth.groundStay")}
             </h2>
             <p className="text-xs text-sidebar-foreground/60 mt-0.5">{t("common.propertyManagement")}</p>
           </div>
@@ -135,7 +136,7 @@ export function AppSidebar() {
                           {approvalCount}
                         </Badge>
                       )}
-                      {item.url === "/dashboard" && isMaintenance && !!maintenanceCount && maintenanceCount > 0 && (
+                      {item.url === "/dashboard" && !isViewer && !!maintenanceCount && maintenanceCount > 0 && (
                         <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-4 min-w-4 justify-center animate-bounce-badge">
                           {maintenanceCount}
                         </Badge>
