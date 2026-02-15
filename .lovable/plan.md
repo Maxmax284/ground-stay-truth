@@ -1,172 +1,181 @@
 
+# Fix Critical RLS Gaps, Expand Notifications, and Add Message Read Tracking
 
-# Dark/Light Mode, Notification Gaps, Role Review, and i18n Completion
-
-This plan addresses four areas: adding a theme toggle, fixing missing notifications for laundry/maintenance flows, reviewing role permissions across all dashboards, and finishing the interrupted i18n translation work.
-
----
-
-## Part 1: Dark/Light Mode Toggle
-
-The dark mode CSS variables already exist in `src/index.css` (lines 72-120) and `next-themes` is already installed. What's missing is the theme provider setup and a toggle button.
-
-### Changes
-
-**`src/App.tsx`** -- Wrap the app in `ThemeProvider` from `next-themes` with `attribute="class"` and `defaultTheme="light"`.
-
-**New file: `src/components/ThemeToggle.tsx`** -- A small button component using `useTheme()` from `next-themes` to cycle between light/dark. Uses Sun/Moon icons from lucide-react.
-
-**`src/components/DashboardLayout.tsx`** -- Add `<ThemeToggle />` next to the `<NotificationBell />` in the header bar.
-
-**`src/components/GuestLayout.tsx`** -- Add `<ThemeToggle />` next to the language selector in the guest header.
-
-**`src/pages/Auth.tsx` and `src/pages/GuestAuth.tsx`** -- Add `<ThemeToggle />` near the language selector on auth pages so users can switch before logging in.
+This plan addresses three areas: fixing database security policies so staff can actually do their jobs, expanding maintenance notifications to include Front Desk and Supervisors, and adding proper read/unread tracking for messages.
 
 ---
 
-## Part 2: Fix Notification Gaps
+## 1. Fix RLS Policy Gaps (Database Migration)
 
-Currently missing notifications:
+Currently, only Admin and Guest have explicit policies on several critical tables. Front Desk, Supervisor, and Manager roles are blocked from reading/writing data they need. Here are the missing policies:
 
-| Event | Who should be notified | Status |
-|-------|----------------------|--------|
-| New laundry request submitted | Admin, Manager, Front Desk | MISSING |
-| Laundry status -> in_progress | Guest | MISSING |
-| Maintenance status -> in_progress | Guest | MISSING |
-| Maintenance status -> resolved | Guest | MISSING |
-| Laundry -> ready_for_pickup | Guest | Already works |
-| New maintenance request | Admin, Manager, Maintenance | Already works |
+### bookings table
+- **Staff can read all bookings** (front_desk+): Currently only admins and guests (own) can read. Front Desk, Supervisors, Managers need SELECT access.
+- **Staff can update bookings** (front_desk+): Needed for state transitions, updating notes, etc.
 
-### Changes
+### booking_state_log table
+- **Staff can read booking state logs** (front_desk+): Currently only admins can read. All staff need to see audit history.
+- **Staff can insert booking state logs** (front_desk+): Needed when transitioning booking states.
 
-**`src/hooks/useLaundryRequests.ts`**
+### payments table
+- **Supervisors+ can manage payments**: Currently only admins can access. Front Desk Supervisors and Managers need INSERT and SELECT.
 
-In `useCreateLaundryRequest`: after inserting, query `user_roles` for admin/manager/front_desk users and insert a notification for each (same pattern as `useCreateMaintenanceRequest`). Message: "New laundry request from [unit_name]".
+### messages table
+- **Staff can read all messages** (front_desk+): Currently only admins and guests (own, non-internal) can read.
+- **Staff can send messages** (front_desk+): Currently only admins and guests can insert.
 
-In `useAdvanceLaundryStatus`: when `nextStatus === "in_progress"`, look up `booking.guest_id` and send notification "Your laundry is being processed."
+### profiles table
+- **Staff can read profiles** (front_desk+): Staff need to look up guest names when viewing bookings, messages, etc.
 
-**`src/hooks/useMaintenanceRequests.ts`**
+### SQL Migration
 
-In `useUpdateMaintenanceStatus`: after updating, look up `booking.guest_id` and send:
-- `in_progress`: "Your maintenance request is being worked on"
-- `resolved`: "Your maintenance request has been resolved"
+```sql
+-- bookings: staff can read
+CREATE POLICY "Staff can read all bookings"
+ON public.bookings FOR SELECT
+USING (public.has_role(auth.uid(), 'front_desk'::app_role));
 
----
+-- bookings: staff can update
+CREATE POLICY "Staff can update bookings"
+ON public.bookings FOR UPDATE
+USING (public.has_role(auth.uid(), 'front_desk'::app_role));
 
-## Part 3: Role Access and Permissions Review
+-- booking_state_log: staff can read
+CREATE POLICY "Staff can read booking state logs"
+ON public.booking_state_log FOR SELECT
+USING (public.has_role(auth.uid(), 'front_desk'::app_role));
 
-After thorough review, here is the current state and gaps:
+-- booking_state_log: staff can insert
+CREATE POLICY "Staff can insert booking state logs"
+ON public.booking_state_log FOR INSERT
+WITH CHECK (public.has_role(auth.uid(), 'front_desk'::app_role));
 
-### Current Role Matrix (correct)
+-- payments: supervisor+ can read
+CREATE POLICY "Supervisors can read payments"
+ON public.payments FOR SELECT
+USING (public.has_role(auth.uid(), 'front_desk_supervisor'::app_role));
 
-| Capability | Guest | Viewer | Maintenance | Front Desk | Supervisor | Manager | Admin |
-|-----------|-------|--------|-------------|------------|------------|---------|-------|
-| Dashboard | -- | View only | Maintenance-focused | Full | Full | Full | Full |
-| Bookings list | -- | Read-only | -- | CRUD + transitions | CRUD + check-in/out | + Approve | + Override |
-| Calendar | -- | Read-only | Read-only | Read-only | Read-only | + Maint blocks | + Maint blocks |
-| Units | -- | -- | -- | -- | -- | CRUD | CRUD |
-| Pricing | -- | -- | -- | -- | -- | CRUD | CRUD |
-| Reports | -- | Read-only | -- | -- | -- | Read-only | Read-only |
-| Messages | -- | -- | -- | Send/read | Send/read | Send/read | Send/read |
-| Settings | -- | -- | -- | Profile only | Profile only | Profile + policies | Full |
-| Maintenance requests | Create (own) | -- | Start + Resolve | View all | View all | Start + Resolve | Full |
-| Laundry requests | Create (own) | -- | -- | Advance status | Advance status | Advance status | Full |
-| Payment amounts | -- | -- | -- | Hidden | Hidden | Visible | Visible |
+-- payments: supervisor+ can insert
+CREATE POLICY "Supervisors can insert payments"
+ON public.payments FOR INSERT
+WITH CHECK (public.has_role(auth.uid(), 'front_desk_supervisor'::app_role));
 
-### Identified Gaps
+-- messages: staff can read all messages
+CREATE POLICY "Staff can read all messages"
+ON public.messages FOR SELECT
+USING (public.has_role(auth.uid(), 'front_desk'::app_role));
 
-1. **Maintenance role cannot see laundry panel on dashboard** -- The maintenance dashboard already shows `<LaundryPanel />`, but laundry status advancement requires `front_desk` or higher. Maintenance staff can see but can't advance laundry. This is correct per current permissions but may be confusing -- the panel should hide the advance button for maintenance role (already handled by `canUpdate` check).
+-- messages: staff can send messages
+CREATE POLICY "Staff can send messages"
+ON public.messages FOR INSERT
+WITH CHECK (public.has_role(auth.uid(), 'front_desk'::app_role));
 
-2. **Front Desk staff don't see the MaintenanceQueue or LaundryPanel on their dashboard** -- Currently only the `maintenance` role gets these panels. Front Desk, Supervisors, Managers, and Admins should also see them since they receive notifications about these requests.
+-- profiles: staff can read all profiles
+CREATE POLICY "Staff can read all profiles"
+ON public.profiles FOR SELECT
+USING (public.has_role(auth.uid(), 'front_desk'::app_role));
 
-3. **Sidebar badges for laundry/maintenance missing for non-maintenance staff** -- The maintenance count badge only shows for `role === "maintenance"`. Admins, managers, and front desk should also see active request counts.
+-- pricing_rules: manager+ can read
+CREATE POLICY "Managers can read pricing rules"
+ON public.pricing_rules FOR SELECT
+USING (public.has_role(auth.uid(), 'manager'::app_role));
 
-### Changes
+-- pricing_rules: manager+ can manage
+CREATE POLICY "Managers can manage pricing rules"
+ON public.pricing_rules FOR ALL
+USING (public.has_role(auth.uid(), 'manager'::app_role))
+WITH CHECK (public.has_role(auth.uid(), 'manager'::app_role));
+```
 
-**`src/pages/Index.tsx`**
-
-Add `<MaintenanceQueue />` and `<LaundryPanel />` to the non-maintenance staff dashboard layout (after the approval queue / quick actions section), visible to front_desk+ roles.
-
-**`src/components/AppSidebar.tsx`**
-
-Show maintenance/laundry badge count on the dashboard nav item for admin, manager, and front_desk roles (not just maintenance).
-
----
-
-## Part 4: AI Layer Alignment
-
-The AI assistant (Kru) is already well-integrated:
-- Property snapshot fetches live unit, booking, maintenance, and laundry counts
-- Role-based filtering (front_desk can't see amounts, guest can't see internal notes)
-- Circuit breaker per role via `policy_settings`
-- Language selector in panel
-
-### One small improvement
-
-**`supabase/functions/ai-assistant/index.ts`** -- The snapshot already includes maintenance and laundry counts. No changes needed for data accuracy. The AI is already aligned with the current system.
-
----
-
-## Part 5: Complete i18n (Interrupted Work)
-
-All 8 locale files were never created (only `en.json` exists). Hardcoded strings in Auth pages were never fixed.
-
-### Files to create (8 new)
-
-| File | Language |
-|------|----------|
-| `src/i18n/locales/th.json` | Thai |
-| `src/i18n/locales/fr.json` | French |
-| `src/i18n/locales/de.json` | German |
-| `src/i18n/locales/ru.json` | Russian |
-| `src/i18n/locales/zh.json` | Chinese (Simplified) |
-| `src/i18n/locales/ja.json` | Japanese |
-| `src/i18n/locales/ko.json` | Korean |
-| `src/i18n/locales/es.json` | Spanish |
-
-Each mirrors the full `en.json` structure with translated values.
-
-### Hardcoded string fixes
-
-| File | Hardcoded | Replace with |
-|------|-----------|-------------|
-| `src/pages/Auth.tsx` line 55 | "Train. Stay. Compete." | `t("auth.tagline")` |
-| `src/pages/GuestAuth.tsx` line 68 | "Fighter's Quarters" | `t("guestAuth.tagline")` |
-| `src/components/DashboardLayout.tsx` line 39 | "Menu" | `t("common.menu")` |
-| `src/components/DashboardLayout.tsx` line 41 | "Ground Stay" | `t("auth.groundStay")` |
-| `src/components/GuestLayout.tsx` line 27 | "Ground Stay" | `t("auth.groundStay")` |
-| `src/components/AppSidebar.tsx` line 105 | "Ground Stay" | `t("auth.groundStay")` |
-
-New keys to add to `en.json`:
-- `"common.menu": "Menu"`
-- `"auth.tagline": "Train. Stay. Compete."`
-- `"guestAuth.tagline": "Fighter's Quarters"`
+Note: The `has_role` function uses the role hierarchy in the `user_roles` table. Because these policies check for a minimum role (e.g., `front_desk`), and higher roles like `manager` and `admin` already have their own ALL policies, this layering works correctly. The `has_role` function checks for an exact role match, so `front_desk` policy won't automatically cover `manager` -- but managers already have coverage through the admin/manager ALL policies.
 
 ---
 
-## Summary of All Files
+## 2. Expand Maintenance Notification Coverage
 
-| File | Action |
-|------|--------|
-| `src/App.tsx` | Add ThemeProvider wrapper |
-| `src/components/ThemeToggle.tsx` | **NEW** - dark/light toggle button |
-| `src/components/DashboardLayout.tsx` | Add ThemeToggle + fix hardcoded strings |
-| `src/components/GuestLayout.tsx` | Add ThemeToggle + fix "Ground Stay" |
-| `src/components/AppSidebar.tsx` | Fix "Ground Stay" + expand badge visibility |
-| `src/pages/Auth.tsx` | Add ThemeToggle + fix tagline |
-| `src/pages/GuestAuth.tsx` | Add ThemeToggle + fix tagline |
-| `src/pages/Index.tsx` | Add MaintenanceQueue/LaundryPanel for staff roles |
-| `src/hooks/useLaundryRequests.ts` | Add staff notifications on create + guest notification on in_progress |
-| `src/hooks/useMaintenanceRequests.ts` | Add guest notifications on in_progress/resolved |
-| `src/i18n/locales/en.json` | Add 3 new keys |
-| `src/i18n/locales/th.json` | **NEW** - full Thai translation |
-| `src/i18n/locales/fr.json` | **NEW** - full French translation |
-| `src/i18n/locales/de.json` | **NEW** - full German translation |
-| `src/i18n/locales/ru.json` | **NEW** - full Russian translation |
-| `src/i18n/locales/zh.json` | **NEW** - full Chinese translation |
-| `src/i18n/locales/ja.json` | **NEW** - full Japanese translation |
-| `src/i18n/locales/ko.json` | **NEW** - full Korean translation |
-| `src/i18n/locales/es.json` | **NEW** - full Spanish translation |
+### File: `src/hooks/useMaintenanceRequests.ts`
 
-No database changes needed. No new dependencies needed (`next-themes` is already installed).
+In `useCreateMaintenanceRequest` (line 132), the notification query currently only targets `admin`, `manager`, and `maintenance` roles. Add `front_desk` and `front_desk_supervisor` to the list so they also receive alerts when guests submit new maintenance requests.
 
+Change:
+```typescript
+.in("role", ["admin", "manager", "maintenance"])
+```
+To:
+```typescript
+.in("role", ["admin", "manager", "maintenance", "front_desk", "front_desk_supervisor"])
+```
+
+---
+
+## 3. Add Message Read Tracking
+
+The current "unread" count is approximated by checking `sender_id !== user.id`, which inflates counts (every message from someone else is always "unread"). A proper solution needs a `read_at` field.
+
+### Database: Add `read_at` column to messages
+
+```sql
+ALTER TABLE public.messages ADD COLUMN read_at timestamptz DEFAULT NULL;
+```
+
+### File: `src/hooks/useBookings.ts`
+
+Add a new mutation `useMarkMessagesRead` that updates `read_at = now()` for all messages in a booking thread where `sender_id != user.id` and `read_at IS NULL`.
+
+```typescript
+export function useMarkMessagesRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (bookingId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { error } = await supabase
+        .from("messages")
+        .update({ read_at: new Date().toISOString() })
+        .eq("booking_id", bookingId)
+        .neq("sender_id", user.id)
+        .is("read_at", null);
+      if (error) throw error;
+    },
+    onSuccess: (_, bookingId) => {
+      qc.invalidateQueries({ queryKey: ["bookingMessages", bookingId] });
+      qc.invalidateQueries({ queryKey: ["inbox-threads"] });
+      qc.invalidateQueries({ queryKey: ["guest-messages"] });
+    },
+  });
+}
+```
+
+### File: `src/pages/Messages.tsx`
+
+Update `useInboxThreads` to calculate `unread_count` using `read_at IS NULL` instead of `sender_id !== user.id`:
+
+```typescript
+unread_count: msgs.filter((m) => m.sender_id !== user?.id && !m.read_at).length
+```
+
+Call `markRead.mutate(bookingId)` when a thread is opened (when `BookingDetailSheet` opens).
+
+### File: `src/pages/GuestPortal.tsx`
+
+Same change for the guest inbox threads -- use `read_at` instead of counting all non-self messages. Call `markRead` when guest opens a thread.
+
+### File: `src/components/BookingDetailSheet.tsx`
+
+When the messages tab is viewed, call `useMarkMessagesRead` to mark messages as read.
+
+---
+
+## Summary of Changes
+
+| Item | Type | Description |
+|------|------|-------------|
+| Database migration | SQL | Add 11 RLS policies for staff access to bookings, state logs, payments, messages, profiles, pricing |
+| Database migration | SQL | Add `read_at` column to messages table |
+| `useMaintenanceRequests.ts` | Code | Add front_desk and front_desk_supervisor to notification targets |
+| `useBookings.ts` | Code | Add `useMarkMessagesRead` mutation |
+| `Messages.tsx` | Code | Use `read_at` for unread count + mark read on open |
+| `GuestPortal.tsx` | Code | Use `read_at` for unread count + mark read on open |
+| `BookingDetailSheet.tsx` | Code | Call mark-read when messages tab is viewed |
+
+No new dependencies needed.
