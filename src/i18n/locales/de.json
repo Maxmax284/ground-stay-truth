@@ -499,7 +499,7 @@
     "unit": "Unterkunft",
     "widgetType": "Widget-Typ",
     "contactUrl": "Kontakt-/Buchungs-URL",
-    "contactUrlNote": "Der Button „Verfügbarkeit prüfen" verlinkt zu dieser URL.",
+    "contactUrlNote": "Der Button 'Verfügbarkeit prüfen' verlinkt zu dieser URL.",
     "ctaTarget": "CTA-Button-Aktion",
     "ctaTargetContact": "Link zu externer URL",
     "ctaTargetRegister": "Link zur Gästeportal-Registrierung",
