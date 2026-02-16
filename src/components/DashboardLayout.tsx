@@ -5,6 +5,7 @@ import { Menu, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NotificationBell } from "@/components/NotificationBell";
 import { AIAssistantPanel } from "@/components/AIAssistantPanel";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useRolePreview } from "@/hooks/useRolePreview";
 import { Button } from "@/components/ui/button";
 
@@ -54,7 +55,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </SidebarTrigger>
             <span className="md:hidden text-sm font-semibold text-primary">{t("auth.groundStay")}</span>
             <span className="md:ml-0 text-sm font-medium text-muted-foreground">{t(titleKey)}</span>
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-1">
+              <ThemeToggle />
               <NotificationBell />
             </div>
           </header>
