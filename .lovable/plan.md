@@ -1,210 +1,332 @@
 
+# Operational Hardening and Governance Enhancement
 
-# Deposit Control System — Context-Based, Admin-Governed, State-Aware
-
-An architectural enhancement to the existing deposit workflow that makes deposit behavior configurable via policy toggles, transparent across all layers, and reversible without code changes.
-
----
-
-## Current State Analysis
-
-**What works today:**
-- Manual deposit recording (cash/card/bank_transfer) is integrated into the `pending_deposit` to `confirmed` transition via an inline form in `BookingStateTransition.tsx`
-- `deposit_percentage` policy setting exists (currently 100%)
-- Guest portal shows a deposit info banner with amount and in-person instructions
-- Notifications fire to guests and admins when deposits are recorded
-- AI pre-flight validation runs on state transitions
-- All payments are audit-logged with `recorded_by` and `booking_id`
-
-**What's missing:**
-- No concept of online deposits
-- No toggles to control deposit behavior
-- No way to require online payment vs allow manual
-- No Manager override path when online is required
-- No `source_channel` tracking on payments (where was it recorded: guest portal vs front desk vs override)
-- AI has no awareness of deposit policy configuration
-- Policy changes happen silently -- no notifications when toggles change
+A structured, phased plan to prevent operational drift, enforce UI discipline per role, introduce admin role simulation, and reinforce override governance -- all within the existing architecture.
 
 ---
 
-## Phase 1 -- Database Changes
+## Current State Findings
 
-### New Policy Settings (data insert, no schema change)
+**What works well:**
+- `permissions.ts` is the single source of truth for all role checks, consumed consistently across every component
+- `stay_support_log` table already logs laundry and maintenance actions with `changed_by`, `from_status`, `to_status`, and `note`
+- Booking state machine is airtight with 9 states, mandatory audit logging, and AI pre-flight validation
+- Notifications fire on state transitions, deposits, and new requests
+- Deposit policy governance is fully centralized via `getDepositPolicy()` helper
 
-Insert three new rows into `policy_settings`:
+**Gaps identified:**
+1. **No override path for laundry/maintenance** -- status can only advance forward; a Manager cannot skip or jump statuses
+2. **No `change_type` field** on `stay_support_log` -- cannot distinguish normal status changes from overrides
+3. **Missing guest notification on maintenance resolution** -- guest only gets notified on laundry "ready for pickup", not on maintenance state changes
+4. **Maintenance role sees LaundryPanel but cannot advance laundry** -- `canUpdateLaundryStatus` requires `front_desk+`, but LaundryPanel renders for maintenance role on dashboard, creating a dead-button scenario
+5. **No role preview simulation** for admin testing
+6. **No staleness advisory in AI digest** -- AI reports counts but doesn't flag items stuck in intermediate states
+7. **Policy changes have no notifications** -- toggling deposit or AI settings fires no alerts to staff
 
-| Key | Default | Description |
-|-----|---------|-------------|
-| `deposits_online_enabled` | `false` | Whether guests can pay deposits online |
-| `deposits_manual_enabled` | `true` | Whether staff can record manual deposits (cash/card) |
-| `deposits_require_online_when_enabled` | `false` | When online is enabled, whether it's required (vs optional) |
+---
 
-### Payments Table Enhancement (migration)
+## Phase A -- Operational Drift Control
 
-Add `source_channel` column to `payments`:
+### Database Change
+
+Add `change_type` column to `stay_support_log`:
 
 ```sql
-ALTER TABLE public.payments 
-  ADD COLUMN IF NOT EXISTS source_channel text 
-  NOT NULL DEFAULT 'front_desk';
+ALTER TABLE public.stay_support_log
+  ADD COLUMN IF NOT EXISTS change_type text NOT NULL DEFAULT 'normal';
 ```
 
-Valid values: `front_desk`, `guest_portal`, `supervisor_override`
+Valid values: `normal`, `override`
 
-This tracks WHERE the payment was recorded, not just by whom.
+This uses the existing table. No new tables created.
+
+### Hook Enhancements
+
+**`src/hooks/useLaundryRequests.ts`**
+
+Add a new `useOverrideLaundryStatus` mutation (Manager+) that:
+- Accepts `target_status` (any valid laundry status), `reason` (required)
+- Writes to `laundry_requests` with the new status
+- Logs to `stay_support_log` with `change_type: 'override'` and the reason in `note`
+- Notifies admins: "Laundry status overridden by [name]. Reason: [reason]"
+- Notifies guest only if target status is `ready_for_pickup` or `collected`
+
+**`src/hooks/useMaintenanceRequests.ts`**
+
+Add a new `useOverrideMaintenanceStatus` mutation (Manager+) that:
+- Accepts `target_status` (any valid maintenance status), `reason` (required), optional `resolution_note`
+- Writes to `maintenance_requests` with the new status
+- Logs to `stay_support_log` with `change_type: 'override'` and reason
+- Notifies admins on override
+- Notifies guest on resolution
+
+Also enhance `useUpdateMaintenanceStatus` to notify guest when status changes to `resolved` or `in_progress` (currently missing).
+
+### Permission Addition
+
+Add to `src/lib/permissions.ts`:
+```
+canOverrideStaySupport: (role) => ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.manager
+```
+
+### UI Changes
+
+**`src/components/MaintenanceQueue.tsx`** and **`src/components/LaundryPanel.tsx`**:
+- Add a small "Override" dropdown button (visible only to Manager+)
+- Override requires a text reason in a popover/dialog before executing
+- Override status changes display with an "Override" badge in the log
+
+**`src/components/BookingDetailSheet.tsx` (Support tab)**:
+- Add override buttons for Manager+ on the inline maintenance/laundry items
+- Same reason-required flow as dashboard panels
+
+### AI Enhancement
+
+Update `supabase/functions/ai-assistant/index.ts` digest mode:
+- Query `created_at` of open maintenance and in-progress laundry
+- If any item has been in intermediate state for >24 hours, include advisory line: "Heads up: [X] maintenance requests have been open for over 24 hours"
+- AI remains read-only
+
+### Notification Gap Fix
+
+Add guest notifications for:
+- Maintenance moved to `in_progress`: "Your maintenance request is being worked on"
+- Maintenance `resolved`: "Your maintenance request has been resolved"
+- Override used (admin notification only): "[Type] status overridden by [name]. Reason: [reason]"
 
 ---
 
-## Phase 2 -- Central Deposit Policy Helper
+## Phase B -- Role UI Discipline Audit
 
-**New file: `src/lib/depositPolicy.ts`**
+### Findings Per Role
 
-A single function `getDepositPolicy(policies)` that reads the three toggles from policy settings and returns the effective behavior:
+| Role | Component | Issue | Fix |
+|------|-----------|-------|-----|
+| **Maintenance** | `LaundryPanel` on dashboard | Sees advance buttons but `canUpdateLaundryStatus` is `front_desk+` -- buttons render but fail | Hide LaundryPanel advance buttons for maintenance role, show read-only status |
+| **Maintenance** | Dashboard | Gets full LaundryPanel which is outside scope | Show laundry as read-only list (no action buttons) |
+| **Front Desk** | `BookingDetailSheet` payments tab | Can see payment form but `canRecordPayment` requires Supervisor+ | Already gated by `canRecord` -- verified correct |
+| **Front Desk** | `PolicySettingsForm` | Cannot access (gated by `canManagePolicies`) | Correct |
+| **Viewer** | Dashboard | Quick Actions hidden, maintenance/laundry hidden | Correct |
+| **Guest** | `GuestStaySupport` | Can create requests but cannot see override/status controls | Correct |
 
-```text
+### Changes
+
+**`src/components/LaundryPanel.tsx`**:
+- For maintenance role: render status list as read-only (no advance buttons)
+- This fixes the dead-button scenario
+
+**`src/pages/Index.tsx` (MaintenanceDashboard)**:
+- Keep MaintenanceQueue with full controls (maintenance can start/resolve)
+- Show LaundryPanel as informational only for maintenance role
+
+No other dead buttons or leaked controls found across the audited components.
+
+---
+
+## Phase C -- Super Admin "Preview As Role" Mode
+
+### Architecture
+
+**Client-side simulation only.** No database mutation, no RLS bypass, no backend changes.
+
+**New context: `src/hooks/useRolePreview.tsx`**
+
+A React context that stores:
+```typescript
 {
-  onlineEnabled: boolean
-  manualEnabled: boolean
-  requireOnline: boolean
-  effectiveMode: 'manual_only' | 'online_optional' | 'online_required'
+  previewRole: AppRole | null;
+  setPreviewRole: (role: AppRole | null) => void;
+  effectiveRole: AppRole; // previewRole ?? actualRole
+  isPreviewMode: boolean;
 }
 ```
 
-Every component reads deposit behavior from this helper. No hardcoded logic anywhere.
+**Integration with `useAuth`**:
+- `useRolePreview` wraps around the existing auth context
+- Components that call `useAuth().role` continue working
+- A new `useEffectiveRole()` hook returns `previewRole ?? role`
+- Permission helpers already accept role as a parameter -- callers pass `effectiveRole` instead of `role`
 
----
+**Key constraint:** The backend (RLS, edge functions) still uses the real user token. Preview mode only affects:
+- Which nav items render
+- Which buttons appear/hide
+- Which dashboard layout displays
+- Which permission checks evaluate to true/false in the UI
 
-## Phase 3 -- Behavior Matrix Implementation
+Preview mode does NOT:
+- Allow mutations beyond the admin's actual authority
+- Bypass RLS (backend still sees admin token)
+- Fetch data the admin couldn't already see (admin has full SELECT access)
 
-### Case A: `deposits_online_enabled = false` (default, current behavior)
+### UI
 
-- Guest sees "Pay in person at front desk" banner (unchanged)
-- Staff records deposit manually via inline form (unchanged)
-- No online payment option shown anywhere
+**Banner:** A persistent warning bar at the top of DashboardLayout when preview mode is active:
+```
+PREVIEW MODE: Viewing as [Role Name] -- This is a simulation. Actions still require your actual role. [Exit Preview]
+```
 
-### Case B: `deposits_online_enabled = true`, `require = false`
+**Trigger:** Add a role selector dropdown in `AppSidebar.tsx` footer (admin only), next to the existing "Preview Guest Portal" link. Options: Front Desk, Supervisor, Manager, Maintenance, Viewer.
 
-- Guest sees BOTH options: "Pay online" button AND "Pay in person" instructions
-- Staff can still record manual payments
-- Either path moves booking to confirmed
-- Online payment placeholder shown (no actual payment gateway yet -- shows "Online payments coming soon" or connects to future integration)
+**Exit:** One-click button in the banner, or selecting "Exit Preview" from the dropdown.
 
-### Case C: `deposits_online_enabled = true`, `require = true`
-
-- Guest sees "Online deposit required" messaging
-- Staff inline deposit form is hidden by default
-- Manager+ can override: a "Manager Override" toggle appears (similar to admin override pattern)
-- Override requires a logged reason
-- Override writes to `booking_state_log` with `[MANAGER DEPOSIT OVERRIDE]` prefix
-- Override triggers notification to admins
-- Payment recorded with `source_channel = 'supervisor_override'`
-
----
-
-## Phase 4 -- File Changes
-
-### Modified Files
+### Files
 
 | File | Change |
 |------|--------|
-| `src/components/BookingStateTransition.tsx` | Read deposit policy via helper. In Case C, hide manual form unless Manager override toggle is active. Add override reason requirement. Set `source_channel` on payment creation. |
-| `src/components/BookingDetailSheet.tsx` | Pass `source_channel` display in payments list (admin/manager view). Update payment method labels. |
-| `src/pages/GuestPortal.tsx` | Read deposit policy. Show appropriate banner per case: in-person only, both options, or online required. |
-| `src/components/PolicySettingsForm.tsx` | Add the 3 new deposit keys to `BOOLEAN_KEYS` set so they render as switches. |
-| `src/hooks/useBookings.ts` | Update `useCreatePayment` to accept `source_channel` parameter. Add notification when policy toggle changes result in different behavior. |
-| `src/hooks/usePolicySettings.ts` | No structural changes needed -- the existing hook already fetches all policy settings. |
-| `supabase/functions/ai-assistant/index.ts` | Include deposit policy state in the PROPERTY SNAPSHOT so AI can reference it in validate/digest/explain modes. |
-| All 9 locale files | Add translation keys for online deposit messaging, override prompts, and policy descriptions. |
+| `src/hooks/useRolePreview.tsx` (new) | React context for preview role state |
+| `src/App.tsx` | Wrap with `RolePreviewProvider` |
+| `src/components/DashboardLayout.tsx` | Show preview banner when active |
+| `src/components/AppSidebar.tsx` | Add role selector dropdown for admin |
+| `src/pages/Index.tsx` | Use `effectiveRole` for conditional rendering |
+| `src/components/BookingStateTransition.tsx` | Use `effectiveRole` for permission display |
+| `src/components/BookingDetailSheet.tsx` | Use `effectiveRole` for permission display |
+| `src/components/MaintenanceQueue.tsx` | Use `effectiveRole` |
+| `src/components/LaundryPanel.tsx` | Use `effectiveRole` |
 
-### New Files
-
-| File | Purpose |
-|------|---------|
-| `src/lib/depositPolicy.ts` | Central helper that computes effective deposit behavior from policy settings. Single source of truth for all components. |
+All mutation hooks continue using the real role from `useAuth()` -- preview only affects rendering.
 
 ---
 
-## Phase 5 -- AI Integration
+## Phase D -- Override Governance Standard
 
-Update the `ai-assistant` edge function to:
+### Audit of All Override Points
 
-1. Fetch the 3 deposit policy values alongside existing policy queries
-2. Include in PROPERTY SNAPSHOT: `Deposit policy: [manual_only|online_optional|online_required]. Manual deposits: [enabled|disabled]. Online deposits: [enabled|disabled].`
-3. In `validate` mode: warn if staff tries to confirm without deposit when online is required and no override is present
-4. In `digest` mode: include pending deposit count and current policy mode
-5. In `explain` mode: clarify why a booking can't move forward based on active policy
+| Override | Reason Required | Logged | Notification | AI Aware |
+|----------|:---:|:---:|:---:|:---:|
+| Admin booking state override | Yes (reason field) | Yes (`booking_state_log`) | Yes (guest + admins) | Yes (validate mode) |
+| Manager deposit override | Yes (reason field) | Yes (`booking_state_log` with prefix) | Yes (admins) | Yes (validate mode) |
+| Early check-in override | Yes (reason + approval) | Yes (`early_checkin_requests`) | Yes (staff) | Yes (validate mode) |
+| Laundry status override | **NEW** | **NEW** (`stay_support_log`) | **NEW** | **NEW** |
+| Maintenance status override | **NEW** | **NEW** (`stay_support_log`) | **NEW** | **NEW** |
 
-AI remains advisory only. It never records payments or changes state.
+All existing overrides are already compliant. Phase A adds the missing laundry/maintenance override governance.
 
----
+### Stall State Analysis
 
-## Phase 6 -- Notification Enhancements
+| State | Can Stall? | Recovery Path |
+|-------|:---:|-------------|
+| `soft_hold` | Yes (12h expiry) | Expiry banner shown, staff can transition |
+| `pending_deposit` | Yes (24h expiry) | Expiry banner shown, staff can cancel or confirm |
+| `pending_approval` | Yes (no auto-expiry) | Approval queue on dashboard, sidebar badge |
+| Maintenance `open` | Yes (no expiry) | **NEW: AI digest flags >24h stale items** |
+| Maintenance `in_progress` | Yes (no expiry) | **NEW: AI digest flags >24h stale items** |
+| Laundry `in_progress` | Yes (no expiry) | **NEW: AI digest flags >24h stale items** |
+| Laundry `ready_for_pickup` | Yes (no expiry) | **NEW: AI digest flags >24h stale items** |
 
-| Trigger | Recipients | Message |
-|---------|-----------|---------|
-| Manager override used on deposit | All admins | "Booking [X] confirmed via manager deposit override by [name]. Reason: [reason]" |
-| Deposit policy toggle changed | All admins/managers | "Deposit policy updated: [key] changed to [value] by [name]" |
-| Online deposit recorded (future) | Guest + admins | "Online deposit of $X received for booking [Y]" |
-
-Policy toggle change notifications are implemented in `useUpdatePolicySetting` -- when the key starts with `deposits_`, fire a notification to admin/manager roles.
-
----
-
-## Phase 7 -- Security
-
-- Only Admin can modify deposit policy settings (existing RLS on `policy_settings` already enforces this)
-- Manager+ can use deposit override (new permission check in `permissions.ts`: `canOverrideDeposit`)
-- `source_channel` is set server-side based on context, not user input
-- All overrides logged to `booking_state_log` with explicit prefix
-- No client-side bypass possible -- the transition handler validates policy before executing
-
-### New Permission
-
-Add to `src/lib/permissions.ts`:
-
-```
-canOverrideDeposit: (role) => ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.manager
-```
+No state can permanently stall without an escalation path after these changes.
 
 ---
 
-## Phase 8 -- No Silent Behavior Shifts
+## Phase E -- UX Resilience
 
-When a deposit policy toggle changes:
+### Mobile (360px)
 
-1. **State machine**: `BookingStateTransition` reads policy on every render (already reactive via `usePolicySettings`)
-2. **AI**: Next AI call includes updated policy in snapshot (fetched fresh each call)
-3. **Notifications**: Toggle change fires notification to admin/manager
-4. **Staff dashboard**: Deposit form visibility updates immediately (React Query invalidation)
-5. **Guest portal**: Deposit banner messaging updates on next page load (policy fetched via `usePolicySettings`)
+- MaintenanceQueue and LaundryPanel already use flex-wrap for badges
+- Override buttons will use small variant (`size="sm"`) and popover dialogs (not modals) for reason input
+- Preview mode banner uses fixed positioning, single line with exit button
+- No layout shifts from new controls -- all additions are conditional renders within existing card boundaries
 
-No cached behavior. No stale state. Everything reads from the live policy.
+### Tablet and Desktop
+
+- Override dropdown renders inline with existing action buttons
+- Preview mode selector in sidebar footer uses existing dropdown patterns
+- No new navigation items or routes
+
+### Role Clarity
+
+- All override buttons are labeled "Override" with a distinct icon
+- Override actions require explicit confirmation (reason + submit)
+- Preview mode has a visually distinct warning banner (amber/orange, full-width)
+- No button renders without a clear label explaining what it does
+
+---
+
+## Phase F -- System Integrity Confirmation
+
+### Single Sources of Truth (preserved)
+
+- **Permissions**: `src/lib/permissions.ts` -- all new permissions added here
+- **Deposit policy**: `src/lib/depositPolicy.ts` -- unchanged
+- **Role hierarchy**: `ROLE_HIERARCHY` in permissions.ts -- unchanged
+- **State machine**: `src/lib/bookingStateMachine.ts` -- unchanged
+
+### No Conflicts With
+
+- Booking state machine (no state changes)
+- Deposit policy logic (no changes)
+- Policy settings toggles (no new toggles, only new permission)
+- AI circuit breaker (no changes to enable/disable logic)
+- RLS policies (no changes needed; `stay_support_log` already allows authenticated INSERT)
+
+### Nothing Becomes Implicit
+
+- Override actions are always logged with reason and change_type
+- Preview mode is always visually indicated
+- AI advisory reflects operational drift transparently
+- Notifications fire on every override
 
 ---
 
 ## Rollout Order
 
-1. Database migration (add `source_channel` column)
-2. Insert 3 new policy setting rows
-3. Create `src/lib/depositPolicy.ts` helper
-4. Add `canOverrideDeposit` permission
-5. Update `PolicySettingsForm.tsx` (add boolean keys)
-6. Update `BookingStateTransition.tsx` (policy-aware deposit flow)
-7. Update `GuestPortal.tsx` (context-aware deposit banner)
-8. Update `useBookings.ts` (source_channel + policy change notifications)
-9. Update `BookingDetailSheet.tsx` (source_channel display)
-10. Update `ai-assistant` edge function (deposit policy in snapshot)
-11. Add translation keys to all 9 locales
-12. Deploy edge function
+1. Database migration: add `change_type` to `stay_support_log`
+2. Add `canOverrideStaySupport` permission to `permissions.ts`
+3. Add override mutations to `useLaundryRequests.ts` and `useMaintenanceRequests.ts`
+4. Fix LaundryPanel dead-button for maintenance role
+5. Add override UI to `MaintenanceQueue.tsx` and `LaundryPanel.tsx`
+6. Add override UI to `BookingDetailSheet.tsx` support tab
+7. Add guest notifications for maintenance status changes
+8. Create `useRolePreview.tsx` context
+9. Integrate preview mode into `App.tsx`, `DashboardLayout.tsx`, `AppSidebar.tsx`
+10. Update consuming components to use `effectiveRole` for rendering
+11. Update `ai-assistant` edge function with staleness detection
+12. Add translation keys to all 9 locale files
+13. Deploy edge function
 
----
+## Files Summary
+
+| File | Action |
+|------|--------|
+| `stay_support_log` (migration) | Add `change_type` column |
+| `src/lib/permissions.ts` | Add `canOverrideStaySupport` |
+| `src/hooks/useLaundryRequests.ts` | Add `useOverrideLaundryStatus`, add guest notification on advances |
+| `src/hooks/useMaintenanceRequests.ts` | Add `useOverrideMaintenanceStatus`, add guest notifications |
+| `src/components/LaundryPanel.tsx` | Add override UI (Manager+), fix maintenance role read-only |
+| `src/components/MaintenanceQueue.tsx` | Add override UI (Manager+) |
+| `src/components/BookingDetailSheet.tsx` | Add override controls in support tab |
+| `src/hooks/useRolePreview.tsx` (new) | Preview role context |
+| `src/App.tsx` | Wrap with RolePreviewProvider |
+| `src/components/DashboardLayout.tsx` | Preview mode banner |
+| `src/components/AppSidebar.tsx` | Preview role selector for admin |
+| `src/pages/Index.tsx` | Use effectiveRole |
+| `supabase/functions/ai-assistant/index.ts` | Add staleness detection in digest mode |
+| All 9 locale files | Add translation keys for overrides, preview mode, notifications |
 
 ## Risk Assessment
 
 | Risk | Mitigation |
 |------|-----------|
-| Online payment gateway not yet integrated | "Online" mode shows instructional UI only. No actual payment processing until a gateway is connected. System is ready for it without depending on it. |
-| Policy changed mid-booking | Bookings already in `pending_deposit` see updated messaging immediately. No bookings get stuck -- manual override always available to Manager+. |
-| Toggle confusion | Policy descriptions are written in plain language. AI can explain current policy in "explain" mode. |
-| Source channel not set on old payments | Default value `'front_desk'` covers existing records. No data migration needed. |
+| Preview mode accidentally allows unauthorized mutations | Mutation hooks always use real role from `useAuth()`, never preview role. Backend RLS enforces actual identity. |
+| Override abuse | All overrides logged with reason, admin notified, AI reflects in digest |
+| `change_type` column on existing data | Default value `'normal'` covers all existing rows |
+| LaundryPanel fix removing functionality | Only hides buttons for maintenance role; Front Desk+ retains full control |
 
+## Regression Testing Checklist
+
+- [ ] Maintenance role: verify LaundryPanel shows statuses but no advance buttons
+- [ ] Maintenance role: verify MaintenanceQueue still allows start/resolve
+- [ ] Manager: verify override dropdown appears on laundry and maintenance items
+- [ ] Manager override: verify reason is required before submission
+- [ ] Manager override: verify `stay_support_log` entry has `change_type = 'override'`
+- [ ] Manager override: verify admin receives notification
+- [ ] Guest: verify notification on maintenance resolution
+- [ ] Admin: verify preview mode selector appears in sidebar
+- [ ] Admin preview as Front Desk: verify Manager-only buttons disappear
+- [ ] Admin preview as Maintenance: verify simplified dashboard renders
+- [ ] Admin preview mode: verify mutations still execute with admin authority
+- [ ] Admin preview mode: verify banner is visible and exit works
+- [ ] AI digest: verify stale items (>24h) are flagged in advisory
+- [ ] AI validate: verify override context is included in pre-flight check
+- [ ] Mobile 360px: verify override popover renders without overflow
+- [ ] Existing booking state transitions: verify no regression
+- [ ] Deposit flow: verify no regression in pending_deposit to confirmed
