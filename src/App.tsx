@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import { RolePreviewProvider } from "@/hooks/useRolePreview";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -25,44 +26,46 @@ import Legal from "./pages/Legal";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <RolePreviewProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/auth/guest" element={<GuestAuth />} />
+  <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <RolePreviewProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/auth/guest" element={<GuestAuth />} />
 
-              {/* Root redirects based on role */}
-              <Route path="/" element={<ProtectedRoute><RoleRedirect /></ProtectedRoute>} />
+                {/* Root redirects based on role */}
+                <Route path="/" element={<ProtectedRoute><RoleRedirect /></ProtectedRoute>} />
 
-              {/* Staff routes — each enforced by canAccessRoute */}
-              <Route path="/dashboard" element={<ProtectedRoute requiredPath="/dashboard"><Index /></ProtectedRoute>} />
-              <Route path="/units" element={<ProtectedRoute requiredPath="/units"><Units /></ProtectedRoute>} />
-              <Route path="/bookings" element={<ProtectedRoute requiredPath="/bookings"><Bookings /></ProtectedRoute>} />
-              <Route path="/calendar" element={<ProtectedRoute requiredPath="/calendar"><CalendarView /></ProtectedRoute>} />
-              <Route path="/pricing" element={<ProtectedRoute requiredPath="/pricing"><Pricing /></ProtectedRoute>} />
-              <Route path="/reports" element={<ProtectedRoute requiredPath="/reports"><Reports /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute requiredPath="/settings"><Settings /></ProtectedRoute>} />
-              <Route path="/messages" element={<ProtectedRoute requiredPath="/messages"><Messages /></ProtectedRoute>} />
+                {/* Staff routes — each enforced by canAccessRoute */}
+                <Route path="/dashboard" element={<ProtectedRoute requiredPath="/dashboard"><Index /></ProtectedRoute>} />
+                <Route path="/units" element={<ProtectedRoute requiredPath="/units"><Units /></ProtectedRoute>} />
+                <Route path="/bookings" element={<ProtectedRoute requiredPath="/bookings"><Bookings /></ProtectedRoute>} />
+                <Route path="/calendar" element={<ProtectedRoute requiredPath="/calendar"><CalendarView /></ProtectedRoute>} />
+                <Route path="/pricing" element={<ProtectedRoute requiredPath="/pricing"><Pricing /></ProtectedRoute>} />
+                <Route path="/reports" element={<ProtectedRoute requiredPath="/reports"><Reports /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute requiredPath="/settings"><Settings /></ProtectedRoute>} />
+                <Route path="/messages" element={<ProtectedRoute requiredPath="/messages"><Messages /></ProtectedRoute>} />
 
-              {/* Guest portal */}
-              <Route path="/guest" element={<ProtectedRoute guestOnly><GuestPortal /></ProtectedRoute>} />
+                {/* Guest portal */}
+                <Route path="/guest" element={<ProtectedRoute guestOnly><GuestPortal /></ProtectedRoute>} />
 
-              {/* Public pages — no auth required */}
-              <Route path="/embed/:type/:unitId" element={<EmbedWidget />} />
-              <Route path="/legal" element={<Legal />} />
+                {/* Public pages — no auth required */}
+                <Route path="/embed/:type/:unitId" element={<EmbedWidget />} />
+                <Route path="/legal" element={<Legal />} />
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </RolePreviewProvider>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </RolePreviewProvider>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;
