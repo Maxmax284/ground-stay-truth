@@ -70,10 +70,18 @@ async function logSupportAction(params: {
   from_status?: string;
   to_status?: string;
   note?: string;
+  change_type?: string;
 }) {
   const { data: { user } } = await supabase.auth.getUser();
   await supabase.from("stay_support_log").insert({
-    ...params,
+    booking_id: params.booking_id,
+    request_type: params.request_type,
+    request_id: params.request_id,
+    action: params.action,
+    from_status: params.from_status,
+    to_status: params.to_status,
+    note: params.note,
+    change_type: params.change_type ?? "normal",
     changed_by: user?.id ?? null,
   });
 }
@@ -192,4 +200,88 @@ export function getNextLaundryStatus(current: string): string | null {
   const idx = LAUNDRY_STATUS_ORDER.indexOf(current);
   if (idx < 0 || idx >= LAUNDRY_STATUS_ORDER.length - 1) return null;
   return LAUNDRY_STATUS_ORDER[idx + 1];
+}
+
+export function useOverrideLaundryStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: {
+      id: string;
+      booking_id: string;
+      current_status: string;
+      target_status: string;
+      reason: string;
+    }) => {
+      if (!params.reason.trim()) throw new Error("Override reason is required");
+
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await supabase
+        .from("laundry_requests")
+        .update({ status: params.target_status, updated_by: user?.id ?? null })
+        .eq("id", params.id)
+        .select()
+        .single();
+      if (error) throw error;
+
+      await logSupportAction({
+        booking_id: params.booking_id,
+        request_type: "laundry",
+        request_id: params.id,
+        action: "status_overridden",
+        from_status: params.current_status,
+        to_status: params.target_status,
+        note: params.reason,
+        change_type: "override",
+      });
+
+      // Notify admins about override
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", user?.id ?? "")
+        .single();
+      const staffName = profile?.full_name ?? "Staff";
+
+      const { data: admins } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin");
+      for (const a of admins ?? []) {
+        if (a.user_id !== user?.id) {
+          await createNotification({
+            user_id: a.user_id,
+            type: "laundry",
+            reference_id: params.id,
+            message: `Laundry status overridden by ${staffName}. Reason: ${params.reason}`,
+          });
+        }
+      }
+
+      // Notify guest on meaningful final states
+      if (["ready_for_pickup", "collected"].includes(params.target_status)) {
+        const { data: booking } = await supabase
+          .from("bookings")
+          .select("guest_id")
+          .eq("id", params.booking_id)
+          .single();
+        if (booking?.guest_id) {
+          await createNotification({
+            user_id: booking.guest_id,
+            type: "laundry",
+            reference_id: params.id,
+            message: params.target_status === "ready_for_pickup"
+              ? "Your laundry is ready for pickup!"
+              : "Your laundry has been collected.",
+          });
+        }
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["laundry-requests"] });
+      qc.invalidateQueries({ queryKey: ["laundry-requests-all"] });
+      qc.invalidateQueries({ queryKey: ["stay-support-log"] });
+    },
+  });
 }

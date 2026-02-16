@@ -142,4 +142,8 @@ export const permissions = {
   /** Can view laundry requests — Front Desk+ (all) or Guest (own) */
   canViewLaundryRequests: (role: AppRole | null) =>
     !!role && (role === "guest" || ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.front_desk),
+
+  /** Can override stay support status (laundry/maintenance) — Manager+ */
+  canOverrideStaySupport: (role: AppRole | null) =>
+    !!role && ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.manager,
 } as const;

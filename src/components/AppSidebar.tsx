@@ -11,10 +11,12 @@ import {
   MessageSquare,
   Eye,
   Swords,
+  ScanEye,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
-import { canAccessRoute, permissions } from "@/lib/permissions";
+import { useRolePreview } from "@/hooks/useRolePreview";
+import { canAccessRoute, permissions, type AppRole } from "@/lib/permissions";
 import {
   Sidebar,
   SidebarContent,
@@ -28,6 +30,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +48,8 @@ const navItems = [
   { titleKey: "nav.messages", url: "/messages", icon: MessageSquare },
   { titleKey: "nav.settings", url: "/settings", icon: Settings },
 ];
+
+const PREVIEW_ROLES: AppRole[] = ["front_desk", "front_desk_supervisor", "manager", "maintenance", "viewer"];
 
 function usePendingUsersCount(isAdmin: boolean) {
   return useQuery({
@@ -87,14 +92,15 @@ function usePendingApprovalCount(canApprove: boolean) {
 export function AppSidebar() {
   const { t } = useTranslation();
   const { signOut, user, role, isAdmin } = useAuth();
-  const canApprove = permissions.canApproveBooking(role);
-  const isMaintenance = role === "maintenance";
-  const isViewer = role === "viewer";
+  const { previewRole, setPreviewRole, effectiveRole, isPreviewMode } = useRolePreview();
+  const canApprove = permissions.canApproveBooking(effectiveRole);
+  const isMaintenance = effectiveRole === "maintenance";
+  const isViewer = effectiveRole === "viewer";
   const { data: pendingCount } = usePendingUsersCount(isAdmin);
   const { data: approvalCount } = usePendingApprovalCount(canApprove);
   const { data: maintenanceCount } = useOpenMaintenanceCount();
 
-  const visibleNavItems = navItems.filter((item) => canAccessRoute(role, item.url));
+  const visibleNavItems = navItems.filter((item) => canAccessRoute(effectiveRole, item.url));
 
   return (
     <Sidebar>
@@ -162,10 +168,29 @@ export function AppSidebar() {
           )}
         </div>
         {isAdmin && (
-          <Link to="/guest?preview=true" className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
-            <Eye className="h-3.5 w-3.5" />
-            {t("nav.previewGuestPortal")}
-          </Link>
+          <>
+            <Link to="/guest?preview=true" className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+              <Eye className="h-3.5 w-3.5" />
+              {t("nav.previewGuestPortal")}
+            </Link>
+            <div className="flex items-center gap-2 px-2 py-1.5 mb-1 text-xs">
+              <ScanEye className="h-3.5 w-3.5 text-sidebar-foreground/60 shrink-0" />
+              <Select
+                value={previewRole ?? "none"}
+                onValueChange={(val) => setPreviewRole(val === "none" ? null : val as AppRole)}
+              >
+                <SelectTrigger className="h-7 text-xs border-sidebar-border">
+                  <SelectValue placeholder={t("preview.selectRole")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t("preview.actualRole")}</SelectItem>
+                  {PREVIEW_ROLES.map((r) => (
+                    <SelectItem key={r} value={r}>{t(`roles.${r}`)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </>
         )}
         <div className="px-1 mb-2">
           <LanguageSelector compact />

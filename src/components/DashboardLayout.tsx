@@ -1,10 +1,12 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { useLocation } from "react-router-dom";
-import { Menu } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NotificationBell } from "@/components/NotificationBell";
 import { AIAssistantPanel } from "@/components/AIAssistantPanel";
+import { useRolePreview } from "@/hooks/useRolePreview";
+import { Button } from "@/components/ui/button";
 
 const routeTitleKeys: Record<string, string> = {
   "/dashboard": "nav.dashboard",
@@ -25,6 +27,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { t } = useTranslation();
   const location = useLocation();
   const titleKey = routeTitleKeys[location.pathname] || "nav.dashboard";
+  const { isPreviewMode, previewRole, setPreviewRole } = useRolePreview();
 
   return (
     <SidebarProvider>
@@ -33,6 +36,17 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <div className="flex-1 flex flex-col">
           {/* Thai flag accent stripe */}
           <div className="thai-stripe" />
+          {/* Preview mode banner */}
+          {isPreviewMode && (
+            <div className="bg-amber-500/90 text-amber-950 px-4 py-2 flex items-center justify-between text-sm font-medium">
+              <span>
+                {t("preview.banner", { role: t(`roles.${previewRole}`) })}
+              </span>
+              <Button size="sm" variant="ghost" className="h-7 text-amber-950 hover:text-amber-900 hover:bg-amber-400/50" onClick={() => setPreviewRole(null)}>
+                <X className="h-4 w-4 mr-1" /> {t("preview.exit")}
+              </Button>
+            </div>
+          )}
           <header className="h-14 flex items-center border-b border-border px-4 bg-card gap-3">
             <SidebarTrigger className="h-10 w-auto px-3 flex items-center gap-2 text-sm font-medium">
               <Menu className="h-5 w-5" />

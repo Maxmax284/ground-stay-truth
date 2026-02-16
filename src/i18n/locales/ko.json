@@ -793,5 +793,20 @@
       "guest_portal": "게스트 포털",
       "supervisor_override": "매니저 오버라이드"
     }
+  },
+  "override": {
+    "title": "상태 오버라이드",
+    "selectStatus": "대상 상태 선택",
+    "reasonRequired": "사유가 필요합니다.",
+    "reasonPlaceholder": "오버라이드가 필요한 이유를 설명하세요…",
+    "confirm": "오버라이드 적용",
+    "applied": "오버라이드 적용됨",
+    "badge": "오버라이드"
+  },
+  "preview": {
+    "banner": "미리보기 모드: {{role}}(으)로 보기 — 시뮬레이션입니다. 작업은 실제 역할이 필요합니다.",
+    "exit": "미리보기 종료",
+    "selectRole": "역할로 미리보기…",
+    "actualRole": "내 실제 역할"
   }
 }
