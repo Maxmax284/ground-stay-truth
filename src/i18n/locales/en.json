@@ -794,5 +794,20 @@
       "guest_portal": "Guest Portal",
       "supervisor_override": "Manager Override"
     }
+  },
+  "override": {
+    "title": "Status Override",
+    "selectStatus": "Select target status",
+    "reasonRequired": "A reason is required for this override.",
+    "reasonPlaceholder": "Explain why this override is needed…",
+    "confirm": "Apply Override",
+    "applied": "Override applied",
+    "badge": "Override"
+  },
+  "preview": {
+    "banner": "PREVIEW MODE: Viewing as {{role}} — This is a simulation. Actions still require your actual role.",
+    "exit": "Exit Preview",
+    "selectRole": "Preview as role…",
+    "actualRole": "My actual role"
   }
 }

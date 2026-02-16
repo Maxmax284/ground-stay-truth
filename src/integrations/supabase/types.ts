@@ -581,6 +581,7 @@ export type Database = {
         Row: {
           action: string
           booking_id: string
+          change_type: string
           changed_by: string | null
           created_at: string
           from_status: string | null
@@ -593,6 +594,7 @@ export type Database = {
         Insert: {
           action: string
           booking_id: string
+          change_type?: string
           changed_by?: string | null
           created_at?: string
           from_status?: string | null
@@ -605,6 +607,7 @@ export type Database = {
         Update: {
           action?: string
           booking_id?: string
+          change_type?: string
           changed_by?: string | null
           created_at?: string
           from_status?: string | null

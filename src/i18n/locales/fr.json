@@ -793,5 +793,20 @@
       "guest_portal": "Portail invité",
       "supervisor_override": "Dérogation manager"
     }
+  },
+  "override": {
+    "title": "Dérogation de statut",
+    "selectStatus": "Sélectionner le statut cible",
+    "reasonRequired": "Une raison est requise.",
+    "reasonPlaceholder": "Expliquez pourquoi cette dérogation est nécessaire…",
+    "confirm": "Appliquer",
+    "applied": "Dérogation appliquée",
+    "badge": "Dérogation"
+  },
+  "preview": {
+    "banner": "MODE APERÇU : Affichage en tant que {{role}} — Ceci est une simulation. Les actions nécessitent votre rôle réel.",
+    "exit": "Quitter l'aperçu",
+    "selectRole": "Aperçu en tant que…",
+    "actualRole": "Mon rôle réel"
   }
 }

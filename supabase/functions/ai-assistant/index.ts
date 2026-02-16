@@ -146,31 +146,53 @@ Active laundry requests: ${(laundryRes.data ?? []).length}.
 Deposit policy: ${depositMode}. Manual deposits: ${dpMap.get("deposits_manual_enabled") !== "false" ? "enabled" : "disabled"}. Online deposits: ${onlineEnabled ? "enabled" : "disabled"}.`;
 
     if (mode === "digest" || mode === "summarize") {
-      const { data: detailedBookings } = await adminClient
-        .from("bookings")
-        .select("id, state, check_in, check_out, unit_id, units(name)")
-        .in("state", ["confirmed", "checked_in", "pending_approval", "pending_deposit"])
-        .order("check_in", { ascending: true })
-        .limit(20);
+      const [detBookingsRes, detMaintenanceRes, detLaundryRes] = await Promise.all([
+        adminClient
+          .from("bookings")
+          .select("id, state, check_in, check_out, unit_id, units(name)")
+          .in("state", ["confirmed", "checked_in", "pending_approval", "pending_deposit"])
+          .order("check_in", { ascending: true })
+          .limit(20),
+        adminClient
+          .from("maintenance_requests")
+          .select("id, category, status, priority, unit_id, units(name), created_at")
+          .in("status", ["open", "in_progress"])
+          .limit(20),
+        adminClient
+          .from("laundry_requests")
+          .select("id, status, unit_id, units(name), created_at")
+          .neq("status", "collected")
+          .limit(20),
+      ]);
 
-      const { data: detailedMaintenance } = await adminClient
-        .from("maintenance_requests")
-        .select("id, category, status, priority, unit_id, units(name)")
-        .in("status", ["open", "in_progress"])
-        .limit(20);
+      const detailedMaintenance = detMaintenanceRes.data ?? [];
+      const detailedLaundry = detLaundryRes.data ?? [];
 
-      const { data: detailedLaundry } = await adminClient
-        .from("laundry_requests")
-        .select("id, status, unit_id, units(name)")
-        .neq("status", "collected")
-        .limit(20);
+      // Staleness detection (>24 hours in intermediate state)
+      const now = new Date();
+      const staleMaintenance = detailedMaintenance.filter((m: any) => {
+        const age = (now.getTime() - new Date(m.created_at).getTime()) / (1000 * 60 * 60);
+        return age > 24;
+      });
+      const staleLaundry = detailedLaundry.filter((l: any) => {
+        const age = (now.getTime() - new Date(l.created_at).getTime()) / (1000 * 60 * 60);
+        return age > 24 && ["in_progress", "ready_for_pickup"].includes(l.status);
+      });
+
+      let stalenessAdvisory = "";
+      if (staleMaintenance.length > 0) {
+        stalenessAdvisory += `\nHeads up: ${staleMaintenance.length} maintenance request(s) have been open for over 24 hours.`;
+      }
+      if (staleLaundry.length > 0) {
+        stalenessAdvisory += `\nHeads up: ${staleLaundry.length} laundry request(s) have been in intermediate state for over 24 hours.`;
+      }
 
       contextData += `
 
 DETAILED OPERATIONAL STATE:
-Active bookings: ${JSON.stringify(detailedBookings ?? [])}
-Open maintenance: ${JSON.stringify(detailedMaintenance ?? [])}
-Active laundry: ${JSON.stringify(detailedLaundry ?? [])}`;
+Active bookings: ${JSON.stringify(detBookingsRes.data ?? [])}
+Open maintenance: ${JSON.stringify(detailedMaintenance)}
+Active laundry: ${JSON.stringify(detailedLaundry)}${stalenessAdvisory}`;
     }
 
     if (mode === "validate" && context) {

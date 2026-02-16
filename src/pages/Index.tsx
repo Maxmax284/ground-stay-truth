@@ -9,6 +9,7 @@ import { useDashboardStats } from "@/hooks/useDashboard";
 import { type BookingState } from "@/lib/bookingStateMachine";
 import { canAccessRoute, permissions } from "@/lib/permissions";
 import { useAuth } from "@/hooks/useAuth";
+import { useRolePreview } from "@/hooks/useRolePreview";
 import { ApprovalQueue } from "@/components/ApprovalQueue";
 import { MaintenanceQueue } from "@/components/MaintenanceQueue";
 import { LaundryPanel } from "@/components/LaundryPanel";
@@ -20,6 +21,7 @@ import { useTranslation } from "react-i18next";
 const Index = () => {
   const { t } = useTranslation();
   const { role } = useAuth();
+  const { effectiveRole } = useRolePreview();
   const { arrivals, departures, activeBookings, unitCount, recentActivity, pendingApproval } = useDashboardStats();
 
   const arrivalsCount = arrivals.data?.length ?? 0;
@@ -28,9 +30,9 @@ const Index = () => {
   const units = unitCount.data ?? 0;
   const isLoading = arrivals.isLoading || departures.isLoading || activeBookings.isLoading || unitCount.isLoading;
 
-  const canApprove = permissions.canApproveBooking(role);
-  const isMaintenance = role === "maintenance";
-  const isViewer = role === "viewer";
+  const canApprove = permissions.canApproveBooking(effectiveRole);
+  const isMaintenance = effectiveRole === "maintenance";
+  const isViewer = effectiveRole === "viewer";
 
   return (
     <DashboardLayout>
@@ -101,16 +103,16 @@ const Index = () => {
                     <CardTitle className="text-lg">{t("dashboard.quickActions")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    {canAccessRoute(role, "/bookings") && (
+                    {canAccessRoute(effectiveRole, "/bookings") && (
                       <QuickAction to="/bookings" icon={Plus} label={t("dashboard.newBooking")} description={t("dashboard.createReservation")} />
                     )}
-                    {canAccessRoute(role, "/calendar") && (
+                    {canAccessRoute(effectiveRole, "/calendar") && (
                       <QuickAction to="/calendar" icon={CalendarDays} label={t("dashboard.viewCalendar")} description={t("dashboard.seeAvailability")} />
                     )}
-                    {canAccessRoute(role, "/units") && (
+                    {canAccessRoute(effectiveRole, "/units") && (
                       <QuickAction to="/units" icon={Building2} label={t("dashboard.manageUnits")} description={t("dashboard.addOrEditUnits")} />
                     )}
-                    {canAccessRoute(role, "/pricing") && (
+                    {canAccessRoute(effectiveRole, "/pricing") && (
                       <QuickAction to="/pricing" icon={TrendingUp} label={t("dashboard.pricingPolicies")} description={t("dashboard.configureRates")} />
                     )}
                   </CardContent>
