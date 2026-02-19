@@ -19,7 +19,7 @@ export function calculateRefund(
   policies: PolicySetting[]
 ): RefundResult {
   const freeDays = Number(policies.find((p) => p.key === "free_cancellation_days")?.value ?? 7);
-  const partialMinDays = Number(policies.find((p) => p.key === "partial_refund_min_days")?.value ?? 3);
+  const partialMinDays = Number(policies.find((p) => p.key === "partial_refund_days")?.value ?? 3);
   const partialPct = Number(policies.find((p) => p.key === "partial_refund_percentage")?.value ?? 50);
 
   const daysUntilCheckIn = differenceInCalendarDays(new Date(checkInDate), new Date());
