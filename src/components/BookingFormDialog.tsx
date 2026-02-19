@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { calculatePricing, type PricingSummary } from "@/lib/pricingCalculator";
+import { formatPrice } from "@/lib/currency";
 import { AlertTriangle } from "lucide-react";
 
 interface BookingFormDialogProps { open: boolean; onOpenChange: (open: boolean) => void; defaultUnitId?: string; defaultCheckIn?: string; defaultCheckOut?: string; }
@@ -161,10 +162,10 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
               <h4 className="text-sm font-semibold text-foreground">{t("bookingForm.priceBreakdown")}</h4>
               <div className="space-y-1">{pricingSources.map(({ source, name, count }, i) => <div key={i} className="flex items-center justify-between text-xs text-muted-foreground"><span className="flex items-center gap-1.5"><Badge variant="outline" className="text-[10px] px-1.5 py-0">{t(`pricing.priceSources.${source}`)}</Badge>{name && <span>({name})</span>}<span>× {count} {count > 1 ? t("common.nights") : t("common.night")}</span></span></div>)}</div>
               <Separator />
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("bookingForm.subtotal")} ({pricing.nights.length} {pricing.nights.length > 1 ? t("common.nights") : t("common.night")})</span><span className="font-medium">${pricing.subtotal.toFixed(2)}</span></div>
-              {pricing.cleaningFee > 0 && <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("bookingForm.cleaningFee")}</span><span className="font-medium">${pricing.cleaningFee.toFixed(2)}</span></div>}
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("bookingForm.subtotal")} ({pricing.nights.length} {pricing.nights.length > 1 ? t("common.nights") : t("common.night")})</span><span className="font-medium">{formatPrice(pricing.subtotal, policies)}</span></div>
+              {pricing.cleaningFee > 0 && <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("bookingForm.cleaningFee")}</span><span className="font-medium">{formatPrice(pricing.cleaningFee, policies)}</span></div>}
               <Separator />
-              <div className="flex justify-between text-sm font-semibold"><span>{t("common.total")}</span><span>${pricing.total.toFixed(2)}</span></div>
+              <div className="flex justify-between text-sm font-semibold"><span>{t("common.total")}</span><span>{formatPrice(pricing.total, policies)}</span></div>
             </div>
           )}
           <div className="space-y-2">

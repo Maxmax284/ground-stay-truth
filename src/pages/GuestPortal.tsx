@@ -14,6 +14,7 @@ import { CalendarMonthView } from "@/components/CalendarMonthView";
 import { GuestBookingRequestForm } from "@/components/GuestBookingRequestForm";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { calculateRefund } from "@/lib/refundCalculator";
+import { formatPrice } from "@/lib/currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -193,6 +194,7 @@ const GuestPortal = () => {
               </TabsTrigger>
             )}
             <TabsTrigger value="calendar">{t("nav.calendar")}</TabsTrigger>
+            <TabsTrigger value="camp-info">{t("guestPortal.campInfo")}</TabsTrigger>
             <TabsTrigger value="policies">{t("guestPortal.policies")}</TabsTrigger>
             <TabsTrigger value="profile">{t("guestPortal.profile")}</TabsTrigger>
           </TabsList>
@@ -249,18 +251,18 @@ const GuestPortal = () => {
                           <Separator />
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">{t("common.from")}</span>
-                            <span className="font-semibold text-foreground">${Number(unit.base_price).toFixed(0)}{t("common.perNight")}</span>
+                            <span className="font-semibold text-foreground">{formatPrice(unit.base_price, policies, { decimals: 0 })}{t("common.perNight")}</span>
                           </div>
                           {Number(unit.weekend_price ?? 0) > 0 && (
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
                               <span>{t("guestPortal.weekendRate")}</span>
-                              <span>${Number(unit.weekend_price).toFixed(0)}{t("common.perNight")}</span>
+                              <span>{formatPrice(unit.weekend_price, policies, { decimals: 0 })}{t("common.perNight")}</span>
                             </div>
                           )}
                           {Number(unit.cleaning_fee ?? 0) > 0 && (
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
                               <span>{t("guestPortal.cleaningFee")}</span>
-                              <span>${Number(unit.cleaning_fee).toFixed(0)}</span>
+                              <span>{formatPrice(unit.cleaning_fee, policies, { decimals: 0 })}</span>
                             </div>
                           )}
                           <Button onClick={() => openBookingForm(unit.id)} size="sm" className="w-full mt-2">
@@ -379,6 +381,28 @@ const GuestPortal = () => {
                 </p>
               )}
             </div>
+          </TabsContent>
+
+          {/* ── Camp Info Tab ── */}
+          <TabsContent value="camp-info">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2"><Info className="h-4 w-4 text-primary" />{t("guestPortal.campInfo")}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
+                  {String(policies?.find((p) => p.key === "camp_info")?.value ?? t("guestPortal.noCampInfo")).replace(/^"|"$/g, "")}
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-foreground">{t("guestPortal.checkInOut")}</h4>
+                  <ul className="space-y-1.5 text-muted-foreground list-disc pl-5">
+                    <li>{t("guestPortal.checkInFrom")} <span className="font-medium text-foreground">{String(policies?.find((p) => p.key === "earliest_checkin_time")?.value ?? "16:00").replace(/^"|"$/g, "")}</span></li>
+                    <li>{t("guestPortal.checkOutBy")} <span className="font-medium text-foreground">{String(policies?.find((p) => p.key === "checkout_time")?.value ?? "11:00").replace(/^"|"$/g, "")}</span></li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* ── Policies Tab ── */}
@@ -545,7 +569,7 @@ function GuestBookingCard({ booking, messages, userId, policies }: { booking: an
           </div>
           {booking.total_price != null && (
             <div className="text-right shrink-0">
-              <p className="text-sm font-semibold text-foreground">${Number(booking.total_price).toFixed(2)}</p>
+              <p className="text-sm font-semibold text-foreground">{formatPrice(booking.total_price, policies)}</p>
               <p className="text-xs text-muted-foreground">{t("common.total")}</p>
             </div>
           )}
@@ -585,7 +609,7 @@ function GuestBookingCard({ booking, messages, userId, policies }: { booking: an
                       {refundInfo.tier === "none" && t("refund.noRefund", { days: refundInfo.daysUntilCheckIn })}
                       {refundInfo.refundAmount != null && booking.total_price != null && (
                         <span className="block text-sm mt-1">
-                          {t("refund.refundAmount")}: ${refundInfo.refundAmount.toFixed(2)} {t("refund.ofTotal", { total: Number(booking.total_price).toFixed(2) })}
+                          {t("refund.refundAmount")}: {formatPrice(refundInfo.refundAmount, policies)} {t("refund.ofTotal", { total: formatPrice(booking.total_price, policies) })}
                         </span>
                       )}
                     </span>

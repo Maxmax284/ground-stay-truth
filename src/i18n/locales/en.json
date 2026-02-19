@@ -609,14 +609,23 @@
     "cancelBookingTitle": "Cancel this booking?",
     "cancelBookingDesc": "Are you sure you want to cancel this booking? Please review the refund policy below.",
     "confirmCancel": "Yes, cancel booking",
-    "bookingCancelled": "Booking cancelled"
+    "bookingCancelled": "Booking cancelled",
+    "campInfo": "Camp Info",
+    "noCampInfo": "Camp information has not been configured yet. Please check back later."
   },
   "guestBooking": {
     "requestBooking": "Request Booking",
     "requestSent": "Booking request sent",
     "requestSentDesc": "Your inquiry has been submitted. You'll hear back from our team soon.",
     "submitRequest": "Submit Request",
-    "notesPlaceholder": "Special requests, arrival time, questions…"
+    "notesPlaceholder": "Special requests, arrival time, questions…",
+    "guestType": "Guest Type",
+    "guestTypes": {
+      "fighter": "Fighter",
+      "training_guest": "Training Guest",
+      "spectator": "Spectator",
+      "long_term": "Long-term Stay"
+    }
   },
   "notFound": {
     "title": "404",

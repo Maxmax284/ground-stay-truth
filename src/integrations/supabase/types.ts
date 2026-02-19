@@ -54,11 +54,13 @@ export type Database = {
       }
       bookings: {
         Row: {
+          arrival_details: Json | null
           check_in: string
           check_out: string
           created_at: string
           created_by: string | null
           guest_id: string | null
+          guest_type: string | null
           id: string
           notes: string | null
           num_guests: number
@@ -69,11 +71,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          arrival_details?: Json | null
           check_in: string
           check_out: string
           created_at?: string
           created_by?: string | null
           guest_id?: string | null
+          guest_type?: string | null
           id?: string
           notes?: string | null
           num_guests?: number
@@ -84,11 +88,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          arrival_details?: Json | null
           check_in?: string
           check_out?: string
           created_at?: string
           created_by?: string | null
           guest_id?: string | null
+          guest_type?: string | null
           id?: string
           notes?: string | null
           num_guests?: number
@@ -546,10 +552,12 @@ export type Database = {
           full_name: string | null
           id: string
           last_sign_in_at: string | null
+          line_id: string | null
           phone: string | null
           preferred_language: string
           updated_at: string
           user_id: string
+          whatsapp: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -558,10 +566,12 @@ export type Database = {
           full_name?: string | null
           id?: string
           last_sign_in_at?: string | null
+          line_id?: string | null
           phone?: string | null
           preferred_language?: string
           updated_at?: string
           user_id: string
+          whatsapp?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -570,10 +580,12 @@ export type Database = {
           full_name?: string | null
           id?: string
           last_sign_in_at?: string | null
+          line_id?: string | null
           phone?: string | null
           preferred_language?: string
           updated_at?: string
           user_id?: string
+          whatsapp?: string | null
         }
         Relationships: []
       }

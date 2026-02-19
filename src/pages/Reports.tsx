@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, TrendingUp, BarChart3, PieChart, Layers, AlertCircle } from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, PieChart as RPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { usePolicySettings } from "@/hooks/usePolicySettings";
+import { getCurrencyConfig } from "@/lib/currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,6 +29,8 @@ const Reports = () => {
   const { role } = useAuth();
   const [monthOffset, setMonthOffset] = useState(0);
   const { isLoading, occupancyByDay, occupancyRate, revenueByUnit, stateDistribution, blockedVsBookable, rangeLabel } = useReports(monthOffset);
+  const { data: policies } = usePolicySettings();
+  const { symbol: currencySymbol } = getCurrencyConfig(policies);
 
   const canSeeAccounts = role === "viewer" || role === "manager" || role === "admin";
 
@@ -57,6 +61,7 @@ const Reports = () => {
                 blockedVsBookable={blockedVsBookable}
                 rangeLabel={rangeLabel}
                 t={t}
+                currencySymbol={currencySymbol}
               />
             </TabsContent>
 
@@ -76,6 +81,7 @@ const Reports = () => {
             blockedVsBookable={blockedVsBookable}
             rangeLabel={rangeLabel}
             t={t}
+            currencySymbol={currencySymbol}
           />
         )}
       </div>
@@ -95,9 +101,10 @@ interface OperationsProps {
   blockedVsBookable: { name: string; booked: number; blocked: number; maintenance: number; available: number }[];
   rangeLabel: string;
   t: (key: string, opts?: Record<string, unknown>) => string;
+  currencySymbol: string;
 }
 
-const OperationsTab = ({ monthOffset, setMonthOffset, isLoading, occupancyByDay, occupancyRate, revenueByUnit, stateDistribution, blockedVsBookable, rangeLabel, t }: OperationsProps) => (
+const OperationsTab = ({ monthOffset, setMonthOffset, isLoading, occupancyByDay, occupancyRate, revenueByUnit, stateDistribution, blockedVsBookable, rangeLabel, t, currencySymbol }: OperationsProps) => (
   <div className="space-y-6 mt-4">
     <div className="flex items-center justify-end">
       <div className="flex items-center gap-2">
@@ -148,10 +155,10 @@ const OperationsTab = ({ monthOffset, setMonthOffset, isLoading, occupancyByDay,
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={revenueByUnit} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(30, 15%, 88%)" />
-                <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
+                <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${currencySymbol}${v}`} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={100} />
                 <Tooltip contentStyle={{ borderRadius: "0.5rem", fontSize: "0.8rem" }}
-                  formatter={(value: number) => [`$${value.toLocaleString()}`, t("reports.revenue")]} />
+                  formatter={(value: number) => [`${currencySymbol}${value.toLocaleString()}`, t("reports.revenue")]} />
                 <Bar dataKey="revenue" fill="hsl(150, 45%, 40%)" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>

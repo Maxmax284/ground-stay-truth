@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.account-census]
 verify_jwt = false
+
+[functions.expire-stale-bookings]
+verify_jwt = false
