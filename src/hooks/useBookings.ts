@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import type { BookingState } from "@/lib/bookingStateMachine";
-import { createNotification } from "@/hooks/useNotifications";
+import { createNotification, createNotifications } from "@/hooks/useNotifications";
 import { formatPrice } from "@/lib/currency";
 
 export type Booking = Tables<"bookings">;
@@ -83,16 +83,16 @@ export function useCreateBooking() {
         .from("user_roles")
         .select("user_id")
         .in("role", ["admin", "manager"]);
-      for (const admin of admins ?? []) {
-        if (admin.user_id !== user?.id) {
-          await createNotification({
-            user_id: admin.user_id,
+      await createNotifications(
+        (admins ?? [])
+          .filter((a) => a.user_id !== user?.id)
+          .map((a) => ({
+            user_id: a.user_id,
             type: "booking",
             reference_id: data.id,
             message: `New booking created for ${booking.check_in} – ${booking.check_out}`,
-          });
-        }
-      }
+          }))
+      );
 
       return data;
     },
@@ -137,31 +137,18 @@ export function useTransitionBookingState() {
         reason,
       });
 
-      // Notify guest about state change
+      // Notify guest + admins/managers about state change
+      const batch: Array<{ user_id: string; type: string; reference_id: string; message: string }> = [];
       if (data.guest_id && data.guest_id !== user?.id) {
-        await createNotification({
-          user_id: data.guest_id,
-          type: "booking",
-          reference_id: bookingId,
-          message: `Your booking status changed to ${toState}`,
-        });
+        batch.push({ user_id: data.guest_id, type: "booking", reference_id: bookingId, message: `Your booking status changed to ${toState}` });
       }
-
-      // Notify admins/managers
-      const { data: admins } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .in("role", ["admin", "manager"]);
+      const { data: admins } = await supabase.from("user_roles").select("user_id").in("role", ["admin", "manager"]);
       for (const admin of admins ?? []) {
         if (admin.user_id !== user?.id) {
-          await createNotification({
-            user_id: admin.user_id,
-            type: "booking",
-            reference_id: bookingId,
-            message: `Booking transitioned from ${fromState} to ${toState}`,
-          });
+          batch.push({ user_id: admin.user_id, type: "booking", reference_id: bookingId, message: `Booking transitioned from ${fromState} to ${toState}` });
         }
       }
+      await createNotifications(batch);
 
       return data;
     },
@@ -256,30 +243,17 @@ export function useCreatePayment() {
         .maybeSingle();
       const currSym = currencyPolicy?.value ? String(currencyPolicy.value).replace(/^"|"$/g, "") : "฿";
 
+      const batch: Array<{ user_id: string; type: string; reference_id: string; message: string }> = [];
       if (booking?.state === "pending_deposit" && booking.guest_id && booking.guest_id !== user?.id) {
-        await createNotification({
-          user_id: booking.guest_id,
-          type: "booking",
-          reference_id: payment.booking_id,
-          message: `Your deposit of ${currSym}${payment.amount.toFixed(2)} (${payment.method}) has been received. Your booking will be confirmed shortly.`,
-        });
+        batch.push({ user_id: booking.guest_id, type: "booking", reference_id: payment.booking_id, message: `Your deposit of ${currSym}${payment.amount.toFixed(2)} (${payment.method}) has been received. Your booking will be confirmed shortly.` });
       }
-
-      // Notify admins/managers about deposit recorded
-      const { data: admins } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .in("role", ["admin", "manager"]);
+      const { data: admins } = await supabase.from("user_roles").select("user_id").in("role", ["admin", "manager"]);
       for (const admin of admins ?? []) {
         if (admin.user_id !== user?.id) {
-          await createNotification({
-            user_id: admin.user_id,
-            type: "booking",
-            reference_id: payment.booking_id,
-            message: `Deposit of ${currSym}${payment.amount.toFixed(2)} recorded via ${payment.method}`,
-          });
+          batch.push({ user_id: admin.user_id, type: "booking", reference_id: payment.booking_id, message: `Deposit of ${currSym}${payment.amount.toFixed(2)} recorded via ${payment.method}` });
         }
       }
+      await createNotifications(batch);
 
       return data;
     },

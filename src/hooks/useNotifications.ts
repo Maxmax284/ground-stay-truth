@@ -92,17 +92,24 @@ export function useMarkAllNotificationsRead() {
   });
 }
 
-/** Helper to insert a notification from application code */
+/** Helper to insert a notification via backend function */
 export async function createNotification(params: {
   user_id: string;
   type: string;
   reference_id?: string;
   message: string;
 }) {
-  await supabase.from("notifications").insert({
-    user_id: params.user_id,
-    type: params.type,
-    reference_id: params.reference_id ?? null,
-    message: params.message,
+  await supabase.functions.invoke("create-notification", {
+    body: { notifications: [params] },
+  });
+}
+
+/** Batch helper for multi-recipient notifications */
+export async function createNotifications(
+  notifications: Array<{ user_id: string; type: string; reference_id?: string; message: string }>
+) {
+  if (notifications.length === 0) return;
+  await supabase.functions.invoke("create-notification", {
+    body: { notifications },
   });
 }
