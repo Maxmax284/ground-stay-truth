@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -19,7 +18,7 @@ const LANG_NAMES: Record<string, string> = {
   es: "Spanish",
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -39,9 +38,8 @@ serve(async (req) => {
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -74,33 +72,14 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           {
             role: "system",
-            content: `You are a translation assistant. Translate the given text to ${targetLangName}. Return ONLY a JSON object with two fields: "translated_text" (the translation) and "source_language" (the ISO 639-1 code of the detected source language, e.g. "en", "th", "de"). Do not add any explanation or markdown. If the text is already in ${targetLangName}, return it unchanged.`,
+            content: `Translate the following text to ${targetLangName}. Respond with ONLY the translated text, nothing else.`,
           },
           { role: "user", content: text },
         ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "return_translation",
-              description: "Return the translation result",
-              parameters: {
-                type: "object",
-                properties: {
-                  translated_text: { type: "string" },
-                  source_language: { type: "string" },
-                },
-                required: ["translated_text", "source_language"],
-                additionalProperties: false,
-              },
-            },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "return_translation" } },
       }),
     });
 
@@ -119,37 +98,22 @@ serve(async (req) => {
       }
       const t = await response.text();
       console.error("Translation error:", response.status, t);
-      return new Response(JSON.stringify({ error: "Translation failed" }), {
+      console.error("Request model:", "google/gemini-2.5-flash");
+      console.error("LOVABLE_API_KEY present:", !!lovableApiKey);
+      return new Response(JSON.stringify({ error: "Translation failed", detail: t }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const result = await response.json();
-
-    // Extract from tool call response
-    const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
-    if (toolCall?.function?.arguments) {
-      const args = JSON.parse(toolCall.function.arguments);
-      return new Response(JSON.stringify(args), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Fallback: try parsing content directly
     const content = result.choices?.[0]?.message?.content;
+
     if (content) {
-      try {
-        const parsed = JSON.parse(content);
-        return new Response(JSON.stringify(parsed), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      } catch {
-        return new Response(
-          JSON.stringify({ translated_text: content, source_language: "unknown" }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+      return new Response(
+        JSON.stringify({ translated_text: content.trim(), source_language: "auto" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     return new Response(JSON.stringify({ error: "No translation returned" }), {

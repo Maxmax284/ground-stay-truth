@@ -21,6 +21,14 @@ Deno.serve(async (req) => {
 
     // If unitId provided, return single unit + availability
     // Otherwise return all active units
+    // Fetch currency symbol from policy_settings
+    const { data: currencyRow } = await supabase
+      .from("policy_settings")
+      .select("value")
+      .eq("key", "currency_symbol")
+      .maybeSingle();
+    const currencySymbol = currencyRow?.value ? String(currencyRow.value).replace(/^"|"$/g, "") : "฿";
+
     if (unitId) {
       const { data: unit, error: unitError } = await supabase
         .from("units")
@@ -57,7 +65,7 @@ Deno.serve(async (req) => {
         ...(maintenance ?? []).map((m) => ({ start: m.start_date, end: m.end_date })),
       ];
 
-      return new Response(JSON.stringify({ unit, blockedRanges }), {
+      return new Response(JSON.stringify({ unit, blockedRanges, currencySymbol }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -71,7 +79,7 @@ Deno.serve(async (req) => {
 
     if (error) throw error;
 
-    return new Response(JSON.stringify({ units }), {
+    return new Response(JSON.stringify({ units, currencySymbol }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {

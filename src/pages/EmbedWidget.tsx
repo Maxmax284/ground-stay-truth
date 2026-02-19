@@ -50,6 +50,7 @@ export default function EmbedWidget() {
   const [unit, setUnit] = useState<UnitData | null>(null);
   const [units, setUnits] = useState<UnitData[]>([]);
   const [blocked, setBlocked] = useState<BlockedRange[]>([]);
+  const [currencySymbol, setCurrencySymbol] = useState("฿");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,6 +63,8 @@ export default function EmbedWidget() {
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || "Failed to load");
+
+        if (json.currencySymbol) setCurrencySymbol(json.currencySymbol);
 
         if (unitId) {
           setUnit(json.unit);
@@ -96,20 +99,20 @@ export default function EmbedWidget() {
 
   switch (type) {
     case "listing":
-      return unit ? <FullListing unit={unit} blocked={blocked} accent={accentColor} contactUrl={contactUrl} /> : <p style={styles.muted}>Unit not found</p>;
+      return unit ? <FullListing unit={unit} blocked={blocked} accent={accentColor} contactUrl={contactUrl} cs={currencySymbol} /> : <p style={styles.muted}>Unit not found</p>;
     case "compact":
-      return unit ? <CompactCard unit={unit} accent={accentColor} contactUrl={contactUrl} /> : <p style={styles.muted}>Unit not found</p>;
+      return unit ? <CompactCard unit={unit} accent={accentColor} contactUrl={contactUrl} cs={currencySymbol} /> : <p style={styles.muted}>Unit not found</p>;
     case "calendar":
       return unit ? <CalendarOnly unit={unit} blocked={blocked} accent={accentColor} contactUrl={contactUrl} /> : <p style={styles.muted}>Unit not found</p>;
     case "cta":
-      return unit ? <CTAOnly unit={unit} accent={accentColor} contactUrl={contactUrl} /> : <p style={styles.muted}>Unit not found</p>;
+      return unit ? <CTAOnly unit={unit} accent={accentColor} contactUrl={contactUrl} cs={currencySymbol} /> : <p style={styles.muted}>Unit not found</p>;
     default:
       return <p style={styles.muted}>Unknown widget type</p>;
   }
 }
 
 // ── Full Listing ──
-function FullListing({ unit, blocked, accent, contactUrl }: { unit: UnitData; blocked: BlockedRange[]; accent: string; contactUrl: string }) {
+function FullListing({ unit, blocked, accent, contactUrl, cs }: { unit: UnitData; blocked: BlockedRange[]; accent: string; contactUrl: string; cs: string }) {
   return (
     <div style={{ ...styles.container, maxWidth: 480 }}>
       {unit.photos && unit.photos.length > 0 && (
@@ -139,11 +142,11 @@ function FullListing({ unit, blocked, accent, contactUrl }: { unit: UnitData; bl
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 16 }}>
         <div>
-          <span style={{ fontSize: 24, fontWeight: 700, color: "#1f2937" }}>฿{unit.base_price}</span>
+          <span style={{ fontSize: 24, fontWeight: 700, color: "#1f2937" }}>{cs}{unit.base_price}</span>
           <span style={styles.muted}>/night</span>
         </div>
         {Number(unit.cleaning_fee ?? 0) > 0 && (
-          <span style={{ ...styles.muted, fontSize: 12 }}>+ ฿{unit.cleaning_fee} cleaning</span>
+          <span style={{ ...styles.muted, fontSize: 12 }}>+ {cs}{unit.cleaning_fee} cleaning</span>
         )}
       </div>
 
@@ -161,7 +164,7 @@ function FullListing({ unit, blocked, accent, contactUrl }: { unit: UnitData; bl
 }
 
 // ── Compact Card ──
-function CompactCard({ unit, accent, contactUrl }: { unit: UnitData; accent: string; contactUrl: string }) {
+function CompactCard({ unit, accent, contactUrl, cs }: { unit: UnitData; accent: string; contactUrl: string; cs: string }) {
   return (
     <div style={{ ...styles.container, maxWidth: 320, padding: 0, overflow: "hidden" }}>
       {unit.photos && unit.photos.length > 0 && (
@@ -180,7 +183,7 @@ function CompactCard({ unit, accent, contactUrl }: { unit: UnitData; accent: str
       </div>
       <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontSize: 18, fontWeight: 700, color: "#1f2937" }}>
-          From ฿{unit.base_price}<span style={{ ...styles.muted, fontSize: 12 }}>/night</span>
+          From {cs}{unit.base_price}<span style={{ ...styles.muted, fontSize: 12 }}>/night</span>
         </span>
       </div>
       {contactUrl && (
@@ -225,7 +228,7 @@ function CalendarOnly({ unit, blocked, accent, contactUrl }: { unit: UnitData; b
 }
 
 // ── CTA Only ──
-function CTAOnly({ unit, accent, contactUrl }: { unit: UnitData; accent: string; contactUrl: string }) {
+function CTAOnly({ unit, accent, contactUrl, cs }: { unit: UnitData; accent: string; contactUrl: string; cs: string }) {
   // If contactUrl starts with the same origin or is a relative /auth path, it's a guest portal registration link
   const ctaLabel = contactUrl.includes("/auth/guest") ? "Book Now" : "Check Availability";
 
@@ -233,7 +236,7 @@ function CTAOnly({ unit, accent, contactUrl }: { unit: UnitData; accent: string;
     <div style={{ ...styles.container, maxWidth: 280, padding: 16, textAlign: "center" as const }}>
       <h3 style={{ fontSize: 16, fontWeight: 600, color: "#1f2937", margin: "0 0 4px" }}>{unit.name}</h3>
       <p style={{ ...styles.muted, fontSize: 13, marginBottom: 12 }}>
-        From <strong style={{ color: "#1f2937" }}>฿{unit.base_price}/night</strong>
+        From <strong style={{ color: "#1f2937" }}>{cs}{unit.base_price}/night</strong>
       </p>
       {contactUrl ? (
         <a
