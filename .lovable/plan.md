@@ -1,96 +1,115 @@
 
 
-# Embed Builder -- Dedicated Page with Full Customization
+# Harden Notification System -- Backend Function Migration
 
 ## Overview
 
-Move the embed widget builder out of the Settings tab and into its own dedicated sidebar page at `/embeds`. This new page will have a two-panel layout: a configuration panel on the left with all customization controls, and a live preview on the right that updates in real-time. The builder will let you toggle every visible component on/off and control the look and feel of the widget before copying the embed code.
+Move all notification creation from client-side `createNotification()` calls to a new backend function (`create-notification`). Currently, the RLS policy on the `notifications` table allows any authenticated user to INSERT a notification targeting any `user_id`, which means a malicious guest could spoof notifications to other users. The fix moves the INSERT logic server-side where the service role key validates context before creating notifications.
 
-## What Changes
+## Security Problem
 
-### 1. New sidebar item: "Embeds"
-- Add a new nav entry between Messages and Settings in the sidebar using a `Code2` icon
-- Gated to `manager` and `admin` roles (same as `canManageUnits`)
-- Remove the "Embeds" tab from the Settings page since it moves to its own route
-
-### 2. New page: `/embeds` (src/pages/Embeds.tsx)
-- Two-column layout: left panel for controls, right panel for live preview
-- On mobile: stacks vertically (controls on top, preview below)
-
-### 3. Enhanced Configuration Controls
-
-**Unit and Widget Type Selection** (existing, carried over):
-- Unit selector (active units only)
-- Widget type selector (Listing, Compact, Calendar, CTA) with badge chips
-
-**New -- Component Visibility Toggles**:
-- Show/hide photo
-- Show/hide description
-- Show/hide amenities list
-- Show/hide capacity badge
-- Show/hide minimum nights badge
-- Show/hide cleaning fee
-- Show/hide availability calendar (for Listing type)
-- Show/hide CTA button
-
-**New -- Style Customization**:
-- Accent color picker (hex input + color swatch) -- controls button color, title accent
-- Border radius slider (0-24px) -- controls card corner rounding
-- Font size selector (Small / Medium / Large)
-- Dark mode toggle for the widget background (light card vs dark card)
-- Card shadow selector (None / Subtle / Medium / Strong)
-- Max width input (px) -- controls the iframe/card max-width
-
-**CTA Configuration** (existing, carried over):
-- CTA target: Contact URL vs Guest Registration
-- Contact URL input field
-- CTA button text override (new -- custom label instead of auto "Book Now" / "Check Availability")
-
-### 4. Updated Embed URL Parameters
-
-The embed widget page (`EmbedWidget.tsx`) will be updated to read new query parameters that control visibility and styling:
-
-- `hide=photo,amenities,calendar` -- comma-separated list of hidden components
-- `accent=#9a5a30` -- accent color (existing)
-- `radius=12` -- border radius
-- `font=md` -- font size (sm/md/lg)
-- `dark=1` -- dark mode
-- `shadow=subtle` -- shadow level
-- `max_w=480` -- max width
-- `cta_label=Book+Now` -- custom CTA text
-
-### 5. Updated EmbedWidget.tsx
-
-Each sub-component (FullListing, CompactCard, CalendarOnly, CTAOnly) will read the new parameters and conditionally render components. The inline styles will be updated to respect the customization values.
-
-### 6. Permissions and Routing
-
-- Add `/embeds` to `NAV_ACCESS` in permissions.ts for `manager` and `admin`
-- Add route in App.tsx with ProtectedRoute
-- Remove the embeds TabsContent from Settings.tsx
-
-## Technical Details
-
-### Files to create:
-- `src/pages/Embeds.tsx` -- new page with the two-panel builder UI
-
-### Files to modify:
-- `src/components/AppSidebar.tsx` -- add "Embeds" nav item with Code2 icon
-- `src/lib/permissions.ts` -- add `/embeds` route access for manager + admin
-- `src/App.tsx` -- add `/embeds` route
-- `src/pages/Settings.tsx` -- remove the embeds tab
-- `src/pages/EmbedWidget.tsx` -- read new query params, apply visibility/style overrides
-- `src/components/EmbedCodeGenerator.tsx` -- refactor into the new full-page builder with toggle/style controls
-- i18n files (en.json at minimum) -- add new translation keys for the toggle labels and style options
-
-### Embed URL example with full customization:
+The current RLS policy on the `notifications` table:
 ```
-/embed/listing/unit-id-123?accent=%239a5a30&hide=amenities,cleaning_fee&radius=16&font=lg&shadow=medium&dark=0&cta_label=Reserve+Now&contact_url=https://example.com
+Policy: "Authenticated users can insert notifications"
+Command: INSERT
+With Check: (auth.uid() IS NOT NULL)
+```
+This means **any logged-in user** (including guests) can insert a notification row with **any arbitrary `user_id`**, allowing spoofed notifications to staff or other guests.
+
+## Solution
+
+### 1. Create a new backend function: `create-notification`
+
+A new edge function at `supabase/functions/create-notification/index.ts` that:
+- Accepts an array of notification payloads: `{ notifications: [{ user_id, type, reference_id?, message }] }`
+- Validates the caller's JWT via `getClaims()`
+- Uses the **service role client** to insert notifications (bypassing RLS)
+- Returns success/failure
+
+This handles the batch pattern already used in the codebase (e.g., looping over admins to notify each one).
+
+### 2. Tighten the RLS INSERT policy on `notifications`
+
+Replace the current permissive INSERT policy:
+```sql
+-- Remove: any authenticated user can insert
+DROP POLICY "Authenticated users can insert notifications" ON notifications;
+
+-- Add: only service role (backend functions) can insert
+-- No new INSERT policy needed -- the edge function uses service_role which bypasses RLS
 ```
 
-### Preview panel behavior:
-- Uses an actual iframe pointed at the embed URL with all current parameters
-- Updates live as you change any toggle or style value
-- Shows the generated iframe code snippet below the preview with a copy button
-- Shows the direct URL with a "open in new tab" button
+With no INSERT policy for regular users, only the service role (used by the edge function) can create notifications. The existing SELECT and UPDATE policies remain unchanged (users can read/update their own).
+
+### 3. Replace all client-side `createNotification()` calls
+
+Update 4 files to call the edge function instead of inserting directly:
+
+**`src/hooks/useNotifications.ts`** -- Replace the `createNotification` helper:
+```typescript
+export async function createNotification(params: {
+  user_id: string;
+  type: string;
+  reference_id?: string;
+  message: string;
+}) {
+  await supabase.functions.invoke("create-notification", {
+    body: { notifications: [params] },
+  });
+}
+
+// New batch helper for multi-recipient notifications
+export async function createNotifications(
+  notifications: Array<{ user_id: string; type: string; reference_id?: string; message: string }>
+) {
+  if (notifications.length === 0) return;
+  await supabase.functions.invoke("create-notification", {
+    body: { notifications },
+  });
+}
+```
+
+**`src/hooks/useBookings.ts`** -- Replace individual `createNotification` loops with batch `createNotifications` calls (reduces N+1 network requests to 1).
+
+**`src/hooks/useMaintenanceRequests.ts`** -- Same batch refactor for staff/guest notifications.
+
+**`src/hooks/useLaundryRequests.ts`** -- Same batch refactor for staff/guest notifications.
+
+**`src/components/BookingStateTransition.tsx`** -- Same refactor for deposit override notifications.
+
+### 4. Update `supabase/config.toml`
+
+Add the new function config:
+```toml
+[functions.create-notification]
+verify_jwt = false
+```
+
+### 5. Database migration
+
+Drop the overly permissive INSERT policy:
+```sql
+DROP POLICY "Authenticated users can insert notifications" ON public.notifications;
+```
+
+No replacement INSERT policy is needed -- the edge function uses `SUPABASE_SERVICE_ROLE_KEY` which bypasses RLS entirely.
+
+## Files to create
+- `supabase/functions/create-notification/index.ts`
+
+## Files to modify
+- `src/hooks/useNotifications.ts` -- rewrite `createNotification` to call edge function, add `createNotifications` batch helper
+- `src/hooks/useBookings.ts` -- switch to batch `createNotifications`
+- `src/hooks/useMaintenanceRequests.ts` -- switch to batch `createNotifications`
+- `src/hooks/useLaundryRequests.ts` -- switch to batch `createNotifications`
+- `src/components/BookingStateTransition.tsx` -- switch to `createNotifications`
+
+## Database migration
+- Drop the `"Authenticated users can insert notifications"` INSERT policy
+
+## What stays the same
+- The `send-booking-confirmation` edge function already uses service role to insert notifications -- no change needed
+- All SELECT/UPDATE RLS policies on notifications remain unchanged
+- The `NotificationBell` component and realtime subscription are unaffected
+- The notification data schema is unchanged
 
