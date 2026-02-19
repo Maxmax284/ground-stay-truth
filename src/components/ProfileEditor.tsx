@@ -44,15 +44,19 @@ export default function ProfileEditor() {
   const { profile, updateProfile } = useProfile();
   const [fullName, setFullName] = useState<string | null>(null);
   const [phone, setPhone] = useState<string | null>(null);
+  const [whatsapp, setWhatsapp] = useState<string | null>(null);
+  const [lineId, setLineId] = useState<string | null>(null);
   const [preferredLang, setPreferredLang] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const currentName = fullName ?? profile.data?.full_name ?? "";
   const currentPhone = phone ?? profile.data?.phone ?? "";
+  const currentWhatsapp = whatsapp ?? profile.data?.whatsapp ?? "";
+  const currentLineId = lineId ?? profile.data?.line_id ?? "";
   const currentLang = preferredLang ?? profile.data?.preferred_language ?? "en";
 
   const handleSave = () => {
-    updateProfile.mutate({ full_name: currentName, phone: currentPhone, preferred_language: currentLang });
+    updateProfile.mutate({ full_name: currentName, phone: currentPhone, whatsapp: currentWhatsapp || null, line_id: currentLineId || null, preferred_language: currentLang });
   };
 
   const handleDeleteAccount = async () => {
@@ -120,6 +124,14 @@ export default function ProfileEditor() {
           <div className="space-y-2">
             <Label htmlFor="phone">{t("profile.phone")}</Label>
             <Input id="phone" value={currentPhone} onChange={(e) => setPhone(e.target.value)} placeholder={t("profile.phonePlaceholder")} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="whatsapp">{t("profile.whatsapp")}</Label>
+            <Input id="whatsapp" value={currentWhatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder={t("profile.whatsappPlaceholder")} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="lineId">{t("profile.lineId")}</Label>
+            <Input id="lineId" value={currentLineId} onChange={(e) => setLineId(e.target.value)} placeholder={t("profile.lineIdPlaceholder")} />
           </div>
           <div className="space-y-2">
             <Label>{t("profile.preferredLanguage")}</Label>

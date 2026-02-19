@@ -339,6 +339,10 @@
     "fullName": "Full Name",
     "phone": "Phone",
     "phonePlaceholder": "+1 555 000 0000",
+    "whatsapp": "WhatsApp",
+    "whatsappPlaceholder": "+66 XX XXX XXXX",
+    "lineId": "LINE ID",
+    "lineIdPlaceholder": "your_line_id",
     "yourName": "Your name",
     "saveChanges": "Save Changes",
     "profileUpdated": "Profile updated",
@@ -625,7 +629,15 @@
       "training_guest": "Training Guest",
       "spectator": "Spectator",
       "long_term": "Long-term Stay"
-    }
+    },
+    "arrivalDetails": "Arrival Details",
+    "flightInfo": "Flight / Ferry",
+    "flightPlaceholder": "e.g. TG 1234 from Bangkok",
+    "arrivalTime": "Expected Arrival",
+    "emergencyContact": "Emergency Contact",
+    "emergencyPlaceholder": "Name & phone number",
+    "dietaryRestrictions": "Dietary Restrictions",
+    "dietaryPlaceholder": "Allergies, vegetarian, etc."
   },
   "notFound": {
     "title": "404",
@@ -761,7 +773,8 @@
       "summarize": "Summary",
       "validate": "Validate",
       "draft": "Draft",
-      "digest": "Digest"
+      "digest": "Digest",
+      "camp": "Camp"
     },
     "draftWithAI": "Draft with AI",
     "drafting": "Drafting…",

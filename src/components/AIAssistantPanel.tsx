@@ -22,6 +22,7 @@ const MODE_LABELS: Record<AIMode, string> = {
   validate: "ai.modes.validate",
   draft: "ai.modes.draft",
   digest: "ai.modes.digest",
+  camp: "ai.modes.camp",
 };
 
 const LANGUAGES = [

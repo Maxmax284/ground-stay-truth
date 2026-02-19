@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AIMode = "explain" | "summarize" | "validate" | "draft" | "digest";
+export type AIMode = "explain" | "summarize" | "validate" | "draft" | "digest" | "camp";
 
 export interface AIMessage {
   role: "user" | "assistant";
