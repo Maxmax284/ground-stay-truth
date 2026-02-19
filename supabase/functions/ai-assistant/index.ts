@@ -195,6 +195,31 @@ Open maintenance: ${JSON.stringify(detailedMaintenance)}
 Active laundry: ${JSON.stringify(detailedLaundry)}${stalenessAdvisory}`;
     }
 
+    if (mode === "camp") {
+      // Fetch camp_info from policy_settings
+      const { data: campInfoSetting } = await adminClient
+        .from("policy_settings")
+        .select("value")
+        .eq("key", "camp_info")
+        .maybeSingle();
+      
+      const campInfo = campInfoSetting?.value ? String(campInfoSetting.value) : null;
+      
+      contextData += `
+
+CAMP BRIEFING MODE — Answer questions about the camp, training, and facilities.
+${campInfo ? `CAMP INFO (admin-configured):\n${campInfo}` : "No camp info has been configured by admin yet. Answer with general Muay Thai camp knowledge but note that specific details should be confirmed with staff."}
+
+You should help with questions like:
+- Training schedule and session times
+- What to bring for training
+- Which units are closest to the gym
+- Camp rules and etiquette
+- Local area info (Lamai Beach, Koh Samui)
+- Diet and nutrition guidance for fighters
+- Recovery tips and facilities`;
+    }
+
     if (mode === "validate" && context) {
       contextData += `
 

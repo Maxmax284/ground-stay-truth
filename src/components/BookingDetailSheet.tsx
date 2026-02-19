@@ -139,8 +139,18 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
           <div className="flex items-center gap-2 text-sm text-muted-foreground"><CalendarDays className="h-4 w-4" /><span>{format(new Date(booking.check_in), "MMM d, yyyy")}</span><ArrowRight className="h-3 w-3" /><span>{format(new Date(booking.check_out), "MMM d, yyyy")}</span></div>
           <div className="text-sm text-muted-foreground">
             {t("bookings.guestCount", { count: booking.num_guests })}
+            {booking.guest_type && <Badge variant="outline" className="ml-2 text-xs">{t(`guestBooking.guestTypes.${booking.guest_type}`, { defaultValue: booking.guest_type })}</Badge>}
             {booking.notes && <span className="block mt-1 italic">"{booking.notes}"</span>}
           </div>
+          {booking.arrival_details && typeof booking.arrival_details === "object" && Object.keys(booking.arrival_details).length > 0 && (
+            <div className="text-sm space-y-1 bg-muted/30 rounded-md p-2">
+              <p className="font-medium text-xs text-muted-foreground">{t("guestBooking.arrivalDetails")}</p>
+              {(booking.arrival_details as any).flight_info && <p className="text-xs">✈️ {(booking.arrival_details as any).flight_info}</p>}
+              {(booking.arrival_details as any).arrival_time && <p className="text-xs">🕐 {(booking.arrival_details as any).arrival_time}</p>}
+              {(booking.arrival_details as any).emergency_contact && <p className="text-xs">🚨 {(booking.arrival_details as any).emergency_contact}</p>}
+              {(booking.arrival_details as any).dietary_restrictions && <p className="text-xs">🍽️ {(booking.arrival_details as any).dietary_restrictions}</p>}
+            </div>
+          )}
         </SheetHeader>
         <Separator />
         <div className="py-4"><BookingStateTransition bookingId={booking.id} currentState={booking.state as BookingState} isAdmin={isAdmin} checkInDate={booking.check_in} totalPrice={booking.total_price} unitId={booking.unit_id} /></div>

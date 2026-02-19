@@ -29,6 +29,13 @@ interface GuestBookingRequestFormProps {
   defaultUnitId?: string;
 }
 
+interface ArrivalDetails {
+  flight_info: string;
+  arrival_time: string;
+  emergency_contact: string;
+  dietary_restrictions: string;
+}
+
 interface FormValues {
   unit_id: string;
   check_in: string;
@@ -36,6 +43,10 @@ interface FormValues {
   num_guests: number;
   guest_type: string;
   notes: string;
+  arrival_flight: string;
+  arrival_time: string;
+  emergency_contact: string;
+  dietary_restrictions: string;
 }
 
 export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: GuestBookingRequestFormProps) {
@@ -48,7 +59,7 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
   const { data: policies } = usePolicySettings();
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
-    defaultValues: { unit_id: defaultUnitId ?? "", check_in: "", check_out: "", num_guests: 1, guest_type: "training_guest", notes: "" },
+    defaultValues: { unit_id: defaultUnitId ?? "", check_in: "", check_out: "", num_guests: 1, guest_type: "training_guest", notes: "", arrival_flight: "", arrival_time: "", emergency_contact: "", dietary_restrictions: "" },
   });
 
   const selectedUnitId = watch("unit_id");
@@ -122,6 +133,11 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
 
   const onSubmit = async (data: FormValues) => {
     if (validationErrors.length > 0 || !user) return;
+    const arrivalDetails: Record<string, string> = {};
+    if (data.arrival_flight) arrivalDetails.flight_info = data.arrival_flight;
+    if (data.arrival_time) arrivalDetails.arrival_time = data.arrival_time;
+    if (data.emergency_contact) arrivalDetails.emergency_contact = data.emergency_contact;
+    if (data.dietary_restrictions) arrivalDetails.dietary_restrictions = data.dietary_restrictions;
     try {
       await createBooking.mutateAsync({
         unit_id: data.unit_id,
@@ -130,7 +146,9 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
         num_guests: Number(data.num_guests),
         notes: data.notes || null,
         guest_id: user.id,
+        guest_type: data.guest_type,
         total_price: pricing.total > 0 ? pricing.total : null,
+        arrival_details: Object.keys(arrivalDetails).length > 0 ? arrivalDetails : null,
         state: "inquiry",
       });
       toast({ title: t("guestBooking.requestSent"), description: t("guestBooking.requestSentDesc") });
@@ -241,6 +259,27 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
                 <SelectItem value="long_term">{t("guestBooking.guestTypes.long_term")}</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <Separator />
+          <h4 className="text-sm font-semibold text-foreground">{t("guestBooking.arrivalDetails")}</h4>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="arrival_flight">{t("guestBooking.flightInfo")}</Label>
+              <Input id="arrival_flight" {...register("arrival_flight")} placeholder={t("guestBooking.flightPlaceholder")} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="arrival_time">{t("guestBooking.arrivalTime")}</Label>
+              <Input id="arrival_time" type="time" {...register("arrival_time")} />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="emergency_contact">{t("guestBooking.emergencyContact")}</Label>
+            <Input id="emergency_contact" {...register("emergency_contact")} placeholder={t("guestBooking.emergencyPlaceholder")} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="dietary_restrictions">{t("guestBooking.dietaryRestrictions")}</Label>
+            <Input id="dietary_restrictions" {...register("dietary_restrictions")} placeholder={t("guestBooking.dietaryPlaceholder")} />
           </div>
 
           <div className="space-y-2">
