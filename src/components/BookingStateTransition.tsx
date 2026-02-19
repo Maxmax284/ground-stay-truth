@@ -22,7 +22,7 @@ import { AlertTriangle, ShieldAlert, DollarSign, Sparkles, Loader2, CreditCard }
 import { formatPrice } from "@/lib/currency";
 import { useAISettings } from "@/hooks/useAISettings";
 import { useAIAssistant } from "@/hooks/useAIAssistant";
-import { createNotification } from "@/hooks/useNotifications";
+import { createNotifications } from "@/hooks/useNotifications";
 import { supabase } from "@/integrations/supabase/client";
 
 interface BookingStateTransitionProps { bookingId: string; currentState: BookingState; isAdmin: boolean; checkInDate?: string; totalPrice?: number | null; unitId?: string; }
@@ -223,16 +223,16 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
         if (depositOverride) {
           const { data: { user } } = await supabase.auth.getUser();
           const { data: admins } = await supabase.from("user_roles").select("user_id").in("role", ["admin"]);
-          for (const admin of admins ?? []) {
-            if (admin.user_id !== user?.id) {
-              await createNotification({
-                user_id: admin.user_id,
+          await createNotifications(
+            (admins ?? [])
+              .filter((a) => a.user_id !== user?.id)
+              .map((a) => ({
+                user_id: a.user_id,
                 type: "booking",
                 reference_id: bookingId,
                 message: `Manager deposit override used. Reason: ${depositOverrideReason}`,
-              });
-            }
-          }
+              }))
+          );
         }
       } catch (err: any) {
         toast({ title: t("stateTransition.transitionFailed"), description: err.message, variant: "destructive" });

@@ -1,0 +1,1 @@
+DROP POLICY "Authenticated users can insert notifications" ON public.notifications;

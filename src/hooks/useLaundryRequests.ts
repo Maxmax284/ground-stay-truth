@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { createNotification } from "@/hooks/useNotifications";
+import { createNotification, createNotifications } from "@/hooks/useNotifications";
 
 export interface LaundryRequest {
   id: string;
@@ -116,16 +116,16 @@ export function useCreateLaundryRequest() {
         .from("user_roles")
         .select("user_id")
         .in("role", ["admin", "manager", "front_desk", "front_desk_supervisor"]);
-      for (const s of staff ?? []) {
-        if (s.user_id !== user?.id) {
-          await createNotification({
+      await createNotifications(
+        (staff ?? [])
+          .filter((s) => s.user_id !== user?.id)
+          .map((s) => ({
             user_id: s.user_id,
             type: "laundry",
             reference_id: data.id,
             message: `New laundry request submitted (${req.bag_count ?? 1} bag${(req.bag_count ?? 1) > 1 ? "s" : ""})`,
-          });
-        }
-      }
+          }))
+      );
 
       return data;
     },
@@ -242,39 +242,25 @@ export function useOverrideLaundryStatus() {
         .single();
       const staffName = profile?.full_name ?? "Staff";
 
-      const { data: admins } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "admin");
+      const batch: Array<{ user_id: string; type: string; reference_id: string; message: string }> = [];
+      const { data: admins } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
       for (const a of admins ?? []) {
         if (a.user_id !== user?.id) {
-          await createNotification({
-            user_id: a.user_id,
-            type: "laundry",
-            reference_id: params.id,
-            message: `Laundry status overridden by ${staffName}. Reason: ${params.reason}`,
-          });
+          batch.push({ user_id: a.user_id, type: "laundry", reference_id: params.id, message: `Laundry status overridden by ${staffName}. Reason: ${params.reason}` });
         }
       }
 
       // Notify guest on meaningful final states
       if (["ready_for_pickup", "collected"].includes(params.target_status)) {
-        const { data: booking } = await supabase
-          .from("bookings")
-          .select("guest_id")
-          .eq("id", params.booking_id)
-          .single();
+        const { data: booking } = await supabase.from("bookings").select("guest_id").eq("id", params.booking_id).single();
         if (booking?.guest_id) {
-          await createNotification({
-            user_id: booking.guest_id,
-            type: "laundry",
-            reference_id: params.id,
-            message: params.target_status === "ready_for_pickup"
-              ? "Your laundry is ready for pickup!"
-              : "Your laundry has been collected.",
+          batch.push({
+            user_id: booking.guest_id, type: "laundry", reference_id: params.id,
+            message: params.target_status === "ready_for_pickup" ? "Your laundry is ready for pickup!" : "Your laundry has been collected.",
           });
         }
       }
+      await createNotifications(batch);
 
       return data;
     },

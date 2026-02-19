@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { createNotification } from "@/hooks/useNotifications";
+import { createNotification, createNotifications } from "@/hooks/useNotifications";
 
 export interface MaintenanceRequest {
   id: string;
@@ -138,16 +138,16 @@ export function useCreateMaintenanceRequest() {
         .from("user_roles")
         .select("user_id")
         .in("role", ["admin", "manager", "maintenance", "front_desk", "front_desk_supervisor"]);
-      for (const s of staff ?? []) {
-        if (s.user_id !== user?.id) {
-          await createNotification({
+      await createNotifications(
+        (staff ?? [])
+          .filter((s) => s.user_id !== user?.id)
+          .map((s) => ({
             user_id: s.user_id,
             type: "maintenance",
             reference_id: data.id,
             message: `New ${req.category} maintenance request created`,
-          });
-        }
-      }
+          }))
+      );
 
       return data;
     },
@@ -272,39 +272,25 @@ export function useOverrideMaintenanceStatus() {
         .single();
       const staffName = profile?.full_name ?? "Staff";
 
-      const { data: admins } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "admin");
+      const batch: Array<{ user_id: string; type: string; reference_id: string; message: string }> = [];
+      const { data: admins } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
       for (const a of admins ?? []) {
         if (a.user_id !== user?.id) {
-          await createNotification({
-            user_id: a.user_id,
-            type: "maintenance",
-            reference_id: params.id,
-            message: `Maintenance status overridden by ${staffName}. Reason: ${params.reason}`,
-          });
+          batch.push({ user_id: a.user_id, type: "maintenance", reference_id: params.id, message: `Maintenance status overridden by ${staffName}. Reason: ${params.reason}` });
         }
       }
 
       // Notify guest on resolution
       if (["in_progress", "resolved"].includes(params.target_status)) {
-        const { data: booking } = await supabase
-          .from("bookings")
-          .select("guest_id")
-          .eq("id", params.booking_id)
-          .single();
+        const { data: booking } = await supabase.from("bookings").select("guest_id").eq("id", params.booking_id).single();
         if (booking?.guest_id) {
-          await createNotification({
-            user_id: booking.guest_id,
-            type: "maintenance",
-            reference_id: params.id,
-            message: params.target_status === "in_progress"
-              ? "Your maintenance request is being worked on."
-              : "Your maintenance request has been resolved.",
+          batch.push({
+            user_id: booking.guest_id, type: "maintenance", reference_id: params.id,
+            message: params.target_status === "in_progress" ? "Your maintenance request is being worked on." : "Your maintenance request has been resolved.",
           });
         }
       }
+      await createNotifications(batch);
 
       return data;
     },
