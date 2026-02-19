@@ -471,7 +471,7 @@
     "partialRefund": "Remboursement {{pct}}% ({{days}} jours avant l'arrivée)",
     "noRefund": "Pas de remboursement ({{days}} jour(s) avant l'arrivée)",
     "refundAmount": "Montant du remboursement",
-    "ofTotal": "sur ${{total}} total"
+    "ofTotal": "sur {{total}} total"
   },
   "documents": {
     "idDocuments": "Pièces d'identité",
@@ -608,14 +608,31 @@
     "cancelBookingTitle": "Annuler cette réservation ?",
     "cancelBookingDesc": "Êtes-vous sûr de vouloir annuler cette réservation ?",
     "confirmCancel": "Oui, annuler la réservation",
-    "bookingCancelled": "Réservation annulée"
+    "bookingCancelled": "Réservation annulée",
+    "campInfo": "Infos du camp",
+    "noCampInfo": "Les informations du camp n'ont pas encore été configurées. Veuillez revenir plus tard."
   },
   "guestBooking": {
     "requestBooking": "Demander une réservation",
     "requestSent": "Demande de réservation envoyée",
     "requestSentDesc": "Votre demande a été soumise. Notre équipe vous répondra bientôt.",
     "submitRequest": "Soumettre la demande",
-    "notesPlaceholder": "Demandes spéciales, heure d'arrivée, questions…"
+    "notesPlaceholder": "Demandes spéciales, heure d'arrivée, questions…",
+    "guestType": "Type d'invité",
+    "guestTypes": {
+      "fighter": "Combattant",
+      "training_guest": "Stagiaire",
+      "spectator": "Spectateur",
+      "long_term": "Séjour longue durée"
+    },
+    "arrivalDetails": "Détails d'arrivée",
+    "flightInfo": "Vol / Ferry",
+    "flightPlaceholder": "ex. TG 1234 depuis Bangkok",
+    "arrivalTime": "Arrivée prévue",
+    "emergencyContact": "Contact d'urgence",
+    "emergencyPlaceholder": "Nom et numéro de téléphone",
+    "dietaryRestrictions": "Restrictions alimentaires",
+    "dietaryPlaceholder": "Allergies, végétarien, etc."
   },
   "notFound": {
     "title": "404",
@@ -751,7 +768,8 @@
       "summarize": "Résumé",
       "validate": "Valider",
       "draft": "Brouillon",
-      "digest": "Synthèse"
+      "digest": "Synthèse",
+      "camp": "Camp"
     },
     "draftWithAI": "Rédiger avec l'IA",
     "drafting": "Rédaction…",
@@ -773,11 +791,11 @@
   },
   "deposit": {
     "collectPrompt": "Le dépôt a-t-il été encaissé ?",
-    "requiredAmount": "Dépôt requis : ${{amount}} ({{percentage}}% du total)",
+    "requiredAmount": "Dépôt requis : {{amount}} ({{percentage}}% du total)",
     "recordAndConfirm": "Enregistrer le dépôt et confirmer",
     "guestTitle": "Dépôt requis",
     "guestInstructions": "Un dépôt est nécessaire pour confirmer votre réservation. Vous pouvez payer en personne à la réception (espèces ou carte acceptées), ou contacter le personnel pour les détails de virement bancaire.",
-    "guestAmount": "Montant du dépôt : ${{amount}}",
+    "guestAmount": "Montant du dépôt : {{amount}}",
     "guestInstructionsOnlineOptional": "Vous pouvez payer votre dépôt en ligne ou en personne à la réception.",
     "guestInstructionsOnlineRequired": "Le paiement en ligne du dépôt est requis pour confirmer votre réservation.",
     "onlineComingSoon": "Les paiements en ligne arrivent bientôt. Veuillez contacter le personnel.",

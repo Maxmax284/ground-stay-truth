@@ -476,7 +476,7 @@
     "partialRefund": "{{pct}}% refund ({{days}} days before check-in)",
     "noRefund": "No refund ({{days}} day(s) before check-in)",
     "refundAmount": "Refund amount",
-    "ofTotal": "of ${{total}} total"
+    "ofTotal": "of {{total}} total"
   },
   "documents": {
     "idDocuments": "ID Documents",
@@ -796,11 +796,11 @@
   },
   "deposit": {
     "collectPrompt": "Has the deposit been collected?",
-    "requiredAmount": "Required deposit: ${{amount}} ({{percentage}}% of total)",
+    "requiredAmount": "Required deposit: {{amount}} ({{percentage}}% of total)",
     "recordAndConfirm": "Record Deposit & Confirm",
     "guestTitle": "Deposit Required",
     "guestInstructions": "A deposit is required to confirm your booking. You can pay in person at the front desk (cash or card accepted), or contact staff for bank transfer details.",
-    "guestAmount": "Deposit amount: ${{amount}}",
+    "guestAmount": "Deposit amount: {{amount}}",
     "guestInstructionsOnlineOptional": "You can pay your deposit online or in person at the front desk.",
     "guestInstructionsOnlineRequired": "Online deposit payment is required to confirm your booking.",
     "onlineComingSoon": "Online payments coming soon. Please contact staff for instructions.",

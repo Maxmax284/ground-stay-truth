@@ -471,7 +471,7 @@
     "partialRefund": "{{pct}}% 환불 (체크인 {{days}}일 전)",
     "noRefund": "환불 불가 (체크인 {{days}}일 전)",
     "refundAmount": "환불 금액",
-    "ofTotal": "${{total}} 중"
+    "ofTotal": "{{total}} 중"
   },
   "documents": {
     "idDocuments": "신분증",
@@ -608,14 +608,31 @@
     "cancelBookingTitle": "이 예약을 취소하시겠습니까?",
     "cancelBookingDesc": "이 예약을 취소하시겠습니까? 아래 환불 정책을 확인하세요.",
     "confirmCancel": "예, 예약 취소",
-    "bookingCancelled": "예약 취소됨"
+    "bookingCancelled": "예약 취소됨",
+    "campInfo": "캠프 정보",
+    "noCampInfo": "캠프 정보가 아직 설정되지 않았습니다. 나중에 다시 확인해 주세요."
   },
   "guestBooking": {
     "requestBooking": "예약 요청",
     "requestSent": "예약 요청 전송됨",
     "requestSentDesc": "문의가 접수되었습니다. 곧 저희 팀에서 연락드리겠습니다.",
     "submitRequest": "요청 제출",
-    "notesPlaceholder": "특별 요청, 도착 시간, 문의사항…"
+    "notesPlaceholder": "특별 요청, 도착 시간, 문의사항…",
+    "guestType": "투숙객 유형",
+    "guestTypes": {
+      "fighter": "파이터",
+      "training_guest": "트레이닝 게스트",
+      "spectator": "관람객",
+      "long_term": "장기 숙박"
+    },
+    "arrivalDetails": "도착 정보",
+    "flightInfo": "항공편 / 페리",
+    "flightPlaceholder": "예: TG 1234 방콕발",
+    "arrivalTime": "예상 도착 시간",
+    "emergencyContact": "비상 연락처",
+    "emergencyPlaceholder": "이름 및 전화번호",
+    "dietaryRestrictions": "식이 제한",
+    "dietaryPlaceholder": "알레르기, 채식 등"
   },
   "notFound": {
     "title": "404",
@@ -751,7 +768,8 @@
       "summarize": "요약",
       "validate": "검증",
       "draft": "초안",
-      "digest": "다이제스트"
+      "digest": "다이제스트",
+      "camp": "캠프"
     },
     "draftWithAI": "AI로 초안 작성",
     "drafting": "작성 중…",
@@ -773,11 +791,11 @@
   },
   "deposit": {
     "collectPrompt": "보증금을 수령하셨습니까?",
-    "requiredAmount": "필요 보증금: ${{amount}} (총액의 {{percentage}}%)",
+    "requiredAmount": "필요 보증금: {{amount}} (총액의 {{percentage}}%)",
     "recordAndConfirm": "보증금 기록 및 확정",
     "guestTitle": "보증금 필요",
     "guestInstructions": "예약을 확정하려면 보증금이 필요합니다. 프론트 데스크에서 현금 또는 카드로 직접 결제하거나 은행 송금에 대해 직원에게 문의하세요.",
-    "guestAmount": "보증금 금액: ${{amount}}",
+    "guestAmount": "보증금 금액: {{amount}}",
     "guestInstructionsOnlineOptional": "온라인 또는 프론트 데스크에서 직접 보증금을 결제할 수 있습니다.",
     "guestInstructionsOnlineRequired": "예약을 확정하려면 온라인 보증금 결제가 필요합니다.",
     "onlineComingSoon": "온라인 결제가 곧 제공됩니다. 직원에게 문의해 주세요.",
