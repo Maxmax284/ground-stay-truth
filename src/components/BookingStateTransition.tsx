@@ -19,6 +19,7 @@ import { useBufferViolation, useEarlyCheckinRequest } from "@/hooks/useEarlyChec
 import { EarlyCheckinApproval } from "@/components/EarlyCheckinApproval";
 import { getValidTransitions, getAllTransitions, type BookingState } from "@/lib/bookingStateMachine";
 import { AlertTriangle, ShieldAlert, DollarSign, Sparkles, Loader2, CreditCard } from "lucide-react";
+import { formatPrice } from "@/lib/currency";
 import { useAISettings } from "@/hooks/useAISettings";
 import { useAIAssistant } from "@/hooks/useAIAssistant";
 import { createNotification } from "@/hooks/useNotifications";
@@ -244,9 +245,9 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
         adminOverride ? "[ADMIN OVERRIDE]" : "",
         depositOverride ? `[MANAGER DEPOSIT OVERRIDE] ${depositOverrideReason}` : "",
         earlyCheckinApproved && targetState === "checked_in" ? "[EARLY CHECK-IN APPROVED]" : "",
-        showDepositForm ? `[DEPOSIT: $${Number(depositAmount).toFixed(2)} via ${depositMethod}]` : "",
+        showDepositForm ? `[DEPOSIT: ${formatPrice(Number(depositAmount), policies)} via ${depositMethod}]` : "",
         reason,
-        refundInfo ? `[Refund: ${refundInfo.label}${refundInfo.refundAmount != null ? ` — $${refundInfo.refundAmount.toFixed(2)}` : ""}]` : "",
+        refundInfo ? `[Refund: ${refundInfo.label}${refundInfo.refundAmount != null ? ` — ${formatPrice(refundInfo.refundAmount, policies)}` : ""}]` : "",
       ].filter(Boolean).join(" ");
       await transition.mutateAsync({ bookingId, fromState: currentState, toState: targetState as BookingState, reason: reasonText });
       toast({ title: t("stateTransition.stateUpdated"), description: t("stateTransition.movedTo", { state: t(`states.${targetState}`) }) });
@@ -285,7 +286,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
               <DollarSign className="h-4 w-4 shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium">{refundInfo.label}</p>
-                {refundInfo.refundAmount != null && <p className="text-xs mt-1">{t("refund.refundAmount")}: <strong>${refundInfo.refundAmount.toFixed(2)}</strong>{totalPrice != null && ` ${t("refund.ofTotal", { total: totalPrice.toFixed(2) })}`}</p>}
+                {refundInfo.refundAmount != null && <p className="text-xs mt-1">{t("refund.refundAmount")}: <strong>{formatPrice(refundInfo.refundAmount, policies)}</strong>{totalPrice != null && ` ${t("refund.ofTotal", { total: formatPrice(totalPrice, policies) })}`}</p>}
               </div>
             </div>
           )}

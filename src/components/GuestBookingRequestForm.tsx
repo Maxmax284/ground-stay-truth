@@ -20,6 +20,7 @@ import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { calculatePricing, type PricingSummary } from "@/lib/pricingCalculator";
+import { formatPrice } from "@/lib/currency";
 import { AlertTriangle, CalendarPlus } from "lucide-react";
 
 interface GuestBookingRequestFormProps {
@@ -33,6 +34,7 @@ interface FormValues {
   check_in: string;
   check_out: string;
   num_guests: number;
+  guest_type: string;
   notes: string;
 }
 
@@ -46,7 +48,7 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
   const { data: policies } = usePolicySettings();
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
-    defaultValues: { unit_id: defaultUnitId ?? "", check_in: "", check_out: "", num_guests: 1, notes: "" },
+    defaultValues: { unit_id: defaultUnitId ?? "", check_in: "", check_out: "", num_guests: 1, guest_type: "training_guest", notes: "" },
   });
 
   const selectedUnitId = watch("unit_id");
@@ -212,21 +214,34 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
               <Separator />
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">{t("bookingForm.subtotal")} ({pricing.nights.length} {pricing.nights.length > 1 ? t("common.nights") : t("common.night")})</span>
-                <span className="font-medium">${pricing.subtotal.toFixed(2)}</span>
+                <span className="font-medium">{formatPrice(pricing.subtotal, policies)}</span>
               </div>
               {pricing.cleaningFee > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t("bookingForm.cleaningFee")}</span>
-                  <span className="font-medium">${pricing.cleaningFee.toFixed(2)}</span>
+                  <span className="font-medium">{formatPrice(pricing.cleaningFee, policies)}</span>
                 </div>
               )}
               <Separator />
               <div className="flex justify-between text-sm font-semibold">
                 <span>{t("common.total")}</span>
-                <span>${pricing.total.toFixed(2)}</span>
+                <span>{formatPrice(pricing.total, policies)}</span>
               </div>
             </div>
           )}
+
+          <div className="space-y-2">
+            <Label>{t("guestBooking.guestType")}</Label>
+            <Select value={watch("guest_type")} onValueChange={(v) => setValue("guest_type", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fighter">{t("guestBooking.guestTypes.fighter")}</SelectItem>
+                <SelectItem value="training_guest">{t("guestBooking.guestTypes.training_guest")}</SelectItem>
+                <SelectItem value="spectator">{t("guestBooking.guestTypes.spectator")}</SelectItem>
+                <SelectItem value="long_term">{t("guestBooking.guestTypes.long_term")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="guest_notes">{t("bookingForm.notes")}</Label>

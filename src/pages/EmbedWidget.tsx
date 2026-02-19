@@ -139,11 +139,11 @@ function FullListing({ unit, blocked, accent, contactUrl }: { unit: UnitData; bl
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 16 }}>
         <div>
-          <span style={{ fontSize: 24, fontWeight: 700, color: "#1f2937" }}>${unit.base_price}</span>
+          <span style={{ fontSize: 24, fontWeight: 700, color: "#1f2937" }}>฿{unit.base_price}</span>
           <span style={styles.muted}>/night</span>
         </div>
         {Number(unit.cleaning_fee ?? 0) > 0 && (
-          <span style={{ ...styles.muted, fontSize: 12 }}>+ ${unit.cleaning_fee} cleaning</span>
+          <span style={{ ...styles.muted, fontSize: 12 }}>+ ฿{unit.cleaning_fee} cleaning</span>
         )}
       </div>
 
@@ -180,7 +180,7 @@ function CompactCard({ unit, accent, contactUrl }: { unit: UnitData; accent: str
       </div>
       <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontSize: 18, fontWeight: 700, color: "#1f2937" }}>
-          From ${unit.base_price}<span style={{ ...styles.muted, fontSize: 12 }}>/night</span>
+          From ฿{unit.base_price}<span style={{ ...styles.muted, fontSize: 12 }}>/night</span>
         </span>
       </div>
       {contactUrl && (
@@ -233,7 +233,7 @@ function CTAOnly({ unit, accent, contactUrl }: { unit: UnitData; accent: string;
     <div style={{ ...styles.container, maxWidth: 280, padding: 16, textAlign: "center" as const }}>
       <h3 style={{ fontSize: 16, fontWeight: 600, color: "#1f2937", margin: "0 0 4px" }}>{unit.name}</h3>
       <p style={{ ...styles.muted, fontSize: 13, marginBottom: 12 }}>
-        From <strong style={{ color: "#1f2937" }}>${unit.base_price}/night</strong>
+        From <strong style={{ color: "#1f2937" }}>฿{unit.base_price}/night</strong>
       </p>
       {contactUrl ? (
         <a

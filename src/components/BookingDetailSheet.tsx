@@ -20,6 +20,7 @@ import { useBooking, useBookingStateLog, useBookingPayments, useBookingMessages,
 import { BookingStateTransition } from "@/components/BookingStateTransition";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
+import { formatPrice } from "@/lib/currency";
 import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText, Info, Wrench, Shirt, Globe, Sparkles } from "lucide-react";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { useGuestDocuments } from "@/hooks/useGuestDocuments";
@@ -95,7 +96,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
         const depositPct = policies?.find((p) => p.key === "deposit_percentage");
         const pct = depositPct ? Number(depositPct.value) : 100;
         const depositAmt = booking.total_price ? (Number(booking.total_price) * pct / 100) : null;
-        const amountStr = depositAmt != null ? ` ($${depositAmt.toFixed(2)})` : "";
+        const amountStr = depositAmt != null ? ` (${formatPrice(depositAmt, policies)})` : "";
         if (depositDeadlineInfo?.isExpired) return t("bookingDetail.nextSteps.depositExpired");
         if (hasPaid) return t("bookingDetail.nextSteps.depositPaid");
         return `${t("bookingDetail.nextSteps.depositNeeded")}${amountStr}`;
@@ -158,7 +159,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
             )}
           </TabsList>
           <TabsContent value="history"><StateHistoryTab logs={stateLog ?? []} /></TabsContent>
-          <TabsContent value="payments"><PaymentsTab payments={payments ?? []} bookingId={booking.id} canSeeAmounts={canSeeAmounts} canRecord={canRecordPay} /></TabsContent>
+          <TabsContent value="payments"><PaymentsTab payments={payments ?? []} bookingId={booking.id} canSeeAmounts={canSeeAmounts} canRecord={canRecordPay} policies={policies} /></TabsContent>
           <TabsContent value="messages"><MessagesTab messages={messages ?? []} bookingId={booking.id} /></TabsContent>
           <TabsContent value="documents"><div className="py-3"><GuestDocumentUpload bookingId={booking.id} showRequirement={["confirmed", "checked_in"].includes(booking.state)} /></div></TabsContent>
           {isCheckedIn && (
@@ -211,7 +212,7 @@ function StateHistoryTab({ logs }: { logs: any[] }) {
   );
 }
 
-function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord }: { payments: any[]; bookingId: string; canSeeAmounts: boolean; canRecord: boolean }) {
+function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies }: { payments: any[]; bookingId: string; canSeeAmounts: boolean; canRecord: boolean; policies?: any[] }) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const createPayment = useCreatePayment();
@@ -235,7 +236,7 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord }: { paymen
             {payments.map((p) => (
               <div key={p.id} className="flex items-center justify-between text-sm border rounded-md p-3">
                 <div>
-                  {canSeeAmounts ? <span className="font-medium">${Number(p.amount).toFixed(2)}</span> : <Badge variant="outline" className="text-xs">{Number(p.amount) > 0 ? t("payments.paid") : t("payments.unpaid")}</Badge>}
+                  {canSeeAmounts ? <span className="font-medium">{formatPrice(p.amount, policies)}</span> : <Badge variant="outline" className="text-xs">{Number(p.amount) > 0 ? t("payments.paid") : t("payments.unpaid")}</Badge>}
                   {canSeeAmounts && <span className="text-muted-foreground ml-2">({t(`payments.methods.${p.method}`)})</span>}
                   {canSeeAmounts && p.source_channel && p.source_channel !== "front_desk" && (
                     <Badge variant="secondary" className="text-[10px] ml-2">{t(`deposit.channels.${p.source_channel}`, { defaultValue: p.source_channel })}</Badge>
