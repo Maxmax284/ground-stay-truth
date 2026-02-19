@@ -22,6 +22,7 @@ import GuestPortal from "./pages/GuestPortal";
 import Messages from "./pages/Messages";
 import NotFound from "./pages/NotFound";
 import Legal from "./pages/Legal";
+import Embeds from "./pages/Embeds";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
                 <Route path="/reports" element={<ProtectedRoute requiredPath="/reports"><Reports /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute requiredPath="/settings"><Settings /></ProtectedRoute>} />
                 <Route path="/messages" element={<ProtectedRoute requiredPath="/messages"><Messages /></ProtectedRoute>} />
+                <Route path="/embeds" element={<ProtectedRoute requiredPath="/embeds"><Embeds /></ProtectedRoute>} />
 
                 {/* Guest portal */}
                 <Route path="/guest" element={<ProtectedRoute guestOnly><GuestPortal /></ProtectedRoute>} />
