@@ -5,6 +5,7 @@ import { LogOut } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { NotificationBell } from "@/components/NotificationBell";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { AIAssistantPanel } from "@/components/AIAssistantPanel";
 
 interface GuestLayoutProps {
@@ -28,6 +29,7 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
         </h1>
         <div className="flex items-center gap-3">
           <LanguageSelector compact />
+          <ThemeToggle />
           <NotificationBell />
           <span className="text-sm text-muted-foreground hidden sm:inline">
             {user?.email}
