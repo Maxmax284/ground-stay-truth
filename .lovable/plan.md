@@ -1,332 +1,145 @@
 
-# Operational Hardening and Governance Enhancement
+# Ground Stay Platform Review -- Full Audit
 
-A structured, phased plan to prevent operational drift, enforce UI discipline per role, introduce admin role simulation, and reinforce override governance -- all within the existing architecture.
+## What This Platform Is
 
----
+Ground Stay is a direct-booking accommodation management system built for Lamai Muay Thai fight camp in Thailand. It replaces third-party platforms (Booking.com, Agoda) to eliminate commissions and give full operational control. The system covers the entire guest lifecycle: inquiry, approval, deposit, check-in, stay support (maintenance/laundry), check-out, and cancellation -- all enforced by a 9-state booking machine with mandatory audit logging.
 
-## Current State Findings
-
-**What works well:**
-- `permissions.ts` is the single source of truth for all role checks, consumed consistently across every component
-- `stay_support_log` table already logs laundry and maintenance actions with `changed_by`, `from_status`, `to_status`, and `note`
-- Booking state machine is airtight with 9 states, mandatory audit logging, and AI pre-flight validation
-- Notifications fire on state transitions, deposits, and new requests
-- Deposit policy governance is fully centralized via `getDepositPolicy()` helper
-
-**Gaps identified:**
-1. **No override path for laundry/maintenance** -- status can only advance forward; a Manager cannot skip or jump statuses
-2. **No `change_type` field** on `stay_support_log` -- cannot distinguish normal status changes from overrides
-3. **Missing guest notification on maintenance resolution** -- guest only gets notified on laundry "ready for pickup", not on maintenance state changes
-4. **Maintenance role sees LaundryPanel but cannot advance laundry** -- `canUpdateLaundryStatus` requires `front_desk+`, but LaundryPanel renders for maintenance role on dashboard, creating a dead-button scenario
-5. **No role preview simulation** for admin testing
-6. **No staleness advisory in AI digest** -- AI reports counts but doesn't flag items stuck in intermediate states
-7. **Policy changes have no notifications** -- toggling deposit or AI settings fires no alerts to staff
+The platform serves 7 distinct roles (Guest, Viewer, Maintenance, Front Desk, Supervisor, Manager, Admin) with strict RLS enforcement, real-time notifications, 9-language i18n (including Thai), embed widgets for external sites, and an AI advisory layer called "Kru" that provides read-only operational intelligence.
 
 ---
 
-## Phase A -- Operational Drift Control
+## What's Working Well
 
-### Database Change
-
-Add `change_type` column to `stay_support_log`:
-
-```sql
-ALTER TABLE public.stay_support_log
-  ADD COLUMN IF NOT EXISTS change_type text NOT NULL DEFAULT 'normal';
-```
-
-Valid values: `normal`, `override`
-
-This uses the existing table. No new tables created.
-
-### Hook Enhancements
-
-**`src/hooks/useLaundryRequests.ts`**
-
-Add a new `useOverrideLaundryStatus` mutation (Manager+) that:
-- Accepts `target_status` (any valid laundry status), `reason` (required)
-- Writes to `laundry_requests` with the new status
-- Logs to `stay_support_log` with `change_type: 'override'` and the reason in `note`
-- Notifies admins: "Laundry status overridden by [name]. Reason: [reason]"
-- Notifies guest only if target status is `ready_for_pickup` or `collected`
-
-**`src/hooks/useMaintenanceRequests.ts`**
-
-Add a new `useOverrideMaintenanceStatus` mutation (Manager+) that:
-- Accepts `target_status` (any valid maintenance status), `reason` (required), optional `resolution_note`
-- Writes to `maintenance_requests` with the new status
-- Logs to `stay_support_log` with `change_type: 'override'` and reason
-- Notifies admins on override
-- Notifies guest on resolution
-
-Also enhance `useUpdateMaintenanceStatus` to notify guest when status changes to `resolved` or `in_progress` (currently missing).
-
-### Permission Addition
-
-Add to `src/lib/permissions.ts`:
-```
-canOverrideStaySupport: (role) => ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.manager
-```
-
-### UI Changes
-
-**`src/components/MaintenanceQueue.tsx`** and **`src/components/LaundryPanel.tsx`**:
-- Add a small "Override" dropdown button (visible only to Manager+)
-- Override requires a text reason in a popover/dialog before executing
-- Override status changes display with an "Override" badge in the log
-
-**`src/components/BookingDetailSheet.tsx` (Support tab)**:
-- Add override buttons for Manager+ on the inline maintenance/laundry items
-- Same reason-required flow as dashboard panels
-
-### AI Enhancement
-
-Update `supabase/functions/ai-assistant/index.ts` digest mode:
-- Query `created_at` of open maintenance and in-progress laundry
-- If any item has been in intermediate state for >24 hours, include advisory line: "Heads up: [X] maintenance requests have been open for over 24 hours"
-- AI remains read-only
-
-### Notification Gap Fix
-
-Add guest notifications for:
-- Maintenance moved to `in_progress`: "Your maintenance request is being worked on"
-- Maintenance `resolved`: "Your maintenance request has been resolved"
-- Override used (admin notification only): "[Type] status overridden by [name]. Reason: [reason]"
+- **Booking State Machine**: 9-state lifecycle with overlap protection, cleaning buffer enforcement, early check-in approval workflow, and mandatory audit trail on every transition. This is production-grade.
+- **Role Hierarchy**: 7-tier system with RLS enforced at the database level via `has_role()` security definer function. Route guards and UI permission checks align with the DB policies.
+- **AI Layer (Kru)**: 5-mode advisor (Explain, Summarize, Validate, Draft, Digest) with real-time property snapshots, staleness detection, per-role circuit breakers, and multi-language response support. Correctly read-only -- never executes actions.
+- **Deposit Control System**: 3-mode policy (manual_only, online_optional, online_required) with Manager override + audit logging. Source channel tracking (front_desk, guest_portal, supervisor_override).
+- **Stay Support**: Maintenance and laundry tracking with override audit logging, real-time notifications, and role-specific action buttons.
+- **i18n**: Full 9-language support including Thai -- critical for the Thailand location.
+- **Cancellation Policy**: Tiered refund calculator (free/partial/none) driven by policy_settings, not hardcoded values.
+- **Embed Widgets**: 4 types (listing, compact, calendar, CTA) with configurable targets pointing to guest registration.
+- **Reports**: Occupancy, revenue by unit, state distribution, blocked vs bookable analysis, plus account overview.
 
 ---
 
-## Phase B -- Role UI Discipline Audit
+## Critical Gaps to Address
 
-### Findings Per Role
+### 1. No "partial_refund_percentage" Policy Setting
+The refund calculator references `partial_refund_percentage` but the policy_settings table only has `partial_refund_days`. The percentage defaults to 50% in code, but there's no admin-configurable row in the database for it.
 
-| Role | Component | Issue | Fix |
-|------|-----------|-------|-----|
-| **Maintenance** | `LaundryPanel` on dashboard | Sees advance buttons but `canUpdateLaundryStatus` is `front_desk+` -- buttons render but fail | Hide LaundryPanel advance buttons for maintenance role, show read-only status |
-| **Maintenance** | Dashboard | Gets full LaundryPanel which is outside scope | Show laundry as read-only list (no action buttons) |
-| **Front Desk** | `BookingDetailSheet` payments tab | Can see payment form but `canRecordPayment` requires Supervisor+ | Already gated by `canRecord` -- verified correct |
-| **Front Desk** | `PolicySettingsForm` | Cannot access (gated by `canManagePolicies`) | Correct |
-| **Viewer** | Dashboard | Quick Actions hidden, maintenance/laundry hidden | Correct |
-| **Guest** | `GuestStaySupport` | Can create requests but cannot see override/status controls | Correct |
+**Fix**: Insert the missing `partial_refund_percentage` policy setting so admins can configure it.
 
-### Changes
+### 2. Currency Hardcoded to USD ($)
+The entire platform displays prices with `$` symbols. In Thailand, the operational currency is Thai Baht (THB). There's no currency configuration -- every price display hardcodes the dollar sign.
 
-**`src/components/LaundryPanel.tsx`**:
-- For maintenance role: render status list as read-only (no advance buttons)
-- This fixes the dead-button scenario
+**Fix**: Add a `currency_code` and `currency_symbol` policy setting. Create a utility function `formatPrice(amount, currency)` and replace all hardcoded `$` references across the codebase (GuestPortal, BookingStateTransition, GuestBookingRequestForm, Reports, EmbedWidget, etc.).
 
-**`src/pages/Index.tsx` (MaintenanceDashboard)**:
-- Keep MaintenanceQueue with full controls (maintenance can start/resolve)
-- Show LaundryPanel as informational only for maintenance role
+### 3. No Thai Tax / Receipt Compliance
+Thailand requires accommodation providers to issue tax invoices for stays. There's no receipt generation, no tax calculation (7% VAT), and no invoice numbering system.
 
-No other dead buttons or leaked controls found across the audited components.
+**Fix**: Add `tax_rate` and `tax_included` policy settings. Build a receipt/invoice generation feature accessible from completed bookings -- even a simple printable summary would satisfy basic compliance.
 
----
+### 4. No Guest Arrival Details Collection
+For a fight camp, guests typically arrive from airports (Surat Thani or Koh Samui). There's no field for:
+- Arrival flight/ferry details
+- Expected arrival time
+- Training program interest (Muay Thai schedule)
+- Emergency contact
+- Dietary restrictions / allergies (relevant for camps that provide meals)
 
-## Phase C -- Super Admin "Preview As Role" Mode
+**Fix**: Add an `arrival_details` JSONB column to bookings or a separate `guest_details` table. Surface these fields in the booking form and guest portal.
 
-### Architecture
+### 5. No Training/Gym Integration Context
+This is a Muay Thai fight camp, but the system treats it as a generic accommodation platform. There's zero awareness of:
+- Training schedule or session bookings
+- Fighter vs. spectator/tourist guest types
+- Gym orientation or welcome package info
+- Weight class or training level (relevant for camp operations)
 
-**Client-side simulation only.** No database mutation, no RLS bypass, no backend changes.
+**Fix**: Add a `guest_type` field (fighter, training_guest, spectator, long_term) to bookings. Add a "Camp Info" tab or section in the guest portal with gym rules, training schedule, and orientation details. This is information display, not a parallel booking system.
 
-**New context: `src/hooks/useRolePreview.tsx`**
+### 6. No Check-In / Check-Out Time Display for Guests
+Policy settings have `earliest_checkin_time` (16:00) and `checkout_time` (11:00), but these aren't displayed anywhere in the guest portal or booking confirmations.
 
-A React context that stores:
-```typescript
-{
-  previewRole: AppRole | null;
-  setPreviewRole: (role: AppRole | null) => void;
-  effectiveRole: AppRole; // previewRole ?? actualRole
-  isPreviewMode: boolean;
-}
-```
+**Fix**: Surface check-in/check-out times on the guest portal booking cards and in the policies tab.
 
-**Integration with `useAuth`**:
-- `useRolePreview` wraps around the existing auth context
-- Components that call `useAuth().role` continue working
-- A new `useEffectiveRole()` hook returns `previewRole ?? role`
-- Permission helpers already accept role as a parameter -- callers pass `effectiveRole` instead of `role`
+### 7. No Soft Hold / Deposit Expiration Automation
+Policy settings define `soft_hold_expiration_hours` (12h) and `deposit_deadline_hours` (24h), but there's no automated job or cron to actually expire these bookings. They rely on staff manually cancelling.
 
-**Key constraint:** The backend (RLS, edge functions) still uses the real user token. Preview mode only affects:
-- Which nav items render
-- Which buttons appear/hide
-- Which dashboard layout displays
-- Which permission checks evaluate to true/false in the UI
+**Fix**: Create a scheduled edge function (pg_cron or a Supabase cron) that runs every 30 minutes to auto-expire soft holds and pending deposits that exceed their deadlines. Log the transitions as system-initiated.
 
-Preview mode does NOT:
-- Allow mutations beyond the admin's actual authority
-- Bypass RLS (backend still sees admin token)
-- Fetch data the admin couldn't already see (admin has full SELECT access)
+### 8. No WhatsApp / LINE Integration for Notifications
+In Thailand, WhatsApp and especially LINE are the dominant communication channels. The notification system is in-app only -- guests must be logged in to see alerts.
 
-### UI
+**Fix (Phase 1)**: Add an optional WhatsApp/LINE contact field to guest profiles. For now, display these in the staff view so front desk can manually message guests for urgent matters.
 
-**Banner:** A persistent warning bar at the top of DashboardLayout when preview mode is active:
-```
-PREVIEW MODE: Viewing as [Role Name] -- This is a simulation. Actions still require your actual role. [Exit Preview]
-```
+**Fix (Phase 2)**: Integrate with a messaging API (Twilio for WhatsApp, LINE Messaging API) to push critical notifications (booking confirmed, check-in reminder, deposit deadline).
 
-**Trigger:** Add a role selector dropdown in `AppSidebar.tsx` footer (admin only), next to the existing "Preview Guest Portal" link. Options: Front Desk, Supervisor, Manager, Maintenance, Viewer.
+### 9. AI Layer: No Guest-Facing Kru on Guest Portal Booking Form
+Kru is available as a floating panel, but it doesn't contextually assist guests during the booking process. A guest browsing listings doesn't get proactive help like "This unit is popular for fighters doing 2-week training camps" or "Heads up: the weekend rate applies to your dates."
 
-**Exit:** One-click button in the banner, or selecting "Exit Preview" from the dropdown.
+**Fix**: Add a contextual Kru suggestion on the booking form that auto-triggers in "explain" mode when a guest selects dates, showing a one-liner about pricing breakdown or camp tips relevant to their stay duration.
 
-### Files
+### 10. No Mobile Responsiveness Verification for Guest Portal
+The guest portal is the primary conversion funnel. Many Thailand-bound travelers book from mobile. While Tailwind provides responsive utilities, there's no evidence of mobile-specific testing or optimization for the booking flow.
 
-| File | Change |
-|------|--------|
-| `src/hooks/useRolePreview.tsx` (new) | React context for preview role state |
-| `src/App.tsx` | Wrap with `RolePreviewProvider` |
-| `src/components/DashboardLayout.tsx` | Show preview banner when active |
-| `src/components/AppSidebar.tsx` | Add role selector dropdown for admin |
-| `src/pages/Index.tsx` | Use `effectiveRole` for conditional rendering |
-| `src/components/BookingStateTransition.tsx` | Use `effectiveRole` for permission display |
-| `src/components/BookingDetailSheet.tsx` | Use `effectiveRole` for permission display |
-| `src/components/MaintenanceQueue.tsx` | Use `effectiveRole` |
-| `src/components/LaundryPanel.tsx` | Use `effectiveRole` |
-
-All mutation hooks continue using the real role from `useAuth()` -- preview only affects rendering.
+**Fix**: Audit and optimize the guest portal for mobile viewports (especially the booking form dialog, listing cards, and messaging thread view). Ensure tap targets are minimum 44px and the booking form doesn't require horizontal scrolling.
 
 ---
 
-## Phase D -- Override Governance Standard
+## Recommended Additions (Not Bolt-Ons -- Native Integrations)
 
-### Audit of All Override Points
+### A. Booking Confirmation Email (Edge Function)
+Currently no email is sent when a booking is confirmed. Create an edge function triggered after the `pending_deposit -> confirmed` transition that sends a formatted confirmation with check-in time, camp address, and arrival instructions.
 
-| Override | Reason Required | Logged | Notification | AI Aware |
-|----------|:---:|:---:|:---:|:---:|
-| Admin booking state override | Yes (reason field) | Yes (`booking_state_log`) | Yes (guest + admins) | Yes (validate mode) |
-| Manager deposit override | Yes (reason field) | Yes (`booking_state_log` with prefix) | Yes (admins) | Yes (validate mode) |
-| Early check-in override | Yes (reason + approval) | Yes (`early_checkin_requests`) | Yes (staff) | Yes (validate mode) |
-| Laundry status override | **NEW** | **NEW** (`stay_support_log`) | **NEW** | **NEW** |
-| Maintenance status override | **NEW** | **NEW** (`stay_support_log`) | **NEW** | **NEW** |
+### B. Guest Review / Feedback Collection
+After checkout (`completed` state), prompt guests to leave a brief review. Store in a `reviews` table. Display aggregate ratings on embed widgets to build social proof and reduce dependency on third-party review platforms.
 
-All existing overrides are already compliant. Phase A adds the missing laundry/maintenance override governance.
+### C. Repeat Guest Recognition
+Track returning guests. When a guest with a previous `completed` booking submits a new inquiry, flag it in the approval queue so staff can offer returning-guest pricing or priority.
 
-### Stall State Analysis
-
-| State | Can Stall? | Recovery Path |
-|-------|:---:|-------------|
-| `soft_hold` | Yes (12h expiry) | Expiry banner shown, staff can transition |
-| `pending_deposit` | Yes (24h expiry) | Expiry banner shown, staff can cancel or confirm |
-| `pending_approval` | Yes (no auto-expiry) | Approval queue on dashboard, sidebar badge |
-| Maintenance `open` | Yes (no expiry) | **NEW: AI digest flags >24h stale items** |
-| Maintenance `in_progress` | Yes (no expiry) | **NEW: AI digest flags >24h stale items** |
-| Laundry `in_progress` | Yes (no expiry) | **NEW: AI digest flags >24h stale items** |
-| Laundry `ready_for_pickup` | Yes (no expiry) | **NEW: AI digest flags >24h stale items** |
-
-No state can permanently stall without an escalation path after these changes.
+### D. Kru "Camp Briefing" Mode
+Add a 6th AI mode specifically for camp context: "What's the training schedule this week?", "Which units are closest to the gym?", "What should I bring for my first session?" This would pull from a `camp_info` policy or content table that admin can edit.
 
 ---
 
-## Phase E -- UX Resilience
+## Priority Order
 
-### Mobile (360px)
-
-- MaintenanceQueue and LaundryPanel already use flex-wrap for badges
-- Override buttons will use small variant (`size="sm"`) and popover dialogs (not modals) for reason input
-- Preview mode banner uses fixed positioning, single line with exit button
-- No layout shifts from new controls -- all additions are conditional renders within existing card boundaries
-
-### Tablet and Desktop
-
-- Override dropdown renders inline with existing action buttons
-- Preview mode selector in sidebar footer uses existing dropdown patterns
-- No new navigation items or routes
-
-### Role Clarity
-
-- All override buttons are labeled "Override" with a distinct icon
-- Override actions require explicit confirmation (reason + submit)
-- Preview mode has a visually distinct warning banner (amber/orange, full-width)
-- No button renders without a clear label explaining what it does
+| Priority | Item | Effort |
+|----------|------|--------|
+| 1 | Currency configuration (THB) | Medium |
+| 2 | Check-in/check-out time display | Low |
+| 3 | Missing partial_refund_percentage policy | Low |
+| 4 | Guest arrival details fields | Medium |
+| 5 | Guest type (fighter/tourist) field | Low |
+| 6 | Soft hold / deposit expiration automation | Medium |
+| 7 | Booking confirmation email | Medium |
+| 8 | Thai tax/receipt basics | Medium |
+| 9 | Camp info in guest portal | Low |
+| 10 | Mobile optimization audit | Medium |
 
 ---
 
-## Phase F -- System Integrity Confirmation
+## Technical Details
 
-### Single Sources of Truth (preserved)
+**Currency Fix** requires changes to:
+- `src/lib/pricingCalculator.ts` (return formatted amounts)
+- `src/components/GuestBookingRequestForm.tsx` (all `$` references)
+- `src/components/BookingStateTransition.tsx` (deposit display)
+- `src/pages/GuestPortal.tsx` (listing prices)
+- `src/pages/Reports.tsx` (revenue chart formatter)
+- `src/pages/EmbedWidget.tsx` (widget price display)
+- New: `src/lib/currency.ts` utility reading from policy_settings
 
-- **Permissions**: `src/lib/permissions.ts` -- all new permissions added here
-- **Deposit policy**: `src/lib/depositPolicy.ts` -- unchanged
-- **Role hierarchy**: `ROLE_HIERARCHY` in permissions.ts -- unchanged
-- **State machine**: `src/lib/bookingStateMachine.ts` -- unchanged
+**Expiration Automation** requires:
+- New edge function `supabase/functions/expire-stale-bookings/index.ts`
+- Cron trigger (pg_cron extension or external scheduler)
+- System-level booking_state_log entries with `changed_by = NULL` (system action)
 
-### No Conflicts With
+**Guest Details** requires:
+- New columns or JSONB field on bookings table
+- Updated booking form (both guest and staff sides)
+- Display in BookingDetailSheet
 
-- Booking state machine (no state changes)
-- Deposit policy logic (no changes)
-- Policy settings toggles (no new toggles, only new permission)
-- AI circuit breaker (no changes to enable/disable logic)
-- RLS policies (no changes needed; `stay_support_log` already allows authenticated INSERT)
-
-### Nothing Becomes Implicit
-
-- Override actions are always logged with reason and change_type
-- Preview mode is always visually indicated
-- AI advisory reflects operational drift transparently
-- Notifications fire on every override
-
----
-
-## Rollout Order
-
-1. Database migration: add `change_type` to `stay_support_log`
-2. Add `canOverrideStaySupport` permission to `permissions.ts`
-3. Add override mutations to `useLaundryRequests.ts` and `useMaintenanceRequests.ts`
-4. Fix LaundryPanel dead-button for maintenance role
-5. Add override UI to `MaintenanceQueue.tsx` and `LaundryPanel.tsx`
-6. Add override UI to `BookingDetailSheet.tsx` support tab
-7. Add guest notifications for maintenance status changes
-8. Create `useRolePreview.tsx` context
-9. Integrate preview mode into `App.tsx`, `DashboardLayout.tsx`, `AppSidebar.tsx`
-10. Update consuming components to use `effectiveRole` for rendering
-11. Update `ai-assistant` edge function with staleness detection
-12. Add translation keys to all 9 locale files
-13. Deploy edge function
-
-## Files Summary
-
-| File | Action |
-|------|--------|
-| `stay_support_log` (migration) | Add `change_type` column |
-| `src/lib/permissions.ts` | Add `canOverrideStaySupport` |
-| `src/hooks/useLaundryRequests.ts` | Add `useOverrideLaundryStatus`, add guest notification on advances |
-| `src/hooks/useMaintenanceRequests.ts` | Add `useOverrideMaintenanceStatus`, add guest notifications |
-| `src/components/LaundryPanel.tsx` | Add override UI (Manager+), fix maintenance role read-only |
-| `src/components/MaintenanceQueue.tsx` | Add override UI (Manager+) |
-| `src/components/BookingDetailSheet.tsx` | Add override controls in support tab |
-| `src/hooks/useRolePreview.tsx` (new) | Preview role context |
-| `src/App.tsx` | Wrap with RolePreviewProvider |
-| `src/components/DashboardLayout.tsx` | Preview mode banner |
-| `src/components/AppSidebar.tsx` | Preview role selector for admin |
-| `src/pages/Index.tsx` | Use effectiveRole |
-| `supabase/functions/ai-assistant/index.ts` | Add staleness detection in digest mode |
-| All 9 locale files | Add translation keys for overrides, preview mode, notifications |
-
-## Risk Assessment
-
-| Risk | Mitigation |
-|------|-----------|
-| Preview mode accidentally allows unauthorized mutations | Mutation hooks always use real role from `useAuth()`, never preview role. Backend RLS enforces actual identity. |
-| Override abuse | All overrides logged with reason, admin notified, AI reflects in digest |
-| `change_type` column on existing data | Default value `'normal'` covers all existing rows |
-| LaundryPanel fix removing functionality | Only hides buttons for maintenance role; Front Desk+ retains full control |
-
-## Regression Testing Checklist
-
-- [ ] Maintenance role: verify LaundryPanel shows statuses but no advance buttons
-- [ ] Maintenance role: verify MaintenanceQueue still allows start/resolve
-- [ ] Manager: verify override dropdown appears on laundry and maintenance items
-- [ ] Manager override: verify reason is required before submission
-- [ ] Manager override: verify `stay_support_log` entry has `change_type = 'override'`
-- [ ] Manager override: verify admin receives notification
-- [ ] Guest: verify notification on maintenance resolution
-- [ ] Admin: verify preview mode selector appears in sidebar
-- [ ] Admin preview as Front Desk: verify Manager-only buttons disappear
-- [ ] Admin preview as Maintenance: verify simplified dashboard renders
-- [ ] Admin preview mode: verify mutations still execute with admin authority
-- [ ] Admin preview mode: verify banner is visible and exit works
-- [ ] AI digest: verify stale items (>24h) are flagged in advisory
-- [ ] AI validate: verify override context is included in pre-flight check
-- [ ] Mobile 360px: verify override popover renders without overflow
-- [ ] Existing booking state transitions: verify no regression
-- [ ] Deposit flow: verify no regression in pending_deposit to confirmed
+All changes follow the existing architectural pattern: policy_settings for configuration, RLS for security, edge functions for privileged operations, and the constitutional principle that humans decide while the system enforces.
