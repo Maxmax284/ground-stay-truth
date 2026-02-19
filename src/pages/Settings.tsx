@@ -4,7 +4,6 @@ import DashboardLayout from "@/components/DashboardLayout";
 import ProfileEditor from "@/components/ProfileEditor";
 import UserRoleManager from "@/components/UserRoleManager";
 import { PolicySettingsForm } from "@/components/PolicySettingsForm";
-import { EmbedCodeGenerator } from "@/components/EmbedCodeGenerator";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 
@@ -14,7 +13,6 @@ const Settings = () => {
 
   const canManageRoles = permissions.canManageRoles(role);
   const canManagePolicies = permissions.canManagePolicies(role);
-  const canManageUnits = permissions.canManageUnits(role);
 
   return (
     <DashboardLayout>
@@ -29,13 +27,11 @@ const Settings = () => {
             <TabsTrigger value="profile">{t("settings.profileTab")}</TabsTrigger>
             {canManageRoles && <TabsTrigger value="users">{t("settings.usersTab")}</TabsTrigger>}
             {canManagePolicies && <TabsTrigger value="policies">{t("settings.policiesTab")}</TabsTrigger>}
-            {canManageUnits && <TabsTrigger value="embeds">{t("settings.embedsTab")}</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="profile"><ProfileEditor /></TabsContent>
           {canManageRoles && <TabsContent value="users"><UserRoleManager /></TabsContent>}
           {canManagePolicies && <TabsContent value="policies"><PolicySettingsForm /></TabsContent>}
-          {canManageUnits && <TabsContent value="embeds"><EmbedCodeGenerator /></TabsContent>}
         </Tabs>
       </div>
     </DashboardLayout>
