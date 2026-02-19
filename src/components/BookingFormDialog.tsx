@@ -171,11 +171,11 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
           <div className="space-y-2">
             <Label>{t("bookingForm.guestOptional")}</Label>
             <Input placeholder={t("bookingForm.searchGuestPlaceholder")} value={guestSearch} onChange={(e) => setGuestSearch(e.target.value)} className="mb-1" />
-            <Select value={selectedGuestId} onValueChange={(v) => setValue("guest_id", v)}>
+            <Select value={selectedGuestId || "__none__"} onValueChange={(v) => setValue("guest_id", v === "__none__" ? "" : v)}>
               <SelectTrigger><SelectValue placeholder={t("bookingForm.selectGuest")} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t("bookingForm.noGuest")}</SelectItem>
-                {filteredGuests.map((p) => <SelectItem key={p.user_id} value={p.user_id}>{p.full_name ?? p.email ?? p.user_id}</SelectItem>)}
+                <SelectItem value="__none__">{t("bookingForm.noGuest")}</SelectItem>
+                {filteredGuests.filter((p) => !!p.user_id).map((p) => <SelectItem key={p.user_id} value={p.user_id}>{p.full_name ?? p.email ?? p.user_id}</SelectItem>)}
               </SelectContent>
             </Select>
             <input type="hidden" {...register("guest_id")} />
