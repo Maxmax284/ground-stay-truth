@@ -450,7 +450,7 @@
     "partialRefund": "{{pct}}% Erstattung ({{days}} Tage vor Check-in)",
     "noRefund": "Keine Erstattung ({{days}} Tag(e) vor Check-in)",
     "refundAmount": "Erstattungsbetrag",
-    "ofTotal": "von ${{total}} gesamt"
+    "ofTotal": "von {{total}} gesamt"
   },
   "documents": {
     "idDocuments": "Ausweisdokumente",
@@ -587,14 +587,31 @@
     "cancelBookingTitle": "Diese Buchung stornieren?",
     "cancelBookingDesc": "Sind Sie sicher, dass Sie diese Buchung stornieren möchten?",
     "confirmCancel": "Ja, Buchung stornieren",
-    "bookingCancelled": "Buchung storniert"
+    "bookingCancelled": "Buchung storniert",
+    "campInfo": "Camp-Info",
+    "noCampInfo": "Camp-Informationen wurden noch nicht konfiguriert. Bitte schauen Sie später noch einmal vorbei."
   },
   "guestBooking": {
     "requestBooking": "Buchung anfragen",
     "requestSent": "Buchungsanfrage gesendet",
     "requestSentDesc": "Ihre Anfrage wurde eingereicht. Unser Team meldet sich bald.",
     "submitRequest": "Anfrage senden",
-    "notesPlaceholder": "Sonderwünsche, Ankunftszeit, Fragen…"
+    "notesPlaceholder": "Sonderwünsche, Ankunftszeit, Fragen…",
+    "guestType": "Gasttyp",
+    "guestTypes": {
+      "fighter": "Kämpfer",
+      "training_guest": "Trainingsgast",
+      "spectator": "Zuschauer",
+      "long_term": "Langzeitaufenthalt"
+    },
+    "arrivalDetails": "Anreisedetails",
+    "flightInfo": "Flug / Fähre",
+    "flightPlaceholder": "z.B. TG 1234 ab Bangkok",
+    "arrivalTime": "Voraussichtliche Ankunft",
+    "emergencyContact": "Notfallkontakt",
+    "emergencyPlaceholder": "Name & Telefonnummer",
+    "dietaryRestrictions": "Ernährungseinschränkungen",
+    "dietaryPlaceholder": "Allergien, Vegetarier, usw."
   },
   "notFound": {
     "title": "404",
@@ -712,7 +729,7 @@
     "disclaimer": "Ich berate nur — ich führe keine Aktionen aus.",
     "inputPlaceholder": "Fragen Sie Kru…",
     "language": "Antwortsprache",
-    "modes": { "explain": "Erklären", "summarize": "Zusammenfassung", "validate": "Validieren", "draft": "Entwurf", "digest": "Überblick" },
+    "modes": { "explain": "Erklären", "summarize": "Zusammenfassung", "validate": "Validieren", "draft": "Entwurf", "digest": "Überblick", "camp": "Camp" },
     "draftWithAI": "Mit KI entwerfen",
     "drafting": "Entwerfen…",
     "preFlightTitle": "Vorab-Prüfung",
@@ -733,11 +750,11 @@
   },
   "deposit": {
     "collectPrompt": "Wurde die Kaution eingezogen?",
-    "requiredAmount": "Erforderliche Kaution: ${{amount}} ({{percentage}}% des Gesamtbetrags)",
+    "requiredAmount": "Erforderliche Kaution: {{amount}} ({{percentage}}% des Gesamtbetrags)",
     "recordAndConfirm": "Kaution erfassen und bestätigen",
     "guestTitle": "Kaution erforderlich",
     "guestInstructions": "Eine Kaution ist erforderlich, um Ihre Buchung zu bestätigen. Sie können vor Ort an der Rezeption bezahlen (Bargeld oder Karte), oder kontaktieren Sie das Personal für Banküberweisung.",
-    "guestAmount": "Kautionsbetrag: ${{amount}}",
+    "guestAmount": "Kautionsbetrag: {{amount}}",
     "guestInstructionsOnlineOptional": "Sie können Ihre Kaution online oder vor Ort an der Rezeption bezahlen.",
     "guestInstructionsOnlineRequired": "Online-Zahlung der Kaution ist erforderlich, um Ihre Buchung zu bestätigen.",
     "onlineComingSoon": "Online-Zahlungen kommen bald. Bitte kontaktieren Sie das Personal.",
@@ -753,5 +770,20 @@
       "guest_portal": "Gästeportal",
       "supervisor_override": "Manager-Überschreibung"
     }
+  },
+  "override": {
+    "title": "Status-Überschreibung",
+    "selectStatus": "Zielstatus auswählen",
+    "reasonRequired": "Ein Grund ist für diese Überschreibung erforderlich.",
+    "reasonPlaceholder": "Erklären Sie, warum diese Überschreibung nötig ist…",
+    "confirm": "Überschreibung anwenden",
+    "applied": "Überschreibung angewendet",
+    "badge": "Überschreibung"
+  },
+  "preview": {
+    "banner": "VORSCHAUMODUS: Anzeige als {{role}} — Dies ist eine Simulation. Aktionen erfordern Ihre tatsächliche Rolle.",
+    "exit": "Vorschau beenden",
+    "selectRole": "Vorschau als Rolle…",
+    "actualRole": "Meine tatsächliche Rolle"
   }
 }

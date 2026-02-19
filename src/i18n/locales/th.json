@@ -471,7 +471,7 @@
     "partialRefund": "คืนเงิน {{pct}}% ({{days}} วันก่อนเช็คอิน)",
     "noRefund": "ไม่คืนเงิน ({{days}} วันก่อนเช็คอิน)",
     "refundAmount": "จำนวนเงินคืน",
-    "ofTotal": "จากทั้งหมด ${{total}}"
+    "ofTotal": "จากทั้งหมด {{total}}"
   },
   "documents": {
     "idDocuments": "เอกสารประจำตัว",
@@ -608,14 +608,31 @@
     "cancelBookingTitle": "ยกเลิกการจองนี้?",
     "cancelBookingDesc": "คุณแน่ใจว่าต้องการยกเลิกการจองนี้? กรุณาตรวจสอบนโยบายการคืนเงินด้านล่าง",
     "confirmCancel": "ใช่ ยกเลิกการจอง",
-    "bookingCancelled": "ยกเลิกการจองแล้ว"
+    "bookingCancelled": "ยกเลิกการจองแล้ว",
+    "campInfo": "ข้อมูลค่าย",
+    "noCampInfo": "ยังไม่ได้ตั้งค่าข้อมูลค่าย กรุณากลับมาตรวจสอบภายหลัง"
   },
   "guestBooking": {
     "requestBooking": "ขอจอง",
     "requestSent": "ส่งคำขอจองแล้ว",
     "requestSentDesc": "ส่งคำขอของคุณแล้ว ทีมงานจะติดต่อกลับเร็วๆ นี้",
     "submitRequest": "ส่งคำขอ",
-    "notesPlaceholder": "คำขอพิเศษ เวลาเดินทางมาถึง คำถาม…"
+    "notesPlaceholder": "คำขอพิเศษ เวลาเดินทางมาถึง คำถาม…",
+    "guestType": "ประเภทผู้เข้าพัก",
+    "guestTypes": {
+      "fighter": "นักสู้",
+      "training_guest": "ผู้เข้าฝึก",
+      "spectator": "ผู้ชม",
+      "long_term": "เข้าพักระยะยาว"
+    },
+    "arrivalDetails": "รายละเอียดการเดินทาง",
+    "flightInfo": "เที่ยวบิน / เรือ",
+    "flightPlaceholder": "เช่น TG 1234 จากกรุงเทพ",
+    "arrivalTime": "เวลาถึงโดยประมาณ",
+    "emergencyContact": "ผู้ติดต่อฉุกเฉิน",
+    "emergencyPlaceholder": "ชื่อและเบอร์โทรศัพท์",
+    "dietaryRestrictions": "ข้อจำกัดด้านอาหาร",
+    "dietaryPlaceholder": "อาการแพ้ มังสวิรัติ ฯลฯ"
   },
   "notFound": {
     "title": "404",
@@ -751,7 +768,8 @@
       "summarize": "สรุป",
       "validate": "ตรวจสอบ",
       "draft": "ร่าง",
-      "digest": "สรุปรวม"
+      "digest": "สรุปรวม",
+      "camp": "ค่าย"
     },
     "draftWithAI": "ร่างด้วย AI",
     "drafting": "กำลังร่าง…",
@@ -773,11 +791,11 @@
   },
   "deposit": {
     "collectPrompt": "ได้รับเงินมัดจำแล้วหรือยัง?",
-    "requiredAmount": "เงินมัดจำที่ต้องการ: ${{amount}} ({{percentage}}% ของทั้งหมด)",
+    "requiredAmount": "เงินมัดจำที่ต้องการ: {{amount}} ({{percentage}}% ของทั้งหมด)",
     "recordAndConfirm": "บันทึกเงินมัดจำและยืนยัน",
     "guestTitle": "ต้องชำระเงินมัดจำ",
     "guestInstructions": "ต้องชำระเงินมัดจำเพื่อยืนยันการจอง คุณสามารถชำระเงินด้วยตนเองที่แผนกต้อนรับ (รับเงินสดและบัตร) หรือติดต่อเจ้าหน้าที่สำหรับรายละเอียดการโอนเงิน",
-    "guestAmount": "จำนวนเงินมัดจำ: ${{amount}}",
+    "guestAmount": "จำนวนเงินมัดจำ: {{amount}}",
     "guestInstructionsOnlineOptional": "คุณสามารถชำระเงินมัดจำออนไลน์หรือด้วยตนเองที่แผนกต้อนรับ",
     "guestInstructionsOnlineRequired": "ต้องชำระเงินมัดจำออนไลน์เพื่อยืนยันการจอง",
     "onlineComingSoon": "การชำระเงินออนไลน์จะเปิดให้บริการเร็วๆ นี้ กรุณาติดต่อเจ้าหน้าที่",
