@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import type { BookingState } from "@/lib/bookingStateMachine";
 import { createNotification } from "@/hooks/useNotifications";
+import { formatPrice } from "@/lib/currency";
 
 export type Booking = Tables<"bookings">;
 export type BookingInsert = TablesInsert<"bookings">;
@@ -247,12 +248,20 @@ export function useCreatePayment() {
         .eq("id", payment.booking_id)
         .single();
 
+      // Fetch currency for notification formatting
+      const { data: currencyPolicy } = await supabase
+        .from("policy_settings")
+        .select("value")
+        .eq("key", "currency_symbol")
+        .maybeSingle();
+      const currSym = currencyPolicy?.value ? String(currencyPolicy.value).replace(/^"|"$/g, "") : "฿";
+
       if (booking?.state === "pending_deposit" && booking.guest_id && booking.guest_id !== user?.id) {
         await createNotification({
           user_id: booking.guest_id,
           type: "booking",
           reference_id: payment.booking_id,
-          message: `Your deposit of $${payment.amount.toFixed(2)} (${payment.method}) has been received. Your booking will be confirmed shortly.`,
+          message: `Your deposit of ${currSym}${payment.amount.toFixed(2)} (${payment.method}) has been received. Your booking will be confirmed shortly.`,
         });
       }
 
@@ -267,7 +276,7 @@ export function useCreatePayment() {
             user_id: admin.user_id,
             type: "booking",
             reference_id: payment.booking_id,
-            message: `Deposit of $${payment.amount.toFixed(2)} recorded via ${payment.method}`,
+            message: `Deposit of ${currSym}${payment.amount.toFixed(2)} recorded via ${payment.method}`,
           });
         }
       }
