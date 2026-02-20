@@ -144,6 +144,22 @@ Open maintenance requests: ${(maintenanceRes.data ?? []).length}.
 Active laundry requests: ${(laundryRes.data ?? []).length}.
 Deposit policy: ${depositMode}. Manual deposits: ${dpMap.get("deposits_manual_enabled") !== "false" ? "enabled" : "disabled"}. Online deposits: ${onlineEnabled ? "enabled" : "disabled"}.`;
 
+    // Gap 3: When caller is a guest, fetch their own bookings for context
+    if (role === "guest") {
+      const { data: guestBookings } = await adminClient
+        .from("bookings")
+        .select("id, state, check_in, check_out, unit_id, units(name), num_guests")
+        .eq("guest_id", userData.user.id)
+        .order("check_in", { ascending: true })
+        .limit(10);
+
+      if (guestBookings && guestBookings.length > 0) {
+        contextData += `\n\nYOUR BOOKINGS (guest's own data only):\n${JSON.stringify(guestBookings)}`;
+      } else {
+        contextData += `\n\nYOUR BOOKINGS: None found.`;
+      }
+    }
+
     if (mode === "digest" || mode === "summarize") {
       const [detBookingsRes, detMaintenanceRes, detLaundryRes] = await Promise.all([
         adminClient

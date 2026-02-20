@@ -1,15 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { HandMetal, X, MessageSquare, AlertTriangle } from "lucide-react";
+import { HandMetal, X, MessageSquare, AlertTriangle, Bot, Loader2 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { useTransitionBookingState } from "@/hooks/useBookings";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/hooks/useAuth";
+import { useAISettings } from "@/hooks/useAISettings";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -17,13 +20,120 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface InquiryQueueProps {
   bookings: any[] | undefined;
   isLoading: boolean;
+  readOnly?: boolean;
 }
 
-export function InquiryQueue({ bookings, isLoading }: InquiryQueueProps) {
+function useAIAdvisory(booking: any, enabled: boolean) {
+  const { session, role } = useAuth();
+  const [advisory, setAdvisory] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!enabled || !session || !booking) return;
+    let cancelled = false;
+    setLoading(true);
+
+    (async () => {
+      try {
+        const resp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({
+              mode: "validate",
+              role,
+              messages: [{ role: "user", content: `Quick check on this inquiry: unit ${booking.units?.name ?? "unknown"}, dates ${booking.check_in} to ${booking.check_out}, ${booking.num_guests} guest(s). Any date overlaps, maintenance blocks, or capacity concerns?` }],
+              context: {
+                bookingId: booking.id,
+                unitId: booking.unit_id,
+                unitName: booking.units?.name,
+                checkIn: booking.check_in,
+                checkOut: booking.check_out,
+                numGuests: booking.num_guests,
+                transition: "inquiry → soft_hold",
+              },
+            }),
+          }
+        );
+        if (!resp.ok || !resp.body) { setLoading(false); return; }
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let result = "";
+        let done = false;
+        while (!done) {
+          const { done: d, value } = await reader.read();
+          if (d) break;
+          const chunk = decoder.decode(value, { stream: true });
+          for (const line of chunk.split("\n")) {
+            if (!line.startsWith("data: ")) continue;
+            const json = line.slice(6).trim();
+            if (json === "[DONE]") { done = true; break; }
+            try {
+              const parsed = JSON.parse(json);
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) result += content;
+            } catch {}
+          }
+        }
+        if (!cancelled) setAdvisory(result || null);
+      } catch {
+        // Non-blocking — ignore errors
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [booking?.id, enabled, session]);
+
+  return { advisory, loading };
+}
+
+function AIAdvisoryBadge({ booking }: { booking: any }) {
+  const { role } = useAuth();
+  const { isAIEnabled } = useAISettings(role);
+  const { advisory, loading } = useAIAdvisory(booking, isAIEnabled);
+
+  if (!isAIEnabled) return null;
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex items-center">
+            {loading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+            ) : advisory ? (
+              <Bot className="h-3.5 w-3.5 text-primary" />
+            ) : (
+              <Bot className="h-3.5 w-3.5 text-muted-foreground/40" />
+            )}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-xs">
+          {loading ? "Kru is checking…" : advisory || "No concerns flagged."}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQueueProps) {
   const { t } = useTranslation();
   const transition = useTransitionBookingState();
   const qc = useQueryClient();
@@ -78,6 +188,9 @@ export function InquiryQueue({ bookings, isLoading }: InquiryQueueProps) {
                 {count}
               </Badge>
             )}
+            {readOnly && (
+              <Badge variant="outline" className="ml-1 text-xs">{t("common.preview")}</Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -108,6 +221,7 @@ export function InquiryQueue({ bookings, isLoading }: InquiryQueueProps) {
                             · {b.profiles.full_name}
                           </span>
                         )}
+                        <AIAdvisoryBadge booking={b} />
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                         <span>
@@ -119,26 +233,28 @@ export function InquiryQueue({ bookings, isLoading }: InquiryQueueProps) {
                         </span>
                       </div>
                     </div>
-                    <div className="flex gap-1.5 shrink-0">
-                      <Button
-                        size="sm"
-                        variant="default"
-                        className="h-8 px-3"
-                        onClick={() => handleHold(b.id)}
-                        disabled={transition.isPending}
-                      >
-                        <HandMetal className="h-3.5 w-3.5 mr-1" /> {t("inquiry.hold")}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="h-8 px-3"
-                        onClick={() => setDismissId(b.id)}
-                        disabled={transition.isPending}
-                      >
-                        <X className="h-3.5 w-3.5 mr-1" /> {t("inquiry.dismiss")}
-                      </Button>
-                    </div>
+                    {!readOnly && (
+                      <div className="flex gap-1.5 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="h-8 px-3"
+                          onClick={() => handleHold(b.id)}
+                          disabled={transition.isPending}
+                        >
+                          <HandMetal className="h-3.5 w-3.5 mr-1" /> {t("inquiry.hold")}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-8 px-3"
+                          onClick={() => setDismissId(b.id)}
+                          disabled={transition.isPending}
+                        >
+                          <X className="h-3.5 w-3.5 mr-1" /> {t("inquiry.dismiss")}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 );
               })}

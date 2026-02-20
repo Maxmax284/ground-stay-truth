@@ -33,6 +33,7 @@ const Index = () => {
   const isLoading = arrivals.isLoading || departures.isLoading || activeBookings.isLoading || unitCount.isLoading || inquiryCount.isLoading;
 
   const canApprove = permissions.canApproveBooking(effectiveRole);
+  const canViewQueues = canApprove || effectiveRole === "front_desk_supervisor";
   const isMaintenance = effectiveRole === "maintenance";
   const isViewer = effectiveRole === "viewer";
 
@@ -89,12 +90,12 @@ const Index = () => {
             </div>
 
             {/* Admin/Manager layout: Approval queue prominent */}
-            {canApprove && (
-              <InquiryQueue bookings={pendingInquiry.data} isLoading={pendingInquiry.isLoading} />
+            {canViewQueues && (
+              <InquiryQueue bookings={pendingInquiry.data} isLoading={pendingInquiry.isLoading} readOnly={!canApprove} />
             )}
 
-            {canApprove && (
-              <ApprovalQueue bookings={pendingApproval.data} isLoading={pendingApproval.isLoading} />
+            {canViewQueues && (
+              <ApprovalQueue bookings={pendingApproval.data} isLoading={pendingApproval.isLoading} readOnly={!canApprove} />
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

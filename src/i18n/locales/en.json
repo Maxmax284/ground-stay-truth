@@ -787,7 +787,13 @@
   "notifications": {
     "title": "Notifications",
     "empty": "No notifications yet.",
-    "markAllRead": "Mark all read"
+    "markAllRead": "Mark all read",
+    "inquiryAcknowledged": "Your inquiry{{unit}} has been acknowledged and placed on hold. We'll follow up shortly.",
+    "inquiryDismissed": "Your inquiry{{unit}} could not be accommodated.{{reason}}",
+    "statusChanged": "Your booking{{unit}} status changed to {{state}}",
+    "newGuestInquiry": "New guest inquiry: {{unit}} {{dates}} — action needed",
+    "bookingCreated": "New booking created: {{unit}} {{dates}}",
+    "transitionStaff": "Booking transitioned from {{from}} to {{to}}"
   },
   "ai": {
     "title": "Kru",

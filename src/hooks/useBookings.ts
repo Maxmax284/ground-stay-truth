@@ -156,10 +156,25 @@ export function useTransitionBookingState() {
         reason,
       });
 
-      // Notify guest + admins/managers about state change
+      // Fetch unit name for richer notifications
+      let unitName = "";
+      if (data.unit_id) {
+        const { data: unit } = await supabase.from("units").select("name").eq("id", data.unit_id).single();
+        unitName = unit?.name ?? "";
+      }
+
+      // Build contextual guest notification
       const batch: Array<{ user_id: string; type: string; reference_id: string; message: string }> = [];
       if (data.guest_id && data.guest_id !== user?.id) {
-        batch.push({ user_id: data.guest_id, type: "booking", reference_id: bookingId, message: `Your booking status changed to ${toState}` });
+        let guestMsg: string;
+        if (fromState === "inquiry" && toState === "soft_hold") {
+          guestMsg = `Your inquiry${unitName ? ` for ${unitName}` : ""} has been acknowledged and placed on hold. We'll follow up shortly.`;
+        } else if (fromState === "inquiry" && toState === "cancelled") {
+          guestMsg = `Your inquiry${unitName ? ` for ${unitName}` : ""} could not be accommodated.${reason ? ` Reason: ${reason}` : ""}`;
+        } else {
+          guestMsg = `Your booking${unitName ? ` (${unitName})` : ""} status changed to ${toState}`;
+        }
+        batch.push({ user_id: data.guest_id, type: "booking", reference_id: bookingId, message: guestMsg });
       }
       const { data: admins } = await supabase.from("user_roles").select("user_id").in("role", ["admin", "manager"]);
       for (const admin of admins ?? []) {
