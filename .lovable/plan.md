@@ -1,115 +1,63 @@
 
 
-# Harden Notification System -- Backend Function Migration
+# Fill the Inquiry Gap -- Dashboard Queue and Smarter Notifications
 
-## Overview
+## The Problem
 
-Move all notification creation from client-side `createNotification()` calls to a new backend function (`create-notification`). Currently, the RLS policy on the `notifications` table allows any authenticated user to INSERT a notification targeting any `user_id`, which means a malicious guest could spoof notifications to other users. The fix moves the INSERT logic server-side where the service role key validates context before creating notifications.
+Right now, when a guest submits a booking request (inquiry), the system:
+- Creates the booking in "inquiry" state
+- Sends a generic "New booking created" notification to admins/managers
 
-## Security Problem
+But there is NO dedicated inbox or queue for new inquiries on the dashboard. Staff only see the Approval Queue (which shows bookings already at "Pending Approval" stage). New inquiries get buried -- staff have to manually navigate to Bookings and filter by state to find them.
 
-The current RLS policy on the `notifications` table:
-```
-Policy: "Authenticated users can insert notifications"
-Command: INSERT
-With Check: (auth.uid() IS NOT NULL)
-```
-This means **any logged-in user** (including guests) can insert a notification row with **any arbitrary `user_id`**, allowing spoofed notifications to staff or other guests.
+## What This Plan Adds
 
-## Solution
+### 1. Inquiry Queue on the Dashboard
 
-### 1. Create a new backend function: `create-notification`
+A new "Inquiry Queue" card on the dashboard, shown above the existing Approval Queue. It displays all bookings in "inquiry" state with:
+- Unit name, guest name, dates, and time since submission
+- Two action buttons: "Hold" (moves to soft_hold) and "Dismiss" (cancels with reason)
+- A count badge that shows how many inquiries are waiting
 
-A new edge function at `supabase/functions/create-notification/index.ts` that:
-- Accepts an array of notification payloads: `{ notifications: [{ user_id, type, reference_id?, message }] }`
-- Validates the caller's JWT via `getClaims()`
-- Uses the **service role client** to insert notifications (bypassing RLS)
-- Returns success/failure
+Visible to the same roles that can see the Approval Queue (managers, admins, and supervisors who can transition states).
 
-This handles the batch pattern already used in the codebase (e.g., looping over admins to notify each one).
+### 2. Better Notification Messages
 
-### 2. Tighten the RLS INSERT policy on `notifications`
+Update the notification text when a guest (not staff) creates a booking inquiry:
+- Current: "New booking created for Jun 15 - Jun 20"
+- New: "New guest inquiry: [Unit Name] Jun 15 - Jun 20 -- action needed"
 
-Replace the current permissive INSERT policy:
-```sql
--- Remove: any authenticated user can insert
-DROP POLICY "Authenticated users can insert notifications" ON notifications;
+This makes the notification bell alerts immediately actionable.
 
--- Add: only service role (backend functions) can insert
--- No new INSERT policy needed -- the edge function uses service_role which bypasses RLS
-```
+### 3. Inquiry Count in Dashboard Stats
 
-With no INSERT policy for regular users, only the service role (used by the edge function) can create notifications. The existing SELECT and UPDATE policies remain unchanged (users can read/update their own).
+Add an "Open Inquiries" stat card to the dashboard stats row so the number is always visible at a glance.
 
-### 3. Replace all client-side `createNotification()` calls
+## Technical Details
 
-Update 4 files to call the edge function instead of inserting directly:
+### Files to create:
+- `src/components/InquiryQueue.tsx` -- New component modeled after `ApprovalQueue.tsx` but for "inquiry" state bookings, with "Hold" and "Dismiss" actions
 
-**`src/hooks/useNotifications.ts`** -- Replace the `createNotification` helper:
-```typescript
-export async function createNotification(params: {
-  user_id: string;
-  type: string;
-  reference_id?: string;
-  message: string;
-}) {
-  await supabase.functions.invoke("create-notification", {
-    body: { notifications: [params] },
-  });
-}
+### Files to modify:
+- `src/pages/Index.tsx` -- Add InquiryQueue above ApprovalQueue, add inquiry count stat card
+- `src/hooks/useDashboard.ts` -- Add `pendingInquiry` query (bookings where state = 'inquiry')
+- `src/hooks/useBookings.ts` -- Improve the notification message in `useCreateBooking` to differentiate guest inquiries from staff bookings, include unit name
+- `src/i18n/locales/en.json` -- Add translation keys for inquiry queue labels, actions, and notification text
 
-// New batch helper for multi-recipient notifications
-export async function createNotifications(
-  notifications: Array<{ user_id: string; type: string; reference_id?: string; message: string }>
-) {
-  if (notifications.length === 0) return;
-  await supabase.functions.invoke("create-notification", {
-    body: { notifications },
-  });
-}
-```
+### InquiryQueue component behavior:
+- Fetches bookings with `state = 'inquiry'`, ordered by `created_at` ascending (oldest first)
+- "Hold" button transitions inquiry to soft_hold with reason "Inquiry acknowledged"
+- "Dismiss" button opens a reason dialog (same pattern as ApprovalQueue reject) and transitions to cancelled
+- Shows wait time using `formatDistanceToNow`
+- Highlighted border when count is greater than 0
 
-**`src/hooks/useBookings.ts`** -- Replace individual `createNotification` loops with batch `createNotifications` calls (reduces N+1 network requests to 1).
+### Notification improvement:
+- When `useCreateBooking` fires and the booking is an inquiry from a guest (guest_id matches current user), the notification to admins/managers will include the unit name and say "action needed"
+- When staff creates a booking (not a guest), the existing message stays
 
-**`src/hooks/useMaintenanceRequests.ts`** -- Same batch refactor for staff/guest notifications.
-
-**`src/hooks/useLaundryRequests.ts`** -- Same batch refactor for staff/guest notifications.
-
-**`src/components/BookingStateTransition.tsx`** -- Same refactor for deposit override notifications.
-
-### 4. Update `supabase/config.toml`
-
-Add the new function config:
-```toml
-[functions.create-notification]
-verify_jwt = false
-```
-
-### 5. Database migration
-
-Drop the overly permissive INSERT policy:
-```sql
-DROP POLICY "Authenticated users can insert notifications" ON public.notifications;
-```
-
-No replacement INSERT policy is needed -- the edge function uses `SUPABASE_SERVICE_ROLE_KEY` which bypasses RLS entirely.
-
-## Files to create
-- `supabase/functions/create-notification/index.ts`
-
-## Files to modify
-- `src/hooks/useNotifications.ts` -- rewrite `createNotification` to call edge function, add `createNotifications` batch helper
-- `src/hooks/useBookings.ts` -- switch to batch `createNotifications`
-- `src/hooks/useMaintenanceRequests.ts` -- switch to batch `createNotifications`
-- `src/hooks/useLaundryRequests.ts` -- switch to batch `createNotifications`
-- `src/components/BookingStateTransition.tsx` -- switch to `createNotifications`
-
-## Database migration
-- Drop the `"Authenticated users can insert notifications"` INSERT policy
-
-## What stays the same
-- The `send-booking-confirmation` edge function already uses service role to insert notifications -- no change needed
-- All SELECT/UPDATE RLS policies on notifications remain unchanged
-- The `NotificationBell` component and realtime subscription are unaffected
-- The notification data schema is unchanged
-
+### Dashboard layout order:
+1. Stats row (arrivals, departures, active bookings, units, NEW: open inquiries)
+2. Inquiry Queue (NEW)
+3. Approval Queue (existing)
+4. Arrivals/Departures/Activity/Quick Actions (existing)
+5. Maintenance/Laundry (existing)
