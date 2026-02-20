@@ -22,6 +22,11 @@ export function NotificationBell() {
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
   const [open, setOpen] = useState(false);
+  const [showRead, setShowRead] = useState(false);
+
+  const visibleNotifications = (notifications ?? []).filter(
+    (n) => showRead || !n.read
+  );
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -38,31 +43,40 @@ export function NotificationBell() {
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <h4 className="text-sm font-semibold">{t("notifications.title")}</h4>
-          {unreadCount > 0 && (
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="sm"
               className="h-7 text-xs"
-              onClick={() => markAllRead.mutate()}
-              disabled={markAllRead.isPending}
+              onClick={() => setShowRead((v) => !v)}
             >
-              <CheckCheck className="h-3 w-3 mr-1" />
-              {t("notifications.markAllRead")}
+              {showRead ? t("notifications.hideRead", "Hide read") : t("notifications.showRead", "Show read")}
             </Button>
-          )}
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => markAllRead.mutate()}
+                disabled={markAllRead.isPending}
+              >
+                <CheckCheck className="h-3 w-3 mr-1" />
+                {t("notifications.markAllRead")}
+              </Button>
+            )}
+          </div>
         </div>
-        <ScrollArea className="max-h-80">
-          {(!notifications || notifications.length === 0) ? (
+        <ScrollArea className="h-80">
+          {visibleNotifications.length === 0 ? (
             <div className="py-8 text-center text-sm text-muted-foreground animate-fade-up">
               {t("notifications.empty")}
             </div>
           ) : (
             <div className="divide-y">
-              {notifications.map((n, i) => (
+              {visibleNotifications.map((n, i) => (
                 <button
                   key={n.id}
-                  className={`w-full text-left px-4 py-3 hover:bg-accent/40 transition-colors flex items-start gap-3 animate-slide-in-right ${!n.read ? "bg-primary/5" : ""}`}
-                  style={{ animationDelay: `${i * 40}ms` }}
+                  className={`w-full text-left px-4 py-3 hover:bg-accent/40 transition-colors flex items-start gap-3 ${!n.read ? "bg-primary/5" : ""}`}
                   onClick={() => {
                     if (!n.read) markRead.mutate(n.id);
                   }}
