@@ -122,7 +122,9 @@
     "noRecentActivity": "No recent activity yet. Your audit log will appear here.",
     "arrivingToday": "Arriving Today",
     "departingToday": "Departing Today",
-    "createdAs": "Created as {{state}}"
+    "createdAs": "Created as {{state}}",
+    "openInquiries": "Open Inquiries",
+    "awaitingResponse": "Awaiting staff response"
   },
   "bookings": {
     "title": "Bookings",
@@ -505,6 +507,19 @@
     "qualityIssues": "Quality Concerns",
     "confidence": "Confidence",
     "summary": "Summary"
+  },
+  "inquiry": {
+    "queueTitle": "New Inquiries",
+    "noItems": "No new inquiries.",
+    "waiting": "waiting",
+    "hold": "Hold",
+    "dismiss": "Dismiss",
+    "held": "Inquiry moved to soft hold",
+    "dismissed": "Inquiry dismissed",
+    "actionFailed": "Action failed",
+    "dismissTitle": "Dismiss Inquiry",
+    "reasonPlaceholder": "Reason for dismissal…",
+    "confirmDismiss": "Confirm Dismiss"
   },
   "approval": {
     "queueTitle": "Pending Approvals",

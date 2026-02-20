@@ -78,11 +78,30 @@ export function useCreateBooking() {
         reason: "Booking created",
       });
 
+      // Determine if this is a guest inquiry vs staff-created booking
+      const isGuestInquiry = booking.guest_id === user?.id && data.state === "inquiry";
+
+      // Fetch unit name for better notification context
+      let unitName = "";
+      if (booking.unit_id) {
+        const { data: unit } = await supabase
+          .from("units")
+          .select("name")
+          .eq("id", booking.unit_id)
+          .single();
+        unitName = unit?.name ?? "";
+      }
+
       // Notify admins/managers about new booking
       const { data: admins } = await supabase
         .from("user_roles")
         .select("user_id")
         .in("role", ["admin", "manager"]);
+
+      const notifMessage = isGuestInquiry
+        ? `New guest inquiry: ${unitName} ${booking.check_in} – ${booking.check_out} — action needed`
+        : `New booking created: ${unitName} ${booking.check_in} – ${booking.check_out}`;
+
       await createNotifications(
         (admins ?? [])
           .filter((a) => a.user_id !== user?.id)
@@ -90,7 +109,7 @@ export function useCreateBooking() {
             user_id: a.user_id,
             type: "booking",
             reference_id: data.id,
-            message: `New booking created for ${booking.check_in} – ${booking.check_out}`,
+            message: notifMessage,
           }))
       );
 

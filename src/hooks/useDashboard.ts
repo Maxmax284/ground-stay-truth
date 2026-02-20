@@ -82,5 +82,30 @@ export function useDashboardStats() {
     },
   });
 
-  return { arrivals, departures, activeBookings, unitCount, recentActivity, pendingApproval };
+  const pendingInquiry = useQuery({
+    queryKey: ["dashboard", "pendingInquiry"],
+    queryFn: async () => {
+      const { data, error } = await (supabase
+        .from("bookings")
+        .select("id, unit_id, check_in, check_out, num_guests, state, guest_id, created_at, units(name), profiles!bookings_guest_id_profiles_fkey(full_name)")
+        .eq("state", "inquiry")
+        .order("created_at", { ascending: true })) as any;
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const inquiryCount = useQuery({
+    queryKey: ["dashboard", "inquiryCount"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("bookings")
+        .select("*", { count: "exact", head: true })
+        .eq("state", "inquiry");
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
+  return { arrivals, departures, activeBookings, unitCount, recentActivity, pendingApproval, pendingInquiry, inquiryCount };
 }
