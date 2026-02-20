@@ -147,4 +147,8 @@ export const permissions = {
   /** Can override stay support status (laundry/maintenance) — Manager+ */
   canOverrideStaySupport: (role: AppRole | null) =>
     !!role && ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.manager,
+
+  /** Can manage reviews (approve/reject/delete) — Admin only */
+  canManageReviews: (role: AppRole | null) =>
+    role === "admin",
 } as const;

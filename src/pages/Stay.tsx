@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Home, Users, Moon, Sparkles, ChevronLeft, ChevronRight, CalendarDays, ArrowRight, MapPin, Clock, Shield, ListChecks } from "lucide-react";
 import { formatPriceSimple } from "@/lib/currency";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { TestimonialSection } from "@/components/TestimonialSection";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -281,6 +282,9 @@ export default function Stay() {
             </div>
           </section>
         )}
+
+        {/* Testimonials */}
+        <TestimonialSection />
 
         {/* Footer CTA */}
         <section className="text-center py-8 space-y-4">

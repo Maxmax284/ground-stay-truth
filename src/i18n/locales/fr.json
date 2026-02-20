@@ -331,7 +331,8 @@
     "profileTab": "Profil",
     "usersTab": "Utilisateurs et rôles",
     "policiesTab": "Politiques",
-    "embedsTab": "Widgets"
+    "embedsTab": "Widgets",
+    "reviewsTab": "Avis"
   },
   "profile": {
     "myProfile": "Mon profil",
@@ -837,5 +838,32 @@
     "welcomeBack": "Bon retour ! Ravi de vous revoir.",
     "stayCount": "C'est votre séjour n°{{count}} chez nous.",
     "returningGuest": "Client fidèle (Séjour #{{count}})"
+  },
+  "reviews": {
+    "leaveReview": "Laisser un avis",
+    "rating": "Note",
+    "title": "Titre",
+    "body": "Votre avis",
+    "titlePlaceholder": "Résumez votre séjour",
+    "bodyPlaceholder": "Parlez-nous de votre expérience…",
+    "submitReview": "Soumettre l'avis",
+    "pendingApproval": "Avis soumis — en attente d'approbation",
+    "approve": "Approuver",
+    "reject": "Rejeter",
+    "remove": "Supprimer l'avis",
+    "removeConfirm": "Supprimer définitivement cet avis ? Cette action est irréversible.",
+    "removed": "Avis supprimé",
+    "whatGuestsSay": "Ce que disent nos clients",
+    "overallRating": "Note globale",
+    "basedOnReviews": "Basé sur {{count}} avis",
+    "pending": "En attente",
+    "approved": "Approuvé",
+    "rejected": "Rejeté",
+    "all": "Tous",
+    "adminNote": "Note admin",
+    "adminNotePlaceholder": "Raison du rejet (optionnel)…",
+    "rejectReason": "Indiquez une raison optionnelle pour rejeter cet avis.",
+    "noReviews": "Aucun avis pour le moment.",
+    "alreadyReviewed": "Vous avez déjà évalué ce séjour."
   }
 }

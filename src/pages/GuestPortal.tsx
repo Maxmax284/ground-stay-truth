@@ -44,10 +44,14 @@ import {
   CalendarDays, ArrowRight, Home, Info, MessageCircle, Send,
   ChevronLeft, ChevronRight, Eye, CalendarPlus, User, Circle,
   MessageSquare, FileText, XCircle, Wrench, ClipboardCheck,
-  Clock, ListChecks, Shield, MapPin, Heart,
+  Clock, ListChecks, Shield, MapPin, Heart, Star,
 } from "lucide-react";
 import { GuestStaySupport } from "@/components/GuestStaySupport";
 import { PreArrivalChecklist } from "@/components/PreArrivalChecklist";
+import { ReviewFormDialog } from "@/components/ReviewFormDialog";
+import { StarRating } from "@/components/StarRating";
+import { useGuestReviews } from "@/hooks/useReviews";
+import { useProfile } from "@/hooks/useProfile";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { toast } from "sonner";
 
@@ -56,6 +60,9 @@ const GuestPortal = () => {
   const { user, role } = useAuth();
   const { data: policies } = usePolicySettings();
   const { data: guestHistory } = useGuestHistory(user?.id);
+  const { data: guestReviews } = useGuestReviews(user?.id);
+  const { profile: profileQuery } = useProfile();
+  const guestName = profileQuery.data?.full_name ?? null;
   const [searchParams] = useSearchParams();
   const isPreview = searchParams.get("preview") === "true" && role === "admin";
   const queryClient = useQueryClient();
@@ -241,9 +248,9 @@ const GuestPortal = () => {
                   {t("guestBooking.requestBooking")}
                 </Button>
               </div>
-              {activeBookings.length > 0 && <Section title={t("guestPortal.currentlyCheckedIn")}>{activeBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} />)}</Section>}
-              {upcomingBookings.length > 0 && <Section title={t("guestPortal.upcoming")}>{upcomingBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} />)}</Section>}
-              {pastBookings.length > 0 && <Section title={t("guestPortal.pastStays")}>{pastBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} />)}</Section>}
+              {activeBookings.length > 0 && <Section title={t("guestPortal.currentlyCheckedIn")}>{activeBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} guestReviews={guestReviews} guestName={guestName} />)}</Section>}
+              {upcomingBookings.length > 0 && <Section title={t("guestPortal.upcoming")}>{upcomingBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} guestReviews={guestReviews} guestName={guestName} />)}</Section>}
+              {pastBookings.length > 0 && <Section title={t("guestPortal.pastStays")}>{pastBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} guestReviews={guestReviews} guestName={guestName} />)}</Section>}
               {!isLoading && !bookings?.length && (
                 <div className="text-center py-16">
                   <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
@@ -540,15 +547,18 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function GuestBookingCard({ booking, messages, userId, policies }: { booking: any; messages: any[]; userId?: string; policies?: any[] }) {
+function GuestBookingCard({ booking, messages, userId, policies, guestReviews, guestName }: { booking: any; messages: any[]; userId?: string; policies?: any[]; guestReviews?: any[]; guestName?: string | null }) {
   const { t } = useTranslation();
   const [showMessages, setShowMessages] = useState(false);
   const [reply, setReply] = useState("");
+  const [reviewOpen, setReviewOpen] = useState(false);
   const queryClient = useQueryClient();
   const state = booking.state as BookingState;
   const showDocUpload = ["confirmed", "pending_deposit", "pending_approval"].includes(state);
   const cancellableStates: BookingState[] = ["inquiry", "soft_hold", "pending_approval", "pending_deposit", "confirmed"];
   const canCancel = cancellableStates.includes(state);
+  const existingReview = guestReviews?.find((r: any) => r.booking_id === booking.id);
+  const canReview = state === "completed" && !existingReview && !!userId;
 
   // Deposit info for pending_deposit state
   const depositPercentage = useMemo(() => {
@@ -675,6 +685,23 @@ function GuestBookingCard({ booking, messages, userId, policies }: { booking: an
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+        )}
+
+        {/* Review section */}
+        {canReview && (
+          <>
+            <Button variant="outline" size="sm" onClick={() => setReviewOpen(true)}>
+              <Star className="h-3.5 w-3.5 mr-1.5" />
+              {t("reviews.leaveReview")}
+            </Button>
+            <ReviewFormDialog open={reviewOpen} onOpenChange={setReviewOpen} bookingId={booking.id} guestId={userId!} guestName={guestName ?? null} />
+          </>
+        )}
+        {existingReview && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <StarRating rating={existingReview.rating} size="sm" />
+            <span>{existingReview.status === "pending" ? t("reviews.pendingApproval") : t(`reviews.${existingReview.status}`)}</span>
+          </div>
         )}
 
         {/* Inline messages */}
