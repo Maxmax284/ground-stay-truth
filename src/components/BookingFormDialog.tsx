@@ -111,9 +111,9 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
   }, [isAdminRole, selectedUnit, checkIn, checkOut, existingBookings.data, cleaningBufferHours, t]);
 
   const pricing: PricingSummary = useMemo(() => {
-    if (!selectedUnit || !checkIn || !checkOut || validationErrors.length > 0) return { nights: [], subtotal: 0, cleaningFee: 0, total: 0 };
-    return calculatePricing(selectedUnit, checkIn, checkOut, allPricingRules ?? []);
-  }, [selectedUnit, checkIn, checkOut, allPricingRules, validationErrors]);
+    if (!selectedUnit || !checkIn || !checkOut || validationErrors.length > 0) return { nights: [], subtotal: 0, cleaningFee: 0, longStayDiscount: null, total: 0 };
+    return calculatePricing(selectedUnit, checkIn, checkOut, allPricingRules ?? [], undefined, policies);
+  }, [selectedUnit, checkIn, checkOut, allPricingRules, validationErrors, policies]);
 
   const onSubmit = async (data: FormValues) => {
     if (validationErrors.length > 0) return;
@@ -164,6 +164,12 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
               <Separator />
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("bookingForm.subtotal")} ({pricing.nights.length} {pricing.nights.length > 1 ? t("common.nights") : t("common.night")})</span><span className="font-medium">{formatPrice(pricing.subtotal, policies)}</span></div>
               {pricing.cleaningFee > 0 && <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("bookingForm.cleaningFee")}</span><span className="font-medium">{formatPrice(pricing.cleaningFee, policies)}</span></div>}
+              {pricing.longStayDiscount && (
+                <div className="flex justify-between text-sm text-[hsl(var(--success))]">
+                  <span>{t("pricing.longStayDiscount", { tier: pricing.longStayDiscount.tierLabel, pct: pricing.longStayDiscount.percentage })}</span>
+                  <span className="font-medium">-{formatPrice(pricing.longStayDiscount.amount, policies)}</span>
+                </div>
+              )}
               <Separator />
               <div className="flex justify-between text-sm font-semibold"><span>{t("common.total")}</span><span>{formatPrice(pricing.total, policies)}</span></div>
             </div>

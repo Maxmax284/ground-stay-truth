@@ -36,9 +36,10 @@ import {
 import {
   CalendarDays, ArrowRight, Home, Info, MessageCircle, Send,
   ChevronLeft, ChevronRight, Eye, CalendarPlus, User, Circle,
-  MessageSquare, FileText, XCircle, Wrench,
+  MessageSquare, FileText, XCircle, Wrench, ClipboardCheck,
 } from "lucide-react";
 import { GuestStaySupport } from "@/components/GuestStaySupport";
+import { PreArrivalChecklist } from "@/components/PreArrivalChecklist";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { toast } from "sonner";
 
@@ -153,6 +154,7 @@ const GuestPortal = () => {
   }, [policies]);
 
   const upcomingBookings = bookings?.filter((b) => ["inquiry", "soft_hold", "pending_approval", "pending_deposit", "confirmed"].includes(b.state)) ?? [];
+  const confirmedBookings = bookings?.filter((b) => b.state === "confirmed") ?? [];
   const activeBookings = bookings?.filter((b) => b.state === "checked_in") ?? [];
   const pastBookings = bookings?.filter((b) => ["completed", "cancelled", "no_show"].includes(b.state)) ?? [];
 
@@ -191,6 +193,12 @@ const GuestPortal = () => {
               <TabsTrigger value="stay-support" className="flex items-center gap-1.5">
                 <Wrench className="h-3.5 w-3.5" />
                 {t("staySupport.tabLabel")}
+              </TabsTrigger>
+            )}
+            {confirmedBookings.length > 0 && (
+              <TabsTrigger value="pre-arrival" className="flex items-center gap-1.5">
+                <ClipboardCheck className="h-3.5 w-3.5" />
+                {t("preArrival.title", "Pre-Arrival")}
               </TabsTrigger>
             )}
             <TabsTrigger value="calendar">{t("nav.calendar")}</TabsTrigger>
@@ -289,6 +297,22 @@ const GuestPortal = () => {
                   units: b.units ? { name: b.units.name } : null,
                 }))}
               />
+            </TabsContent>
+          )}
+
+          {/* ── Pre-Arrival Tab ── */}
+          {confirmedBookings.length > 0 && (
+            <TabsContent value="pre-arrival">
+              <div className="space-y-4">
+                {confirmedBookings.map((b) => (
+                  <div key={b.id} className="space-y-2">
+                    {confirmedBookings.length > 1 && (
+                      <h3 className="text-sm font-semibold text-muted-foreground">{b.units?.name ?? "—"}</h3>
+                    )}
+                    <PreArrivalChecklist bookingId={b.id} />
+                  </div>
+                ))}
+              </div>
             </TabsContent>
           )}
 
