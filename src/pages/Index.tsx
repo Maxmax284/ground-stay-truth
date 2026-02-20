@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Building2, BookOpen, CalendarDays, TrendingUp, ArrowRight, Plus, LogIn, LogOut, Wrench, Shirt } from "lucide-react";
+import { Building2, BookOpen, CalendarDays, TrendingUp, ArrowRight, Plus, LogIn, LogOut, Wrench, Shirt, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { canAccessRoute, permissions } from "@/lib/permissions";
 import { useAuth } from "@/hooks/useAuth";
 import { useRolePreview } from "@/hooks/useRolePreview";
 import { ApprovalQueue } from "@/components/ApprovalQueue";
+import { InquiryQueue } from "@/components/InquiryQueue";
 import { MaintenanceQueue } from "@/components/MaintenanceQueue";
 import { LaundryPanel } from "@/components/LaundryPanel";
 import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
@@ -22,13 +23,14 @@ const Index = () => {
   const { t } = useTranslation();
   const { role } = useAuth();
   const { effectiveRole } = useRolePreview();
-  const { arrivals, departures, activeBookings, unitCount, recentActivity, pendingApproval } = useDashboardStats();
+  const { arrivals, departures, activeBookings, unitCount, recentActivity, pendingApproval, pendingInquiry, inquiryCount } = useDashboardStats();
 
   const arrivalsCount = arrivals.data?.length ?? 0;
   const departuresCount = departures.data?.length ?? 0;
   const activeCount = activeBookings.data ?? 0;
   const units = unitCount.data ?? 0;
-  const isLoading = arrivals.isLoading || departures.isLoading || activeBookings.isLoading || unitCount.isLoading;
+  const inquiries = inquiryCount.data ?? 0;
+  const isLoading = arrivals.isLoading || departures.isLoading || activeBookings.isLoading || unitCount.isLoading || inquiryCount.isLoading;
 
   const canApprove = permissions.canApproveBooking(effectiveRole);
   const isMaintenance = effectiveRole === "maintenance";
@@ -48,7 +50,7 @@ const Index = () => {
         ) : (
           <>
             {/* Stats Row — visible to all non-maintenance */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <StatCard
                 label={t("dashboard.todaysArrivals")}
                 value={isLoading ? null : arrivalsCount}
@@ -71,15 +73,26 @@ const Index = () => {
                 stagger={3}
               />
               <StatCard
+                label={t("dashboard.openInquiries")}
+                value={isLoading ? null : inquiries}
+                icon={MessageSquare}
+                description={t("dashboard.awaitingResponse")}
+                stagger={4}
+              />
+              <StatCard
                 label={t("dashboard.activeUnits")}
                 value={isLoading ? null : units}
                 icon={Building2}
                 description={t("dashboard.unitsConfigured", { count: units })}
-                stagger={4}
+                stagger={5}
               />
             </div>
 
             {/* Admin/Manager layout: Approval queue prominent */}
+            {canApprove && (
+              <InquiryQueue bookings={pendingInquiry.data} isLoading={pendingInquiry.isLoading} />
+            )}
+
             {canApprove && (
               <ApprovalQueue bookings={pendingApproval.data} isLoading={pendingApproval.isLoading} />
             )}
