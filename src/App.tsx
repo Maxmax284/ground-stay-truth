@@ -23,6 +23,7 @@ import Messages from "./pages/Messages";
 import NotFound from "./pages/NotFound";
 import Legal from "./pages/Legal";
 import Embeds from "./pages/Embeds";
+import Stay from "./pages/Stay";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ const App = () => (
 
                 {/* Public pages — no auth required */}
                 <Route path="/embed/:type/:unitId" element={<EmbedWidget />} />
+                <Route path="/stay" element={<Stay />} />
                 <Route path="/legal" element={<Legal />} />
 
                 <Route path="*" element={<NotFound />} />

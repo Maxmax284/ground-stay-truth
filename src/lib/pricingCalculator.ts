@@ -1,5 +1,6 @@
-import { eachDayOfInterval, parseISO, isWeekend, format } from "date-fns";
+import { eachDayOfInterval, parseISO, isWeekend, format, differenceInCalendarDays } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
+import type { PolicySetting } from "@/hooks/usePolicySettings";
 
 type Unit = Tables<"units">;
 type PricingRule = Tables<"pricing_rules">;
@@ -11,11 +12,53 @@ export interface NightBreakdown {
   ruleName?: string;
 }
 
+export interface LongStayDiscount {
+  tierLabel: string;
+  percentage: number;
+  amount: number;
+}
+
 export interface PricingSummary {
   nights: NightBreakdown[];
   subtotal: number;
   cleaningFee: number;
+  longStayDiscount: LongStayDiscount | null;
   total: number;
+}
+
+/**
+ * Get the best applicable long-stay discount tier.
+ * Returns null if no discount applies.
+ */
+export function getLongStayDiscount(
+  nightCount: number,
+  subtotal: number,
+  policies?: PolicySetting[] | null
+): LongStayDiscount | null {
+  if (!policies || nightCount < 7) return null;
+
+  const get = (key: string) => {
+    const p = policies.find((p) => p.key === key);
+    return p ? Number(p.value) : 0;
+  };
+
+  const tiers = [
+    { min: 30, pct: get("long_stay_30_nights_discount_percentage"), label: "30+ nights" },
+    { min: 14, pct: get("long_stay_14_nights_discount_percentage"), label: "14+ nights" },
+    { min: 7, pct: get("long_stay_7_nights_discount_percentage"), label: "7+ nights" },
+  ];
+
+  for (const tier of tiers) {
+    if (nightCount >= tier.min && tier.pct > 0) {
+      return {
+        tierLabel: tier.label,
+        percentage: tier.pct,
+        amount: Math.round((subtotal * tier.pct) / 100 * 100) / 100,
+      };
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -24,23 +67,26 @@ export interface PricingSummary {
  * 2. Seasonal pricing rules
  * 3. Weekend pricing
  * 4. Base price
+ *
+ * Then apply long-stay discount if eligible.
  */
 export function calculatePricing(
   unit: Unit,
   checkIn: string,
   checkOut: string,
   pricingRules: PricingRule[],
-  priceOverride?: number | null
+  priceOverride?: number | null,
+  policies?: PolicySetting[] | null
 ): PricingSummary {
   if (!checkIn || !checkOut) {
-    return { nights: [], subtotal: 0, cleaningFee: 0, total: 0 };
+    return { nights: [], subtotal: 0, cleaningFee: 0, longStayDiscount: null, total: 0 };
   }
 
   const startDate = parseISO(checkIn);
   const endDate = parseISO(checkOut);
 
   if (endDate <= startDate) {
-    return { nights: [], subtotal: 0, cleaningFee: 0, total: 0 };
+    return { nights: [], subtotal: 0, cleaningFee: 0, longStayDiscount: null, total: 0 };
   }
 
   // Nights = each day from check-in up to (but not including) check-out
@@ -83,10 +129,15 @@ export function calculatePricing(
   const subtotal = nights.reduce((sum, n) => sum + n.price, 0);
   const cleaningFee = Number(unit.cleaning_fee ?? 0);
 
+  // Long-stay discount
+  const longStayDiscount = getLongStayDiscount(nights.length, subtotal, policies);
+  const discountAmount = longStayDiscount?.amount ?? 0;
+
   return {
     nights,
     subtotal,
     cleaningFee,
-    total: subtotal + cleaningFee,
+    longStayDiscount,
+    total: subtotal - discountAmount + cleaningFee,
   };
 }

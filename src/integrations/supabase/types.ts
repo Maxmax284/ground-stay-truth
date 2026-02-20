@@ -64,6 +64,7 @@ export type Database = {
           id: string
           notes: string | null
           num_guests: number
+          pre_arrival_status: string
           price_override: number | null
           state: Database["public"]["Enums"]["booking_state"]
           total_price: number | null
@@ -81,6 +82,7 @@ export type Database = {
           id?: string
           notes?: string | null
           num_guests?: number
+          pre_arrival_status?: string
           price_override?: number | null
           state?: Database["public"]["Enums"]["booking_state"]
           total_price?: number | null
@@ -98,6 +100,7 @@ export type Database = {
           id?: string
           notes?: string | null
           num_guests?: number
+          pre_arrival_status?: string
           price_override?: number | null
           state?: Database["public"]["Enums"]["booking_state"]
           total_price?: number | null
@@ -505,6 +508,47 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      pre_arrival_checklist: {
+        Row: {
+          booking_id: string
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          data: Json | null
+          id: string
+          item_key: string
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          data?: Json | null
+          id?: string
+          item_key: string
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          data?: Json | null
+          id?: string
+          item_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pre_arrival_checklist_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pricing_rules: {
         Row: {

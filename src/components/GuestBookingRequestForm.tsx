@@ -115,9 +115,9 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
   }, [selectedUnit, checkIn, checkOut, numGuests, maintenanceBlocks, existingBookings.data, cleaningBufferHours, t]);
 
   const pricing: PricingSummary = useMemo(() => {
-    if (!selectedUnit || !checkIn || !checkOut || validationErrors.length > 0) return { nights: [], subtotal: 0, cleaningFee: 0, total: 0 };
-    return calculatePricing(selectedUnit, checkIn, checkOut, allPricingRules ?? []);
-  }, [selectedUnit, checkIn, checkOut, allPricingRules, validationErrors]);
+    if (!selectedUnit || !checkIn || !checkOut || validationErrors.length > 0) return { nights: [], subtotal: 0, cleaningFee: 0, longStayDiscount: null, total: 0 };
+    return calculatePricing(selectedUnit, checkIn, checkOut, allPricingRules ?? [], undefined, policies);
+  }, [selectedUnit, checkIn, checkOut, allPricingRules, validationErrors, policies]);
 
   const pricingSources = useMemo(() => {
     const sources = new Map<string, number>();
@@ -238,6 +238,12 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t("bookingForm.cleaningFee")}</span>
                   <span className="font-medium">{formatPrice(pricing.cleaningFee, policies)}</span>
+                </div>
+              )}
+              {pricing.longStayDiscount && (
+                <div className="flex justify-between text-sm text-[hsl(var(--success))]">
+                  <span>{t("pricing.longStayDiscount", { tier: pricing.longStayDiscount.tierLabel, pct: pricing.longStayDiscount.percentage })}</span>
+                  <span className="font-medium">-{formatPrice(pricing.longStayDiscount.amount, policies)}</span>
                 </div>
               )}
               <Separator />
