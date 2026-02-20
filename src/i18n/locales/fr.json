@@ -832,5 +832,10 @@
     "exit": "Quitter l'aperçu",
     "selectRole": "Aperçu en tant que…",
     "actualRole": "Mon rôle réel"
+  },
+  "loyalty": {
+    "welcomeBack": "Bon retour ! Ravi de vous revoir.",
+    "stayCount": "C'est votre séjour n°{{count}} chez nous.",
+    "returningGuest": "Client fidèle (Séjour #{{count}})"
   }
 }

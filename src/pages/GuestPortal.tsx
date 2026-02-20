@@ -5,6 +5,7 @@ import { useMarkMessagesRead } from "@/hooks/useBookings";
 import { format, startOfMonth, addMonths, subMonths, formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useGuestHistory } from "@/hooks/useGuestHistory";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { getDepositPolicy } from "@/lib/depositPolicy";
 import { useSearchParams } from "react-router-dom";
@@ -43,7 +44,7 @@ import {
   CalendarDays, ArrowRight, Home, Info, MessageCircle, Send,
   ChevronLeft, ChevronRight, Eye, CalendarPlus, User, Circle,
   MessageSquare, FileText, XCircle, Wrench, ClipboardCheck,
-  Clock, ListChecks, Shield, MapPin,
+  Clock, ListChecks, Shield, MapPin, Heart,
 } from "lucide-react";
 import { GuestStaySupport } from "@/components/GuestStaySupport";
 import { PreArrivalChecklist } from "@/components/PreArrivalChecklist";
@@ -54,6 +55,7 @@ const GuestPortal = () => {
   const { t } = useTranslation();
   const { user, role } = useAuth();
   const { data: policies } = usePolicySettings();
+  const { data: guestHistory } = useGuestHistory(user?.id);
   const [searchParams] = useSearchParams();
   const isPreview = searchParams.get("preview") === "true" && role === "admin";
   const queryClient = useQueryClient();
@@ -185,6 +187,22 @@ const GuestPortal = () => {
             <p className="text-muted-foreground mt-1">{t("guestPortal.subtitle")}</p>
           </div>
         </div>
+
+        {guestHistory?.isReturning && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="flex items-center gap-3 py-4">
+              <Heart className="h-5 w-5 text-primary shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {t("loyalty.welcomeBack")}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {t("loyalty.stayCount", { count: (guestHistory.completedStays ?? 0) + 1 })}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Tabs defaultValue="bookings" className="space-y-4">
           <TabsList className="flex-wrap">

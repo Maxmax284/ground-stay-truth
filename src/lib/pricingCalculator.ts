@@ -18,17 +18,23 @@ export interface LongStayDiscount {
   amount: number;
 }
 
+export interface LoyaltyDiscount {
+  tierLabel: string;
+  percentage: number;
+  amount: number;
+}
+
 export interface PricingSummary {
   nights: NightBreakdown[];
   subtotal: number;
   cleaningFee: number;
   longStayDiscount: LongStayDiscount | null;
+  loyaltyDiscount: LoyaltyDiscount | null;
   total: number;
 }
 
 /**
  * Get the best applicable long-stay discount tier.
- * Returns null if no discount applies.
  */
 export function getLongStayDiscount(
   nightCount: number,
@@ -62,13 +68,54 @@ export function getLongStayDiscount(
 }
 
 /**
+ * Get loyalty discount based on completed stays.
+ * Only activates when loyalty_pricing_enabled is true and percentages > 0.
+ */
+export function getLoyaltyDiscount(
+  completedStays: number,
+  subtotal: number,
+  policies?: PolicySetting[] | null
+): LoyaltyDiscount | null {
+  if (!policies || completedStays < 1) return null;
+
+  const get = (key: string) => {
+    const p = policies.find((p) => p.key === key);
+    return p ? String(p.value) : "";
+  };
+
+  const enabled = get("loyalty_pricing_enabled") === "true";
+  if (!enabled) return null;
+
+  const pct3 = Number(get("loyalty_3rd_stay_discount_percentage")) || 0;
+  const pct2 = Number(get("loyalty_2nd_stay_discount_percentage")) || 0;
+
+  let pct = 0;
+  let label = "";
+  if (completedStays >= 2 && pct3 > 0) {
+    pct = pct3;
+    label = "3rd+ stay";
+  } else if (completedStays >= 1 && pct2 > 0) {
+    pct = pct2;
+    label = "2nd stay";
+  }
+
+  if (pct <= 0) return null;
+
+  return {
+    tierLabel: label,
+    percentage: pct,
+    amount: Math.round((subtotal * pct) / 100 * 100) / 100,
+  };
+}
+
+/**
  * Calculate nightly prices using the constitutional cascade:
- * 1. Manual override (highest priority — handled separately via price_override on booking)
+ * 1. Manual override (highest priority)
  * 2. Seasonal pricing rules
  * 3. Weekend pricing
  * 4. Base price
  *
- * Then apply long-stay discount if eligible.
+ * Then apply long-stay and/or loyalty discounts.
  */
 export function calculatePricing(
   unit: Unit,
@@ -76,20 +123,20 @@ export function calculatePricing(
   checkOut: string,
   pricingRules: PricingRule[],
   priceOverride?: number | null,
-  policies?: PolicySetting[] | null
+  policies?: PolicySetting[] | null,
+  completedStays?: number
 ): PricingSummary {
   if (!checkIn || !checkOut) {
-    return { nights: [], subtotal: 0, cleaningFee: 0, longStayDiscount: null, total: 0 };
+    return { nights: [], subtotal: 0, cleaningFee: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
   }
 
   const startDate = parseISO(checkIn);
   const endDate = parseISO(checkOut);
 
   if (endDate <= startDate) {
-    return { nights: [], subtotal: 0, cleaningFee: 0, longStayDiscount: null, total: 0 };
+    return { nights: [], subtotal: 0, cleaningFee: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
   }
 
-  // Nights = each day from check-in up to (but not including) check-out
   const nightDates = eachDayOfInterval({ start: startDate, end: new Date(endDate.getTime() - 86400000) });
 
   const unitRules = pricingRules
@@ -99,12 +146,10 @@ export function calculatePricing(
   const nights: NightBreakdown[] = nightDates.map((date) => {
     const dateStr = format(date, "yyyy-MM-dd");
 
-    // 1. Manual override — flat per night
     if (priceOverride != null && priceOverride > 0) {
       return { date: dateStr, price: priceOverride, source: "override" as const };
     }
 
-    // 2. Seasonal pricing rule
     const matchingRule = unitRules.find(
       (r) => dateStr >= r.start_date && dateStr <= r.end_date
     );
@@ -117,12 +162,10 @@ export function calculatePricing(
       };
     }
 
-    // 3. Weekend pricing
     if (isWeekend(date) && unit.weekend_price != null && Number(unit.weekend_price) > 0) {
       return { date: dateStr, price: Number(unit.weekend_price), source: "weekend" as const };
     }
 
-    // 4. Base price
     return { date: dateStr, price: Number(unit.base_price), source: "base" as const };
   });
 
@@ -131,13 +174,46 @@ export function calculatePricing(
 
   // Long-stay discount
   const longStayDiscount = getLongStayDiscount(nights.length, subtotal, policies);
-  const discountAmount = longStayDiscount?.amount ?? 0;
+
+  // Loyalty discount
+  const loyaltyDiscount = getLoyaltyDiscount(completedStays ?? 0, subtotal, policies);
+
+  // Resolve stacking
+  let discountAmount = 0;
+  let appliedLongStay = longStayDiscount;
+  let appliedLoyalty = loyaltyDiscount;
+
+  if (longStayDiscount && loyaltyDiscount) {
+    const stacksStr = policies?.find((p) => p.key === "loyalty_discount_stacks_with_long_stay");
+    const stacks = stacksStr ? String(stacksStr.value) === "true" : false;
+
+    if (stacks) {
+      // Apply loyalty first on subtotal, then long-stay on remainder
+      const loyaltyAmt = loyaltyDiscount.amount;
+      const remainder = subtotal - loyaltyAmt;
+      const longStayAmt = Math.round((remainder * longStayDiscount.percentage) / 100 * 100) / 100;
+      appliedLongStay = { ...longStayDiscount, amount: longStayAmt };
+      discountAmount = loyaltyAmt + longStayAmt;
+    } else {
+      // Use whichever is higher
+      if (longStayDiscount.amount >= loyaltyDiscount.amount) {
+        appliedLoyalty = null;
+        discountAmount = longStayDiscount.amount;
+      } else {
+        appliedLongStay = null;
+        discountAmount = loyaltyDiscount.amount;
+      }
+    }
+  } else {
+    discountAmount = (longStayDiscount?.amount ?? 0) + (loyaltyDiscount?.amount ?? 0);
+  }
 
   return {
     nights,
     subtotal,
     cleaningFee,
-    longStayDiscount,
+    longStayDiscount: appliedLongStay,
+    loyaltyDiscount: appliedLoyalty,
     total: subtotal - discountAmount + cleaningFee,
   };
 }

@@ -832,5 +832,10 @@
     "exit": "미리보기 종료",
     "selectRole": "역할로 미리보기…",
     "actualRole": "내 실제 역할"
+  },
+  "loyalty": {
+    "welcomeBack": "다시 오신 것을 환영합니다! 다시 뵙게 되어 기쁩니다.",
+    "stayCount": "이번이 {{count}}번째 숙박입니다.",
+    "returningGuest": "재방문 게스트 ({{count}}번째 숙박)"
   }
 }
