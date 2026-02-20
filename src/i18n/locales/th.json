@@ -612,6 +612,12 @@
     "campInfo": "ข้อมูลค่าย",
     "noCampInfo": "ยังไม่ได้ตั้งค่าข้อมูลค่าย กรุณากลับมาตรวจสอบภายหลัง"
   },
+  "campInfo": {
+    "trainingSchedule": "ตารางฝึกซ้อม",
+    "whatToBring": "สิ่งที่ต้องนำมา",
+    "gymRules": "กฎของยิม",
+    "airportDirections": "เส้นทางจากสนามบิน"
+  },
   "guestBooking": {
     "requestBooking": "ขอจอง",
     "requestSent": "ส่งคำขอจองแล้ว",

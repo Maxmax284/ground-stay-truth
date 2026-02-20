@@ -591,6 +591,12 @@
     "campInfo": "Camp-Info",
     "noCampInfo": "Camp-Informationen wurden noch nicht konfiguriert. Bitte schauen Sie später noch einmal vorbei."
   },
+  "campInfo": {
+    "trainingSchedule": "Trainingsplan",
+    "whatToBring": "Was mitbringen",
+    "gymRules": "Gym-Regeln",
+    "airportDirections": "Anfahrt vom Flughafen"
+  },
   "guestBooking": {
     "requestBooking": "Buchung anfragen",
     "requestSent": "Buchungsanfrage gesendet",

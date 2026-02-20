@@ -612,6 +612,12 @@
     "campInfo": "Infos du camp",
     "noCampInfo": "Les informations du camp n'ont pas encore été configurées. Veuillez revenir plus tard."
   },
+  "campInfo": {
+    "trainingSchedule": "Programme d'entraînement",
+    "whatToBring": "Quoi apporter",
+    "gymRules": "Règles du gymnase",
+    "airportDirections": "Accès depuis l'aéroport"
+  },
   "guestBooking": {
     "requestBooking": "Demander une réservation",
     "requestSent": "Demande de réservation envoyée",

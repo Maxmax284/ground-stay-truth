@@ -612,6 +612,12 @@
     "campInfo": "캠프 정보",
     "noCampInfo": "캠프 정보가 아직 설정되지 않았습니다. 나중에 다시 확인해 주세요."
   },
+  "campInfo": {
+    "trainingSchedule": "훈련 일정",
+    "whatToBring": "준비물",
+    "gymRules": "체육관 규칙",
+    "airportDirections": "공항에서 오는 길"
+  },
   "guestBooking": {
     "requestBooking": "예약 요청",
     "requestSent": "예약 요청 전송됨",

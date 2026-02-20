@@ -647,6 +647,12 @@
     "campInfo": "Camp Info",
     "noCampInfo": "Camp information has not been configured yet. Please check back later."
   },
+  "campInfo": {
+    "trainingSchedule": "Training Schedule",
+    "whatToBring": "What to Bring",
+    "gymRules": "Gym Rules",
+    "airportDirections": "Airport Directions"
+  },
   "guestBooking": {
     "requestBooking": "Request Booking",
     "requestSent": "Booking request sent",
