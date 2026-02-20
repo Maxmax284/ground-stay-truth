@@ -265,7 +265,9 @@
       "seasonal": "Seasonal",
       "weekend": "Weekend",
       "base": "Base Rate"
-    }
+    },
+    "longStayDiscount": "Long-stay ({{tier}}, {{pct}}%)",
+    "loyaltyDiscount": "Loyalty ({{tier}}, {{pct}}%)"
   },
   "policyLabels": {
     "soft_hold_expiration_hours": "Soft Hold Expiration (hours)",
@@ -285,7 +287,11 @@
     "deposit_percentage": "Deposit Percentage (%)",
     "deposits_online_enabled": "Online Deposits",
     "deposits_manual_enabled": "Manual Deposits (Cash/Card)",
-    "deposits_require_online_when_enabled": "Require Online Deposit"
+    "deposits_require_online_when_enabled": "Require Online Deposit",
+    "loyalty_pricing_enabled": "Loyalty Pricing (Master Toggle)",
+    "loyalty_2nd_stay_discount_percentage": "2nd Stay Discount (%)",
+    "loyalty_3rd_stay_discount_percentage": "3rd+ Stay Discount (%)",
+    "loyalty_discount_stacks_with_long_stay": "Loyalty Stacks with Long-Stay"
   },
   "reports": {
     "title": "Reports",
@@ -873,5 +879,10 @@
     "exit": "Exit Preview",
     "selectRole": "Preview as role…",
     "actualRole": "My actual role"
+  },
+  "loyalty": {
+    "welcomeBack": "Welcome back! Great to see you again.",
+    "stayCount": "This is your stay #{{count}} with us.",
+    "returningGuest": "Returning Guest (Stay #{{count}})"
   }
 }

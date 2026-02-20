@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef } from "react";
 import { toast as sonnerToast } from "sonner";
+import { useGuestHistory } from "@/hooks/useGuestHistory";
 import { useTranslation } from "react-i18next";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,8 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
   const { t } = useTranslation();
   const { role } = useAuth();
   const { data: booking } = useBooking(bookingId);
+  const guestId = (booking as any)?.guest_id;
+  const { data: guestHistory } = useGuestHistory(guestId);
   const { data: stateLog } = useBookingStateLog(bookingId);
   const { data: payments } = useBookingPayments(bookingId);
   const { data: messages } = useBookingMessages(bookingId);
@@ -122,7 +125,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
             <Badge className={STATE_VARIANTS[booking.state as BookingState]}>{t(`states.${booking.state}`)}</Badge>
             {isCheckedIn && <StaySupportBadge bookingId={booking.id} />}
           </SheetTitle>
-          {guestName && <div className="flex items-center gap-2 text-sm text-foreground"><User className="h-4 w-4 text-muted-foreground" /><span className="font-medium">{guestName}</span></div>}
+          {guestName && <div className="flex items-center gap-2 text-sm text-foreground"><User className="h-4 w-4 text-muted-foreground" /><span className="font-medium">{guestName}</span>{guestHistory?.isReturning && <Badge variant="secondary" className="text-[10px]">{t("loyalty.returningGuest", { count: (guestHistory.completedStays ?? 0) + 1 })}</Badge>}</div>}
           {softHoldInfo && (
             <div className={`flex items-center gap-2 text-sm ${softHoldInfo.isExpired ? "text-destructive" : "text-warning-foreground"}`}>
               <AlertTriangle className="h-4 w-4" />

@@ -43,5 +43,6 @@
   "legal": { "privacyPolicy": "隐私政策", "termsOfService": "服务条款", "bySigningUp": "注册即表示您同意我们的", "and": "和", "reviewOur": "查看我们的", "forDataDetails": "了解您的数据如何被处理。" },
   "deposit": { "collectPrompt": "已收取押金了吗？", "requiredAmount": "所需押金：{{amount}}（总额的{{percentage}}%）", "recordAndConfirm": "记录押金并确认", "guestTitle": "需要押金", "guestInstructions": "需要支付押金以确认您的预订。您可以在前台亲自支付（接受现金或刷卡），或联系工作人员获取银行转账信息。", "guestAmount": "押金金额：{{amount}}", "guestInstructionsOnlineOptional": "您可以在线或在前台亲自支付押金。", "guestInstructionsOnlineRequired": "需要在线支付押金以确认您的预订。", "onlineComingSoon": "在线支付即将推出。请联系工作人员。", "managerOverride": "经理覆盖", "managerOverrideDesc": "需要在线押金。使用覆盖来记录手动押金。", "overrideReason": "覆盖原因", "overrideReasonPlaceholder": "解释为什么接受手动押金…", "overrideReasonRequired": "覆盖需要提供原因。", "onlineRequired": "需要在线押金", "sourceChannel": "来源", "channels": { "front_desk": "前台", "guest_portal": "客人门户", "supervisor_override": "经理覆盖" } },
   "override": { "title": "状态覆盖", "selectStatus": "选择目标状态", "reasonRequired": "此覆盖需要提供原因。", "reasonPlaceholder": "说明为什么需要此覆盖…", "confirm": "应用覆盖", "applied": "覆盖已应用", "badge": "覆盖" },
-  "preview": { "banner": "预览模式：以 {{role}} 身份查看 — 这是模拟。操作仍需要您的实际角色。", "exit": "退出预览", "selectRole": "以角色预览…", "actualRole": "我的实际角色" }
+  "preview": { "banner": "预览模式：以 {{role}} 身份查看 — 这是模拟。操作仍需要您的实际角色。", "exit": "退出预览", "selectRole": "以角色预览…", "actualRole": "我的实际角色" },
+  "loyalty": { "welcomeBack": "欢迎回来！很高兴再次见到您。", "stayCount": "这是您第{{count}}次入住。", "returningGuest": "回头客（第{{count}}次入住）" }
 }

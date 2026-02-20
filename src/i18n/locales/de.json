@@ -791,5 +791,10 @@
     "exit": "Vorschau beenden",
     "selectRole": "Vorschau als Rolle…",
     "actualRole": "Meine tatsächliche Rolle"
+  },
+  "loyalty": {
+    "welcomeBack": "Willkommen zurück! Schön, Sie wiederzusehen.",
+    "stayCount": "Dies ist Ihr Aufenthalt Nr. {{count}} bei uns.",
+    "returningGuest": "Wiederkehrender Gast (Aufenthalt #{{count}})"
   }
 }
