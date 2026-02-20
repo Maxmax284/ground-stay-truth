@@ -633,6 +633,62 @@ export type Database = {
         }
         Relationships: []
       }
+      reviews: {
+        Row: {
+          admin_note: string | null
+          body: string
+          booking_id: string
+          created_at: string
+          guest_display_name: string | null
+          guest_id: string
+          id: string
+          rating: number
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          admin_note?: string | null
+          body: string
+          booking_id: string
+          created_at?: string
+          guest_display_name?: string | null
+          guest_id: string
+          id?: string
+          rating: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          admin_note?: string | null
+          body?: string
+          booking_id?: string
+          created_at?: string
+          guest_display_name?: string | null
+          guest_id?: string
+          id?: string
+          rating?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stay_support_log: {
         Row: {
           action: string

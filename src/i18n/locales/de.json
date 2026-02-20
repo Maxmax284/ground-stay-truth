@@ -315,7 +315,8 @@
     "profileTab": "Profil",
     "usersTab": "Benutzer & Rollen",
     "policiesTab": "Richtlinien",
-    "embedsTab": "Widgets"
+    "embedsTab": "Widgets",
+    "reviewsTab": "Bewertungen"
   },
   "profile": {
     "myProfile": "Mein Profil",
@@ -796,5 +797,32 @@
     "welcomeBack": "Willkommen zurück! Schön, Sie wiederzusehen.",
     "stayCount": "Dies ist Ihr Aufenthalt Nr. {{count}} bei uns.",
     "returningGuest": "Wiederkehrender Gast (Aufenthalt #{{count}})"
+  },
+  "reviews": {
+    "leaveReview": "Bewertung abgeben",
+    "rating": "Bewertung",
+    "title": "Titel",
+    "body": "Ihre Bewertung",
+    "titlePlaceholder": "Fassen Sie Ihren Aufenthalt zusammen",
+    "bodyPlaceholder": "Erzählen Sie von Ihrer Erfahrung…",
+    "submitReview": "Bewertung absenden",
+    "pendingApproval": "Bewertung eingereicht — Genehmigung ausstehend",
+    "approve": "Genehmigen",
+    "reject": "Ablehnen",
+    "remove": "Bewertung entfernen",
+    "removeConfirm": "Diese Bewertung dauerhaft löschen? Dies kann nicht rückgängig gemacht werden.",
+    "removed": "Bewertung entfernt",
+    "whatGuestsSay": "Was unsere Gäste sagen",
+    "overallRating": "Gesamtbewertung",
+    "basedOnReviews": "Basierend auf {{count}} Bewertungen",
+    "pending": "Ausstehend",
+    "approved": "Genehmigt",
+    "rejected": "Abgelehnt",
+    "all": "Alle",
+    "adminNote": "Admin-Notiz",
+    "adminNotePlaceholder": "Ablehnungsgrund (optional)…",
+    "rejectReason": "Geben Sie einen optionalen Grund für die Ablehnung an.",
+    "noReviews": "Noch keine Bewertungen.",
+    "alreadyReviewed": "Sie haben diesen Aufenthalt bereits bewertet."
   }
 }

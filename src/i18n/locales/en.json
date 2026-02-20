@@ -340,7 +340,8 @@
     "profileTab": "Profile",
     "usersTab": "Users & Roles",
     "policiesTab": "Policies",
-    "embedsTab": "Embeds"
+    "embedsTab": "Embeds",
+    "reviewsTab": "Reviews"
   },
   "profile": {
     "myProfile": "My Profile",
@@ -884,5 +885,32 @@
     "welcomeBack": "Welcome back! Great to see you again.",
     "stayCount": "This is your stay #{{count}} with us.",
     "returningGuest": "Returning Guest (Stay #{{count}})"
+  },
+  "reviews": {
+    "leaveReview": "Leave a Review",
+    "rating": "Rating",
+    "title": "Title",
+    "body": "Your Review",
+    "titlePlaceholder": "Sum up your stay in a few words",
+    "bodyPlaceholder": "Tell us about your experience…",
+    "submitReview": "Submit Review",
+    "pendingApproval": "Review submitted — pending approval",
+    "approve": "Approve",
+    "reject": "Reject",
+    "remove": "Remove Review",
+    "removeConfirm": "Permanently delete this review? This cannot be undone.",
+    "removed": "Review removed",
+    "whatGuestsSay": "What Our Guests Say",
+    "overallRating": "Overall Rating",
+    "basedOnReviews": "Based on {{count}} reviews",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "all": "All",
+    "adminNote": "Admin Note",
+    "adminNotePlaceholder": "Reason for rejection (optional)…",
+    "rejectReason": "Provide an optional reason for rejecting this review.",
+    "noReviews": "No reviews yet.",
+    "alreadyReviewed": "You've already reviewed this stay."
   }
 }

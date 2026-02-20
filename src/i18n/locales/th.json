@@ -331,7 +331,8 @@
     "profileTab": "โปรไฟล์",
     "usersTab": "ผู้ใช้และบทบาท",
     "policiesTab": "นโยบาย",
-    "embedsTab": "วิดเจ็ต"
+    "embedsTab": "วิดเจ็ต",
+    "reviewsTab": "รีวิว"
   },
   "profile": {
     "myProfile": "โปรไฟล์ของฉัน",
@@ -837,5 +838,32 @@
     "welcomeBack": "ยินดีต้อนรับกลับ! ดีใจที่ได้พบคุณอีกครั้ง",
     "stayCount": "นี่คือการเข้าพักครั้งที่ {{count}} ของคุณกับเรา",
     "returningGuest": "แขกที่กลับมา (ครั้งที่ {{count}})"
+  },
+  "reviews": {
+    "leaveReview": "เขียนรีวิว",
+    "rating": "คะแนน",
+    "title": "หัวข้อ",
+    "body": "รีวิวของคุณ",
+    "titlePlaceholder": "สรุปการเข้าพักของคุณ",
+    "bodyPlaceholder": "เล่าประสบการณ์ของคุณ…",
+    "submitReview": "ส่งรีวิว",
+    "pendingApproval": "รีวิวส่งแล้ว — รอการอนุมัติ",
+    "approve": "อนุมัติ",
+    "reject": "ปฏิเสธ",
+    "remove": "ลบรีวิว",
+    "removeConfirm": "ลบรีวิวนี้ถาวร? ไม่สามารถยกเลิกได้",
+    "removed": "ลบรีวิวแล้ว",
+    "whatGuestsSay": "สิ่งที่แขกของเราพูด",
+    "overallRating": "คะแนนรวม",
+    "basedOnReviews": "จาก {{count}} รีวิว",
+    "pending": "รอดำเนินการ",
+    "approved": "อนุมัติแล้ว",
+    "rejected": "ถูกปฏิเสธ",
+    "all": "ทั้งหมด",
+    "adminNote": "หมายเหตุผู้ดูแล",
+    "adminNotePlaceholder": "เหตุผลในการปฏิเสธ (ถ้ามี)…",
+    "rejectReason": "ระบุเหตุผลในการปฏิเสธรีวิวนี้ (ถ้ามี)",
+    "noReviews": "ยังไม่มีรีวิว",
+    "alreadyReviewed": "คุณได้รีวิวการเข้าพักนี้แล้ว"
   }
 }

@@ -331,7 +331,8 @@
     "profileTab": "프로필",
     "usersTab": "사용자 및 역할",
     "policiesTab": "정책",
-    "embedsTab": "임베드"
+    "embedsTab": "임베드",
+    "reviewsTab": "리뷰"
   },
   "profile": {
     "myProfile": "내 프로필",
@@ -837,5 +838,32 @@
     "welcomeBack": "다시 오신 것을 환영합니다! 다시 뵙게 되어 기쁩니다.",
     "stayCount": "이번이 {{count}}번째 숙박입니다.",
     "returningGuest": "재방문 게스트 ({{count}}번째 숙박)"
+  },
+  "reviews": {
+    "leaveReview": "리뷰 남기기",
+    "rating": "평점",
+    "title": "제목",
+    "body": "리뷰 내용",
+    "titlePlaceholder": "숙박을 요약해 주세요",
+    "bodyPlaceholder": "경험을 알려주세요…",
+    "submitReview": "리뷰 제출",
+    "pendingApproval": "리뷰 제출됨 — 승인 대기 중",
+    "approve": "승인",
+    "reject": "거절",
+    "remove": "리뷰 삭제",
+    "removeConfirm": "이 리뷰를 영구 삭제하시겠습니까? 취소할 수 없습니다.",
+    "removed": "리뷰 삭제됨",
+    "whatGuestsSay": "게스트들의 후기",
+    "overallRating": "종합 평점",
+    "basedOnReviews": "{{count}}개 리뷰 기반",
+    "pending": "대기 중",
+    "approved": "승인됨",
+    "rejected": "거절됨",
+    "all": "전체",
+    "adminNote": "관리자 메모",
+    "adminNotePlaceholder": "거절 사유 (선택)…",
+    "rejectReason": "이 리뷰를 거절하는 사유를 입력하세요 (선택).",
+    "noReviews": "아직 리뷰가 없습니다.",
+    "alreadyReviewed": "이미 이 숙박에 대한 리뷰를 남기셨습니다."
   }
 }
