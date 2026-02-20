@@ -34,9 +34,16 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
   CalendarDays, ArrowRight, Home, Info, MessageCircle, Send,
   ChevronLeft, ChevronRight, Eye, CalendarPlus, User, Circle,
   MessageSquare, FileText, XCircle, Wrench, ClipboardCheck,
+  Clock, ListChecks, Shield, MapPin,
 } from "lucide-react";
 import { GuestStaySupport } from "@/components/GuestStaySupport";
 import { PreArrivalChecklist } from "@/components/PreArrivalChecklist";
@@ -414,9 +421,7 @@ const GuestPortal = () => {
                 <CardTitle className="text-lg flex items-center gap-2"><Info className="h-4 w-4 text-primary" />{t("guestPortal.campInfo")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 text-sm">
-                <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
-                  {String(policies?.find((p) => p.key === "camp_info")?.value ?? t("guestPortal.noCampInfo")).replace(/^"|"$/g, "")}
-                </div>
+                <CampInfoAccordion policies={policies ?? []} />
                 <Separator />
                 <div className="space-y-2">
                   <h4 className="font-semibold text-foreground">{t("guestPortal.checkInOut")}</h4>
@@ -753,6 +758,65 @@ function GuestThreadView({ bookingId, booking, messages, userId, onBack }: {
         </div>
       )}
     </div>
+  );
+}
+
+/* ── Camp Info Accordion ── */
+interface CampInfoSection {
+  key: string;
+  icon: React.ReactNode;
+  labelKey: string;
+}
+
+const CAMP_SECTIONS: CampInfoSection[] = [
+  { key: "training_schedule", icon: <Clock className="h-4 w-4 text-primary" />, labelKey: "campInfo.trainingSchedule" },
+  { key: "what_to_bring", icon: <ListChecks className="h-4 w-4 text-primary" />, labelKey: "campInfo.whatToBring" },
+  { key: "gym_rules", icon: <Shield className="h-4 w-4 text-primary" />, labelKey: "campInfo.gymRules" },
+  { key: "airport_directions", icon: <MapPin className="h-4 w-4 text-primary" />, labelKey: "campInfo.airportDirections" },
+];
+
+function CampInfoAccordion({ policies }: { policies: Array<{ key: string; value: any }> }) {
+  const { t } = useTranslation();
+  const raw = policies.find((p) => p.key === "camp_info")?.value;
+
+  if (!raw) {
+    return <p className="text-muted-foreground">{t("guestPortal.noCampInfo")}</p>;
+  }
+
+  // Detect structured vs legacy plain text
+  const parsed = typeof raw === "object" && raw !== null ? raw : null;
+
+  if (!parsed) {
+    // Legacy flat text fallback
+    return (
+      <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
+        {String(raw).replace(/^"|"$/g, "")}
+      </div>
+    );
+  }
+
+  return (
+    <Accordion type="multiple" defaultValue={["training_schedule"]} className="w-full">
+      {CAMP_SECTIONS.map((section) => {
+        const content = parsed[section.key];
+        if (!content) return null;
+        return (
+          <AccordionItem key={section.key} value={section.key}>
+            <AccordionTrigger className="text-sm font-medium">
+              <span className="flex items-center gap-2">
+                {section.icon}
+                {t(section.labelKey)}
+              </span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap pl-6">
+                {String(content)}
+              </p>
+            </AccordionContent>
+          </AccordionItem>
+        );
+      })}
+    </Accordion>
   );
 }
 

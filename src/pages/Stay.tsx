@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Home, Users, Moon, Sparkles, ChevronLeft, ChevronRight, CalendarDays, ArrowRight, MapPin, Clock, Shield } from "lucide-react";
+import { Home, Users, Moon, Sparkles, ChevronLeft, ChevronRight, CalendarDays, ArrowRight, MapPin, Clock, Shield, ListChecks } from "lucide-react";
 import { formatPriceSimple } from "@/lib/currency";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
@@ -37,7 +37,7 @@ export default function Stay() {
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
 
   // Fetch camp_info for summary
-  const [campSummary, setCampSummary] = useState<string>("");
+  const [campSummary, setCampSummary] = useState<any>(null);
 
   useEffect(() => {
     (async () => {
@@ -62,9 +62,7 @@ export default function Stay() {
         });
         const data = await resp.json();
         if (data?.[0]?.value) {
-          const raw = String(data[0].value).replace(/^"|"$/g, "");
-          // Take first 300 chars as summary
-          setCampSummary(raw.length > 300 ? raw.slice(0, 300) + "…" : raw);
+          setCampSummary(data[0].value);
         }
       } catch { /* silent */ }
     })();
@@ -231,14 +229,56 @@ export default function Stay() {
         {campSummary && (
           <section className="space-y-4">
             <h2 className="font-serif text-2xl font-bold text-foreground">About the Camp</h2>
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{campSummary}</p>
-                <Button variant="link" className="mt-2 p-0 h-auto text-primary" onClick={() => navigate("/auth/guest")}>
-                  Sign up to learn more <ArrowRight className="h-3 w-3 ml-1" />
-                </Button>
-              </CardContent>
-            </Card>
+            {(() => {
+              // Try to parse structured JSON
+              let parsed: Record<string, string> | null = null;
+              try {
+                const val = typeof campSummary === "object" ? campSummary : JSON.parse(campSummary);
+                if (typeof val === "object" && val !== null && !Array.isArray(val)) parsed = val;
+              } catch { /* legacy text */ }
+
+              if (parsed) {
+                const sections = [
+                  { key: "training_schedule", icon: <Clock className="h-4 w-4 text-primary" />, label: "Training Schedule" },
+                  { key: "what_to_bring", icon: <ListChecks className="h-4 w-4 text-primary" />, label: "What to Bring" },
+                  { key: "gym_rules", icon: <Shield className="h-4 w-4 text-primary" />, label: "Gym Rules" },
+                  { key: "airport_directions", icon: <MapPin className="h-4 w-4 text-primary" />, label: "Airport Directions" },
+                ];
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {sections.map((s) => {
+                      const content = parsed![s.key];
+                      if (!content) return null;
+                      const firstLine = String(content).split("\n")[0];
+                      return (
+                        <Card key={s.key}>
+                          <CardContent className="pt-5 space-y-1">
+                            <div className="flex items-center gap-2 font-semibold text-sm text-foreground">
+                              {s.icon} {s.label}
+                            </div>
+                            <p className="text-xs text-muted-foreground line-clamp-2">{firstLine}</p>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                );
+              }
+
+              // Legacy plain text fallback
+              return (
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{campSummary}</p>
+                  </CardContent>
+                </Card>
+              );
+            })()}
+            <div className="text-center">
+              <Button variant="link" className="p-0 h-auto text-primary" onClick={() => navigate("/auth/guest")}>
+                Sign up to learn more <ArrowRight className="h-3 w-3 ml-1" />
+              </Button>
+            </div>
           </section>
         )}
 
