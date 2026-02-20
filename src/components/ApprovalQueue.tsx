@@ -21,9 +21,10 @@ import {
 interface ApprovalQueueProps {
   bookings: any[] | undefined;
   isLoading: boolean;
+  readOnly?: boolean;
 }
 
-export function ApprovalQueue({ bookings, isLoading }: ApprovalQueueProps) {
+export function ApprovalQueue({ bookings, isLoading, readOnly = false }: ApprovalQueueProps) {
   const { t } = useTranslation();
   const transition = useTransitionBookingState();
   const qc = useQueryClient();
@@ -78,6 +79,9 @@ export function ApprovalQueue({ bookings, isLoading }: ApprovalQueueProps) {
                 {count}
               </Badge>
             )}
+            {readOnly && (
+              <Badge variant="outline" className="ml-1 text-xs">{t("common.preview")}</Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -119,26 +123,28 @@ export function ApprovalQueue({ bookings, isLoading }: ApprovalQueueProps) {
                         </span>
                       </div>
                     </div>
-                    <div className="flex gap-1.5 shrink-0">
-                      <Button
-                        size="sm"
-                        variant="default"
-                        className="h-8 px-3"
-                        onClick={() => handleApprove(b.id)}
-                        disabled={transition.isPending}
-                      >
-                        <Check className="h-3.5 w-3.5 mr-1" /> {t("approval.approve")}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="h-8 px-3"
-                        onClick={() => setRejectId(b.id)}
-                        disabled={transition.isPending}
-                      >
-                        <X className="h-3.5 w-3.5 mr-1" /> {t("approval.reject")}
-                      </Button>
-                    </div>
+                    {!readOnly && (
+                      <div className="flex gap-1.5 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="h-8 px-3"
+                          onClick={() => handleApprove(b.id)}
+                          disabled={transition.isPending}
+                        >
+                          <Check className="h-3.5 w-3.5 mr-1" /> {t("approval.approve")}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-8 px-3"
+                          onClick={() => setRejectId(b.id)}
+                          disabled={transition.isPending}
+                        >
+                          <X className="h-3.5 w-3.5 mr-1" /> {t("approval.reject")}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
