@@ -851,7 +851,7 @@
     "approve": "승인",
     "reject": "거절",
     "remove": "리뷰 삭제",
-    "removeConfirm": "이 리뷰를 영구 삭제하시겠습니까? 취소할 수 없습니다.",
+    "removeConfirm": "이 리뷰를 영구 삭제하시겠습니까? 감사 기록에 기록됩니다.",
     "removed": "리뷰 삭제됨",
     "whatGuestsSay": "게스트들의 후기",
     "overallRating": "종합 평점",
@@ -861,9 +861,20 @@
     "rejected": "거절됨",
     "all": "전체",
     "adminNote": "관리자 메모",
-    "adminNotePlaceholder": "거절 사유 (선택)…",
+    "adminNotePlaceholder": "거절 사유 (필수)…",
     "rejectReason": "이 리뷰를 거절하는 사유를 입력하세요 (선택).",
+    "rejectReasonRequired": "리뷰 거절 시 사유가 필요합니다. 감사 기록에 기록됩니다.",
     "noReviews": "아직 리뷰가 없습니다.",
-    "alreadyReviewed": "이미 이 숙박에 대한 리뷰를 남기셨습니다."
+    "alreadyReviewed": "이미 이 숙박에 대한 리뷰를 남기셨습니다.",
+    "tooEarly": "체크아웃 24시간 후부터 리뷰를 작성할 수 있습니다.",
+    "canReviewFrom": "{{date}}부터 리뷰를 남길 수 있습니다.",
+    "windowClosed": "이 숙박의 리뷰 기간이 종료되었습니다 (체크아웃 후 90일).",
+    "titleMinLength": "제목은 최소 10자 이상이어야 합니다.",
+    "bodyMinLength": "리뷰는 최소 20자 이상이어야 합니다.",
+    "moderationHistory": "검토 이력",
+    "noAuditHistory": "기록된 검토 작업이 없습니다.",
+    "verifiedStay": "인증된 숙박",
+    "stayedIn": "{{month}} 숙박",
+    "moderationDisclosure": "모든 리뷰는 인증된 게스트의 것이며 경영진이 검토합니다."
   }
 }

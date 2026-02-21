@@ -558,6 +558,11 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
   const cancellableStates: BookingState[] = ["inquiry", "soft_hold", "pending_approval", "pending_deposit", "confirmed"];
   const canCancel = cancellableStates.includes(state);
   const existingReview = guestReviews?.find((r: any) => r.booking_id === booking.id);
+  const stayNights = useMemo(() => {
+    const ci = new Date(booking.check_in);
+    const co = new Date(booking.check_out);
+    return Math.round((co.getTime() - ci.getTime()) / (1000 * 60 * 60 * 24));
+  }, [booking.check_in, booking.check_out]);
   const canReview = state === "completed" && !existingReview && !!userId;
 
   // Deposit info for pending_deposit state
@@ -694,7 +699,7 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
               <Star className="h-3.5 w-3.5 mr-1.5" />
               {t("reviews.leaveReview")}
             </Button>
-            <ReviewFormDialog open={reviewOpen} onOpenChange={setReviewOpen} bookingId={booking.id} guestId={userId!} guestName={guestName ?? null} />
+            <ReviewFormDialog open={reviewOpen} onOpenChange={setReviewOpen} bookingId={booking.id} guestId={userId!} guestName={guestName ?? null} checkOut={booking.check_out} checkIn={booking.check_in} unitName={booking.units?.name} stayNights={stayNights} />
           </>
         )}
         {existingReview && (

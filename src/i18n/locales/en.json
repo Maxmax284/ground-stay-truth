@@ -898,7 +898,7 @@
     "approve": "Approve",
     "reject": "Reject",
     "remove": "Remove Review",
-    "removeConfirm": "Permanently delete this review? This cannot be undone.",
+    "removeConfirm": "Permanently delete this review? This action is logged in the audit trail.",
     "removed": "Review removed",
     "whatGuestsSay": "What Our Guests Say",
     "overallRating": "Overall Rating",
@@ -908,9 +908,20 @@
     "rejected": "Rejected",
     "all": "All",
     "adminNote": "Admin Note",
-    "adminNotePlaceholder": "Reason for rejection (optional)…",
+    "adminNotePlaceholder": "Reason for rejection (required)…",
     "rejectReason": "Provide an optional reason for rejecting this review.",
+    "rejectReasonRequired": "A reason is required when rejecting a review. This is recorded in the audit trail.",
     "noReviews": "No reviews yet.",
-    "alreadyReviewed": "You've already reviewed this stay."
+    "alreadyReviewed": "You've already reviewed this stay.",
+    "tooEarly": "Reviews can be submitted 24 hours after checkout to allow for a cooling-off period.",
+    "canReviewFrom": "You can leave a review from {{date}}.",
+    "windowClosed": "The review window for this stay has closed (90 days after checkout).",
+    "titleMinLength": "Title must be at least 10 characters.",
+    "bodyMinLength": "Review must be at least 20 characters.",
+    "moderationHistory": "Moderation History",
+    "noAuditHistory": "No moderation actions recorded.",
+    "verifiedStay": "Verified Stay",
+    "stayedIn": "Stayed in {{month}}",
+    "moderationDisclosure": "All reviews are from verified guests and moderated by management."
   }
 }
