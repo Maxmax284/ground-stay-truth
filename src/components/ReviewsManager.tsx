@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StarRating } from "@/components/StarRating";
-import { useAllReviews, useApproveReview, useRejectReview, useDeleteReview, type Review } from "@/hooks/useReviews";
+import { useAllReviews, useApproveReview, useRejectReview, useDeleteReview, useReviewAuditLog, type Review } from "@/hooks/useReviews";
 import { useAuth } from "@/hooks/useAuth";
-import { CheckCircle, XCircle, Trash2, Star } from "lucide-react";
+import { CheckCircle, XCircle, Trash2, Star, ChevronDown, ChevronUp, CalendarDays, Home, History } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -33,6 +33,7 @@ export function ReviewsManager() {
   const remove = useDeleteReview();
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState("");
+  const [expandedAudit, setExpandedAudit] = useState<string | null>(null);
 
   const stats = useMemo(() => {
     if (!reviews) return { avg: 0, total: 0, pending: 0 };
@@ -42,26 +43,49 @@ export function ReviewsManager() {
     return { avg: Math.round(avg * 10) / 10, total: approved.length, pending };
   }, [reviews]);
 
-  const handleApprove = (id: string) => {
-    approve.mutate({ id, reviewedBy: user!.id }, {
-      onSuccess: () => toast.success(t("reviews.approved")),
-      onError: (e: any) => toast.error(e.message),
-    });
+  const getReviewSnapshot = (r: Review) => ({
+    rating: r.rating,
+    title: r.title,
+    body: r.body,
+    status: r.status,
+    guest_display_name: r.guest_display_name,
+  });
+
+  const handleApprove = (r: Review) => {
+    approve.mutate(
+      { id: r.id, reviewedBy: user!.id, reviewSnapshot: getReviewSnapshot(r) },
+      {
+        onSuccess: () => toast.success(t("reviews.approved")),
+        onError: (e: any) => toast.error(e.message),
+      }
+    );
   };
 
   const handleReject = () => {
-    if (!rejectId) return;
-    reject.mutate({ id: rejectId, reviewedBy: user!.id, adminNote: rejectNote.trim() || undefined }, {
-      onSuccess: () => { toast.success(t("reviews.rejected")); setRejectId(null); setRejectNote(""); },
-      onError: (e: any) => toast.error(e.message),
-    });
+    if (!rejectId || !rejectNote.trim()) return;
+    const review = reviews?.find((r) => r.id === rejectId);
+    reject.mutate(
+      {
+        id: rejectId,
+        reviewedBy: user!.id,
+        adminNote: rejectNote.trim(),
+        reviewSnapshot: review ? getReviewSnapshot(review) : undefined,
+      },
+      {
+        onSuccess: () => { toast.success(t("reviews.rejected")); setRejectId(null); setRejectNote(""); },
+        onError: (e: any) => toast.error(e.message),
+      }
+    );
   };
 
-  const handleDelete = (id: string) => {
-    remove.mutate(id, {
-      onSuccess: () => toast.success(t("reviews.removed")),
-      onError: (e: any) => toast.error(e.message),
-    });
+  const handleDelete = (r: Review) => {
+    remove.mutate(
+      { id: r.id, performedBy: user!.id, reviewSnapshot: getReviewSnapshot(r) },
+      {
+        onSuccess: () => toast.success(t("reviews.removed")),
+        onError: (e: any) => toast.error(e.message),
+      }
+    );
   };
 
   const STATUS_BADGE: Record<string, string> = {
@@ -125,9 +149,35 @@ export function ReviewsManager() {
                     </div>
                     <p className="font-semibold text-sm text-foreground">{r.title}</p>
                     <p className="text-sm text-muted-foreground line-clamp-3">{r.body}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {r.guest_display_name ?? t("common.unknown")} · {format(new Date(r.created_at), "MMM d, yyyy")}
-                    </p>
+
+                    {/* Booking metadata */}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <span>{r.guest_display_name ?? t("common.unknown")}</span>
+                      <span>·</span>
+                      <span>{format(new Date(r.created_at), "MMM d, yyyy")}</span>
+                      {r.stay_unit_name && (
+                        <>
+                          <span>·</span>
+                          <span className="flex items-center gap-1"><Home className="h-3 w-3" />{r.stay_unit_name}</span>
+                        </>
+                      )}
+                      {r.stay_check_in && r.stay_check_out && (
+                        <>
+                          <span>·</span>
+                          <span className="flex items-center gap-1">
+                            <CalendarDays className="h-3 w-3" />
+                            {format(new Date(r.stay_check_in), "MMM d")} – {format(new Date(r.stay_check_out), "MMM d, yyyy")}
+                          </span>
+                        </>
+                      )}
+                      {r.stay_nights && (
+                        <>
+                          <span>·</span>
+                          <span>{r.stay_nights} {t("common.nights")}</span>
+                        </>
+                      )}
+                    </div>
+
                     {r.admin_note && (
                       <p className="text-xs text-destructive italic mt-1">{t("reviews.adminNote")}: {r.admin_note}</p>
                     )}
@@ -135,7 +185,7 @@ export function ReviewsManager() {
                   <div className="flex gap-1 shrink-0">
                     {r.status === "pending" && (
                       <>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-emerald-600" onClick={() => handleApprove(r.id)} disabled={approve.isPending}>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 text-emerald-600" onClick={() => handleApprove(r)} disabled={approve.isPending}>
                           <CheckCircle className="h-4 w-4" />
                         </Button>
                         <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => { setRejectId(r.id); setRejectNote(""); }} disabled={reject.isPending}>
@@ -156,7 +206,7 @@ export function ReviewsManager() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(r.id)} className="bg-destructive text-destructive-foreground">
+                          <AlertDialogAction onClick={() => handleDelete(r)} className="bg-destructive text-destructive-foreground">
                             {t("common.delete")}
                           </AlertDialogAction>
                         </AlertDialogFooter>
@@ -164,28 +214,62 @@ export function ReviewsManager() {
                     </AlertDialog>
                   </div>
                 </div>
+
+                {/* Audit Trail Toggle */}
+                <button
+                  onClick={() => setExpandedAudit(expandedAudit === r.id ? null : r.id)}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <History className="h-3 w-3" />
+                  {t("reviews.moderationHistory")}
+                  {expandedAudit === r.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                </button>
+                {expandedAudit === r.id && <AuditTrail reviewId={r.id} />}
               </CardContent>
             </Card>
           ))}
         </div>
       )}
 
-      {/* Reject Dialog */}
+      {/* Reject Dialog — reason is now mandatory */}
       <AlertDialog open={!!rejectId} onOpenChange={(o) => !o && setRejectId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("reviews.reject")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("reviews.rejectReason")}</AlertDialogDescription>
+            <AlertDialogDescription>{t("reviews.rejectReasonRequired")}</AlertDialogDescription>
           </AlertDialogHeader>
           <Textarea value={rejectNote} onChange={(e) => setRejectNote(e.target.value)} placeholder={t("reviews.adminNotePlaceholder")} />
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleReject} className="bg-destructive text-destructive-foreground">
+            <AlertDialogAction onClick={handleReject} disabled={!rejectNote.trim()} className="bg-destructive text-destructive-foreground">
               {t("reviews.reject")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  );
+}
+
+/** Inline audit trail for a review */
+function AuditTrail({ reviewId }: { reviewId: string }) {
+  const { t } = useTranslation();
+  const { data: logs, isLoading } = useReviewAuditLog(reviewId);
+
+  if (isLoading) return <p className="text-xs text-muted-foreground pl-4">{t("common.loading")}</p>;
+  if (!logs?.length) return <p className="text-xs text-muted-foreground pl-4">{t("reviews.noAuditHistory")}</p>;
+
+  return (
+    <div className="pl-4 border-l-2 border-muted space-y-2 mt-1">
+      {logs.map((log) => (
+        <div key={log.id} className="text-xs space-y-0.5">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-[10px]">{log.action}</Badge>
+            <span className="text-muted-foreground">{format(new Date(log.created_at), "MMM d, yyyy 'at' h:mm a")}</span>
+          </div>
+          {log.reason && <p className="text-muted-foreground italic">{log.reason}</p>}
+        </div>
+      ))}
     </div>
   );
 }

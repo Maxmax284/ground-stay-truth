@@ -810,7 +810,7 @@
     "approve": "Genehmigen",
     "reject": "Ablehnen",
     "remove": "Bewertung entfernen",
-    "removeConfirm": "Diese Bewertung dauerhaft löschen? Dies kann nicht rückgängig gemacht werden.",
+    "removeConfirm": "Diese Bewertung dauerhaft löschen? Diese Aktion wird im Prüfprotokoll aufgezeichnet.",
     "removed": "Bewertung entfernt",
     "whatGuestsSay": "Was unsere Gäste sagen",
     "overallRating": "Gesamtbewertung",
@@ -820,9 +820,20 @@
     "rejected": "Abgelehnt",
     "all": "Alle",
     "adminNote": "Admin-Notiz",
-    "adminNotePlaceholder": "Ablehnungsgrund (optional)…",
+    "adminNotePlaceholder": "Ablehnungsgrund (erforderlich)…",
     "rejectReason": "Geben Sie einen optionalen Grund für die Ablehnung an.",
+    "rejectReasonRequired": "Ein Grund ist bei Ablehnung erforderlich. Dies wird im Prüfprotokoll aufgezeichnet.",
     "noReviews": "Noch keine Bewertungen.",
-    "alreadyReviewed": "Sie haben diesen Aufenthalt bereits bewertet."
+    "alreadyReviewed": "Sie haben diesen Aufenthalt bereits bewertet.",
+    "tooEarly": "Bewertungen können 24 Stunden nach dem Checkout abgegeben werden.",
+    "canReviewFrom": "Sie können ab {{date}} eine Bewertung abgeben.",
+    "windowClosed": "Das Bewertungsfenster für diesen Aufenthalt ist geschlossen (90 Tage nach Checkout).",
+    "titleMinLength": "Der Titel muss mindestens 10 Zeichen lang sein.",
+    "bodyMinLength": "Die Bewertung muss mindestens 20 Zeichen lang sein.",
+    "moderationHistory": "Moderationshistorie",
+    "noAuditHistory": "Keine Moderationsaktionen aufgezeichnet.",
+    "verifiedStay": "Verifizierter Aufenthalt",
+    "stayedIn": "Aufenthalt im {{month}}",
+    "moderationDisclosure": "Alle Bewertungen stammen von verifizierten Gästen und werden vom Management moderiert."
   }
 }

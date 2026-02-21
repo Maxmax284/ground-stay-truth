@@ -13,8 +13,46 @@ export interface Review {
   reviewed_by: string | null;
   reviewed_at: string | null;
   guest_display_name: string | null;
+  stay_check_in: string | null;
+  stay_check_out: string | null;
+  stay_unit_name: string | null;
+  stay_nights: number | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  review_id: string;
+  action: string;
+  performed_by: string;
+  reason: string | null;
+  metadata: Record<string, any> | null;
+  created_at: string;
+}
+
+/** Privacy-safe display name: "John Doe" → "John D." */
+export function maskDisplayName(name: string | null): string {
+  if (!name) return "Guest";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+}
+
+/** Check if a booking is within the review time window (24h–90d after checkout) */
+export function getReviewTimeGate(checkOut: string): { canReview: boolean; reason?: string; reviewStartDate?: Date } {
+  const checkout = new Date(checkOut);
+  const now = new Date();
+  const reviewStart = new Date(checkout.getTime() + 24 * 60 * 60 * 1000);
+  const reviewEnd = new Date(checkout.getTime() + 90 * 24 * 60 * 60 * 1000);
+
+  if (now < reviewStart) {
+    return { canReview: false, reason: "too_early", reviewStartDate: reviewStart };
+  }
+  if (now > reviewEnd) {
+    return { canReview: false, reason: "expired" };
+  }
+  return { canReview: true };
 }
 
 /** Fetch approved reviews for the public /stay page */
@@ -70,11 +108,56 @@ export function useAllReviews(statusFilter?: string) {
   });
 }
 
-/** Submit a review (guest) */
+/** Fetch audit log for a specific review */
+export function useReviewAuditLog(reviewId?: string) {
+  return useQuery({
+    queryKey: ["review-audit-log", reviewId],
+    enabled: !!reviewId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("review_audit_log" as any)
+        .select("*")
+        .eq("review_id", reviewId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as AuditLogEntry[];
+    },
+  });
+}
+
+/** Insert an audit log entry */
+async function insertAuditLog(entry: {
+  review_id: string;
+  action: string;
+  performed_by: string;
+  reason?: string;
+  metadata?: Record<string, any>;
+}) {
+  await supabase.from("review_audit_log" as any).insert({
+    review_id: entry.review_id,
+    action: entry.action,
+    performed_by: entry.performed_by,
+    reason: entry.reason ?? null,
+    metadata: entry.metadata ?? null,
+  } as any);
+}
+
+/** Submit a review (guest) — snapshots booking metadata */
 export function useSubmitReview() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (review: { booking_id: string; guest_id: string; rating: number; title: string; body: string; guest_display_name: string | null }) => {
+    mutationFn: async (review: {
+      booking_id: string;
+      guest_id: string;
+      rating: number;
+      title: string;
+      body: string;
+      guest_display_name: string | null;
+      stay_check_in?: string;
+      stay_check_out?: string;
+      stay_unit_name?: string;
+      stay_nights?: number;
+    }) => {
       const { error } = await supabase.from("reviews" as any).insert(review as any);
       if (error) throw error;
     },
@@ -84,44 +167,72 @@ export function useSubmitReview() {
   });
 }
 
-/** Approve a review (admin) */
+/** Approve a review (admin) — writes audit log */
 export function useApproveReview() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, reviewedBy }: { id: string; reviewedBy: string }) => {
+    mutationFn: async ({ id, reviewedBy, reviewSnapshot }: { id: string; reviewedBy: string; reviewSnapshot?: Record<string, any> }) => {
       const { error } = await supabase
         .from("reviews" as any)
         .update({ status: "approved", reviewed_by: reviewedBy, reviewed_at: new Date().toISOString() } as any)
         .eq("id", id);
       if (error) throw error;
+      await insertAuditLog({
+        review_id: id,
+        action: "approved",
+        performed_by: reviewedBy,
+        metadata: reviewSnapshot,
+      });
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["reviews"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["reviews"] });
+      qc.invalidateQueries({ queryKey: ["review-audit-log"] });
+    },
   });
 }
 
-/** Reject a review (admin) */
+/** Reject a review (admin) — requires reason, writes audit log */
 export function useRejectReview() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, reviewedBy, adminNote }: { id: string; reviewedBy: string; adminNote?: string }) => {
+    mutationFn: async ({ id, reviewedBy, adminNote, reviewSnapshot }: { id: string; reviewedBy: string; adminNote: string; reviewSnapshot?: Record<string, any> }) => {
       const { error } = await supabase
         .from("reviews" as any)
-        .update({ status: "rejected", reviewed_by: reviewedBy, reviewed_at: new Date().toISOString(), admin_note: adminNote ?? null } as any)
+        .update({ status: "rejected", reviewed_by: reviewedBy, reviewed_at: new Date().toISOString(), admin_note: adminNote } as any)
         .eq("id", id);
       if (error) throw error;
+      await insertAuditLog({
+        review_id: id,
+        action: "rejected",
+        performed_by: reviewedBy,
+        reason: adminNote,
+        metadata: reviewSnapshot,
+      });
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["reviews"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["reviews"] });
+      qc.invalidateQueries({ queryKey: ["review-audit-log"] });
+    },
   });
 }
 
-/** Delete a review (admin) */
+/** Delete a review (admin) — writes audit log before deletion */
 export function useDeleteReview() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, performedBy, reviewSnapshot }: { id: string; performedBy: string; reviewSnapshot?: Record<string, any> }) => {
+      await insertAuditLog({
+        review_id: id,
+        action: "deleted",
+        performed_by: performedBy,
+        metadata: reviewSnapshot,
+      });
       const { error } = await supabase.from("reviews" as any).delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["reviews"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["reviews"] });
+      qc.invalidateQueries({ queryKey: ["review-audit-log"] });
+    },
   });
 }

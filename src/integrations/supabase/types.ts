@@ -633,6 +633,36 @@ export type Database = {
         }
         Relationships: []
       }
+      review_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          performed_by: string
+          reason: string | null
+          review_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          performed_by: string
+          reason?: string | null
+          review_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          performed_by?: string
+          reason?: string | null
+          review_id?: string
+        }
+        Relationships: []
+      }
       reviews: {
         Row: {
           admin_note: string | null
@@ -646,6 +676,10 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
+          stay_check_in: string | null
+          stay_check_out: string | null
+          stay_nights: number | null
+          stay_unit_name: string | null
           title: string
           updated_at: string
         }
@@ -661,6 +695,10 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
+          stay_check_in?: string | null
+          stay_check_out?: string | null
+          stay_nights?: number | null
+          stay_unit_name?: string | null
           title: string
           updated_at?: string
         }
@@ -676,6 +714,10 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
+          stay_check_in?: string | null
+          stay_check_out?: string | null
+          stay_nights?: number | null
+          stay_unit_name?: string | null
           title?: string
           updated_at?: string
         }

@@ -851,7 +851,7 @@
     "approve": "Approuver",
     "reject": "Rejeter",
     "remove": "Supprimer l'avis",
-    "removeConfirm": "Supprimer définitivement cet avis ? Cette action est irréversible.",
+    "removeConfirm": "Supprimer définitivement cet avis ? Cette action est enregistrée dans l'historique.",
     "removed": "Avis supprimé",
     "whatGuestsSay": "Ce que disent nos clients",
     "overallRating": "Note globale",
@@ -861,9 +861,20 @@
     "rejected": "Rejeté",
     "all": "Tous",
     "adminNote": "Note admin",
-    "adminNotePlaceholder": "Raison du rejet (optionnel)…",
+    "adminNotePlaceholder": "Raison du rejet (obligatoire)…",
     "rejectReason": "Indiquez une raison optionnelle pour rejeter cet avis.",
+    "rejectReasonRequired": "Une raison est requise pour rejeter un avis. Ceci est enregistré dans l'historique.",
     "noReviews": "Aucun avis pour le moment.",
-    "alreadyReviewed": "Vous avez déjà évalué ce séjour."
+    "alreadyReviewed": "Vous avez déjà évalué ce séjour.",
+    "tooEarly": "Les avis peuvent être soumis 24 heures après le départ.",
+    "canReviewFrom": "Vous pouvez laisser un avis à partir du {{date}}.",
+    "windowClosed": "La période d'avis pour ce séjour est terminée (90 jours après le départ).",
+    "titleMinLength": "Le titre doit comporter au moins 10 caractères.",
+    "bodyMinLength": "L'avis doit comporter au moins 20 caractères.",
+    "moderationHistory": "Historique de modération",
+    "noAuditHistory": "Aucune action de modération enregistrée.",
+    "verifiedStay": "Séjour vérifié",
+    "stayedIn": "Séjour en {{month}}",
+    "moderationDisclosure": "Tous les avis proviennent de clients vérifiés et sont modérés par la direction."
   }
 }
