@@ -1,187 +1,160 @@
 
 
-# Post-Stay Review & Testimonial System
+# Review System Compliance, Audit Trail & Anti-Fraud Enhancements
 
 ## Overview
 
-Build a complete review lifecycle: guests leave star-rated feedback after completing a stay, admins approve/reject reviews before they go public, and approved reviews display as social proof on the `/stay` landing page. A new "Reviews" management tab in Settings gives admins full control.
+Harden the existing review system to be compliant, auditable, and resistant to fraud or orchestrated false advertising. This means adding a full audit trail for every admin action on reviews, enforcing verification that reviews come only from real completed stays, adding anti-gaming safeguards, and surfacing transparency indicators on public-facing reviews.
 
 ## What Gets Built
 
-### 1. New Database Table: `reviews`
+### 1. Review Audit Log Table
 
-| Column | Type | Default | Notes |
-|--------|------|---------|-------|
-| `id` | uuid | `gen_random_uuid()` | PK |
-| `booking_id` | uuid | - | FK to bookings, unique (one review per stay) |
-| `guest_id` | uuid | - | The reviewer |
-| `rating` | integer | - | 1-5 stars |
-| `title` | text | - | Short headline |
-| `body` | text | - | Review content |
-| `status` | text | `'pending'` | `pending`, `approved`, `rejected` |
-| `admin_note` | text | null | Internal reason for rejection |
-| `reviewed_by` | uuid | null | Admin who approved/rejected |
-| `reviewed_at` | timestamptz | null | When admin acted |
-| `guest_display_name` | text | null | Snapshot of guest name at submission time |
-| `created_at` | timestamptz | `now()` | |
-| `updated_at` | timestamptz | `now()` | |
+A new `review_audit_log` table that records every moderation action (approve, reject, delete) with who did it and when. This creates an immutable paper trail.
 
-RLS policies:
-- **Guests** can INSERT reviews for their own completed bookings (one per booking)
-- **Guests** can SELECT their own reviews
-- **Anon/public** can SELECT where `status = 'approved'` (for the `/stay` page)
-- **Staff (front_desk+)** can SELECT all reviews
-- **Admins** can UPDATE reviews (approve/reject) and DELETE
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| review_id | uuid | The review acted upon |
+| action | text | `approved`, `rejected`, `deleted`, `edited` |
+| performed_by | uuid | Admin who took action |
+| reason | text | Required for rejections, optional otherwise |
+| metadata | jsonb | Snapshot of review state at time of action (rating, title, body, status) |
+| created_at | timestamptz | Immutable timestamp |
 
-### 2. Guest Portal - Leave a Review
+RLS: Admin-only read/write. No updates or deletes allowed (append-only log).
 
-On the **Bookings tab** in GuestPortal, past bookings with state `completed` get a "Leave a Review" button (only if no review exists for that booking yet).
+### 2. Verified Stay Badge
 
-Clicking opens a dialog with:
-- 5-star rating selector (clickable stars using the Star icon from lucide)
-- Title field (required, max 100 chars)
-- Body textarea (required, max 1000 chars)
-- Submit button
+Add a "Verified Stay" indicator on public testimonials to prove the review comes from someone who actually completed a booking. This is the anti-fraud cornerstone.
 
-After submission, the card shows "Review submitted - pending approval" with the stars displayed.
+- On the `/stay` testimonials: each review card gets a small "Verified Stay" badge with a shield icon
+- The verification is inherent -- RLS already ensures only guests with `completed` bookings can insert reviews, so every approved review is by definition from a verified stay
+- Display the stay duration (e.g., "Stayed 14 nights") alongside the guest name for authenticity
 
-### 3. Admin Reviews Management
+### 3. Anti-Fraud Safeguards
 
-Add a new **"Reviews"** tab in the Settings page (visible to admins only, using `canManagePolicies` or a new `canManageReviews` permission).
+**Time-gating**: Guests can only leave a review between 24 hours and 90 days after checkout. This prevents:
+- Immediate emotional reviews (cooling-off period)
+- Ancient reviews that could be orchestrated long after the fact
 
-The tab shows:
-- Filter tabs: All / Pending / Approved / Rejected
-- Each review card displays: guest name, star rating, title, body excerpt, booking dates, unit name, submission date
-- Action buttons per review:
-  - **Approve** (moves to `approved` -- becomes visible on `/stay`)
-  - **Reject** with optional admin note (reason field)
-  - **Remove** (delete entirely for spam/inappropriate content)
-- Pending count badge on the Reviews tab trigger
+**Content validation**: 
+- Minimum 20 characters for the review body (prevent spam/placeholder reviews)
+- Minimum 10 characters for the title
 
-### 4. Public `/stay` Page - Testimonials Section
+**Rate limiting**: The existing UNIQUE constraint on `booking_id` already prevents multiple reviews per stay. No additional changes needed.
 
-Add a "What Our Guests Say" section between the Camp Info and Footer CTA sections:
-- Fetch approved reviews (ordered by most recent, limit 6)
-- Display as a grid of testimonial cards with:
-  - Star rating (filled/empty stars)
-  - Review title in bold
-  - Body text (truncated to 3 lines)
-  - Guest display name and stay date
-- Overall rating summary: average stars + total review count
-- Only renders if there are approved reviews (no empty state on public page)
+**No self-review visibility on public page**: Guest display names on the public page show first name + last initial only (e.g., "John D.") to prevent identifying and targeting specific reviewers.
 
-### 5. Overall Rating Display
+### 4. Enhanced Admin ReviewsManager
 
-- Calculate and display aggregate stats: average rating (to 1 decimal) and total approved review count
-- Show on the `/stay` hero area as a subtle badge: "4.8 (23 reviews)"
-- Show on the admin Reviews tab as summary cards
+**Audit trail visibility**: Add an expandable "Moderation History" section for each review showing who approved/rejected/deleted and when.
 
-### 6. New Permission
+**Review metadata on admin cards**:
+- Show booking dates (check-in / check-out) so admins can verify the stay actually happened
+- Show stay duration
+- Show unit name
+- Show if the guest is a repeat guest (stay count)
 
-Add to `permissions.ts`:
-- `canManageReviews`: Admin only (same as `canManagePolicies`)
+**Bulk actions**: No bulk approve -- each review must be individually reviewed to prevent rubber-stamping (compliance guardrail).
 
-### 7. Translation Keys
+**Admin rejection requires a note**: Make the rejection reason field mandatory (currently optional). This creates accountability.
 
-Add `reviews.*` keys to all 9 locale files covering:
-- `reviews.leaveReview`, `reviews.rating`, `reviews.title`, `reviews.body`
-- `reviews.submitReview`, `reviews.pendingApproval`
-- `reviews.approve`, `reviews.reject`, `reviews.remove`
-- `reviews.whatGuestsSay`, `reviews.overallRating`, `reviews.basedOnReviews`
-- `reviews.pending`, `reviews.approved`, `reviews.rejected`
-- `reviews.adminNote`, `reviews.rejectReason`
-- `reviews.noReviews`, `reviews.alreadyReviewed`
+### 5. Public Testimonial Enhancements
+
+**Aggregate rating transparency**:
+- Show total number of reviews alongside average
+- Show rating distribution bar chart (how many 5-star, 4-star, etc.)
+- This prevents cherry-picking perception -- visitors see the full picture
+
+**Review date displayed**: Show "Stayed in [Month Year]" not just the review submission date.
+
+**"All reviews moderated" disclosure**: Small text at the bottom: "All reviews are from verified guests and moderated by management" -- standard compliance language.
+
+### 6. Staff Visibility
+
+Add review information to `BookingDetailSheet` so staff can see if a completed booking has a review, and its status. Read-only for non-admins.
 
 ## Technical Details
 
 ### Database Migration
 
-```sql
-CREATE TABLE public.reviews (
+```text
+-- New audit log table (append-only)
+CREATE TABLE review_audit_log (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  booking_id uuid NOT NULL REFERENCES public.bookings(id) ON DELETE CASCADE,
-  guest_id uuid NOT NULL,
-  rating integer NOT NULL CHECK (rating >= 1 AND rating <= 5),
-  title text NOT NULL,
-  body text NOT NULL,
-  status text NOT NULL DEFAULT 'pending',
-  admin_note text,
-  reviewed_by uuid,
-  reviewed_at timestamptz,
-  guest_display_name text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE(booking_id)
+  review_id uuid NOT NULL,
+  action text NOT NULL,
+  performed_by uuid NOT NULL,
+  reason text,
+  metadata jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
 );
 
-ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
+-- RLS: Admin read + insert only, no update/delete
+ALTER TABLE review_audit_log ENABLE ROW LEVEL SECURITY;
 
--- Guests insert own reviews for completed bookings
-CREATE POLICY "Guests can insert own reviews" ON public.reviews
-  FOR INSERT WITH CHECK (
-    guest_id = auth.uid()
-    AND EXISTS (
-      SELECT 1 FROM bookings
-      WHERE bookings.id = reviews.booking_id
-        AND bookings.guest_id = auth.uid()
-        AND bookings.state = 'completed'
-    )
-  );
+CREATE POLICY "Admins can read audit log" ON review_audit_log
+  FOR SELECT USING (has_role(auth.uid(), 'admin'::app_role));
 
--- Guests can read own reviews
-CREATE POLICY "Guests can read own reviews" ON public.reviews
-  FOR SELECT USING (guest_id = auth.uid());
+CREATE POLICY "Admins can insert audit log" ON review_audit_log
+  FOR INSERT WITH CHECK (has_role(auth.uid(), 'admin'::app_role));
 
--- Anyone can read approved reviews (public testimonials)
-CREATE POLICY "Anyone can read approved reviews" ON public.reviews
-  FOR SELECT USING (status = 'approved');
-
--- Staff can read all reviews
-CREATE POLICY "Staff can read all reviews" ON public.reviews
-  FOR SELECT USING (has_role(auth.uid(), 'front_desk'::app_role));
-
--- Admins can manage reviews
-CREATE POLICY "Admins can manage reviews" ON public.reviews
-  FOR ALL USING (has_role(auth.uid(), 'admin'::app_role))
-  WITH CHECK (has_role(auth.uid(), 'admin'::app_role));
-
--- Updated_at trigger
-CREATE TRIGGER update_reviews_updated_at
-  BEFORE UPDATE ON public.reviews
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- Add booking metadata columns to reviews for public display
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS stay_check_in date;
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS stay_check_out date;
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS stay_unit_name text;
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS stay_nights integer;
 ```
 
-### New Files
-
-| File | Purpose |
-|------|---------|
-| `src/hooks/useReviews.ts` | Hook for CRUD operations on reviews (guest submit, admin approve/reject/delete, public fetch) |
-| `src/components/ReviewFormDialog.tsx` | Guest-facing star rating + review form dialog |
-| `src/components/ReviewsManager.tsx` | Admin reviews management component with filter tabs and action buttons |
-| `src/components/TestimonialSection.tsx` | Public `/stay` testimonial grid with star display and aggregate rating |
-| `src/components/StarRating.tsx` | Reusable star rating component (display + interactive modes) |
-
-### Modified Files
+### Files Modified
 
 | File | Change |
 |------|--------|
-| `src/pages/GuestPortal.tsx` | Add "Leave a Review" button on completed booking cards |
-| `src/pages/Stay.tsx` | Add testimonial section |
-| `src/pages/Settings.tsx` | Add "Reviews" tab for admins |
-| `src/lib/permissions.ts` | Add `canManageReviews` |
-| `src/i18n/locales/en.json` | Add `reviews.*` keys |
+| `src/hooks/useReviews.ts` | Add audit log insertion on approve/reject/delete; add time-gate check; fetch booking metadata on submit |
+| `src/components/ReviewFormDialog.tsx` | Add time-gate validation (24h-90d window); enforce min lengths; snapshot booking dates on submit |
+| `src/components/ReviewsManager.tsx` | Show booking metadata; mandatory rejection notes; audit trail accordion per review |
+| `src/components/TestimonialSection.tsx` | Verified badge; rating distribution; stay duration; privacy-safe names; moderation disclosure |
+| `src/components/BookingDetailSheet.tsx` | Show review status for completed bookings |
+| `src/components/StarRating.tsx` | No changes needed |
+| `src/i18n/locales/en.json` | Add new keys for verified stay, audit trail, time-gate messages, rating distribution |
 | `src/i18n/locales/*.json` | Propagate to all 8 other locales |
 
-### Public Page Data Flow
+### Audit Trail Flow
 
-The `/stay` page fetches approved reviews without authentication using the anon key, similar to how it fetches `policy_settings` and unit data. The "Anyone can read approved reviews" RLS policy enables this.
+When an admin approves, rejects, or deletes a review:
+1. The action executes on the `reviews` table (existing behavior)
+2. A row is inserted into `review_audit_log` with: action type, admin user ID, reason, and a JSONB snapshot of the review's state at that moment (rating, title, body, previous status)
+3. The audit log is append-only -- no updates or deletes permitted by RLS
 
-### Guardrails
+### Time-Gate Logic
 
-- One review per booking (unique constraint on `booking_id`)
-- Only `completed` bookings can be reviewed (RLS enforced)
-- Reviews start as `pending` -- never public until admin approves
-- Admins can reject with a note or delete entirely
-- Star rating constrained to 1-5 at database level
-- Input validation with length limits on title (100) and body (1000)
+```text
+checkout_date = booking.check_out
+now = current timestamp
+
+canReview = 
+  now >= checkout_date + 24 hours
+  AND now <= checkout_date + 90 days
+  AND booking.state = 'completed'
+  AND no existing review for this booking
+```
+
+Displayed to the guest as: "You can leave a review starting [date] (24 hours after checkout)" or "The review window for this stay has closed" if past 90 days.
+
+### Privacy-Safe Display Names
+
+On the public `/stay` page only, transform `guest_display_name` to first name + last initial:
+- "John Doe" becomes "John D."
+- "Maria" stays "Maria"
+- null becomes "Guest"
+
+This is a display-only transformation -- the full name remains in the database for admin reference.
+
+### Rating Distribution
+
+Calculate from approved reviews:
+- Count of reviews per star level (1-5)
+- Display as horizontal bars with percentages
+- Renders above the testimonial cards grid
 
