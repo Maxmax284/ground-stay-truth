@@ -834,6 +834,15 @@
     "noAuditHistory": "Keine Moderationsaktionen aufgezeichnet.",
     "verifiedStay": "Verifizierter Aufenthalt",
     "stayedIn": "Aufenthalt im {{month}}",
-    "moderationDisclosure": "Alle Bewertungen stammen von verifizierten Gästen und werden vom Management moderiert."
+    "moderationDisclosure": "Alle Bewertungen stammen von verifizierten Gästen und werden vom Management moderiert.",
+    "reviewStatus": "Bewertung",
+    "noReviewSubmitted": "Keine Bewertung abgegeben",
+    "managementResponse": "Antwort der Verwaltung",
+    "reply": "Antworten",
+    "replyPlaceholder": "Öffentliche Antwort verfassen…",
+    "editResponse": "Bearbeiten",
+    "removeResponse": "Antwort entfernen",
+    "responseSaved": "Antwort gespeichert",
+    "responseRemoved": "Antwort entfernt"
   }
 }

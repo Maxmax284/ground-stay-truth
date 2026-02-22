@@ -70,6 +70,15 @@ export function TestimonialSection() {
               </div>
               <p className="font-semibold text-sm text-foreground">{r.title}</p>
               <p className="text-sm text-muted-foreground line-clamp-3">{r.body}</p>
+              {r.admin_response && (
+                <div className="bg-muted/40 rounded-md p-2 mt-1">
+                  <p className="text-[10px] font-semibold text-muted-foreground mb-0.5">Management Response</p>
+                  <p className="text-xs text-muted-foreground">{r.admin_response}</p>
+                  {r.admin_response_at && (
+                    <p className="text-[10px] text-muted-foreground/60 mt-0.5">{format(new Date(r.admin_response_at), "MMM yyyy")}</p>
+                  )}
+                </div>
+              )}
               <div className="text-xs text-muted-foreground pt-1 space-y-0.5">
                 <p>
                   {maskDisplayName(r.guest_display_name)}

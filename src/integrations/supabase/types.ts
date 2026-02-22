@@ -666,6 +666,8 @@ export type Database = {
       reviews: {
         Row: {
           admin_note: string | null
+          admin_response: string | null
+          admin_response_at: string | null
           body: string
           booking_id: string
           created_at: string
@@ -685,6 +687,8 @@ export type Database = {
         }
         Insert: {
           admin_note?: string | null
+          admin_response?: string | null
+          admin_response_at?: string | null
           body: string
           booking_id: string
           created_at?: string
@@ -704,6 +708,8 @@ export type Database = {
         }
         Update: {
           admin_note?: string | null
+          admin_response?: string | null
+          admin_response_at?: string | null
           body?: string
           booking_id?: string
           created_at?: string

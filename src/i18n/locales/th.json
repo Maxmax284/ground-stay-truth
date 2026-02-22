@@ -875,6 +875,15 @@
     "noAuditHistory": "ไม่มีการดำเนินการตรวจสอบ",
     "verifiedStay": "การเข้าพักที่ยืนยันแล้ว",
     "stayedIn": "เข้าพักใน {{month}}",
-    "moderationDisclosure": "รีวิวทั้งหมดมาจากแขกที่ได้รับการยืนยันและตรวจสอบโดยฝ่ายจัดการ"
+    "moderationDisclosure": "รีวิวทั้งหมดมาจากแขกที่ได้รับการยืนยันและตรวจสอบโดยฝ่ายจัดการ",
+    "reviewStatus": "รีวิว",
+    "noReviewSubmitted": "ไม่มีรีวิว",
+    "managementResponse": "การตอบกลับจากฝ่ายจัดการ",
+    "reply": "ตอบกลับ",
+    "replyPlaceholder": "เขียนการตอบกลับสาธารณะ…",
+    "editResponse": "แก้ไข",
+    "removeResponse": "ลบการตอบกลับ",
+    "responseSaved": "บันทึกการตอบกลับแล้ว",
+    "responseRemoved": "ลบการตอบกลับแล้ว"
   }
 }

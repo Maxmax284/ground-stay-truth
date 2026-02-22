@@ -875,6 +875,15 @@
     "noAuditHistory": "Aucune action de modération enregistrée.",
     "verifiedStay": "Séjour vérifié",
     "stayedIn": "Séjour en {{month}}",
-    "moderationDisclosure": "Tous les avis proviennent de clients vérifiés et sont modérés par la direction."
+    "moderationDisclosure": "Tous les avis proviennent de clients vérifiés et sont modérés par la direction.",
+    "reviewStatus": "Avis",
+    "noReviewSubmitted": "Aucun avis soumis",
+    "managementResponse": "Réponse de la direction",
+    "reply": "Répondre",
+    "replyPlaceholder": "Rédiger une réponse publique…",
+    "editResponse": "Modifier",
+    "removeResponse": "Supprimer la réponse",
+    "responseSaved": "Réponse enregistrée",
+    "responseRemoved": "Réponse supprimée"
   }
 }
