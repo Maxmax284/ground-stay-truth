@@ -875,6 +875,15 @@
     "noAuditHistory": "기록된 검토 작업이 없습니다.",
     "verifiedStay": "인증된 숙박",
     "stayedIn": "{{month}} 숙박",
-    "moderationDisclosure": "모든 리뷰는 인증된 게스트의 것이며 경영진이 검토합니다."
+    "moderationDisclosure": "모든 리뷰는 인증된 게스트의 것이며 경영진이 검토합니다.",
+    "reviewStatus": "리뷰",
+    "noReviewSubmitted": "리뷰 없음",
+    "managementResponse": "경영진 답변",
+    "reply": "답변",
+    "replyPlaceholder": "공개 답변 작성…",
+    "editResponse": "수정",
+    "removeResponse": "답변 삭제",
+    "responseSaved": "답변 저장됨",
+    "responseRemoved": "답변 삭제됨"
   }
 }

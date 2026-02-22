@@ -922,6 +922,15 @@
     "noAuditHistory": "No moderation actions recorded.",
     "verifiedStay": "Verified Stay",
     "stayedIn": "Stayed in {{month}}",
-    "moderationDisclosure": "All reviews are from verified guests and moderated by management."
+    "moderationDisclosure": "All reviews are from verified guests and moderated by management.",
+    "reviewStatus": "Review",
+    "noReviewSubmitted": "No review submitted",
+    "managementResponse": "Management Response",
+    "reply": "Reply",
+    "replyPlaceholder": "Write a public response…",
+    "editResponse": "Edit",
+    "removeResponse": "Remove Response",
+    "responseSaved": "Response saved",
+    "responseRemoved": "Response removed"
   }
 }

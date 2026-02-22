@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StarRating } from "@/components/StarRating";
-import { useAllReviews, useApproveReview, useRejectReview, useDeleteReview, useReviewAuditLog, type Review } from "@/hooks/useReviews";
+import { useAllReviews, useApproveReview, useRejectReview, useDeleteReview, useReviewAuditLog, useRespondToReview, type Review } from "@/hooks/useReviews";
 import { useAuth } from "@/hooks/useAuth";
-import { CheckCircle, XCircle, Trash2, Star, ChevronDown, ChevronUp, CalendarDays, Home, History } from "lucide-react";
+import { CheckCircle, XCircle, Trash2, Star, ChevronDown, ChevronUp, CalendarDays, Home, History, MessageSquare, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -31,9 +31,12 @@ export function ReviewsManager() {
   const approve = useApproveReview();
   const reject = useRejectReview();
   const remove = useDeleteReview();
+  const respond = useRespondToReview();
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState("");
   const [expandedAudit, setExpandedAudit] = useState<string | null>(null);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
 
   const stats = useMemo(() => {
     if (!reviews) return { avg: 0, total: 0, pending: 0 };
@@ -83,6 +86,27 @@ export function ReviewsManager() {
       { id: r.id, performedBy: user!.id, reviewSnapshot: getReviewSnapshot(r) },
       {
         onSuccess: () => toast.success(t("reviews.removed")),
+        onError: (e: any) => toast.error(e.message),
+      }
+    );
+  };
+
+  const handleRespond = (reviewId: string) => {
+    if (!replyText.trim()) return;
+    respond.mutate(
+      { id: reviewId, performedBy: user!.id, response: replyText.trim() },
+      {
+        onSuccess: () => { toast.success(t("reviews.responseSaved", { defaultValue: "Response saved" })); setReplyingTo(null); setReplyText(""); },
+        onError: (e: any) => toast.error(e.message),
+      }
+    );
+  };
+
+  const handleRemoveResponse = (reviewId: string) => {
+    respond.mutate(
+      { id: reviewId, performedBy: user!.id, response: null },
+      {
+        onSuccess: () => toast.success(t("reviews.responseRemoved", { defaultValue: "Response removed" })),
         onError: (e: any) => toast.error(e.message),
       }
     );
@@ -180,6 +204,44 @@ export function ReviewsManager() {
 
                     {r.admin_note && (
                       <p className="text-xs text-destructive italic mt-1">{t("reviews.adminNote")}: {r.admin_note}</p>
+                    )}
+
+                    {/* Existing admin response */}
+                    {r.admin_response && (
+                      <div className="mt-2 bg-muted/40 rounded-md p-2 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-medium text-muted-foreground">{t("reviews.managementResponse", { defaultValue: "Management Response" })}</p>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => { setReplyingTo(r.id); setReplyText(r.admin_response ?? ""); }}>
+                              {t("reviews.editResponse", { defaultValue: "Edit" })}
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-6 text-xs px-2 text-destructive" onClick={() => handleRemoveResponse(r.id)}>
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{r.admin_response}</p>
+                      </div>
+                    )}
+
+                    {/* Reply button for approved reviews without response */}
+                    {r.status === "approved" && !r.admin_response && replyingTo !== r.id && (
+                      <Button size="sm" variant="ghost" className="h-7 text-xs mt-1 gap-1" onClick={() => { setReplyingTo(r.id); setReplyText(""); }}>
+                        <MessageSquare className="h-3 w-3" /> {t("reviews.reply", { defaultValue: "Reply" })}
+                      </Button>
+                    )}
+
+                    {/* Reply textarea */}
+                    {replyingTo === r.id && (
+                      <div className="mt-2 space-y-2">
+                        <Textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder={t("reviews.replyPlaceholder", { defaultValue: "Write a public response…" })} rows={3} />
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => handleRespond(r.id)} disabled={!replyText.trim() || respond.isPending}>
+                            {respond.isPending ? t("common.saving") : t("common.save")}
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => { setReplyingTo(null); setReplyText(""); }}>{t("common.cancel")}</Button>
+                        </div>
+                      </div>
                     )}
                   </div>
                   <div className="flex gap-1 shrink-0">

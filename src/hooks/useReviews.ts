@@ -10,6 +10,8 @@ export interface Review {
   body: string;
   status: string;
   admin_note: string | null;
+  admin_response: string | null;
+  admin_response_at: string | null;
   reviewed_by: string | null;
   reviewed_at: string | null;
   guest_display_name: string | null;
@@ -207,6 +209,51 @@ export function useRejectReview() {
         performed_by: reviewedBy,
         reason: adminNote,
         metadata: reviewSnapshot,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["reviews"] });
+      qc.invalidateQueries({ queryKey: ["review-audit-log"] });
+    },
+  });
+}
+
+/** Fetch the review for a specific booking */
+export function useBookingReview(bookingId?: string) {
+  return useQuery({
+    queryKey: ["reviews", "booking", bookingId],
+    enabled: !!bookingId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("reviews" as any)
+        .select("*")
+        .eq("booking_id", bookingId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data as unknown as Review | null;
+    },
+  });
+}
+
+/** Respond to a review (admin) — writes audit log */
+export function useRespondToReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, performedBy, response }: { id: string; performedBy: string; response: string | null }) => {
+      const isRemoval = response === null;
+      const { error } = await supabase
+        .from("reviews" as any)
+        .update({
+          admin_response: response,
+          admin_response_at: response ? new Date().toISOString() : null,
+        } as any)
+        .eq("id", id);
+      if (error) throw error;
+      await insertAuditLog({
+        review_id: id,
+        action: isRemoval ? "response_removed" : "responded",
+        performed_by: performedBy,
+        metadata: { admin_response: response },
       });
     },
     onSuccess: () => {
