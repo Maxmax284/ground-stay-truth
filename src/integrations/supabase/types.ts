@@ -831,6 +831,7 @@ export type Database = {
           min_nights: number
           name: string
           photos: string[] | null
+          reviews_enabled: boolean
           rules: string | null
           updated_at: string
           weekend_price: number | null
@@ -848,6 +849,7 @@ export type Database = {
           min_nights?: number
           name: string
           photos?: string[] | null
+          reviews_enabled?: boolean
           rules?: string | null
           updated_at?: string
           weekend_price?: number | null
@@ -865,6 +867,7 @@ export type Database = {
           min_nights?: number
           name?: string
           photos?: string[] | null
+          reviews_enabled?: boolean
           rules?: string | null
           updated_at?: string
           weekend_price?: number | null

@@ -1,0 +1,1 @@
+ALTER TABLE public.units ADD COLUMN IF NOT EXISTS reviews_enabled boolean NOT NULL DEFAULT true;

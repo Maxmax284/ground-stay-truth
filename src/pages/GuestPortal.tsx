@@ -84,7 +84,7 @@ const GuestPortal = () => {
   const { data: bookings, isLoading } = useQuery({
     queryKey: ["guest-bookings", user?.id], enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase.from("bookings").select("*, units(name, photos, amenities, rules, capacity)").eq("guest_id", user!.id).order("check_in", { ascending: false });
+      const { data, error } = await supabase.from("bookings").select("*, units(name, photos, amenities, rules, capacity, reviews_enabled)").eq("guest_id", user!.id).order("check_in", { ascending: false });
       if (error) throw error; return data;
     },
   });
@@ -563,7 +563,8 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
     const co = new Date(booking.check_out);
     return Math.round((co.getTime() - ci.getTime()) / (1000 * 60 * 60 * 24));
   }, [booking.check_in, booking.check_out]);
-  const canReview = state === "completed" && !existingReview && !!userId;
+  const unitReviewsEnabled = (booking.units as any)?.reviews_enabled !== false;
+  const canReview = state === "completed" && !existingReview && !!userId && unitReviewsEnabled;
 
   // Deposit info for pending_deposit state
   const depositPercentage = useMemo(() => {
