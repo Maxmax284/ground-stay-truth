@@ -225,7 +225,9 @@
     "nightsPlus": "{{count}}+ nights",
     "upToGuests": "Up to {{count}} guests",
     "minNightsLabel": "Min {{count}} night",
-    "minNightsLabel_other": "Min {{count}} nights"
+    "minNightsLabel_other": "Min {{count}} nights",
+    "reviewsEnabled": "Reviews Enabled",
+    "reviewsDisabled": "Reviews Disabled"
   },
   "pricing": {
     "title": "Pricing & Policies",
@@ -931,6 +933,9 @@
     "editResponse": "Edit",
     "removeResponse": "Remove Response",
     "responseSaved": "Response saved",
-    "responseRemoved": "Response removed"
+    "responseRemoved": "Response removed",
+    "unitsWithReviewsDisabled": "Units with reviews disabled",
+    "reviewsDisabledForUnit": "Reviews are disabled for this unit",
+    "responseNotificationSent": "Guest notified of your response"
   }
 }

@@ -235,7 +235,7 @@ export function useBookingReview(bookingId?: string) {
   });
 }
 
-/** Respond to a review (admin) — writes audit log */
+/** Respond to a review (admin) — writes audit log + notifies guest */
 export function useRespondToReview() {
   const qc = useQueryClient();
   return useMutation({
@@ -255,6 +255,12 @@ export function useRespondToReview() {
         performed_by: performedBy,
         metadata: { admin_response: response },
       });
+      // Fire-and-forget notification for new/updated responses (not removals)
+      if (!isRemoval) {
+        supabase.functions.invoke("notify-review-response", {
+          body: { review_id: id, admin_response: response },
+        }).catch((err) => console.warn("Notification failed (non-blocking):", err));
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["reviews"] });

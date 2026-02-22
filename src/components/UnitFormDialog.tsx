@@ -34,7 +34,7 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
   useEffect(() => { setSelectedAmenities(unit?.amenities ?? []); setSelectedGroupId(unit?.group_id ?? "none"); setPhotos(unit?.photos ?? []); setSavedUnitId(unit?.id); setIsEditingAfterCreate(false); }, [unit]);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
-    defaultValues: { name: unit?.name ?? "", description: unit?.description ?? "", capacity: unit?.capacity ?? 2, min_nights: unit?.min_nights ?? 1, base_price: unit?.base_price ?? 0, weekend_price: unit?.weekend_price ?? undefined, cleaning_fee: unit?.cleaning_fee ?? 0, rules: unit?.rules ?? "", is_active: unit?.is_active ?? true },
+    defaultValues: { name: unit?.name ?? "", description: unit?.description ?? "", capacity: unit?.capacity ?? 2, min_nights: unit?.min_nights ?? 1, base_price: unit?.base_price ?? 0, weekend_price: unit?.weekend_price ?? undefined, cleaning_fee: unit?.cleaning_fee ?? 0, rules: unit?.rules ?? "", is_active: unit?.is_active ?? true, reviews_enabled: (unit as any)?.reviews_enabled ?? true },
   });
 
   const toggleAmenity = (amenity: string) => setSelectedAmenities((prev) => prev.includes(amenity) ? prev.filter((a) => a !== amenity) : [...prev, amenity]);
@@ -74,6 +74,7 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
           <div className="space-y-2"><Label>{t("units.photos")}</Label>{savedUnitId ? <UnitPhotoUpload unitId={savedUnitId} photos={photos} onChange={setPhotos} /> : <p className="text-xs text-muted-foreground">{t("units.saveFirst")}</p>}</div>
           <div className="space-y-2"><Label htmlFor="rules">{t("units.houseRules")}</Label><Textarea id="rules" {...register("rules")} placeholder="No smoking, quiet hours after 10pm…" rows={2} /></div>
           <div className="flex items-center justify-between"><Label htmlFor="is_active">{t("common.active")}</Label><Switch id="is_active" defaultChecked={unit?.is_active ?? true} {...register("is_active")} /></div>
+          <div className="flex items-center justify-between"><Label htmlFor="reviews_enabled">{t("units.reviewsEnabled", { defaultValue: "Reviews Enabled" })}</Label><Switch id="reviews_enabled" defaultChecked={(unit as any)?.reviews_enabled ?? true} {...register("reviews_enabled" as any)} /></div>
           <div className="flex justify-end gap-2 pt-2"><Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button><Button type="submit" disabled={createUnit.isPending || updateUnit.isPending}>{isEditing || isEditingAfterCreate ? t("units.saveChanges") : t("units.addUnit")}</Button></div>
         </form>
       </DialogContent>

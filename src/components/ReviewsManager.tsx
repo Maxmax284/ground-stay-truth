@@ -9,7 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StarRating } from "@/components/StarRating";
 import { useAllReviews, useApproveReview, useRejectReview, useDeleteReview, useReviewAuditLog, useRespondToReview, type Review } from "@/hooks/useReviews";
 import { useAuth } from "@/hooks/useAuth";
-import { CheckCircle, XCircle, Trash2, Star, ChevronDown, ChevronUp, CalendarDays, Home, History, MessageSquare, X } from "lucide-react";
+import { useUnits } from "@/hooks/useUnits";
+import { CheckCircle, XCircle, Trash2, Star, ChevronDown, ChevronUp, CalendarDays, Home, History, MessageSquare, X, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -37,6 +38,8 @@ export function ReviewsManager() {
   const [expandedAudit, setExpandedAudit] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
+  const { data: units } = useUnits();
+  const disabledUnits = useMemo(() => (units ?? []).filter((u: any) => u.reviews_enabled === false), [units]);
 
   const stats = useMemo(() => {
     if (!reviews) return { avg: 0, total: 0, pending: 0 };
@@ -291,6 +294,23 @@ export function ReviewsManager() {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Units with reviews disabled */}
+      {disabledUnits.length > 0 && (
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <p className="text-sm font-medium text-foreground">{t("reviews.unitsWithReviewsDisabled", { defaultValue: "Units with reviews disabled" })}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {disabledUnits.map((u: any) => (
+                <Badge key={u.id} variant="outline" className="text-xs">{u.name}</Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Reject Dialog — reason is now mandatory */}
