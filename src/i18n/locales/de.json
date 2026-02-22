@@ -211,7 +211,9 @@
     "nightsPlus": "{{count}}+ Nächte",
     "upToGuests": "Bis zu {{count}} Gäste",
     "minNightsLabel": "Min {{count}} Nacht",
-    "minNightsLabel_other": "Min {{count}} Nächte"
+    "minNightsLabel_other": "Min {{count}} Nächte",
+    "reviewsEnabled": "Bewertungen aktiviert",
+    "reviewsDisabled": "Bewertungen deaktiviert"
   },
   "pricing": {
     "title": "Preise & Richtlinien",
@@ -843,6 +845,9 @@
     "editResponse": "Bearbeiten",
     "removeResponse": "Antwort entfernen",
     "responseSaved": "Antwort gespeichert",
-    "responseRemoved": "Antwort entfernt"
+    "responseRemoved": "Antwort entfernt",
+    "unitsWithReviewsDisabled": "Unterkünfte mit deaktivierten Bewertungen",
+    "reviewsDisabledForUnit": "Bewertungen sind für diese Unterkunft deaktiviert",
+    "responseNotificationSent": "Gast wurde über Ihre Antwort benachrichtigt"
   }
 }
