@@ -222,7 +222,9 @@
     "nightsPlus": "{{count}}박 이상",
     "upToGuests": "최대 {{count}}명",
     "minNightsLabel": "최소 {{count}}박",
-    "minNightsLabel_other": "최소 {{count}}박"
+    "minNightsLabel_other": "최소 {{count}}박",
+    "reviewsEnabled": "리뷰 활성화",
+    "reviewsDisabled": "리뷰 비활성화"
   },
   "pricing": {
     "title": "요금 및 정책",
@@ -884,6 +886,9 @@
     "editResponse": "수정",
     "removeResponse": "답변 삭제",
     "responseSaved": "답변 저장됨",
-    "responseRemoved": "답변 삭제됨"
+    "responseRemoved": "답변 삭제됨",
+    "unitsWithReviewsDisabled": "리뷰가 비활성화된 객실",
+    "reviewsDisabledForUnit": "이 객실은 리뷰가 비활성화되어 있습니다",
+    "responseNotificationSent": "게스트에게 답변이 알림되었습니다"
   }
 }

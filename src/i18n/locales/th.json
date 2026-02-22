@@ -222,7 +222,9 @@
     "nightsPlus": "{{count}}+ คืน",
     "upToGuests": "สูงสุด {{count}} ผู้เข้าพัก",
     "minNightsLabel": "ขั้นต่ำ {{count}} คืน",
-    "minNightsLabel_other": "ขั้นต่ำ {{count}} คืน"
+    "minNightsLabel_other": "ขั้นต่ำ {{count}} คืน",
+    "reviewsEnabled": "เปิดรีวิว",
+    "reviewsDisabled": "ปิดรีวิว"
   },
   "pricing": {
     "title": "ราคาและนโยบาย",
@@ -884,6 +886,9 @@
     "editResponse": "แก้ไข",
     "removeResponse": "ลบการตอบกลับ",
     "responseSaved": "บันทึกการตอบกลับแล้ว",
-    "responseRemoved": "ลบการตอบกลับแล้ว"
+    "responseRemoved": "ลบการตอบกลับแล้ว",
+    "unitsWithReviewsDisabled": "ห้องพักที่ปิดรีวิว",
+    "reviewsDisabledForUnit": "รีวิวถูกปิดสำหรับห้องพักนี้",
+    "responseNotificationSent": "แจ้งเตือนผู้เข้าพักเรื่องการตอบกลับแล้ว"
   }
 }
