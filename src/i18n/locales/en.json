@@ -937,5 +937,97 @@
     "unitsWithReviewsDisabled": "Units with reviews disabled",
     "reviewsDisabledForUnit": "Reviews are disabled for this unit",
     "responseNotificationSent": "Guest notified of your response"
+  },
+  "tutorial": {
+    "welcome": "Welcome to Ground Stay!",
+    "letsGetStarted": "Let us show you around. We'll walk through each section so you know where everything is.",
+    "next": "Next",
+    "back": "Back",
+    "skip": "Skip Tutorial",
+    "finish": "Get Started",
+    "stepOf": "Step {{current}} of {{total}}",
+    "resetTutorial": "Reset Tutorial",
+    "resetTutorialDesc": "Re-launch the guided walkthrough to revisit each section.",
+    "tutorialReset": "Tutorial will show on next page load",
+    "dashboard": {
+      "title": "Dashboard",
+      "point1": "See today's arrivals, departures, and active bookings at a glance",
+      "point2": "Access quick actions to create bookings or manage units",
+      "point3": "Monitor maintenance requests and laundry queue"
+    },
+    "units": {
+      "title": "Units",
+      "point1": "Add, edit, and organize your accommodation units",
+      "point2": "Upload photos and manage amenities for each unit",
+      "point3": "Group units by type and control availability"
+    },
+    "bookings": {
+      "title": "Bookings",
+      "point1": "Manage reservations through their full lifecycle",
+      "point2": "Transition booking states: inquiry → confirmed → checked in",
+      "point3": "Review the approval queue and handle deposits"
+    },
+    "calendar": {
+      "title": "Calendar",
+      "point1": "Visual overview of availability across all units",
+      "point2": "Switch between timeline, month, and day views",
+      "point3": "Create and manage maintenance blocks"
+    },
+    "pricing": {
+      "title": "Pricing & Policies",
+      "point1": "Configure seasonal pricing rules and long-stay discounts",
+      "point2": "Set operational policies like check-out times and buffers",
+      "point3": "Manage deposit requirements and cancellation rules"
+    },
+    "reports": {
+      "title": "Reports",
+      "point1": "Track occupancy rates and revenue by unit",
+      "point2": "View booking state breakdowns and trends",
+      "point3": "Access account census and activity reports"
+    },
+    "messages": {
+      "title": "Messages",
+      "point1": "Communicate with guests through real-time chat",
+      "point2": "Add internal notes visible only to staff",
+      "point3": "Auto-translate messages across languages"
+    },
+    "embeds": {
+      "title": "Embeds",
+      "point1": "Generate embed widgets for external websites",
+      "point2": "Customize the booking widget appearance",
+      "point3": "Copy embed code and preview before publishing"
+    },
+    "settings": {
+      "title": "Settings",
+      "point1": "Update your profile and contact information",
+      "point2": "Manage user roles and staff accounts",
+      "point3": "Configure system policies and review management"
+    },
+    "guest": {
+      "bookings": {
+        "title": "My Bookings",
+        "point1": "View your current and past reservations",
+        "point2": "Request new bookings or cancel existing ones",
+        "point3": "Track booking status from inquiry to check-out"
+      },
+      "messages": {
+        "title": "Messages",
+        "point1": "Chat directly with the property staff",
+        "point2": "Get real-time updates on your requests",
+        "point3": "Messages are translated automatically if needed"
+      },
+      "documents": {
+        "title": "Documents",
+        "point1": "Upload your ID for pre-arrival verification",
+        "point2": "Track document verification status",
+        "point3": "Required for check-in completion"
+      },
+      "profile": {
+        "title": "Profile",
+        "point1": "Update your contact details and preferences",
+        "point2": "Choose your preferred language",
+        "point3": "Manage your WhatsApp and LINE contact info"
+      }
+    }
   }
 }

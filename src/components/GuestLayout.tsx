@@ -7,6 +7,7 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 import { NotificationBell } from "@/components/NotificationBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AIAssistantPanel } from "@/components/AIAssistantPanel";
+import { TutorialOverlay } from "@/components/TutorialOverlay";
 
 interface GuestLayoutProps {
   children: React.ReactNode;
@@ -56,6 +57,7 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
         <a href="/legal#terms" className="hover:text-foreground hover:underline">{t("legal.termsOfService")}</a>
       </footer>
       <AIAssistantPanel />
+      <TutorialOverlay variant="guest" />
     </div>
   );
 };

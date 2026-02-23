@@ -890,5 +890,32 @@
     "unitsWithReviewsDisabled": "Logements avec avis désactivés",
     "reviewsDisabledForUnit": "Les avis sont désactivés pour ce logement",
     "responseNotificationSent": "L'invité a été notifié de votre réponse"
+  },
+  "tutorial": {
+    "welcome": "Bienvenue sur Ground Stay !",
+    "letsGetStarted": "Laissez-nous vous faire visiter. Nous parcourrons chaque section pour que vous sachiez où tout se trouve.",
+    "next": "Suivant",
+    "back": "Retour",
+    "skip": "Passer le tutoriel",
+    "finish": "Commencer",
+    "stepOf": "Étape {{current}} sur {{total}}",
+    "resetTutorial": "Réinitialiser le tutoriel",
+    "resetTutorialDesc": "Relancer la visite guidée pour revoir chaque section.",
+    "tutorialReset": "Le tutoriel s'affichera au prochain chargement",
+    "dashboard": { "title": "Tableau de bord", "point1": "Voyez les arrivées, départs et réservations actives d'un coup d'œil", "point2": "Accédez aux actions rapides pour créer des réservations ou gérer les logements", "point3": "Suivez les demandes de maintenance et la file d'attente de blanchisserie" },
+    "units": { "title": "Logements", "point1": "Ajoutez, modifiez et organisez vos logements", "point2": "Téléchargez des photos et gérez les équipements", "point3": "Regroupez les logements par type et contrôlez la disponibilité" },
+    "bookings": { "title": "Réservations", "point1": "Gérez les réservations tout au long de leur cycle de vie", "point2": "Transition des états : demande → confirmé → enregistré", "point3": "Consultez la file d'approbation et gérez les acomptes" },
+    "calendar": { "title": "Calendrier", "point1": "Vue d'ensemble visuelle de la disponibilité", "point2": "Basculez entre les vues chronologie, mois et jour", "point3": "Créez et gérez les blocages de maintenance" },
+    "pricing": { "title": "Tarifs et politiques", "point1": "Configurez les tarifs saisonniers et remises longs séjours", "point2": "Définissez les politiques opérationnelles", "point3": "Gérez les exigences d'acompte et les règles d'annulation" },
+    "reports": { "title": "Rapports", "point1": "Suivez les taux d'occupation et revenus par logement", "point2": "Consultez la répartition des états de réservation", "point3": "Accédez au recensement des comptes et rapports d'activité" },
+    "messages": { "title": "Messages", "point1": "Communiquez avec les clients en temps réel", "point2": "Ajoutez des notes internes visibles uniquement par le personnel", "point3": "Traduction automatique des messages" },
+    "embeds": { "title": "Intégrations", "point1": "Générez des widgets pour les sites externes", "point2": "Personnalisez l'apparence du widget de réservation", "point3": "Copiez le code et prévisualisez avant publication" },
+    "settings": { "title": "Paramètres", "point1": "Mettez à jour votre profil et coordonnées", "point2": "Gérez les rôles et comptes du personnel", "point3": "Configurez les politiques système et la gestion des avis" },
+    "guest": {
+      "bookings": { "title": "Mes réservations", "point1": "Consultez vos réservations actuelles et passées", "point2": "Demandez de nouvelles réservations ou annulez", "point3": "Suivez le statut de la demande au départ" },
+      "messages": { "title": "Messages", "point1": "Discutez directement avec le personnel", "point2": "Recevez des mises à jour en temps réel", "point3": "Les messages sont traduits automatiquement si nécessaire" },
+      "documents": { "title": "Documents", "point1": "Téléchargez votre pièce d'identité pour vérification", "point2": "Suivez le statut de vérification", "point3": "Requis pour l'enregistrement" },
+      "profile": { "title": "Profil", "point1": "Mettez à jour vos coordonnées et préférences", "point2": "Choisissez votre langue préférée", "point3": "Gérez vos contacts WhatsApp et LINE" }
+    }
   }
 }

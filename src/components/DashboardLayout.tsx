@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { NotificationBell } from "@/components/NotificationBell";
 import { AIAssistantPanel } from "@/components/AIAssistantPanel";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { TutorialOverlay } from "@/components/TutorialOverlay";
 import { useRolePreview } from "@/hooks/useRolePreview";
 import { Button } from "@/components/ui/button";
 
@@ -68,6 +69,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </div>
       <AIAssistantPanel />
+      <TutorialOverlay variant="staff" />
     </SidebarProvider>
   );
 };
