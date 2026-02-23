@@ -8,6 +8,7 @@ import {
   BarChart3, MessageSquare, Code2, Settings, FileText, User,
   ChevronRight, ChevronLeft, X, Sparkles,
 } from "lucide-react";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { useTutorial } from "@/hooks/useTutorial";
 import { useAuth } from "@/hooks/useAuth";
 import { canAccessRoute } from "@/lib/permissions";
@@ -85,10 +86,13 @@ export function TutorialOverlay({ variant }: TutorialOverlayProps) {
               {isWelcome ? t("tutorial.welcome") : t("tutorial.stepOf", { current: currentStep + 1, total: steps.length })}
             </span>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleSkip} className="h-7 text-xs text-muted-foreground hover:text-foreground">
-            <X className="h-3 w-3 mr-1" />
-            {t("tutorial.skip")}
-          </Button>
+          <div className="flex items-center gap-2">
+            <LanguageSelector compact className="w-[52px] h-7 px-2 text-xs bg-background border-border z-[60]" />
+            <Button variant="ghost" size="sm" onClick={handleSkip} className="h-7 text-xs text-muted-foreground hover:text-foreground">
+              <X className="h-3 w-3 mr-1" />
+              {t("tutorial.skip")}
+            </Button>
+          </div>
         </div>
 
         {/* Content */}
