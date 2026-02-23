@@ -890,5 +890,32 @@
     "unitsWithReviewsDisabled": "리뷰가 비활성화된 객실",
     "reviewsDisabledForUnit": "이 객실은 리뷰가 비활성화되어 있습니다",
     "responseNotificationSent": "게스트에게 답변이 알림되었습니다"
+  },
+  "tutorial": {
+    "welcome": "Ground Stay에 오신 것을 환영합니다!",
+    "letsGetStarted": "각 섹션을 안내해 드리겠습니다.",
+    "next": "다음",
+    "back": "이전",
+    "skip": "튜토리얼 건너뛰기",
+    "finish": "시작하기",
+    "stepOf": "{{total}}단계 중 {{current}}단계",
+    "resetTutorial": "튜토리얼 초기화",
+    "resetTutorialDesc": "가이드 투어를 다시 시작합니다.",
+    "tutorialReset": "다음 페이지 로드 시 튜토리얼이 표시됩니다",
+    "dashboard": { "title": "대시보드", "point1": "오늘의 도착, 출발, 활성 예약을 한눈에 확인", "point2": "예약 생성 및 객실 관리 빠른 작업", "point3": "유지보수 요청 및 세탁 대기열 모니터링" },
+    "units": { "title": "객실", "point1": "객실 추가, 편집, 정리", "point2": "사진 업로드 및 편의시설 관리", "point3": "유형별 객실 그룹화 및 가용성 관리" },
+    "bookings": { "title": "예약", "point1": "전체 수명 주기 동안 예약 관리", "point2": "예약 상태 전환: 문의 → 확인 → 체크인", "point3": "승인 대기열 및 보증금 관리" },
+    "calendar": { "title": "캘린더", "point1": "모든 객실의 가용성 시각적 개요", "point2": "타임라인, 월, 일 보기 전환", "point3": "유지보수 차단 생성 및 관리" },
+    "pricing": { "title": "요금 및 정책", "point1": "시즌별 요금 및 장기 투숙 할인 설정", "point2": "체크아웃 시간 등 운영 정책 설정", "point3": "보증금 요구사항 및 취소 규정 관리" },
+    "reports": { "title": "보고서", "point1": "객실별 점유율 및 수익 추적", "point2": "예약 상태 분석 및 트렌드 확인", "point3": "계정 현황 및 활동 보고서 접근" },
+    "messages": { "title": "메시지", "point1": "실시간 채팅으로 게스트와 소통", "point2": "직원만 볼 수 있는 내부 메모 추가", "point3": "메시지 자동 번역" },
+    "embeds": { "title": "임베드", "point1": "외부 웹사이트용 임베드 위젯 생성", "point2": "예약 위젯 외관 맞춤 설정", "point3": "코드 복사 및 게시 전 미리보기" },
+    "settings": { "title": "설정", "point1": "프로필 및 연락처 정보 업데이트", "point2": "사용자 역할 및 직원 계정 관리", "point3": "시스템 정책 및 리뷰 관리 설정" },
+    "guest": {
+      "bookings": { "title": "내 예약", "point1": "현재 및 과거 예약 확인", "point2": "새 예약 요청 또는 기존 예약 취소", "point3": "문의부터 체크아웃까지 예약 상태 추적" },
+      "messages": { "title": "메시지", "point1": "직원과 직접 채팅", "point2": "요청에 대한 실시간 업데이트 수신", "point3": "필요 시 메시지가 자동 번역됩니다" },
+      "documents": { "title": "서류", "point1": "도착 전 확인을 위해 신분증 업로드", "point2": "서류 확인 상태 추적", "point3": "체크인 완료에 필요" },
+      "profile": { "title": "프로필", "point1": "연락처 정보 및 설정 업데이트", "point2": "선호 언어 선택", "point3": "WhatsApp 및 LINE 연락처 관리" }
+    }
   }
 }

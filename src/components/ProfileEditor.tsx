@@ -21,9 +21,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
+import { useTutorial } from "@/hooks/useTutorial";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Trash2 } from "lucide-react";
+import { Trash2, RotateCcw } from "lucide-react";
 
 const LANGUAGES = [
   { code: "en", label: "English" },
@@ -42,6 +43,7 @@ export default function ProfileEditor() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { profile, updateProfile } = useProfile();
+  const { resetTutorial, isResetting } = useTutorial();
   const [fullName, setFullName] = useState<string | null>(null);
   const [phone, setPhone] = useState<string | null>(null);
   const [whatsapp, setWhatsapp] = useState<string | null>(null);
@@ -146,6 +148,19 @@ export default function ProfileEditor() {
           </div>
           <Button onClick={handleSave} disabled={updateProfile.isPending}>
             {updateProfile.isPending ? t("common.saving") : t("profile.saveChanges")}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">{t("tutorial.resetTutorial")}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">{t("tutorial.resetTutorialDesc")}</p>
+          <Button variant="outline" size="sm" onClick={() => { resetTutorial(); toast.success(t("tutorial.tutorialReset")); }} disabled={isResetting}>
+            <RotateCcw className="h-4 w-4 mr-1.5" />
+            {t("tutorial.resetTutorial")}
           </Button>
         </CardContent>
       </Card>

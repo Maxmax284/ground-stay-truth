@@ -849,5 +849,32 @@
     "unitsWithReviewsDisabled": "Unterkünfte mit deaktivierten Bewertungen",
     "reviewsDisabledForUnit": "Bewertungen sind für diese Unterkunft deaktiviert",
     "responseNotificationSent": "Gast wurde über Ihre Antwort benachrichtigt"
+  },
+  "tutorial": {
+    "welcome": "Willkommen bei Ground Stay!",
+    "letsGetStarted": "Lassen Sie uns Ihnen alles zeigen. Wir gehen jeden Bereich durch, damit Sie wissen, wo alles ist.",
+    "next": "Weiter",
+    "back": "Zurück",
+    "skip": "Tutorial überspringen",
+    "finish": "Los geht's",
+    "stepOf": "Schritt {{current}} von {{total}}",
+    "resetTutorial": "Tutorial zurücksetzen",
+    "resetTutorialDesc": "Starten Sie die geführte Tour erneut.",
+    "tutorialReset": "Tutorial wird beim nächsten Laden angezeigt",
+    "dashboard": { "title": "Dashboard", "point1": "Sehen Sie Ankünfte, Abreisen und aktive Buchungen auf einen Blick", "point2": "Schnellaktionen für Buchungen und Verwaltung", "point3": "Wartungsanfragen und Wäschequeue überwachen" },
+    "units": { "title": "Unterkünfte", "point1": "Unterkünfte hinzufügen, bearbeiten und organisieren", "point2": "Fotos hochladen und Ausstattung verwalten", "point3": "Unterkünfte gruppieren und Verfügbarkeit steuern" },
+    "bookings": { "title": "Buchungen", "point1": "Reservierungen über den gesamten Lebenszyklus verwalten", "point2": "Buchungsstatus ändern: Anfrage → bestätigt → eingecheckt", "point3": "Genehmigungsqueue und Anzahlungen verwalten" },
+    "calendar": { "title": "Kalender", "point1": "Visuelle Übersicht der Verfügbarkeit", "point2": "Zwischen Zeitleiste, Monats- und Tagesansicht wechseln", "point3": "Wartungsblöcke erstellen und verwalten" },
+    "pricing": { "title": "Preise & Richtlinien", "point1": "Saisonpreise und Langzeitrabatte konfigurieren", "point2": "Betriebsrichtlinien wie Check-out-Zeiten festlegen", "point3": "Anzahlungsanforderungen und Stornierungsregeln verwalten" },
+    "reports": { "title": "Berichte", "point1": "Auslastung und Umsatz pro Unterkunft verfolgen", "point2": "Buchungsstatusaufschlüsselung und Trends anzeigen", "point3": "Kontenzählung und Aktivitätsberichte abrufen" },
+    "messages": { "title": "Nachrichten", "point1": "Mit Gästen in Echtzeit kommunizieren", "point2": "Interne Notizen nur für Personal hinzufügen", "point3": "Automatische Übersetzung von Nachrichten" },
+    "embeds": { "title": "Einbettungen", "point1": "Embed-Widgets für externe Websites generieren", "point2": "Buchungswidget-Erscheinung anpassen", "point3": "Code kopieren und vor Veröffentlichung prüfen" },
+    "settings": { "title": "Einstellungen", "point1": "Profil und Kontaktdaten aktualisieren", "point2": "Benutzerrollen und Mitarbeiterkonten verwalten", "point3": "Systemrichtlinien und Bewertungsverwaltung konfigurieren" },
+    "guest": {
+      "bookings": { "title": "Meine Buchungen", "point1": "Aktuelle und vergangene Reservierungen einsehen", "point2": "Neue Buchungen anfragen oder bestehende stornieren", "point3": "Buchungsstatus von Anfrage bis Check-out verfolgen" },
+      "messages": { "title": "Nachrichten", "point1": "Direkt mit dem Personal chatten", "point2": "Echtzeit-Updates zu Ihren Anfragen erhalten", "point3": "Nachrichten werden bei Bedarf automatisch übersetzt" },
+      "documents": { "title": "Dokumente", "point1": "Ausweis zur Vorab-Verifizierung hochladen", "point2": "Verifizierungsstatus verfolgen", "point3": "Erforderlich für den Check-in" },
+      "profile": { "title": "Profil", "point1": "Kontaktdaten und Einstellungen aktualisieren", "point2": "Bevorzugte Sprache wählen", "point3": "WhatsApp- und LINE-Kontaktdaten verwalten" }
+    }
   }
 }

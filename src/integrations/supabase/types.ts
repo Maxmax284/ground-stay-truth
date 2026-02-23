@@ -599,6 +599,7 @@ export type Database = {
           line_id: string | null
           phone: string | null
           preferred_language: string
+          tutorial_completed: boolean
           updated_at: string
           user_id: string
           whatsapp: string | null
@@ -613,6 +614,7 @@ export type Database = {
           line_id?: string | null
           phone?: string | null
           preferred_language?: string
+          tutorial_completed?: boolean
           updated_at?: string
           user_id: string
           whatsapp?: string | null
@@ -627,6 +629,7 @@ export type Database = {
           line_id?: string | null
           phone?: string | null
           preferred_language?: string
+          tutorial_completed?: boolean
           updated_at?: string
           user_id?: string
           whatsapp?: string | null
