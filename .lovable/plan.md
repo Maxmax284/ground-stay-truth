@@ -1,125 +1,133 @@
 
-
-# Admin Response, Per-Unit Review Toggle & Email Notifications
+# Tutorial Onboarding Layer
 
 ## Overview
+Add a guided tutorial system that walks users through each tab's capabilities on first login, supports all 9 languages, and can be reset from Settings.
 
-Three additions: (1) ensure admin response feature works end-to-end (already partially implemented -- verify and polish), (2) add a per-unit "reviews enabled" toggle controlled exclusively by admins, and (3) send email notifications to guests when an admin responds to their review.
+## How It Works
 
-## 1. Per-Unit "Reviews Enabled" Toggle
+**First Login Detection**: A new `tutorial_completed` boolean column on the `profiles` table (default `false`). When a user logs in and this is `false`, the tutorial activates automatically.
 
-Add a `reviews_enabled` boolean column to the `units` table (default `true`). Only admins can toggle this -- it controls whether guests can leave reviews for bookings associated with that unit.
+**Tutorial Component**: A reusable `TutorialOverlay` component that displays a series of step cards -- one per accessible tab -- explaining what each section does. It uses a stepped dialog/modal with:
+- Tab icon and name
+- 2-3 bullet points describing key capabilities
+- "Next" / "Back" / "Skip" / "Finish" navigation
+- Progress indicator (e.g., step 3 of 7)
 
-### Database Change
+**Role-Aware Steps**: The tutorial only shows steps for tabs the user's role can access (using the existing `canAccessRoute` function). Guests see a separate guest-portal tutorial.
 
-Add column to units table:
+**Multi-Language**: All tutorial text is added to the existing i18n translation files (all 9 languages). Content renders in whatever language the user has selected.
 
-```text
-ALTER TABLE public.units ADD COLUMN IF NOT EXISTS reviews_enabled boolean NOT NULL DEFAULT true;
-```
+**Reset in Settings**: A "Reset Tutorial" button in the Profile tab of Settings that sets `tutorial_completed` back to `false` and relaunches the tutorial.
 
-No new RLS policies needed -- the existing "Admins can manage units" ALL policy already covers updates, and the public SELECT policy covers reads.
-
-### Admin UI
-
-In the Units management page (or within the UnitFormDialog), add a "Reviews Enabled" toggle switch visible only to admins. When toggled off, guests cannot submit reviews for bookings in that unit.
-
-### Guest-Side Enforcement
-
-In `GuestBookingCard`, before showing the "Leave a Review" button, check whether the booking's unit has `reviews_enabled = true`. This requires fetching the unit's `reviews_enabled` status alongside the booking data (already fetched via the `units(...)` join).
-
-In `ReviewFormDialog`, add a guard so even if someone navigates there directly, the form won't submit if the unit has reviews disabled.
-
-### Admin ReviewsManager Enhancement
-
-Add a small section at the top or bottom of the Reviews tab showing which units currently have reviews disabled, so admins have visibility into their own settings.
-
-## 2. Email Notification on Admin Response
-
-Create a new edge function `notify-review-response` that:
-1. Accepts `review_id` and `admin_response` in the request body
-2. Looks up the review to get the `guest_id`
-3. Looks up the guest's email from the `profiles` table
-4. Creates an in-app notification via the `notifications` table (using service role)
-5. Sends an email to the guest informing them that management has responded to their review
-
-The `useRespondToReview` mutation in `useReviews.ts` will call this edge function after successfully saving the response.
-
-Since the existing email infrastructure uses notifications (the `send-booking-confirmation` function creates notifications rather than sending real emails), this will follow the same pattern -- create a notification record for the guest. When actual email sending is configured in the future, these notifications can trigger emails.
-
-### Edge Function: `notify-review-response`
+## Architecture
 
 ```text
-- Validates JWT
-- Accepts { review_id, admin_response }
-- Uses service role to:
-  1. Fetch review (get guest_id, title)
-  2. Insert notification for guest:
-     type: "review_response"
-     message: "Management has responded to your review: [title]"
-     reference_id: review_id
+profiles table
+  + tutorial_completed (boolean, default false)
+
+Components:
+  TutorialOverlay.tsx    -- Full-screen stepped overlay
+  useTutorial.ts         -- Hook: reads/writes tutorial state
+
+Pages touched:
+  DashboardLayout.tsx    -- Mounts <TutorialOverlay /> after auth
+  GuestLayout.tsx        -- Mounts <TutorialOverlay /> for guests
+  ProfileEditor.tsx      -- Adds "Reset Tutorial" button
 ```
 
-### Hook Change
+## Step Content (Staff)
 
-In `useRespondToReview`, after the successful DB update and audit log insertion, invoke the edge function to trigger the notification. This is fire-and-forget -- if the notification fails, the response itself is still saved.
+| Step | Tab | Key Points |
+|------|-----|------------|
+| 1 | Dashboard | Overview stats, arrivals/departures, quick actions, maintenance queue |
+| 2 | Units | Add/edit accommodation units, photos, groups, amenities |
+| 3 | Bookings | Manage reservations, state transitions, approval queue |
+| 4 | Calendar | Visual availability, maintenance blocks, timeline/month/day views |
+| 5 | Pricing | Seasonal rules, long-stay discounts, operational policies |
+| 6 | Reports | Occupancy, revenue, booking state breakdown, account census |
+| 7 | Messages | Guest conversations, internal notes, real-time chat |
+| 8 | Embeds | Generate embed widgets for external websites |
+| 9 | Settings | Profile, user roles, policies, reviews management |
 
-## 3. Polish Existing Admin Response Feature
+Steps are filtered by role -- a front desk user won't see Units, Pricing, or Embeds.
 
-The admin response feature (Reply button, textarea, save/edit/remove) is already implemented in `ReviewsManager.tsx` and displayed in `TestimonialSection.tsx`. This plan ensures:
-- The audit trail correctly logs `responded` and `response_removed` actions (already done)
-- The public `/stay` page displays responses beneath testimonials (already done)
-- Translation keys are complete across all locales
+## Step Content (Guest)
+
+| Step | Key Points |
+|------|------------|
+| 1 | My Bookings -- view, request, cancel reservations |
+| 2 | Messages -- communicate with staff |
+| 3 | Documents -- upload ID for check-in |
+| 4 | Profile -- update contact info and language |
 
 ## Technical Details
 
-### Database Migration
-
-```text
-ALTER TABLE public.units ADD COLUMN IF NOT EXISTS reviews_enabled boolean NOT NULL DEFAULT true;
+### 1. Database Migration
+Add column to profiles:
+```sql
+ALTER TABLE public.profiles
+ADD COLUMN tutorial_completed boolean NOT NULL DEFAULT false;
 ```
+No new RLS needed -- existing "Users can update own profile" policy covers it.
 
-### New Files
+### 2. `useTutorial` Hook (`src/hooks/useTutorial.ts`)
+- Reads `tutorial_completed` from profiles via existing `useProfile` pattern
+- Provides `showTutorial` boolean, `completeTutorial()`, and `resetTutorial()` functions
+- `completeTutorial` sets `tutorial_completed = true` in the database
+- `resetTutorial` sets it back to `false` and triggers re-render
 
-| File | Purpose |
-|------|---------|
-| `supabase/functions/notify-review-response/index.ts` | Edge function to create guest notification when admin responds to a review |
+### 3. `TutorialOverlay` Component (`src/components/TutorialOverlay.tsx`)
+- Renders as a full-screen overlay with backdrop blur
+- Uses Dialog from radix for accessibility (keyboard nav, focus trap)
+- Each step: icon, translated title, translated bullet points
+- Accepts `variant="staff" | "guest"` to select step set
+- Steps filtered by role using `canAccessRoute`
+- "Skip" dismisses and marks complete; "Finish" on last step marks complete
+- Smooth fade/slide transitions between steps
 
-### Modified Files
-
-| File | Change |
-|------|--------|
-| `src/hooks/useReviews.ts` | Update `useRespondToReview` to call the notification edge function after saving |
-| `src/pages/GuestPortal.tsx` | Check `reviews_enabled` on the unit before showing "Leave a Review" button |
-| `src/components/UnitFormDialog.tsx` | Add "Reviews Enabled" toggle (admin-only) |
-| `src/components/ReviewsManager.tsx` | Show list of units with reviews disabled for admin awareness |
-| `src/i18n/locales/en.json` | Add keys: `units.reviewsEnabled`, `units.reviewsDisabled`, `reviews.reviewsDisabledForUnit`, `reviews.responseNotificationSent`, `reviews.unitsWithReviewsDisabled` |
-| `src/i18n/locales/*.json` | Propagate to all 8 other locales |
-
-### Edge Function Config
-
-Add to `supabase/config.toml`:
-```text
-[functions.notify-review-response]
-verify_jwt = false
+### 4. i18n Keys
+Add `tutorial` namespace to all 9 locale files:
+```json
+{
+  "tutorial": {
+    "welcome": "Welcome to Ground Stay!",
+    "letsGetStarted": "Let us show you around.",
+    "next": "Next",
+    "back": "Back",
+    "skip": "Skip Tutorial",
+    "finish": "Get Started",
+    "stepOf": "Step {{current}} of {{total}}",
+    "resetTutorial": "Reset Tutorial",
+    "resetTutorialDesc": "Re-launch the guided walkthrough",
+    "tutorialReset": "Tutorial will show on next page load",
+    "dashboard": {
+      "title": "Dashboard",
+      "point1": "See today's arrivals, departures, and active bookings at a glance",
+      "point2": "Access quick actions to create bookings or manage units",
+      "point3": "Monitor maintenance requests and laundry queue"
+    },
+    "units": { ... },
+    "bookings": { ... },
+    ...
+    "guest": {
+      "bookings": { "title": "My Bookings", "point1": "...", ... },
+      "messages": { ... },
+      ...
+    }
+  }
+}
 ```
+All 9 language files (en, th, fr, de, ru, zh, ja, ko, es) will receive full translations.
 
-### Data Flow for Admin Response + Notification
+### 5. Integration Points
+- **DashboardLayout.tsx**: Add `<TutorialOverlay variant="staff" />` inside the layout, conditionally rendered when `showTutorial` is true
+- **GuestLayout.tsx**: Add `<TutorialOverlay variant="guest" />` similarly
+- **ProfileEditor.tsx**: Add a "Reset Tutorial" button in the profile form that calls `resetTutorial()`
 
-1. Admin clicks "Reply" on an approved review in ReviewsManager
-2. Admin types response and clicks Save
-3. `useRespondToReview` updates `admin_response` and `admin_response_at` on the review
-4. Audit log entry created with action `responded`
-5. Edge function `notify-review-response` called with the review ID
-6. Edge function creates a notification for the guest: "Management has responded to your review"
-7. Guest sees the notification in their notification bell
-8. On the public `/stay` page, the response appears beneath the testimonial
-
-### Per-Unit Toggle Flow
-
-1. Admin opens unit settings in UnitFormDialog
-2. Toggles "Reviews Enabled" on/off
-3. When disabled, guests with completed bookings for that unit will NOT see the "Leave a Review" button
-4. Already-submitted reviews for that unit are unaffected (they remain in the system)
-5. The toggle only controls future review submissions
-
+### 6. Behavior
+- Tutorial auto-launches once after first login (profile exists but `tutorial_completed = false`)
+- Completing or skipping persists `tutorial_completed = true` to the database
+- Resetting from Settings sets it to `false` and immediately shows the overlay
+- Language switch mid-tutorial works because all text goes through `t()`
+- No localStorage dependency -- state is database-backed and syncs across devices
