@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
+import { Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
   const { data: groups } = useUnitGroups();
 
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>(unit?.amenities ?? []);
+  const [customAmenity, setCustomAmenity] = useState("");
   const [selectedGroupId, setSelectedGroupId] = useState<string>(unit?.group_id ?? "none");
   const [photos, setPhotos] = useState<string[]>(unit?.photos ?? []);
   const [savedUnitId, setSavedUnitId] = useState<string | undefined>(unit?.id);
@@ -38,9 +40,21 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
   });
 
   useEffect(() => {
-    setSelectedAmenities(unit?.amenities ?? []); setSelectedGroupId(unit?.group_id ?? "none"); setPhotos(unit?.photos ?? []); setSavedUnitId(unit?.id); setIsEditingAfterCreate(false); setIsActive(unit?.is_active ?? true); setReviewsEnabled((unit as any)?.reviews_enabled ?? true);
+    setSelectedAmenities(unit?.amenities ?? []); setCustomAmenity(""); setSelectedGroupId(unit?.group_id ?? "none"); setPhotos(unit?.photos ?? []); setSavedUnitId(unit?.id); setIsEditingAfterCreate(false); setIsActive(unit?.is_active ?? true); setReviewsEnabled((unit as any)?.reviews_enabled ?? true);
     reset({ name: unit?.name ?? "", description: unit?.description ?? "", capacity: unit?.capacity ?? 2, min_nights: unit?.min_nights ?? 1, base_price: unit?.base_price ?? 0, weekend_price: unit?.weekend_price ?? undefined, cleaning_fee: unit?.cleaning_fee ?? 0, rules: unit?.rules ?? "" });
   }, [unit, reset]);
+
+  const allAmenityOptions = useMemo(() => {
+    const extras = selectedAmenities.filter((a) => !AMENITY_OPTIONS.includes(a));
+    return [...AMENITY_OPTIONS, ...extras];
+  }, [selectedAmenities]);
+
+  const addCustomAmenity = () => {
+    const trimmed = customAmenity.trim();
+    if (!trimmed || selectedAmenities.includes(trimmed) || AMENITY_OPTIONS.includes(trimmed)) return;
+    setSelectedAmenities((prev) => [...prev, trimmed]);
+    setCustomAmenity("");
+  };
 
   const toggleAmenity = (amenity: string) => setSelectedAmenities((prev) => prev.includes(amenity) ? prev.filter((a) => a !== amenity) : [...prev, amenity]);
 
@@ -75,7 +89,7 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
             <div className="space-y-2"><Label htmlFor="weekend_price">{t("units.weekendPrice")}</Label><Input id="weekend_price" type="number" step="0.01" min={0} {...register("weekend_price")} /></div>
             <div className="space-y-2"><Label htmlFor="cleaning_fee">{t("units.cleaningFee")}</Label><Input id="cleaning_fee" type="number" step="0.01" min={0} {...register("cleaning_fee")} /></div>
           </div>
-          <div className="space-y-2"><Label>{t("units.amenities")}</Label><div className="flex flex-wrap gap-2">{AMENITY_OPTIONS.map((amenity) => <button key={amenity} type="button" onClick={() => toggleAmenity(amenity)} className={`px-3 py-1 rounded-full text-sm border transition-colors ${selectedAmenities.includes(amenity) ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:border-primary/50"}`}>{amenity}</button>)}</div></div>
+          <div className="space-y-2"><Label>{t("units.amenities")}</Label><div className="flex flex-wrap gap-2">{allAmenityOptions.map((amenity) => <button key={amenity} type="button" onClick={() => toggleAmenity(amenity)} className={`px-3 py-1 rounded-full text-sm border transition-colors ${selectedAmenities.includes(amenity) ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:border-primary/50"}`}>{amenity}</button>)}</div><div className="flex gap-2 mt-2"><Input placeholder={t("units.customAmenityPlaceholder", { defaultValue: "Add custom amenity…" })} value={customAmenity} onChange={(e) => setCustomAmenity(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomAmenity(); } }} className="flex-1" /><Button type="button" size="sm" variant="outline" onClick={addCustomAmenity} disabled={!customAmenity.trim()}><Plus className="h-4 w-4" /></Button></div></div>
           <div className="space-y-2"><Label>{t("units.photos")}</Label>{savedUnitId ? <UnitPhotoUpload unitId={savedUnitId} photos={photos} onChange={setPhotos} /> : <p className="text-xs text-muted-foreground">{t("units.saveFirst")}</p>}</div>
           <div className="space-y-2"><Label htmlFor="rules">{t("units.houseRules")}</Label><Textarea id="rules" {...register("rules")} placeholder="No smoking, quiet hours after 10pm…" rows={2} /></div>
           <div className="flex items-center justify-between"><Label htmlFor="is_active">{t("common.active")}</Label><Switch id="is_active" checked={isActive} onCheckedChange={setIsActive} /></div>

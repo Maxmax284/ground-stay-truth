@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Building2, Users, Moon, ChevronDown, ChevronRight, Image } from "lucide-react";
+import { Plus, Building2, Users, Moon, ChevronDown, ChevronRight, Image, Search } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useUnits, useUpdateUnit, useDeleteUnit, type Unit } from "@/hooks/useUnits";
 import { useUnitGroups } from "@/hooks/useUnitGroups";
@@ -24,12 +25,26 @@ const Units = () => {
   const { toast } = useToast();
   const [formOpen, setFormOpen] = useState(false);
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+
+  const filteredUnits = useMemo(() => {
+    if (!units) return [];
+    return units.filter((u) => {
+      if (statusFilter === "active" && !u.is_active) return false;
+      if (statusFilter === "inactive" && u.is_active) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (!u.name.toLowerCase().includes(q) && !(u.description ?? "").toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+  }, [units, searchQuery, statusFilter]);
 
   const grouped = useMemo(() => {
-    if (!units) return { grouped: new Map<string, { name: string; units: Unit[] }>(), ungrouped: [] as Unit[] };
     const map = new Map<string, { name: string; units: Unit[] }>();
     const ungrouped: Unit[] = [];
-    for (const u of units) {
+    for (const u of filteredUnits) {
       if (u.group_id && u.unit_groups?.name) {
         if (!map.has(u.group_id)) map.set(u.group_id, { name: u.unit_groups.name, units: [] });
         map.get(u.group_id)!.units.push(u);
@@ -38,7 +53,7 @@ const Units = () => {
       }
     }
     return { grouped: map, ungrouped };
-  }, [units]);
+  }, [filteredUnits]);
 
   const handleEdit = (unit: Unit) => {
     setEditingUnit(unit);
@@ -136,6 +151,30 @@ const Units = () => {
           </Button>
         </div>
 
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t("units.searchPlaceholder", { defaultValue: "Search units…" })}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <div className="flex gap-1">
+            {(["all", "active", "inactive"] as const).map((s) => (
+              <Button
+                key={s}
+                size="sm"
+                variant={statusFilter === s ? "default" : "outline"}
+                onClick={() => setStatusFilter(s)}
+              >
+                {t(`units.filter_${s}`, { defaultValue: s.charAt(0).toUpperCase() + s.slice(1) })}
+              </Button>
+            ))}
+          </div>
+        </div>
+
         <div>
           <p className="text-sm font-medium text-muted-foreground mb-2">{t("units.groups")}</p>
           <UnitGroupManager />
@@ -154,6 +193,8 @@ const Units = () => {
               </Button>
             </CardContent>
           </Card>
+        ) : filteredUnits.length === 0 ? (
+          <p className="text-muted-foreground text-center py-8">{t("units.noResults", { defaultValue: "No units match your filters." })}</p>
         ) : hasGroups ? (
           <div className="space-y-4">
             {Array.from(grouped.grouped.entries()).map(([groupId, { name, units: groupUnits }]) => (
@@ -189,7 +230,7 @@ const Units = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {units.map(renderUnitCard)}
+            {filteredUnits.map(renderUnitCard)}
           </div>
         )}
       </div>
