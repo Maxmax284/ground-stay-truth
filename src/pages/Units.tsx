@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Building2, Users, Moon, DollarSign, ChevronDown, ChevronRight, Image } from "lucide-react";
+import { Plus, Building2, Users, Moon, ChevronDown, ChevronRight, Image } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,13 @@ import { useUnitGroups } from "@/hooks/useUnitGroups";
 import { UnitFormDialog } from "@/components/UnitFormDialog";
 import { UnitGroupManager } from "@/components/UnitGroupManager";
 import { useToast } from "@/hooks/use-toast";
+import { usePolicySettings } from "@/hooks/usePolicySettings";
+import { formatPrice } from "@/lib/currency";
 
 const Units = () => {
   const { t } = useTranslation();
   const { data: units, isLoading } = useUnits();
+  const { data: policies } = usePolicySettings();
   const { data: groups } = useUnitGroups();
   const updateUnit = useUpdateUnit();
   const deleteUnit = useDeleteUnit();
@@ -93,7 +96,7 @@ const Units = () => {
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {unit.capacity}</span>
           <span className="flex items-center gap-1"><Moon className="h-3.5 w-3.5" /> {t("units.nightsPlus", { count: unit.min_nights })}</span>
-          <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" /> {unit.base_price}</span>
+          <span>{formatPrice(unit.base_price, policies, { decimals: 0 })}</span>
         </div>
         {unit.amenities && unit.amenities.length > 0 && (
           <div className="flex flex-wrap gap-1">
