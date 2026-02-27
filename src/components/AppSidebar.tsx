@@ -13,6 +13,7 @@ import {
   Eye,
   Swords,
   ScanEye,
+  Target,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -169,6 +170,10 @@ export function AppSidebar() {
             </Badge>
           )}
         </div>
+        <Link to="/simulation" className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+          <Target className="h-3.5 w-3.5" />
+          {t("nav.warRoomSim", "War Room Sim")}
+        </Link>
         {isAdmin && (
           <>
             <Link to="/guest?preview=true" className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">

@@ -27,6 +27,7 @@ const NAV_ACCESS: Record<string, AppRole[]> = {
   "/settings":  ["front_desk", "front_desk_supervisor", "manager", "admin"],
   "/messages":  ["front_desk", "front_desk_supervisor", "manager", "admin"],
   "/embeds":    ["manager", "admin"],
+  "/simulation": ["admin", "manager", "front_desk_supervisor", "front_desk", "maintenance", "viewer", "guest"],
 };
 
 export function canAccessRoute(role: AppRole | null, path: string): boolean {
