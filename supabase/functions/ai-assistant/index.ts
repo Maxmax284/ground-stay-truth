@@ -188,19 +188,49 @@ serve(async (req) => {
     const { mode, role, messages, context, language } = await req.json();
     const responseLang = language || "English";
 
-    // ─── SIMULATION ACTOR MODE (no DB queries) ─────────────────────────────
+    // ─── SIMULATION ACTOR MODE ─────────────────────────────────────────────
+    // ISOLATION CONTRACT: This branch NEVER creates database clients, NEVER
+    // queries production tables, and NEVER accesses adminClient. All context
+    // comes exclusively from the client-side sandbox state payload.
+    // IDs must be prefixed with "sim-" — reject any that reference real UUIDs.
     if (mode === "simulation_actor") {
-      const { actor, event_type, sandbox_state } = context || {};
-      
+      const { actor, event_type, sandbox_state, difficulty, actor_memory } = context || {};
+
+      // Production isolation guard: reject if any IDs look like real UUIDs
+      const contextStr = JSON.stringify(context || {});
+      const realUuidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+      const foundUuids = contextStr.match(realUuidPattern) || [];
+      const hasRealIds = foundUuids.some((id: string) => !id.startsWith("00000000"));
+      if (hasRealIds) {
+        return new Response(JSON.stringify({ error: "Simulation context contains non-simulated IDs" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const ACTOR_PROMPTS: Record<string, string> = {
-        guest: `You are a guest staying at Ground Stay, a Muay Thai fight camp accommodation in Koh Samui, Thailand. You're a real person — curious, sometimes impatient, sometimes grateful. Respond naturally and briefly (1-2 sentences) to what just happened. Ask questions about your stay, training schedule, or facilities when relevant. Keep it conversational.`,
-        supervisor: `You are a front desk supervisor at Ground Stay, a Muay Thai fight camp accommodation. You post brief internal operational notes (1-2 sentences) about booking management, staff coordination, and operational decisions. Be direct, professional, no-nonsense. Use "Heads up:" or "Note:" prefixes when appropriate.`,
-        maintenance: `You are a maintenance staff member at Ground Stay, a Muay Thai fight camp. Respond briefly (1-2 sentences) with updates on repair work — what you found, what parts you need, estimated completion time. Be practical and specific.`,
-        front_desk: `You are a front desk staff member at Ground Stay, a Muay Thai fight camp accommodation. Respond briefly (1-2 sentences) to guest inquiries and booking-related events. Be helpful, warm, and efficient. Coordinate logistics when needed.`,
+        guest: `You are a guest staying at Ground Stay, a Muay Thai fight camp accommodation in Koh Samui, Thailand. You're a real person — curious, sometimes impatient, sometimes grateful. Respond naturally and briefly (1-3 sentences) to what just happened. Ask questions about your stay, training schedule, or facilities when relevant. Keep it conversational.`,
+        supervisor: `You are a front desk supervisor at Ground Stay, a Muay Thai fight camp accommodation. You post brief internal operational notes (1-3 sentences) about booking management, staff coordination, and operational decisions. Be direct, professional, no-nonsense. Use "Heads up:" or "Note:" prefixes when appropriate.`,
+        maintenance: `You are a maintenance staff member at Ground Stay, a Muay Thai fight camp. Respond briefly (1-3 sentences) with updates on repair work — what you found, what parts you need, estimated completion time. Be practical and specific.`,
+        front_desk: `You are a front desk staff member at Ground Stay, a Muay Thai fight camp accommodation. Respond briefly (1-3 sentences) to guest inquiries and booking-related events. Be helpful, warm, and efficient. Coordinate logistics when needed.`,
+      };
+
+      const DIFFICULTY_INSTRUCTIONS: Record<string, string> = {
+        calm: "Be polite, patient, and grateful. No complications. Express satisfaction easily.",
+        neutral: "Be normal and conversational. Occasional questions are fine.",
+        demanding: "Be impatient, detail-oriented, and somewhat frustrated. Point out delays. Ask follow-up questions. Complain about specifics.",
+        chaos: "Be urgent, contradictory, and emotionally intense. Misremember details occasionally. Introduce complications like wrong room numbers, urgency spikes, or misunderstandings. Express strong emotions.",
       };
 
       const actorPrompt = ACTOR_PROMPTS[actor] || ACTOR_PROMPTS.guest;
-      const systemPrompt = `${actorPrompt}\n\nSANDBOX CONTEXT (current simulation state):\n${JSON.stringify(sandbox_state || {})}\n\nEVENT: ${event_type || "unknown"}\n\nRESPOND IN: ${responseLang}\n\nRules:\n- Keep response to 1-2 sentences max.\n- Stay in character. Never mention you are AI.\n- Be specific to the situation described.`;
+      const difficultyInstr = DIFFICULTY_INSTRUCTIONS[difficulty || "neutral"] || DIFFICULTY_INSTRUCTIONS.neutral;
+
+      let memoryContext = "";
+      if (actor_memory && Array.isArray(actor_memory) && actor_memory.length > 0) {
+        memoryContext = `\n\nYOUR MEMORY (prior events this session — reference these naturally when relevant):\n${actor_memory.map((m: any) => `- [${m.tone}] ${m.summary}${m.unresolved ? " (UNRESOLVED)" : ""}`).join("\n")}`;
+      }
+
+      const systemPrompt = `${actorPrompt}\n\nTONE: ${difficultyInstr}\n\nSANDBOX CONTEXT:\n${JSON.stringify(sandbox_state || {})}\n\nEVENT: ${event_type || "unknown"}${memoryContext}\n\nRESPOND IN: ${responseLang}\n\nRules:\n- Keep response to 1-3 sentences max.\n- Stay in character. Never mention you are AI.\n- Be specific to the situation described.\n- You may occasionally misremember a detail or ask a clarifying follow-up — this is natural.\n- Match your emotional tone to the difficulty setting.`;
 
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -214,7 +244,8 @@ serve(async (req) => {
             { role: "system", content: systemPrompt },
             ...(messages ?? []),
           ],
-          max_tokens: 150,
+          max_tokens: 100,
+          stop: ["\n\n\n"],
         }),
       });
 
