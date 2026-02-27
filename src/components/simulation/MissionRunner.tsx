@@ -1,4 +1,4 @@
-import { BookOpen, User, Bot, Trophy, ArrowRight, ArrowLeft, CheckCircle2, Play, MessageSquare, Wrench, Shirt, BarChart3, UserPlus } from "lucide-react";
+import { BookOpen, User, Bot, Trophy, ArrowRight, ArrowLeft, CheckCircle2, Play, MessageSquare, Wrench, Shirt, BarChart3, UserPlus, Star, Zap, Medal } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useSimulation } from "./SimulationContext";
 import { MISSIONS, type Mission } from "./missions";
+import { useCountUp } from "@/hooks/useCountUp";
 
 const ICON_MAP: Record<string, React.ReactNode> = {
   BookOpen: <BookOpen className="h-5 w-5" />,
@@ -193,6 +194,12 @@ export function MissionRunner() {
     return bRec - aRec || aComp - bComp;
   });
 
+  const allComplete = completedMissions.length === MISSIONS.length;
+
+  if (allComplete && !active) {
+    return <TrophyScreen onReplay={() => startMission(MISSIONS[0])} />;
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -204,11 +211,6 @@ export function MissionRunner() {
             {completedMissions.length} / {MISSIONS.length} completed
           </p>
         </div>
-        {completedMissions.length === MISSIONS.length && (
-          <Badge className="bg-success text-success-foreground">
-            <Trophy className="h-3 w-3 mr-1" /> All Complete!
-          </Badge>
-        )}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {sorted.map((m) => (
@@ -219,6 +221,79 @@ export function MissionRunner() {
             onStart={() => startMission(m)}
           />
         ))}
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ icon, value, label }: { icon: React.ReactNode; value: number; label: string }) {
+  const count = useCountUp(value, 1200);
+  return (
+    <div className="flex flex-col items-center gap-2 p-4 rounded-xl bg-background border">
+      <div className="p-2.5 rounded-full bg-primary/10 text-primary">{icon}</div>
+      <span className="text-2xl font-bold tabular-nums">{count}</span>
+      <span className="text-xs text-muted-foreground text-center">{label}</span>
+    </div>
+  );
+}
+
+function TrophyScreen({ onReplay }: { onReplay: () => void }) {
+  const { data, completedMissions } = useSimulation();
+
+  const totalSteps = MISSIONS.reduce((sum, m) => sum + m.steps.length, 0);
+  const bookingsCreated = data.bookings.length;
+  const messagesExchanged = data.messages.length;
+  const rolesExplored = new Set(MISSIONS.flatMap((m) => m.steps.filter((s) => s.requiredRole).map((s) => s.requiredRole!))).size;
+
+  return (
+    <div className="flex flex-col items-center text-center py-8 space-y-6 max-w-xl mx-auto">
+      {/* Trophy */}
+      <div className="relative">
+        <div className="p-5 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border-2 border-primary/30 animate-pulse">
+          <Trophy className="h-12 w-12 text-primary" />
+        </div>
+        <div className="absolute -top-1 -right-1 p-1.5 rounded-full bg-success text-success-foreground">
+          <CheckCircle2 className="h-4 w-4" />
+        </div>
+      </div>
+
+      {/* Title */}
+      <div className="space-y-2">
+        <h2 className="text-2xl font-bold">War Room Mastered!</h2>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          You've completed all {completedMissions.length} missions and explored every corner of the platform. You're ready for live operations.
+        </p>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
+        <StatCard icon={<Medal className="h-5 w-5" />} value={completedMissions.length} label="Missions Completed" />
+        <StatCard icon={<Zap className="h-5 w-5" />} value={totalSteps} label="Steps Walked" />
+        <StatCard icon={<Star className="h-5 w-5" />} value={bookingsCreated} label="Bookings in Sandbox" />
+        <StatCard icon={<MessageSquare className="h-5 w-5" />} value={messagesExchanged} label="Messages Sent" />
+      </div>
+
+      {/* Extra stats */}
+      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+        <span>{rolesExplored} roles explored</span>
+        <span>·</span>
+        <span>{data.maintenanceRequests.length} maintenance tickets</span>
+        <span>·</span>
+        <span>{data.laundryRequests.length} laundry requests</span>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-3 pt-2">
+        <Button variant="outline" onClick={onReplay}>
+          <Play className="h-3.5 w-3.5 mr-1.5" />
+          Replay Missions
+        </Button>
+        <Button asChild>
+          <a href="/">
+            <ArrowRight className="h-3.5 w-3.5 mr-1.5" />
+            Go to Live Dashboard
+          </a>
+        </Button>
       </div>
     </div>
   );
