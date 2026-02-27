@@ -2,6 +2,13 @@ import { createContext, useContext, useState, useMemo, useCallback, ReactNode } 
 import { generateMockData, type SimulationData, type MockBooking, type MockMessage, type MockMaintenanceRequest, type MockLaundryRequest } from "./mockData";
 import type { AppRole } from "@/lib/permissions";
 
+export interface ActorLogEntry {
+  id: string;
+  actor: string;
+  action: string;
+  timestamp: string;
+}
+
 interface SimulationContextType {
   isSimulation: boolean;
   data: SimulationData;
@@ -25,6 +32,9 @@ interface SimulationContextType {
   /** Track completed missions in localStorage */
   completedMissions: string[];
   completeMission: (id: string) => void;
+  /** AI actor activity log */
+  actorLog: ActorLogEntry[];
+  addActorLog: (entry: Omit<ActorLogEntry, "id" | "timestamp">) => void;
 }
 
 const SimulationContext = createContext<SimulationContextType | undefined>(undefined);
@@ -104,6 +114,15 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     setMissionStep(0);
   }, []);
 
+  const [actorLog, setActorLog] = useState<ActorLogEntry[]>([]);
+
+  const addActorLog = useCallback((entry: Omit<ActorLogEntry, "id" | "timestamp">) => {
+    setActorLog((prev) => [
+      { ...entry, id: simId("log"), timestamp: new Date().toISOString() },
+      ...prev,
+    ].slice(0, 50));
+  }, []);
+
   const value = useMemo(
     () => ({
       isSimulation: true,
@@ -121,8 +140,10 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       setMissionStep,
       completedMissions,
       completeMission,
+      actorLog,
+      addActorLog,
     }),
-    [data, simulatedRole, activeMission, missionStep, completedMissions, transitionBooking, createBooking, sendMessage, updateMaintenanceStatus, updateLaundryStatus, completeMission]
+    [data, simulatedRole, activeMission, missionStep, completedMissions, actorLog, transitionBooking, createBooking, sendMessage, updateMaintenanceStatus, updateLaundryStatus, completeMission, addActorLog]
   );
 
   return (

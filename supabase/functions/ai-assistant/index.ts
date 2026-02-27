@@ -188,6 +188,51 @@ serve(async (req) => {
     const { mode, role, messages, context, language } = await req.json();
     const responseLang = language || "English";
 
+    // ─── SIMULATION ACTOR MODE (no DB queries) ─────────────────────────────
+    if (mode === "simulation_actor") {
+      const { actor, event_type, sandbox_state } = context || {};
+      
+      const ACTOR_PROMPTS: Record<string, string> = {
+        guest: `You are a guest staying at Ground Stay, a Muay Thai fight camp accommodation in Koh Samui, Thailand. You're a real person — curious, sometimes impatient, sometimes grateful. Respond naturally and briefly (1-2 sentences) to what just happened. Ask questions about your stay, training schedule, or facilities when relevant. Keep it conversational.`,
+        supervisor: `You are a front desk supervisor at Ground Stay, a Muay Thai fight camp accommodation. You post brief internal operational notes (1-2 sentences) about booking management, staff coordination, and operational decisions. Be direct, professional, no-nonsense. Use "Heads up:" or "Note:" prefixes when appropriate.`,
+        maintenance: `You are a maintenance staff member at Ground Stay, a Muay Thai fight camp. Respond briefly (1-2 sentences) with updates on repair work — what you found, what parts you need, estimated completion time. Be practical and specific.`,
+        front_desk: `You are a front desk staff member at Ground Stay, a Muay Thai fight camp accommodation. Respond briefly (1-2 sentences) to guest inquiries and booking-related events. Be helpful, warm, and efficient. Coordinate logistics when needed.`,
+      };
+
+      const actorPrompt = ACTOR_PROMPTS[actor] || ACTOR_PROMPTS.guest;
+      const systemPrompt = `${actorPrompt}\n\nSANDBOX CONTEXT (current simulation state):\n${JSON.stringify(sandbox_state || {})}\n\nEVENT: ${event_type || "unknown"}\n\nRESPOND IN: ${responseLang}\n\nRules:\n- Keep response to 1-2 sentences max.\n- Stay in character. Never mention you are AI.\n- Be specific to the situation described.`;
+
+      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${lovableApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-lite",
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...(messages ?? []),
+          ],
+          max_tokens: 150,
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        const status = aiResponse.status;
+        return new Response(JSON.stringify({ error: status === 429 ? "Rate limit" : "AI error" }), {
+          status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const result = await aiResponse.json();
+      const content = result.choices?.[0]?.message?.content || "";
+      return new Response(JSON.stringify({ content, actor }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Check AI circuit breaker
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const { data: policies } = await adminClient
