@@ -2,10 +2,22 @@ import { createContext, useContext, useState, useMemo, useCallback, ReactNode } 
 import { generateMockData, type SimulationData, type MockBooking, type MockMessage, type MockMaintenanceRequest, type MockLaundryRequest } from "./mockData";
 import type { AppRole } from "@/lib/permissions";
 
+export type ActorLogType = "response" | "escalation" | "chaos" | "suppressed";
+export type ActorDifficulty = "calm" | "neutral" | "demanding" | "chaos";
+
 export interface ActorLogEntry {
   id: string;
   actor: string;
   action: string;
+  timestamp: string;
+  type?: ActorLogType;
+}
+
+export interface ActorMemoryEntry {
+  actor: string;
+  summary: string;
+  tone: "neutral" | "frustrated" | "grateful" | "urgent";
+  unresolved: boolean;
   timestamp: string;
 }
 
@@ -14,27 +26,29 @@ interface SimulationContextType {
   data: SimulationData;
   simulatedRole: AppRole;
   setSimulatedRole: (role: AppRole) => void;
-  /** Transition a mock booking to a new state */
   transitionBooking: (id: string, newState: MockBooking["state"]) => void;
-  /** Create a new mock booking */
   createBooking: (booking: Omit<MockBooking, "id" | "created_at">) => string;
-  /** Send a mock message */
   sendMessage: (msg: Omit<MockMessage, "id" | "created_at">) => void;
-  /** Update maintenance request status */
   updateMaintenanceStatus: (id: string, status: string, note?: string) => void;
-  /** Update laundry request status */
   updateLaundryStatus: (id: string, status: string) => void;
-  /** Current active mission id (null = none) */
   activeMission: string | null;
   setActiveMission: (id: string | null) => void;
   missionStep: number;
   setMissionStep: (step: number) => void;
-  /** Track completed missions in localStorage */
   completedMissions: string[];
   completeMission: (id: string) => void;
-  /** AI actor activity log */
   actorLog: ActorLogEntry[];
   addActorLog: (entry: Omit<ActorLogEntry, "id" | "timestamp">) => void;
+  /** Per-actor session memory */
+  actorMemory: Record<string, ActorMemoryEntry[]>;
+  addActorMemory: (entry: Omit<ActorMemoryEntry, "timestamp">) => void;
+  clearActorMemory: () => void;
+  /** Difficulty setting */
+  actorDifficulty: ActorDifficulty;
+  setActorDifficulty: (d: ActorDifficulty) => void;
+  /** Inject chaos events into data */
+  addMaintenanceRequest: (req: Omit<MockMaintenanceRequest, "id" | "created_at">) => void;
+  addLaundryRequest: (req: Omit<MockLaundryRequest, "id" | "created_at">) => void;
 }
 
 const SimulationContext = createContext<SimulationContextType | undefined>(undefined);
@@ -60,6 +74,9 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   const [activeMission, setActiveMission] = useState<string | null>(null);
   const [missionStep, setMissionStep] = useState(0);
   const [completedMissions, setCompleted] = useState<string[]>(loadCompleted);
+  const [actorLog, setActorLog] = useState<ActorLogEntry[]>([]);
+  const [actorMemory, setActorMemory] = useState<Record<string, ActorMemoryEntry[]>>({});
+  const [actorDifficulty, setActorDifficulty] = useState<ActorDifficulty>("neutral");
 
   const transitionBooking = useCallback((id: string, newState: MockBooking["state"]) => {
     setData((prev) => ({
@@ -104,6 +121,26 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const addMaintenanceRequest = useCallback((req: Omit<MockMaintenanceRequest, "id" | "created_at">) => {
+    setData((prev) => ({
+      ...prev,
+      maintenanceRequests: [
+        ...prev.maintenanceRequests,
+        { ...req, id: simId("sim-maint"), created_at: new Date().toISOString() } as MockMaintenanceRequest,
+      ],
+    }));
+  }, []);
+
+  const addLaundryRequest = useCallback((req: Omit<MockLaundryRequest, "id" | "created_at">) => {
+    setData((prev) => ({
+      ...prev,
+      laundryRequests: [
+        ...prev.laundryRequests,
+        { ...req, id: simId("sim-lnd"), created_at: new Date().toISOString() } as MockLaundryRequest,
+      ],
+    }));
+  }, []);
+
   const completeMission = useCallback((id: string) => {
     setCompleted((prev) => {
       const next = prev.includes(id) ? prev : [...prev, id];
@@ -114,13 +151,23 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     setMissionStep(0);
   }, []);
 
-  const [actorLog, setActorLog] = useState<ActorLogEntry[]>([]);
-
   const addActorLog = useCallback((entry: Omit<ActorLogEntry, "id" | "timestamp">) => {
     setActorLog((prev) => [
       { ...entry, id: simId("log"), timestamp: new Date().toISOString() },
       ...prev,
     ].slice(0, 50));
+  }, []);
+
+  const addActorMemory = useCallback((entry: Omit<ActorMemoryEntry, "timestamp">) => {
+    setActorMemory((prev) => {
+      const existing = prev[entry.actor] || [];
+      const updated = [...existing, { ...entry, timestamp: new Date().toISOString() }].slice(-20);
+      return { ...prev, [entry.actor]: updated };
+    });
+  }, []);
+
+  const clearActorMemory = useCallback(() => {
+    setActorMemory({});
   }, []);
 
   const value = useMemo(
@@ -142,8 +189,15 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       completeMission,
       actorLog,
       addActorLog,
+      actorMemory,
+      addActorMemory,
+      clearActorMemory,
+      actorDifficulty,
+      setActorDifficulty,
+      addMaintenanceRequest,
+      addLaundryRequest,
     }),
-    [data, simulatedRole, activeMission, missionStep, completedMissions, actorLog, transitionBooking, createBooking, sendMessage, updateMaintenanceStatus, updateLaundryStatus, completeMission, addActorLog]
+    [data, simulatedRole, activeMission, missionStep, completedMissions, actorLog, actorMemory, actorDifficulty, transitionBooking, createBooking, sendMessage, updateMaintenanceStatus, updateLaundryStatus, completeMission, addActorLog, addActorMemory, clearActorMemory, addMaintenanceRequest, addLaundryRequest]
   );
 
   return (
