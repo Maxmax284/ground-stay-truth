@@ -143,7 +143,7 @@ function BookingCard({ booking }: { booking: import("./mockData").MockBooking })
 }
 
 function MessagesPanel() {
-  const { data, sendMessage } = useSimulation();
+  const { data, sendMessage, actorTyping } = useSimulation();
   const [selectedBookingId, setSelectedBookingId] = useState(data.bookings[0]?.id || "");
   const [newMsg, setNewMsg] = useState("");
   const [isInternal, setIsInternal] = useState(false);
@@ -208,6 +208,20 @@ function MessagesPanel() {
               </div>
             );
           })}
+          {actorTyping && actorTyping.bookingId === selectedBookingId && (
+            <div className="text-xs p-2 rounded-md border-primary/30 bg-primary/5 border ml-0 mr-8">
+              <div className="flex items-center gap-1 mb-0.5">
+                <Bot className="h-3 w-3 text-primary shrink-0" />
+                <span className="font-medium capitalize">{actorTyping.actor.replace(/_/g, " ")} AI</span>
+                <Badge variant="outline" className="text-[8px] px-1 border-primary/30 text-primary">AI</Badge>
+              </div>
+              <div className="flex items-center gap-1 h-4">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce typing-dot-1" />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce typing-dot-2" />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce typing-dot-3" />
+              </div>
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
           <Input

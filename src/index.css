@@ -336,3 +336,8 @@
 @keyframes roundhouse-spin {
   to { transform: rotate(360deg); }
 }
+
+/* Typing indicator dots */
+.typing-dot-1 { animation-delay: 0ms; }
+.typing-dot-2 { animation-delay: 150ms; }
+.typing-dot-3 { animation-delay: 300ms; }
