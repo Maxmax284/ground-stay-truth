@@ -160,6 +160,7 @@ export function useSimulationActors(enabled: boolean) {
     data, sendMessage, addActorLog, simulatedRole,
     actorMemory, addActorMemory, actorDifficulty,
     addMaintenanceRequest, addLaundryRequest, transitionBooking,
+    setActorTyping,
   } = useSimulation();
   const { session } = useAuth();
   const prevDataRef = useRef<SimulationData | null>(null);
@@ -186,6 +187,8 @@ export function useSimulationActors(enabled: boolean) {
           type: "suppressed",
         });
       }
+      // Set typing indicator
+      setActorTyping({ actor: event.actor, bookingId: event.booking_id || "" });
 
       try {
         const booking = data.bookings.find((b) => b.id === event.booking_id);
@@ -272,6 +275,7 @@ export function useSimulationActors(enabled: boolean) {
       } catch {
         // Silently skip
       } finally {
+        setActorTyping(null);
         queueLockRef.current = false;
       }
     },

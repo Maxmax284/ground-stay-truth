@@ -46,6 +46,9 @@ interface SimulationContextType {
   /** Difficulty setting */
   actorDifficulty: ActorDifficulty;
   setActorDifficulty: (d: ActorDifficulty) => void;
+  /** Typing indicator */
+  actorTyping: { actor: string; bookingId: string } | null;
+  setActorTyping: (v: { actor: string; bookingId: string } | null) => void;
   /** Inject chaos events into data */
   addMaintenanceRequest: (req: Omit<MockMaintenanceRequest, "id" | "created_at">) => void;
   addLaundryRequest: (req: Omit<MockLaundryRequest, "id" | "created_at">) => void;
@@ -77,6 +80,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   const [actorLog, setActorLog] = useState<ActorLogEntry[]>([]);
   const [actorMemory, setActorMemory] = useState<Record<string, ActorMemoryEntry[]>>({});
   const [actorDifficulty, setActorDifficulty] = useState<ActorDifficulty>("neutral");
+  const [actorTyping, setActorTyping] = useState<{ actor: string; bookingId: string } | null>(null);
 
   const transitionBooking = useCallback((id: string, newState: MockBooking["state"]) => {
     setData((prev) => ({
@@ -194,10 +198,12 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       clearActorMemory,
       actorDifficulty,
       setActorDifficulty,
+      actorTyping,
+      setActorTyping,
       addMaintenanceRequest,
       addLaundryRequest,
     }),
-    [data, simulatedRole, activeMission, missionStep, completedMissions, actorLog, actorMemory, actorDifficulty, transitionBooking, createBooking, sendMessage, updateMaintenanceStatus, updateLaundryStatus, completeMission, addActorLog, addActorMemory, clearActorMemory, addMaintenanceRequest, addLaundryRequest]
+    [data, simulatedRole, activeMission, missionStep, completedMissions, actorLog, actorMemory, actorDifficulty, actorTyping, transitionBooking, createBooking, sendMessage, updateMaintenanceStatus, updateLaundryStatus, completeMission, addActorLog, addActorMemory, clearActorMemory, addMaintenanceRequest, addLaundryRequest]
   );
 
   return (
