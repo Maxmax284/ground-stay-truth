@@ -1,4 +1,4 @@
-import { BookOpen, User, Bot, Trophy, ArrowRight, ArrowLeft, CheckCircle2, Play } from "lucide-react";
+import { BookOpen, User, Bot, Trophy, ArrowRight, ArrowLeft, CheckCircle2, Play, MessageSquare, Wrench, Shirt, BarChart3, UserPlus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,8 +11,12 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   BookOpen: <BookOpen className="h-5 w-5" />,
   User: <User className="h-5 w-5" />,
   Bot: <Bot className="h-5 w-5" />,
+  MessageSquare: <MessageSquare className="h-5 w-5" />,
+  Wrench: <Wrench className="h-5 w-5" />,
+  Shirt: <Shirt className="h-5 w-5" />,
+  BarChart3: <BarChart3 className="h-5 w-5" />,
+  UserPlus: <UserPlus className="h-5 w-5" />,
 };
-
 function MissionCard({ mission, isCompleted, onStart }: { mission: Mission; isCompleted: boolean; onStart: () => void }) {
   const { simulatedRole } = useSimulation();
   const isRecommended = mission.targetRoles.includes(simulatedRole);
