@@ -5,6 +5,7 @@ import ProfileEditor from "@/components/ProfileEditor";
 import UserRoleManager from "@/components/UserRoleManager";
 import { PolicySettingsForm } from "@/components/PolicySettingsForm";
 import { ReviewsManager } from "@/components/ReviewsManager";
+import { IntegrationSettings } from "@/components/IntegrationSettings";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 
@@ -15,6 +16,7 @@ const Settings = () => {
   const canManageRoles = permissions.canManageRoles(role);
   const canManagePolicies = permissions.canManagePolicies(role);
   const canManageReviews = permissions.canManageReviews(role);
+  const isAdmin = role === "admin";
 
   return (
     <DashboardLayout>
@@ -25,16 +27,18 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-4">
-          <TabsList>
+          <TabsList className="flex-wrap">
             <TabsTrigger value="profile">{t("settings.profileTab")}</TabsTrigger>
             {canManageRoles && <TabsTrigger value="users">{t("settings.usersTab")}</TabsTrigger>}
             {canManagePolicies && <TabsTrigger value="policies">{t("settings.policiesTab")}</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="integrations">Integrations</TabsTrigger>}
             {canManageReviews && <TabsTrigger value="reviews">{t("settings.reviewsTab")}</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="profile"><ProfileEditor /></TabsContent>
           {canManageRoles && <TabsContent value="users"><UserRoleManager /></TabsContent>}
           {canManagePolicies && <TabsContent value="policies"><PolicySettingsForm /></TabsContent>}
+          {isAdmin && <TabsContent value="integrations"><IntegrationSettings /></TabsContent>}
           {canManageReviews && <TabsContent value="reviews"><ReviewsManager /></TabsContent>}
         </Tabs>
       </div>

@@ -47,6 +47,7 @@ import {
   Clock, ListChecks, Shield, MapPin, Heart, Star,
 } from "lucide-react";
 import { GuestStaySupport } from "@/components/GuestStaySupport";
+import { GuestPaymentButton } from "@/components/GuestPaymentButton";
 import { PreArrivalChecklist } from "@/components/PreArrivalChecklist";
 import { ReviewFormDialog } from "@/components/ReviewFormDialog";
 import { StarRating } from "@/components/StarRating";
@@ -508,9 +509,14 @@ const GuestPortal = () => {
 
 /* ── Helper Components ── */
 
-function DepositBanner({ policies, depositAmount }: { policies?: any[]; depositAmount: number | null }) {
+function DepositBanner({ policies, depositAmount, bookingId }: { policies?: any[]; depositAmount: number | null; bookingId: string }) {
   const { t } = useTranslation();
   const depositPol = getDepositPolicy(policies ?? []);
+
+  const currencySymbol = useMemo(() => {
+    const setting = (policies ?? []).find((p: any) => p.key === "currency_symbol");
+    return setting ? String(setting.value).replace(/^"|"$/g, "") : "฿";
+  }, [policies]);
 
   let instructions = t("deposit.guestInstructions"); // default: pay in person
   if (depositPol.effectiveMode === "online_required") {
@@ -520,7 +526,7 @@ function DepositBanner({ policies, depositAmount }: { policies?: any[]; depositA
   }
 
   return (
-    <div className="rounded-md border border-primary/20 bg-primary/5 p-3 space-y-1.5">
+    <div className="rounded-md border border-primary/20 bg-primary/5 p-3 space-y-2.5">
       <div className="flex items-center gap-2 text-sm font-medium text-primary">
         <Info className="h-4 w-4 shrink-0" />
         {t("deposit.guestTitle")}
@@ -532,7 +538,11 @@ function DepositBanner({ policies, depositAmount }: { policies?: any[]; depositA
         </p>
       )}
       {depositPol.onlineEnabled && (
-        <p className="text-xs text-muted-foreground italic">{t("deposit.onlineComingSoon")}</p>
+        <GuestPaymentButton
+          bookingId={bookingId}
+          depositAmount={depositAmount}
+          currencySymbol={currencySymbol}
+        />
       )}
     </div>
   );
@@ -641,7 +651,7 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
 
         {/* Deposit info banner for pending_deposit */}
         {state === "pending_deposit" && (
-          <DepositBanner policies={policies} depositAmount={depositAmount} />
+          <DepositBanner policies={policies} depositAmount={depositAmount} bookingId={booking.id} />
         )}
 
         {/* Document Upload for applicable states */}

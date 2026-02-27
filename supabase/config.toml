@@ -26,3 +26,12 @@ verify_jwt = false
 
 [functions.send-booking-confirmation]
 verify_jwt = false
+
+[functions.process-payment]
+verify_jwt = false
+
+[functions.payment-webhook]
+verify_jwt = false
+
+[functions.send-transactional-email]
+verify_jwt = false
