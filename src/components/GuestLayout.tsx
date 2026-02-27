@@ -1,7 +1,8 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, Target } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -29,6 +30,13 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
           {t("auth.groundStay")}
         </h1>
         <div className="flex items-center gap-3">
+          <Link
+            to="/simulation"
+            className="text-muted-foreground hover:text-foreground transition-colors"
+            title={t("nav.platformGuide", "Platform Guide")}
+          >
+            <Target className="h-4 w-4" />
+          </Link>
           <LanguageSelector compact />
           <ThemeToggle />
           <NotificationBell />
