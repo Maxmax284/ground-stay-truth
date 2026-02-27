@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Building2, Users, Moon, ChevronDown, ChevronRight, Image, Search } from "lucide-react";
+import { Plus, Building2, Users, Moon, ChevronDown, ChevronRight, Image, Search, Calendar, Copy, Check } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,11 +14,14 @@ import { UnitGroupManager } from "@/components/UnitGroupManager";
 import { useToast } from "@/hooks/use-toast";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
+import { useAuth } from "@/hooks/useAuth";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const Units = () => {
   const { t } = useTranslation();
   const { data: units, isLoading } = useUnits();
   const { data: policies } = usePolicySettings();
+  const { role } = useAuth();
   const { data: groups } = useUnitGroups();
   const updateUnit = useUpdateUnit();
   const deleteUnit = useDeleteUnit();
@@ -27,6 +30,17 @@ const Units = () => {
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const icalUrl = (unitId: string) =>
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ical-export?unit_id=${unitId}`;
+
+  const copyIcalUrl = async (unitId: string) => {
+    await navigator.clipboard.writeText(icalUrl(unitId));
+    setCopiedId(unitId);
+    toast({ title: "iCal feed URL copied" });
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const filteredUnits = useMemo(() => {
     if (!units) return [];
@@ -123,7 +137,7 @@ const Units = () => {
             )}
           </div>
         )}
-        <div className="flex gap-2 pt-1">
+        <div className="flex gap-2 pt-1 flex-wrap">
           <Button size="sm" variant="outline" onClick={() => handleEdit(unit)}>{t("common.edit")}</Button>
           <Button size="sm" variant="ghost" onClick={() => handleToggleActive(unit)}>
             {unit.is_active ? t("units.deactivate") : t("units.activate")}
@@ -131,6 +145,19 @@ const Units = () => {
           <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => handleDelete(unit)}>
             {t("common.remove")}
           </Button>
+          {(role === "admin" || role === "manager") && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="ghost" onClick={() => copyIcalUrl(unit.id)}>
+                    {copiedId === unit.id ? <Check className="h-3.5 w-3.5 mr-1" /> : <Calendar className="h-3.5 w-3.5 mr-1" />}
+                    iCal
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Copy iCal feed URL for external calendar sync</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
       </CardContent>
     </Card>
