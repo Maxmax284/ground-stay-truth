@@ -171,6 +171,44 @@ export type Database = {
           },
         ]
       }
+      email_log: {
+        Row: {
+          booking_id: string | null
+          id: string
+          provider_message_id: string | null
+          recipient_email: string
+          sent_at: string
+          status: string
+          template_key: string
+        }
+        Insert: {
+          booking_id?: string | null
+          id?: string
+          provider_message_id?: string | null
+          recipient_email: string
+          sent_at?: string
+          status?: string
+          template_key: string
+        }
+        Update: {
+          booking_id?: string | null
+          id?: string
+          provider_message_id?: string | null
+          recipient_email?: string
+          sent_at?: string
+          status?: string
+          template_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_log_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guest_documents: {
         Row: {
           booking_id: string
@@ -438,15 +476,63 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          payment_id: string | null
+          processed: boolean
+          provider: string
+          provider_event_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+          payment_id?: string | null
+          processed?: boolean
+          provider: string
+          provider_event_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          payment_id?: string | null
+          processed?: boolean
+          provider?: string
+          provider_event_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_events_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
           booking_id: string
           created_at: string
           id: string
+          idempotency_key: string | null
           method: string
           notes: string | null
+          provider: string
+          provider_status: string
+          provider_transaction_id: string | null
+          receipt_url: string | null
           recorded_by: string | null
+          refund_amount: number | null
+          refund_reason: string | null
           source_channel: string
           status: string
         }
@@ -455,9 +541,16 @@ export type Database = {
           booking_id: string
           created_at?: string
           id?: string
+          idempotency_key?: string | null
           method?: string
           notes?: string | null
+          provider?: string
+          provider_status?: string
+          provider_transaction_id?: string | null
+          receipt_url?: string | null
           recorded_by?: string | null
+          refund_amount?: number | null
+          refund_reason?: string | null
           source_channel?: string
           status?: string
         }
@@ -466,9 +559,16 @@ export type Database = {
           booking_id?: string
           created_at?: string
           id?: string
+          idempotency_key?: string | null
           method?: string
           notes?: string | null
+          provider?: string
+          provider_status?: string
+          provider_transaction_id?: string | null
+          receipt_url?: string | null
           recorded_by?: string | null
+          refund_amount?: number | null
+          refund_reason?: string | null
           source_channel?: string
           status?: string
         }

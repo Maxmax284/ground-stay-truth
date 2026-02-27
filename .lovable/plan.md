@@ -1,37 +1,34 @@
+# GroundStay Operational Activation Blueprint
 
+## Execution Phases
 
-# Search, Filter, and Custom Amenities for Units
+### Phase 1: Revenue Activation (CURRENT)
+1. [x] Save plan
+2. [ ] Add columns to `payments` table + create `payment_events` table with RLS
+3. [ ] Add payment provider `policy_settings` rows
+4. [ ] Enable Stripe via Lovable integration
+5. [ ] Build `process-payment` edge function
+6. [ ] Build `payment-webhook` edge function
+7. [ ] Add payment UI to Guest Portal
+8. [ ] Wire auto-transition (pending_deposit → confirmed)
 
-## Overview
-Three improvements to the Units page:
-1. A search bar to filter units by name or description
-2. An active/inactive status filter (All / Active / Inactive)
-3. Allow typing custom amenities in the unit form beyond the 14 preset options
+### Phase 2: Communication Automation
+1. [ ] Create `email_log` table with RLS
+2. [ ] Build `send-transactional-email` edge function (Resend)
+3. [ ] Refactor `send-booking-confirmation` for real delivery
+4. [ ] Extend `expire-stale-bookings` with deposit reminders
+5. [ ] Build pre-arrival + review request cron functions
 
-## What Changes
+### Phase 3: AI Operational Intelligence
+1. [ ] Expand AI context per role (availability, revenue, digest, pricing)
+2. [ ] Apply Section 4A tone/delivery enforcement
+3. [ ] Maintenance photo analysis via Gemini vision
 
-### 1. Search Bar and Status Filter (Units Page)
-A search input and a three-option toggle (All / Active / Inactive) will be added between the page header and the unit group manager. Typing in the search bar instantly filters units by name or description (case-insensitive). The status filter lets you show all units, only active, or only inactive.
+### Phase 4: Security Hardening
+1. [ ] Rate limiting on public endpoints
+2. [ ] Audit auth in all edge functions
+3. [ ] Add missing FK constraints
+4. [ ] Full security scan
 
-### 2. Custom Amenities (Unit Form Dialog)
-Below the existing amenity chips, a text input with an "Add" button lets you type any custom amenity name and add it. The custom amenity appears as a selected chip alongside the preset ones and can be toggled off the same way. Previously-saved custom amenities from existing units also appear as chips when editing.
-
----
-
-## Technical Details
-
-### File: `src/pages/Units.tsx`
-
-1. **Add state**: `searchQuery` (string) and `statusFilter` ("all" | "active" | "inactive")
-2. **Add imports**: `Search` icon from lucide, `Input` component
-3. **Add filter UI** between header and group manager: a row with the search `Input` (with Search icon) and three `Button` variants for All/Active/Inactive
-4. **Filter logic**: Add a `filteredUnits` memo that filters `units` by search query (matches name or description) and status filter, then feed `filteredUnits` into the existing `grouped` memo instead of raw `units`
-
-### File: `src/components/UnitFormDialog.tsx`
-
-1. **Add state**: `customAmenity` (string) for the input field
-2. **Add imports**: `Plus` icon from lucide
-3. **Compute combined amenity list**: Merge `AMENITY_OPTIONS` with any amenities already on the unit that aren't in the preset list (so custom ones from DB appear as chips)
-4. **Add input row** below the preset amenity chips: an `Input` + "Add" `Button`. On click (or Enter key), trim the value, check it's not a duplicate, add it to `selectedAmenities`, and clear the input
-5. **No database changes needed** -- amenities are stored as a text array, so custom strings are already supported
-
+### Phase 5: OTA Sync (Optional)
+1. [ ] iCal export endpoint per unit
