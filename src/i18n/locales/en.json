@@ -949,11 +949,86 @@
     "resetTutorial": "Reset Tutorial",
     "resetTutorialDesc": "Re-launch the guided walkthrough to revisit each section.",
     "tutorialReset": "Tutorial will show on next page load",
+    "roleBadge": "Your role: {{role}}",
+    "yourRole": {
+      "admin": {
+        "title": "Your Role: Administrator",
+        "point1": "Full control over the property: users, policies, units, pricing, and system configuration",
+        "point2": "Approve bookings, manage staff accounts, and set operational rules",
+        "point3": "Access every section of the platform with no restrictions"
+      },
+      "manager": {
+        "title": "Your Role: Manager",
+        "point1": "Oversee daily operations: approve bookings, manage units, and set pricing",
+        "point2": "View revenue reports, occupancy trends, and payment analytics",
+        "point3": "Configure embeds and coordinate staff workflows"
+      },
+      "front_desk_supervisor": {
+        "title": "Your Role: Supervisor",
+        "point1": "Handle check-ins, check-outs, and record deposit payments",
+        "point2": "Manage day-to-day bookings and guest coordination",
+        "point3": "Read-only visibility on approval queues and messages"
+      },
+      "front_desk": {
+        "title": "Your Role: Front Desk",
+        "point1": "Manage day-to-day bookings, messages, and guest coordination",
+        "point2": "Create inquiries, transition booking states, and upload documents",
+        "point3": "Communicate with guests in real-time with auto-translation"
+      },
+      "maintenance": {
+        "title": "Your Role: Maintenance",
+        "point1": "Handle room maintenance requests prioritized by urgency",
+        "point2": "View the calendar for scheduling around bookings and blocks",
+        "point3": "Track laundry requests and update task statuses"
+      },
+      "viewer": {
+        "title": "Your Role: Viewer",
+        "point1": "Read-only access to bookings, calendar, and reports",
+        "point2": "Monitor occupancy, revenue, and booking trends",
+        "point3": "No ability to create or modify bookings or settings"
+      },
+      "guest": {
+        "title": "Your Role: Guest",
+        "point1": "Manage your bookings, message staff, and upload documents",
+        "point2": "Request maintenance, laundry, and get support during your stay",
+        "point3": "Track your booking from inquiry through to check-out"
+      }
+    },
     "dashboard": {
       "title": "Dashboard",
       "point1": "See today's arrivals, departures, and active bookings at a glance",
       "point2": "Access quick actions to create bookings or manage units",
-      "point3": "Monitor maintenance requests and laundry queue"
+      "point3": "Monitor maintenance requests and laundry queue",
+      "admin": {
+        "point1": "Monitor all queues, approve bookings, and manage staff alerts",
+        "point2": "Track occupancy and revenue across all units at a glance",
+        "point3": "Review system-wide activity and pending escalations"
+      },
+      "manager": {
+        "point1": "Monitor occupancy, today's arrivals/departures, and pending approvals",
+        "point2": "Quick-access to create bookings, view calendar, and manage units",
+        "point3": "Track open inquiries and maintenance requests"
+      },
+      "front_desk_supervisor": {
+        "point1": "Track today's check-ins, check-outs, and active bookings",
+        "point2": "Access booking management and guest coordination tools",
+        "point3": "View pending deposits and escalated requests"
+      },
+      "front_desk": {
+        "point1": "Track today's arrivals and departures at a glance",
+        "point2": "Respond to guest inquiries and manage booking states",
+        "point3": "Quick actions to create bookings and view the calendar"
+      },
+      "maintenance": {
+        "point1": "View your prioritized maintenance queue and open requests",
+        "point2": "Track laundry requests and update task statuses",
+        "point3": "See scheduled maintenance blocks on the calendar"
+      },
+      "viewer": {
+        "point1": "View today's arrivals, departures, and occupancy overview",
+        "point2": "Monitor active bookings across all units",
+        "point3": "Read-only access — no actions available"
+      }
     },
     "units": {
       "title": "Units",
@@ -965,13 +1040,48 @@
       "title": "Bookings",
       "point1": "Manage reservations through their full lifecycle",
       "point2": "Transition booking states: inquiry → confirmed → checked in",
-      "point3": "Review the approval queue and handle deposits"
+      "point3": "Review the approval queue and handle deposits",
+      "admin": {
+        "point1": "Full control over all bookings with admin override capability",
+        "point2": "Approve or reject pending bookings and manage escalations",
+        "point3": "Override booking states and handle exceptions"
+      },
+      "manager": {
+        "point1": "Review and approve pending bookings from the approval queue",
+        "point2": "Manage booking lifecycle and deposit requirements",
+        "point3": "Oversee all reservations and handle edge cases"
+      },
+      "front_desk_supervisor": {
+        "point1": "Manage bookings, complete check-ins and check-outs",
+        "point2": "Record deposit payments and advance booking states",
+        "point3": "Handle day-to-day reservation management"
+      },
+      "front_desk": {
+        "point1": "Create new inquiries and manage existing bookings",
+        "point2": "Transition bookings through standard workflow states",
+        "point3": "Upload guest documents and coordinate arrivals"
+      },
+      "viewer": {
+        "point1": "View all bookings in read-only mode",
+        "point2": "Filter by state, unit, and date range",
+        "point3": "Monitor booking trends without edit access"
+      }
     },
     "calendar": {
       "title": "Calendar",
       "point1": "Visual overview of availability across all units",
       "point2": "Switch between timeline, month, and day views",
-      "point3": "Create and manage maintenance blocks"
+      "point3": "Create and manage maintenance blocks",
+      "maintenance": {
+        "point1": "View scheduled maintenance blocks and upcoming bookings",
+        "point2": "Plan your work around check-ins and check-outs",
+        "point3": "Switch between timeline, month, and day views"
+      },
+      "viewer": {
+        "point1": "View availability across all units in read-only mode",
+        "point2": "Switch between timeline, month, and day views",
+        "point3": "Monitor occupancy patterns and maintenance windows"
+      }
     },
     "pricing": {
       "title": "Pricing & Policies",
@@ -983,7 +1093,12 @@
       "title": "Reports",
       "point1": "Track occupancy rates and revenue by unit",
       "point2": "View booking state breakdowns and trends",
-      "point3": "Access account census and activity reports"
+      "point3": "Access account census and activity reports",
+      "viewer": {
+        "point1": "Monitor occupancy rates and revenue in read-only mode",
+        "point2": "View booking trends and state breakdowns",
+        "point3": "Access account census data without edit privileges"
+      }
     },
     "messages": {
       "title": "Messages",
@@ -1001,7 +1116,58 @@
       "title": "Settings",
       "point1": "Update your profile and contact information",
       "point2": "Manage user roles and staff accounts",
-      "point3": "Configure system policies and review management"
+      "point3": "Configure system policies and review management",
+      "front_desk_supervisor": {
+        "point1": "Update your profile and contact information",
+        "point2": "View user directory and team contacts",
+        "point3": "Access your account preferences"
+      },
+      "front_desk": {
+        "point1": "Update your profile and contact information",
+        "point2": "View user directory and team contacts",
+        "point3": "Access your account preferences"
+      }
+    },
+    "kruGlitch": {
+      "title": "Kru Glitch AI",
+      "point1": "Your intelligent assistant for property operations",
+      "point2": "Ask questions about bookings, availability, and trends",
+      "point3": "Get context-aware answers based on your role",
+      "admin": {
+        "point1": "Ask about system health, webhook status, and failed payments",
+        "point2": "Get policy configuration summaries and staff activity reports",
+        "point3": "Query revenue analytics, occupancy data, and operational metrics"
+      },
+      "manager": {
+        "point1": "Ask about revenue summaries, occupancy trends, and 30-day analytics",
+        "point2": "Get booking pipeline status and approval queue overviews",
+        "point3": "Query payment reports and pricing rule effectiveness"
+      },
+      "front_desk_supervisor": {
+        "point1": "Ask about today's arrivals, departures, and 14-day availability",
+        "point2": "Get deposit status summaries and pending action items",
+        "point3": "Query guest histories and booking details quickly"
+      },
+      "front_desk": {
+        "point1": "Ask about today's arrivals, departures, and upcoming check-ins",
+        "point2": "Get quick booking lookups and availability checks",
+        "point3": "Draft guest messages and get response suggestions"
+      },
+      "maintenance": {
+        "point1": "Ask about your prioritized maintenance queue",
+        "point2": "Check for overdue requests and upcoming maintenance blocks",
+        "point3": "Get unit status summaries and scheduling information"
+      },
+      "viewer": {
+        "point1": "Ask about occupancy trends and booking statistics",
+        "point2": "Get report summaries and data insights",
+        "point3": "Query historical data without making changes"
+      },
+      "guest": {
+        "point1": "Ask about your booking details, pricing, and availability",
+        "point2": "Get pre-arrival checklist status and document requirements",
+        "point3": "Ask about camp schedules, policies, and local information"
+      }
     },
     "guest": {
       "bookings": {
@@ -1021,6 +1187,24 @@
         "point1": "Upload your ID for pre-arrival verification",
         "point2": "Track document verification status",
         "point3": "Required for check-in completion"
+      },
+      "staySupport": {
+        "title": "Stay Support",
+        "point1": "Report room issues like plumbing, electrical, or cleanliness",
+        "point2": "Request laundry drop-off and track pickup status",
+        "point3": "All requests are tracked and staff are notified automatically"
+      },
+      "payments": {
+        "title": "Payments",
+        "point1": "View deposit requirements and payment status for your bookings",
+        "point2": "Pay deposits online or arrange in-person payment at the front desk",
+        "point3": "Track refund eligibility based on cancellation timing"
+      },
+      "reviews": {
+        "title": "Reviews",
+        "point1": "Leave a review after your stay (available 24h after checkout)",
+        "point2": "Rate your experience and share feedback with future guests",
+        "point3": "Reviews are moderated by management before publishing"
       },
       "profile": {
         "title": "Profile",
