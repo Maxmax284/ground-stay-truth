@@ -7,8 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { useSimulation } from "./SimulationContext";
+import { AIActorEngine } from "./AIActorEngine";
 import { cn } from "@/lib/utils";
-import { Plus, ArrowRight, Send, MessageSquare, Wrench, Shirt } from "lucide-react";
+import { Plus, ArrowRight, Send, MessageSquare, Wrench, Shirt, Bot } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type BookingState = Database["public"]["Enums"]["booking_state"];
@@ -174,19 +175,39 @@ function MessagesPanel() {
           {bookingMessages.length === 0 && (
             <p className="text-xs text-muted-foreground text-center py-4">No messages yet</p>
           )}
-          {bookingMessages.map((msg) => (
-            <div key={msg.id} className={cn(
-              "text-xs p-2 rounded-md",
-              msg.is_internal ? "bg-warning/10 border border-warning/20" : "bg-background border",
-              msg.sender_id?.includes("guest") ? "ml-0 mr-8" : "ml-8 mr-0"
-            )}>
-              <div className="flex items-center gap-1 mb-0.5">
-                <span className="font-medium">{msg.sender_id?.includes("guest") ? booking?.guest_name || "Guest" : "Staff"}</span>
-                {msg.is_internal && <Badge variant="outline" className="text-[8px] px-1">Internal</Badge>}
+          {bookingMessages.map((msg) => {
+            const isAIActor = msg.sender_id?.startsWith("ai-actor-");
+            const actorType = isAIActor ? msg.sender_id!.replace("ai-actor-", "") : null;
+            const isGuest = msg.sender_id?.includes("guest");
+            const actorLabels: Record<string, string> = {
+              guest: "Guest AI",
+              supervisor: "Supervisor AI",
+              maintenance: "Maintenance AI",
+              "front-desk": "Front Desk AI",
+            };
+            return (
+              <div key={msg.id} className={cn(
+                "text-xs p-2 rounded-md",
+                msg.is_internal ? "bg-warning/10 border border-warning/20" : "bg-background border",
+                isAIActor ? "border-primary/30 bg-primary/5" : "",
+                isGuest && !isAIActor ? "ml-0 mr-8" : !isGuest && !isAIActor ? "ml-8 mr-0" : isAIActor && isGuest ? "ml-0 mr-8" : "ml-8 mr-0"
+              )}>
+                <div className="flex items-center gap-1 mb-0.5">
+                  {isAIActor && <Bot className="h-3 w-3 text-primary shrink-0" />}
+                  <span className="font-medium">
+                    {isAIActor
+                      ? actorLabels[actorType!] || "AI Actor"
+                      : isGuest
+                        ? booking?.guest_name || "Guest"
+                        : "Staff"}
+                  </span>
+                  {msg.is_internal && <Badge variant="outline" className="text-[8px] px-1">Internal</Badge>}
+                  {isAIActor && <Badge variant="outline" className="text-[8px] px-1 border-primary/30 text-primary">AI</Badge>}
+                </div>
+                {msg.content}
               </div>
-              {msg.content}
-            </div>
-          ))}
+            );
+          })}
         </div>
         <div className="flex gap-2">
           <Input
@@ -305,7 +326,8 @@ export function SimulationSandbox() {
 
   return (
     <div className="space-y-6">
-      {/* Units Overview */}
+      {/* AI Actor Engine */}
+      <AIActorEngine />
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
