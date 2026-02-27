@@ -1,66 +1,65 @@
 
+# Contextual Actor Identity — Real Names Instead of Generic Labels
 
-# Typing Indicator for AI Actor Responses
+## Problem
 
-## What This Adds
+Right now, every AI actor message, typing indicator, activity log entry, and chaos event uses generic labels like "Guest AI" or "Supervisor AI". When you're managing 12 bookings with different guests (Alex Turner, Maria Santos, Walk-in Guest, etc.), seeing "Guest AI" in the messages panel tells you nothing. You need to know *which* guest is talking.
 
-A pulsing dots animation ("...") that appears in the Messages panel while an AI actor is generating a response. This gives users immediate visual feedback that an actor is "thinking" before its message appears, making the simulation feel more realistic and interactive.
+## What Changes
 
-## Current Gap
+Every place that currently says "Guest AI" will instead show the actual guest name from the booking context. Supervisor and Maintenance actors will also include the booking context so you know who they're talking about.
 
-Right now, when you trigger an action (e.g., transition a booking), there's a 1-2 second delay before the AI response appears in the Messages panel, but nothing visible indicates that a response is coming. Users may think nothing happened.
+### Identity Mapping
 
-## Implementation
+| Actor | Current Label | New Label |
+|-------|--------------|-----------|
+| Guest | "Guest AI" | "Alex Turner" (with AI badge) |
+| Supervisor | "Supervisor AI" | "Supervisor — re: Alex Turner" |
+| Maintenance | "Maintenance AI" | "Maintenance — re: Alex Turner" |
+| Front Desk | "Front Desk AI" | "Front Desk — re: Alex Turner" |
+| Typing indicator | "guest AI" | "Alex Turner is typing..." |
+| Activity log | "Guest AI" | "Alex Turner" |
+| Chaos events | "Chaos: Confused guest message" | "Chaos: Walk-in Guest sent confused message" |
 
-### 1. Add typing state to SimulationContext
+---
 
-Add an `actorTyping` state (`{ actor: string; bookingId: string } | null`) to `SimulationContext.tsx` with a `setActorTyping` setter. This tracks which actor is currently generating a response and for which booking thread.
+## Files Changed
 
-**File:** `src/components/simulation/SimulationContext.tsx`
-- Add `actorTyping` state (default `null`) and `setActorTyping` callback
-- Expose both in the context value
+### 1. `SimulationContext.tsx` — Extend typing state with guest name
 
-### 2. Set typing state in useSimulationActors
+Add `guestName` to the `actorTyping` state so the typing indicator can show the real name.
 
-In `useSimulationActors.ts`, set `actorTyping` to the active actor before calling the edge function, and clear it after the response is injected (or on error).
+- Change `actorTyping` type from `{ actor: string; bookingId: string }` to `{ actor: string; bookingId: string; guestName: string }`
 
-**File:** `src/components/simulation/useSimulationActors.ts`
-- Call `setActorTyping({ actor: event.actor, bookingId: event.booking_id })` before the fetch call
-- Call `setActorTyping(null)` in the `finally` block (after the message is sent)
+### 2. `useSimulationActors.ts` — Thread guest name through all actor events
 
-### 3. Render typing indicator in MessagesPanel
+- When setting `actorTyping`, include `guestName` from the matched booking
+- When logging to `addActorLog`, include guest name in the action string (e.g., "Alex Turner" instead of generic actor label)
+- In chaos events, use the actual `randomBooking.guest_name` in log messages and confused message content
+- Add a `guest_name` field to the edge function payload so the AI model knows the guest's name and can reference it naturally in responses
 
-In `SimulationSandbox.tsx`, inside the `MessagesPanel` component, check `actorTyping` from context. When it matches the currently selected booking thread, render a small animated indicator at the bottom of the message list.
+### 3. `SimulationSandbox.tsx` — Messages panel shows real names
 
-**File:** `src/components/simulation/SimulationSandbox.tsx`
-- Import `actorTyping` from `useSimulation()`
-- After the message list map, conditionally render a typing bubble with 3 pulsing dots
-- The bubble uses the same visual styling as AI actor messages (Bot icon + actor label + primary border)
-- The dots animate with a staggered CSS pulse using Tailwind's `animate-bounce` with `animation-delay`
+In the `MessagesPanel` component:
+- When rendering AI actor messages: if the actor is "guest", show `booking.guest_name` instead of "Guest AI". For other actors (supervisor, maintenance, front_desk), show the role label followed by the guest context (e.g., "Supervisor — re: Alex Turner")
+- For the typing indicator: show `actorTyping.guestName` instead of the generic actor label. For non-guest actors, show "Supervisor — re: {name}"
+- Update the message alignment logic to keep guest-actor messages on the left and staff-actor messages on the right
 
-### Visual Design
+### 4. `AIActorEngine.tsx` — Activity log shows guest names
 
-The typing indicator will look like a regular AI actor message bubble but instead of text content, it shows three bouncing dots:
+- Update the activity log rendering to parse guest names from the action strings (already included from step 2)
+- No structural changes needed since the log entries already contain the action text with context — the improvement comes from the data being richer
 
-```text
- [Bot icon] Guest AI
- . . .    (bouncing dots, staggered)
-```
+### 5. `ai-assistant/index.ts` — AI knows the guest's name
 
-Styled with `border-primary/30 bg-primary/5` to match existing AI actor message styling. Each dot is a small circle with `animate-bounce` and staggered delays (0ms, 150ms, 300ms).
+- In the `simulation_actor` branch, include `guest_name` from the context payload in the system prompt so the AI model addresses the guest by name when acting as them, and references them by name when acting as supervisor/maintenance
 
-### 4. Add CSS for staggered bounce animation
-
-Add a small utility style in `src/index.css` for the staggered animation delays, since Tailwind doesn't support `animation-delay` out of the box. Three classes: `delay-0`, `delay-150`, `delay-300`.
-
-**File:** `src/index.css`
-- Add `.typing-dot-1`, `.typing-dot-2`, `.typing-dot-3` with increasing `animation-delay` values
+---
 
 ## Technical Notes
 
 - No database changes
-- No edge function changes
-- The typing state automatically clears on error (via `finally` block), so it never gets stuck
-- The indicator only shows in the message thread matching the actor's target booking, not globally
-- When actors are disabled, `actorTyping` is always null
-
+- No new state — just enriching existing state with the guest name from the booking that's already available in context
+- The `actorTyping` type change is backwards-compatible since it only adds a field
+- Guest names for chaos events come from the randomly selected booking, so they're always contextually correct
+- When a booking has no guest name (edge case), falls back to "Guest" as before
