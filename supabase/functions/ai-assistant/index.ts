@@ -35,7 +35,7 @@ const ROLE_RULES: Record<string, string> = {
   viewer: `ROLE: Viewer — Read-only observer. Provide summaries and explanations. Do not suggest operational actions.`,
 };
 
-// ─── LAYER 4: COMBATIVE GYM INTELLIGENCE ─────────────────────────────────────
+// ─── LAYER 4-12: BEHAVIORAL LAYERS ──────────────────────────────────────────
 const GYM_INTELLIGENCE = `
 COMBATIVE GYM INTELLIGENCE:
 - Respect hierarchy: Kru > Trainer > Fighter > Guest. Never undermine rank in responses.
@@ -45,7 +45,6 @@ COMBATIVE GYM INTELLIGENCE:
 - Discipline-first framing for all performance-related topics.
 - Confident tone, never aggressive or mocking.`;
 
-// ─── LAYER 5: REALITY COMPRESSION ────────────────────────────────────────────
 const REALITY_COMPRESSION = `
 REALITY COMPRESSION:
 - Strip fluff. No filler phrases, no padding, no preamble.
@@ -54,7 +53,6 @@ REALITY COMPRESSION:
 - State trade-offs clearly. Every decision has a cost — name it.
 - Never inflate praise. Never diminish legitimate progress.`;
 
-// ─── LAYER 6: TACTICAL PAUSE ─────────────────────────────────────────────────
 const TACTICAL_PAUSE = `
 TACTICAL PAUSE:
 When user language indicates spiraling, overexcitement, or assumption stacking:
@@ -63,7 +61,6 @@ When user language indicates spiraling, overexcitement, or assumption stacking:
 - No therapy tone. Maintain calm operator energy.
 - Do not mirror anxiety. Anchor the conversation.`;
 
-// ─── LAYER 7: DEPTH CALIBRATION (replaces blanket brevity) ───────────────────
 const DEPTH_CALIBRATION = `
 DEPTH CALIBRATION:
 - Operational questions (booking status, unit availability, request status): direct, 2–4 sentences.
@@ -73,7 +70,6 @@ DEPTH CALIBRATION:
 - Cross-connect domains when useful — systems thinking, Muay Thai, governance, business.
 - Match user energy: short question = short answer. Detailed question = thorough response.`;
 
-// ─── LAYER 8: PATTERN MIRRORING ──────────────────────────────────────────────
 const PATTERN_MIRRORING = `
 PATTERN MIRRORING:
 Detect the user's communication mode and adapt structure:
@@ -82,24 +78,21 @@ Detect the user's communication mode and adapt structure:
 - Joking / light mode (playful tone): dry humor only. Never escalate. Never become sycophantic.
 Do not announce which mode you detected. Just adapt.`;
 
-// ─── LAYER 9: TONE DISCIPLINE ────────────────────────────────────────────────
 const TONE_DISCIPLINE = `
 TONE DISCIPLINE:
+- Speak like a sharp back-of-house operator: short, direct sentences.
+- Plain language only. No buzzwords. No "stakeholders," no "synergy."
+- Translate metrics into meaning: what's happening, why it matters, what to do next.
+- Never sound like an audit report.
+- No "As an AI…" disclaimers.
 - Max 1–2 emojis per response. Zero in health, legal, financial, or safety contexts.
 - No influencer slang. No "let's gooo," no "fire," no "crushing it."
-- Sarcasm: minimal and controlled. Never mean-spirited.
-- Zero humor in health, legal, financial, or safety contexts.
-- Never mock. Never condescend.
-- Challenge flawed assumptions directly but respectfully.
-- East Coast directness: max 1–2 regional phrases per response (e.g., "here's the deal," "bottom line," "straight up"). Prioritize clarity over style. Do not expand the phrase inventory.
 - Use natural language. "Here's the deal" not "I'm ready to assist."
-- Don't repeat yourself or pad responses with filler phrases.
-- Never use markdown bold, bullet lists, or numbered lists unless explicitly asked for a list.`;
+- Don't repeat yourself or pad responses with filler phrases.`;
 
-// ─── LAYER 10: STRATEGIC ARC AWARENESS ───────────────────────────────────────
 const STRATEGIC_ARC = `
 STRATEGIC ARC AWARENESS:
-When topics touch any of these domains, automatically expand to second-order consequences and system-level implications. Do not wait to be asked:
+When topics touch any of these domains, automatically expand to second-order consequences and system-level implications:
 - Multi-gym expansion
 - Platform control and ownership
 - AI governance
@@ -107,7 +100,6 @@ When topics touch any of these domains, automatically expand to second-order con
 - Risk liability
 - Data ownership and portability`;
 
-// ─── LAYER 11: SAFETY (preserved verbatim from original) ─────────────────────
 const SAFETY_RULES = `
 RULES (non-negotiable):
 - You NEVER execute actions, modify state, or record payments.
@@ -116,7 +108,6 @@ RULES (non-negotiable):
 - Never expose payment amounts to front_desk role users.
 - Never expose internal notes to guest role users.`;
 
-// ─── LAYER 12: ACCURACY (preserved verbatim from original) ───────────────────
 const ACCURACY = `
 ACCURACY:
 - ONLY reference data provided in the PROPERTY SNAPSHOT below. This is your single source of truth.
@@ -127,16 +118,13 @@ ACCURACY:
 function buildSystemPrompt(role: string, language: string, contextData: string): string {
   const layers: string[] = [IDENTITY];
 
-  // Operator frame — admin and manager only (invisible)
   if (role === "admin" || role === "manager") {
     layers.push(OPERATOR_FRAME);
   }
 
-  // Role-specific rules
   const roleKey = role && ROLE_RULES[role] ? role : "guest";
   layers.push(ROLE_RULES[roleKey]);
 
-  // Universal behavioral layers
   layers.push(GYM_INTELLIGENCE);
   layers.push(REALITY_COMPRESSION);
   layers.push(TACTICAL_PAUSE);
@@ -144,19 +132,14 @@ function buildSystemPrompt(role: string, language: string, contextData: string):
   layers.push(PATTERN_MIRRORING);
   layers.push(TONE_DISCIPLINE);
 
-  // Strategic arc — admin and manager only
   if (role === "admin" || role === "manager") {
     layers.push(STRATEGIC_ARC);
   }
 
-  // Safety and accuracy — always
   layers.push(SAFETY_RULES);
   layers.push(ACCURACY);
-
-  // Language directive
   layers.push(`LANGUAGE: Respond in ${language}.`);
 
-  // Context data (property snapshot, mode-specific data)
   if (contextData) {
     layers.push(contextData);
   }
@@ -236,13 +219,13 @@ serve(async (req) => {
       });
     }
 
-    // Always fetch baseline snapshot for accuracy
+    // ─── BASELINE SNAPSHOT (all roles) ──────────────────────────────────────
     const [unitsRes, bookingsRes, maintenanceRes, laundryRes, depositPoliciesRes] = await Promise.all([
-      adminClient.from("units").select("name, is_active"),
+      adminClient.from("units").select("name, is_active, base_price, capacity"),
       adminClient.from("bookings").select("state").in("state", ["pending_approval", "pending_deposit", "confirmed", "checked_in"]),
       adminClient.from("maintenance_requests").select("status").in("status", ["open", "in_progress"]),
       adminClient.from("laundry_requests").select("status").neq("status", "collected"),
-      adminClient.from("policy_settings").select("key, value").in("key", ["deposits_online_enabled", "deposits_manual_enabled", "deposits_require_online_when_enabled"]),
+      adminClient.from("policy_settings").select("key, value").in("key", ["deposits_online_enabled", "deposits_manual_enabled", "deposits_require_online_when_enabled", "currency_symbol", "deposit_percentage"]),
     ]);
 
     const units = unitsRes.data ?? [];
@@ -252,35 +235,240 @@ serve(async (req) => {
       return acc;
     }, {});
 
-    // Compute deposit policy mode
-    const dpMap = new Map((depositPoliciesRes.data ?? []).map((p: any) => [p.key, String(p.value)]));
+    const dpMap = new Map((depositPoliciesRes.data ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]));
     const onlineEnabled = dpMap.get("deposits_online_enabled") === "true";
     const requireOnline = dpMap.get("deposits_require_online_when_enabled") === "true";
     const depositMode = onlineEnabled && requireOnline ? "online_required" : onlineEnabled ? "online_optional" : "manual_only";
+    const currencySymbol = dpMap.get("currency_symbol") || "฿";
 
     let contextData = `PROPERTY SNAPSHOT (source of truth — do not contradict):
 Units: ${units.length} total (${activeUnits.length} active). Names: ${activeUnits.map((u: any) => u.name).join(", ") || "none"}.
 Active bookings: ${bookingStates["confirmed"] || 0} confirmed, ${bookingStates["checked_in"] || 0} checked_in, ${bookingStates["pending_approval"] || 0} pending_approval, ${bookingStates["pending_deposit"] || 0} pending_deposit.
 Open maintenance requests: ${(maintenanceRes.data ?? []).length}.
 Active laundry requests: ${(laundryRes.data ?? []).length}.
-Deposit policy: ${depositMode}. Manual deposits: ${dpMap.get("deposits_manual_enabled") !== "false" ? "enabled" : "disabled"}. Online deposits: ${onlineEnabled ? "enabled" : "disabled"}.`;
+Deposit policy: ${depositMode}. Currency: ${currencySymbol}.`;
 
-    // When caller is a guest, fetch their own bookings for context
+    // ─── ROLE-SPECIFIC CONTEXT EXPANSIONS ──────────────────────────────────
+    const now = new Date();
+
     if (role === "guest") {
-      const { data: guestBookings } = await adminClient
-        .from("bookings")
-        .select("id, state, check_in, check_out, unit_id, units(name), num_guests")
-        .eq("guest_id", userData.user.id)
-        .order("check_in", { ascending: true })
-        .limit(10);
+      // Guest's own bookings + checklist + documents
+      const [guestBookingsRes, checklistRes, docsRes] = await Promise.all([
+        adminClient
+          .from("bookings")
+          .select("id, state, check_in, check_out, unit_id, units(name), num_guests, total_price")
+          .eq("guest_id", userData.user.id)
+          .order("check_in", { ascending: true })
+          .limit(10),
+        adminClient
+          .from("pre_arrival_checklist")
+          .select("item_key, completed")
+          .in("booking_id", (await adminClient.from("bookings").select("id").eq("guest_id", userData.user.id).limit(5)).data?.map((b: any) => b.id) || []),
+        adminClient
+          .from("guest_documents")
+          .select("file_name, verification_status")
+          .in("booking_id", (await adminClient.from("bookings").select("id").eq("guest_id", userData.user.id).limit(5)).data?.map((b: any) => b.id) || []),
+      ]);
 
-      if (guestBookings && guestBookings.length > 0) {
-        contextData += `\n\nYOUR BOOKINGS (guest's own data only):\n${JSON.stringify(guestBookings)}`;
-      } else {
-        contextData += `\n\nYOUR BOOKINGS: None found.`;
+      const guestBookings = guestBookingsRes.data ?? [];
+      const checklist = checklistRes.data ?? [];
+      const docs = docsRes.data ?? [];
+      const completedItems = checklist.filter((c: any) => c.completed).length;
+      const totalItems = checklist.length;
+      const verifiedDocs = docs.filter((d: any) => d.verification_status === "verified").length;
+
+      contextData += `\n\nYOUR BOOKINGS:\n${guestBookings.length > 0 ? JSON.stringify(guestBookings) : "None found."}`;
+      if (totalItems > 0) {
+        contextData += `\nPre-arrival checklist: ${completedItems}/${totalItems} completed.`;
+      }
+      if (docs.length > 0) {
+        contextData += `\nDocuments: ${docs.length} uploaded, ${verifiedDocs} verified.`;
+      }
+
+      // Pricing info for quote generation
+      contextData += `\n\nPRICING REFERENCE (for quotes):`;
+      for (const u of activeUnits) {
+        contextData += `\n- ${(u as any).name}: ${currencySymbol}${(u as any).base_price}/night, capacity ${(u as any).capacity}`;
       }
     }
 
+    if (role === "front_desk" || role === "front_desk_supervisor") {
+      // Today's arrivals/departures + availability
+      const today = now.toISOString().split("T")[0];
+      const [arrivalsRes, departuresRes, blocksRes] = await Promise.all([
+        adminClient
+          .from("bookings")
+          .select("id, check_in, unit_id, units(name), guest_id, profiles!bookings_guest_id_profiles_fkey(full_name), state")
+          .eq("check_in", today)
+          .in("state", ["confirmed", "checked_in"]),
+        adminClient
+          .from("bookings")
+          .select("id, check_out, unit_id, units(name), state")
+          .eq("check_out", today)
+          .in("state", ["checked_in", "completed"]),
+        adminClient
+          .from("maintenance_blocks")
+          .select("unit_id, start_date, end_date, units(name)")
+          .gte("end_date", today),
+      ]);
+
+      contextData += `\n\nTODAY'S OPERATIONS (${today}):`;
+      contextData += `\nArrivals today: ${(arrivalsRes.data ?? []).length}. ${JSON.stringify(arrivalsRes.data ?? [])}`;
+      contextData += `\nDepartures today: ${(departuresRes.data ?? []).length}. ${JSON.stringify(departuresRes.data ?? [])}`;
+
+      // Availability check: next 14 days
+      const next14 = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      const { data: upcomingBookings } = await adminClient
+        .from("bookings")
+        .select("unit_id, check_in, check_out, units(name)")
+        .in("state", ["pending_approval", "pending_deposit", "confirmed", "checked_in"])
+        .lte("check_in", next14)
+        .gte("check_out", today);
+
+      contextData += `\n\nAVAILABILITY (next 14 days):`;
+      contextData += `\nBlocked bookings: ${JSON.stringify(upcomingBookings ?? [])}`;
+      contextData += `\nMaintenance blocks: ${JSON.stringify(blocksRes.data ?? [])}`;
+      contextData += `\nUse this data to answer "Is unit X available on date Y?" by checking if any booking or block overlaps the requested dates.`;
+    }
+
+    if (role === "front_desk_supervisor") {
+      // Escalation digest: stale requests, pending approvals
+      const staleThreshold = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+      const [staleMaintenanceRes, staleLaundryRes, pendingApprovalsRes] = await Promise.all([
+        adminClient
+          .from("maintenance_requests")
+          .select("id, category, priority, unit_id, units(name), created_at")
+          .in("status", ["open", "in_progress"])
+          .lt("created_at", staleThreshold),
+        adminClient
+          .from("laundry_requests")
+          .select("id, unit_id, units(name), status, created_at")
+          .in("status", ["in_progress", "ready_for_pickup"])
+          .lt("created_at", staleThreshold),
+        adminClient
+          .from("bookings")
+          .select("id, unit_id, units(name), check_in, guest_id")
+          .eq("state", "pending_approval"),
+      ]);
+
+      contextData += `\n\nESCALATION DIGEST:`;
+      contextData += `\nStale maintenance (>24h): ${(staleMaintenanceRes.data ?? []).length}. ${JSON.stringify(staleMaintenanceRes.data ?? [])}`;
+      contextData += `\nStale laundry (>24h): ${(staleLaundryRes.data ?? []).length}. ${JSON.stringify(staleLaundryRes.data ?? [])}`;
+      contextData += `\nPending approvals: ${(pendingApprovalsRes.data ?? []).length}. ${JSON.stringify(pendingApprovalsRes.data ?? [])}`;
+    }
+
+    if (role === "manager") {
+      // Revenue analytics from payments
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const [paymentsRes, completedRes, allBookingsRes] = await Promise.all([
+        adminClient
+          .from("payments")
+          .select("amount, created_at, provider")
+          .eq("status", "recorded")
+          .gte("created_at", thirtyDaysAgo),
+        adminClient
+          .from("bookings")
+          .select("id, check_in, check_out, total_price, unit_id")
+          .eq("state", "completed")
+          .gte("updated_at", thirtyDaysAgo),
+        adminClient
+          .from("bookings")
+          .select("id, state, check_in, check_out, unit_id")
+          .in("state", ["confirmed", "checked_in", "completed"])
+          .gte("check_in", thirtyDaysAgo),
+      ]);
+
+      const payments = paymentsRes.data ?? [];
+      const totalRevenue = payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+      const totalNights = (allBookingsRes.data ?? []).reduce((sum: number, b: any) => {
+        const cin = new Date(b.check_in);
+        const cout = new Date(b.check_out);
+        return sum + Math.max(1, Math.round((cout.getTime() - cin.getTime()) / (1000 * 60 * 60 * 24)));
+      }, 0);
+      const totalCapacityNights = activeUnits.length * 30;
+      const occupancyRate = totalCapacityNights > 0 ? ((totalNights / totalCapacityNights) * 100).toFixed(1) : "N/A";
+
+      contextData += `\n\nREVENUE SNAPSHOT (last 30 days):`;
+      contextData += `\nTotal collected: ${currencySymbol}${totalRevenue.toLocaleString()}`;
+      contextData += `\nPayment count: ${payments.length}`;
+      contextData += `\nCompleted stays: ${(completedRes.data ?? []).length}`;
+      contextData += `\nOccupancy estimate: ${occupancyRate}% (${totalNights} booked nights / ${totalCapacityNights} available)`;
+      contextData += `\nActive units: ${activeUnits.length}`;
+    }
+
+    if (role === "admin") {
+      // System health: recent state log, payment events, policy changes
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const [stateLogRes, paymentEventsRes, recentPoliciesRes, paymentsRes] = await Promise.all([
+        adminClient
+          .from("booking_state_log")
+          .select("booking_id, from_state, to_state, reason, created_at")
+          .gte("created_at", sevenDaysAgo)
+          .order("created_at", { ascending: false })
+          .limit(20),
+        adminClient
+          .from("payment_events")
+          .select("event_type, provider, processed, created_at")
+          .gte("created_at", sevenDaysAgo)
+          .order("created_at", { ascending: false })
+          .limit(15),
+        adminClient
+          .from("policy_settings")
+          .select("key, value, updated_at, updated_by")
+          .gte("updated_at", sevenDaysAgo)
+          .order("updated_at", { ascending: false })
+          .limit(10),
+        adminClient
+          .from("payments")
+          .select("amount, created_at, provider, status")
+          .eq("status", "recorded")
+          .gte("created_at", sevenDaysAgo),
+      ]);
+
+      const failedEvents = (paymentEventsRes.data ?? []).filter((e: any) => !e.processed);
+      const payments = paymentsRes.data ?? [];
+      const totalRevenue = payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+
+      contextData += `\n\nSYSTEM HEALTH (last 7 days):`;
+      contextData += `\nState transitions: ${(stateLogRes.data ?? []).length}. Recent: ${JSON.stringify((stateLogRes.data ?? []).slice(0, 5))}`;
+      contextData += `\nPayment events: ${(paymentEventsRes.data ?? []).length} total, ${failedEvents.length} unprocessed`;
+      contextData += `\nRevenue (7d): ${currencySymbol}${totalRevenue.toLocaleString()} from ${payments.length} payments`;
+      contextData += `\nPolicy changes: ${JSON.stringify(recentPoliciesRes.data ?? [])}`;
+      if (failedEvents.length > 0) {
+        contextData += `\nHeads up: ${failedEvents.length} payment event(s) are marked unprocessed. Investigate webhook delivery.`;
+      }
+    }
+
+    if (role === "maintenance") {
+      // Full maintenance queue with age and priority sorting
+      const { data: maintenanceQueue } = await adminClient
+        .from("maintenance_requests")
+        .select("id, category, description, priority, status, unit_id, units(name), created_at, photo_url")
+        .in("status", ["open", "in_progress"])
+        .order("priority", { ascending: true })
+        .order("created_at", { ascending: true })
+        .limit(25);
+
+      const queue = (maintenanceQueue ?? []).map((m: any) => {
+        const ageHours = Math.round((now.getTime() - new Date(m.created_at).getTime()) / (1000 * 60 * 60));
+        return { ...m, age_hours: ageHours, overdue: ageHours > 24 };
+      });
+
+      // Sort: urgent first, then by age
+      const priorityOrder: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
+      queue.sort((a: any, b: any) => {
+        const pDiff = (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2);
+        if (pDiff !== 0) return pDiff;
+        return b.age_hours - a.age_hours;
+      });
+
+      contextData += `\n\nMAINTENANCE QUEUE (${queue.length} open):`;
+      contextData += `\n${JSON.stringify(queue)}`;
+      contextData += `\nOverdue (>24h): ${queue.filter((q: any) => q.overdue).length}`;
+      contextData += `\nStart with the most urgent and oldest items first.`;
+    }
+
+    // ─── MODE-SPECIFIC EXPANSIONS ───────────────────────────────────────────
     if (mode === "digest" || mode === "summarize") {
       const [detBookingsRes, detMaintenanceRes, detLaundryRes] = await Promise.all([
         adminClient
@@ -301,16 +489,11 @@ Deposit policy: ${depositMode}. Manual deposits: ${dpMap.get("deposits_manual_en
           .limit(20),
       ]);
 
-      const detailedMaintenance = detMaintenanceRes.data ?? [];
-      const detailedLaundry = detLaundryRes.data ?? [];
-
-      // Staleness detection (>24 hours in intermediate state)
-      const now = new Date();
-      const staleMaintenance = detailedMaintenance.filter((m: any) => {
+      const staleMaintenance = (detMaintenanceRes.data ?? []).filter((m: any) => {
         const age = (now.getTime() - new Date(m.created_at).getTime()) / (1000 * 60 * 60);
         return age > 24;
       });
-      const staleLaundry = detailedLaundry.filter((l: any) => {
+      const staleLaundry = (detLaundryRes.data ?? []).filter((l: any) => {
         const age = (now.getTime() - new Date(l.created_at).getTime()) / (1000 * 60 * 60);
         return age > 24 && ["in_progress", "ready_for_pickup"].includes(l.status);
       });
@@ -327,8 +510,8 @@ Deposit policy: ${depositMode}. Manual deposits: ${dpMap.get("deposits_manual_en
 
 DETAILED OPERATIONAL STATE:
 Active bookings: ${JSON.stringify(detBookingsRes.data ?? [])}
-Open maintenance: ${JSON.stringify(detailedMaintenance)}
-Active laundry: ${JSON.stringify(detailedLaundry)}${stalenessAdvisory}`;
+Open maintenance: ${JSON.stringify(detMaintenanceRes.data ?? [])}
+Active laundry: ${JSON.stringify(detLaundryRes.data ?? [])}${stalenessAdvisory}`;
     }
 
     if (mode === "camp") {

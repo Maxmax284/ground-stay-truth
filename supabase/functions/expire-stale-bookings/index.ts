@@ -12,26 +12,32 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     // Get policy settings
     const { data: policies } = await supabase
       .from("policy_settings")
       .select("key, value")
-      .in("key", ["soft_hold_expiration_hours", "deposit_deadline_hours"]);
+      .in("key", [
+        "soft_hold_expiration_hours",
+        "deposit_deadline_hours",
+        "deposit_reminder_hours",
+        "deposit_percentage",
+        "currency_symbol",
+      ]);
 
-    const softHoldHours = Number(
-      policies?.find((p) => p.key === "soft_hold_expiration_hours")?.value ?? 12
-    );
-    const depositHours = Number(
-      policies?.find((p) => p.key === "deposit_deadline_hours")?.value ?? 24
-    );
+    const policyMap = new Map((policies ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]));
+    const softHoldHours = Number(policyMap.get("soft_hold_expiration_hours") ?? 12);
+    const depositHours = Number(policyMap.get("deposit_deadline_hours") ?? 24);
+    const reminderHours = Number(policyMap.get("deposit_reminder_hours") ?? 12);
+    const depositPercentage = Number(policyMap.get("deposit_percentage") ?? 100);
+    const currencySymbol = policyMap.get("currency_symbol") || "฿";
 
     const now = new Date();
     let expired = 0;
+    let reminders = 0;
 
     // 1. Expire soft holds
     const softHoldCutoff = new Date(
@@ -62,11 +68,60 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 2. Expire pending deposits
+    // 2. Send deposit reminders (before expiring)
+    const reminderCutoff = new Date(
+      now.getTime() - reminderHours * 60 * 60 * 1000
+    ).toISOString();
     const depositCutoff = new Date(
       now.getTime() - depositHours * 60 * 60 * 1000
     ).toISOString();
 
+    const { data: pendingDeposits } = await supabase
+      .from("bookings")
+      .select("id, guest_id, total_price, check_in, check_out, unit_id, units(name), profiles!bookings_guest_id_profiles_fkey(email, full_name, preferred_language)")
+      .eq("state", "pending_deposit")
+      .lt("updated_at", reminderCutoff)
+      .gt("updated_at", depositCutoff);
+
+    for (const booking of pendingDeposits ?? []) {
+      const guestEmail = (booking as any).profiles?.email;
+      const guestName = (booking as any).profiles?.full_name || "Guest";
+      const guestLang = (booking as any).profiles?.preferred_language || "en";
+      const unitName = (booking as any).units?.name || "Your Unit";
+
+      if (!guestEmail) continue;
+
+      const depositAmount = Math.round((Number(booking.total_price || 0) * depositPercentage) / 100);
+      const depositFormatted = `${currencySymbol}${depositAmount.toLocaleString()}`;
+
+      try {
+        await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${serviceRoleKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            template_key: "deposit_reminder",
+            recipient_email: guestEmail,
+            booking_id: booking.id,
+            language: guestLang,
+            data: {
+              guest_name: guestName,
+              unit_name: unitName,
+              check_in: booking.check_in,
+              check_out: booking.check_out,
+              deposit_amount: depositFormatted,
+            },
+          }),
+        });
+        reminders++;
+      } catch (e) {
+        console.error("Failed to send deposit reminder:", e);
+      }
+    }
+
+    // 3. Expire pending deposits past deadline
     const { data: staleDeposits } = await supabase
       .from("bookings")
       .select("id")
@@ -81,7 +136,7 @@ Deno.serve(async (req) => {
         .eq("booking_id", booking.id)
         .limit(1);
 
-      if (payments && payments.length > 0) continue; // Has payment, skip
+      if (payments && payments.length > 0) continue;
 
       const { error } = await supabase
         .from("bookings")
@@ -101,7 +156,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, expired, timestamp: now.toISOString() }),
+      JSON.stringify({ success: true, expired, reminders, timestamp: now.toISOString() }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {

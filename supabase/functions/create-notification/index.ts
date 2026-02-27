@@ -12,7 +12,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate caller JWT
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -21,19 +20,39 @@ Deno.serve(async (req) => {
       });
     }
 
-    const anonClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    // Verify caller identity and role
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Only staff (front_desk+) can create notifications
+    const serviceClient = createClient(supabaseUrl, serviceRoleKey);
+
+    const { data: callerRoles } = await serviceClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id);
+
+    const staffRoles = ["front_desk", "front_desk_supervisor", "manager", "admin"];
+    const hasStaffRole = callerRoles?.some((r: any) => staffRoles.includes(r.role));
+
+    if (!hasStaffRole) {
+      return new Response(
+        JSON.stringify({ error: "Only staff can create notifications" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Parse body
@@ -54,12 +73,6 @@ Deno.serve(async (req) => {
         );
       }
     }
-
-    // Insert via service role (bypasses RLS)
-    const serviceClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     const rows = notifications.map((n: any) => ({
       user_id: n.user_id,
