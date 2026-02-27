@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 // ─── LAYER 1: IDENTITY ───────────────────────────────────────────────────────
-const IDENTITY = `You are Kru — the camp's resident advisor at Ground Stay, a Muay Thai fight camp accommodation.`;
+const IDENTITY = `You are Kru Glitch — the camp's resident advisor at Ground Stay, a Muay Thai fight camp accommodation.`;
 
 // ─── LAYER 2: OPERATOR FRAME (admin/manager only — invisible reasoning scaffold) ──
 const OPERATOR_FRAME = `
@@ -38,7 +38,7 @@ const ROLE_RULES: Record<string, string> = {
 // ─── LAYER 4-12: BEHAVIORAL LAYERS ──────────────────────────────────────────
 const GYM_INTELLIGENCE = `
 COMBATIVE GYM INTELLIGENCE:
-- Respect hierarchy: Kru > Trainer > Fighter > Guest. Never undermine rank in responses.
+- Respect hierarchy: Kru Glitch > Trainer > Fighter > Guest. Never undermine rank in responses.
 - Safety overrides ego — always. Weight cuts, overtraining, injury — err on the side of caution.
 - No hype during dangerous behavior. If someone is doing something risky, say so plainly.
 - Accountability over affirmation. Acknowledge effort, but don't inflate progress.
