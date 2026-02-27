@@ -47,8 +47,8 @@ interface SimulationContextType {
   actorDifficulty: ActorDifficulty;
   setActorDifficulty: (d: ActorDifficulty) => void;
   /** Typing indicator */
-  actorTyping: { actor: string; bookingId: string } | null;
-  setActorTyping: (v: { actor: string; bookingId: string } | null) => void;
+  actorTyping: { actor: string; bookingId: string; guestName: string } | null;
+  setActorTyping: (v: { actor: string; bookingId: string; guestName: string } | null) => void;
   /** Inject chaos events into data */
   addMaintenanceRequest: (req: Omit<MockMaintenanceRequest, "id" | "created_at">) => void;
   addLaundryRequest: (req: Omit<MockLaundryRequest, "id" | "created_at">) => void;
@@ -80,7 +80,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   const [actorLog, setActorLog] = useState<ActorLogEntry[]>([]);
   const [actorMemory, setActorMemory] = useState<Record<string, ActorMemoryEntry[]>>({});
   const [actorDifficulty, setActorDifficulty] = useState<ActorDifficulty>("neutral");
-  const [actorTyping, setActorTyping] = useState<{ actor: string; bookingId: string } | null>(null);
+  const [actorTyping, setActorTyping] = useState<{ actor: string; bookingId: string; guestName: string } | null>(null);
 
   const transitionBooking = useCallback((id: string, newState: MockBooking["state"]) => {
     setData((prev) => ({

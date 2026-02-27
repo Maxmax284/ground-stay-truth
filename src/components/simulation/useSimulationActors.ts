@@ -187,8 +187,9 @@ export function useSimulationActors(enabled: boolean) {
           type: "suppressed",
         });
       }
-      // Set typing indicator
-      setActorTyping({ actor: event.actor, bookingId: event.booking_id || "" });
+      // Set typing indicator with guest name
+      const typingBooking = data.bookings.find((b) => b.id === event.booking_id);
+      setActorTyping({ actor: event.actor, bookingId: event.booking_id || "", guestName: typingBooking?.guest_name || "Guest" });
 
       try {
         const booking = data.bookings.find((b) => b.id === event.booking_id);
@@ -253,9 +254,11 @@ export function useSimulationActors(enabled: boolean) {
         const isEscalation = event.event_type.includes("approval") || event.event_type.includes("escalat");
         const logType = isEscalation ? "escalation" as const : "response" as const;
 
+        const guestName = booking?.guest_name || "Guest";
+        const actorLabel = event.actor === "guest" ? guestName : `${event.actor.replace(/_/g, " ")} — re: ${guestName}`;
         addActorLog({
           actor: event.actor,
-          action: `${event.event_type}: "${content.slice(0, 60)}${content.length > 60 ? "…" : ""}"`,
+          action: `[${actorLabel}] ${event.event_type}: "${content.slice(0, 60)}${content.length > 60 ? "…" : ""}"`,
           type: logType,
         });
 
@@ -320,7 +323,7 @@ export function useSimulationActors(enabled: boolean) {
             note: "Urgent — duplicate request from confused guest",
             status: "pending",
           });
-          addActorLog({ actor: "guest", action: "Chaos: Duplicate laundry request submitted", type: "chaos" });
+          addActorLog({ actor: "guest", action: `Chaos: ${randomBooking.guest_name} submitted duplicate laundry request`, type: "chaos" });
           break;
 
         case "urgent_maintenance":
@@ -332,7 +335,7 @@ export function useSimulationActors(enabled: boolean) {
             priority: "urgent",
             status: "open",
           });
-          addActorLog({ actor: "maintenance", action: "Chaos: Urgent maintenance request created", type: "chaos" });
+          addActorLog({ actor: "maintenance", action: `Chaos: Urgent maintenance for ${randomBooking.guest_name}'s unit`, type: "chaos" });
           break;
 
         case "confused_message": {
@@ -343,7 +346,7 @@ export function useSimulationActors(enabled: boolean) {
             content: "Wait, I think I'm in the wrong room? The key doesn't work. Can someone help?",
             is_internal: false,
           });
-          addActorLog({ actor: "guest", action: "Chaos: Confused guest message sent to wrong thread", type: "chaos" });
+          addActorLog({ actor: "guest", action: `Chaos: ${wrongBooking.guest_name} sent confused message`, type: "chaos" });
           break;
         }
 

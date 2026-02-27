@@ -179,12 +179,16 @@ function MessagesPanel() {
             const isAIActor = msg.sender_id?.startsWith("ai-actor-");
             const actorType = isAIActor ? msg.sender_id!.replace("ai-actor-", "") : null;
             const isGuest = msg.sender_id?.includes("guest");
-            const actorLabels: Record<string, string> = {
-              guest: "Guest AI",
-              supervisor: "Supervisor AI",
-              maintenance: "Maintenance AI",
-              "front-desk": "Front Desk AI",
-            };
+            const guestName = booking?.guest_name || "Guest";
+            const actorLabel = actorType === "guest"
+              ? guestName
+              : actorType === "supervisor"
+                ? `Supervisor — re: ${guestName}`
+                : actorType === "maintenance"
+                  ? `Maintenance — re: ${guestName}`
+                  : actorType === "front-desk"
+                    ? `Front Desk — re: ${guestName}`
+                    : "AI Actor";
             return (
               <div key={msg.id} className={cn(
                 "text-xs p-2 rounded-md",
@@ -196,7 +200,7 @@ function MessagesPanel() {
                   {isAIActor && <Bot className="h-3 w-3 text-primary shrink-0" />}
                   <span className="font-medium">
                     {isAIActor
-                      ? actorLabels[actorType!] || "AI Actor"
+                      ? actorLabel
                       : isGuest
                         ? booking?.guest_name || "Guest"
                         : "Staff"}
@@ -212,7 +216,11 @@ function MessagesPanel() {
             <div className="text-xs p-2 rounded-md border-primary/30 bg-primary/5 border ml-0 mr-8">
               <div className="flex items-center gap-1 mb-0.5">
                 <Bot className="h-3 w-3 text-primary shrink-0" />
-                <span className="font-medium capitalize">{actorTyping.actor.replace(/_/g, " ")} AI</span>
+                <span className="font-medium">
+                  {actorTyping.actor === "guest"
+                    ? `${actorTyping.guestName} is typing`
+                    : `${actorTyping.actor.replace(/_/g, " ")} — re: ${actorTyping.guestName}`}
+                </span>
                 <Badge variant="outline" className="text-[8px] px-1 border-primary/30 text-primary">AI</Badge>
               </div>
               <div className="flex items-center gap-1 h-4">

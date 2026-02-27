@@ -222,7 +222,12 @@ serve(async (req) => {
         chaos: "Be urgent, contradictory, and emotionally intense. Misremember details occasionally. Introduce complications like wrong room numbers, urgency spikes, or misunderstandings. Express strong emotions.",
       };
 
-      const actorPrompt = ACTOR_PROMPTS[actor] || ACTOR_PROMPTS.guest;
+      const guestName = sandbox_state?.booking?.guest_name || "Guest";
+      const actorPromptBase = ACTOR_PROMPTS[actor] || ACTOR_PROMPTS.guest;
+      const nameInstruction = actor === "guest"
+        ? `\n\nYour name is ${guestName}. You are this specific guest. Refer to yourself naturally.`
+        : `\n\nYou are handling a matter related to guest "${guestName}". Reference them by name when relevant.`;
+      const actorPrompt = actorPromptBase + nameInstruction;
       const difficultyInstr = DIFFICULTY_INSTRUCTIONS[difficulty || "neutral"] || DIFFICULTY_INSTRUCTIONS.neutral;
 
       let memoryContext = "";
