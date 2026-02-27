@@ -12,9 +12,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify the requesting user's JWT
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Missing authorization" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -25,7 +24,7 @@ Deno.serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Create a client with the user's token to get their identity
+    // Verify caller identity
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -42,14 +41,31 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Use service role to delete the user (cascades handle cleanup)
+    const { target_user_id } = await req.json().catch(() => ({ target_user_id: null }));
+
     const adminClient = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const { error: deleteError } = await adminClient.auth.admin.deleteUser(
-      user.id
-    );
+    // If deleting another user, caller must be admin
+    const deleteUserId = target_user_id || user.id;
+
+    if (deleteUserId !== user.id) {
+      const { data: callerRoles } = await adminClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin");
+
+      if (!callerRoles?.length) {
+        return new Response(
+          JSON.stringify({ error: "Only admins can delete other accounts" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    const { error: deleteError } = await adminClient.auth.admin.deleteUser(deleteUserId);
 
     if (deleteError) {
       return new Response(JSON.stringify({ error: deleteError.message }), {
