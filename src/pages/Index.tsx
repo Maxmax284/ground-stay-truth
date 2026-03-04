@@ -20,12 +20,7 @@ import { useDraftMessages, useApproveDraftMessage } from "@/hooks/useBookings";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { MaintenanceQueue } from "@/components/MaintenanceQueue";
-import { LaundryPanel } from "@/components/LaundryPanel";
-import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
-import { useCountUp } from "@/hooks/useCountUp";
-import { format } from "date-fns";
-import { useTranslation } from "react-i18next";
+
 
 const Index = () => {
   const { t } = useTranslation();
