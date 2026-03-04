@@ -36,7 +36,8 @@ const Index = () => {
   const isLoading = arrivals.isLoading || departures.isLoading || activeBookings.isLoading || unitCount.isLoading || inquiryCount.isLoading;
 
   const canApprove = permissions.canApproveBooking(effectiveRole);
-  const canViewQueues = canApprove || effectiveRole === "front_desk_supervisor" || effectiveRole === "manager";
+  const canRecommend = permissions.canRecommendBooking(effectiveRole);
+  const canViewQueues = canApprove || canRecommend || effectiveRole === "front_desk_supervisor";
   const isMaintenance = effectiveRole === "maintenance";
   const isViewer = effectiveRole === "viewer";
 
