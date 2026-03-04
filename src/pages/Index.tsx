@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Building2, BookOpen, CalendarDays, TrendingUp, ArrowRight, Plus, LogIn, LogOut, Wrench, Shirt, MessageSquare } from "lucide-react";
+import { Building2, BookOpen, CalendarDays, TrendingUp, ArrowRight, Plus, LogIn, LogOut, Wrench, Shirt, MessageSquare, ShieldCheck, Check, X, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRolePreview } from "@/hooks/useRolePreview";
 import { ApprovalQueue } from "@/components/ApprovalQueue";
 import { InquiryQueue } from "@/components/InquiryQueue";
+import { MaintenanceQueue } from "@/components/MaintenanceQueue";
+import { LaundryPanel } from "@/components/LaundryPanel";
+import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
+import { useCountUp } from "@/hooks/useCountUp";
+import { useDraftMessages, useApproveDraftMessage } from "@/hooks/useBookings";
+import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { MaintenanceQueue } from "@/components/MaintenanceQueue";
 import { LaundryPanel } from "@/components/LaundryPanel";
 import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
@@ -33,7 +41,7 @@ const Index = () => {
   const isLoading = arrivals.isLoading || departures.isLoading || activeBookings.isLoading || unitCount.isLoading || inquiryCount.isLoading;
 
   const canApprove = permissions.canApproveBooking(effectiveRole);
-  const canViewQueues = canApprove || effectiveRole === "front_desk_supervisor";
+  const canViewQueues = canApprove || effectiveRole === "front_desk_supervisor" || effectiveRole === "manager";
   const isMaintenance = effectiveRole === "maintenance";
   const isViewer = effectiveRole === "viewer";
 
@@ -97,6 +105,9 @@ const Index = () => {
             {canViewQueues && (
               <ApprovalQueue bookings={pendingApproval.data} isLoading={pendingApproval.isLoading} readOnly={!canApprove} />
             )}
+
+            {/* Admin-only: Pending Admin Actions (draft messages) */}
+            {canApprove && <PendingAdminActions t={t} />}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Front Desk / Supervisor: arrivals/departures first */}
