@@ -410,27 +410,33 @@ export type Database = {
       }
       messages: {
         Row: {
+          approved_by: string | null
           booking_id: string
           content: string
           created_at: string
+          draft: boolean
           id: string
           is_internal: boolean
           read_at: string | null
           sender_id: string | null
         }
         Insert: {
+          approved_by?: string | null
           booking_id: string
           content: string
           created_at?: string
+          draft?: boolean
           id?: string
           is_internal?: boolean
           read_at?: string | null
           sender_id?: string | null
         }
         Update: {
+          approved_by?: string | null
           booking_id?: string
           content?: string
           created_at?: string
+          draft?: boolean
           id?: string
           is_internal?: boolean
           read_at?: string | null
