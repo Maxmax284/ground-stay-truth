@@ -95,11 +95,11 @@ const Index = () => {
 
             {/* Admin/Manager layout: Approval queue prominent */}
             {canViewQueues && (
-              <InquiryQueue bookings={pendingInquiry.data} isLoading={pendingInquiry.isLoading} readOnly={!canApprove} />
+              <InquiryQueue bookings={pendingInquiry.data} isLoading={pendingInquiry.isLoading} readOnly={!canApprove && !canRecommend} />
             )}
 
             {canViewQueues && (
-              <ApprovalQueue bookings={pendingApproval.data} isLoading={pendingApproval.isLoading} readOnly={!canApprove} />
+              <ApprovalQueue bookings={pendingApproval.data} isLoading={pendingApproval.isLoading} readOnly={!canApprove && !canRecommend} />
             )}
 
             {/* Admin-only: Pending Admin Actions (draft messages) */}
