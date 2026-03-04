@@ -10,8 +10,8 @@ import { useTransitionBookingState } from "@/hooks/useBookings";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
+import { useEffectiveRole } from "@/hooks/useRolePreview";
 import { supabase } from "@/integrations/supabase/client";
 import { createNotifications } from "@/hooks/useNotifications";
 import {
@@ -30,7 +30,7 @@ interface ApprovalQueueProps {
 
 export function ApprovalQueue({ bookings, isLoading, readOnly = false }: ApprovalQueueProps) {
   const { t } = useTranslation();
-  const { role } = useAuth();
+  const role = useEffectiveRole();
   const transition = useTransitionBookingState();
   const qc = useQueryClient();
   const [rejectId, setRejectId] = useState<string | null>(null);
