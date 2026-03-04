@@ -1225,5 +1225,13 @@
         "point3": "Manage your WhatsApp and LINE contact info"
       }
     }
+  },
+  "adminActions": {
+    "title": "Pending Admin Actions",
+    "draftDesc": "Guest-facing messages drafted by staff awaiting your approval before delivery.",
+    "messageApproved": "Message approved and sent to guest",
+    "messageRejected": "Draft message discarded",
+    "send": "Send",
+    "discard": "Discard"
   }
 }
