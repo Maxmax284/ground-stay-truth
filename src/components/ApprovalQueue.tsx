@@ -4,12 +4,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, X, Clock, AlertTriangle } from "lucide-react";
+import { Check, X, Clock, AlertTriangle, ThumbsUp, ThumbsDown } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { useTransitionBookingState } from "@/hooks/useBookings";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/hooks/useAuth";
+import { permissions } from "@/lib/permissions";
+import { supabase } from "@/integrations/supabase/client";
+import { createNotifications } from "@/hooks/useNotifications";
 import {
   Dialog,
   DialogContent,
@@ -26,10 +30,18 @@ interface ApprovalQueueProps {
 
 export function ApprovalQueue({ bookings, isLoading, readOnly = false }: ApprovalQueueProps) {
   const { t } = useTranslation();
+  const { role } = useAuth();
   const transition = useTransitionBookingState();
   const qc = useQueryClient();
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [recommendId, setRecommendId] = useState<string | null>(null);
+  const [recommendType, setRecommendType] = useState<"approve" | "reject">("approve");
+  const [recommendNote, setRecommendNote] = useState("");
+  const [submittingRecommend, setSubmittingRecommend] = useState(false);
+
+  const isAdmin = permissions.canApproveBooking(role);
+  const canRecommend = permissions.canRecommendBooking(role) && !isAdmin;
 
   const handleApprove = async (bookingId: string) => {
     try {
@@ -62,6 +74,55 @@ export function ApprovalQueue({ bookings, isLoading, readOnly = false }: Approva
     } finally {
       setRejectId(null);
       setRejectReason("");
+    }
+  };
+
+  const handleRecommend = async () => {
+    if (!recommendId || !recommendNote.trim()) return;
+    setSubmittingRecommend(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", user?.id ?? "")
+        .single();
+      const senderName = profile?.full_name ?? "Manager";
+
+      // Log recommendation in booking_state_log
+      await supabase.from("booking_state_log").insert({
+        booking_id: recommendId,
+        from_state: "pending_approval" as any,
+        to_state: "pending_approval" as any,
+        changed_by: user?.id ?? null,
+        reason: `[RECOMMENDATION] ${senderName} recommends ${recommendType}: ${recommendNote}`,
+      });
+
+      // Notify admins
+      const { data: admins } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin");
+
+      await createNotifications(
+        (admins ?? [])
+          .filter((a) => a.user_id !== user?.id)
+          .map((a) => ({
+            user_id: a.user_id,
+            type: "booking",
+            reference_id: recommendId,
+            message: `${senderName} recommends ${recommendType} for booking — "${recommendNote}"`,
+          }))
+      );
+
+      qc.invalidateQueries({ queryKey: ["bookingStateLog"] });
+      toast.success(t("approval.recommendationSent"));
+    } catch {
+      toast.error(t("approval.actionFailed"));
+    } finally {
+      setSubmittingRecommend(false);
+      setRecommendId(null);
+      setRecommendNote("");
     }
   };
 
@@ -123,7 +184,7 @@ export function ApprovalQueue({ bookings, isLoading, readOnly = false }: Approva
                         </span>
                       </div>
                     </div>
-                    {!readOnly && (
+                    {!readOnly && isAdmin && (
                       <div className="flex gap-1.5 shrink-0">
                         <Button
                           size="sm"
@@ -145,6 +206,26 @@ export function ApprovalQueue({ bookings, isLoading, readOnly = false }: Approva
                         </Button>
                       </div>
                     )}
+                    {!readOnly && canRecommend && (
+                      <div className="flex gap-1.5 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 px-3"
+                          onClick={() => { setRecommendId(b.id); setRecommendType("approve"); }}
+                        >
+                          <ThumbsUp className="h-3.5 w-3.5 mr-1" /> {t("approval.recommend")}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 px-3 text-destructive border-destructive/30"
+                          onClick={() => { setRecommendId(b.id); setRecommendType("reject"); }}
+                        >
+                          <ThumbsDown className="h-3.5 w-3.5 mr-1" /> {t("approval.recommendReject")}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -153,6 +234,7 @@ export function ApprovalQueue({ bookings, isLoading, readOnly = false }: Approva
         </CardContent>
       </Card>
 
+      {/* Admin reject dialog */}
       <Dialog open={!!rejectId} onOpenChange={(o) => !o && setRejectId(null)}>
         <DialogContent>
           <DialogHeader>
@@ -173,6 +255,38 @@ export function ApprovalQueue({ bookings, isLoading, readOnly = false }: Approva
               onClick={handleReject}
             >
               {t("approval.confirmReject")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manager recommend dialog */}
+      <Dialog open={!!recommendId} onOpenChange={(o) => !o && setRecommendId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {recommendType === "approve"
+                ? t("approval.recommendApproveTitle")
+                : t("approval.recommendRejectTitle")}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {t("approval.recommendDesc")}
+          </p>
+          <Input
+            placeholder={t("approval.recommendNotePlaceholder")}
+            value={recommendNote}
+            onChange={(e) => setRecommendNote(e.target.value)}
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRecommendId(null)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              disabled={!recommendNote.trim() || submittingRecommend}
+              onClick={handleRecommend}
+            >
+              {submittingRecommend ? t("common.updating") : t("approval.sendRecommendation")}
             </Button>
           </DialogFooter>
         </DialogContent>

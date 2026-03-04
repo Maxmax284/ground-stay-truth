@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Building2, BookOpen, CalendarDays, TrendingUp, ArrowRight, Plus, LogIn, LogOut, Wrench, Shirt, MessageSquare } from "lucide-react";
+import { Building2, BookOpen, CalendarDays, TrendingUp, ArrowRight, Plus, LogIn, LogOut, Wrench, Shirt, MessageSquare, ShieldCheck, Check, X, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,11 @@ import { MaintenanceQueue } from "@/components/MaintenanceQueue";
 import { LaundryPanel } from "@/components/LaundryPanel";
 import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
 import { useCountUp } from "@/hooks/useCountUp";
+import { useDraftMessages, useApproveDraftMessage } from "@/hooks/useBookings";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+
 
 const Index = () => {
   const { t } = useTranslation();
@@ -33,7 +36,7 @@ const Index = () => {
   const isLoading = arrivals.isLoading || departures.isLoading || activeBookings.isLoading || unitCount.isLoading || inquiryCount.isLoading;
 
   const canApprove = permissions.canApproveBooking(effectiveRole);
-  const canViewQueues = canApprove || effectiveRole === "front_desk_supervisor";
+  const canViewQueues = canApprove || effectiveRole === "front_desk_supervisor" || effectiveRole === "manager";
   const isMaintenance = effectiveRole === "maintenance";
   const isViewer = effectiveRole === "viewer";
 
@@ -98,6 +101,9 @@ const Index = () => {
               <ApprovalQueue bookings={pendingApproval.data} isLoading={pendingApproval.isLoading} readOnly={!canApprove} />
             )}
 
+            {/* Admin-only: Pending Admin Actions (draft messages) */}
+            {canApprove && <PendingAdminActions t={t} />}
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Front Desk / Supervisor: arrivals/departures first */}
               {!isViewer && arrivalsCount > 0 && (
@@ -147,6 +153,57 @@ const Index = () => {
     </DashboardLayout>
   );
 };
+
+function PendingAdminActions({ t }: { t: any }) {
+  const { data: drafts, isLoading } = useDraftMessages();
+  const approveDraft = useApproveDraftMessage();
+  const count = drafts?.length ?? 0;
+
+  const handleAction = async (messageId: string, bookingId: string, approve: boolean) => {
+    try {
+      await approveDraft.mutateAsync({ messageId, bookingId, approve });
+      toast.success(approve ? t("adminActions.messageApproved") : t("adminActions.messageRejected"));
+    } catch {
+      toast.error(t("approval.actionFailed"));
+    }
+  };
+
+  if (isLoading || count === 0) return null;
+
+  return (
+    <Card className="border-primary/50">
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <ShieldCheck className="h-5 w-5 text-primary" />
+          {t("adminActions.title")}
+          <Badge variant="destructive" className="ml-1 text-xs">{count}</Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-xs text-muted-foreground mb-2">{t("adminActions.draftDesc")}</p>
+        {drafts!.map((msg) => (
+          <div key={msg.id} className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+            <FileText className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm truncate">{msg.content}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {format(new Date(msg.created_at), "MMM d, h:mm a")}
+              </p>
+            </div>
+            <div className="flex gap-1.5 shrink-0">
+              <Button size="sm" variant="default" className="h-7 px-2" onClick={() => handleAction(msg.id, msg.booking_id, true)} disabled={approveDraft.isPending}>
+                <Check className="h-3 w-3 mr-1" /> {t("adminActions.send")}
+              </Button>
+              <Button size="sm" variant="destructive" className="h-7 px-2" onClick={() => handleAction(msg.id, msg.booking_id, false)} disabled={approveDraft.isPending}>
+                <X className="h-3 w-3 mr-1" /> {t("adminActions.discard")}
+              </Button>
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
 
 function MaintenanceDashboard({ t }: { t: any }) {
   return (

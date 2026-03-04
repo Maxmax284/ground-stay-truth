@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { useAISettings } from "@/hooks/useAISettings";
+import { permissions } from "@/lib/permissions";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -133,12 +134,22 @@ function AIAdvisoryBadge({ booking }: { booking: any }) {
   );
 }
 
+interface InquiryQueueProps {
+  bookings: any[] | undefined;
+  isLoading: boolean;
+  readOnly?: boolean;
+}
+
 export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQueueProps) {
   const { t } = useTranslation();
+  const { role } = useAuth();
   const transition = useTransitionBookingState();
   const qc = useQueryClient();
   const [dismissId, setDismissId] = useState<string | null>(null);
   const [dismissReason, setDismissReason] = useState("");
+
+  const canDismiss = permissions.canDismissInquiry(role);
+  const canHold = permissions.canHoldInquiry(role);
 
   const handleHold = async (bookingId: string) => {
     try {
@@ -235,24 +246,28 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
                     </div>
                     {!readOnly && (
                       <div className="flex gap-1.5 shrink-0">
-                        <Button
-                          size="sm"
-                          variant="default"
-                          className="h-8 px-3"
-                          onClick={() => handleHold(b.id)}
-                          disabled={transition.isPending}
-                        >
-                          <HandMetal className="h-3.5 w-3.5 mr-1" /> {t("inquiry.hold")}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="h-8 px-3"
-                          onClick={() => setDismissId(b.id)}
-                          disabled={transition.isPending}
-                        >
-                          <X className="h-3.5 w-3.5 mr-1" /> {t("inquiry.dismiss")}
-                        </Button>
+                        {canHold && (
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="h-8 px-3"
+                            onClick={() => handleHold(b.id)}
+                            disabled={transition.isPending}
+                          >
+                            <HandMetal className="h-3.5 w-3.5 mr-1" /> {t("inquiry.hold")}
+                          </Button>
+                        )}
+                        {canDismiss && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-8 px-3"
+                            onClick={() => setDismissId(b.id)}
+                            disabled={transition.isPending}
+                          >
+                            <X className="h-3.5 w-3.5 mr-1" /> {t("inquiry.dismiss")}
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>

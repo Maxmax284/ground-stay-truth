@@ -99,9 +99,25 @@ export const permissions = {
   canManageMaintenanceBlocks: (role: AppRole | null) =>
     !!role && ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.manager,
 
-  /** Can approve/reject bookings — Manager+ */
+  /** Can approve/reject bookings — Admin only */
   canApproveBooking: (role: AppRole | null) =>
+    role === "admin",
+
+  /** Can recommend approve/reject bookings — Manager+ */
+  canRecommendBooking: (role: AppRole | null) =>
     !!role && ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.manager,
+
+  /** Can dismiss (cancel) inquiries — Admin only */
+  canDismissInquiry: (role: AppRole | null) =>
+    role === "admin",
+
+  /** Can hold inquiries — Manager+ */
+  canHoldInquiry: (role: AppRole | null) =>
+    !!role && ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.manager,
+
+  /** Can execute critical state transitions (approval/deposit/confirm) — Admin only */
+  canApproveStateTransition: (role: AppRole | null) =>
+    role === "admin",
 
   /** Can upload ID documents — Front Desk+ or Guest (own docs) */
   canUploadDocuments: (role: AppRole | null) =>

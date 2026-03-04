@@ -477,6 +477,10 @@
     "reasonLabel": "Reason",
     "reasonPlaceholder": "Explain the reason for this transition…",
     "confirmTransition": "Confirm Transition",
+    "requestApproval": "Request Admin Approval",
+    "approvalRequested": "Approval requested",
+    "approvalRequestedDesc": "Admin has been notified and will review this transition.",
+    "adminApprovalRequired": "This transition requires Admin approval. Your request will be sent for review.",
     "stateUpdated": "State updated",
     "movedTo": "Booking moved to {{state}}",
     "transitionFailed": "Transition failed",
@@ -541,7 +545,15 @@
     "actionFailed": "Action failed",
     "rejectTitle": "Reject Booking",
     "reasonPlaceholder": "Reason for rejection…",
-    "confirmReject": "Confirm Reject"
+    "confirmReject": "Confirm Reject",
+    "recommend": "Recommend",
+    "recommendReject": "Flag Reject",
+    "recommendApproveTitle": "Recommend Approval",
+    "recommendRejectTitle": "Recommend Rejection",
+    "recommendDesc": "Your recommendation will be logged and sent to the Admin for final decision.",
+    "recommendNotePlaceholder": "Why do you recommend this action?",
+    "sendRecommendation": "Send Recommendation",
+    "recommendationSent": "Recommendation sent to Admin"
   },
   "maintenanceBlock": {
     "title": "Block Dates for Maintenance",
@@ -1213,5 +1225,13 @@
         "point3": "Manage your WhatsApp and LINE contact info"
       }
     }
+  },
+  "adminActions": {
+    "title": "Pending Admin Actions",
+    "draftDesc": "Guest-facing messages drafted by staff awaiting your approval before delivery.",
+    "messageApproved": "Message approved and sent to guest",
+    "messageRejected": "Draft message discarded",
+    "send": "Send",
+    "discard": "Discard"
   }
 }

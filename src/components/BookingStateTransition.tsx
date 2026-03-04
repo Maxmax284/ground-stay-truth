@@ -159,6 +159,19 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
     return () => { cancelled = true; };
   }, [targetState, isAIEnabled]);
 
+  // Critical transitions that require admin sign-off
+  const ADMIN_GATED_TRANSITIONS: Array<{ from: BookingState; to: BookingState }> = [
+    { from: "pending_approval", to: "pending_deposit" },
+    { from: "pending_approval", to: "cancelled" },
+    { from: "pending_deposit", to: "confirmed" },
+    { from: "inquiry", to: "cancelled" },
+  ];
+
+  const isAdminGated = (from: BookingState, to: BookingState) =>
+    ADMIN_GATED_TRANSITIONS.some((t) => t.from === from && t.to === to);
+
+  const canApproveTransition = permissions.canApproveStateTransition(role);
+
   const rawTransitions = adminOverride ? getAllTransitions(currentState) : getValidTransitions(currentState);
   const validStates = rawTransitions.filter((s) => {
     if (s === "checked_in" && !canCheckIn) return false;
@@ -190,6 +203,55 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
 
   // Block confirmation if online required, no payment, and no override
   const depositBlocked = isPendingDepositToConfirmed && depositPolicy.effectiveMode === "online_required" && !hasPayments && !depositOverride;
+
+  // Request admin approval for gated transitions (non-admin)
+  const handleRequestApproval = async () => {
+    if (!targetState || !reason.trim()) {
+      toast({ title: t("stateTransition.reasonRequired"), description: t("stateTransition.reasonDesc"), variant: "destructive" });
+      return;
+    }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", user?.id ?? "")
+        .single();
+      const senderName = profile?.full_name ?? "Staff";
+
+      // Log as recommendation
+      await supabase.from("booking_state_log").insert({
+        booking_id: bookingId,
+        from_state: currentState,
+        to_state: currentState, // no actual transition
+        changed_by: user?.id ?? null,
+        reason: `[TRANSITION REQUEST] ${senderName} requests ${currentState} → ${targetState}: ${reason}`,
+      });
+
+      // Notify admins
+      const { data: admins } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin");
+
+      await createNotifications(
+        (admins ?? [])
+          .filter((a) => a.user_id !== user?.id)
+          .map((a) => ({
+            user_id: a.user_id,
+            type: "booking",
+            reference_id: bookingId,
+            message: `${senderName} requests transition: ${currentState} → ${targetState} — "${reason}"`,
+          }))
+      );
+
+      toast({ title: t("stateTransition.approvalRequested"), description: t("stateTransition.approvalRequestedDesc") });
+      setTargetState("");
+      setReason("");
+    } catch (err: any) {
+      toast({ title: t("stateTransition.transitionFailed"), description: err.message, variant: "destructive" });
+    }
+  };
 
   const handleTransition = async () => {
     if (!targetState) return;
@@ -268,6 +330,9 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
       setDepositAmount(""); setDepositMethod("cash"); setDepositNotes("");
     } catch (err: any) { toast({ title: t("stateTransition.transitionFailed"), description: err.message, variant: "destructive" }); }
   };
+
+  // Determine if current target is admin-gated and user is not admin
+  const targetIsGated = !!targetState && isAdminGated(currentState, targetState as BookingState) && !canApproveTransition && !adminOverride;
 
   return (
     <div className="space-y-3 rounded-lg border border-border p-4">
@@ -377,8 +442,26 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
             </div>
           )}
           <div className="space-y-1"><Label className="text-xs">{t("stateTransition.reasonLabel")} *</Label><Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("stateTransition.reasonPlaceholder")} rows={2} /></div>
-          <Button onClick={handleTransition} disabled={!targetState || !reason.trim() || transition.isPending || createPayment.isPending || checkInBlocked || checkInBufferBlocked || depositBlocked} size="sm" className="w-full">
-            {(transition.isPending || createPayment.isPending) ? t("common.updating") : showDepositForm ? t("deposit.recordAndConfirm") : t("stateTransition.confirmTransition")}
+          {targetIsGated && (
+            <div className="flex items-center gap-2 text-sm text-warning-foreground bg-warning/10 rounded-md p-3">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <span>{t("stateTransition.adminApprovalRequired")}</span>
+            </div>
+          )}
+          <Button
+            onClick={targetIsGated ? handleRequestApproval : handleTransition}
+            disabled={!targetState || !reason.trim() || transition.isPending || createPayment.isPending || checkInBlocked || checkInBufferBlocked || (depositBlocked && !targetIsGated)}
+            size="sm"
+            className="w-full"
+            variant={targetIsGated ? "outline" : "default"}
+          >
+            {(transition.isPending || createPayment.isPending)
+              ? t("common.updating")
+              : targetIsGated
+                ? t("stateTransition.requestApproval")
+                : showDepositForm
+                  ? t("deposit.recordAndConfirm")
+                  : t("stateTransition.confirmTransition")}
           </Button>
         </>
       )}
