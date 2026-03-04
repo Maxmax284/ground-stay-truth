@@ -323,16 +323,105 @@ export function useCreateMessage() {
       is_internal: boolean;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
+
+      // Check if this is a guest-facing message from non-admin — save as draft
+      let isDraft = false;
+      if (!message.is_internal) {
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user?.id ?? "");
+        const userRole = roles?.[0]?.role;
+        if (userRole && userRole !== "admin") {
+          isDraft = true;
+        }
+      }
+
       const { data, error } = await supabase
         .from("messages")
-        .insert({ ...message, sender_id: user?.id ?? null })
+        .insert({
+          ...message,
+          sender_id: user?.id ?? null,
+          draft: isDraft,
+        } as any)
         .select()
         .single();
       if (error) throw error;
+
+      // If draft, notify admins for review
+      if (isDraft) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("user_id", user?.id ?? "")
+          .single();
+        const senderName = profile?.full_name ?? "Staff";
+        const { data: admins } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .eq("role", "admin");
+        await createNotifications(
+          (admins ?? [])
+            .filter((a) => a.user_id !== user?.id)
+            .map((a) => ({
+              user_id: a.user_id,
+              type: "message",
+              reference_id: message.booking_id,
+              message: `${senderName} drafted a guest message pending your approval`,
+            }))
+        );
+      }
+
       return data;
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["bookingMessages", vars.booking_id] });
+    },
+  });
+}
+
+// ── Approve / reject draft messages (Admin only) ──
+export function useApproveDraftMessage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ messageId, bookingId, approve }: { messageId: string; bookingId: string; approve: boolean }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (approve) {
+        const { error } = await supabase
+          .from("messages")
+          .update({ draft: false, approved_by: user?.id } as any)
+          .eq("id", messageId);
+        if (error) throw error;
+      } else {
+        // Reject — delete the draft
+        const { error } = await supabase
+          .from("messages")
+          .delete()
+          .eq("id", messageId);
+        if (error) throw error;
+      }
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["bookingMessages", vars.bookingId] });
+      qc.invalidateQueries({ queryKey: ["inbox-threads"] });
+      qc.invalidateQueries({ queryKey: ["draft-messages"] });
+    },
+  });
+}
+
+// ── Pending draft messages (Admin dashboard) ──
+export function useDraftMessages() {
+  return useQuery({
+    queryKey: ["draft-messages"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("draft", true)
+        .eq("is_internal", false)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as Message[];
     },
   });
 }
