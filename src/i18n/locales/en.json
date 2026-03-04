@@ -541,7 +541,15 @@
     "actionFailed": "Action failed",
     "rejectTitle": "Reject Booking",
     "reasonPlaceholder": "Reason for rejection…",
-    "confirmReject": "Confirm Reject"
+    "confirmReject": "Confirm Reject",
+    "recommend": "Recommend",
+    "recommendReject": "Flag Reject",
+    "recommendApproveTitle": "Recommend Approval",
+    "recommendRejectTitle": "Recommend Rejection",
+    "recommendDesc": "Your recommendation will be logged and sent to the Admin for final decision.",
+    "recommendNotePlaceholder": "Why do you recommend this action?",
+    "sendRecommendation": "Send Recommendation",
+    "recommendationSent": "Recommendation sent to Admin"
   },
   "maintenanceBlock": {
     "title": "Block Dates for Maintenance",
