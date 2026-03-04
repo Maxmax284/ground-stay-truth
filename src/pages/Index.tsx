@@ -205,7 +205,7 @@ function PendingAdminActions({ t }: { t: any }) {
   );
 }
 
-
+function MaintenanceDashboard({ t }: { t: any }) {
   return (
     <div className="space-y-4">
       <MaintenanceQueue />
