@@ -30,7 +30,7 @@ interface ApprovalQueueProps {
 
 export function ApprovalQueue({ bookings, isLoading, readOnly = false }: ApprovalQueueProps) {
   const { t } = useTranslation();
-  const { role } = useAuth();
+  const role = useEffectiveRole();
   const transition = useTransitionBookingState();
   const qc = useQueryClient();
   const [rejectId, setRejectId] = useState<string | null>(null);
