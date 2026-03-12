@@ -67,12 +67,31 @@ export interface MockMessage {
   created_at: string;
 }
 
+export interface MockTrainingPackage {
+  id: string;
+  name: string;
+  description: string;
+  duration_days: number;
+  price: number;
+  is_active: boolean;
+}
+
+export interface MockTrainingLink {
+  id: string;
+  booking_id: string;
+  package_id: string;
+  trainer_name: string | null;
+  start_date: string | null;
+}
+
 export interface SimulationData {
   units: MockUnit[];
   bookings: MockBooking[];
   maintenanceRequests: MockMaintenanceRequest[];
   laundryRequests: MockLaundryRequest[];
   messages: MockMessage[];
+  trainingPackages: MockTrainingPackage[];
+  trainingLinks: MockTrainingLink[];
 }
 
 function daysFromNow(offset: number): string {
