@@ -155,6 +155,31 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const collectDeposit = useCallback((bookingId: string, amount: number, method: MockSecurityDeposit["collection_method"]) => {
+    setData((prev) => ({
+      ...prev,
+      securityDeposits: [...prev.securityDeposits, {
+        id: simId("sim-sd"),
+        booking_id: bookingId,
+        amount_held: amount,
+        amount_deducted: 0,
+        deduction_reason: null,
+        status: "held" as const,
+        collection_method: method,
+        notes: null,
+      }],
+    }));
+  }, []);
+
+  const updateDepositStatus = useCallback((id: string, status: MockSecurityDeposit["status"], updates?: Partial<MockSecurityDeposit>) => {
+    setData((prev) => ({
+      ...prev,
+      securityDeposits: prev.securityDeposits.map((d) =>
+        d.id === id ? { ...d, status, ...updates } : d
+      ),
+    }));
+  }, []);
+
   const completeMission = useCallback((id: string) => {
     setCompleted((prev) => {
       const next = prev.includes(id) ? prev : [...prev, id];
