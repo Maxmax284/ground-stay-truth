@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useMemo, useCallback, ReactNode } from "react";
-import { generateMockData, type SimulationData, type MockBooking, type MockMessage, type MockMaintenanceRequest, type MockLaundryRequest, type MockTrainingLink } from "./mockData";
+import { generateMockData, type SimulationData, type MockBooking, type MockMessage, type MockMaintenanceRequest, type MockLaundryRequest, type MockTrainingLink, type MockSecurityDeposit } from "./mockData";
 import type { AppRole } from "@/lib/permissions";
 
 export type ActorLogType = "response" | "escalation" | "chaos" | "suppressed";
