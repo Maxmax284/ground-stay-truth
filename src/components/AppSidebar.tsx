@@ -103,6 +103,7 @@ export function AppSidebar() {
   const { data: pendingCount } = usePendingUsersCount(isAdmin);
   const { data: approvalCount } = usePendingApprovalCount(canApprove);
   const { data: maintenanceCount } = useOpenMaintenanceCount();
+  const { data: housekeepingCount } = usePendingHousekeepingCount();
 
   const visibleNavItems = navItems.filter((item) => canAccessRoute(effectiveRole, item.url));
 
