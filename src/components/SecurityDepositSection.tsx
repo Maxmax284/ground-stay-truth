@@ -3,7 +3,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
@@ -12,7 +11,7 @@ import { permissions } from "@/lib/permissions";
 import { useSecurityDeposit, useCreateSecurityDeposit, useUpdateSecurityDeposit } from "@/hooks/useSecurityDeposit";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
-import { Shield, Check, AlertTriangle } from "lucide-react";
+import { Shield, Check, AlertTriangle, Banknote, CreditCard, HandCoins } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
   held: "bg-warning/15 text-warning-foreground",
@@ -20,6 +19,12 @@ const STATUS_COLORS: Record<string, string> = {
   released: "bg-success/15 text-success",
   deducted: "bg-destructive/15 text-destructive",
 };
+
+const COLLECTION_METHODS = [
+  { value: "cash", label: "Cash", icon: Banknote },
+  { value: "card", label: "Card", icon: CreditCard },
+  { value: "bank_transfer", label: "Bank Transfer", icon: HandCoins },
+];
 
 export function SecurityDepositSection({ bookingId, bookingState }: { bookingId: string; bookingState: string }) {
   const { role, user } = useAuth();
@@ -30,6 +35,8 @@ export function SecurityDepositSection({ bookingId, bookingState }: { bookingId:
   const { toast } = useToast();
   const [deductionAmount, setDeductionAmount] = useState("");
   const [deductionReason, setDeductionReason] = useState("");
+  const [collectionMethod, setCollectionMethod] = useState("cash");
+  const [inspectionNotes, setInspectionNotes] = useState("");
 
   const depositSetting = policies?.find((p) => p.key === "security_deposit_amount");
   const depositAmount = Number(depositSetting?.value ?? 0);
@@ -39,12 +46,33 @@ export function SecurityDepositSection({ bookingId, bookingState }: { bookingId:
   if (depositAmount <= 0 && !deposit) return null;
 
   const canManage = permissions.canApproveOverride(role); // Manager+
+  const canCollect = permissions.canTransition(role); // Front Desk+
   const isCheckout = bookingState === "completed";
+  const isActiveStay = bookingState === "checked_in" || bookingState === "confirmed";
 
   const handleCollect = async () => {
     try {
       await createDeposit.mutateAsync({ booking_id: bookingId, amount_held: depositAmount });
-      toast({ title: "Security deposit collected" });
+      toast({
+        title: "Security deposit collected",
+        description: `${formatPrice(depositAmount, policies)} via ${COLLECTION_METHODS.find(m => m.value === collectionMethod)?.label ?? collectionMethod}`,
+      });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleInspect = async () => {
+    if (!deposit) return;
+    try {
+      await updateDeposit.mutateAsync({
+        id: deposit.id,
+        booking_id: bookingId,
+        status: "inspected",
+        inspected_by: user?.id,
+        notes: inspectionNotes || undefined,
+      });
+      toast({ title: "Unit inspected", description: "Ready for release or deduction." });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -86,50 +114,131 @@ export function SecurityDepositSection({ bookingId, bookingState }: { bookingId:
         <Shield className="h-4 w-4 text-muted-foreground" />
         <span className="text-sm font-semibold">Security Deposit</span>
         {isRequired && !deposit && <Badge variant="destructive" className="text-[10px]">Required</Badge>}
+        {deposit && (
+          <Badge className={`text-[10px] ${STATUS_COLORS[deposit.status] ?? ""}`}>
+            {deposit.status}
+          </Badge>
+        )}
       </div>
 
       {!deposit ? (
-        <div className="space-y-2">
+        /* ── Collection Flow (in-person) ── */
+        <div className="space-y-3 border rounded-md p-3 bg-muted/30">
           <p className="text-xs text-muted-foreground">
-            Security deposit: {formatPrice(depositAmount, policies)}
+            Collect <span className="font-medium text-foreground">{formatPrice(depositAmount, policies)}</span> from guest in person
           </p>
-          {canManage && (
-            <Button size="sm" variant="outline" onClick={handleCollect} disabled={createDeposit.isPending}>
-              Collect Deposit
+          <div className="space-y-2">
+            <Label className="text-xs">Collection Method</Label>
+            <div className="flex gap-1.5">
+              {COLLECTION_METHODS.map((method) => {
+                const Icon = method.icon;
+                const isSelected = collectionMethod === method.value;
+                return (
+                  <Button
+                    key={method.value}
+                    type="button"
+                    size="sm"
+                    variant={isSelected ? "default" : "outline"}
+                    className="h-8 text-xs gap-1.5 flex-1"
+                    onClick={() => setCollectionMethod(method.value)}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {method.label}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+          {canCollect && (
+            <Button
+              size="sm"
+              className="w-full gap-1.5"
+              onClick={handleCollect}
+              disabled={createDeposit.isPending}
+            >
+              <HandCoins className="h-4 w-4" />
+              Confirm Deposit Collected ({COLLECTION_METHODS.find(m => m.value === collectionMethod)?.label})
             </Button>
           )}
         </div>
       ) : (
+        /* ── Deposit Status & Actions ── */
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Badge className={`text-[10px] ${STATUS_COLORS[deposit.status] ?? ""}`}>
-              {deposit.status}
-            </Badge>
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm">{formatPrice(deposit.amount_held, policies)} held</span>
-            {deposit.amount_deducted > 0 && (
-              <span className="text-xs text-destructive">(-{formatPrice(deposit.amount_deducted, policies)})</span>
+            {deposit.amount_deducted && deposit.amount_deducted > 0 && (
+              <span className="text-xs text-destructive font-medium">
+                (-{formatPrice(deposit.amount_deducted, policies)} deducted)
+              </span>
             )}
           </div>
-          {deposit.deduction_reason && <p className="text-xs text-muted-foreground">{deposit.deduction_reason}</p>}
 
-          {/* Action buttons for Manager+ at checkout */}
-          {canManage && deposit.status === "held" && (isCheckout || bookingState === "checked_in") && (
+          {deposit.notes && (
+            <p className="text-xs text-muted-foreground italic">{deposit.notes}</p>
+          )}
+          {deposit.deduction_reason && (
+            <p className="text-xs text-destructive">Reason: {deposit.deduction_reason}</p>
+          )}
+
+          {/* Released/deducted final state */}
+          {(deposit.status === "released" || deposit.status === "deducted") && (
+            <p className="text-xs text-muted-foreground">
+              {deposit.status === "released" ? "✓ Full deposit returned to guest" : "Partial deduction applied, remainder returned"}
+            </p>
+          )}
+
+          {/* ── Inspect step (Manager+ after checkout/checkin) ── */}
+          {canManage && deposit.status === "held" && (isCheckout || isActiveStay) && (
             <div className="space-y-2 border rounded-md p-3 bg-muted/30">
-              <p className="text-xs font-medium">Inspection Actions</p>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" className="gap-1" onClick={handleRelease} disabled={updateDeposit.isPending}>
-                  <Check className="h-3 w-3" /> Release Full
-                </Button>
-              </div>
+              <p className="text-xs font-medium">Step 1: Inspect Unit</p>
+              <Input
+                value={inspectionNotes}
+                onChange={(e) => setInspectionNotes(e.target.value)}
+                className="h-8 text-xs"
+                placeholder="Inspection notes (optional)"
+              />
+              <Button size="sm" variant="outline" className="gap-1 w-full" onClick={handleInspect} disabled={updateDeposit.isPending}>
+                <Check className="h-3 w-3" /> Mark as Inspected
+              </Button>
+            </div>
+          )}
+
+          {/* ── Release/Deduct step (Manager+ after inspection) ── */}
+          {canManage && deposit.status === "inspected" && (
+            <div className="space-y-3 border rounded-md p-3 bg-muted/30">
+              <p className="text-xs font-medium">Step 2: Release or Deduct</p>
+              <Button size="sm" variant="outline" className="gap-1 w-full" onClick={handleRelease} disabled={updateDeposit.isPending}>
+                <Check className="h-3 w-3" /> Release Full Deposit
+              </Button>
+              <Separator />
               <div className="space-y-1.5">
-                <Label className="text-xs">Deduct amount</Label>
+                <Label className="text-xs">Or deduct for damages</Label>
                 <div className="flex gap-2">
-                  <Input type="number" min={0} max={Number(deposit.amount_held)} value={deductionAmount} onChange={(e) => setDeductionAmount(e.target.value)} className="h-8 w-24 text-xs" placeholder="Amount" />
-                  <Input value={deductionReason} onChange={(e) => setDeductionReason(e.target.value)} className="h-8 text-xs flex-1" placeholder="Reason" />
-                  <Button size="sm" variant="destructive" className="h-8 text-xs" onClick={handleDeduct} disabled={!deductionAmount || updateDeposit.isPending}>
-                    <AlertTriangle className="h-3 w-3 mr-1" /> Deduct
-                  </Button>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={Number(deposit.amount_held)}
+                    value={deductionAmount}
+                    onChange={(e) => setDeductionAmount(e.target.value)}
+                    className="h-8 w-24 text-xs"
+                    placeholder="Amount"
+                  />
+                  <Input
+                    value={deductionReason}
+                    onChange={(e) => setDeductionReason(e.target.value)}
+                    className="h-8 text-xs flex-1"
+                    placeholder="Reason for deduction"
+                  />
                 </div>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="h-8 text-xs w-full gap-1"
+                  onClick={handleDeduct}
+                  disabled={!deductionAmount || updateDeposit.isPending}
+                >
+                  <AlertTriangle className="h-3 w-3" /> Deduct & Return Remainder
+                </Button>
               </div>
             </div>
           )}
