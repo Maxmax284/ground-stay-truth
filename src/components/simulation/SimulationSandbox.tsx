@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { useSimulation } from "./SimulationContext";
 import { AIActorEngine } from "./AIActorEngine";
 import { cn } from "@/lib/utils";
-import { Plus, ArrowRight, Send, MessageSquare, Wrench, Shirt, Bot } from "lucide-react";
+import { Plus, ArrowRight, Send, MessageSquare, Wrench, Shirt, Bot, Dumbbell } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type BookingState = Database["public"]["Enums"]["booking_state"];
