@@ -149,7 +149,7 @@ export function AppSidebar() {
                       )}
                       {item.url === "/dashboard" && !isViewer && !!maintenanceCount && maintenanceCount > 0 && (
                         <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-4 min-w-4 justify-center animate-bounce-badge">
-                          {maintenanceCount}
+                          {maintenanceCount + (housekeepingCount ?? 0)}
                         </Badge>
                       )}
                     </NavLink>

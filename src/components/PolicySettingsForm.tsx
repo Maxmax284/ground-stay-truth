@@ -22,6 +22,9 @@ const BOOLEAN_KEYS = new Set([
   "deposits_require_online_when_enabled",
   "loyalty_pricing_enabled",
   "loyalty_discount_stacks_with_long_stay",
+  "security_deposit_required",
+  "email_deposit_reminder_enabled",
+  "email_welcome_enabled",
 ]);
 
 export function PolicySettingsForm() {
