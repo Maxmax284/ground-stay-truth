@@ -39,6 +39,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
+import { usePendingHousekeepingCount } from "@/hooks/useHousekeepingTasks";
 
 const navItems = [
   { titleKey: "nav.dashboard", url: "/dashboard", icon: Home },
