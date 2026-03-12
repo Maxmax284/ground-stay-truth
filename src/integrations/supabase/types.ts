@@ -52,6 +52,51 @@ export type Database = {
           },
         ]
       }
+      booking_training_links: {
+        Row: {
+          booking_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          package_id: string
+          start_date: string | null
+          trainer_name: string | null
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          package_id: string
+          start_date?: string | null
+          trainer_name?: string | null
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          package_id?: string
+          start_date?: string | null
+          trainer_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_training_links_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_training_links_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "training_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           arrival_details: Json | null
@@ -249,6 +294,70 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      housekeeping_tasks: {
+        Row: {
+          assigned_to: string | null
+          booking_in_id: string | null
+          booking_out_id: string
+          completed_at: string | null
+          created_at: string
+          due_by: string | null
+          id: string
+          notes: string | null
+          status: string
+          unit_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          booking_in_id?: string | null
+          booking_out_id: string
+          completed_at?: string | null
+          created_at?: string
+          due_by?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          unit_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          booking_in_id?: string | null
+          booking_out_id?: string
+          completed_at?: string | null
+          created_at?: string
+          due_by?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          unit_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "housekeeping_tasks_booking_in_id_fkey"
+            columns: ["booking_in_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "housekeeping_tasks_booking_out_id_fkey"
+            columns: ["booking_out_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "housekeeping_tasks_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
             referencedColumns: ["id"]
           },
         ]
@@ -846,6 +955,62 @@ export type Database = {
           },
         ]
       }
+      security_deposits: {
+        Row: {
+          amount_deducted: number | null
+          amount_held: number
+          booking_id: string
+          created_at: string
+          deduction_reason: string | null
+          held_at: string
+          id: string
+          inspected_at: string | null
+          inspected_by: string | null
+          notes: string | null
+          released_at: string | null
+          released_by: string | null
+          status: string
+        }
+        Insert: {
+          amount_deducted?: number | null
+          amount_held?: number
+          booking_id: string
+          created_at?: string
+          deduction_reason?: string | null
+          held_at?: string
+          id?: string
+          inspected_at?: string | null
+          inspected_by?: string | null
+          notes?: string | null
+          released_at?: string | null
+          released_by?: string | null
+          status?: string
+        }
+        Update: {
+          amount_deducted?: number | null
+          amount_held?: number
+          booking_id?: string
+          created_at?: string
+          deduction_reason?: string | null
+          held_at?: string
+          id?: string
+          inspected_at?: string | null
+          inspected_by?: string | null
+          notes?: string | null
+          released_at?: string | null
+          released_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_deposits_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stay_support_log: {
         Row: {
           action: string
@@ -895,6 +1060,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      training_packages: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_days: number
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          price?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+        }
+        Relationships: []
       }
       unit_groups: {
         Row: {
