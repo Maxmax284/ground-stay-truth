@@ -14,6 +14,7 @@ import { ApprovalQueue } from "@/components/ApprovalQueue";
 import { InquiryQueue } from "@/components/InquiryQueue";
 import { MaintenanceQueue } from "@/components/MaintenanceQueue";
 import { LaundryPanel } from "@/components/LaundryPanel";
+import { HousekeepingPanel } from "@/components/HousekeepingPanel";
 import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useDraftMessages, useApproveDraftMessage } from "@/hooks/useBookings";
