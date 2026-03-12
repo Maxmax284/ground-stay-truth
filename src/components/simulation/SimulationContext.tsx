@@ -52,6 +52,7 @@ interface SimulationContextType {
   /** Inject chaos events into data */
   addMaintenanceRequest: (req: Omit<MockMaintenanceRequest, "id" | "created_at">) => void;
   addLaundryRequest: (req: Omit<MockLaundryRequest, "id" | "created_at">) => void;
+  linkTraining: (link: Omit<MockTrainingLink, "id">) => void;
 }
 
 const SimulationContext = createContext<SimulationContextType | undefined>(undefined);
