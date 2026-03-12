@@ -534,6 +534,12 @@ function SecurityDepositsPanel() {
 
 export function SimulationSandbox() {
   const { data } = useSimulation();
+  const [showArchived, setShowArchived] = useState(false);
+
+  const ARCHIVED_STATES = ["completed", "cancelled", "no_show"];
+  const activeBookings = data.bookings.filter((b) => !ARCHIVED_STATES.includes(b.state));
+  const archivedBookings = data.bookings.filter((b) => ARCHIVED_STATES.includes(b.state));
+  const displayedBookings = showArchived ? data.bookings : activeBookings;
 
   return (
     <div className="space-y-6">
