@@ -28,6 +28,8 @@ export function SecurityDepositSection({ bookingId, bookingState }: { bookingId:
   const createDeposit = useCreateSecurityDeposit();
   const updateDeposit = useUpdateSecurityDeposit();
   const { toast } = useToast();
+  const [deductionAmount, setDeductionAmount] = useState("");
+  const [deductionReason, setDeductionReason] = useState("");
 
   const depositSetting = policies?.find((p) => p.key === "security_deposit_amount");
   const depositAmount = Number(depositSetting?.value ?? 0);
@@ -38,9 +40,6 @@ export function SecurityDepositSection({ bookingId, bookingState }: { bookingId:
 
   const canManage = permissions.canApproveOverride(role); // Manager+
   const isCheckout = bookingState === "completed";
-
-  const [deductionAmount, setDeductionAmount] = useState("");
-  const [deductionReason, setDeductionReason] = useState("");
 
   const handleCollect = async () => {
     try {
