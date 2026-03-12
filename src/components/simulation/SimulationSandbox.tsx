@@ -343,6 +343,72 @@ function LaundryPanel() {
   );
 }
 
+function TrainingPanel() {
+  const { data, linkTraining } = useSimulation();
+  const [selectedBooking, setSelectedBooking] = useState("");
+  const [selectedPackage, setSelectedPackage] = useState("");
+
+  const activeLinks = data.trainingLinks.map((link) => {
+    const booking = data.bookings.find((b) => b.id === link.booking_id);
+    const pkg = data.trainingPackages.find((p) => p.id === link.package_id);
+    return { ...link, booking, pkg };
+  });
+
+  const handleLink = () => {
+    if (!selectedBooking || !selectedPackage) return;
+    linkTraining({ booking_id: selectedBooking, package_id: selectedPackage, trainer_name: null, start_date: null });
+    setSelectedBooking("");
+    setSelectedPackage("");
+  };
+
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+        <Dumbbell className="h-3.5 w-3.5" /> Training ({activeLinks.length})
+      </h3>
+      <div className="space-y-2">
+        {activeLinks.map((link) => (
+          <Card key={link.id}>
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">{link.booking?.guest_name ?? "Unknown"}</p>
+                  <p className="text-xs text-muted-foreground">{link.pkg?.name ?? "Package"} · {link.pkg?.duration_days}d</p>
+                </div>
+                <div className="text-right">
+                  {link.trainer_name && <Badge variant="outline" className="text-[10px]">{link.trainer_name}</Badge>}
+                  {link.start_date && <p className="text-[10px] text-muted-foreground mt-0.5">Starts {link.start_date}</p>}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        <div className="flex gap-2 items-end">
+          <Select value={selectedBooking} onValueChange={setSelectedBooking}>
+            <SelectTrigger className="h-7 text-xs flex-1"><SelectValue placeholder="Booking..." /></SelectTrigger>
+            <SelectContent>
+              {data.bookings.filter((b) => !["cancelled", "no_show", "completed"].includes(b.state)).map((b) => (
+                <SelectItem key={b.id} value={b.id} className="text-xs">{b.guest_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedPackage} onValueChange={setSelectedPackage}>
+            <SelectTrigger className="h-7 text-xs flex-1"><SelectValue placeholder="Package..." /></SelectTrigger>
+            <SelectContent>
+              {data.trainingPackages.filter((p) => p.is_active).map((p) => (
+                <SelectItem key={p.id} value={p.id} className="text-xs">{p.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button size="sm" className="h-7 text-xs shrink-0" disabled={!selectedBooking || !selectedPackage} onClick={handleLink}>
+            <Plus className="h-3 w-3 mr-0.5" /> Link
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function SimulationSandbox() {
   const { data } = useSimulation();
 
@@ -401,8 +467,9 @@ export function SimulationSandbox() {
       {/* Messages */}
       <MessagesPanel />
 
-      {/* Maintenance & Laundry */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Training, Maintenance & Laundry */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <TrainingPanel />
         <MaintenancePanel />
         <LaundryPanel />
       </div>
