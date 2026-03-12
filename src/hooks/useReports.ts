@@ -125,6 +125,44 @@ export function useReports(monthOffset = 0) {
     return { name: unit.name, booked: bookedDays, blocked: blockedDays, maintenance: maintenanceDays, available: availableDays };
   });
 
+  // ── Advanced KPIs ──
+  const totalRevenue = revenueByUnit.reduce((s, u) => s + u.revenue, 0);
+  const adr = totalOccupiedDays > 0 ? totalRevenue / totalOccupiedDays : 0;
+  const revpar = totalUnitDays > 0 ? totalRevenue / totalUnitDays : 0;
+
+  // ── 30-day Forward Occupancy Forecast ──
+  const forecastBookings = useQuery({
+    queryKey: ["reports", "forecast"],
+    queryFn: async () => {
+      const today = format(new Date(), "yyyy-MM-dd");
+      const futureEnd = format(new Date(Date.now() + 30 * 86400000), "yyyy-MM-dd");
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("unit_id, check_in, check_out, state")
+        .in("state", ["confirmed", "pending_deposit", "checked_in"])
+        .lte("check_in", futureEnd)
+        .gte("check_out", today);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const forecastOccupancy = (() => {
+    const today = new Date();
+    const futureDays = eachDayOfInterval({ start: today, end: new Date(today.getTime() + 29 * 86400000) });
+    const unitCount = units.data?.length ?? 1;
+    const totalSlots = futureDays.length * unitCount;
+    let occupiedSlots = 0;
+    futureDays.forEach((day) => {
+      const dayStr = format(day, "yyyy-MM-dd");
+      const occ = (forecastBookings.data ?? []).filter(
+        (b) => b.check_in <= dayStr && b.check_out > dayStr
+      ).length;
+      occupiedSlots += occ;
+    });
+    return totalSlots > 0 ? Math.round((occupiedSlots / totalSlots) * 100) : 0;
+  })();
+
   return {
     isLoading: bookings.isLoading || units.isLoading || maintenanceBlocks.isLoading,
     occupancyByDay,
@@ -133,5 +171,12 @@ export function useReports(monthOffset = 0) {
     stateDistribution,
     blockedVsBookable,
     rangeLabel: format(refDate, "MMMM yyyy"),
+    adr,
+    revpar,
+    totalRevenue,
+    forecastOccupancy,
+    forecastLoading: forecastBookings.isLoading,
+    // Expose raw data for CSV export
+    rawBookings: bookings.data ?? [],
   };
 }
