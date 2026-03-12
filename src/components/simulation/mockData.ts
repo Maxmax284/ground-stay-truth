@@ -84,6 +84,17 @@ export interface MockTrainingLink {
   start_date: string | null;
 }
 
+export interface MockSecurityDeposit {
+  id: string;
+  booking_id: string;
+  amount_held: number;
+  amount_deducted: number;
+  deduction_reason: string | null;
+  status: "held" | "inspected" | "released" | "deducted";
+  collection_method: "cash" | "card" | "bank_transfer";
+  notes: string | null;
+}
+
 export interface SimulationData {
   units: MockUnit[];
   bookings: MockBooking[];
@@ -92,6 +103,7 @@ export interface SimulationData {
   messages: MockMessage[];
   trainingPackages: MockTrainingPackage[];
   trainingLinks: MockTrainingLink[];
+  securityDeposits: MockSecurityDeposit[];
 }
 
 function daysFromNow(offset: number): string {
