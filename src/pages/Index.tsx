@@ -14,6 +14,7 @@ import { ApprovalQueue } from "@/components/ApprovalQueue";
 import { InquiryQueue } from "@/components/InquiryQueue";
 import { MaintenanceQueue } from "@/components/MaintenanceQueue";
 import { LaundryPanel } from "@/components/LaundryPanel";
+import { HousekeepingPanel } from "@/components/HousekeepingPanel";
 import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useDraftMessages, useApproveDraftMessage } from "@/hooks/useBookings";
@@ -141,7 +142,10 @@ const Index = () => {
               )}
             </div>
 
-            {/* Maintenance & Laundry panels for all non-viewer, non-maintenance staff */}
+            {/* Housekeeping, Maintenance & Laundry panels for all non-viewer, non-maintenance staff */}
+            {!isViewer && !isMaintenance && (
+              <HousekeepingPanel />
+            )}
             {!isViewer && !isMaintenance && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <MaintenanceQueue />

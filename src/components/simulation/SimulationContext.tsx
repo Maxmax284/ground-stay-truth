@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useMemo, useCallback, ReactNode } from "react";
-import { generateMockData, type SimulationData, type MockBooking, type MockMessage, type MockMaintenanceRequest, type MockLaundryRequest } from "./mockData";
+import { generateMockData, type SimulationData, type MockBooking, type MockMessage, type MockMaintenanceRequest, type MockLaundryRequest, type MockTrainingLink } from "./mockData";
 import type { AppRole } from "@/lib/permissions";
 
 export type ActorLogType = "response" | "escalation" | "chaos" | "suppressed";
@@ -52,6 +52,7 @@ interface SimulationContextType {
   /** Inject chaos events into data */
   addMaintenanceRequest: (req: Omit<MockMaintenanceRequest, "id" | "created_at">) => void;
   addLaundryRequest: (req: Omit<MockLaundryRequest, "id" | "created_at">) => void;
+  linkTraining: (link: Omit<MockTrainingLink, "id">) => void;
 }
 
 const SimulationContext = createContext<SimulationContextType | undefined>(undefined);
@@ -145,6 +146,13 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const linkTraining = useCallback((link: Omit<MockTrainingLink, "id">) => {
+    setData((prev) => ({
+      ...prev,
+      trainingLinks: [...prev.trainingLinks, { ...link, id: simId("sim-tl") }],
+    }));
+  }, []);
+
   const completeMission = useCallback((id: string) => {
     setCompleted((prev) => {
       const next = prev.includes(id) ? prev : [...prev, id];
@@ -202,8 +210,9 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       setActorTyping,
       addMaintenanceRequest,
       addLaundryRequest,
+      linkTraining,
     }),
-    [data, simulatedRole, activeMission, missionStep, completedMissions, actorLog, actorMemory, actorDifficulty, actorTyping, transitionBooking, createBooking, sendMessage, updateMaintenanceStatus, updateLaundryStatus, completeMission, addActorLog, addActorMemory, clearActorMemory, addMaintenanceRequest, addLaundryRequest]
+    [data, simulatedRole, activeMission, missionStep, completedMissions, actorLog, actorMemory, actorDifficulty, actorTyping, transitionBooking, createBooking, sendMessage, updateMaintenanceStatus, updateLaundryStatus, completeMission, addActorLog, addActorMemory, clearActorMemory, addMaintenanceRequest, addLaundryRequest, linkTraining]
   );
 
   return (

@@ -24,6 +24,8 @@ import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { formatPrice } from "@/lib/currency";
 import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText, Info, Wrench, Shirt, Globe, Sparkles } from "lucide-react";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
+import { SecurityDepositSection } from "@/components/SecurityDepositSection";
+import { BookingTrainingSection } from "@/components/BookingTrainingSection";
 import { useGuestDocuments } from "@/hooks/useGuestDocuments";
 import { useMaintenanceRequests, useUpdateMaintenanceStatus } from "@/hooks/useMaintenanceRequests";
 import { useLaundryRequests, useAdvanceLaundryStatus, getNextLaundryStatus } from "@/hooks/useLaundryRequests";
@@ -157,6 +159,8 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
             </div>
           )}
         </SheetHeader>
+        <SecurityDepositSection bookingId={booking.id} bookingState={booking.state} />
+        <BookingTrainingSection bookingId={booking.id} />
         <Separator />
         <div className="py-4"><BookingStateTransition bookingId={booking.id} currentState={booking.state as BookingState} isAdmin={isAdmin} checkInDate={booking.check_in} totalPrice={booking.total_price} unitId={booking.unit_id} /></div>
         <Tabs defaultValue="history" className="mt-2" onValueChange={(val) => {

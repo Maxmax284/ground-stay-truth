@@ -67,12 +67,31 @@ export interface MockMessage {
   created_at: string;
 }
 
+export interface MockTrainingPackage {
+  id: string;
+  name: string;
+  description: string;
+  duration_days: number;
+  price: number;
+  is_active: boolean;
+}
+
+export interface MockTrainingLink {
+  id: string;
+  booking_id: string;
+  package_id: string;
+  trainer_name: string | null;
+  start_date: string | null;
+}
+
 export interface SimulationData {
   units: MockUnit[];
   bookings: MockBooking[];
   maintenanceRequests: MockMaintenanceRequest[];
   laundryRequests: MockLaundryRequest[];
   messages: MockMessage[];
+  trainingPackages: MockTrainingPackage[];
+  trainingLinks: MockTrainingLink[];
 }
 
 function daysFromNow(offset: number): string {
@@ -175,5 +194,17 @@ export function generateMockData(): SimulationData {
     { id: "sim-msg-5", booking_id: "sim-bk-04", sender_id: "sim-guest-4", content: "My trainer recommended this camp. Looking forward to it!", is_internal: false, created_at: daysFromNow(0) },
   ];
 
-  return { units, bookings, maintenanceRequests, laundryRequests, messages };
+  const trainingPackages: MockTrainingPackage[] = [
+    { id: "sim-tp-1", name: "Beginner Muay Thai", description: "Fundamentals: stance, basic strikes, clinch intro", duration_days: 7, price: 5000, is_active: true },
+    { id: "sim-tp-2", name: "Advanced Fighter Camp", description: "Intensive sparring, conditioning, fight prep", duration_days: 14, price: 12000, is_active: true },
+    { id: "sim-tp-3", name: "Private Sessions", description: "1-on-1 with senior Kru, custom program", duration_days: 5, price: 8000, is_active: true },
+  ];
+
+  const trainingLinks: MockTrainingLink[] = [
+    { id: "sim-tl-1", booking_id: "sim-bk-01", package_id: "sim-tp-2", trainer_name: "Kru Nong", start_date: daysFromNow(0) },
+    { id: "sim-tl-2", booking_id: "sim-bk-02", package_id: "sim-tp-1", trainer_name: "Kru Dam", start_date: daysFromNow(1) },
+    { id: "sim-tl-3", booking_id: "sim-bk-04", package_id: "sim-tp-3", trainer_name: null, start_date: daysFromNow(7) },
+  ];
+
+  return { units, bookings, maintenanceRequests, laundryRequests, messages, trainingPackages, trainingLinks };
 }

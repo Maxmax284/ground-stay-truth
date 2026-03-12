@@ -145,4 +145,18 @@ export const MISSIONS: Mission[] = [
       { title: "Complete!", description: "Staff onboarding complete: Create account → Assign role → Verify access → Recommend training. The Role Preview and War Room Simulation ensure new staff are confident before going live." },
     ],
   },
+  {
+    id: "training-program",
+    titleKey: "simulation.missions.trainingProgram.title",
+    descriptionKey: "simulation.missions.trainingProgram.description",
+    icon: "Dumbbell",
+    targetRoles: ["front_desk", "front_desk_supervisor", "manager", "admin"],
+    steps: [
+      { title: "Step 1: Create Training Packages", description: "Admins define training packages in Settings → Training. Each package has a name, duration, and price (e.g., 'Beginner Muay Thai — 7 days — ฿5,000').", requiredRole: "admin" },
+      { title: "Step 2: Link to Booking", description: "Open any booking and use the Training Program section to assign a package. Select the package, optionally set a trainer and start date." },
+      { title: "Step 3: View in Sandbox", description: "The Training panel in the sandbox shows all active training links — which guests are training, with whom, and on what program." },
+      { title: "Step 4: Guest Visibility", description: "Guests see their assigned training package in their portal, including trainer name and schedule details." },
+      { title: "Complete!", description: "Training integration complete: Admin creates packages → Staff links to bookings → Guests see details. This connects accommodation with training operations." },
+    ],
+  },
 ];

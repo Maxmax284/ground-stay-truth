@@ -39,6 +39,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
+import { usePendingHousekeepingCount } from "@/hooks/useHousekeepingTasks";
 
 const navItems = [
   { titleKey: "nav.dashboard", url: "/dashboard", icon: Home },
@@ -102,6 +103,7 @@ export function AppSidebar() {
   const { data: pendingCount } = usePendingUsersCount(isAdmin);
   const { data: approvalCount } = usePendingApprovalCount(canApprove);
   const { data: maintenanceCount } = useOpenMaintenanceCount();
+  const { data: housekeepingCount } = usePendingHousekeepingCount();
 
   const visibleNavItems = navItems.filter((item) => canAccessRoute(effectiveRole, item.url));
 
@@ -147,7 +149,7 @@ export function AppSidebar() {
                       )}
                       {item.url === "/dashboard" && !isViewer && !!maintenanceCount && maintenanceCount > 0 && (
                         <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-4 min-w-4 justify-center animate-bounce-badge">
-                          {maintenanceCount}
+                          {maintenanceCount + (housekeepingCount ?? 0)}
                         </Badge>
                       )}
                     </NavLink>

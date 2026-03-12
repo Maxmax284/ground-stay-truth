@@ -17,24 +17,43 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const now = new Date();
-    const today = now.toISOString().split("T")[0];
     let preArrivalSent = 0;
     let reviewRequestsSent = 0;
+    let depositRemindersSent = 0;
+    let welcomeMessagesSent = 0;
 
     // Fetch policy settings
     const { data: policies } = await supabase
       .from("policy_settings")
       .select("key, value")
-      .in("key", ["earliest_checkin_time", "checkout_time"]);
+      .in("key", [
+        "earliest_checkin_time", "checkout_time",
+        "email_deposit_reminder_enabled", "email_welcome_enabled",
+      ]);
 
     const policyMap = new Map((policies ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]));
     const checkinTime = policyMap.get("earliest_checkin_time") || "16:00";
+    const depositRemindersEnabled = policyMap.get("email_deposit_reminder_enabled") !== "false";
+    const welcomeEnabled = policyMap.get("email_welcome_enabled") !== "false";
+
+    // Helper to send email
+    async function sendEmail(templateKey: string, recipientEmail: string, bookingId: string, language: string, data: Record<string, any>) {
+      try {
+        const resp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${serviceRoleKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ template_key: templateKey, recipient_email: recipientEmail, booking_id: bookingId, language, data }),
+        });
+        const result = await resp.json();
+        return result.sent || result.skipped;
+      } catch (e) {
+        console.error(`Email ${templateKey} failed:`, e);
+        return false;
+      }
+    }
 
     // 1. Pre-arrival reminders: 3 days before check_in for confirmed bookings
-    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0];
-
+    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     const { data: preArrivalBookings } = await supabase
       .from("bookings")
       .select("id, guest_id, check_in, check_out, unit_id, units(name), profiles!bookings_guest_id_profiles_fkey(email, full_name, preferred_language)")
@@ -43,44 +62,19 @@ Deno.serve(async (req) => {
 
     for (const booking of preArrivalBookings ?? []) {
       const guestEmail = (booking as any).profiles?.email;
-      const guestName = (booking as any).profiles?.full_name || "Guest";
-      const guestLang = (booking as any).profiles?.preferred_language || "en";
-      const unitName = (booking as any).units?.name || "Your Unit";
-
       if (!guestEmail) continue;
-
-      try {
-        const resp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${serviceRoleKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            template_key: "pre_arrival_reminder",
-            recipient_email: guestEmail,
-            booking_id: booking.id,
-            language: guestLang,
-            data: {
-              guest_name: guestName,
-              unit_name: unitName,
-              check_in: booking.check_in,
-              check_out: booking.check_out,
-              checkin_time: checkinTime,
-            },
-          }),
+      const sent = await sendEmail("pre_arrival_reminder", guestEmail, booking.id,
+        (booking as any).profiles?.preferred_language || "en", {
+          guest_name: (booking as any).profiles?.full_name || "Guest",
+          unit_name: (booking as any).units?.name || "Your Unit",
+          check_in: booking.check_in, check_out: booking.check_out, checkin_time: checkinTime,
         });
-        const result = await resp.json();
-        if (result.sent || result.skipped) preArrivalSent++;
-      } catch (e) {
-        console.error("Pre-arrival email failed:", e);
-      }
+      if (sent) preArrivalSent++;
     }
 
     // 2. Review requests: bookings completed 24h ago
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
     const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
-
     const { data: completedBookings } = await supabase
       .from("bookings")
       .select("id, guest_id, check_in, check_out, unit_id, units(name), profiles!bookings_guest_id_profiles_fkey(email, full_name, preferred_language)")
@@ -90,45 +84,81 @@ Deno.serve(async (req) => {
 
     for (const booking of completedBookings ?? []) {
       const guestEmail = (booking as any).profiles?.email;
-      const guestName = (booking as any).profiles?.full_name || "Guest";
-      const guestLang = (booking as any).profiles?.preferred_language || "en";
-      const unitName = (booking as any).units?.name || "Your Unit";
-
       if (!guestEmail) continue;
-
-      // Check if review already exists
-      const { data: existingReview } = await supabase
-        .from("reviews")
-        .select("id")
-        .eq("booking_id", booking.id)
-        .maybeSingle();
-
+      const { data: existingReview } = await supabase.from("reviews").select("id").eq("booking_id", booking.id).maybeSingle();
       if (existingReview) continue;
-
-      try {
-        const resp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${serviceRoleKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            template_key: "review_request",
-            recipient_email: guestEmail,
-            booking_id: booking.id,
-            language: guestLang,
-            data: {
-              guest_name: guestName,
-              unit_name: unitName,
-              check_in: booking.check_in,
-              check_out: booking.check_out,
-            },
-          }),
+      const sent = await sendEmail("review_request", guestEmail, booking.id,
+        (booking as any).profiles?.preferred_language || "en", {
+          guest_name: (booking as any).profiles?.full_name || "Guest",
+          unit_name: (booking as any).units?.name || "Your Unit",
+          check_in: booking.check_in, check_out: booking.check_out,
         });
-        const result = await resp.json();
-        if (result.sent || result.skipped) reviewRequestsSent++;
-      } catch (e) {
-        console.error("Review request email failed:", e);
+      if (sent) reviewRequestsSent++;
+    }
+
+    // 3. Deposit reminders (12h and 24h after entering pending_deposit)
+    if (depositRemindersEnabled) {
+      const { data: pendingDepositBookings } = await supabase
+        .from("bookings")
+        .select("id, guest_id, check_in, check_out, total_price, unit_id, units(name), profiles!bookings_guest_id_profiles_fkey(email, full_name, preferred_language)")
+        .eq("state", "pending_deposit");
+
+      for (const booking of pendingDepositBookings ?? []) {
+        const guestEmail = (booking as any).profiles?.email;
+        if (!guestEmail) continue;
+
+        // Check when it entered pending_deposit
+        const { data: stateLog } = await supabase
+          .from("booking_state_log")
+          .select("created_at")
+          .eq("booking_id", booking.id)
+          .eq("to_state", "pending_deposit")
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        if (!stateLog?.length) continue;
+        const enteredAt = new Date(stateLog[0].created_at);
+        const hoursSince = (now.getTime() - enteredAt.getTime()) / (1000 * 60 * 60);
+
+        // Send at ~12h and ~24h marks (with 1h tolerance window)
+        const shouldSend12 = hoursSince >= 11 && hoursSince < 13;
+        const shouldSend24 = hoursSince >= 23 && hoursSince < 25;
+        const templateKey = shouldSend12 ? "deposit_reminder_12h" : shouldSend24 ? "deposit_reminder_24h" : null;
+
+        if (templateKey) {
+          const sent = await sendEmail(templateKey, guestEmail, booking.id,
+            (booking as any).profiles?.preferred_language || "en", {
+              guest_name: (booking as any).profiles?.full_name || "Guest",
+              unit_name: (booking as any).units?.name || "Your Unit",
+              total_price: booking.total_price,
+              check_in: booking.check_in,
+            });
+          if (sent) depositRemindersSent++;
+        }
+      }
+    }
+
+    // 4. Welcome message on check-in day
+    if (welcomeEnabled) {
+      const today = now.toISOString().split("T")[0];
+      const { data: checkinBookings } = await supabase
+        .from("bookings")
+        .select("id, guest_id, check_in, check_out, unit_id, units(name), profiles!bookings_guest_id_profiles_fkey(email, full_name, preferred_language)")
+        .eq("state", "confirmed")
+        .eq("check_in", today);
+
+      for (const booking of checkinBookings ?? []) {
+        const guestEmail = (booking as any).profiles?.email;
+        if (!guestEmail) continue;
+        const sent = await sendEmail("welcome_checkin", guestEmail, booking.id,
+          (booking as any).profiles?.preferred_language || "en", {
+            guest_name: (booking as any).profiles?.full_name || "Guest",
+            unit_name: (booking as any).units?.name || "Your Unit",
+            checkin_time: checkinTime,
+            check_in: booking.check_in,
+            check_out: booking.check_out,
+          });
+        if (sent) welcomeMessagesSent++;
       }
     }
 
@@ -137,6 +167,8 @@ Deno.serve(async (req) => {
         success: true,
         pre_arrival_sent: preArrivalSent,
         review_requests_sent: reviewRequestsSent,
+        deposit_reminders_sent: depositRemindersSent,
+        welcome_messages_sent: welcomeMessagesSent,
         timestamp: now.toISOString(),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
