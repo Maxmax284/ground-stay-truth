@@ -146,6 +146,13 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const linkTraining = useCallback((link: Omit<MockTrainingLink, "id">) => {
+    setData((prev) => ({
+      ...prev,
+      trainingLinks: [...prev.trainingLinks, { ...link, id: simId("sim-tl") }],
+    }));
+  }, []);
+
   const completeMission = useCallback((id: string) => {
     setCompleted((prev) => {
       const next = prev.includes(id) ? prev : [...prev, id];
