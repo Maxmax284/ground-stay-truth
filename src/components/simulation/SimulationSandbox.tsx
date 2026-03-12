@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { useSimulation } from "./SimulationContext";
 import { AIActorEngine } from "./AIActorEngine";
 import { cn } from "@/lib/utils";
-import { Plus, ArrowRight, Send, MessageSquare, Wrench, Shirt, Bot, Dumbbell } from "lucide-react";
+import { Plus, ArrowRight, Send, MessageSquare, Wrench, Shirt, Bot, Dumbbell, Shield, Check, AlertTriangle, Banknote, CreditCard, HandCoins } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type BookingState = Database["public"]["Enums"]["booking_state"];
@@ -409,6 +409,129 @@ function TrainingPanel() {
   );
 }
 
+const DEPOSIT_STATUS_COLORS: Record<string, string> = {
+  held: "bg-warning/15 text-warning-foreground",
+  inspected: "bg-primary/15 text-primary",
+  released: "bg-success/15 text-success",
+  deducted: "bg-destructive/15 text-destructive",
+};
+
+const METHOD_ICONS: Record<string, typeof Banknote> = {
+  cash: Banknote,
+  card: CreditCard,
+  bank_transfer: HandCoins,
+};
+
+function SecurityDepositsPanel() {
+  const { data, collectDeposit, updateDepositStatus } = useSimulation();
+  const [selectedBooking, setSelectedBooking] = useState("");
+  const [method, setMethod] = useState<"cash" | "card" | "bank_transfer">("cash");
+  const [deductAmount, setDeductAmount] = useState("");
+  const [deductReason, setDeductReason] = useState("");
+
+  const depositAmount = 5000; // Mock policy amount
+
+  // Bookings eligible for deposit collection (active, no existing deposit)
+  const eligibleBookings = data.bookings.filter(
+    (b) => ["confirmed", "checked_in"].includes(b.state) &&
+      !data.securityDeposits.some((d) => d.booking_id === b.id)
+  );
+
+  const handleCollect = () => {
+    if (!selectedBooking) return;
+    collectDeposit(selectedBooking, depositAmount, method);
+    setSelectedBooking("");
+  };
+
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+        <Shield className="h-3.5 w-3.5" /> Security Deposits ({data.securityDeposits.length})
+      </h3>
+      <div className="space-y-2">
+        {data.securityDeposits.map((dep) => {
+          const booking = data.bookings.find((b) => b.id === dep.booking_id);
+          const MethodIcon = METHOD_ICONS[dep.collection_method] || Banknote;
+          const isActionable = dep.status === "held" || dep.status === "inspected";
+          return (
+            <Card key={dep.id}>
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">{booking?.guest_name ?? "Unknown"}</p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <MethodIcon className="h-3 w-3" /> ฿{dep.amount_held.toLocaleString()} via {dep.collection_method.replace(/_/g, " ")}
+                    </p>
+                  </div>
+                  <Badge className={`text-[10px] ${DEPOSIT_STATUS_COLORS[dep.status] ?? ""}`}>
+                    {dep.status}
+                  </Badge>
+                </div>
+                {dep.amount_deducted > 0 && (
+                  <p className="text-xs text-destructive">-฿{dep.amount_deducted.toLocaleString()} — {dep.deduction_reason}</p>
+                )}
+                {dep.notes && <p className="text-xs text-muted-foreground italic">{dep.notes}</p>}
+
+                {/* Action buttons */}
+                {dep.status === "held" && (
+                  <Button size="sm" variant="outline" className="h-6 text-[10px] w-full gap-1" onClick={() => updateDepositStatus(dep.id, "inspected", { notes: "Unit inspected — no issues found" })}>
+                    <Check className="h-3 w-3" /> Mark Inspected
+                  </Button>
+                )}
+                {dep.status === "inspected" && (
+                  <div className="space-y-1.5">
+                    <div className="flex gap-1.5">
+                      <Button size="sm" variant="outline" className="h-6 text-[10px] flex-1 gap-1" onClick={() => updateDepositStatus(dep.id, "released")}>
+                        <Check className="h-3 w-3" /> Release Full
+                      </Button>
+                    </div>
+                    <div className="flex gap-1">
+                      <Input type="number" min={0} max={dep.amount_held} value={deductAmount} onChange={(e) => setDeductAmount(e.target.value)} className="h-6 text-[10px] w-20" placeholder="฿" />
+                      <Input value={deductReason} onChange={(e) => setDeductReason(e.target.value)} className="h-6 text-[10px] flex-1" placeholder="Reason" />
+                      <Button size="sm" variant="destructive" className="h-6 text-[10px] px-2" disabled={!deductAmount} onClick={() => {
+                        updateDepositStatus(dep.id, "deducted", { amount_deducted: parseFloat(deductAmount), deduction_reason: deductReason || "Damage" });
+                        setDeductAmount("");
+                        setDeductReason("");
+                      }}>
+                        <AlertTriangle className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+
+        {/* Collect new deposit */}
+        {eligibleBookings.length > 0 && (
+          <div className="flex gap-1.5 items-end flex-wrap">
+            <Select value={selectedBooking} onValueChange={setSelectedBooking}>
+              <SelectTrigger className="h-7 text-xs flex-1 min-w-[100px]"><SelectValue placeholder="Guest..." /></SelectTrigger>
+              <SelectContent>
+                {eligibleBookings.map((b) => (
+                  <SelectItem key={b.id} value={b.id} className="text-xs">{b.guest_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={method} onValueChange={(v) => setMethod(v as any)}>
+              <SelectTrigger className="h-7 text-xs w-24"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cash" className="text-xs">Cash</SelectItem>
+                <SelectItem value="card" className="text-xs">Card</SelectItem>
+                <SelectItem value="bank_transfer" className="text-xs">Transfer</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button size="sm" className="h-7 text-xs shrink-0" disabled={!selectedBooking} onClick={handleCollect}>
+              <HandCoins className="h-3 w-3 mr-0.5" /> Collect
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function SimulationSandbox() {
   const { data } = useSimulation();
 
@@ -467,8 +590,9 @@ export function SimulationSandbox() {
       {/* Messages */}
       <MessagesPanel />
 
-      {/* Training, Maintenance & Laundry */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Security Deposits, Training, Maintenance & Laundry */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <SecurityDepositsPanel />
         <TrainingPanel />
         <MaintenancePanel />
         <LaundryPanel />

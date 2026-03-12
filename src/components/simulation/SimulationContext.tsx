@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useMemo, useCallback, ReactNode } from "react";
-import { generateMockData, type SimulationData, type MockBooking, type MockMessage, type MockMaintenanceRequest, type MockLaundryRequest, type MockTrainingLink } from "./mockData";
+import { generateMockData, type SimulationData, type MockBooking, type MockMessage, type MockMaintenanceRequest, type MockLaundryRequest, type MockTrainingLink, type MockSecurityDeposit } from "./mockData";
 import type { AppRole } from "@/lib/permissions";
 
 export type ActorLogType = "response" | "escalation" | "chaos" | "suppressed";
@@ -53,6 +53,8 @@ interface SimulationContextType {
   addMaintenanceRequest: (req: Omit<MockMaintenanceRequest, "id" | "created_at">) => void;
   addLaundryRequest: (req: Omit<MockLaundryRequest, "id" | "created_at">) => void;
   linkTraining: (link: Omit<MockTrainingLink, "id">) => void;
+  collectDeposit: (bookingId: string, amount: number, method: MockSecurityDeposit["collection_method"]) => void;
+  updateDepositStatus: (id: string, status: MockSecurityDeposit["status"], updates?: Partial<MockSecurityDeposit>) => void;
 }
 
 const SimulationContext = createContext<SimulationContextType | undefined>(undefined);
@@ -153,6 +155,31 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const collectDeposit = useCallback((bookingId: string, amount: number, method: MockSecurityDeposit["collection_method"]) => {
+    setData((prev) => ({
+      ...prev,
+      securityDeposits: [...prev.securityDeposits, {
+        id: simId("sim-sd"),
+        booking_id: bookingId,
+        amount_held: amount,
+        amount_deducted: 0,
+        deduction_reason: null,
+        status: "held" as const,
+        collection_method: method,
+        notes: null,
+      }],
+    }));
+  }, []);
+
+  const updateDepositStatus = useCallback((id: string, status: MockSecurityDeposit["status"], updates?: Partial<MockSecurityDeposit>) => {
+    setData((prev) => ({
+      ...prev,
+      securityDeposits: prev.securityDeposits.map((d) =>
+        d.id === id ? { ...d, status, ...updates } : d
+      ),
+    }));
+  }, []);
+
   const completeMission = useCallback((id: string) => {
     setCompleted((prev) => {
       const next = prev.includes(id) ? prev : [...prev, id];
@@ -211,8 +238,10 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       addMaintenanceRequest,
       addLaundryRequest,
       linkTraining,
+      collectDeposit,
+      updateDepositStatus,
     }),
-    [data, simulatedRole, activeMission, missionStep, completedMissions, actorLog, actorMemory, actorDifficulty, actorTyping, transitionBooking, createBooking, sendMessage, updateMaintenanceStatus, updateLaundryStatus, completeMission, addActorLog, addActorMemory, clearActorMemory, addMaintenanceRequest, addLaundryRequest, linkTraining]
+    [data, simulatedRole, activeMission, missionStep, completedMissions, actorLog, actorMemory, actorDifficulty, actorTyping, transitionBooking, createBooking, sendMessage, updateMaintenanceStatus, updateLaundryStatus, completeMission, addActorLog, addActorMemory, clearActorMemory, addMaintenanceRequest, addLaundryRequest, linkTraining, collectDeposit, updateDepositStatus]
   );
 
   return (

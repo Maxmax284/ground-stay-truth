@@ -84,6 +84,17 @@ export interface MockTrainingLink {
   start_date: string | null;
 }
 
+export interface MockSecurityDeposit {
+  id: string;
+  booking_id: string;
+  amount_held: number;
+  amount_deducted: number;
+  deduction_reason: string | null;
+  status: "held" | "inspected" | "released" | "deducted";
+  collection_method: "cash" | "card" | "bank_transfer";
+  notes: string | null;
+}
+
 export interface SimulationData {
   units: MockUnit[];
   bookings: MockBooking[];
@@ -92,6 +103,7 @@ export interface SimulationData {
   messages: MockMessage[];
   trainingPackages: MockTrainingPackage[];
   trainingLinks: MockTrainingLink[];
+  securityDeposits: MockSecurityDeposit[];
 }
 
 function daysFromNow(offset: number): string {
@@ -206,5 +218,10 @@ export function generateMockData(): SimulationData {
     { id: "sim-tl-3", booking_id: "sim-bk-04", package_id: "sim-tp-3", trainer_name: null, start_date: daysFromNow(7) },
   ];
 
-  return { units, bookings, maintenanceRequests, laundryRequests, messages, trainingPackages, trainingLinks };
+  const securityDeposits: MockSecurityDeposit[] = [
+    { id: "sim-sd-1", booking_id: "sim-bk-01", amount_held: 5000, amount_deducted: 0, deduction_reason: null, status: "held", collection_method: "cash", notes: null },
+    { id: "sim-sd-2", booking_id: "sim-bk-05", amount_held: 5000, amount_deducted: 1200, deduction_reason: "Broken lamp shade", status: "deducted", collection_method: "card", notes: "Lamp in bedroom damaged" },
+  ];
+
+  return { units, bookings, maintenanceRequests, laundryRequests, messages, trainingPackages, trainingLinks, securityDeposits };
 }
