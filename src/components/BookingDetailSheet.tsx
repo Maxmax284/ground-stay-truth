@@ -159,6 +159,8 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
             </div>
           )}
         </SheetHeader>
+        <SecurityDepositSection bookingId={booking.id} bookingState={booking.state} />
+        <BookingTrainingSection bookingId={booking.id} />
         <Separator />
         <div className="py-4"><BookingStateTransition bookingId={booking.id} currentState={booking.state as BookingState} isAdmin={isAdmin} checkInDate={booking.check_in} totalPrice={booking.total_price} unitId={booking.unit_id} /></div>
         <Tabs defaultValue="history" className="mt-2" onValueChange={(val) => {
