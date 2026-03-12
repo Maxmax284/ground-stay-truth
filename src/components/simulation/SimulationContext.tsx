@@ -238,8 +238,10 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       addMaintenanceRequest,
       addLaundryRequest,
       linkTraining,
+      collectDeposit,
+      updateDepositStatus,
     }),
-    [data, simulatedRole, activeMission, missionStep, completedMissions, actorLog, actorMemory, actorDifficulty, actorTyping, transitionBooking, createBooking, sendMessage, updateMaintenanceStatus, updateLaundryStatus, completeMission, addActorLog, addActorMemory, clearActorMemory, addMaintenanceRequest, addLaundryRequest, linkTraining]
+    [data, simulatedRole, activeMission, missionStep, completedMissions, actorLog, actorMemory, actorDifficulty, actorTyping, transitionBooking, createBooking, sendMessage, updateMaintenanceStatus, updateLaundryStatus, completeMission, addActorLog, addActorMemory, clearActorMemory, addMaintenanceRequest, addLaundryRequest, linkTraining, collectDeposit, updateDepositStatus]
   );
 
   return (
