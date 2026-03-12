@@ -534,6 +534,12 @@ function SecurityDepositsPanel() {
 
 export function SimulationSandbox() {
   const { data } = useSimulation();
+  const [showArchived, setShowArchived] = useState(false);
+
+  const ARCHIVED_STATES = ["completed", "cancelled", "no_show"];
+  const activeBookings = data.bookings.filter((b) => !ARCHIVED_STATES.includes(b.state));
+  const archivedBookings = data.bookings.filter((b) => ARCHIVED_STATES.includes(b.state));
+  const displayedBookings = showArchived ? data.bookings : activeBookings;
 
   return (
     <div className="space-y-6">
@@ -574,14 +580,24 @@ export function SimulationSandbox() {
 
       {/* Bookings Grid */}
       <div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-            Mock Bookings ({data.bookings.length})
+            Active Bookings ({activeBookings.length})
+            {archivedBookings.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-2 text-[10px] h-5 px-2 text-muted-foreground"
+                onClick={() => setShowArchived(!showArchived)}
+              >
+                {showArchived ? "Hide" : "Show"} archived ({archivedBookings.length})
+              </Button>
+            )}
           </h3>
           <CreateBookingDialog />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {data.bookings.map((booking) => (
+          {displayedBookings.map((booking) => (
             <BookingCard key={booking.id} booking={booking} />
           ))}
         </div>
