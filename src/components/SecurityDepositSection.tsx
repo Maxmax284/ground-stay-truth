@@ -46,7 +46,7 @@ export function SecurityDepositSection({ bookingId, bookingState }: { bookingId:
   if (depositAmount <= 0 && !deposit) return null;
 
   const canManage = permissions.canApproveOverride(role); // Manager+
-  const canCollect = permissions.canTransition(role); // Front Desk+
+  const canCollect = permissions.canTransitionState(role); // Front Desk+
   const isCheckout = bookingState === "completed";
   const isActiveStay = bookingState === "checked_in" || bookingState === "confirmed";
 
