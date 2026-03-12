@@ -53,6 +53,8 @@ interface SimulationContextType {
   addMaintenanceRequest: (req: Omit<MockMaintenanceRequest, "id" | "created_at">) => void;
   addLaundryRequest: (req: Omit<MockLaundryRequest, "id" | "created_at">) => void;
   linkTraining: (link: Omit<MockTrainingLink, "id">) => void;
+  collectDeposit: (bookingId: string, amount: number, method: MockSecurityDeposit["collection_method"]) => void;
+  updateDepositStatus: (id: string, status: MockSecurityDeposit["status"], updates?: Partial<MockSecurityDeposit>) => void;
 }
 
 const SimulationContext = createContext<SimulationContextType | undefined>(undefined);
