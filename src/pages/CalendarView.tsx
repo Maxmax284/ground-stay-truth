@@ -281,6 +281,8 @@ const CalendarView = () => {
               cleaningBufferHours={cleaningBufferHours}
               onCellClick={handleCellClick}
               onBookingClick={handleBookingClick}
+              unitGroups={unitGroupsData ?? []}
+              paymentSummaries={paymentSummaries ?? []}
             />
           )
         )}
