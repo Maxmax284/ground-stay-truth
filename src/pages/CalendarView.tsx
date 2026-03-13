@@ -35,6 +35,7 @@ const CalendarView = () => {
   const { isAdmin, role } = useAuth();
   const { data: units } = useUnits();
   const { data: policies } = usePolicySettings();
+  const { data: unitGroupsData } = useUnitGroups();
   const isMobile = useIsMobile();
   const activeUnits = useMemo(() => (units ?? []).filter((u) => u.is_active), [units]);
 
