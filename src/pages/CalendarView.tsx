@@ -17,6 +17,8 @@ import { useBookings } from "@/hooks/useBookings";
 import { useMaintenanceBlocks } from "@/hooks/useMaintenanceBlocks";
 import { useAuth } from "@/hooks/useAuth";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
+import { useUnitGroups } from "@/hooks/useUnitGroups";
+import { useCalendarPayments } from "@/hooks/useCalendarPayments";
 import { permissions } from "@/lib/permissions";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ChevronLeft, ChevronRight, CalendarDays, Wrench, LayoutGrid, Calendar, List } from "lucide-react";
