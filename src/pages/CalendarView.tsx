@@ -17,6 +17,8 @@ import { useBookings } from "@/hooks/useBookings";
 import { useMaintenanceBlocks } from "@/hooks/useMaintenanceBlocks";
 import { useAuth } from "@/hooks/useAuth";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
+import { useUnitGroups } from "@/hooks/useUnitGroups";
+import { useCalendarPayments } from "@/hooks/useCalendarPayments";
 import { permissions } from "@/lib/permissions";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ChevronLeft, ChevronRight, CalendarDays, Wrench, LayoutGrid, Calendar, List } from "lucide-react";
@@ -33,6 +35,7 @@ const CalendarView = () => {
   const { isAdmin, role } = useAuth();
   const { data: units } = useUnits();
   const { data: policies } = usePolicySettings();
+  const { data: unitGroupsData } = useUnitGroups();
   const isMobile = useIsMobile();
   const activeUnits = useMemo(() => (units ?? []).filter((u) => u.is_active), [units]);
 
@@ -69,6 +72,8 @@ const CalendarView = () => {
 
   const { data: bookings } = useBookings({ dateFrom: dateRange.from, dateTo: dateRange.to });
   const { data: maintenanceBlocks } = useMaintenanceBlocks({ dateFrom: dateRange.from, dateTo: dateRange.to });
+  const bookingIds = useMemo(() => (bookings ?? []).map((b) => b.id), [bookings]);
+  const { data: paymentSummaries } = useCalendarPayments(bookingIds);
 
   const [newBookingUnit, setNewBookingUnit] = useState<string | undefined>();
   const [newBookingDate, setNewBookingDate] = useState<string | undefined>();
@@ -276,6 +281,8 @@ const CalendarView = () => {
               cleaningBufferHours={cleaningBufferHours}
               onCellClick={handleCellClick}
               onBookingClick={handleBookingClick}
+              unitGroups={unitGroupsData ?? []}
+              paymentSummaries={paymentSummaries ?? []}
             />
           )
         )}
