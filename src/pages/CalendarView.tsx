@@ -72,6 +72,8 @@ const CalendarView = () => {
 
   const { data: bookings } = useBookings({ dateFrom: dateRange.from, dateTo: dateRange.to });
   const { data: maintenanceBlocks } = useMaintenanceBlocks({ dateFrom: dateRange.from, dateTo: dateRange.to });
+  const bookingIds = useMemo(() => (bookings ?? []).map((b) => b.id), [bookings]);
+  const { data: paymentSummaries } = useCalendarPayments(bookingIds);
 
   const [newBookingUnit, setNewBookingUnit] = useState<string | undefined>();
   const [newBookingDate, setNewBookingDate] = useState<string | undefined>();
