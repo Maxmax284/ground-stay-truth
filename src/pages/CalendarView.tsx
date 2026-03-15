@@ -42,6 +42,46 @@ const CalendarView = () => {
   const { data: unitGroupsData } = useUnitGroups();
   const isMobile = useIsMobile();
   const activeUnits = useMemo(() => (units ?? []).filter((u) => u.is_active), [units]);
+  const queryClient = useQueryClient();
+
+  // Drag-and-drop permission: admin or manager only
+  const canDragDrop = !isMobile && (role === "admin" || role === "manager");
+
+  // Mutation for drag-and-drop booking updates
+  const dragUpdateMutation = useMutation({
+    mutationFn: async (result: DragResult) => {
+      const updates: Record<string, unknown> = {
+        check_in: result.newCheckIn,
+        check_out: result.newCheckOut,
+        unit_id: result.newUnitId,
+      };
+      const { error } = await supabase
+        .from("bookings")
+        .update(updates)
+        .eq("id", result.bookingId);
+      if (error) throw error;
+
+      // Log the change
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from("booking_state_log").insert({
+        booking_id: result.bookingId,
+        to_state: "confirmed" as any, // preserve current state
+        changed_by: user?.id ?? null,
+        reason: `Calendar drag: moved to ${result.newCheckIn} – ${result.newCheckOut}`,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      toast({ title: "Booking updated", description: "Dates and room assignment saved." });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Update failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const handleBookingDragEnd = useCallback((result: DragResult) => {
+    dragUpdateMutation.mutate(result);
+  }, [dragUpdateMutation]);
 
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   const [selectedDay, setSelectedDay] = useState<Date>(() => startOfDay(new Date()));
