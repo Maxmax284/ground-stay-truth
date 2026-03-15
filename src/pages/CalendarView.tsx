@@ -464,6 +464,21 @@ const CalendarView = () => {
         onOpenChange={setShowMaintenanceDialog}
         units={activeUnits}
       />
+
+      <AlertDialog open={showDragConfirm} onOpenChange={setShowDragConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Move checked-in booking?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This guest is currently staying. Changing dates or room for an active stay may cause confusion. Are you sure you want to proceed?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelDragMove}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDragMove}>Move Booking</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };
