@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { CalendarGrid } from "@/components/CalendarGrid";
 import { CalendarMonthView } from "@/components/CalendarMonthView";
@@ -145,11 +146,6 @@ const CalendarView = () => {
       toast({ title: "Undo failed", description: err.message, variant: "destructive" });
     },
   });
-
-  const handleBookingDragEnd = useCallback((result: DragResult) => {
-    dragUpdateMutation.mutate(result);
-  }, [dragUpdateMutation]);
-
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   const [selectedDay, setSelectedDay] = useState<Date>(() => startOfDay(new Date()));
 
@@ -185,6 +181,32 @@ const CalendarView = () => {
   const { data: maintenanceBlocks } = useMaintenanceBlocks({ dateFrom: dateRange.from, dateTo: dateRange.to });
   const bookingIds = useMemo(() => (bookings ?? []).map((b) => b.id), [bookings]);
   const { data: paymentSummaries } = useCalendarPayments(bookingIds);
+
+  // Confirmation dialog for checked-in bookings
+  const [pendingDrag, setPendingDrag] = useState<DragResult | null>(null);
+  const [showDragConfirm, setShowDragConfirm] = useState(false);
+
+  const handleBookingDragEnd = useCallback((result: DragResult) => {
+    const booking = (bookings ?? []).find(b => b.id === result.bookingId);
+    if (booking?.state === "checked_in") {
+      setPendingDrag(result);
+      setShowDragConfirm(true);
+      return;
+    }
+    dragUpdateMutation.mutate(result);
+  }, [dragUpdateMutation, bookings]);
+
+  const confirmDragMove = useCallback(() => {
+    if (pendingDrag) dragUpdateMutation.mutate(pendingDrag);
+    setShowDragConfirm(false);
+    setPendingDrag(null);
+  }, [pendingDrag, dragUpdateMutation]);
+
+  const cancelDragMove = useCallback(() => {
+    setShowDragConfirm(false);
+    setPendingDrag(null);
+    queryClient.invalidateQueries({ queryKey: ["bookings"] });
+  }, [queryClient]);
 
   const [newBookingUnit, setNewBookingUnit] = useState<string | undefined>();
   const [newBookingDate, setNewBookingDate] = useState<string | undefined>();
@@ -442,6 +464,21 @@ const CalendarView = () => {
         onOpenChange={setShowMaintenanceDialog}
         units={activeUnits}
       />
+
+      <AlertDialog open={showDragConfirm} onOpenChange={setShowDragConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Move checked-in booking?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This guest is currently staying. Changing dates or room for an active stay may cause confusion. Are you sure you want to proceed?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelDragMove}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDragMove}>Move Booking</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };
