@@ -182,7 +182,32 @@ const CalendarView = () => {
   const bookingIds = useMemo(() => (bookings ?? []).map((b) => b.id), [bookings]);
   const { data: paymentSummaries } = useCalendarPayments(bookingIds);
 
-  const [newBookingUnit, setNewBookingUnit] = useState<string | undefined>();
+  // Confirmation dialog for checked-in bookings
+  const [pendingDrag, setPendingDrag] = useState<DragResult | null>(null);
+  const [showDragConfirm, setShowDragConfirm] = useState(false);
+
+  const handleBookingDragEnd = useCallback((result: DragResult) => {
+    const booking = (bookings ?? []).find(b => b.id === result.bookingId);
+    if (booking?.state === "checked_in") {
+      setPendingDrag(result);
+      setShowDragConfirm(true);
+      return;
+    }
+    dragUpdateMutation.mutate(result);
+  }, [dragUpdateMutation, bookings]);
+
+  const confirmDragMove = useCallback(() => {
+    if (pendingDrag) dragUpdateMutation.mutate(pendingDrag);
+    setShowDragConfirm(false);
+    setPendingDrag(null);
+  }, [pendingDrag, dragUpdateMutation]);
+
+  const cancelDragMove = useCallback(() => {
+    setShowDragConfirm(false);
+    setPendingDrag(null);
+    queryClient.invalidateQueries({ queryKey: ["bookings"] });
+  }, [queryClient]);
+
   const [newBookingDate, setNewBookingDate] = useState<string | undefined>();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
