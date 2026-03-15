@@ -50,6 +50,13 @@ const CalendarView = () => {
   // Mutation for drag-and-drop booking updates
   const dragUpdateMutation = useMutation({
     mutationFn: async (result: DragResult) => {
+      // Fetch current booking state first
+      const { data: currentBooking } = await supabase
+        .from("bookings")
+        .select("state")
+        .eq("id", result.bookingId)
+        .single();
+
       const updates: Record<string, unknown> = {
         check_in: result.newCheckIn,
         check_out: result.newCheckOut,
@@ -61,11 +68,11 @@ const CalendarView = () => {
         .eq("id", result.bookingId);
       if (error) throw error;
 
-      // Log the change
+      // Log the change with actual current state
       const { data: { user } } = await supabase.auth.getUser();
       await supabase.from("booking_state_log").insert({
         booking_id: result.bookingId,
-        to_state: "confirmed" as any, // preserve current state
+        to_state: currentBooking?.state ?? "confirmed",
         changed_by: user?.id ?? null,
         reason: `Calendar drag: moved to ${result.newCheckIn} – ${result.newCheckOut}`,
       });
