@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { addDays, subDays, addMonths, subMonths, startOfDay, startOfMonth, endOfMonth, format, isSameDay } from "date-fns";
 import { useTranslation } from "react-i18next";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,11 +20,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { useUnitGroups } from "@/hooks/useUnitGroups";
 import { useCalendarPayments } from "@/hooks/useCalendarPayments";
+import { supabase } from "@/integrations/supabase/client";
 import { permissions } from "@/lib/permissions";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ChevronLeft, ChevronRight, CalendarDays, Wrench, LayoutGrid, Calendar, List } from "lucide-react";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { toast } from "@/hooks/use-toast";
+import type { DragResult } from "@/hooks/useCalendarDragDrop";
 
 type ViewMode = "timeline" | "month" | "day";
 
@@ -38,6 +42,53 @@ const CalendarView = () => {
   const { data: unitGroupsData } = useUnitGroups();
   const isMobile = useIsMobile();
   const activeUnits = useMemo(() => (units ?? []).filter((u) => u.is_active), [units]);
+  const queryClient = useQueryClient();
+
+  // Drag-and-drop permission: admin or manager only
+  const canDragDrop = !isMobile && (role === "admin" || role === "manager");
+
+  // Mutation for drag-and-drop booking updates
+  const dragUpdateMutation = useMutation({
+    mutationFn: async (result: DragResult) => {
+      // Fetch current booking state first
+      const { data: currentBooking } = await supabase
+        .from("bookings")
+        .select("state")
+        .eq("id", result.bookingId)
+        .single();
+
+      const updates: Record<string, unknown> = {
+        check_in: result.newCheckIn,
+        check_out: result.newCheckOut,
+        unit_id: result.newUnitId,
+      };
+      const { error } = await supabase
+        .from("bookings")
+        .update(updates)
+        .eq("id", result.bookingId);
+      if (error) throw error;
+
+      // Log the change with actual current state
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from("booking_state_log").insert({
+        booking_id: result.bookingId,
+        to_state: currentBooking?.state ?? "confirmed",
+        changed_by: user?.id ?? null,
+        reason: `Calendar drag: moved to ${result.newCheckIn} – ${result.newCheckOut}`,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      toast({ title: "Booking updated", description: "Dates and room assignment saved." });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Update failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const handleBookingDragEnd = useCallback((result: DragResult) => {
+    dragUpdateMutation.mutate(result);
+  }, [dragUpdateMutation]);
 
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   const [selectedDay, setSelectedDay] = useState<Date>(() => startOfDay(new Date()));
@@ -283,6 +334,8 @@ const CalendarView = () => {
               onBookingClick={handleBookingClick}
               unitGroups={unitGroupsData ?? []}
               paymentSummaries={paymentSummaries ?? []}
+              canDragDrop={canDragDrop}
+              onBookingDragEnd={handleBookingDragEnd}
             />
           )
         )}
