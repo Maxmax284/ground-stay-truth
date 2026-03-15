@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { addDays, subDays, addMonths, subMonths, startOfDay, startOfMonth, endOfMonth, format, isSameDay } from "date-fns";
 import { useTranslation } from "react-i18next";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,11 +20,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { useUnitGroups } from "@/hooks/useUnitGroups";
 import { useCalendarPayments } from "@/hooks/useCalendarPayments";
+import { supabase } from "@/integrations/supabase/client";
 import { permissions } from "@/lib/permissions";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ChevronLeft, ChevronRight, CalendarDays, Wrench, LayoutGrid, Calendar, List } from "lucide-react";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { toast } from "@/hooks/use-toast";
+import type { DragResult } from "@/hooks/useCalendarDragDrop";
 
 type ViewMode = "timeline" | "month" | "day";
 
