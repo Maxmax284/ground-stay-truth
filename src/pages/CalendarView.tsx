@@ -327,6 +327,8 @@ const CalendarView = () => {
               onBookingClick={handleBookingClick}
               unitGroups={unitGroupsData ?? []}
               paymentSummaries={paymentSummaries ?? []}
+              canDragDrop={canDragDrop}
+              onBookingDragEnd={handleBookingDragEnd}
             />
           )
         )}
