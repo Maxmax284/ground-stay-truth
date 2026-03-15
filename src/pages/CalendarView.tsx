@@ -27,6 +27,7 @@ import { ChevronLeft, ChevronRight, CalendarDays, Wrench, LayoutGrid, Calendar, 
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { toast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import type { DragResult } from "@/hooks/useCalendarDragDrop";
 
 type ViewMode = "timeline" | "month" | "day";
