@@ -208,6 +208,7 @@ const CalendarView = () => {
     queryClient.invalidateQueries({ queryKey: ["bookings"] });
   }, [queryClient]);
 
+  const [newBookingUnit, setNewBookingUnit] = useState<string | undefined>();
   const [newBookingDate, setNewBookingDate] = useState<string | undefined>();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
