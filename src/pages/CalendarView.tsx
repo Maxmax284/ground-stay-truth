@@ -147,9 +147,34 @@ const CalendarView = () => {
     },
   });
 
+  // Confirmation dialog for checked-in bookings
+  const [pendingDrag, setPendingDrag] = useState<DragResult | null>(null);
+  const [showDragConfirm, setShowDragConfirm] = useState(false);
+
   const handleBookingDragEnd = useCallback((result: DragResult) => {
+    // Check if the booking is checked_in by looking at current bookings data
+    const booking = (bookings ?? []).find(b => b.id === result.bookingId);
+    if (booking?.state === "checked_in") {
+      setPendingDrag(result);
+      setShowDragConfirm(true);
+      return;
+    }
     dragUpdateMutation.mutate(result);
-  }, [dragUpdateMutation]);
+  }, [dragUpdateMutation, bookings]);
+
+  const confirmDragMove = useCallback(() => {
+    if (pendingDrag) {
+      dragUpdateMutation.mutate(pendingDrag);
+    }
+    setShowDragConfirm(false);
+    setPendingDrag(null);
+  }, [pendingDrag, dragUpdateMutation]);
+
+  const cancelDragMove = useCallback(() => {
+    setShowDragConfirm(false);
+    setPendingDrag(null);
+    queryClient.invalidateQueries({ queryKey: ["bookings"] });
+  }, [queryClient]);
 
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   const [selectedDay, setSelectedDay] = useState<Date>(() => startOfDay(new Date()));
