@@ -45,16 +45,16 @@ const CalendarView = () => {
   const activeUnits = useMemo(() => (units ?? []).filter((u) => u.is_active), [units]);
   const queryClient = useQueryClient();
 
-  // Drag-and-drop permission: admin or manager only
-  const canDragDrop = !isMobile && (role === "admin" || role === "manager");
+  // Undo state for drag-drop
+  const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Mutation for drag-and-drop booking updates
   const dragUpdateMutation = useMutation({
     mutationFn: async (result: DragResult) => {
-      // Fetch current booking state first
+      // Fetch current booking values before updating
       const { data: currentBooking } = await supabase
         .from("bookings")
-        .select("state")
+        .select("state, check_in, check_out, unit_id")
         .eq("id", result.bookingId)
         .single();
 
@@ -77,13 +77,69 @@ const CalendarView = () => {
         changed_by: user?.id ?? null,
         reason: `Calendar drag: moved to ${result.newCheckIn} – ${result.newCheckOut}`,
       });
+
+      return {
+        bookingId: result.bookingId,
+        oldCheckIn: currentBooking?.check_in,
+        oldCheckOut: currentBooking?.check_out,
+        oldUnitId: currentBooking?.unit_id,
+        state: currentBooking?.state ?? "confirmed",
+      };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
-      toast({ title: "Booking updated", description: "Dates and room assignment saved." });
+
+      // Clear any previous undo timeout
+      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+
+      const { dismiss } = toast({
+        title: "Booking updated",
+        description: "Dates and room assignment saved.",
+        action: (
+          <ToastAction altText="Undo" onClick={() => {
+            if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+            undoMutation.mutate(data);
+            dismiss();
+          }}>
+            Undo
+          </ToastAction>
+        ),
+      });
+
+      // Auto-dismiss undo window after 10s
+      undoTimeoutRef.current = setTimeout(() => {
+        undoTimeoutRef.current = null;
+        dismiss();
+      }, 10000);
     },
     onError: (err: Error) => {
       toast({ title: "Update failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  // Undo mutation: revert booking to previous values
+  const undoMutation = useMutation({
+    mutationFn: async (data: { bookingId: string; oldCheckIn: string; oldCheckOut: string; oldUnitId: string; state: string }) => {
+      const { error } = await supabase
+        .from("bookings")
+        .update({ check_in: data.oldCheckIn, check_out: data.oldCheckOut, unit_id: data.oldUnitId })
+        .eq("id", data.bookingId);
+      if (error) throw error;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from("booking_state_log").insert({
+        booking_id: data.bookingId,
+        to_state: data.state as any,
+        changed_by: user?.id ?? null,
+        reason: "Calendar drag: reverted",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      toast({ title: "Reverted", description: "Booking restored to its previous dates and room." });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Undo failed", description: err.message, variant: "destructive" });
     },
   });
 
