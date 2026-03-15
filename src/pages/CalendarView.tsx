@@ -45,6 +45,9 @@ const CalendarView = () => {
   const activeUnits = useMemo(() => (units ?? []).filter((u) => u.is_active), [units]);
   const queryClient = useQueryClient();
 
+  // Drag-and-drop permission: admin or manager only
+  const canDragDrop = !isMobile && (role === "admin" || role === "manager");
+
   // Undo state for drag-drop
   const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
