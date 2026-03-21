@@ -137,6 +137,7 @@ const BOOLEAN_KEYS = new Set([
   "loyalty_pricing_enabled", "loyalty_discount_stacks_with_long_stay",
   "security_deposit_required", "email_deposit_reminder_enabled", "email_welcome_enabled",
   "tax_included", "require_pre_arrival_completion_before_checkin",
+  "transport_enabled", "transport_night_surcharge_enabled",
 ]);
 
 /* Nice display names */
