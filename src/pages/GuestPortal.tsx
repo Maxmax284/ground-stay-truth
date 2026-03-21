@@ -48,6 +48,7 @@ import {
   Clock, ListChecks, Shield, MapPin, Heart, Star,
 } from "lucide-react";
 import { GuestStaySupport } from "@/components/GuestStaySupport";
+import { GuestPickupCard } from "@/components/GuestPickupCard";
 import { GuestPaymentButton } from "@/components/GuestPaymentButton";
 import { PreArrivalChecklist } from "@/components/PreArrivalChecklist";
 import { ReviewFormDialog } from "@/components/ReviewFormDialog";
@@ -657,6 +658,11 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
         {/* Deposit info banner for pending_deposit */}
         {state === "pending_deposit" && (
           <DepositBanner policies={policies} depositAmount={depositAmount} bookingId={booking.id} />
+        )}
+
+        {/* Airport Pickup info */}
+        {!["completed", "cancelled", "no_show"].includes(state) && (
+          <GuestPickupCard bookingId={booking.id} guestName={guestName} />
         )}
 
         {/* Document Upload for applicable states */}
