@@ -17,6 +17,7 @@ import { MaintenanceQueue } from "@/components/MaintenanceQueue";
 import { LaundryPanel } from "@/components/LaundryPanel";
 import { HousekeepingPanel } from "@/components/HousekeepingPanel";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
+import { TodaysPickupsWidget } from "@/components/TodaysPickupsWidget";
 import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useDraftMessages, useApproveDraftMessage } from "@/hooks/useBookings";
@@ -115,6 +116,9 @@ const Index = () => {
 
             {/* Admin-only: Pending Admin Actions (draft messages) */}
             {canApprove && <PendingAdminActions t={t} />}
+
+            {/* Today's Pickups widget */}
+            {!isViewer && <TodaysPickupsWidget onClickBooking={setDetailBookingId} />}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Front Desk / Supervisor: arrivals/departures first */}

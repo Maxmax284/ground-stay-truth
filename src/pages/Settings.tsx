@@ -8,6 +8,7 @@ import { CancellationPolicyEditor } from "@/components/CancellationPolicyEditor"
 import { ReviewsManager } from "@/components/ReviewsManager";
 import { IntegrationSettings } from "@/components/IntegrationSettings";
 import { TrainingPackagesManager } from "@/components/TrainingPackagesManager";
+import { DriverManager } from "@/components/DriverManager";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 
@@ -34,6 +35,7 @@ const Settings = () => {
             {canManageRoles && <TabsTrigger value="users">{t("settings.usersTab")}</TabsTrigger>}
             {canManagePolicies && <TabsTrigger value="cancellation">Cancellation</TabsTrigger>}
             {canManagePolicies && <TabsTrigger value="policies">{t("settings.policiesTab")}</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="drivers">Drivers</TabsTrigger>}
             {isAdmin && <TabsTrigger value="training">Training</TabsTrigger>}
             {isAdmin && <TabsTrigger value="integrations">Integrations</TabsTrigger>}
             {canManageReviews && <TabsTrigger value="reviews">{t("settings.reviewsTab")}</TabsTrigger>}
@@ -43,6 +45,7 @@ const Settings = () => {
           {canManageRoles && <TabsContent value="users"><UserRoleManager /></TabsContent>}
           {canManagePolicies && <TabsContent value="cancellation"><CancellationPolicyEditor /></TabsContent>}
           {canManagePolicies && <TabsContent value="policies"><PolicySettingsForm /></TabsContent>}
+          {isAdmin && <TabsContent value="drivers"><DriverManager /></TabsContent>}
           {isAdmin && <TabsContent value="training"><TrainingPackagesManager /></TabsContent>}
           {isAdmin && <TabsContent value="integrations"><IntegrationSettings /></TabsContent>}
           {canManageReviews && <TabsContent value="reviews"><ReviewsManager /></TabsContent>}

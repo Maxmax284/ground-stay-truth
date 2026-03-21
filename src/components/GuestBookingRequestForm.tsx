@@ -22,7 +22,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { calculatePricing, type PricingSummary } from "@/lib/pricingCalculator";
 import { formatPrice } from "@/lib/currency";
-import { AlertTriangle, CalendarPlus, Plane } from "lucide-react";
+import { AlertTriangle, CalendarPlus, Plane, Luggage } from "lucide-react";
 
 interface GuestBookingRequestFormProps {
   open: boolean;
@@ -41,6 +41,11 @@ interface FormValues {
   arrival_time: string;
   emergency_contact: string;
   airport_pickup: boolean;
+  pickup_flight_number: string;
+  pickup_arrival_datetime: string;
+  pickup_passenger_count: number;
+  pickup_luggage_notes: string;
+  pickup_special_instructions: string;
 }
 
 export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: GuestBookingRequestFormProps) {
@@ -53,7 +58,13 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
   const { data: policies } = usePolicySettings();
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
-    defaultValues: { unit_id: defaultUnitId ?? "", check_in: "", check_out: "", num_guests: 1, guest_type: "training_guest", notes: "", arrival_flight: "", arrival_time: "", emergency_contact: "", airport_pickup: false },
+    defaultValues: {
+      unit_id: defaultUnitId ?? "", check_in: "", check_out: "", num_guests: 1,
+      guest_type: "training_guest", notes: "", arrival_flight: "", arrival_time: "",
+      emergency_contact: "", airport_pickup: false, pickup_flight_number: "",
+      pickup_arrival_datetime: "", pickup_passenger_count: 1, pickup_luggage_notes: "",
+      pickup_special_instructions: "",
+    },
   });
 
   // Pre-fill unit when defaultUnitId changes
@@ -141,7 +152,7 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
     if (data.emergency_contact) arrivalDetails.emergency_contact = data.emergency_contact;
     if (data.airport_pickup) arrivalDetails.airport_pickup = true;
     try {
-      await createBooking.mutateAsync({
+      const bookingResult = await createBooking.mutateAsync({
         unit_id: data.unit_id,
         check_in: data.check_in,
         check_out: data.check_out,
@@ -153,6 +164,28 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
         arrival_details: Object.keys(arrivalDetails).length > 0 ? arrivalDetails : null,
         state: "inquiry",
       });
+
+      // Create airport pickup record if requested
+      if (data.airport_pickup && bookingResult?.id) {
+        const transportFee = policies?.find((p) => p.key === "transport_base_fee");
+        const feeType = policies?.find((p) => p.key === "transport_fee_type");
+        const baseFee = transportFee ? Number(transportFee.value) : 500;
+        const fee = String(feeType?.value).replace(/"/g, "") === "per_person"
+          ? baseFee * Number(data.pickup_passenger_count || 1)
+          : baseFee;
+
+        await supabase.from("airport_pickups" as any).insert({
+          booking_id: bookingResult.id,
+          status: "requested",
+          fee,
+          flight_number: data.pickup_flight_number || null,
+          arrival_datetime: data.pickup_arrival_datetime || null,
+          passenger_count: Number(data.pickup_passenger_count) || 1,
+          luggage_notes: data.pickup_luggage_notes || null,
+          special_instructions: data.pickup_special_instructions || null,
+        } as any);
+      }
+
       toast({ title: t("guestBooking.requestSent"), description: t("guestBooking.requestSentDesc") });
       reset();
       onOpenChange(false);
@@ -300,15 +333,46 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
           </div>
 
           {/* Airport pickup option */}
-          <div className="flex items-center justify-between rounded-md border border-border p-3">
-            <div className="flex items-center gap-2">
-              <Plane className="h-4 w-4 text-primary" />
-              <div>
-                <Label htmlFor="airport_pickup" className="text-sm font-medium">{t("guestBooking.airportPickup", { defaultValue: "Arrange Airport Pickup" })}</Label>
-                <p className="text-xs text-muted-foreground">{t("guestBooking.airportPickupDesc", { defaultValue: "We'll arrange a pickup from the airport for you" })}</p>
+          <div className="rounded-md border border-border p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Plane className="h-4 w-4 text-primary" />
+                <div>
+                  <Label htmlFor="airport_pickup" className="text-sm font-medium">{t("guestBooking.airportPickup", { defaultValue: "Arrange Airport Pickup" })}</Label>
+                  <p className="text-xs text-muted-foreground">{t("guestBooking.airportPickupDesc", { defaultValue: "We'll arrange a pickup from the airport for you" })}</p>
+                </div>
               </div>
+              <Switch id="airport_pickup" checked={airportPickup} onCheckedChange={(v) => setValue("airport_pickup", v)} />
             </div>
-            <Switch id="airport_pickup" checked={airportPickup} onCheckedChange={(v) => setValue("airport_pickup", v)} />
+
+            {airportPickup && (
+              <div className="space-y-3 pt-1 border-t border-border/50">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Flight Number</Label>
+                    <Input {...register("pickup_flight_number")} placeholder="TG 925" className="h-8 text-sm" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Arrival Date & Time</Label>
+                    <Input type="datetime-local" {...register("pickup_arrival_datetime")} className="h-8 text-sm" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Passengers</Label>
+                    <Input type="number" min={1} {...register("pickup_passenger_count")} className="h-8 text-sm" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Luggage Notes</Label>
+                    <Input {...register("pickup_luggage_notes")} placeholder="2 bags" className="h-8 text-sm" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Special Instructions</Label>
+                  <Input {...register("pickup_special_instructions")} placeholder="Wheelchair assistance, etc." className="h-8 text-sm" />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

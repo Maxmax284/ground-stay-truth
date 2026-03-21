@@ -12,7 +12,7 @@ import { usePolicySettings, useUpdatePolicySetting, type PolicySetting } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Save, Banknote, Percent, Heart, Bot, Wrench, Mail, Receipt,
-  Clock, Shield, CreditCard, ToggleLeft, CalendarClock, Sparkles,
+  Clock, Shield, CreditCard, ToggleLeft, CalendarClock, Sparkles, Plane,
 } from "lucide-react";
 
 /* ── Setting Groups ────────────────────────────────────────── */
@@ -107,6 +107,19 @@ const GROUPS: SettingGroup[] = [
     keys: ["currency_code", "currency_symbol", "tax_included", "tax_rate"],
     summary: (g) => `${g("currency_symbol")} ${g("currency_code")} • ${g("tax_rate")}% tax${g("tax_included") === "true" ? " (inclusive)" : ""}`,
   },
+  {
+    id: "transport",
+    label: "Transport",
+    icon: <Plane className="h-4 w-4" />,
+    keys: [
+      "transport_enabled", "transport_base_fee", "transport_fee_type",
+      "transport_night_surcharge_enabled", "transport_night_surcharge",
+      "transport_free_pickup_min_nights",
+    ],
+    summary: (g) => g("transport_enabled") === "true"
+      ? `Active • ฿${g("transport_base_fee")} ${g("transport_fee_type")}${g("transport_night_surcharge_enabled") === "true" ? ` • ฿${g("transport_night_surcharge")} night surcharge` : ""}`
+      : "Disabled",
+  },
 ];
 
 /* Keys handled by cancellation editor or technical/sensitive */
@@ -124,6 +137,7 @@ const BOOLEAN_KEYS = new Set([
   "loyalty_pricing_enabled", "loyalty_discount_stacks_with_long_stay",
   "security_deposit_required", "email_deposit_reminder_enabled", "email_welcome_enabled",
   "tax_included", "require_pre_arrival_completion_before_checkin",
+  "transport_enabled", "transport_night_surcharge_enabled",
 ]);
 
 /* Nice display names */
@@ -159,6 +173,12 @@ const FRIENDLY_LABELS: Record<string, string> = {
   currency_symbol: "Currency Symbol",
   tax_included: "Tax Included in Prices",
   tax_rate: "Tax Rate (%)",
+  transport_enabled: "Airport Pickup Service",
+  transport_base_fee: "Base Fee (฿)",
+  transport_fee_type: "Fee Type (flat / per_person)",
+  transport_night_surcharge_enabled: "Night Surcharge",
+  transport_night_surcharge: "Night Surcharge Amount (฿)",
+  transport_free_pickup_min_nights: "Free Pickup Min Nights (0 = off)",
 };
 
 const SETTING_ICONS: Record<string, React.ReactNode> = {
