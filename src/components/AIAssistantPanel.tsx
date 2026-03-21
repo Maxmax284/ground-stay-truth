@@ -112,8 +112,14 @@ function AIAssistantPanelInner() {
     }
   }, []);
 
+  const dragStartPos = useRef({ x: 0, y: 0 });
+
   const handleBubblePointerMove = useCallback((e: React.PointerEvent) => {
     if (!isDraggingRef.current) return;
+    const dx = e.clientX - dragStartPos.current.x;
+    const dy = e.clientY - dragStartPos.current.y;
+    // Only count as drag if moved more than 8px
+    if (!hasDraggedRef.current && Math.sqrt(dx * dx + dy * dy) < 8) return;
     hasDraggedRef.current = true;
     const newX = e.clientX - dragOffset.current.x;
     const newY = e.clientY - dragOffset.current.y;
