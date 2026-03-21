@@ -44,7 +44,10 @@ export function PolicySettingsForm() {
   const [editValues, setEditValues] = useState<Record<string, string>>({});
 
   if (isLoading) return <div className="space-y-3">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div>;
-  if (!settings?.length) return <p className="text-sm text-muted-foreground">{t("pricing.noPolicies")}</p>;
+
+  // Filter out cancellation keys — those have their own dedicated editor
+  const filteredSettings = settings?.filter((s) => !CANCELLATION_KEYS.has(s.key)) ?? [];
+  if (!filteredSettings.length) return <p className="text-sm text-muted-foreground">{t("pricing.noPolicies")}</p>;
 
   const handleSave = async (setting: PolicySetting) => {
     const rawValue = editValues[setting.id]; if (rawValue === undefined) return;
