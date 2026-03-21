@@ -74,6 +74,15 @@ const GuestPortal = () => {
   // Booking request dialog
   const [bookingFormOpen, setBookingFormOpen] = useState(false);
   const [bookingFormUnitId, setBookingFormUnitId] = useState<string | undefined>();
+
+  // Auto-open booking form when arriving with ?unit=<id> from the Stay page
+  useEffect(() => {
+    const unitFromUrl = searchParams.get("unit");
+    if (unitFromUrl && !bookingFormOpen) {
+      setBookingFormUnitId(unitFromUrl);
+      setBookingFormOpen(true);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // Messages tab state
   const [selectedThread, setSelectedThread] = useState<string | null>(null);
   const markRead = useMarkMessagesRead();
