@@ -192,10 +192,15 @@ function FullListing({ unit, blocked, cfg, contactUrl, cs }: { unit: UnitData; b
 
       {!h.has("amenities") && (unit.amenities?.length ?? 0) > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-          {unit.amenities!.map((a, i) => (
-            <span key={i} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, background: amenityBg(cfg.dark), color: cfg.dark ? "#d1d5db" : "#374151" }}>{a}</span>
-          ))}
-        </div>
+          {unit.amenities!.map((a, i) => {
+            const Icon = getAmenityIcon(a) ?? Sparkles;
+            return (
+              <span key={i} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, background: amenityBg(cfg.dark), color: cfg.dark ? "#d1d5db" : "#374151", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <Icon style={{ width: 12, height: 12 }} />
+                {a}
+              </span>
+            );
+          })}
       )}
 
       <div style={{ margin: "16px 0", borderTop: `1px solid ${borderColor(cfg.dark)}` }} />
