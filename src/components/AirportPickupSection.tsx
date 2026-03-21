@@ -88,11 +88,22 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
 
   const handleAssignDriver = async (driverId: string) => {
     try {
-      await upsert.mutateAsync({
+      const prevStatus = pickup.status;
+      const newStatus = prevStatus === "requested" ? "assigned" : prevStatus;
+      const result = await upsert.mutateAsync({
         booking_id: bookingId,
         driver_id: driverId,
-        status: pickup.status === "requested" ? "assigned" : pickup.status,
+        status: newStatus,
         assigned_at: new Date().toISOString(),
+      });
+      const assignedDriver = drivers?.find(d => d.id === driverId);
+      await logPickupAction({
+        bookingId,
+        pickupId: pickup.id,
+        action: "driver_assigned",
+        fromStatus: prevStatus,
+        toStatus: newStatus,
+        note: assignedDriver ? `Driver assigned: ${assignedDriver.name}` : "Driver assigned",
       });
       toast({ title: "Driver assigned" });
     } catch (err: any) {
