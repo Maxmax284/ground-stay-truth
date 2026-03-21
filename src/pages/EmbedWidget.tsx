@@ -201,6 +201,7 @@ function FullListing({ unit, blocked, cfg, contactUrl, cs }: { unit: UnitData; b
               </span>
             );
           })}
+        </div>
       )}
 
       <div style={{ margin: "16px 0", borderTop: `1px solid ${borderColor(cfg.dark)}` }} />
