@@ -23,6 +23,7 @@ const Pricing = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
   const { data: units, isLoading: unitsLoading } = useUnits();
+  const { data: policies } = usePolicySettings();
   const { data: rules, isLoading: rulesLoading } = usePricingRules();
   const deleteRule = useDeletePricingRule();
 
