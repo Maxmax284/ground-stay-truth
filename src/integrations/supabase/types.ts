@@ -14,6 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
+      airport_pickups: {
+        Row: {
+          arrival_datetime: string | null
+          assigned_at: string | null
+          assigned_by: string | null
+          booking_id: string
+          completed_at: string | null
+          completed_by: string | null
+          confirmed_at: string | null
+          created_at: string
+          driver_id: string | null
+          fee: number
+          fee_override: boolean
+          fee_override_by: string | null
+          fee_override_reason: string | null
+          flight_number: string | null
+          id: string
+          luggage_notes: string | null
+          passenger_count: number | null
+          special_instructions: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          arrival_datetime?: string | null
+          assigned_at?: string | null
+          assigned_by?: string | null
+          booking_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          driver_id?: string | null
+          fee?: number
+          fee_override?: boolean
+          fee_override_by?: string | null
+          fee_override_reason?: string | null
+          flight_number?: string | null
+          id?: string
+          luggage_notes?: string | null
+          passenger_count?: number | null
+          special_instructions?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          arrival_datetime?: string | null
+          assigned_at?: string | null
+          assigned_by?: string | null
+          booking_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          driver_id?: string | null
+          fee?: number
+          fee_override?: boolean
+          fee_override_by?: string | null
+          fee_override_reason?: string | null
+          flight_number?: string | null
+          id?: string
+          luggage_notes?: string | null
+          passenger_count?: number | null
+          special_instructions?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "airport_pickups_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "airport_pickups_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_state_log: {
         Row: {
           booking_id: string
@@ -168,6 +252,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      drivers: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          license_plate: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          photo_url: string | null
+          updated_at: string
+          vehicle_type: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          license_plate?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          updated_at?: string
+          vehicle_type?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          license_plate?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          updated_at?: string
+          vehicle_type?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
       }
       early_checkin_requests: {
         Row: {
