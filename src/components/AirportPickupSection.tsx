@@ -47,7 +47,42 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
     return setting ? Number(setting.value) : 500;
   }, [policies]);
 
-  if (isLoading || !pickup) return null;
+  const transportEnabled = policies?.find((p) => p.key === "transport_enabled");
+  const isEnabled = transportEnabled ? String(transportEnabled.value) === "true" : false;
+
+  if (isLoading) return null;
+
+  // Show create button for staff when no pickup exists
+  if (!pickup) {
+    if (!canManage || !isEnabled) return null;
+    return (
+      <Card className="border-dashed border-primary/20">
+        <CardContent className="p-4">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full gap-2"
+            onClick={async () => {
+              try {
+                await upsert.mutateAsync({
+                  booking_id: bookingId,
+                  fee: baseFee,
+                  status: "requested",
+                });
+                toast({ title: "Airport pickup created" });
+              } catch (err: any) {
+                toast({ title: "Error", description: err.message, variant: "destructive" });
+              }
+            }}
+            disabled={upsert.isPending}
+          >
+            <Plane className="h-4 w-4" />
+            Add Airport Pickup
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const driver = pickup.drivers;
 
