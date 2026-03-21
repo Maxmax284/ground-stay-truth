@@ -80,10 +80,24 @@ export function useReports(monthOffset = 0) {
   const totalOccupiedDays = occupancyByDay.reduce((s, d) => s + d.occupied, 0);
   const occupancyRate = totalUnitDays > 0 ? Math.round((totalOccupiedDays / totalUnitDays) * 100) : 0;
 
-  // Derived: revenue per unit
+  // Derive net revenue per unit (gross - refunds) using actual payment data when available
+  const paymentsByBooking = new Map<string, { gross: number; refunds: number }>();
+  (payments.data ?? []).forEach((p) => {
+    const entry = paymentsByBooking.get(p.booking_id) ?? { gross: 0, refunds: 0 };
+    entry.gross += Number(p.amount);
+    entry.refunds += Number(p.refund_amount ?? 0);
+    paymentsByBooking.set(p.booking_id, entry);
+  });
+
   const revenueByUnit = (units.data ?? []).map((unit) => {
     const unitBookings = (bookings.data ?? []).filter((b) => b.unit_id === unit.id);
     const revenue = unitBookings.reduce((sum, b) => {
+      const paymentData = paymentsByBooking.get(b.id);
+      if (paymentData) {
+        // Use actual payment data: gross minus refunds
+        return sum + paymentData.gross - paymentData.refunds;
+      }
+      // Fall back to booking price if no payment records
       const price = b.price_override ?? b.total_price ?? 0;
       return sum + Number(price);
     }, 0);

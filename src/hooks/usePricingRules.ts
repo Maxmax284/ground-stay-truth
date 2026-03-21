@@ -48,6 +48,19 @@ export function useUpdatePricingRule() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: PricingRuleUpdate & { id: string }) => {
+      // Check for overlapping rules on the same unit (exclude self)
+      if (updates.unit_id && updates.start_date && updates.end_date) {
+        const { data: existing } = await supabase
+          .from("pricing_rules")
+          .select("id, name, start_date, end_date")
+          .eq("unit_id", updates.unit_id)
+          .neq("id", id)
+          .lte("start_date", updates.end_date)
+          .gte("end_date", updates.start_date);
+        if (existing && existing.length > 0) {
+          throw new Error(`Date range overlaps with existing rule "${existing[0].name}" (${existing[0].start_date} – ${existing[0].end_date})`);
+        }
+      }
       const { data, error } = await supabase.from("pricing_rules").update(updates).eq("id", id).select().single();
       if (error) throw error;
       return data;

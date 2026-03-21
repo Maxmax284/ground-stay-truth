@@ -95,7 +95,14 @@ export default function UserRoleManager() {
               {roles.data.map((r) => (
                 <div key={r.id} className="flex items-center justify-between border rounded-md p-3">
                   <div className="min-w-0"><p className="text-sm font-medium truncate">{r.profile_name || r.profile_email || r.user_id}</p><p className="text-xs text-muted-foreground font-mono truncate">{r.user_id}</p></div>
-                  <div className="flex items-center gap-2 shrink-0"><Badge variant="secondary">{t(`roles.${r.role}`)}</Badge><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeRole.mutate(r.id)} disabled={removeRole.isPending}><Trash2 className="h-4 w-4" /></Button></div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant="secondary">{t(`roles.${r.role}`)}</Badge>
+                    {isLastAdmin(r) ? (
+                      <span className="text-xs text-muted-foreground italic">{t("userRoles.lastAdmin", "Last admin")}</span>
+                    ) : (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeRole.mutate(r.id)} disabled={removeRole.isPending}><Trash2 className="h-4 w-4" /></Button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
