@@ -128,6 +128,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
 
   // AI Pre-flight check when target state changes
   useEffect(() => {
+    setAiAcknowledged(false);
     if (!targetState || !isAIEnabled) {
       setAiValidation(null);
       return;
