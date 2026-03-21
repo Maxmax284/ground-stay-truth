@@ -112,6 +112,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
   };
 
   const handleStatusChange = async (newStatus: string) => {
+    const prevStatus = pickup.status;
     const updates: Partial<AirportPickup> & { booking_id: string } = {
       booking_id: bookingId,
       status: newStatus,
@@ -122,6 +123,14 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
     }
     try {
       await upsert.mutateAsync(updates);
+      await logPickupAction({
+        bookingId,
+        pickupId: pickup.id,
+        action: `status_${newStatus}`,
+        fromStatus: prevStatus,
+        toStatus: newStatus,
+        note: `Pickup status changed: ${prevStatus} → ${newStatus}`,
+      });
       toast({ title: `Pickup ${newStatus}` });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
