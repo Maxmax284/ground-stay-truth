@@ -660,6 +660,11 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
           <DepositBanner policies={policies} depositAmount={depositAmount} bookingId={booking.id} />
         )}
 
+        {/* Airport Pickup info */}
+        {!["completed", "cancelled", "no_show"].includes(state) && (
+          <GuestPickupCard bookingId={booking.id} guestName={guestName} />
+        )}
+
         {/* Document Upload for applicable states */}
         {showDocUpload && (
           <div className="border rounded-md p-3">
