@@ -160,7 +160,7 @@ const Pricing = () => {
                           <TableCell className="text-sm text-muted-foreground">
                             {format(new Date(r.start_date), "MMM d")} – {format(new Date(r.end_date), "MMM d, yyyy")}
                           </TableCell>
-                          <TableCell className="font-medium">${Number(r.price).toFixed(2)}</TableCell>
+                          <TableCell className="font-medium">{formatPrice(r.price, policies)}</TableCell>
                           <TableCell>
                             <div className="flex gap-1">
                               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingRule(r); setShowRuleForm(true); }}>
