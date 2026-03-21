@@ -11,7 +11,7 @@ interface TrainingBadgeProps {
  */
 export function TrainingBadge({ className }: TrainingBadgeProps) {
   return (
-    <Badge className={`gap-1 bg-[hsl(var(--fight-gold))] text-[hsl(var(--fight-dark))] hover:bg-[hsl(var(--fight-gold))]/90 ${className ?? ""}`}>
+    <Badge className={`gap-1 bg-fight-gold text-fight-dark hover:bg-fight-gold/90 ${className ?? ""}`}>
       <Swords className="h-3 w-3" />
       Training Included
     </Badge>
