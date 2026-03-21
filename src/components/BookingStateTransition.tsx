@@ -501,6 +501,45 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
               <Textarea placeholder={t("payments.paymentNotes")} value={depositNotes} onChange={(e) => setDepositNotes(e.target.value)} rows={1} />
             </div>
           )}
+          {/* Cash payment at check-in */}
+          {showCashAtCheckin && (
+            <div className="space-y-3 rounded-md border border-primary/20 bg-primary/5 p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                  <CreditCard className="h-4 w-4" />
+                  {t("checkin.confirmPayment", { defaultValue: "Confirm Payment at Check-in" })}
+                </div>
+                <Switch checked={cashAtCheckin} onCheckedChange={setCashAtCheckin} />
+              </div>
+              <p className="text-xs text-muted-foreground">{t("checkin.confirmPaymentDesc", { defaultValue: "Record cash or in-person payment received during check-in" })}</p>
+              {outstandingAtCheckin != null && outstandingAtCheckin > 0 && (
+                <p className="text-xs text-muted-foreground">{t("checkin.outstanding", { defaultValue: "Outstanding balance" })}: <strong className="text-destructive">{formatPrice(outstandingAtCheckin, policies)}</strong></p>
+              )}
+              {cashAtCheckin && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t("payments.amount")} *</Label>
+                      <Input type="number" step="0.01" min="0" value={checkinPayAmount} onChange={(e) => setCheckinPayAmount(e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t("payments.method")}</Label>
+                      <Select value={checkinPayMethod} onValueChange={setCheckinPayMethod}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cash">{t("payments.methods.cash")}</SelectItem>
+                          <SelectItem value="card">{t("payments.methods.card")}</SelectItem>
+                          <SelectItem value="in_person">{t("payments.methods.in_person", { defaultValue: "In Person" })}</SelectItem>
+                          <SelectItem value="bank_transfer">{t("payments.methods.bank_transfer")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <Textarea placeholder={t("checkin.paymentNotes", { defaultValue: "Payment notes (e.g. receipt number)" })} value={checkinPayNotes} onChange={(e) => setCheckinPayNotes(e.target.value)} rows={1} />
+                </>
+              )}
+            </div>
+          )}
           <div className="space-y-1"><Label className="text-xs">{t("stateTransition.reasonLabel")} *</Label><Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("stateTransition.reasonPlaceholder")} rows={2} /></div>
           {targetIsGated && (
             <div className="flex items-center gap-2 text-sm text-warning-foreground bg-warning/10 rounded-md p-3">
