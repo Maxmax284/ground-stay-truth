@@ -47,11 +47,18 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
   const [reason, setReason] = useState("");
   const [aiValidation, setAiValidation] = useState<string | null>(null);
   const [aiChecking, setAiChecking] = useState(false);
+  const [aiAcknowledged, setAiAcknowledged] = useState(false);
 
   // Deposit form state
   const [depositAmount, setDepositAmount] = useState("");
   const [depositMethod, setDepositMethod] = useState("cash");
   const [depositNotes, setDepositNotes] = useState("");
+
+  // Cash at check-in state
+  const [cashAtCheckin, setCashAtCheckin] = useState(false);
+  const [checkinPayAmount, setCheckinPayAmount] = useState("");
+  const [checkinPayMethod, setCheckinPayMethod] = useState("cash");
+  const [checkinPayNotes, setCheckinPayNotes] = useState("");
 
   const canOverride = permissions.canAdminOverride(role);
   const canCheckIn = permissions.canCompleteCheckIn(role);
