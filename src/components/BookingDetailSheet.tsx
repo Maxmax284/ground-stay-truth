@@ -26,6 +26,7 @@ import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTria
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { SecurityDepositSection } from "@/components/SecurityDepositSection";
 import { BookingTrainingSection } from "@/components/BookingTrainingSection";
+import { AirportPickupSection } from "@/components/AirportPickupSection";
 import { useGuestDocuments } from "@/hooks/useGuestDocuments";
 import { useMaintenanceRequests, useUpdateMaintenanceStatus } from "@/hooks/useMaintenanceRequests";
 import { useLaundryRequests, useAdvanceLaundryStatus, getNextLaundryStatus } from "@/hooks/useLaundryRequests";
