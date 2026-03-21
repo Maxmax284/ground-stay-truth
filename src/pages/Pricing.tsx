@@ -85,7 +85,7 @@ const Pricing = () => {
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">{t("units.cleaningFee")}</span>
                           <span className="font-medium">
-                            {u.cleaning_fee ? `$${Number(u.cleaning_fee).toFixed(2)}` : "—"}
+                            {u.cleaning_fee ? formatPrice(u.cleaning_fee, policies) : "—"}
                           </span>
                         </div>
                       </CardContent>
