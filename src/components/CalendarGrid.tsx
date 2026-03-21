@@ -311,8 +311,24 @@ export function CalendarGrid({
     );
   };
 
+  // Room type summary
+  const groupSummary = useMemo(() => {
+    if (groupedUnits.length <= 1 && !groupedUnits[0]?.group) return null;
+    return groupedUnits
+      .filter(g => g.group)
+      .map(g => `${g.units.length}× ${g.group!.name}`)
+      .join(" · ");
+  }, [groupedUnits]);
+
   return (
     <div className="rounded-lg border bg-card overflow-hidden">
+      {groupSummary && (
+        <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+          <span>{groupSummary}</span>
+          <span className="text-muted-foreground/50">·</span>
+          <span>{units.length} {t("units.title").toLowerCase()}</span>
+        </div>
+      )}
       {canDragDrop && (
         <div className="px-3 py-1.5 border-b bg-accent/10 flex items-center gap-2 text-xs text-muted-foreground">
           <GripVertical className="h-3.5 w-3.5" />
