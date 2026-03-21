@@ -627,6 +627,42 @@ ${JSON.stringify(context)}
 Check for: buffer violations, missing documents, payment gaps, supervisor caps.`;
     }
 
+    if (mode === "policy_draft") {
+      // Non-streaming mode for generating policy text
+      const policySystemPrompt = `You are a professional hospitality policy writer. Write clear, concise cancellation and booking policies for accommodation properties. Use plain English that's professional but approachable. Do not use markdown headers — use plain text with line breaks.`;
+      
+      const policyResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${lovableApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: policySystemPrompt },
+            ...(messages ?? []),
+          ],
+          stream: false,
+        }),
+      });
+
+      if (!policyResponse.ok) {
+        const t = await policyResponse.text();
+        console.error("AI gateway error:", policyResponse.status, t);
+        return new Response(JSON.stringify({ error: "AI gateway error" }), {
+          status: policyResponse.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const policyResult = await policyResponse.json();
+      const content = policyResult.choices?.[0]?.message?.content || "";
+      return new Response(JSON.stringify({ content }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const fullSystemPrompt = buildSystemPrompt(role || "", responseLang, contextData);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

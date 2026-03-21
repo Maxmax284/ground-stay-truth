@@ -10,6 +10,15 @@ import { usePolicySettings, useUpdatePolicySetting, type PolicySetting } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Save } from "lucide-react";
 
+const CANCELLATION_KEYS = new Set([
+  "free_cancellation_days",
+  "partial_refund_days",
+  "partial_refund_percentage",
+  "no_refund_hours",
+  "earliest_checkin_time",
+  "checkout_time",
+]);
+
 const BOOLEAN_KEYS = new Set([
   "ai_assistant_enabled",
   "ai_guest_enabled",
@@ -35,7 +44,10 @@ export function PolicySettingsForm() {
   const [editValues, setEditValues] = useState<Record<string, string>>({});
 
   if (isLoading) return <div className="space-y-3">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div>;
-  if (!settings?.length) return <p className="text-sm text-muted-foreground">{t("pricing.noPolicies")}</p>;
+
+  // Filter out cancellation keys — those have their own dedicated editor
+  const filteredSettings = settings?.filter((s) => !CANCELLATION_KEYS.has(s.key)) ?? [];
+  if (!filteredSettings.length) return <p className="text-sm text-muted-foreground">{t("pricing.noPolicies")}</p>;
 
   const handleSave = async (setting: PolicySetting) => {
     const rawValue = editValues[setting.id]; if (rawValue === undefined) return;
@@ -56,7 +68,7 @@ export function PolicySettingsForm() {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {settings.map((s) => {
+      {filteredSettings.map((s) => {
         const isBool = BOOLEAN_KEYS.has(s.key);
         const boolValue = String(s.value) === "true";
         const currentValue = editValues[s.id] ?? String(typeof s.value === "object" ? JSON.stringify(s.value) : s.value);
