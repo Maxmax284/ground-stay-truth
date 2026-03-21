@@ -3,13 +3,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTodaysPickups } from "@/hooks/useAirportPickups";
-import { Plane, MessageSquare, Car } from "lucide-react";
+import { Plane, MessageSquare, Car, Clock, User } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
   requested: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
   assigned: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   confirmed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
   completed: "bg-muted text-muted-foreground",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  requested: "Awaiting Driver",
+  assigned: "Driver Assigned",
+  confirmed: "Confirmed",
+  completed: "Completed",
 };
 
 interface Props {
@@ -22,14 +29,23 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
   if (isLoading) return <Skeleton className="h-24 w-full" />;
   if (!pickups || pickups.length === 0) return null;
 
+  const needsAttention = pickups.filter((p: any) => p.status === "requested").length;
+
   return (
     <Card className="border-primary/20">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Plane className="h-5 w-5 text-primary" />
-          Today's Pickups
-          <Badge variant="secondary" className="text-xs ml-1">{pickups.length}</Badge>
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Plane className="h-5 w-5 text-primary" />
+            Today's Pickups
+            <Badge variant="secondary" className="text-xs ml-1">{pickups.length}</Badge>
+          </CardTitle>
+          {needsAttention > 0 && (
+            <Badge variant="destructive" className="text-xs animate-pulse">
+              {needsAttention} need{needsAttention > 1 ? "" : "s"} driver
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-2">
         {pickups.map((p: any) => {
@@ -47,24 +63,44 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
           return (
             <div
               key={p.id}
-              className="flex items-center justify-between rounded-md border p-3 text-sm cursor-pointer hover:bg-accent/30 transition-colors"
+              className={`flex items-center justify-between rounded-lg border p-3 text-sm cursor-pointer hover:bg-accent/30 transition-colors ${
+                p.status === "requested" ? "border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10" : ""
+              }`}
               onClick={() => onClickBooking?.(p.booking_id)}
             >
-              <div className="flex-1 min-w-0 space-y-0.5">
+              <div className="flex-1 min-w-0 space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="font-medium truncate">{guestName}</span>
                   {unitName && <span className="text-xs text-muted-foreground">· {unitName}</span>}
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  {time && <span>🕐 {time}</span>}
-                  {p.flight_number && <span>✈️ {p.flight_number}</span>}
+                <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                  {time && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" /> {time}
+                    </span>
+                  )}
+                  {p.flight_number && (
+                    <span className="flex items-center gap-1">
+                      <Plane className="h-3 w-3" /> {p.flight_number}
+                    </span>
+                  )}
+                  {p.passenger_count > 1 && (
+                    <span className="flex items-center gap-1">
+                      <User className="h-3 w-3" /> {p.passenger_count} pax
+                    </span>
+                  )}
                   {driverName && (
-                    <span className="flex items-center gap-0.5"><Car className="h-3 w-3" /> {driverName}</span>
+                    <span className="flex items-center gap-1">
+                      <Car className="h-3 w-3" /> {driverName}
+                      {p.drivers?.license_plate && <span className="text-[10px]">({p.drivers.license_plate})</span>}
+                    </span>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <Badge className={STATUS_COLORS[p.status] ?? ""}>{p.status}</Badge>
+              <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                <Badge className={STATUS_COLORS[p.status] ?? ""}>
+                  {STATUS_LABELS[p.status] ?? p.status}
+                </Badge>
                 {whatsappLink && (
                   <Button
                     variant="ghost"

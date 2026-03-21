@@ -59,13 +59,37 @@ export function useDashboardStats() {
   const recentActivity = useQuery({
     queryKey: ["dashboard", "activity"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch booking state logs
+      const { data: stateLogs, error: stateErr } = await supabase
         .from("booking_state_log")
         .select("*, bookings(unit_id, units(name))")
         .order("created_at", { ascending: false })
         .limit(10);
-      if (error) throw error;
-      return data;
+      if (stateErr) throw stateErr;
+
+      // Fetch recent pickup activity from stay_support_log
+      const { data: pickupLogs, error: pickupErr } = await supabase
+        .from("stay_support_log")
+        .select("*, bookings(unit_id, units(name))")
+        .eq("request_type", "airport_pickup")
+        .order("created_at", { ascending: false })
+        .limit(5);
+      if (pickupErr) throw pickupErr;
+
+      // Merge and sort by created_at, take top 12
+      const merged = [
+        ...(stateLogs ?? []).map((l: any) => ({ ...l, _type: "state" })),
+        ...(pickupLogs ?? []).map((l: any) => ({
+          ...l,
+          _type: "pickup",
+          from_state: l.from_status,
+          to_state: l.to_status ?? l.action,
+          reason: l.note,
+        })),
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+       .slice(0, 12);
+
+      return merged;
     },
   });
 

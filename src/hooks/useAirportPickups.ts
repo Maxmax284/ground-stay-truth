@@ -67,14 +67,44 @@ export function useTodaysPickups() {
   return useQuery({
     queryKey: ["todays_pickups", today],
     queryFn: async () => {
+      // Query by arrival_datetime date OR booking check_in date
+      const startOfDay = `${today}T00:00:00`;
+      const endOfDay = `${today}T23:59:59`;
       const { data, error } = await (supabase
         .from("airport_pickups" as any)
         .select("*, drivers(name, whatsapp, vehicle_type, license_plate), bookings!inner(id, check_in, guest_id, units(name), profiles!bookings_guest_id_profiles_fkey(full_name))")
-        .eq("bookings.check_in", today)
         .neq("status", "cancelled")
-        .order("arrival_datetime", { ascending: true }) as any);
+        .neq("status", "completed")
+        .or(`arrival_datetime.gte.${startOfDay},arrival_datetime.lte.${endOfDay},arrival_datetime.is.null`)
+        .order("arrival_datetime", { ascending: true, nullsFirst: false }) as any);
       if (error) throw error;
-      return data as any[];
+      // Filter: if arrival_datetime is null, fall back to check_in matching today
+      return (data ?? []).filter((p: any) => {
+        if (p.arrival_datetime) {
+          const d = p.arrival_datetime.substring(0, 10);
+          return d === today;
+        }
+        return p.bookings?.check_in === today;
+      }) as any[];
     },
+  });
+}
+
+export async function logPickupAction(params: {
+  bookingId: string;
+  pickupId: string;
+  action: string;
+  fromStatus?: string | null;
+  toStatus?: string | null;
+  note?: string | null;
+}) {
+  await supabase.from("stay_support_log").insert({
+    booking_id: params.bookingId,
+    request_type: "airport_pickup",
+    request_id: params.pickupId,
+    action: params.action,
+    from_status: params.fromStatus ?? null,
+    to_status: params.toStatus ?? null,
+    note: params.note ?? null,
   });
 }

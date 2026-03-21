@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
-import { useAirportPickup, useUpsertAirportPickup, type AirportPickup } from "@/hooks/useAirportPickups";
+import { useAirportPickup, useUpsertAirportPickup, logPickupAction, type AirportPickup } from "@/hooks/useAirportPickups";
 import { useDrivers } from "@/hooks/useDrivers";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
@@ -88,11 +88,22 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
 
   const handleAssignDriver = async (driverId: string) => {
     try {
-      await upsert.mutateAsync({
+      const prevStatus = pickup.status;
+      const newStatus = prevStatus === "requested" ? "assigned" : prevStatus;
+      const result = await upsert.mutateAsync({
         booking_id: bookingId,
         driver_id: driverId,
-        status: pickup.status === "requested" ? "assigned" : pickup.status,
+        status: newStatus,
         assigned_at: new Date().toISOString(),
+      });
+      const assignedDriver = drivers?.find(d => d.id === driverId);
+      await logPickupAction({
+        bookingId,
+        pickupId: pickup.id,
+        action: "driver_assigned",
+        fromStatus: prevStatus,
+        toStatus: newStatus,
+        note: assignedDriver ? `Driver assigned: ${assignedDriver.name}` : "Driver assigned",
       });
       toast({ title: "Driver assigned" });
     } catch (err: any) {
@@ -101,6 +112,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
   };
 
   const handleStatusChange = async (newStatus: string) => {
+    const prevStatus = pickup.status;
     const updates: Partial<AirportPickup> & { booking_id: string } = {
       booking_id: bookingId,
       status: newStatus,
@@ -111,6 +123,14 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
     }
     try {
       await upsert.mutateAsync(updates);
+      await logPickupAction({
+        bookingId,
+        pickupId: pickup.id,
+        action: `status_${newStatus}`,
+        fromStatus: prevStatus,
+        toStatus: newStatus,
+        note: `Pickup status changed: ${prevStatus} → ${newStatus}`,
+      });
       toast({ title: `Pickup ${newStatus}` });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -125,6 +145,12 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
         fee: Number(feeValue),
         fee_override: true,
         fee_override_reason: feeReason.trim(),
+      });
+      await logPickupAction({
+        bookingId,
+        pickupId: pickup.id,
+        action: "fee_override",
+        note: `Fee changed to ฿${feeValue}: ${feeReason.trim()}`,
       });
       toast({ title: "Fee updated" });
       setEditingFee(false);
