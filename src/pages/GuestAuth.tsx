@@ -31,7 +31,7 @@ const GuestAuth = () => {
   }
 
   if (user) {
-    if (role === "guest") return <Navigate to="/guest" replace />;
+    if (role === "guest") return <Navigate to={unitParam ? `/guest?unit=${unitParam}` : "/guest"} replace />;
     return <Navigate to="/dashboard" replace />;
   }
 
