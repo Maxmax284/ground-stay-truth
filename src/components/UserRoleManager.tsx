@@ -23,8 +23,11 @@ export default function UserRoleManager() {
   const { roles, addRole, removeRole, createStaffAccount } = useUserRoles();
   const [newRole, setNewRole] = useState<AppRole>("viewer");
 
+  const adminCount = useMemo(() => (roles.data ?? []).filter((r) => r.role === "admin").length, [roles.data]);
   const supervisorCount = useMemo(() => (roles.data ?? []).filter((r) => r.role === "front_desk_supervisor").length, [roles.data]);
   const supervisorCapReached = newRole === "front_desk_supervisor" && supervisorCount >= 2;
+
+  const isLastAdmin = (role: UserRoleRow) => role.role === "admin" && adminCount <= 1;
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<ProfileResult[]>([]);
