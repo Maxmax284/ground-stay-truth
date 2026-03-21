@@ -155,7 +155,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
               {(booking.arrival_details as any).flight_info && <p className="text-xs">✈️ {(booking.arrival_details as any).flight_info}</p>}
               {(booking.arrival_details as any).arrival_time && <p className="text-xs">🕐 {(booking.arrival_details as any).arrival_time}</p>}
               {(booking.arrival_details as any).emergency_contact && <p className="text-xs">🚨 {(booking.arrival_details as any).emergency_contact}</p>}
-              {(booking.arrival_details as any).dietary_restrictions && <p className="text-xs">🍽️ {(booking.arrival_details as any).dietary_restrictions}</p>}
+              {(booking.arrival_details as any).airport_pickup && <p className="text-xs">🛬 {t("guestBooking.airportPickup", { defaultValue: "Airport Pickup Requested" })}</p>}
             </div>
           )}
         </SheetHeader>
