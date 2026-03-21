@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
+import { getAmenityIcon } from "@/lib/amenityIcons";
+import { Sparkles } from "lucide-react";
 import { useParams, useSearchParams } from "react-router-dom";
 import {
   format,
