@@ -26,6 +26,16 @@ export function useCreatePricingRule() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (rule: PricingRuleInsert) => {
+      // Check for overlapping rules on the same unit
+      const { data: existing } = await supabase
+        .from("pricing_rules")
+        .select("id, name, start_date, end_date")
+        .eq("unit_id", rule.unit_id)
+        .lte("start_date", rule.end_date)
+        .gte("end_date", rule.start_date);
+      if (existing && existing.length > 0) {
+        throw new Error(`Date range overlaps with existing rule "${existing[0].name}" (${existing[0].start_date} – ${existing[0].end_date})`);
+      }
       const { data, error } = await supabase.from("pricing_rules").insert(rule).select().single();
       if (error) throw error;
       return data;
