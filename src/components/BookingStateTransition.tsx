@@ -323,6 +323,21 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
       }
     }
 
+    // Record cash payment at check-in if selected
+    if (cashAtCheckin && checkinPayAmount && Number(checkinPayAmount) > 0) {
+      try {
+        await createPayment.mutateAsync({
+          booking_id: bookingId,
+          amount: Number(checkinPayAmount),
+          method: checkinPayMethod,
+          notes: checkinPayNotes || "Payment confirmed at check-in",
+          source_channel: "front_desk",
+        });
+      } catch (err: any) {
+        toast({ title: t("stateTransition.transitionFailed"), description: err.message, variant: "destructive" });
+        return;
+      }
+
     try {
       const reasonText = [
         adminOverride ? "[ADMIN OVERRIDE]" : "",
