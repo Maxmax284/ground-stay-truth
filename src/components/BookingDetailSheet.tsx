@@ -30,6 +30,7 @@ import { useGuestDocuments } from "@/hooks/useGuestDocuments";
 import { useMaintenanceRequests, useUpdateMaintenanceStatus } from "@/hooks/useMaintenanceRequests";
 import { useLaundryRequests, useAdvanceLaundryStatus, getNextLaundryStatus } from "@/hooks/useLaundryRequests";
 import { StaySupportBadge } from "@/components/StaySupportBadge";
+import { TrainingBadge } from "@/components/TrainingBadge";
 import { useMessageTranslation } from "@/hooks/useMessageTranslation";
 import { useProfile } from "@/hooks/useProfile";
 import { useAIAssistant } from "@/hooks/useAIAssistant";
