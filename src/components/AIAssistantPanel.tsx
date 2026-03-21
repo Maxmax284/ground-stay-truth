@@ -90,6 +90,8 @@ function AIAssistantPanelInner() {
   const [language, setLanguage] = useState<string>("en");
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const [bubbleDragging, setBubbleDragging] = useState(false);
+  const bubbleRef = useRef<HTMLDivElement>(null);
   // Draggable position — used for BOTH bubble and open panel
   const [bubblePos, setBubblePos] = useState<{ x: number; y: number } | null>(null);
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
