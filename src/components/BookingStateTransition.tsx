@@ -47,11 +47,18 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
   const [reason, setReason] = useState("");
   const [aiValidation, setAiValidation] = useState<string | null>(null);
   const [aiChecking, setAiChecking] = useState(false);
+  const [aiAcknowledged, setAiAcknowledged] = useState(false);
 
   // Deposit form state
   const [depositAmount, setDepositAmount] = useState("");
   const [depositMethod, setDepositMethod] = useState("cash");
   const [depositNotes, setDepositNotes] = useState("");
+
+  // Cash at check-in state
+  const [cashAtCheckin, setCashAtCheckin] = useState(false);
+  const [checkinPayAmount, setCheckinPayAmount] = useState("");
+  const [checkinPayMethod, setCheckinPayMethod] = useState("cash");
+  const [checkinPayNotes, setCheckinPayNotes] = useState("");
 
   const canOverride = permissions.canAdminOverride(role);
   const canCheckIn = permissions.canCompleteCheckIn(role);
@@ -83,12 +90,25 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
   // Show override toggle when online is required and user has permission
   const showDepositOverrideToggle = isPendingDepositToConfirmed && depositPolicy.effectiveMode === "online_required" && canDepositOverride && !hasPayments;
 
+  // Cash payment at check-in
+  const isCheckinTransition = targetState === "checked_in";
+  const showCashAtCheckin = isCheckinTransition && canRecordPay;
+  const totalPaid = (existingPayments ?? []).reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+  const outstandingAtCheckin = totalPrice ? totalPrice - totalPaid : null;
+
   // Pre-fill deposit amount
   useEffect(() => {
     if (showDepositForm && requiredDeposit != null && !depositAmount) {
       setDepositAmount(requiredDeposit.toFixed(2));
     }
   }, [showDepositForm, requiredDeposit]);
+
+  // Pre-fill check-in payment amount
+  useEffect(() => {
+    if (showCashAtCheckin && cashAtCheckin && outstandingAtCheckin != null && outstandingAtCheckin > 0 && !checkinPayAmount) {
+      setCheckinPayAmount(outstandingAtCheckin.toFixed(2));
+    }
+  }, [showCashAtCheckin, cashAtCheckin, outstandingAtCheckin]);
 
   const cleaningBufferHours = useMemo(() => {
     const setting = policies?.find((p) => p.key === "cleaning_buffer_hours");
@@ -108,6 +128,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
 
   // AI Pre-flight check when target state changes
   useEffect(() => {
+    setAiAcknowledged(false);
     if (!targetState || !isAIEnabled) {
       setAiValidation(null);
       return;
@@ -302,12 +323,29 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
       }
     }
 
+    // Record cash payment at check-in if selected
+    if (cashAtCheckin && checkinPayAmount && Number(checkinPayAmount) > 0) {
+      try {
+        await createPayment.mutateAsync({
+          booking_id: bookingId,
+          amount: Number(checkinPayAmount),
+          method: checkinPayMethod,
+          notes: checkinPayNotes || "Payment confirmed at check-in",
+          source_channel: "front_desk",
+        });
+      } catch (err: any) {
+        toast({ title: t("stateTransition.transitionFailed"), description: err.message, variant: "destructive" });
+        return;
+      }
+    }
+
     try {
       const reasonText = [
         adminOverride ? "[ADMIN OVERRIDE]" : "",
         depositOverride ? `[MANAGER DEPOSIT OVERRIDE] ${depositOverrideReason}` : "",
         earlyCheckinApproved && targetState === "checked_in" ? "[EARLY CHECK-IN APPROVED]" : "",
         showDepositForm ? `[DEPOSIT: ${formatPrice(Number(depositAmount), policies)} via ${depositMethod}]` : "",
+        cashAtCheckin && checkinPayAmount ? `[CASH AT CHECK-IN: ${formatPrice(Number(checkinPayAmount), policies)} via ${checkinPayMethod}]` : "",
         reason,
         refundInfo ? `[Refund: ${refundInfo.label}${refundInfo.refundAmount != null ? ` — ${formatPrice(refundInfo.refundAmount, policies)}` : ""}]` : "",
       ].filter(Boolean).join(" ");
@@ -328,6 +366,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
       }
       setTargetState(""); setReason(""); setAdminOverride(false); setDepositOverride(false); setDepositOverrideReason("");
       setDepositAmount(""); setDepositMethod("cash"); setDepositNotes("");
+      setCashAtCheckin(false); setCheckinPayAmount(""); setCheckinPayMethod("cash"); setCheckinPayNotes(""); setAiAcknowledged(false);
     } catch (err: any) { toast({ title: t("stateTransition.transitionFailed"), description: err.message, variant: "destructive" }); }
   };
 
@@ -376,14 +415,35 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
             </div>
           )}
           {(aiChecking || aiValidation) && (
-            <div className="flex items-start gap-2 text-sm rounded-md p-3 bg-accent/50 text-accent-foreground border border-accent">
+            <div className={`flex items-start gap-2 text-sm rounded-md p-3 border ${aiAcknowledged ? "bg-muted/30 border-border" : "bg-accent/50 border-accent"} text-accent-foreground`}>
               <Sparkles className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-xs mb-1">{t("ai.preFlightTitle")}</p>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="font-medium text-xs">{t("ai.preFlightTitle", { defaultValue: "AI Pre-flight Check" })}</p>
+                  <Badge variant="outline" className="text-[10px]">{t("ai.advisory", { defaultValue: "Advisory" })}</Badge>
+                </div>
                 {aiChecking ? (
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" />{t("ai.preFlightLoading")}</div>
                 ) : (
-                  <p className="text-xs whitespace-pre-wrap">{aiValidation}</p>
+                  <>
+                    <p className="text-xs whitespace-pre-wrap">{aiValidation}</p>
+                    {!aiAcknowledged && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 h-7 text-xs"
+                        onClick={() => setAiAcknowledged(true)}
+                      >
+                        {canOverride
+                          ? t("ai.acknowledgeOverride", { defaultValue: "Acknowledge & Override" })
+                          : t("ai.acknowledge", { defaultValue: "Acknowledged" })}
+                      </Button>
+                    )}
+                    {aiAcknowledged && (
+                      <p className="text-xs text-muted-foreground mt-1 italic">{t("ai.acknowledged", { defaultValue: "✓ Advisory acknowledged — proceed with transition" })}</p>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -441,6 +501,45 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
               <Textarea placeholder={t("payments.paymentNotes")} value={depositNotes} onChange={(e) => setDepositNotes(e.target.value)} rows={1} />
             </div>
           )}
+          {/* Cash payment at check-in */}
+          {showCashAtCheckin && (
+            <div className="space-y-3 rounded-md border border-primary/20 bg-primary/5 p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                  <CreditCard className="h-4 w-4" />
+                  {t("checkin.confirmPayment", { defaultValue: "Confirm Payment at Check-in" })}
+                </div>
+                <Switch checked={cashAtCheckin} onCheckedChange={setCashAtCheckin} />
+              </div>
+              <p className="text-xs text-muted-foreground">{t("checkin.confirmPaymentDesc", { defaultValue: "Record cash or in-person payment received during check-in" })}</p>
+              {outstandingAtCheckin != null && outstandingAtCheckin > 0 && (
+                <p className="text-xs text-muted-foreground">{t("checkin.outstanding", { defaultValue: "Outstanding balance" })}: <strong className="text-destructive">{formatPrice(outstandingAtCheckin, policies)}</strong></p>
+              )}
+              {cashAtCheckin && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t("payments.amount")} *</Label>
+                      <Input type="number" step="0.01" min="0" value={checkinPayAmount} onChange={(e) => setCheckinPayAmount(e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t("payments.method")}</Label>
+                      <Select value={checkinPayMethod} onValueChange={setCheckinPayMethod}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cash">{t("payments.methods.cash")}</SelectItem>
+                          <SelectItem value="card">{t("payments.methods.card")}</SelectItem>
+                          <SelectItem value="in_person">{t("payments.methods.in_person", { defaultValue: "In Person" })}</SelectItem>
+                          <SelectItem value="bank_transfer">{t("payments.methods.bank_transfer")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <Textarea placeholder={t("checkin.paymentNotes", { defaultValue: "Payment notes (e.g. receipt number)" })} value={checkinPayNotes} onChange={(e) => setCheckinPayNotes(e.target.value)} rows={1} />
+                </>
+              )}
+            </div>
+          )}
           <div className="space-y-1"><Label className="text-xs">{t("stateTransition.reasonLabel")} *</Label><Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("stateTransition.reasonPlaceholder")} rows={2} /></div>
           {targetIsGated && (
             <div className="flex items-center gap-2 text-sm text-warning-foreground bg-warning/10 rounded-md p-3">
@@ -461,7 +560,9 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
                 ? t("stateTransition.requestApproval")
                 : showDepositForm
                   ? t("deposit.recordAndConfirm")
-                  : t("stateTransition.confirmTransition")}
+                  : cashAtCheckin
+                    ? t("checkin.recordAndCheckIn", { defaultValue: "Record Payment & Check In" })
+                    : t("stateTransition.confirmTransition")}
           </Button>
         </>
       )}
