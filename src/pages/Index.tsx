@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Building2, BookOpen, CalendarDays, TrendingUp, ArrowRight, Plus, LogIn, LogOut, Wrench, Shirt, MessageSquare, ShieldCheck, Check, X, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ import { InquiryQueue } from "@/components/InquiryQueue";
 import { MaintenanceQueue } from "@/components/MaintenanceQueue";
 import { LaundryPanel } from "@/components/LaundryPanel";
 import { HousekeepingPanel } from "@/components/HousekeepingPanel";
+import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useDraftMessages, useApproveDraftMessage } from "@/hooks/useBookings";
@@ -25,9 +27,11 @@ import { toast } from "sonner";
 
 const Index = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { role } = useAuth();
   const { effectiveRole } = useRolePreview();
   const { arrivals, departures, activeBookings, unitCount, recentActivity, pendingApproval, pendingInquiry, inquiryCount } = useDashboardStats();
+  const [detailBookingId, setDetailBookingId] = useState<string | null>(null);
 
   const arrivalsCount = arrivals.data?.length ?? 0;
   const departuresCount = departures.data?.length ?? 0;
@@ -41,6 +45,7 @@ const Index = () => {
   const canViewQueues = canApprove || canRecommend || effectiveRole === "front_desk_supervisor";
   const isMaintenance = effectiveRole === "maintenance";
   const isViewer = effectiveRole === "viewer";
+  const isAdmin = canApprove;
 
   return (
     <DashboardLayout>
@@ -55,7 +60,7 @@ const Index = () => {
           <MaintenanceDashboard t={t} />
         ) : (
           <>
-            {/* Stats Row — visible to all non-maintenance */}
+            {/* Stats Row — clickable */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <StatCard
                 label={t("dashboard.todaysArrivals")}
@@ -63,6 +68,7 @@ const Index = () => {
                 icon={LogIn}
                 description={t("dashboard.checkInsToday", { count: arrivalsCount })}
                 stagger={1}
+                onClick={() => navigate("/bookings?filter=arriving_today")}
               />
               <StatCard
                 label={t("dashboard.todaysDepartures")}
@@ -70,6 +76,7 @@ const Index = () => {
                 icon={LogOut}
                 description={t("dashboard.checkOutsToday", { count: departuresCount })}
                 stagger={2}
+                onClick={() => navigate("/bookings?filter=departing_today")}
               />
               <StatCard
                 label={t("dashboard.activeBookings")}
@@ -77,6 +84,7 @@ const Index = () => {
                 icon={BookOpen}
                 description={t("dashboard.acrossAllUnits")}
                 stagger={3}
+                onClick={() => navigate("/bookings?filter=active")}
               />
               <StatCard
                 label={t("dashboard.openInquiries")}
@@ -84,6 +92,7 @@ const Index = () => {
                 icon={MessageSquare}
                 description={t("dashboard.awaitingResponse")}
                 stagger={4}
+                onClick={() => navigate("/bookings?filter=inquiry")}
               />
               <StatCard
                 label={t("dashboard.activeUnits")}
@@ -91,6 +100,7 @@ const Index = () => {
                 icon={Building2}
                 description={t("dashboard.unitsConfigured", { count: units })}
                 stagger={5}
+                onClick={() => navigate("/units")}
               />
             </div>
 
@@ -109,14 +119,14 @@ const Index = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Front Desk / Supervisor: arrivals/departures first */}
               {!isViewer && arrivalsCount > 0 && (
-                <ArrivalCard arrivals={arrivals.data} t={t} />
+                <ArrivalCard arrivals={arrivals.data} t={t} onClickBooking={setDetailBookingId} />
               )}
               {!isViewer && departuresCount > 0 && (
-                <DepartureCard departures={departures.data} t={t} />
+                <DepartureCard departures={departures.data} t={t} onClickBooking={setDetailBookingId} />
               )}
 
               {/* Recent Activity — all roles */}
-              <RecentActivityCard recentActivity={recentActivity} t={t} />
+              <RecentActivityCard recentActivity={recentActivity} t={t} onClickBooking={setDetailBookingId} />
 
               {/* Quick Actions — not for Viewer */}
               {!isViewer && (
@@ -155,6 +165,14 @@ const Index = () => {
           </>
         )}
       </div>
+
+      {/* Detail sheet for clicking on bookings from arrivals/departures/activity */}
+      <BookingDetailSheet
+        bookingId={detailBookingId}
+        open={!!detailBookingId}
+        onOpenChange={(open) => !open && setDetailBookingId(null)}
+        isAdmin={isAdmin}
+      />
     </DashboardLayout>
   );
 };
@@ -230,7 +248,7 @@ function MaintenanceDashboard({ t }: { t: any }) {
   );
 }
 
-function ArrivalCard({ arrivals, t }: { arrivals: any[]; t: any }) {
+function ArrivalCard({ arrivals, t, onClickBooking }: { arrivals: any[]; t: any; onClickBooking: (id: string) => void }) {
   return (
     <Card className="animate-fade-up animate-stagger-4">
       <CardHeader>
@@ -240,7 +258,11 @@ function ArrivalCard({ arrivals, t }: { arrivals: any[]; t: any }) {
       </CardHeader>
       <CardContent className="space-y-2">
         {arrivals?.map((b: any, i: number) => (
-          <div key={b.id} className={`flex items-center justify-between text-sm border rounded-md p-3 animate-fade-up animate-stagger-${Math.min(i + 1, 8)}`}>
+          <div
+            key={b.id}
+            className={`flex items-center justify-between text-sm border rounded-md p-3 cursor-pointer hover:bg-accent/50 transition-colors animate-fade-up animate-stagger-${Math.min(i + 1, 8)}`}
+            onClick={() => onClickBooking(b.id)}
+          >
             <div>
               <span className="font-medium">{b.units?.name ?? "—"}</span>
               {b.profiles?.full_name && (
@@ -255,7 +277,7 @@ function ArrivalCard({ arrivals, t }: { arrivals: any[]; t: any }) {
   );
 }
 
-function DepartureCard({ departures, t }: { departures: any[]; t: any }) {
+function DepartureCard({ departures, t, onClickBooking }: { departures: any[]; t: any; onClickBooking: (id: string) => void }) {
   return (
     <Card className="animate-fade-up animate-stagger-4">
       <CardHeader>
@@ -265,7 +287,11 @@ function DepartureCard({ departures, t }: { departures: any[]; t: any }) {
       </CardHeader>
       <CardContent className="space-y-2">
         {departures?.map((b: any, i: number) => (
-          <div key={b.id} className={`flex items-center justify-between text-sm border rounded-md p-3 animate-fade-up animate-stagger-${Math.min(i + 1, 8)}`}>
+          <div
+            key={b.id}
+            className={`flex items-center justify-between text-sm border rounded-md p-3 cursor-pointer hover:bg-accent/50 transition-colors animate-fade-up animate-stagger-${Math.min(i + 1, 8)}`}
+            onClick={() => onClickBooking(b.id)}
+          >
             <div>
               <span className="font-medium">{b.units?.name ?? "—"}</span>
               {b.profiles?.full_name && (
@@ -280,7 +306,7 @@ function DepartureCard({ departures, t }: { departures: any[]; t: any }) {
   );
 }
 
-function RecentActivityCard({ recentActivity, t }: { recentActivity: any; t: any }) {
+function RecentActivityCard({ recentActivity, t, onClickBooking }: { recentActivity: any; t: any; onClickBooking: (id: string) => void }) {
   return (
     <Card className="animate-fade-up animate-stagger-5">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -306,7 +332,11 @@ function RecentActivityCard({ recentActivity, t }: { recentActivity: any; t: any
               const toLabel = t(`states.${log.to_state}`);
 
               return (
-                <div key={log.id} className={`flex items-start gap-3 text-sm animate-fade-up animate-stagger-${Math.min(i + 1, 8)}`}>
+                <div
+                  key={log.id}
+                  className={`flex items-start gap-3 text-sm cursor-pointer hover:bg-accent/30 rounded-md p-1 -m-1 transition-colors animate-fade-up animate-stagger-${Math.min(i + 1, 8)}`}
+                  onClick={() => onClickBooking(log.booking_id)}
+                >
                   <div className="mt-1.5 h-2 w-2 rounded-full bg-primary shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-foreground">
@@ -335,13 +365,16 @@ function RecentActivityCard({ recentActivity, t }: { recentActivity: any; t: any
   );
 }
 
-function StatCard({ label, value, icon: Icon, description, stagger }: {
-  label: string; value: number | null; icon: any; description: string; stagger: number;
+function StatCard({ label, value, icon: Icon, description, stagger, onClick }: {
+  label: string; value: number | null; icon: any; description: string; stagger: number; onClick?: () => void;
 }) {
   const animatedValue = useCountUp(value ?? 0);
 
   return (
-    <Card className={`hover-lift animate-fade-up animate-stagger-${stagger}`}>
+    <Card
+      className={`hover-lift animate-fade-up animate-stagger-${stagger} ${onClick ? "cursor-pointer" : ""}`}
+      onClick={onClick}
+    >
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground" style={{ fontFamily: "'Source Sans 3', sans-serif" }}>
           {label}

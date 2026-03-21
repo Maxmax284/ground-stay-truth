@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Swords, X, Send, Trash2, Sparkles, AlertTriangle, Globe } from "lucide-react";
+import { Swords, X, Send, Trash2, Sparkles, AlertTriangle, Globe, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +64,51 @@ function AIAssistantPanelInner() {
   const [language, setLanguage] = useState<string>("en");
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Draggable position
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragOffset = useRef({ x: 0, y: 0 });
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const rect = panelRef.current?.getBoundingClientRect();
+    if (rect) {
+      dragOffset.current = { x: clientX - rect.left, y: clientY - rect.top };
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isDragging) return;
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+      const newX = clientX - dragOffset.current.x;
+      const newY = clientY - dragOffset.current.y;
+      // Clamp within viewport
+      const maxX = window.innerWidth - (panelRef.current?.offsetWidth ?? 380);
+      const maxY = window.innerHeight - (panelRef.current?.offsetHeight ?? 400);
+      setPosition({
+        x: Math.max(0, Math.min(newX, maxX)),
+        y: Math.max(0, Math.min(newY, maxY)),
+      });
+    };
+    const handleEnd = () => setIsDragging(false);
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleEnd);
+    window.addEventListener("touchmove", handleMove);
+    window.addEventListener("touchend", handleEnd);
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchmove", handleMove);
+      window.removeEventListener("touchend", handleEnd);
+    };
+  }, [isDragging]);
+
   // Set default language from profile
   useEffect(() => {
     if (profile.data?.preferred_language) {
@@ -86,6 +131,10 @@ function AIAssistantPanelInner() {
     sendMessage(trimmed, mode, undefined, langCodeToName(language));
   };
 
+  const panelStyle: React.CSSProperties = position
+    ? { position: "fixed", left: position.x, top: position.y, bottom: "auto", right: "auto", zIndex: 50 }
+    : {};
+
   if (!isOpen) {
     return (
       <button
@@ -99,10 +148,22 @@ function AIAssistantPanelInner() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] bg-card border border-border rounded-2xl shadow-2xl flex flex-col md:bottom-6 bottom-20 max-h-[min(32rem,calc(100vh-8rem))] animate-slide-up">
-      {/* Header */}
+    <div
+      ref={panelRef}
+      style={panelStyle}
+      className={`${!position ? "fixed bottom-6 right-6 md:bottom-6 bottom-20" : ""} z-50 w-[380px] max-w-[calc(100vw-2rem)] bg-card border border-border rounded-2xl shadow-2xl flex flex-col max-h-[min(32rem,calc(100vh-8rem))] animate-slide-up`}
+    >
+      {/* Header with drag handle */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div className="flex items-center gap-2">
+          <div
+            className="cursor-grab active:cursor-grabbing p-1 -ml-1 rounded hover:bg-accent/50 touch-none"
+            onMouseDown={handleDragStart}
+            onTouchStart={handleDragStart}
+            title="Drag to move"
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
           <Swords className="h-4 w-4 text-primary" />
           <span className="text-sm font-semibold">{t("ai.title")}</span>
           <Badge variant="secondary" className="text-[10px]">{t("ai.assistOnly")}</Badge>
@@ -129,7 +190,7 @@ function AIAssistantPanelInner() {
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={clearChat} title={t("ai.clearChat")}>
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsOpen(false)}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setIsOpen(false); setPosition(null); }}>
             <X className="h-4 w-4" />
           </Button>
         </div>

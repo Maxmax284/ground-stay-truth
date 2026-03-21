@@ -1133,12 +1133,15 @@ export type Database = {
           id: string
           is_active: boolean
           min_nights: number
+          monthly_rate: number | null
           name: string
           photos: string[] | null
           reviews_enabled: boolean
           rules: string | null
+          sort_order: number
           updated_at: string
           weekend_price: number | null
+          weekly_rate: number | null
         }
         Insert: {
           amenities?: string[] | null
@@ -1151,12 +1154,15 @@ export type Database = {
           id?: string
           is_active?: boolean
           min_nights?: number
+          monthly_rate?: number | null
           name: string
           photos?: string[] | null
           reviews_enabled?: boolean
           rules?: string | null
+          sort_order?: number
           updated_at?: string
           weekend_price?: number | null
+          weekly_rate?: number | null
         }
         Update: {
           amenities?: string[] | null
@@ -1169,12 +1175,15 @@ export type Database = {
           id?: string
           is_active?: boolean
           min_nights?: number
+          monthly_rate?: number | null
           name?: string
           photos?: string[] | null
           reviews_enabled?: boolean
           rules?: string | null
+          sort_order?: number
           updated_at?: string
           weekend_price?: number | null
+          weekly_rate?: number | null
         }
         Relationships: [
           {
