@@ -146,6 +146,12 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
         fee_override: true,
         fee_override_reason: feeReason.trim(),
       });
+      await logPickupAction({
+        bookingId,
+        pickupId: pickup.id,
+        action: "fee_override",
+        note: `Fee changed to ฿${feeValue}: ${feeReason.trim()}`,
+      });
       toast({ title: "Fee updated" });
       setEditingFee(false);
       setFeeReason("");
