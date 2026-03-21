@@ -173,6 +173,12 @@ const FRIENDLY_LABELS: Record<string, string> = {
   currency_symbol: "Currency Symbol",
   tax_included: "Tax Included in Prices",
   tax_rate: "Tax Rate (%)",
+  transport_enabled: "Airport Pickup Service",
+  transport_base_fee: "Base Fee (฿)",
+  transport_fee_type: "Fee Type (flat / per_person)",
+  transport_night_surcharge_enabled: "Night Surcharge",
+  transport_night_surcharge: "Night Surcharge Amount (฿)",
+  transport_free_pickup_min_nights: "Free Pickup Min Nights (0 = off)",
 };
 
 const SETTING_ICONS: Record<string, React.ReactNode> = {
