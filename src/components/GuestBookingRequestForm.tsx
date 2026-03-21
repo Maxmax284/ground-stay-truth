@@ -173,17 +173,24 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label>{t("bookingForm.unit")} *</Label>
-            <Select value={selectedUnitId} onValueChange={(v) => setValue("unit_id", v)}>
-              <SelectTrigger><SelectValue placeholder={t("bookingForm.selectUnit")} /></SelectTrigger>
-              <SelectContent>
-                {activeUnits.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.name}
-                    <span className="text-muted-foreground ml-1 text-xs">(max {u.capacity}, min {u.min_nights}n)</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {defaultUnitId && selectedUnit ? (
+              <div className="flex items-center gap-2 rounded-md border border-input bg-muted/50 px-3 py-2">
+                <span className="font-medium text-sm">{selectedUnit.name}</span>
+                <span className="text-muted-foreground text-xs">(max {selectedUnit.capacity}, min {selectedUnit.min_nights}n)</span>
+              </div>
+            ) : (
+              <Select value={selectedUnitId} onValueChange={(v) => setValue("unit_id", v)}>
+                <SelectTrigger><SelectValue placeholder={t("bookingForm.selectUnit")} /></SelectTrigger>
+                <SelectContent>
+                  {activeUnits.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.name}
+                      <span className="text-muted-foreground ml-1 text-xs">(max {u.capacity}, min {u.min_nights}n)</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <input type="hidden" {...register("unit_id", { required: true })} />
             {errors.unit_id && <p className="text-sm text-destructive">{t("bookingForm.unitRequired")}</p>}
           </div>
