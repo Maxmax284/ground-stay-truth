@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { AmenityList } from "@/components/AmenityBadge";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMarkMessagesRead } from "@/hooks/useBookings";

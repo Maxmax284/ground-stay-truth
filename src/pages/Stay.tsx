@@ -10,6 +10,7 @@ import { Home, Users, Moon, Sparkles, ChevronLeft, ChevronRight, CalendarDays, A
 import { formatPriceSimple } from "@/lib/currency";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { TestimonialSection } from "@/components/TestimonialSection";
+import { AmenityList } from "@/components/AmenityBadge";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;

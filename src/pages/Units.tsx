@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { AmenityList } from "@/components/AmenityBadge";
 import { useTranslation } from "react-i18next";
 import { Plus, Building2, Users, Moon, ChevronDown, ChevronRight, Image, Search, Calendar, Copy, Check } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
