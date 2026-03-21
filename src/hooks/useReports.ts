@@ -21,6 +21,22 @@ export function useReports(monthOffset = 0) {
     },
   });
 
+  // Fetch payments with refund data for net revenue calculation
+  const payments = useQuery({
+    queryKey: ["reports", "payments", rangeStart, rangeEnd],
+    queryFn: async () => {
+      const bookingIds = bookings.data?.map((b) => b.id) ?? [];
+      if (bookingIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("payments")
+        .select("booking_id, amount, refund_amount, status")
+        .in("booking_id", bookingIds);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!bookings.data,
+  });
+
   const units = useQuery({
     queryKey: ["reports", "units"],
     queryFn: async () => {
