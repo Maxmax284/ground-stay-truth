@@ -194,7 +194,7 @@ export function useReports(monthOffset = 0) {
   })();
 
   return {
-    isLoading: bookings.isLoading || units.isLoading || maintenanceBlocks.isLoading,
+    isLoading: bookings.isLoading || units.isLoading || maintenanceBlocks.isLoading || payments.isLoading,
     occupancyByDay,
     occupancyRate,
     revenueByUnit,
