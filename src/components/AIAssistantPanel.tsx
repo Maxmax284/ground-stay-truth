@@ -140,18 +140,20 @@ function AIAssistantPanelInner() {
     <div
       ref={panelRef}
       style={panelStyle}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
       className={`${!position ? "fixed bottom-6 right-6 md:bottom-6 bottom-20" : ""} z-50 w-[380px] max-w-[calc(100vw-2rem)] bg-card border border-border rounded-2xl shadow-2xl flex flex-col max-h-[min(32rem,calc(100vh-8rem))] animate-slide-up`}
     >
       {/* Header with drag handle */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div className="flex items-center gap-2">
           <div
-            className="cursor-grab active:cursor-grabbing p-1 -ml-1 rounded hover:bg-accent/50 touch-none"
-            onMouseDown={handleDragStart}
-            onTouchStart={handleDragStart}
+            className="cursor-grab active:cursor-grabbing p-2 -ml-2 rounded hover:bg-accent/50"
+            onPointerDown={handlePointerDown}
             title="Drag to move"
           >
             <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
           </div>
           <Swords className="h-4 w-4 text-primary" />
           <span className="text-sm font-semibold">{t("ai.title")}</span>
