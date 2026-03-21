@@ -66,48 +66,37 @@ function AIAssistantPanelInner() {
 
   // Draggable position
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
-    setIsDragging(true);
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    isDraggingRef.current = true;
     const rect = panelRef.current?.getBoundingClientRect();
     if (rect) {
-      dragOffset.current = { x: clientX - rect.left, y: clientY - rect.top };
+      dragOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     }
   }, []);
 
-  useEffect(() => {
-    if (!isDragging) return;
-    const handleMove = (e: MouseEvent | TouchEvent) => {
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-      const newX = clientX - dragOffset.current.x;
-      const newY = clientY - dragOffset.current.y;
-      // Clamp within viewport
-      const maxX = window.innerWidth - (panelRef.current?.offsetWidth ?? 380);
-      const maxY = window.innerHeight - (panelRef.current?.offsetHeight ?? 400);
-      setPosition({
-        x: Math.max(0, Math.min(newX, maxX)),
-        y: Math.max(0, Math.min(newY, maxY)),
-      });
-    };
-    const handleEnd = () => setIsDragging(false);
-    window.addEventListener("mousemove", handleMove);
-    window.addEventListener("mouseup", handleEnd);
-    window.addEventListener("touchmove", handleMove);
-    window.addEventListener("touchend", handleEnd);
-    return () => {
-      window.removeEventListener("mousemove", handleMove);
-      window.removeEventListener("mouseup", handleEnd);
-      window.removeEventListener("touchmove", handleMove);
-      window.removeEventListener("touchend", handleEnd);
-    };
-  }, [isDragging]);
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDraggingRef.current) return;
+    e.preventDefault();
+    const newX = e.clientX - dragOffset.current.x;
+    const newY = e.clientY - dragOffset.current.y;
+    const maxX = window.innerWidth - (panelRef.current?.offsetWidth ?? 380);
+    const maxY = window.innerHeight - (panelRef.current?.offsetHeight ?? 400);
+    setPosition({
+      x: Math.max(0, Math.min(newX, maxX)),
+      y: Math.max(0, Math.min(newY, maxY)),
+    });
+  }, []);
+
+  const handlePointerUp = useCallback(() => {
+    isDraggingRef.current = false;
+  }, []);
 
   // Set default language from profile
   useEffect(() => {
