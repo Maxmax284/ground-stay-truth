@@ -332,8 +332,9 @@ function RecentActivityCard({ recentActivity, t, onClickBooking }: { recentActiv
           <div className="space-y-3">
             {recentActivity.data.map((log: any, i: number) => {
               const unitName = log.bookings?.units?.name ?? t("common.unknown");
-              const fromLabel = log.from_state ? t(`states.${log.from_state}`) : null;
-              const toLabel = t(`states.${log.to_state}`);
+              const isPickup = log._type === "pickup";
+              const fromLabel = log.from_state ? t(`states.${log.from_state}`, log.from_state) : null;
+              const toLabel = isPickup ? log.action?.replace("status_", "").replace("_", " ") : t(`states.${log.to_state}`);
 
               return (
                 <div
@@ -341,18 +342,20 @@ function RecentActivityCard({ recentActivity, t, onClickBooking }: { recentActiv
                   className={`flex items-start gap-3 text-sm cursor-pointer hover:bg-accent/30 rounded-md p-1 -m-1 transition-colors animate-fade-up animate-stagger-${Math.min(i + 1, 8)}`}
                   onClick={() => onClickBooking(log.booking_id)}
                 >
-                  <div className="mt-1.5 h-2 w-2 rounded-full bg-primary shrink-0" />
+                  <div className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${isPickup ? "bg-blue-500" : "bg-primary"}`} />
                   <div className="flex-1 min-w-0">
                     <p className="text-foreground">
                       <span className="font-medium">{unitName}</span>
                       {" — "}
-                      {fromLabel ? (
+                      {isPickup ? (
+                        <span className="text-blue-600 dark:text-blue-400">✈ {log.reason ?? toLabel}</span>
+                      ) : fromLabel ? (
                         <span>{fromLabel} → {toLabel}</span>
                       ) : (
                         <span>{t("dashboard.createdAs", { state: toLabel })}</span>
                       )}
                     </p>
-                    {log.reason && (
+                    {!isPickup && log.reason && (
                       <p className="text-xs text-muted-foreground truncate">{log.reason}</p>
                     )}
                     <p className="text-xs text-muted-foreground">
