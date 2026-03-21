@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { HandMetal, X, MessageSquare, AlertTriangle, Bot, Loader2 } from "lucide-react";
+import { HandMetal, X, MessageSquare, AlertTriangle, Bot, Loader2, Eye } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { useTransitionBookingState } from "@/hooks/useBookings";
 import { useQueryClient } from "@tanstack/react-query";
@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAISettings } from "@/hooks/useAISettings";
 import { permissions } from "@/lib/permissions";
 import { supabase } from "@/integrations/supabase/client";
+import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import {
   Dialog,
   DialogContent,
@@ -134,12 +135,6 @@ function AIAdvisoryBadge({ booking }: { booking: any }) {
   );
 }
 
-interface InquiryQueueProps {
-  bookings: any[] | undefined;
-  isLoading: boolean;
-  readOnly?: boolean;
-}
-
 export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQueueProps) {
   const { t } = useTranslation();
   const { role } = useAuth();
@@ -147,9 +142,11 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
   const qc = useQueryClient();
   const [dismissId, setDismissId] = useState<string | null>(null);
   const [dismissReason, setDismissReason] = useState("");
+  const [detailBookingId, setDetailBookingId] = useState<string | null>(null);
 
   const canDismiss = permissions.canDismissInquiry(role);
   const canHold = permissions.canHoldInquiry(role);
+  const isAdmin = permissions.canApproveBooking(role);
 
   const handleHold = async (bookingId: string) => {
     try {
@@ -220,7 +217,8 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
                 return (
                   <div
                     key={b.id}
-                    className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3"
+                    className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 cursor-pointer hover:bg-primary/10 transition-colors"
+                    onClick={() => setDetailBookingId(b.id)}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -239,13 +237,26 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
                           {format(new Date(b.check_in), "MMM d")} – {format(new Date(b.check_out), "MMM d")}
                         </span>
                         <span>·</span>
+                        <span>{b.num_guests} guest{b.num_guests > 1 ? "s" : ""}</span>
+                        <span>·</span>
                         <span className="flex items-center gap-0.5">
                           <AlertTriangle className="h-3 w-3" /> {t("inquiry.waiting")} {waitTime}
                         </span>
                       </div>
+                      {b.notes && (
+                        <p className="text-xs text-muted-foreground mt-1 truncate italic">"{b.notes}"</p>
+                      )}
                     </div>
                     {!readOnly && (
-                      <div className="flex gap-1.5 shrink-0">
+                      <div className="flex gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 px-2"
+                          onClick={() => setDetailBookingId(b.id)}
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
                         {canHold && (
                           <Button
                             size="sm"
@@ -277,6 +288,14 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
           )}
         </CardContent>
       </Card>
+
+      {/* Booking detail sheet for viewing inquiry details */}
+      <BookingDetailSheet
+        bookingId={detailBookingId}
+        open={!!detailBookingId}
+        onOpenChange={(open) => !open && setDetailBookingId(null)}
+        isAdmin={isAdmin}
+      />
 
       <Dialog open={!!dismissId} onOpenChange={(o) => !o && setDismissId(null)}>
         <DialogContent>

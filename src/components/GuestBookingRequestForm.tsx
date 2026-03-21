@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateBooking } from "@/hooks/useBookings";
@@ -21,19 +22,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { calculatePricing, type PricingSummary } from "@/lib/pricingCalculator";
 import { formatPrice } from "@/lib/currency";
-import { AlertTriangle, CalendarPlus } from "lucide-react";
+import { AlertTriangle, CalendarPlus, Plane } from "lucide-react";
 
 interface GuestBookingRequestFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultUnitId?: string;
-}
-
-interface ArrivalDetails {
-  flight_info: string;
-  arrival_time: string;
-  emergency_contact: string;
-  dietary_restrictions: string;
 }
 
 interface FormValues {
@@ -46,7 +40,7 @@ interface FormValues {
   arrival_flight: string;
   arrival_time: string;
   emergency_contact: string;
-  dietary_restrictions: string;
+  airport_pickup: boolean;
 }
 
 export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: GuestBookingRequestFormProps) {
@@ -59,13 +53,21 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
   const { data: policies } = usePolicySettings();
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
-    defaultValues: { unit_id: defaultUnitId ?? "", check_in: "", check_out: "", num_guests: 1, guest_type: "training_guest", notes: "", arrival_flight: "", arrival_time: "", emergency_contact: "", dietary_restrictions: "" },
+    defaultValues: { unit_id: defaultUnitId ?? "", check_in: "", check_out: "", num_guests: 1, guest_type: "training_guest", notes: "", arrival_flight: "", arrival_time: "", emergency_contact: "", airport_pickup: false },
   });
+
+  // Pre-fill unit when defaultUnitId changes
+  useEffect(() => {
+    if (defaultUnitId) {
+      setValue("unit_id", defaultUnitId);
+    }
+  }, [defaultUnitId, setValue]);
 
   const selectedUnitId = watch("unit_id");
   const checkIn = watch("check_in");
   const checkOut = watch("check_out");
   const numGuests = watch("num_guests");
+  const airportPickup = watch("airport_pickup");
   const activeUnits = units?.filter((u) => u.is_active) ?? [];
   const selectedUnit = activeUnits.find((u) => u.id === selectedUnitId);
 
@@ -133,11 +135,11 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
 
   const onSubmit = async (data: FormValues) => {
     if (validationErrors.length > 0 || !user) return;
-    const arrivalDetails: Record<string, string> = {};
+    const arrivalDetails: Record<string, any> = {};
     if (data.arrival_flight) arrivalDetails.flight_info = data.arrival_flight;
     if (data.arrival_time) arrivalDetails.arrival_time = data.arrival_time;
     if (data.emergency_contact) arrivalDetails.emergency_contact = data.emergency_contact;
-    if (data.dietary_restrictions) arrivalDetails.dietary_restrictions = data.dietary_restrictions;
+    if (data.airport_pickup) arrivalDetails.airport_pickup = true;
     try {
       await createBooking.mutateAsync({
         unit_id: data.unit_id,
@@ -289,9 +291,17 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
             <Label htmlFor="emergency_contact">{t("guestBooking.emergencyContact")}</Label>
             <Input id="emergency_contact" {...register("emergency_contact")} placeholder={t("guestBooking.emergencyPlaceholder")} />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="dietary_restrictions">{t("guestBooking.dietaryRestrictions")}</Label>
-            <Input id="dietary_restrictions" {...register("dietary_restrictions")} placeholder={t("guestBooking.dietaryPlaceholder")} />
+
+          {/* Airport pickup option */}
+          <div className="flex items-center justify-between rounded-md border border-border p-3">
+            <div className="flex items-center gap-2">
+              <Plane className="h-4 w-4 text-primary" />
+              <div>
+                <Label htmlFor="airport_pickup" className="text-sm font-medium">{t("guestBooking.airportPickup", { defaultValue: "Arrange Airport Pickup" })}</Label>
+                <p className="text-xs text-muted-foreground">{t("guestBooking.airportPickupDesc", { defaultValue: "We'll arrange a pickup from the airport for you" })}</p>
+              </div>
+            </div>
+            <Switch id="airport_pickup" checked={airportPickup} onCheckedChange={(v) => setValue("airport_pickup", v)} />
           </div>
 
           <div className="space-y-2">
