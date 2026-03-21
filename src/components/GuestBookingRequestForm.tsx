@@ -22,7 +22,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { calculatePricing, type PricingSummary } from "@/lib/pricingCalculator";
 import { formatPrice } from "@/lib/currency";
-import { AlertTriangle, CalendarPlus, Plane } from "lucide-react";
+import { AlertTriangle, CalendarPlus, Plane, Luggage } from "lucide-react";
 
 interface GuestBookingRequestFormProps {
   open: boolean;
