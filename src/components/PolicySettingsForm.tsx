@@ -10,6 +10,15 @@ import { usePolicySettings, useUpdatePolicySetting, type PolicySetting } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Save } from "lucide-react";
 
+const CANCELLATION_KEYS = new Set([
+  "free_cancellation_days",
+  "partial_refund_days",
+  "partial_refund_percentage",
+  "no_refund_hours",
+  "earliest_checkin_time",
+  "checkout_time",
+]);
+
 const BOOLEAN_KEYS = new Set([
   "ai_assistant_enabled",
   "ai_guest_enabled",

@@ -4,6 +4,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import ProfileEditor from "@/components/ProfileEditor";
 import UserRoleManager from "@/components/UserRoleManager";
 import { PolicySettingsForm } from "@/components/PolicySettingsForm";
+import { CancellationPolicyEditor } from "@/components/CancellationPolicyEditor";
 import { ReviewsManager } from "@/components/ReviewsManager";
 import { IntegrationSettings } from "@/components/IntegrationSettings";
 import { TrainingPackagesManager } from "@/components/TrainingPackagesManager";
@@ -31,6 +32,7 @@ const Settings = () => {
           <TabsList className="flex-wrap">
             <TabsTrigger value="profile">{t("settings.profileTab")}</TabsTrigger>
             {canManageRoles && <TabsTrigger value="users">{t("settings.usersTab")}</TabsTrigger>}
+            {canManagePolicies && <TabsTrigger value="cancellation">Cancellation</TabsTrigger>}
             {canManagePolicies && <TabsTrigger value="policies">{t("settings.policiesTab")}</TabsTrigger>}
             {isAdmin && <TabsTrigger value="training">Training</TabsTrigger>}
             {isAdmin && <TabsTrigger value="integrations">Integrations</TabsTrigger>}
@@ -39,6 +41,7 @@ const Settings = () => {
 
           <TabsContent value="profile"><ProfileEditor /></TabsContent>
           {canManageRoles && <TabsContent value="users"><UserRoleManager /></TabsContent>}
+          {canManagePolicies && <TabsContent value="cancellation"><CancellationPolicyEditor /></TabsContent>}
           {canManagePolicies && <TabsContent value="policies"><PolicySettingsForm /></TabsContent>}
           {isAdmin && <TabsContent value="training"><TrainingPackagesManager /></TabsContent>}
           {isAdmin && <TabsContent value="integrations"><IntegrationSettings /></TabsContent>}
