@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
-import { useAirportPickup, useUpsertAirportPickup, type AirportPickup } from "@/hooks/useAirportPickups";
+import { useAirportPickup, useUpsertAirportPickup, logPickupAction, type AirportPickup } from "@/hooks/useAirportPickups";
 import { useDrivers } from "@/hooks/useDrivers";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
