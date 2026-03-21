@@ -99,7 +99,6 @@ function AIAssistantPanelInner() {
   const hasDraggedRef = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
-  const [bubbleDragging, setBubbleDragging] = useState(false);
 
   // --- Bubble drag handlers ---
   const handleBubblePointerDown = useCallback((e: React.PointerEvent) => {
