@@ -74,7 +74,7 @@ const Pricing = () => {
                       <CardContent className="space-y-1 text-sm">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">{t("units.basePrice")}</span>
-                          <span className="font-medium">${Number(u.base_price).toFixed(2)}</span>
+                          <span className="font-medium">{formatPrice(u.base_price, policies)}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">{t("units.weekendPrice")}</span>
