@@ -311,15 +311,46 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
           </div>
 
           {/* Airport pickup option */}
-          <div className="flex items-center justify-between rounded-md border border-border p-3">
-            <div className="flex items-center gap-2">
-              <Plane className="h-4 w-4 text-primary" />
-              <div>
-                <Label htmlFor="airport_pickup" className="text-sm font-medium">{t("guestBooking.airportPickup", { defaultValue: "Arrange Airport Pickup" })}</Label>
-                <p className="text-xs text-muted-foreground">{t("guestBooking.airportPickupDesc", { defaultValue: "We'll arrange a pickup from the airport for you" })}</p>
+          <div className="rounded-md border border-border p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Plane className="h-4 w-4 text-primary" />
+                <div>
+                  <Label htmlFor="airport_pickup" className="text-sm font-medium">{t("guestBooking.airportPickup", { defaultValue: "Arrange Airport Pickup" })}</Label>
+                  <p className="text-xs text-muted-foreground">{t("guestBooking.airportPickupDesc", { defaultValue: "We'll arrange a pickup from the airport for you" })}</p>
+                </div>
               </div>
+              <Switch id="airport_pickup" checked={airportPickup} onCheckedChange={(v) => setValue("airport_pickup", v)} />
             </div>
-            <Switch id="airport_pickup" checked={airportPickup} onCheckedChange={(v) => setValue("airport_pickup", v)} />
+
+            {airportPickup && (
+              <div className="space-y-3 pt-1 border-t border-border/50">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Flight Number</Label>
+                    <Input {...register("pickup_flight_number")} placeholder="TG 925" className="h-8 text-sm" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Arrival Date & Time</Label>
+                    <Input type="datetime-local" {...register("pickup_arrival_datetime")} className="h-8 text-sm" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Passengers</Label>
+                    <Input type="number" min={1} {...register("pickup_passenger_count")} className="h-8 text-sm" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Luggage Notes</Label>
+                    <Input {...register("pickup_luggage_notes")} placeholder="2 bags" className="h-8 text-sm" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Special Instructions</Label>
+                  <Input {...register("pickup_special_instructions")} placeholder="Wheelchair assistance, etc." className="h-8 text-sm" />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
