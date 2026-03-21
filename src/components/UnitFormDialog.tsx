@@ -60,7 +60,7 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
 
   const onSubmit = async (data: any) => {
     try {
-      const payload = { ...data, amenities: selectedAmenities, photos, group_id: selectedGroupId === "none" ? null : selectedGroupId, base_price: Number(data.base_price), weekend_price: data.weekend_price ? Number(data.weekend_price) : null, cleaning_fee: Number(data.cleaning_fee), capacity: Number(data.capacity), min_nights: Number(data.min_nights), is_active: isActive, reviews_enabled: reviewsEnabled };
+      const payload = { ...data, amenities: selectedAmenities, photos, group_id: selectedGroupId === "none" ? null : selectedGroupId, base_price: Number(data.base_price), weekend_price: data.weekend_price ? Number(data.weekend_price) : null, cleaning_fee: Number(data.cleaning_fee), weekly_rate: data.weekly_rate ? Number(data.weekly_rate) : null, monthly_rate: data.monthly_rate ? Number(data.monthly_rate) : null, sort_order: Number(data.sort_order ?? 0), capacity: Number(data.capacity), min_nights: Number(data.min_nights), is_active: isActive, reviews_enabled: reviewsEnabled };
       if ((isEditing || isEditingAfterCreate) && (unit || savedUnitId)) {
         const id = unit?.id ?? savedUnitId!;
         await updateUnit.mutateAsync({ id, ...payload }); toast({ title: t("units.unitUpdated") }); reset(); onOpenChange(false);
