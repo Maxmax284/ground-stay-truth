@@ -13,6 +13,8 @@ const GuestAuth = () => {
   const { t } = useTranslation();
   const { user, role, loading, signIn, signUp } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const unitParam = searchParams.get("unit");
   const [isLogin, setIsLogin] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
