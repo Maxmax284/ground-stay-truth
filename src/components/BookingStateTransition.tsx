@@ -337,6 +337,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
         toast({ title: t("stateTransition.transitionFailed"), description: err.message, variant: "destructive" });
         return;
       }
+    }
 
     try {
       const reasonText = [
