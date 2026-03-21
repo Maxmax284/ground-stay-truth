@@ -41,6 +41,11 @@ interface FormValues {
   arrival_time: string;
   emergency_contact: string;
   airport_pickup: boolean;
+  pickup_flight_number: string;
+  pickup_arrival_datetime: string;
+  pickup_passenger_count: number;
+  pickup_luggage_notes: string;
+  pickup_special_instructions: string;
 }
 
 export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: GuestBookingRequestFormProps) {
