@@ -194,18 +194,23 @@ function AIAssistantPanelInner() {
     ? { position: "fixed", left: bubblePos.x, top: bubblePos.y, bottom: "auto", right: "auto" }
     : {};
 
+  const [bubbleDragging, setBubbleDragging] = useState(false);
+
   if (!isOpen) {
     return (
       <div
         ref={bubbleRef}
-        style={bubbleStyle}
+        style={{
+          ...bubbleStyle,
+          transition: bubbleDragging ? "none" : "left 0.3s ease-out, top 0.3s ease-out",
+        }}
         className={`${!bubblePos ? "fixed bottom-6 right-6 md:bottom-6 bottom-20" : ""} z-50 select-none touch-none`}
-        onPointerDown={handleBubblePointerDown}
+        onPointerDown={(e) => { setBubbleDragging(true); handleBubblePointerDown(e); }}
         onPointerMove={handleBubblePointerMove}
-        onPointerUp={handleBubblePointerUp}
+        onPointerUp={(e) => { setBubbleDragging(false); handleBubblePointerUp(); }}
       >
         <div
-          className={`h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl flex items-center justify-center animate-pulse-ring ${isDraggingRef.current ? "scale-110 cursor-grabbing" : "cursor-grab hover:scale-105"} transition-all`}
+          className={`h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl flex items-center justify-center animate-pulse-ring ${bubbleDragging ? "scale-110 cursor-grabbing" : "cursor-grab hover:scale-105"} transition-transform`}
           aria-label={t("ai.openAssistant")}
         >
           <Sparkles className="h-6 w-6 pointer-events-none" />
