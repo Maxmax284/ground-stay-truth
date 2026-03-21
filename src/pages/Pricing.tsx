@@ -14,6 +14,8 @@ import { Plus, Trash2, Pencil } from "lucide-react";
 import { useUnits } from "@/hooks/useUnits";
 import { usePricingRules, useDeletePricingRule } from "@/hooks/usePricingRules";
 import { PricingRuleForm } from "@/components/PricingRuleForm";
+import { usePolicySettings } from "@/hooks/usePolicySettings";
+import { formatPrice } from "@/lib/currency";
 import { PolicySettingsForm } from "@/components/PolicySettingsForm";
 import type { PricingRule } from "@/hooks/usePricingRules";
 
@@ -21,6 +23,7 @@ const Pricing = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
   const { data: units, isLoading: unitsLoading } = useUnits();
+  const { data: policies } = usePolicySettings();
   const { data: rules, isLoading: rulesLoading } = usePricingRules();
   const deleteRule = useDeletePricingRule();
 
@@ -71,18 +74,18 @@ const Pricing = () => {
                       <CardContent className="space-y-1 text-sm">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">{t("units.basePrice")}</span>
-                          <span className="font-medium">${Number(u.base_price).toFixed(2)}</span>
+                          <span className="font-medium">{formatPrice(u.base_price, policies)}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">{t("units.weekendPrice")}</span>
                           <span className="font-medium">
-                            {u.weekend_price ? `$${Number(u.weekend_price).toFixed(2)}` : "—"}
+                            {u.weekend_price ? formatPrice(u.weekend_price, policies) : "—"}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">{t("units.cleaningFee")}</span>
                           <span className="font-medium">
-                            {u.cleaning_fee ? `$${Number(u.cleaning_fee).toFixed(2)}` : "—"}
+                            {u.cleaning_fee ? formatPrice(u.cleaning_fee, policies) : "—"}
                           </span>
                         </div>
                       </CardContent>
@@ -157,7 +160,7 @@ const Pricing = () => {
                           <TableCell className="text-sm text-muted-foreground">
                             {format(new Date(r.start_date), "MMM d")} – {format(new Date(r.end_date), "MMM d, yyyy")}
                           </TableCell>
-                          <TableCell className="font-medium">${Number(r.price).toFixed(2)}</TableCell>
+                          <TableCell className="font-medium">{formatPrice(r.price, policies)}</TableCell>
                           <TableCell>
                             <div className="flex gap-1">
                               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingRule(r); setShowRuleForm(true); }}>

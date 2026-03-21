@@ -30,6 +30,7 @@ import { useGuestDocuments } from "@/hooks/useGuestDocuments";
 import { useMaintenanceRequests, useUpdateMaintenanceStatus } from "@/hooks/useMaintenanceRequests";
 import { useLaundryRequests, useAdvanceLaundryStatus, getNextLaundryStatus } from "@/hooks/useLaundryRequests";
 import { StaySupportBadge } from "@/components/StaySupportBadge";
+import { TrainingBadge } from "@/components/TrainingBadge";
 import { useMessageTranslation } from "@/hooks/useMessageTranslation";
 import { useProfile } from "@/hooks/useProfile";
 import { useAIAssistant } from "@/hooks/useAIAssistant";
@@ -128,6 +129,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
             <span>{booking.units?.name ?? t("bookingDetail.unknownUnit")}</span>
             <Badge className={STATE_VARIANTS[booking.state as BookingState]}>{t(`states.${booking.state}`)}</Badge>
             {isCheckedIn && <StaySupportBadge bookingId={booking.id} />}
+            {booking.guest_type === "training_guest" && <TrainingBadge />}
           </SheetTitle>
           {guestName && <div className="flex items-center gap-2 text-sm text-foreground"><User className="h-4 w-4 text-muted-foreground" /><span className="font-medium">{guestName}</span>{guestHistory?.isReturning && <Badge variant="secondary" className="text-[10px]">{t("loyalty.returningGuest", { count: (guestHistory.completedStays ?? 0) + 1 })}</Badge>}{isCompleted && (bookingReview ? <Badge className={`text-[10px] ${bookingReview.status === "approved" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300" : bookingReview.status === "rejected" ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"}`}>{t("reviews.reviewStatus", { defaultValue: "Review" })}: {t(`reviews.${bookingReview.status}`)}</Badge> : <span className="text-xs text-muted-foreground">{t("reviews.noReviewSubmitted", { defaultValue: "No review submitted" })}</span>)}</div>}
           {softHoldInfo && (

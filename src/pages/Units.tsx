@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { AmenityList } from "@/components/AmenityBadge";
 import { useTranslation } from "react-i18next";
 import { Plus, Building2, Users, Moon, ChevronDown, ChevronRight, Image, Search, Calendar, Copy, Check } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -128,14 +129,7 @@ const Units = () => {
           <span>{formatPrice(unit.base_price, policies, { decimals: 0 })}</span>
         </div>
         {unit.amenities && unit.amenities.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {unit.amenities.slice(0, 4).map((a) => (
-              <Badge key={a} variant="outline" className="text-xs">{a}</Badge>
-            ))}
-            {unit.amenities.length > 4 && (
-              <Badge variant="outline" className="text-xs">+{unit.amenities.length - 4}</Badge>
-            )}
-          </div>
+          <AmenityList amenities={unit.amenities} max={4} size="sm" />
         )}
         <div className="flex gap-2 pt-1 flex-wrap">
           <Button size="sm" variant="outline" onClick={() => handleEdit(unit)}>{t("common.edit")}</Button>

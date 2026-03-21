@@ -418,7 +418,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
               </div>
               {requiredDeposit != null && (
                 <p className="text-xs text-muted-foreground">
-                  {t("deposit.requiredAmount", { amount: requiredDeposit.toFixed(2), percentage: depositPercentage })}
+                  {t("deposit.requiredAmount", { amount: formatPrice(requiredDeposit, policies), percentage: depositPercentage })}
                 </p>
               )}
               <div className="grid grid-cols-2 gap-3">
