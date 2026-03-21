@@ -90,12 +90,25 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
   // Show override toggle when online is required and user has permission
   const showDepositOverrideToggle = isPendingDepositToConfirmed && depositPolicy.effectiveMode === "online_required" && canDepositOverride && !hasPayments;
 
+  // Cash payment at check-in
+  const isCheckinTransition = targetState === "checked_in";
+  const showCashAtCheckin = isCheckinTransition && canRecordPay;
+  const totalPaid = (existingPayments ?? []).reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+  const outstandingAtCheckin = totalPrice ? totalPrice - totalPaid : null;
+
   // Pre-fill deposit amount
   useEffect(() => {
     if (showDepositForm && requiredDeposit != null && !depositAmount) {
       setDepositAmount(requiredDeposit.toFixed(2));
     }
   }, [showDepositForm, requiredDeposit]);
+
+  // Pre-fill check-in payment amount
+  useEffect(() => {
+    if (showCashAtCheckin && cashAtCheckin && outstandingAtCheckin != null && outstandingAtCheckin > 0 && !checkinPayAmount) {
+      setCheckinPayAmount(outstandingAtCheckin.toFixed(2));
+    }
+  }, [showCashAtCheckin, cashAtCheckin, outstandingAtCheckin]);
 
   const cleaningBufferHours = useMemo(() => {
     const setting = policies?.find((p) => p.key === "cleaning_buffer_hours");
