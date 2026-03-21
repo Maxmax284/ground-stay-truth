@@ -415,14 +415,35 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
             </div>
           )}
           {(aiChecking || aiValidation) && (
-            <div className="flex items-start gap-2 text-sm rounded-md p-3 bg-accent/50 text-accent-foreground border border-accent">
+            <div className={`flex items-start gap-2 text-sm rounded-md p-3 border ${aiAcknowledged ? "bg-muted/30 border-border" : "bg-accent/50 border-accent"} text-accent-foreground`}>
               <Sparkles className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-xs mb-1">{t("ai.preFlightTitle")}</p>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="font-medium text-xs">{t("ai.preFlightTitle", { defaultValue: "AI Pre-flight Check" })}</p>
+                  <Badge variant="outline" className="text-[10px]">{t("ai.advisory", { defaultValue: "Advisory" })}</Badge>
+                </div>
                 {aiChecking ? (
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" />{t("ai.preFlightLoading")}</div>
                 ) : (
-                  <p className="text-xs whitespace-pre-wrap">{aiValidation}</p>
+                  <>
+                    <p className="text-xs whitespace-pre-wrap">{aiValidation}</p>
+                    {!aiAcknowledged && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 h-7 text-xs"
+                        onClick={() => setAiAcknowledged(true)}
+                      >
+                        {canOverride
+                          ? t("ai.acknowledgeOverride", { defaultValue: "Acknowledge & Override" })
+                          : t("ai.acknowledge", { defaultValue: "Acknowledged" })}
+                      </Button>
+                    )}
+                    {aiAcknowledged && (
+                      <p className="text-xs text-muted-foreground mt-1 italic">{t("ai.acknowledged", { defaultValue: "✓ Advisory acknowledged — proceed with transition" })}</p>
+                    )}
+                  </>
                 )}
               </div>
             </div>
