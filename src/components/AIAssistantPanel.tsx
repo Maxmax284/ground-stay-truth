@@ -194,7 +194,7 @@ function AIAssistantPanelInner() {
     ? { position: "fixed", left: bubblePos.x, top: bubblePos.y, bottom: "auto", right: "auto" }
     : {};
 
-  const [bubbleDragging, setBubbleDragging] = useState(false);
+
 
   if (!isOpen) {
     return (
