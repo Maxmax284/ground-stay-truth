@@ -105,6 +105,7 @@ function AIAssistantPanelInner() {
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     isDraggingRef.current = true;
     hasDraggedRef.current = false;
+    dragStartPos.current = { x: e.clientX, y: e.clientY };
     const el = bubbleRef.current;
     if (el) {
       const rect = el.getBoundingClientRect();
