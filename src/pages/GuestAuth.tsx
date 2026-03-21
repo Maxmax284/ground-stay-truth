@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,8 @@ const GuestAuth = () => {
   const { t } = useTranslation();
   const { user, role, loading, signIn, signUp } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const unitParam = searchParams.get("unit");
   const [isLogin, setIsLogin] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,7 +31,7 @@ const GuestAuth = () => {
   }
 
   if (user) {
-    if (role === "guest") return <Navigate to="/guest" replace />;
+    if (role === "guest") return <Navigate to={unitParam ? `/guest?unit=${unitParam}` : "/guest"} replace />;
     return <Navigate to="/dashboard" replace />;
   }
 
