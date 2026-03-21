@@ -79,7 +79,7 @@ const Pricing = () => {
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">{t("units.weekendPrice")}</span>
                           <span className="font-medium">
-                            {u.weekend_price ? `$${Number(u.weekend_price).toFixed(2)}` : "—"}
+                            {u.weekend_price ? formatPrice(u.weekend_price, policies) : "—"}
                           </span>
                         </div>
                         <div className="flex justify-between">
