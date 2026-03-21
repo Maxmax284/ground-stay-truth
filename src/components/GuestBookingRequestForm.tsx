@@ -152,7 +152,7 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
     if (data.emergency_contact) arrivalDetails.emergency_contact = data.emergency_contact;
     if (data.airport_pickup) arrivalDetails.airport_pickup = true;
     try {
-      await createBooking.mutateAsync({
+      const bookingResult = await createBooking.mutateAsync({
         unit_id: data.unit_id,
         check_in: data.check_in,
         check_out: data.check_out,
@@ -164,6 +164,28 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
         arrival_details: Object.keys(arrivalDetails).length > 0 ? arrivalDetails : null,
         state: "inquiry",
       });
+
+      // Create airport pickup record if requested
+      if (data.airport_pickup && bookingResult?.id) {
+        const transportFee = policies?.find((p) => p.key === "transport_base_fee");
+        const feeType = policies?.find((p) => p.key === "transport_fee_type");
+        const baseFee = transportFee ? Number(transportFee.value) : 500;
+        const fee = String(feeType?.value).replace(/"/g, "") === "per_person"
+          ? baseFee * Number(data.pickup_passenger_count || 1)
+          : baseFee;
+
+        await supabase.from("airport_pickups" as any).insert({
+          booking_id: bookingResult.id,
+          status: "requested",
+          fee,
+          flight_number: data.pickup_flight_number || null,
+          arrival_datetime: data.pickup_arrival_datetime || null,
+          passenger_count: Number(data.pickup_passenger_count) || 1,
+          luggage_notes: data.pickup_luggage_notes || null,
+          special_instructions: data.pickup_special_instructions || null,
+        } as any);
+      }
+
       toast({ title: t("guestBooking.requestSent"), description: t("guestBooking.requestSentDesc") });
       reset();
       onOpenChange(false);
