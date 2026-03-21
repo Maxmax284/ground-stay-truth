@@ -283,12 +283,7 @@ const GuestPortal = () => {
                             <Badge variant="outline">{t("units.upToGuests", { count: unit.capacity })}</Badge>
                             <Badge variant="outline">{t("units.minNightsLabel", { count: unit.min_nights })}</Badge>
                           </div>
-                          {(unit.amenities?.length ?? 0) > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
-                              {unit.amenities!.slice(0, 8).map((a, i) => <Badge key={i} variant="secondary" className="text-[10px]">{a}</Badge>)}
-                              {(unit.amenities!.length > 8) && <Badge variant="secondary" className="text-[10px]">{t("guestPortal.more", { count: unit.amenities!.length - 8 })}</Badge>}
-                            </div>
-                          )}
+                          <AmenityList amenities={unit.amenities} max={8} />
                           <Separator />
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">{t("common.from")}</span>
