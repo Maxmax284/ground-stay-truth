@@ -58,7 +58,13 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
   const { data: policies } = usePolicySettings();
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
-    defaultValues: { unit_id: defaultUnitId ?? "", check_in: "", check_out: "", num_guests: 1, guest_type: "training_guest", notes: "", arrival_flight: "", arrival_time: "", emergency_contact: "", airport_pickup: false },
+    defaultValues: {
+      unit_id: defaultUnitId ?? "", check_in: "", check_out: "", num_guests: 1,
+      guest_type: "training_guest", notes: "", arrival_flight: "", arrival_time: "",
+      emergency_contact: "", airport_pickup: false, pickup_flight_number: "",
+      pickup_arrival_datetime: "", pickup_passenger_count: 1, pickup_luggage_notes: "",
+      pickup_special_instructions: "",
+    },
   });
 
   // Pre-fill unit when defaultUnitId changes
