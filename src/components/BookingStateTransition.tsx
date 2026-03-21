@@ -560,7 +560,9 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
                 ? t("stateTransition.requestApproval")
                 : showDepositForm
                   ? t("deposit.recordAndConfirm")
-                  : t("stateTransition.confirmTransition")}
+                  : cashAtCheckin
+                    ? t("checkin.recordAndCheckIn", { defaultValue: "Record Payment & Check In" })
+                    : t("stateTransition.confirmTransition")}
           </Button>
         </>
       )}
