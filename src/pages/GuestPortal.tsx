@@ -48,6 +48,7 @@ import {
   Clock, ListChecks, Shield, MapPin, Heart, Star,
 } from "lucide-react";
 import { GuestStaySupport } from "@/components/GuestStaySupport";
+import { GuestPickupCard } from "@/components/GuestPickupCard";
 import { GuestPaymentButton } from "@/components/GuestPaymentButton";
 import { PreArrivalChecklist } from "@/components/PreArrivalChecklist";
 import { ReviewFormDialog } from "@/components/ReviewFormDialog";
