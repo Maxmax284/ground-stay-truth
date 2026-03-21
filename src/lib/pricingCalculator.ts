@@ -138,6 +138,25 @@ export function calculatePricing(
   }
 
   const nightDates = eachDayOfInterval({ start: startDate, end: new Date(endDate.getTime() - 86400000) });
+  const nightCount = nightDates.length;
+
+  // Check if weekly or monthly flat rate applies
+  const weeklyRate = unit.weekly_rate != null ? Number(unit.weekly_rate) : null;
+  const monthlyRate = unit.monthly_rate != null ? Number(unit.monthly_rate) : null;
+
+  let useFixedRate = false;
+  let fixedRatePerNight = 0;
+  let fixedRateSource: "monthly_rate" | "weekly_rate" | null = null;
+
+  if (monthlyRate && monthlyRate > 0 && nightCount >= 28) {
+    fixedRatePerNight = Math.round((monthlyRate / 30) * 100) / 100;
+    useFixedRate = true;
+    fixedRateSource = "monthly_rate";
+  } else if (weeklyRate && weeklyRate > 0 && nightCount >= 7) {
+    fixedRatePerNight = Math.round((weeklyRate / 7) * 100) / 100;
+    useFixedRate = true;
+    fixedRateSource = "weekly_rate";
+  }
 
   const unitRules = pricingRules
     .filter((r) => r.unit_id === unit.id)
@@ -148,6 +167,11 @@ export function calculatePricing(
 
     if (priceOverride != null && priceOverride > 0) {
       return { date: dateStr, price: priceOverride, source: "override" as const };
+    }
+
+    // Weekly/monthly flat rate takes priority over seasonal/weekend but not override
+    if (useFixedRate) {
+      return { date: dateStr, price: fixedRatePerNight, source: "base" as const, ruleName: fixedRateSource === "monthly_rate" ? "Monthly Rate" : "Weekly Rate" };
     }
 
     const matchingRule = unitRules.find(
@@ -172,8 +196,8 @@ export function calculatePricing(
   const subtotal = nights.reduce((sum, n) => sum + n.price, 0);
   const cleaningFee = Number(unit.cleaning_fee ?? 0);
 
-  // Long-stay discount
-  const longStayDiscount = getLongStayDiscount(nights.length, subtotal, policies);
+  // Long-stay discount (skip if already using weekly/monthly rate)
+  const longStayDiscount = useFixedRate ? null : getLongStayDiscount(nights.length, subtotal, policies);
 
   // Loyalty discount
   const loyaltyDiscount = getLoyaltyDiscount(completedStays ?? 0, subtotal, policies);
@@ -188,14 +212,12 @@ export function calculatePricing(
     const stacks = stacksStr ? String(stacksStr.value) === "true" : false;
 
     if (stacks) {
-      // Apply loyalty first on subtotal, then long-stay on remainder
       const loyaltyAmt = loyaltyDiscount.amount;
       const remainder = subtotal - loyaltyAmt;
       const longStayAmt = Math.round((remainder * longStayDiscount.percentage) / 100 * 100) / 100;
       appliedLongStay = { ...longStayDiscount, amount: longStayAmt };
       discountAmount = loyaltyAmt + longStayAmt;
     } else {
-      // Use whichever is higher
       if (longStayDiscount.amount >= loyaltyDiscount.amount) {
         appliedLoyalty = null;
         discountAmount = longStayDiscount.amount;
