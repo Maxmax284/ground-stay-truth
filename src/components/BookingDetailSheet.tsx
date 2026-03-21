@@ -231,13 +231,16 @@ function StateHistoryTab({ logs }: { logs: any[] }) {
   );
 }
 
-function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies }: { payments: any[]; bookingId: string; canSeeAmounts: boolean; canRecord: boolean; policies?: any[] }) {
+function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, totalPrice }: { payments: any[]; bookingId: string; canSeeAmounts: boolean; canRecord: boolean; policies?: any[]; totalPrice?: number | null }) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const createPayment = useCreatePayment();
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("cash");
   const [notes, setNotes] = useState("");
+
+  const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+  const outstanding = totalPrice ? totalPrice - totalPaid : null;
 
   const handleRecord = async () => {
     if (!amount || Number(amount) <= 0) { toast({ title: t("payments.enterValidAmount"), variant: "destructive" }); return; }
@@ -249,6 +252,26 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies }
 
   return (
     <div className="space-y-4 py-3">
+      {/* Stay cost summary */}
+      {canSeeAmounts && totalPrice != null && (
+        <div className="rounded-md border border-border bg-muted/30 p-3 space-y-1">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">{t("payments.totalStayCost", { defaultValue: "Total Stay Cost" })}</span>
+            <span className="font-semibold">{formatPrice(totalPrice, policies)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">{t("payments.totalPaid", { defaultValue: "Total Paid" })}</span>
+            <span className="font-medium text-[hsl(var(--success))]">{formatPrice(totalPaid, policies)}</span>
+          </div>
+          {outstanding != null && outstanding > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">{t("payments.outstanding", { defaultValue: "Outstanding" })}</span>
+              <span className="font-medium text-destructive">{formatPrice(outstanding, policies)}</span>
+            </div>
+          )}
+        </div>
+      )}
+
       {payments.length > 0 ? (
         <ScrollArea className="max-h-[200px]">
           <div className="space-y-2">
@@ -273,14 +296,14 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies }
           <Separator />
           <h4 className="text-sm font-semibold">{t("payments.recordPayment")}</h4>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1"><Label className="text-xs">{t("payments.amount")} *</Label><Input type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
+            <div className="space-y-1"><Label className="text-xs">{t("payments.amount")} *</Label><Input type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={outstanding && outstanding > 0 ? outstanding.toFixed(2) : ""} /></div>
             <div className="space-y-1"><Label className="text-xs">{t("payments.method")}</Label>
               <Select value={method} onValueChange={setMethod}><SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="cash">{t("payments.methods.cash")}</SelectItem>
                   <SelectItem value="card">{t("payments.methods.card")}</SelectItem>
                   <SelectItem value="bank_transfer">{t("payments.methods.bank_transfer")}</SelectItem>
-                  <SelectItem value="in_person">{t("payments.methods.in_person")}</SelectItem>
+                  <SelectItem value="in_person">{t("payments.methods.in_person", { defaultValue: "In Person" })}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
