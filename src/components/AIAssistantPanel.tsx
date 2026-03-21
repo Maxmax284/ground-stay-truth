@@ -66,48 +66,37 @@ function AIAssistantPanelInner() {
 
   // Draggable position
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
-    setIsDragging(true);
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    isDraggingRef.current = true;
     const rect = panelRef.current?.getBoundingClientRect();
     if (rect) {
-      dragOffset.current = { x: clientX - rect.left, y: clientY - rect.top };
+      dragOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     }
   }, []);
 
-  useEffect(() => {
-    if (!isDragging) return;
-    const handleMove = (e: MouseEvent | TouchEvent) => {
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-      const newX = clientX - dragOffset.current.x;
-      const newY = clientY - dragOffset.current.y;
-      // Clamp within viewport
-      const maxX = window.innerWidth - (panelRef.current?.offsetWidth ?? 380);
-      const maxY = window.innerHeight - (panelRef.current?.offsetHeight ?? 400);
-      setPosition({
-        x: Math.max(0, Math.min(newX, maxX)),
-        y: Math.max(0, Math.min(newY, maxY)),
-      });
-    };
-    const handleEnd = () => setIsDragging(false);
-    window.addEventListener("mousemove", handleMove);
-    window.addEventListener("mouseup", handleEnd);
-    window.addEventListener("touchmove", handleMove);
-    window.addEventListener("touchend", handleEnd);
-    return () => {
-      window.removeEventListener("mousemove", handleMove);
-      window.removeEventListener("mouseup", handleEnd);
-      window.removeEventListener("touchmove", handleMove);
-      window.removeEventListener("touchend", handleEnd);
-    };
-  }, [isDragging]);
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDraggingRef.current) return;
+    e.preventDefault();
+    const newX = e.clientX - dragOffset.current.x;
+    const newY = e.clientY - dragOffset.current.y;
+    const maxX = window.innerWidth - (panelRef.current?.offsetWidth ?? 380);
+    const maxY = window.innerHeight - (panelRef.current?.offsetHeight ?? 400);
+    setPosition({
+      x: Math.max(0, Math.min(newX, maxX)),
+      y: Math.max(0, Math.min(newY, maxY)),
+    });
+  }, []);
+
+  const handlePointerUp = useCallback(() => {
+    isDraggingRef.current = false;
+  }, []);
 
   // Set default language from profile
   useEffect(() => {
@@ -151,15 +140,16 @@ function AIAssistantPanelInner() {
     <div
       ref={panelRef}
       style={panelStyle}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
       className={`${!position ? "fixed bottom-6 right-6 md:bottom-6 bottom-20" : ""} z-50 w-[380px] max-w-[calc(100vw-2rem)] bg-card border border-border rounded-2xl shadow-2xl flex flex-col max-h-[min(32rem,calc(100vh-8rem))] animate-slide-up`}
     >
       {/* Header with drag handle */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div className="flex items-center gap-2">
           <div
-            className="cursor-grab active:cursor-grabbing p-1 -ml-1 rounded hover:bg-accent/50 touch-none"
-            onMouseDown={handleDragStart}
-            onTouchStart={handleDragStart}
+            className="cursor-grab active:cursor-grabbing p-2 -ml-2 rounded hover:bg-accent/50"
+            onPointerDown={handlePointerDown}
             title="Drag to move"
           >
             <GripVertical className="h-4 w-4 text-muted-foreground" />
