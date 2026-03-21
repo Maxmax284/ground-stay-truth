@@ -12,7 +12,7 @@ import { usePolicySettings, useUpdatePolicySetting, type PolicySetting } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Save, Banknote, Percent, Heart, Bot, Wrench, Mail, Receipt,
-  Clock, Shield, CreditCard, ToggleLeft, CalendarClock, Sparkles,
+  Clock, Shield, CreditCard, ToggleLeft, CalendarClock, Sparkles, Plane,
 } from "lucide-react";
 
 /* ── Setting Groups ────────────────────────────────────────── */
