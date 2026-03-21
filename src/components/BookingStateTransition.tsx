@@ -345,6 +345,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
         depositOverride ? `[MANAGER DEPOSIT OVERRIDE] ${depositOverrideReason}` : "",
         earlyCheckinApproved && targetState === "checked_in" ? "[EARLY CHECK-IN APPROVED]" : "",
         showDepositForm ? `[DEPOSIT: ${formatPrice(Number(depositAmount), policies)} via ${depositMethod}]` : "",
+        cashAtCheckin && checkinPayAmount ? `[CASH AT CHECK-IN: ${formatPrice(Number(checkinPayAmount), policies)} via ${checkinPayMethod}]` : "",
         reason,
         refundInfo ? `[Refund: ${refundInfo.label}${refundInfo.refundAmount != null ? ` — ${formatPrice(refundInfo.refundAmount, policies)}` : ""}]` : "",
       ].filter(Boolean).join(" ");
