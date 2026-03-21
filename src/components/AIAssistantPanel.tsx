@@ -214,6 +214,10 @@ function AIAssistantPanelInner() {
     );
   }
 
+  const panelStyle: React.CSSProperties = position
+    ? { position: "fixed", left: position.x, top: position.y, bottom: "auto", right: "auto", zIndex: 50 }
+    : {};
+
   return (
     <div
       ref={panelRef}
