@@ -107,6 +107,19 @@ const GROUPS: SettingGroup[] = [
     keys: ["currency_code", "currency_symbol", "tax_included", "tax_rate"],
     summary: (g) => `${g("currency_symbol")} ${g("currency_code")} • ${g("tax_rate")}% tax${g("tax_included") === "true" ? " (inclusive)" : ""}`,
   },
+  {
+    id: "transport",
+    label: "Transport",
+    icon: <Plane className="h-4 w-4" />,
+    keys: [
+      "transport_enabled", "transport_base_fee", "transport_fee_type",
+      "transport_night_surcharge_enabled", "transport_night_surcharge",
+      "transport_free_pickup_min_nights",
+    ],
+    summary: (g) => g("transport_enabled") === "true"
+      ? `Active • ฿${g("transport_base_fee")} ${g("transport_fee_type")}${g("transport_night_surcharge_enabled") === "true" ? ` • ฿${g("transport_night_surcharge")} night surcharge` : ""}`
+      : "Disabled",
+  },
 ];
 
 /* Keys handled by cancellation editor or technical/sensitive */
