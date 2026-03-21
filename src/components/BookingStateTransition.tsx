@@ -366,6 +366,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
       }
       setTargetState(""); setReason(""); setAdminOverride(false); setDepositOverride(false); setDepositOverrideReason("");
       setDepositAmount(""); setDepositMethod("cash"); setDepositNotes("");
+      setCashAtCheckin(false); setCheckinPayAmount(""); setCheckinPayMethod("cash"); setCheckinPayNotes(""); setAiAcknowledged(false);
     } catch (err: any) { toast({ title: t("stateTransition.transitionFailed"), description: err.message, variant: "destructive" }); }
   };
 
