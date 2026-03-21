@@ -154,7 +154,6 @@ function AIAssistantPanelInner() {
           >
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
-          </div>
           <Swords className="h-4 w-4 text-primary" />
           <span className="text-sm font-semibold">{t("ai.title")}</span>
           <Badge variant="secondary" className="text-[10px]">{t("ai.assistOnly")}</Badge>
