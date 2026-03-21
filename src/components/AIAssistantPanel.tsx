@@ -52,6 +52,32 @@ class AIErrorBoundary extends React.Component<
   render() { return this.state.hasError ? this.props.fallback : this.props.children; }
 }
 
+// Snap corners: returns the nearest corner position for a given point
+const CORNER_MARGIN = 24;
+const BUBBLE_SIZE = 56;
+
+function snapToCorner(x: number, y: number): { x: number; y: number } {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const corners = [
+    { x: CORNER_MARGIN, y: CORNER_MARGIN }, // top-left
+    { x: vw - BUBBLE_SIZE - CORNER_MARGIN, y: CORNER_MARGIN }, // top-right
+    { x: CORNER_MARGIN, y: vh - BUBBLE_SIZE - CORNER_MARGIN }, // bottom-left
+    { x: vw - BUBBLE_SIZE - CORNER_MARGIN, y: vh - BUBBLE_SIZE - CORNER_MARGIN }, // bottom-right
+  ];
+  const centerX = x + BUBBLE_SIZE / 2;
+  const centerY = y + BUBBLE_SIZE / 2;
+  let nearest = corners[3]; // default bottom-right
+  let minDist = Infinity;
+  for (const c of corners) {
+    const cx = c.x + BUBBLE_SIZE / 2;
+    const cy = c.y + BUBBLE_SIZE / 2;
+    const dist = Math.sqrt((centerX - cx) ** 2 + (centerY - cy) ** 2);
+    if (dist < minDist) { minDist = dist; nearest = c; }
+  }
+  return nearest;
+}
+
 function AIAssistantPanelInner() {
   const { t } = useTranslation();
   const { role } = useAuth();
@@ -64,12 +90,56 @@ function AIAssistantPanelInner() {
   const [language, setLanguage] = useState<string>("en");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Draggable position
+  const [bubbleDragging, setBubbleDragging] = useState(false);
+  const bubbleRef = useRef<HTMLDivElement>(null);
+  // Draggable position — used for BOTH bubble and open panel
+  const [bubblePos, setBubblePos] = useState<{ x: number; y: number } | null>(null);
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const isDraggingRef = useRef(false);
+  const hasDraggedRef = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // --- Bubble drag handlers ---
+  const handleBubblePointerDown = useCallback((e: React.PointerEvent) => {
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    isDraggingRef.current = true;
+    hasDraggedRef.current = false;
+    const el = bubbleRef.current;
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      dragOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+  }, []);
+
+  const handleBubblePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDraggingRef.current) return;
+    hasDraggedRef.current = true;
+    const newX = e.clientX - dragOffset.current.x;
+    const newY = e.clientY - dragOffset.current.y;
+    const maxX = window.innerWidth - BUBBLE_SIZE;
+    const maxY = window.innerHeight - BUBBLE_SIZE;
+    setBubblePos({
+      x: Math.max(0, Math.min(newX, maxX)),
+      y: Math.max(0, Math.min(newY, maxY)),
+    });
+  }, []);
+
+  const handleBubblePointerUp = useCallback(() => {
+    const wasDragging = hasDraggedRef.current;
+    isDraggingRef.current = false;
+    if (wasDragging && bubblePos) {
+      // Snap to nearest corner
+      const snapped = snapToCorner(bubblePos.x, bubblePos.y);
+      setBubblePos(snapped);
+    }
+    if (!wasDragging) {
+      setIsOpen(true);
+    }
+    hasDraggedRef.current = false;
+  }, [bubblePos]);
+
+  // --- Open panel drag handlers (header grip) ---
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -120,21 +190,39 @@ function AIAssistantPanelInner() {
     sendMessage(trimmed, mode, undefined, langCodeToName(language));
   };
 
-  const panelStyle: React.CSSProperties = position
-    ? { position: "fixed", left: position.x, top: position.y, bottom: "auto", right: "auto", zIndex: 50 }
+  // Bubble style
+  const bubbleStyle: React.CSSProperties = bubblePos
+    ? { position: "fixed", left: bubblePos.x, top: bubblePos.y, bottom: "auto", right: "auto" }
     : {};
+
+
 
   if (!isOpen) {
     return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all flex items-center justify-center hover:scale-105 md:bottom-6 bottom-20 animate-pulse-ring"
-        aria-label={t("ai.openAssistant")}
+      <div
+        ref={bubbleRef}
+        style={{
+          ...bubbleStyle,
+          transition: bubbleDragging ? "none" : "left 0.3s ease-out, top 0.3s ease-out",
+        }}
+        className={`${!bubblePos ? "fixed bottom-6 right-6 md:bottom-6 bottom-20" : ""} z-50 select-none touch-none`}
+        onPointerDown={(e) => { setBubbleDragging(true); handleBubblePointerDown(e); }}
+        onPointerMove={handleBubblePointerMove}
+        onPointerUp={(e) => { setBubbleDragging(false); handleBubblePointerUp(); }}
       >
-        <Sparkles className="h-6 w-6" />
-      </button>
+        <div
+          className={`h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl flex items-center justify-center animate-pulse-ring ${bubbleDragging ? "scale-110 cursor-grabbing" : "cursor-grab hover:scale-105"} transition-transform`}
+          aria-label={t("ai.openAssistant")}
+        >
+          <Sparkles className="h-6 w-6 pointer-events-none" />
+        </div>
+      </div>
     );
   }
+
+  const panelStyle: React.CSSProperties = position
+    ? { position: "fixed", left: position.x, top: position.y, bottom: "auto", right: "auto", zIndex: 50 }
+    : {};
 
   return (
     <div
