@@ -68,7 +68,7 @@ export function PolicySettingsForm() {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {settings.map((s) => {
+      {filteredSettings.map((s) => {
         const isBool = BOOLEAN_KEYS.has(s.key);
         const boolValue = String(s.value) === "true";
         const currentValue = editValues[s.id] ?? String(typeof s.value === "object" ? JSON.stringify(s.value) : s.value);
