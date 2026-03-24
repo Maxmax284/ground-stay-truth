@@ -178,9 +178,23 @@ export function calculatePricing(
       (r) => dateStr >= r.start_date && dateStr <= r.end_date
     );
     if (matchingRule) {
+      let seasonalPrice: number;
+      const isPercentage = matchingRule.adjustment_type === "percentage" && matchingRule.adjustment_value != null;
+
+      if (isPercentage) {
+        const baseForCalc = isWeekend(date) && unit.weekend_price != null && Number(unit.weekend_price) > 0
+          ? Number(unit.weekend_price)
+          : Number(unit.base_price);
+        seasonalPrice = Math.round(baseForCalc * (1 + Number(matchingRule.adjustment_value) / 100) * 100) / 100;
+      } else if (isWeekend(date) && matchingRule.weekend_price != null && Number(matchingRule.weekend_price) > 0) {
+        seasonalPrice = Number(matchingRule.weekend_price);
+      } else {
+        seasonalPrice = Number(matchingRule.price);
+      }
+
       return {
         date: dateStr,
-        price: Number(matchingRule.price),
+        price: seasonalPrice,
         source: "seasonal" as const,
         ruleName: matchingRule.name,
       };

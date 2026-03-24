@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil, Copy } from "lucide-react";
 import { useUnits } from "@/hooks/useUnits";
 import { usePricingRules, useDeletePricingRule } from "@/hooks/usePricingRules";
 import { PricingRuleForm } from "@/components/PricingRuleForm";
