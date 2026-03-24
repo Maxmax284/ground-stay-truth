@@ -893,31 +893,43 @@ export type Database = {
       }
       pricing_rules: {
         Row: {
+          adjustment_type: string
+          adjustment_value: number | null
           created_at: string
           end_date: string
           id: string
+          min_nights: number | null
           name: string
           price: number
           start_date: string
           unit_id: string
+          weekend_price: number | null
         }
         Insert: {
+          adjustment_type?: string
+          adjustment_value?: number | null
           created_at?: string
           end_date: string
           id?: string
+          min_nights?: number | null
           name: string
           price: number
           start_date: string
           unit_id: string
+          weekend_price?: number | null
         }
         Update: {
+          adjustment_type?: string
+          adjustment_value?: number | null
           created_at?: string
           end_date?: string
           id?: string
+          min_nights?: number | null
           name?: string
           price?: number
           start_date?: string
           unit_id?: string
+          weekend_price?: number | null
         }
         Relationships: [
           {
