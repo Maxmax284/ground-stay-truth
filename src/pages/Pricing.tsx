@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Plus, Trash2, Pencil, Copy } from "lucide-react";
 import { useUnits } from "@/hooks/useUnits";
-import { usePricingRules, useDeletePricingRule } from "@/hooks/usePricingRules";
+import { usePricingRules, useDeletePricingRule, useCreatePricingRule } from "@/hooks/usePricingRules";
 import { PricingRuleForm } from "@/components/PricingRuleForm";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
