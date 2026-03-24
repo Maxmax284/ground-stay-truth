@@ -178,26 +178,52 @@ const Pricing = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {rules.map((r) => (
-                        <TableRow key={r.id}>
-                          <TableCell className="font-medium">{r.name}</TableCell>
-                          <TableCell>{r.units?.name ?? "—"}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {format(new Date(r.start_date), "MMM d")} – {format(new Date(r.end_date), "MMM d, yyyy")}
-                          </TableCell>
-                          <TableCell className="font-medium">{formatPrice(r.price, policies)}</TableCell>
-                          <TableCell>
-                            <div className="flex gap-1">
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingRule(r); setShowRuleForm(true); }}>
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(r.id)} disabled={deleteRule.isPending}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {rules.map((r) => {
+                        const ruleAny = r as any;
+                        const isPercentage = ruleAny.adjustment_type === "percentage";
+                        const hasWeekend = r.weekend_price != null && Number(r.weekend_price) > 0;
+                        const hasMinNights = ruleAny.min_nights != null;
+                        return (
+                          <TableRow key={r.id}>
+                            <TableCell>
+                              <span className="font-medium">{r.name}</span>
+                              {hasMinNights && (
+                                <Badge variant="outline" className="ml-2 text-xs">Min {ruleAny.min_nights}N</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>{r.units?.name ?? "—"}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {format(new Date(r.start_date), "MMM d")} – {format(new Date(r.end_date), "MMM d, yyyy")}
+                            </TableCell>
+                            <TableCell>
+                              {isPercentage ? (
+                                <Badge variant="secondary" className="text-xs">
+                                  {Number(ruleAny.adjustment_value) > 0 ? "+" : ""}{ruleAny.adjustment_value}%
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs">Exact</Badge>
+                              )}
+                              {hasWeekend && !isPercentage && (
+                                <Badge variant="outline" className="ml-1 text-xs">Wknd</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="font-medium">{formatPrice(r.price, policies)}</TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingRule(r); setShowRuleForm(true); }} title="Edit">
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDuplicate(r)} disabled={duplicateRule.isPending} title="Duplicate to next year">
+                                  <Copy className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(r.id)} disabled={deleteRule.isPending} title="Delete">
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
