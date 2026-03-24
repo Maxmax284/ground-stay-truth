@@ -42,6 +42,29 @@ const Pricing = () => {
     }
   };
 
+  const handleDuplicate = async (r: PricingRule & { units?: { name: string } | null }) => {
+    try {
+      const startDate = new Date(r.start_date);
+      const endDate = new Date(r.end_date);
+      startDate.setFullYear(startDate.getFullYear() + 1);
+      endDate.setFullYear(endDate.getFullYear() + 1);
+      await duplicateRule.mutateAsync({
+        name: `${r.name} (${startDate.getFullYear()})`,
+        unit_id: r.unit_id,
+        start_date: startDate.toISOString().split("T")[0],
+        end_date: endDate.toISOString().split("T")[0],
+        price: r.price,
+        weekend_price: r.weekend_price,
+        adjustment_type: (r as any).adjustment_type ?? "absolute",
+        adjustment_value: (r as any).adjustment_value,
+        min_nights: (r as any).min_nights,
+      } as any);
+      toast({ title: "Rule duplicated to next year" });
+    } catch (err: any) {
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
