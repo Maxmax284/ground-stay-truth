@@ -10,9 +10,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil, Copy } from "lucide-react";
 import { useUnits } from "@/hooks/useUnits";
-import { usePricingRules, useDeletePricingRule } from "@/hooks/usePricingRules";
+import { usePricingRules, useDeletePricingRule, useCreatePricingRule } from "@/hooks/usePricingRules";
 import { PricingRuleForm } from "@/components/PricingRuleForm";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
@@ -26,6 +26,7 @@ const Pricing = () => {
   const { data: policies } = usePolicySettings();
   const { data: rules, isLoading: rulesLoading } = usePricingRules();
   const deleteRule = useDeletePricingRule();
+  const duplicateRule = useCreatePricingRule();
 
   const [showRuleForm, setShowRuleForm] = useState(false);
   const [editingRule, setEditingRule] = useState<PricingRule | null>(null);
@@ -36,6 +37,29 @@ const Pricing = () => {
     try {
       await deleteRule.mutateAsync(id);
       toast({ title: t("pricing.ruleDeleted") });
+    } catch (err: any) {
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDuplicate = async (r: PricingRule & { units?: { name: string } | null }) => {
+    try {
+      const startDate = new Date(r.start_date);
+      const endDate = new Date(r.end_date);
+      startDate.setFullYear(startDate.getFullYear() + 1);
+      endDate.setFullYear(endDate.getFullYear() + 1);
+      await duplicateRule.mutateAsync({
+        name: `${r.name} (${startDate.getFullYear()})`,
+        unit_id: r.unit_id,
+        start_date: startDate.toISOString().split("T")[0],
+        end_date: endDate.toISOString().split("T")[0],
+        price: r.price,
+        weekend_price: r.weekend_price,
+        adjustment_type: (r as any).adjustment_type ?? "absolute",
+        adjustment_value: (r as any).adjustment_value,
+        min_nights: (r as any).min_nights,
+      } as any);
+      toast({ title: "Rule duplicated to next year" });
     } catch (err: any) {
       toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     }
@@ -148,31 +172,58 @@ const Pricing = () => {
                         <TableHead>{t("pricing.ruleName")}</TableHead>
                         <TableHead>{t("bookings.unit")}</TableHead>
                         <TableHead>{t("pricing.dates")}</TableHead>
+                        <TableHead>Type</TableHead>
                         <TableHead>{t("pricing.pricePerNight")}</TableHead>
-                        <TableHead className="w-[80px]"></TableHead>
+                        <TableHead className="w-[120px]"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {rules.map((r) => (
-                        <TableRow key={r.id}>
-                          <TableCell className="font-medium">{r.name}</TableCell>
-                          <TableCell>{r.units?.name ?? "—"}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {format(new Date(r.start_date), "MMM d")} – {format(new Date(r.end_date), "MMM d, yyyy")}
-                          </TableCell>
-                          <TableCell className="font-medium">{formatPrice(r.price, policies)}</TableCell>
-                          <TableCell>
-                            <div className="flex gap-1">
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingRule(r); setShowRuleForm(true); }}>
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(r.id)} disabled={deleteRule.isPending}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {rules.map((r) => {
+                        const ruleAny = r as any;
+                        const isPercentage = ruleAny.adjustment_type === "percentage";
+                        const hasWeekend = r.weekend_price != null && Number(r.weekend_price) > 0;
+                        const hasMinNights = ruleAny.min_nights != null;
+                        return (
+                          <TableRow key={r.id}>
+                            <TableCell>
+                              <span className="font-medium">{r.name}</span>
+                              {hasMinNights && (
+                                <Badge variant="outline" className="ml-2 text-xs">Min {ruleAny.min_nights}N</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>{r.units?.name ?? "—"}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {format(new Date(r.start_date), "MMM d")} – {format(new Date(r.end_date), "MMM d, yyyy")}
+                            </TableCell>
+                            <TableCell>
+                              {isPercentage ? (
+                                <Badge variant="secondary" className="text-xs">
+                                  {Number(ruleAny.adjustment_value) > 0 ? "+" : ""}{ruleAny.adjustment_value}%
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs">Exact</Badge>
+                              )}
+                              {hasWeekend && !isPercentage && (
+                                <Badge variant="outline" className="ml-1 text-xs">Wknd</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="font-medium">{formatPrice(r.price, policies)}</TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingRule(r); setShowRuleForm(true); }} title="Edit">
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDuplicate(r)} disabled={duplicateRule.isPending} title="Duplicate to next year">
+                                  <Copy className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(r.id)} disabled={deleteRule.isPending} title="Delete">
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
