@@ -26,6 +26,7 @@ const Pricing = () => {
   const { data: policies } = usePolicySettings();
   const { data: rules, isLoading: rulesLoading } = usePricingRules();
   const deleteRule = useDeletePricingRule();
+  const duplicateRule = useCreatePricingRule();
 
   const [showRuleForm, setShowRuleForm] = useState(false);
   const [editingRule, setEditingRule] = useState<PricingRule | null>(null);
