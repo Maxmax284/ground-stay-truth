@@ -172,8 +172,9 @@ const Pricing = () => {
                         <TableHead>{t("pricing.ruleName")}</TableHead>
                         <TableHead>{t("bookings.unit")}</TableHead>
                         <TableHead>{t("pricing.dates")}</TableHead>
+                        <TableHead>Type</TableHead>
                         <TableHead>{t("pricing.pricePerNight")}</TableHead>
-                        <TableHead className="w-[80px]"></TableHead>
+                        <TableHead className="w-[120px]"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
