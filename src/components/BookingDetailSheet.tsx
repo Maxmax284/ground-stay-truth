@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 import { format, differenceInHours } from "date-fns";
-import { useBooking, useBookingStateLog, useBookingPayments, useBookingMessages, useCreatePayment, useCreateMessage, useMarkMessagesRead } from "@/hooks/useBookings";
+import { useBooking, useBookingStateLog, useBookingPayments, useBookingMessages, useCreatePayment, useRefundPayment, useCreateMessage, useMarkMessagesRead } from "@/hooks/useBookings";
 import { BookingStateTransition } from "@/components/BookingStateTransition";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
