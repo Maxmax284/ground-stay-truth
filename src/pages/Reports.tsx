@@ -47,6 +47,7 @@ const Reports = () => {
           <Tabs defaultValue="operations">
             <TabsList>
               <TabsTrigger value="operations">{t("reports.accounts.operationsTab")}</TabsTrigger>
+              <TabsTrigger value="payments">Payments</TabsTrigger>
               <TabsTrigger value="accounts">{t("reports.accounts.tabLabel")}</TabsTrigger>
             </TabsList>
 
@@ -59,6 +60,10 @@ const Reports = () => {
                 currencySymbol={currencySymbol}
                 policies={policies}
               />
+            </TabsContent>
+
+            <TabsContent value="payments">
+              <PaymentAnalytics />
             </TabsContent>
 
             <TabsContent value="accounts">
