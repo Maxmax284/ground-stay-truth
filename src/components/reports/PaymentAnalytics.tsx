@@ -55,9 +55,20 @@ const PaymentAnalytics = () => {
   return (
     <div className="space-y-6 mt-4">
       {/* Month navigation */}
-      <div className="flex items-center justify-end gap-2">
-        <Button variant="outline" size="icon" onClick={() => setMonthOffset((o) => o + 1)}>
-          <ChevronLeft className="h-4 w-4" />
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={isLoading || rawPayments.length === 0} className="gap-2">
+          <Download className="h-4 w-4" /> Export CSV
+        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => setMonthOffset((o) => o + 1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm font-medium min-w-[120px] text-center">{rangeLabel}</span>
+          <Button variant="outline" size="icon" disabled={monthOffset === 0} onClick={() => setMonthOffset((o) => o - 1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
         </Button>
         <span className="text-sm font-medium min-w-[120px] text-center">{rangeLabel}</span>
         <Button variant="outline" size="icon" disabled={monthOffset === 0} onClick={() => setMonthOffset((o) => o - 1)}>
