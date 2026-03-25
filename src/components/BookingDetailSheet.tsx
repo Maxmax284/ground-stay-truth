@@ -17,13 +17,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 import { format, differenceInHours } from "date-fns";
-import { useBooking, useBookingStateLog, useBookingPayments, useBookingMessages, useCreatePayment, useCreateMessage, useMarkMessagesRead } from "@/hooks/useBookings";
+import { useBooking, useBookingStateLog, useBookingPayments, useBookingMessages, useCreatePayment, useRefundPayment, useCreateMessage, useMarkMessagesRead } from "@/hooks/useBookings";
 import { BookingStateTransition } from "@/components/BookingStateTransition";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { formatPrice } from "@/lib/currency";
 import { calculateOutstanding, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_VARIANTS, PAYMENT_TYPE_LABELS, type PaymentStatus, type PaymentType } from "@/lib/paymentTypes";
-import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText, Info, Wrench, Shirt, Globe, Sparkles } from "lucide-react";
+import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText, Info, Wrench, Shirt, Globe, Sparkles, RotateCcw } from "lucide-react";
+import { RefundDialog } from "@/components/RefundDialog";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { SecurityDepositSection } from "@/components/SecurityDepositSection";
 import { BookingTrainingSection } from "@/components/BookingTrainingSection";
@@ -239,11 +240,16 @@ function StateHistoryTab({ logs }: { logs: any[] }) {
 function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, totalPrice }: { payments: any[]; bookingId: string; canSeeAmounts: boolean; canRecord: boolean; policies?: any[]; totalPrice?: number | null }) {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const { role } = useAuth();
   const createPayment = useCreatePayment();
+  const refundPayment = useRefundPayment();
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("cash");
   const [notes, setNotes] = useState("");
   const [paymentType, setPaymentType] = useState<string>("deposit");
+  const [refundTarget, setRefundTarget] = useState<any>(null);
+
+  const isAdmin = role === "admin";
 
   const balance = useMemo(
     () => calculateOutstanding(totalPrice ?? null, payments),
@@ -257,6 +263,17 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
       toast({ title: t("payments.paymentRecorded") }); setAmount(""); setNotes("");
     } catch (err: any) { toast({ title: t("common.error"), description: err.message, variant: "destructive" }); }
   };
+
+  const handleRefund = async (paymentId: string, refundAmount: number, reason: string) => {
+    try {
+      await refundPayment.mutateAsync({ paymentId, bookingId, refundAmount, reason });
+      toast({ title: t("payments.refundIssued", { defaultValue: "Refund issued successfully" }) });
+    } catch (err: any) {
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+    }
+  };
+
+  const canRefund = (p: any) => isAdmin && ["recorded", "partially_refunded"].includes(p.status) && Number(p.amount) > Number(p.refund_amount ?? 0);
 
   return (
     <div className="space-y-4 py-3">
@@ -287,7 +304,7 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
         </div>
       )}
 
-      {/* Payment list with type badges + status indicators */}
+      {/* Payment list with type badges + status indicators + refund button */}
       {payments.length > 0 ? (
         <ScrollArea className="max-h-[220px]">
           <div className="space-y-2">
@@ -316,7 +333,14 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
                       <p className="text-xs text-[hsl(var(--info))]">↩ Refund: {formatPrice(p.refund_amount, policies)}{p.refund_reason ? ` — ${p.refund_reason}` : ""}</p>
                     )}
                   </div>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">{format(new Date(p.created_at), "MMM d")}</span>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">{format(new Date(p.created_at), "MMM d")}</span>
+                    {canRefund(p) && (
+                      <Button variant="ghost" size="sm" className="h-6 px-2 text-xs gap-1 text-destructive hover:text-destructive" onClick={() => setRefundTarget(p)}>
+                        <RotateCcw className="h-3 w-3" /> {t("payments.refund", { defaultValue: "Refund" })}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -356,6 +380,16 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
           <Button size="sm" onClick={handleRecord} disabled={createPayment.isPending} className="w-full">{createPayment.isPending ? t("common.recording") : t("payments.recordPayment")}</Button>
         </>
       )}
+
+      {/* Refund dialog */}
+      <RefundDialog
+        open={!!refundTarget}
+        onOpenChange={(v) => { if (!v) setRefundTarget(null); }}
+        payment={refundTarget}
+        policies={policies}
+        onConfirm={handleRefund}
+        isPending={refundPayment.isPending}
+      />
     </div>
   );
 }
