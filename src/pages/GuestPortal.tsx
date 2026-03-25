@@ -50,6 +50,7 @@ import {
 import { GuestStaySupport } from "@/components/GuestStaySupport";
 import { GuestPickupCard } from "@/components/GuestPickupCard";
 import { GuestPaymentButton } from "@/components/GuestPaymentButton";
+import { GuestPaymentSummary } from "@/components/GuestPaymentSummary";
 import { PreArrivalChecklist } from "@/components/PreArrivalChecklist";
 import { ReviewFormDialog } from "@/components/ReviewFormDialog";
 import { StarRating } from "@/components/StarRating";
@@ -658,6 +659,11 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
         {/* Deposit info banner for pending_deposit */}
         {state === "pending_deposit" && (
           <DepositBanner policies={policies} depositAmount={depositAmount} bookingId={booking.id} />
+        )}
+
+        {/* Payment summary for all non-inquiry bookings */}
+        {!["inquiry", "soft_hold"].includes(state) && booking.total_price != null && (
+          <GuestPaymentSummary bookingId={booking.id} totalPrice={booking.total_price} policies={policies} />
         )}
 
         {/* Airport Pickup info */}
