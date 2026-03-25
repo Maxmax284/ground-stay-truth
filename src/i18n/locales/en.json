@@ -731,6 +731,7 @@
     "bufferWarning": "Check-in falls within the {{hours}}h cleaning buffer. You may override as Admin.",
     "checkoutAfterCheckin": "Check-out must be after check-in.",
     "minStay": "Minimum stay is {{count}} night(s) for this unit.",
+    "seasonalMinStay": "{{ruleName}} minimum: {{count}} night(s).",
     "maxCapacity": "Maximum capacity is {{count}} guest(s) for this unit.",
     "maintenanceConflict": "Unit is blocked for maintenance from {{start}} to {{end}}{{reason}}.",
     "bufferConflict": "Check-in conflicts with {{hours}}h cleaning buffer after a checkout on {{date}}."
