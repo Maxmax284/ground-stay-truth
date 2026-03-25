@@ -17,6 +17,7 @@ import AccountSnapshotCards from "@/components/reports/AccountSnapshotCards";
 import AccountRoleChart from "@/components/reports/AccountRoleChart";
 import AccountActivityChart from "@/components/reports/AccountActivityChart";
 import AccountDetailTable from "@/components/reports/AccountDetailTable";
+import PaymentAnalytics from "@/components/reports/PaymentAnalytics";
 
 const STATE_COLORS: Record<string, string> = {
   inquiry: "hsl(30, 15%, 60%)", soft_hold: "hsl(38, 55%, 65%)", pending_approval: "hsl(38, 90%, 50%)",
@@ -46,6 +47,7 @@ const Reports = () => {
           <Tabs defaultValue="operations">
             <TabsList>
               <TabsTrigger value="operations">{t("reports.accounts.operationsTab")}</TabsTrigger>
+              <TabsTrigger value="payments">Payments</TabsTrigger>
               <TabsTrigger value="accounts">{t("reports.accounts.tabLabel")}</TabsTrigger>
             </TabsList>
 
@@ -58,6 +60,10 @@ const Reports = () => {
                 currencySymbol={currencySymbol}
                 policies={policies}
               />
+            </TabsContent>
+
+            <TabsContent value="payments">
+              <PaymentAnalytics />
             </TabsContent>
 
             <TabsContent value="accounts">
