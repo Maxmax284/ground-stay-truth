@@ -661,6 +661,11 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
           <DepositBanner policies={policies} depositAmount={depositAmount} bookingId={booking.id} />
         )}
 
+        {/* Payment summary for all non-inquiry bookings */}
+        {!["inquiry", "soft_hold"].includes(state) && booking.total_price != null && (
+          <GuestPaymentSummary bookingId={booking.id} totalPrice={booking.total_price} policies={policies} />
+        )}
+
         {/* Airport Pickup info */}
         {!["completed", "cancelled", "no_show"].includes(state) && (
           <GuestPickupCard bookingId={booking.id} guestName={guestName} />
