@@ -1,9 +1,11 @@
+import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import type { BookingState } from "@/lib/bookingStateMachine";
 import { createNotification, createNotifications } from "@/hooks/useNotifications";
 import { formatPrice } from "@/lib/currency";
+import { calculateOutstanding } from "@/lib/paymentTypes";
 
 export type Booking = Tables<"bookings">;
 export type BookingInsert = TablesInsert<"bookings">;
