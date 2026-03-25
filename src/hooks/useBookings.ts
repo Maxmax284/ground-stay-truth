@@ -316,6 +316,70 @@ export function useCreatePayment() {
   });
 }
 
+// ── Refund a payment ──
+export function useRefundPayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: {
+      paymentId: string;
+      bookingId: string;
+      refundAmount: number;
+      reason: string;
+    }) => {
+      const { data: payment } = await supabase
+        .from("payments")
+        .select("amount, refund_amount")
+        .eq("id", params.paymentId)
+        .single();
+      if (!payment) throw new Error("Payment not found");
+
+      const alreadyRefunded = Number(payment.refund_amount ?? 0);
+      const totalRefund = alreadyRefunded + params.refundAmount;
+      const isFullRefund = totalRefund >= Number(payment.amount);
+
+      const { data, error } = await supabase
+        .from("payments")
+        .update({
+          refund_amount: totalRefund,
+          refund_reason: params.reason,
+          status: isFullRefund ? "refunded" : "partially_refunded",
+        } as any)
+        .eq("id", params.paymentId)
+        .select()
+        .single();
+      if (error) throw error;
+
+      // Notify admins
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: currencyPolicy } = await supabase
+        .from("policy_settings")
+        .select("value")
+        .eq("key", "currency_symbol")
+        .maybeSingle();
+      const currSym = currencyPolicy?.value ? String(currencyPolicy.value).replace(/^"|"$/g, "") : "฿";
+
+      const { data: admins } = await supabase.from("user_roles").select("user_id").in("role", ["admin", "manager"]);
+      const batch: Array<{ user_id: string; type: string; reference_id: string; message: string }> = [];
+      for (const admin of admins ?? []) {
+        if (admin.user_id !== user?.id) {
+          batch.push({
+            user_id: admin.user_id,
+            type: "booking",
+            reference_id: params.bookingId,
+            message: `Refund of ${currSym}${params.refundAmount.toFixed(2)} issued: ${params.reason}`,
+          });
+        }
+      }
+      await createNotifications(batch);
+
+      return data;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["bookingPayments", vars.bookingId] });
+    },
+  });
+}
+
 // ── Messages for a booking ──
 export function useBookingMessages(bookingId: string | null) {
   return useQuery({
