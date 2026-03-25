@@ -128,3 +128,4 @@ export function usePaymentAnalytics(monthOffset = 0) {
     outstandingByUnit,
     rawPayments: payments,
   };
+}
