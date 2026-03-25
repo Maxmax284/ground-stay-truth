@@ -50,6 +50,7 @@ import {
 import { GuestStaySupport } from "@/components/GuestStaySupport";
 import { GuestPickupCard } from "@/components/GuestPickupCard";
 import { GuestPaymentButton } from "@/components/GuestPaymentButton";
+import { GuestPaymentSummary } from "@/components/GuestPaymentSummary";
 import { PreArrivalChecklist } from "@/components/PreArrivalChecklist";
 import { ReviewFormDialog } from "@/components/ReviewFormDialog";
 import { StarRating } from "@/components/StarRating";
