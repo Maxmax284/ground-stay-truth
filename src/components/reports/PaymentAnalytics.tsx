@@ -69,12 +69,6 @@ const PaymentAnalytics = () => {
           </Button>
         </div>
       </div>
-        </Button>
-        <span className="text-sm font-medium min-w-[120px] text-center">{rangeLabel}</span>
-        <Button variant="outline" size="icon" disabled={monthOffset === 0} onClick={() => setMonthOffset((o) => o - 1)}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
