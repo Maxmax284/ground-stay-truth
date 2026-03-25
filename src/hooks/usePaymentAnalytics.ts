@@ -126,5 +126,6 @@ export function usePaymentAnalytics(monthOffset = 0) {
     methodDistribution,
     typeDistribution,
     outstandingByUnit,
+    rawPayments: payments,
   };
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, DollarSign, TrendingDown, CreditCard, PieChart as PieIcon, Building } from "lucide-react";
+import { ChevronLeft, ChevronRight, DollarSign, TrendingDown, CreditCard, PieChart as PieIcon, Building, Download } from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, PieChart as RPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePaymentAnalytics } from "@/hooks/usePaymentAnalytics";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { getCurrencyConfig, formatPrice } from "@/lib/currency";
-import { PAYMENT_TYPE_LABELS, type PaymentType } from "@/lib/paymentTypes";
+import { PAYMENT_TYPE_LABELS, PAYMENT_STATUS_LABELS, type PaymentType, type PaymentStatus } from "@/lib/paymentTypes";
+import { downloadCSV } from "@/lib/csvExport";
 
 const METHOD_COLORS: Record<string, string> = {
   bank_transfer: "hsl(210, 50%, 50%)",
@@ -32,21 +33,41 @@ const PaymentAnalytics = () => {
   const { data: policies } = usePolicySettings();
   const { symbol: currencySymbol } = getCurrencyConfig(policies);
 
-  const { isLoading, rangeLabel, revenueTrend, totalGross, totalRefunds, totalNet, refundRate, refundCount, totalCount, methodDistribution, typeDistribution, outstandingByUnit } = analytics;
+  const { isLoading, rangeLabel, revenueTrend, totalGross, totalRefunds, totalNet, refundRate, refundCount, totalCount, methodDistribution, typeDistribution, outstandingByUnit, rawPayments } = analytics;
+
+  const handleExportCSV = () => {
+    const rows = rawPayments.map((p) => ({
+      payment_id: p.id,
+      booking_id: p.booking_id,
+      amount: p.amount,
+      status: PAYMENT_STATUS_LABELS[p.status as PaymentStatus] ?? p.status,
+      payment_type: PAYMENT_TYPE_LABELS[p.payment_type as PaymentType] ?? p.payment_type,
+      method: p.method,
+      provider: p.provider,
+      refund_amount: p.refund_amount ?? "",
+      created_at: p.created_at,
+    }));
+    downloadCSV(rows, `payment-ledger-${rangeLabel.replace(/\s+/g, "-")}.csv`);
+  };
 
   const totalOutstanding = outstandingByUnit.reduce((s, u) => s + u.outstanding, 0);
 
   return (
     <div className="space-y-6 mt-4">
       {/* Month navigation */}
-      <div className="flex items-center justify-end gap-2">
-        <Button variant="outline" size="icon" onClick={() => setMonthOffset((o) => o + 1)}>
-          <ChevronLeft className="h-4 w-4" />
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={isLoading || rawPayments.length === 0} className="gap-2">
+          <Download className="h-4 w-4" /> Export CSV
         </Button>
-        <span className="text-sm font-medium min-w-[120px] text-center">{rangeLabel}</span>
-        <Button variant="outline" size="icon" disabled={monthOffset === 0} onClick={() => setMonthOffset((o) => o - 1)}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => setMonthOffset((o) => o + 1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm font-medium min-w-[120px] text-center">{rangeLabel}</span>
+          <Button variant="outline" size="icon" disabled={monthOffset === 0} onClick={() => setMonthOffset((o) => o - 1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* KPI Cards */}
