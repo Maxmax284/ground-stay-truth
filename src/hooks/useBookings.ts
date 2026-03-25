@@ -243,6 +243,15 @@ export function useBookingPayments(bookingId: string | null) {
   });
 }
 
+/** Outstanding balance for a booking — derived from payments */
+export function useOutstandingBalance(bookingId: string | null, totalPrice: number | null) {
+  const { data: payments } = useBookingPayments(bookingId);
+  return useMemo(() => {
+    if (!payments) return { totalPaid: 0, totalRefunded: 0, outstanding: totalPrice ?? 0 };
+    return calculateOutstanding(totalPrice, payments);
+  }, [payments, totalPrice]);
+}
+
 export function useCreatePayment() {
   const qc = useQueryClient();
   return useMutation({
