@@ -38,6 +38,7 @@ Deno.serve(async (req) => {
     const now = new Date();
     let expired = 0;
     let reminders = 0;
+    let expiredPayments = 0;
 
     // 1. Expire soft holds
     const softHoldCutoff = new Date(
@@ -155,8 +156,63 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 4. Expire stale pending payments past expires_at
+    const { data: stalePayments } = await supabase
+      .from("payments")
+      .select("id, booking_id, status, payment_type")
+      .eq("status", "pending")
+      .not("expires_at", "is", null)
+      .lt("expires_at", now.toISOString());
+
+    for (const payment of stalePayments ?? []) {
+      const { error } = await supabase
+        .from("payments")
+        .update({ status: "cancelled", provider_status: "expired" })
+        .eq("id", payment.id);
+
+      if (!error) {
+        expiredPayments++;
+
+        // If this was a deposit payment, check if booking should be cancelled
+        if (payment.payment_type === "deposit") {
+          const { data: otherPayments } = await supabase
+            .from("payments")
+            .select("id")
+            .eq("booking_id", payment.booking_id)
+            .in("status", ["recorded", "pending"])
+            .neq("id", payment.id)
+            .limit(1);
+
+          if (!otherPayments || otherPayments.length === 0) {
+            // No other active payments — cancel the booking if still pending_deposit
+            const { data: booking } = await supabase
+              .from("bookings")
+              .select("state")
+              .eq("id", payment.booking_id)
+              .single();
+
+            if (booking?.state === "pending_deposit") {
+              await supabase
+                .from("bookings")
+                .update({ state: "cancelled" })
+                .eq("id", payment.booking_id);
+
+              await supabase.from("booking_state_log").insert({
+                booking_id: payment.booking_id,
+                from_state: "pending_deposit",
+                to_state: "cancelled",
+                changed_by: null,
+                reason: "[SYSTEM] Payment session expired — no successful payments on file",
+              });
+              expired++;
+            }
+          }
+        }
+      }
+    }
+
     return new Response(
-      JSON.stringify({ success: true, expired, reminders, timestamp: now.toISOString() }),
+      JSON.stringify({ success: true, expired, reminders, expiredPayments, timestamp: now.toISOString() }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
