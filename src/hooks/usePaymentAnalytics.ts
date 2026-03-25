@@ -126,5 +126,16 @@ export function usePaymentAnalytics(monthOffset = 0) {
     methodDistribution,
     typeDistribution,
     outstandingByUnit,
+    rawPayments: payments,
+  };
+}
+    totalRefunds,
+    totalNet,
+    refundRate,
+    refundCount,
+    totalCount,
+    methodDistribution,
+    typeDistribution,
+    outstandingByUnit,
   };
 }
