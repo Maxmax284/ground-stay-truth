@@ -346,7 +346,7 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
             <Label className="text-xs">{t("payments.paymentType", { defaultValue: "Payment Type" })}</Label>
             <Select value={paymentType} onValueChange={setPaymentType}><SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {Object.entries(PAYMENT_TYPE_LABELS).map(([val, label]) => (
+                {(Object.entries(PAYMENT_TYPE_LABELS) as [string, string][]).map(([val, label]) => (
                   <SelectItem key={val} value={val}>{label}</SelectItem>
                 ))}
               </SelectContent>
