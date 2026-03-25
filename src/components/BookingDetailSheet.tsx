@@ -242,65 +242,94 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("cash");
   const [notes, setNotes] = useState("");
+  const [paymentType, setPaymentType] = useState<string>("deposit");
 
-  const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
-  const outstanding = totalPrice ? totalPrice - totalPaid : null;
+  const balance = useMemo(
+    () => calculateOutstanding(totalPrice ?? null, payments),
+    [totalPrice, payments]
+  );
 
   const handleRecord = async () => {
     if (!amount || Number(amount) <= 0) { toast({ title: t("payments.enterValidAmount"), variant: "destructive" }); return; }
     try {
-      await createPayment.mutateAsync({ booking_id: bookingId, amount: Number(amount), method, notes: notes || undefined });
+      await createPayment.mutateAsync({ booking_id: bookingId, amount: Number(amount), method, notes: notes || undefined, payment_type: paymentType });
       toast({ title: t("payments.paymentRecorded") }); setAmount(""); setNotes("");
     } catch (err: any) { toast({ title: t("common.error"), description: err.message, variant: "destructive" }); }
   };
 
   return (
     <div className="space-y-4 py-3">
-      {/* Stay cost summary */}
+      {/* Outstanding balance summary */}
       {canSeeAmounts && totalPrice != null && (
-        <div className="rounded-md border border-border bg-muted/30 p-3 space-y-1">
+        <div className="rounded-md border border-border bg-muted/30 p-3 space-y-1.5">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">{t("payments.totalStayCost", { defaultValue: "Total Stay Cost" })}</span>
             <span className="font-semibold">{formatPrice(totalPrice, policies)}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">{t("payments.totalPaid", { defaultValue: "Total Paid" })}</span>
-            <span className="font-medium text-[hsl(var(--success))]">{formatPrice(totalPaid, policies)}</span>
+            <span className="font-medium text-[hsl(var(--success))]">{formatPrice(balance.totalPaid, policies)}</span>
           </div>
-          {outstanding != null && outstanding > 0 && (
+          {balance.totalRefunded > 0 && (
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{t("payments.outstanding", { defaultValue: "Outstanding" })}</span>
-              <span className="font-medium text-destructive">{formatPrice(outstanding, policies)}</span>
+              <span className="text-muted-foreground">{t("payments.totalRefunded", { defaultValue: "Refunded" })}</span>
+              <span className="font-medium text-[hsl(var(--info))]">−{formatPrice(balance.totalRefunded, policies)}</span>
             </div>
           )}
+          <Separator className="my-1" />
+          <div className="flex justify-between text-sm">
+            <span className="font-medium">{t("payments.outstanding", { defaultValue: "Outstanding" })}</span>
+            <span className={`font-semibold ${balance.outstanding > 0 ? "text-destructive" : "text-[hsl(var(--success))]"}`}>
+              {balance.outstanding > 0 ? formatPrice(balance.outstanding, policies) : t("payments.fullyPaid", { defaultValue: "Fully Paid" })}
+            </span>
+          </div>
         </div>
       )}
 
+      {/* Payment list with type badges + status indicators */}
       {payments.length > 0 ? (
-        <ScrollArea className="max-h-[200px]">
+        <ScrollArea className="max-h-[220px]">
           <div className="space-y-2">
-            {payments.map((p) => (
-              <div key={p.id} className="flex items-center justify-between text-sm border rounded-md p-3">
-                <div>
-                  {canSeeAmounts ? <span className="font-medium">{formatPrice(p.amount, policies)}</span> : <Badge variant="outline" className="text-xs">{Number(p.amount) > 0 ? t("payments.paid") : t("payments.unpaid")}</Badge>}
-                  {canSeeAmounts && <span className="text-muted-foreground ml-2">({t(`payments.methods.${p.method}`)})</span>}
-                  {canSeeAmounts && p.source_channel && p.source_channel !== "front_desk" && (
-                    <Badge variant="secondary" className="text-[10px] ml-2">{t(`deposit.channels.${p.source_channel}`, { defaultValue: p.source_channel })}</Badge>
-                  )}
-                  {p.notes && canSeeAmounts && <p className="text-xs text-muted-foreground">{p.notes}</p>}
+            {payments.map((p) => {
+              const statusLabel = PAYMENT_STATUS_LABELS[p.status as PaymentStatus] ?? p.status;
+              const statusVariant = PAYMENT_STATUS_VARIANTS[p.status as PaymentStatus] ?? "bg-muted text-muted-foreground";
+              const typeLabel = PAYMENT_TYPE_LABELS[p.payment_type as PaymentType] ?? p.payment_type;
+              return (
+                <div key={p.id} className="flex items-start justify-between text-sm border rounded-md p-3 gap-2">
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {canSeeAmounts ? <span className="font-medium">{formatPrice(p.amount, policies)}</span> : <Badge variant="outline" className="text-xs">{Number(p.amount) > 0 ? t("payments.paid") : t("payments.unpaid")}</Badge>}
+                      <Badge className={`text-[10px] border-0 ${statusVariant}`}>{statusLabel}</Badge>
+                      <Badge variant="outline" className="text-[10px]">{typeLabel}</Badge>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap text-xs text-muted-foreground">
+                      {canSeeAmounts && <span>{t(`payments.methods.${p.method}`)}</span>}
+                      {canSeeAmounts && p.provider && p.provider !== "manual" && <span>· {p.provider}</span>}
+                      {canSeeAmounts && p.source_channel && p.source_channel !== "front_desk" && (
+                        <Badge variant="secondary" className="text-[10px]">{t(`deposit.channels.${p.source_channel}`, { defaultValue: p.source_channel })}</Badge>
+                      )}
+                    </div>
+                    {p.description && canSeeAmounts && <p className="text-xs text-muted-foreground">{p.description}</p>}
+                    {p.notes && canSeeAmounts && <p className="text-xs text-muted-foreground italic">{p.notes}</p>}
+                    {p.refund_amount != null && Number(p.refund_amount) > 0 && canSeeAmounts && (
+                      <p className="text-xs text-[hsl(var(--info))]">↩ Refund: {formatPrice(p.refund_amount, policies)}{p.refund_reason ? ` — ${p.refund_reason}` : ""}</p>
+                    )}
+                  </div>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">{format(new Date(p.created_at), "MMM d")}</span>
                 </div>
-                <span className="text-xs text-muted-foreground">{format(new Date(p.created_at), "MMM d")}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </ScrollArea>
       ) : <p className="text-sm text-muted-foreground">{t("payments.noPayments")}</p>}
+
+      {/* Record payment form */}
       {canRecord && (
         <>
           <Separator />
           <h4 className="text-sm font-semibold">{t("payments.recordPayment")}</h4>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1"><Label className="text-xs">{t("payments.amount")} *</Label><Input type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={outstanding && outstanding > 0 ? outstanding.toFixed(2) : ""} /></div>
+            <div className="space-y-1"><Label className="text-xs">{t("payments.amount")} *</Label><Input type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={balance.outstanding > 0 ? balance.outstanding.toFixed(2) : ""} /></div>
             <div className="space-y-1"><Label className="text-xs">{t("payments.method")}</Label>
               <Select value={method} onValueChange={setMethod}><SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -311,6 +340,16 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">{t("payments.paymentType", { defaultValue: "Payment Type" })}</Label>
+            <Select value={paymentType} onValueChange={setPaymentType}><SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Object.entries(PAYMENT_TYPE_LABELS).map(([val, label]) => (
+                  <SelectItem key={val} value={val}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <Textarea placeholder={t("payments.paymentNotes")} value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
           <Button size="sm" onClick={handleRecord} disabled={createPayment.isPending} className="w-full">{createPayment.isPending ? t("common.recording") : t("payments.recordPayment")}</Button>
