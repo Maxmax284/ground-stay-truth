@@ -763,11 +763,15 @@ export type Database = {
           amount: number
           booking_id: string
           created_at: string
+          description: string | null
+          expires_at: string | null
           id: string
           idempotency_key: string | null
           method: string
           notes: string | null
+          payment_type: string
           provider: string
+          provider_session_id: string | null
           provider_status: string
           provider_transaction_id: string | null
           receipt_url: string | null
@@ -781,11 +785,15 @@ export type Database = {
           amount: number
           booking_id: string
           created_at?: string
+          description?: string | null
+          expires_at?: string | null
           id?: string
           idempotency_key?: string | null
           method?: string
           notes?: string | null
+          payment_type?: string
           provider?: string
+          provider_session_id?: string | null
           provider_status?: string
           provider_transaction_id?: string | null
           receipt_url?: string | null
@@ -799,11 +807,15 @@ export type Database = {
           amount?: number
           booking_id?: string
           created_at?: string
+          description?: string | null
+          expires_at?: string | null
           id?: string
           idempotency_key?: string | null
           method?: string
           notes?: string | null
+          payment_type?: string
           provider?: string
+          provider_session_id?: string | null
           provider_status?: string
           provider_transaction_id?: string | null
           receipt_url?: string | null

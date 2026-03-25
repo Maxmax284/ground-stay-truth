@@ -1,9 +1,11 @@
+import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import type { BookingState } from "@/lib/bookingStateMachine";
 import { createNotification, createNotifications } from "@/hooks/useNotifications";
 import { formatPrice } from "@/lib/currency";
+import { calculateOutstanding } from "@/lib/paymentTypes";
 
 export type Booking = Tables<"bookings">;
 export type BookingInsert = TablesInsert<"bookings">;
@@ -243,6 +245,15 @@ export function useBookingPayments(bookingId: string | null) {
   });
 }
 
+/** Outstanding balance for a booking — derived from payments */
+export function useOutstandingBalance(bookingId: string | null, totalPrice: number | null) {
+  const { data: payments } = useBookingPayments(bookingId);
+  return useMemo(() => {
+    if (!payments) return { totalPaid: 0, totalRefunded: 0, outstanding: totalPrice ?? 0 };
+    return calculateOutstanding(totalPrice, payments);
+  }, [payments, totalPrice]);
+}
+
 export function useCreatePayment() {
   const qc = useQueryClient();
   return useMutation({
@@ -252,12 +263,20 @@ export function useCreatePayment() {
       method: string;
       notes?: string;
       source_channel?: string;
+      payment_type?: string;
+      description?: string;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
-      const { source_channel, ...rest } = payment;
+      const { source_channel, payment_type, description, ...rest } = payment;
       const { data, error } = await supabase
         .from("payments")
-        .insert({ ...rest, recorded_by: user?.id ?? null, source_channel: source_channel ?? "front_desk" } as any)
+        .insert({
+          ...rest,
+          recorded_by: user?.id ?? null,
+          source_channel: source_channel ?? "front_desk",
+          payment_type: payment_type ?? "deposit",
+          description: description ?? undefined,
+        } as any)
         .select()
         .single();
       if (error) throw error;

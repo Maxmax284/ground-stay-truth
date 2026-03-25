@@ -8,6 +8,88 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ── Provider Adapter Interface ──
+interface CheckoutResult {
+  url: string;
+  session_id: string;
+  expires_at: string; // ISO timestamp
+}
+
+interface ProviderAdapter {
+  createCheckoutSession(params: {
+    amount: number;
+    currency: string;
+    description: string;
+    metadata: Record<string, string>;
+    successUrl: string;
+    cancelUrl: string;
+    customerEmail?: string;
+    idempotencyKey: string;
+  }): Promise<CheckoutResult>;
+}
+
+// ── Stripe Adapter ──
+function createStripeAdapter(secretKey: string): ProviderAdapter {
+  const stripe = new Stripe(secretKey, { apiVersion: "2023-10-16" });
+
+  return {
+    async createCheckoutSession(params) {
+      const session = await stripe.checkout.sessions.create(
+        {
+          payment_method_types: ["card"],
+          mode: "payment",
+          customer_email: params.customerEmail || undefined,
+          line_items: [
+            {
+              price_data: {
+                currency: params.currency,
+                product_data: {
+                  name: params.description,
+                  description: params.metadata.stay_description || undefined,
+                },
+                unit_amount: params.amount * 100, // Stripe uses smallest currency unit
+              },
+              quantity: 1,
+            },
+          ],
+          metadata: params.metadata,
+          success_url: params.successUrl,
+          cancel_url: params.cancelUrl,
+        },
+        { idempotencyKey: params.idempotencyKey }
+      );
+
+      // Stripe sessions expire after 24 hours by default
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+      return {
+        url: session.url!,
+        session_id: session.id,
+        expires_at: expiresAt,
+      };
+    },
+  };
+}
+
+// ── Provider Resolution ──
+function resolveProvider(
+  providerName: string,
+  policyMap: Map<string, string>
+): ProviderAdapter {
+  switch (providerName) {
+    case "stripe": {
+      const secretKey = policyMap.get("stripe_secret_key");
+      if (!secretKey || secretKey.length < 10) {
+        throw new Error("Stripe not configured");
+      }
+      return createStripeAdapter(secretKey);
+    }
+    // Future: case "paypal": return createPayPalAdapter(...)
+    default:
+      throw new Error("Online payments not configured");
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -31,16 +113,17 @@ serve(async (req) => {
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(
-      authHeader.replace("Bearer ", "")
-    );
-    if (claimsError || !claimsData?.claims?.sub) {
+    const {
+      data: { user },
+      error: userError,
+    } = await userClient.auth.getUser();
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = claimsData.claims.sub;
+    const userId = user.id;
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
@@ -55,7 +138,9 @@ serve(async (req) => {
     // Fetch booking — verify the caller owns it
     const { data: booking, error: bookingErr } = await adminClient
       .from("bookings")
-      .select("*, units(name), profiles!bookings_guest_id_profiles_fkey(full_name, email)")
+      .select(
+        "*, units(name), profiles!bookings_guest_id_profiles_fkey(full_name, email)"
+      )
       .eq("id", booking_id)
       .single();
 
@@ -75,23 +160,48 @@ serve(async (req) => {
     }
 
     if (booking.state !== "pending_deposit") {
-      return new Response(JSON.stringify({ error: "Booking is not awaiting deposit" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Booking is not awaiting deposit" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
-    // Check for existing payment
+    // Check for existing successful payment
     const { data: existingPayments } = await adminClient
       .from("payments")
-      .select("id")
+      .select("id, status")
       .eq("booking_id", booking_id)
       .eq("status", "recorded");
     if (existingPayments && existingPayments.length > 0) {
-      return new Response(JSON.stringify({ error: "Payment already recorded" }), {
-        status: 409,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Payment already recorded" }),
+        {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Check for existing pending session (don't create duplicate checkout sessions)
+    const { data: pendingPayments } = await adminClient
+      .from("payments")
+      .select("id, provider_session_id, expires_at")
+      .eq("booking_id", booking_id)
+      .eq("status", "pending");
+
+    if (pendingPayments && pendingPayments.length > 0) {
+      const pending = pendingPayments[0];
+      // If not expired, reuse the existing session — but we don't have the URL stored
+      // Mark old pending as cancelled and create fresh
+      for (const p of pendingPayments) {
+        await adminClient
+          .from("payments")
+          .update({ status: "cancelled" })
+          .eq("id", p.id);
+      }
     }
 
     // Get provider settings
@@ -106,80 +216,103 @@ serve(async (req) => {
         "currency_code",
       ]);
 
-    const policyMap = new Map((policies ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]));
-    const provider = policyMap.get("payment_provider") || "manual";
+    const policyMap = new Map(
+      (policies ?? []).map((p: any) => [
+        p.key,
+        String(p.value).replace(/^"|"$/g, ""),
+      ])
+    );
+    const providerName = policyMap.get("payment_provider") || "manual";
 
-    if (provider !== "stripe") {
-      return new Response(JSON.stringify({ error: "Online payments not configured" }), {
+    // Resolve the provider adapter
+    let adapter: ProviderAdapter;
+    try {
+      adapter = resolveProvider(providerName, policyMap);
+    } catch (e: any) {
+      return new Response(JSON.stringify({ error: e.message }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const stripeSecretKey = policyMap.get("stripe_secret_key");
-    if (!stripeSecretKey || stripeSecretKey.length < 10) {
-      return new Response(JSON.stringify({ error: "Stripe not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const depositPercentage = Number(policyMap.get("deposit_percentage") || "100");
-    const currencyCode = (policyMap.get("currency_code") || "THB").toLowerCase();
-    const depositAmount = Math.round((Number(booking.total_price || 0) * depositPercentage) / 100);
+    const depositPercentage = Number(
+      policyMap.get("deposit_percentage") || "100"
+    );
+    const currencyCode = (
+      policyMap.get("currency_code") || "THB"
+    ).toLowerCase();
+    const depositAmount = Math.round(
+      (Number(booking.total_price || 0) * depositPercentage) / 100
+    );
 
     if (depositAmount <= 0) {
-      return new Response(JSON.stringify({ error: "Invalid deposit amount" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Invalid deposit amount" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
-    // Generate idempotency key
     const idempotencyKey = `deposit_${booking_id}_${depositAmount}`;
-
-    // Create Stripe checkout session
-    const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
-
     const unitName = (booking as any).units?.name || "Accommodation";
     const guestEmail = (booking as any).profiles?.email;
+    const stayDescription = `${booking.check_in} to ${booking.check_out} (${booking.num_guests} guest${booking.num_guests > 1 ? "s" : ""})`;
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      mode: "payment",
-      customer_email: guestEmail || undefined,
-      line_items: [
-        {
-          price_data: {
-            currency: currencyCode,
-            product_data: {
-              name: `Deposit — ${unitName}`,
-              description: `${booking.check_in} to ${booking.check_out} (${booking.num_guests} guest${booking.num_guests > 1 ? "s" : ""})`,
-            },
-            unit_amount: depositAmount * 100, // Stripe uses smallest currency unit
-          },
-          quantity: 1,
-        },
-      ],
+    // Create checkout session via provider adapter
+    const result = await adapter.createCheckoutSession({
+      amount: depositAmount,
+      currency: currencyCode,
+      description: `Deposit — ${unitName}`,
       metadata: {
-        booking_id: booking_id,
+        booking_id,
         idempotency_key: idempotencyKey,
+        stay_description: stayDescription,
       },
-      success_url: success_url || `${req.headers.get("origin")}/guest?payment=success`,
-      cancel_url: cancel_url || `${req.headers.get("origin")}/guest?payment=cancelled`,
-    }, {
-      idempotencyKey: idempotencyKey,
+      successUrl:
+        success_url ||
+        `${req.headers.get("origin")}/guest?payment=success`,
+      cancelUrl:
+        cancel_url ||
+        `${req.headers.get("origin")}/guest?payment=cancelled`,
+      customerEmail: guestEmail || undefined,
+      idempotencyKey,
+    });
+
+    // Phase 2: Record a PENDING payment so we track the attempt
+    await adminClient.from("payments").insert({
+      booking_id,
+      amount: depositAmount,
+      method: "card",
+      status: "pending",
+      payment_type: "deposit",
+      description: `Deposit — ${unitName}`,
+      source_channel: "online",
+      provider: providerName,
+      provider_session_id: result.session_id,
+      provider_status: "pending",
+      idempotency_key: idempotencyKey,
+      recorded_by: userId,
+      expires_at: result.expires_at,
     });
 
     return new Response(
-      JSON.stringify({ url: session.url, session_id: session.id }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ url: result.url, session_id: result.session_id }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
     );
   } catch (e) {
     console.error("process-payment error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        error: e instanceof Error ? e.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
     );
   }
 });

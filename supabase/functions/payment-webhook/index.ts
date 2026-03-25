@@ -8,6 +8,99 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
+// ── Provider Webhook Verifiers ──
+interface NormalizedPaymentEvent {
+  provider: string;
+  eventType: string; // normalized: "payment.success", "payment.failed", "session.expired"
+  providerEventId: string;
+  bookingId: string | null;
+  idempotencyKey: string | null;
+  amountPaid: number;
+  transactionId: string | null;
+  receiptUrl: string | null;
+  sessionId: string | null;
+  rawPayload: any;
+}
+
+async function verifyAndNormalizeStripe(
+  req: Request,
+  body: string,
+  stripeSecretKey: string,
+  webhookSecret: string
+): Promise<NormalizedPaymentEvent> {
+  const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
+  const signature = req.headers.get("stripe-signature");
+  if (!signature) throw new Error("Missing stripe-signature header");
+
+  const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+
+  // Normalize based on event type
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    return {
+      provider: "stripe",
+      eventType: "payment.success",
+      providerEventId: event.id,
+      bookingId: session.metadata?.booking_id || null,
+      idempotencyKey: session.metadata?.idempotency_key || null,
+      amountPaid: (session.amount_total || 0) / 100,
+      transactionId: session.payment_intent as string | null,
+      receiptUrl: (session as any).receipt_url || null,
+      sessionId: session.id,
+      rawPayload: event.data.object,
+    };
+  }
+
+  if (event.type === "checkout.session.expired") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    return {
+      provider: "stripe",
+      eventType: "session.expired",
+      providerEventId: event.id,
+      bookingId: session.metadata?.booking_id || null,
+      idempotencyKey: session.metadata?.idempotency_key || null,
+      amountPaid: 0,
+      transactionId: null,
+      receiptUrl: null,
+      sessionId: session.id,
+      rawPayload: event.data.object,
+    };
+  }
+
+  if (
+    event.type === "payment_intent.payment_failed" ||
+    event.type === "charge.failed"
+  ) {
+    const obj = event.data.object as any;
+    return {
+      provider: "stripe",
+      eventType: "payment.failed",
+      providerEventId: event.id,
+      bookingId: obj.metadata?.booking_id || null,
+      idempotencyKey: obj.metadata?.idempotency_key || null,
+      amountPaid: 0,
+      transactionId: obj.id || null,
+      receiptUrl: null,
+      sessionId: null,
+      rawPayload: event.data.object,
+    };
+  }
+
+  // Unhandled event type — log but don't process
+  return {
+    provider: "stripe",
+    eventType: `unknown.${event.type}`,
+    providerEventId: event.id,
+    bookingId: null,
+    idempotencyKey: null,
+    amountPaid: 0,
+    transactionId: null,
+    receiptUrl: null,
+    sessionId: null,
+    rawPayload: event.data.object,
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -18,17 +111,32 @@ serve(async (req) => {
   const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
   try {
-    // Get webhook secret from policy_settings
+    // Get provider settings
     const { data: policies } = await adminClient
       .from("policy_settings")
       .select("key, value")
-      .in("key", ["stripe_webhook_secret", "stripe_secret_key", "deposit_percentage", "currency_symbol"]);
+      .in("key", [
+        "stripe_webhook_secret",
+        "stripe_secret_key",
+        "payment_provider",
+        "deposit_percentage",
+        "currency_symbol",
+      ]);
 
-    const policyMap = new Map((policies ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]));
+    const policyMap = new Map(
+      (policies ?? []).map((p: any) => [
+        p.key,
+        String(p.value).replace(/^"|"$/g, ""),
+      ])
+    );
     const webhookSecret = policyMap.get("stripe_webhook_secret");
     const stripeSecretKey = policyMap.get("stripe_secret_key");
 
-    if (!webhookSecret || !stripeSecretKey || webhookSecret.length < 10) {
+    if (
+      !webhookSecret ||
+      !stripeSecretKey ||
+      webhookSecret.length < 10
+    ) {
       console.error("Stripe webhook secret or secret key not configured");
       return new Response(JSON.stringify({ error: "Not configured" }), {
         status: 500,
@@ -36,21 +144,20 @@ serve(async (req) => {
       });
     }
 
-    const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
-    const signature = req.headers.get("stripe-signature");
-    if (!signature) {
-      return new Response(JSON.stringify({ error: "Missing signature" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const body = await req.text();
-    let event: Stripe.Event;
+
+    // Verify and normalize via provider adapter
+    // Future: detect provider from request headers/path and route accordingly
+    let normalized: NormalizedPaymentEvent;
     try {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      normalized = await verifyAndNormalizeStripe(
+        req,
+        body,
+        stripeSecretKey,
+        webhookSecret
+      );
     } catch (err) {
-      console.error("Webhook signature verification failed:", err);
+      console.error("Webhook verification failed:", err);
       return new Response(JSON.stringify({ error: "Invalid signature" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -61,159 +168,41 @@ serve(async (req) => {
     const { error: eventLogError } = await adminClient
       .from("payment_events")
       .insert({
-        provider: "stripe",
-        provider_event_id: event.id,
-        event_type: event.type,
-        payload: event.data.object as any,
+        provider: normalized.provider,
+        provider_event_id: normalized.providerEventId,
+        event_type: normalized.eventType,
+        payload: normalized.rawPayload,
         processed: false,
       });
 
     if (eventLogError) {
-      // Unique constraint violation = duplicate event, safe to ignore
       if (eventLogError.code === "23505") {
-        console.log("Duplicate webhook event ignored:", event.id);
-        return new Response(JSON.stringify({ received: true, duplicate: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        console.log("Duplicate webhook event ignored:", normalized.providerEventId);
+        return new Response(
+          JSON.stringify({ received: true, duplicate: true }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
       console.error("Error logging payment event:", eventLogError);
     }
 
-    // Process the event
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const bookingId = session.metadata?.booking_id;
-      const idempotencyKey = session.metadata?.idempotency_key;
+    // ── Handle normalized events ──
 
-      if (!bookingId) {
-        console.error("No booking_id in session metadata");
-        return new Response(JSON.stringify({ received: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Fetch booking with FOR UPDATE semantics via service role
-      const { data: booking, error: bookingErr } = await adminClient
-        .from("bookings")
-        .select("id, state, guest_id, total_price, unit_id")
-        .eq("id", bookingId)
-        .single();
-
-      if (bookingErr || !booking) {
-        console.error("Booking not found:", bookingId);
-        return new Response(JSON.stringify({ received: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Only process if booking is still in pending_deposit
-      if (booking.state !== "pending_deposit") {
-        console.log("Booking not in pending_deposit state, skipping:", booking.state);
-        // Mark event as processed
-        await adminClient
-          .from("payment_events")
-          .update({ processed: true })
-          .eq("provider_event_id", event.id);
-        return new Response(JSON.stringify({ received: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const amountPaid = (session.amount_total || 0) / 100;
-
-      // Record payment
-      const { data: payment, error: paymentErr } = await adminClient
-        .from("payments")
-        .insert({
-          booking_id: bookingId,
-          amount: amountPaid,
-          method: "card",
-          status: "recorded",
-          source_channel: "online",
-          provider: "stripe",
-          provider_transaction_id: session.payment_intent as string,
-          provider_status: "completed",
-          idempotency_key: idempotencyKey || `stripe_${session.id}`,
-          receipt_url: session.receipt_url || null,
-          recorded_by: booking.guest_id,
-        })
-        .select()
-        .single();
-
-      if (paymentErr) {
-        // Idempotency key conflict = payment already recorded
-        if (paymentErr.code === "23505") {
-          console.log("Payment already recorded for this session");
-        } else {
-          console.error("Error recording payment:", paymentErr);
-        }
-      } else {
-        // Link payment to event
-        await adminClient
-          .from("payment_events")
-          .update({ payment_id: payment.id, processed: true })
-          .eq("provider_event_id", event.id);
-      }
-
-      // Transition booking: pending_deposit → confirmed
-      const { error: transitionErr } = await adminClient
-        .from("bookings")
-        .update({ state: "confirmed" })
-        .eq("id", bookingId)
-        .eq("state", "pending_deposit"); // Optimistic lock on state
-
-      if (transitionErr) {
-        console.error("Error transitioning booking:", transitionErr);
-      } else {
-        // Log state transition
-        await adminClient.from("booking_state_log").insert({
-          booking_id: bookingId,
-          from_state: "pending_deposit",
-          to_state: "confirmed",
-          reason: `Online payment received via Stripe (${session.payment_intent})`,
-        });
-
-        // Notify guest
-        if (booking.guest_id) {
-          await adminClient.from("notifications").insert({
-            user_id: booking.guest_id,
-            type: "booking_confirmed",
-            message: `Your deposit has been received and your booking is now confirmed!`,
-            reference_id: bookingId,
-          });
-        }
-
-        // Notify admins
-        const { data: admins } = await adminClient
-          .from("user_roles")
-          .select("user_id")
-          .in("role", ["admin", "manager"]);
-
-        const adminNotifs = (admins ?? []).map((a: any) => ({
-          user_id: a.user_id,
-          type: "booking",
-          message: `Online deposit received: ${amountPaid} — booking auto-confirmed`,
-          reference_id: bookingId,
-        }));
-        if (adminNotifs.length > 0) {
-          await adminClient.from("notifications").insert(adminNotifs);
-        }
-
-        // Trigger confirmation email
-        try {
-          await fetch(`${supabaseUrl}/functions/v1/send-booking-confirmation`, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${serviceRoleKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ booking_id: bookingId }),
-          });
-        } catch (emailErr) {
-          console.error("Failed to trigger confirmation email:", emailErr);
-        }
-      }
+    if (normalized.eventType === "payment.success") {
+      await handlePaymentSuccess(adminClient, normalized, supabaseUrl, serviceRoleKey);
+    } else if (normalized.eventType === "payment.failed") {
+      await handlePaymentFailed(adminClient, normalized);
+    } else if (normalized.eventType === "session.expired") {
+      await handleSessionExpired(adminClient, normalized);
     }
+
+    // Mark event as processed
+    await adminClient
+      .from("payment_events")
+      .update({ processed: true })
+      .eq("provider_event_id", normalized.providerEventId);
 
     return new Response(JSON.stringify({ received: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -221,8 +210,216 @@ serve(async (req) => {
   } catch (e) {
     console.error("payment-webhook error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        error: e instanceof Error ? e.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
     );
   }
 });
+
+// ── Event Handlers ──
+
+async function handlePaymentSuccess(
+  adminClient: any,
+  event: NormalizedPaymentEvent,
+  supabaseUrl: string,
+  serviceRoleKey: string
+) {
+  const bookingId = event.bookingId;
+  if (!bookingId) {
+    console.error("No booking_id in payment event metadata");
+    return;
+  }
+
+  const { data: booking, error: bookingErr } = await adminClient
+    .from("bookings")
+    .select("id, state, guest_id, total_price, unit_id")
+    .eq("id", bookingId)
+    .single();
+
+  if (bookingErr || !booking) {
+    console.error("Booking not found:", bookingId);
+    return;
+  }
+
+  // Transition pending payment → recorded (if we created one in process-payment)
+  if (event.sessionId) {
+    const { data: pendingPayment } = await adminClient
+      .from("payments")
+      .select("id")
+      .eq("provider_session_id", event.sessionId)
+      .eq("status", "pending")
+      .maybeSingle();
+
+    if (pendingPayment) {
+      await adminClient
+        .from("payments")
+        .update({
+          status: "recorded",
+          provider_status: "completed",
+          provider_transaction_id: event.transactionId,
+          receipt_url: event.receiptUrl,
+        })
+        .eq("id", pendingPayment.id);
+
+      // Link payment to event
+      await adminClient
+        .from("payment_events")
+        .update({ payment_id: pendingPayment.id })
+        .eq("provider_event_id", event.providerEventId);
+    } else {
+      // No pending payment found — insert a recorded one (backward compat / race condition)
+      const { data: newPayment } = await adminClient
+        .from("payments")
+        .insert({
+          booking_id: bookingId,
+          amount: event.amountPaid,
+          method: "card",
+          status: "recorded",
+          payment_type: "deposit",
+          description: `Deposit — online payment`,
+          source_channel: "online",
+          provider: event.provider,
+          provider_transaction_id: event.transactionId,
+          provider_session_id: event.sessionId,
+          provider_status: "completed",
+          idempotency_key: event.idempotencyKey || `${event.provider}_${event.sessionId}`,
+          receipt_url: event.receiptUrl,
+          recorded_by: booking.guest_id,
+        })
+        .select()
+        .single();
+
+      if (newPayment) {
+        await adminClient
+          .from("payment_events")
+          .update({ payment_id: newPayment.id })
+          .eq("provider_event_id", event.providerEventId);
+      }
+    }
+  }
+
+  // Only transition if booking is in pending_deposit
+  if (booking.state !== "pending_deposit") {
+    console.log(
+      "Booking not in pending_deposit state, skipping transition:",
+      booking.state
+    );
+    return;
+  }
+
+  // Transition booking: pending_deposit → confirmed
+  const { error: transitionErr } = await adminClient
+    .from("bookings")
+    .update({ state: "confirmed" })
+    .eq("id", bookingId)
+    .eq("state", "pending_deposit"); // Optimistic lock
+
+  if (transitionErr) {
+    console.error("Error transitioning booking:", transitionErr);
+    return;
+  }
+
+  // Log state transition
+  await adminClient.from("booking_state_log").insert({
+    booking_id: bookingId,
+    from_state: "pending_deposit",
+    to_state: "confirmed",
+    reason: `Online payment received via ${event.provider} (${event.transactionId})`,
+  });
+
+  // Notify guest
+  if (booking.guest_id) {
+    await adminClient.from("notifications").insert({
+      user_id: booking.guest_id,
+      type: "booking_confirmed",
+      message:
+        "Your deposit has been received and your booking is now confirmed!",
+      reference_id: bookingId,
+    });
+  }
+
+  // Notify admins
+  const { data: admins } = await adminClient
+    .from("user_roles")
+    .select("user_id")
+    .in("role", ["admin", "manager"]);
+
+  const adminNotifs = (admins ?? []).map((a: any) => ({
+    user_id: a.user_id,
+    type: "booking",
+    message: `Online deposit received: ${event.amountPaid} — booking auto-confirmed`,
+    reference_id: bookingId,
+  }));
+  if (adminNotifs.length > 0) {
+    await adminClient.from("notifications").insert(adminNotifs);
+  }
+
+  // Trigger confirmation email
+  try {
+    await fetch(
+      `${supabaseUrl}/functions/v1/send-booking-confirmation`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${serviceRoleKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ booking_id: bookingId }),
+      }
+    );
+  } catch (emailErr) {
+    console.error("Failed to trigger confirmation email:", emailErr);
+  }
+}
+
+async function handlePaymentFailed(
+  adminClient: any,
+  event: NormalizedPaymentEvent
+) {
+  // Transition any pending payment for this session to failed
+  if (event.sessionId) {
+    await adminClient
+      .from("payments")
+      .update({ status: "failed", provider_status: "failed" })
+      .eq("provider_session_id", event.sessionId)
+      .eq("status", "pending");
+  }
+
+  // Notify guest if we have a booking
+  if (event.bookingId) {
+    const { data: booking } = await adminClient
+      .from("bookings")
+      .select("guest_id")
+      .eq("id", event.bookingId)
+      .single();
+
+    if (booking?.guest_id) {
+      await adminClient.from("notifications").insert({
+        user_id: booking.guest_id,
+        type: "booking",
+        message:
+          "Your payment could not be processed. Please try again or contact the front desk.",
+        reference_id: event.bookingId,
+      });
+    }
+  }
+}
+
+async function handleSessionExpired(
+  adminClient: any,
+  event: NormalizedPaymentEvent
+) {
+  // Transition pending payment to cancelled
+  if (event.sessionId) {
+    await adminClient
+      .from("payments")
+      .update({ status: "cancelled", provider_status: "expired" })
+      .eq("provider_session_id", event.sessionId)
+      .eq("status", "pending");
+  }
+}
