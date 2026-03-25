@@ -33,7 +33,22 @@ const PaymentAnalytics = () => {
   const { data: policies } = usePolicySettings();
   const { symbol: currencySymbol } = getCurrencyConfig(policies);
 
-  const { isLoading, rangeLabel, revenueTrend, totalGross, totalRefunds, totalNet, refundRate, refundCount, totalCount, methodDistribution, typeDistribution, outstandingByUnit } = analytics;
+  const { isLoading, rangeLabel, revenueTrend, totalGross, totalRefunds, totalNet, refundRate, refundCount, totalCount, methodDistribution, typeDistribution, outstandingByUnit, rawPayments } = analytics;
+
+  const handleExportCSV = () => {
+    const rows = rawPayments.map((p) => ({
+      payment_id: p.id,
+      booking_id: p.booking_id,
+      amount: p.amount,
+      status: PAYMENT_STATUS_LABELS[p.status as PaymentStatus] ?? p.status,
+      payment_type: PAYMENT_TYPE_LABELS[p.payment_type as PaymentType] ?? p.payment_type,
+      method: p.method,
+      provider: p.provider,
+      refund_amount: p.refund_amount ?? "",
+      created_at: p.created_at,
+    }));
+    downloadCSV(rows, `payment-ledger-${rangeLabel.replace(/\s+/g, "-")}.csv`);
+  };
 
   const totalOutstanding = outstandingByUnit.reduce((s, u) => s + u.outstanding, 0);
 
