@@ -263,12 +263,20 @@ export function useCreatePayment() {
       method: string;
       notes?: string;
       source_channel?: string;
+      payment_type?: string;
+      description?: string;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
-      const { source_channel, ...rest } = payment;
+      const { source_channel, payment_type, description, ...rest } = payment;
       const { data, error } = await supabase
         .from("payments")
-        .insert({ ...rest, recorded_by: user?.id ?? null, source_channel: source_channel ?? "front_desk" } as any)
+        .insert({
+          ...rest,
+          recorded_by: user?.id ?? null,
+          source_channel: source_channel ?? "front_desk",
+          payment_type: payment_type ?? "deposit",
+          description: description ?? undefined,
+        } as any)
         .select()
         .single();
       if (error) throw error;
