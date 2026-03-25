@@ -75,8 +75,20 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
     if (!selectedUnit || !checkIn || !checkOut) return errs;
     const nights = differenceInCalendarDays(new Date(checkOut), new Date(checkIn));
     if (nights <= 0) errs.push(t("bookingForm.checkoutAfterCheckin"));
-    else if (nights < selectedUnit.min_nights) errs.push(t("bookingForm.minStay", { count: selectedUnit.min_nights }));
-    if (Number(numGuests) > selectedUnit.capacity) errs.push(t("bookingForm.maxCapacity", { count: selectedUnit.capacity }));
+    else {
+      const unitRules = (allPricingRules ?? []).filter((r) => r.unit_id === selectedUnit.id);
+      const seasonalRule = unitRules.find(
+        (r) => r.min_nights != null && r.min_nights > 0 && checkIn >= r.start_date && checkIn <= r.end_date
+      );
+      const effectiveMinNights = seasonalRule?.min_nights ?? selectedUnit.min_nights;
+      if (nights < effectiveMinNights) {
+        if (seasonalRule) {
+          errs.push(t("bookingForm.seasonalMinStay", { ruleName: seasonalRule.name, count: effectiveMinNights }));
+        } else {
+          errs.push(t("bookingForm.minStay", { count: selectedUnit.min_nights }));
+        }
+      }
+    }
     if (maintenanceBlocks?.length) {
       for (const block of maintenanceBlocks) {
         if (block.start_date <= checkOut && block.end_date >= checkIn) {
