@@ -38,6 +38,7 @@ Deno.serve(async (req) => {
     const now = new Date();
     let expired = 0;
     let reminders = 0;
+    let expiredPayments = 0;
 
     // 1. Expire soft holds
     const softHoldCutoff = new Date(
