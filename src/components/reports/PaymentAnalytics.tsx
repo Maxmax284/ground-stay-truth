@@ -7,7 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePaymentAnalytics } from "@/hooks/usePaymentAnalytics";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { getCurrencyConfig, formatPrice } from "@/lib/currency";
-import { PAYMENT_TYPE_LABELS, type PaymentType } from "@/lib/paymentTypes";
+import { PAYMENT_TYPE_LABELS, PAYMENT_STATUS_LABELS, type PaymentType, type PaymentStatus } from "@/lib/paymentTypes";
+import { downloadCSV } from "@/lib/csvExport";
 
 const METHOD_COLORS: Record<string, string> = {
   bank_transfer: "hsl(210, 50%, 50%)",
