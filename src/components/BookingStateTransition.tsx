@@ -351,19 +351,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
       ].filter(Boolean).join(" ");
       await transition.mutateAsync({ bookingId, fromState: currentState, toState: targetState as BookingState, reason: reasonText });
       toast({ title: t("stateTransition.stateUpdated"), description: t("stateTransition.movedTo", { state: t(`states.${targetState}`) }) });
-      // Trigger confirmation notification when booking moves to confirmed
-      if (targetState === "confirmed") {
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-booking-confirmation`, {
-              method: "POST",
-              headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
-              body: JSON.stringify({ booking_id: bookingId }),
-            }).catch(console.error);
-          }
-        } catch {}
-      }
+      // Email triggers now handled centrally in useTransitionBookingState
       setTargetState(""); setReason(""); setAdminOverride(false); setDepositOverride(false); setDepositOverrideReason("");
       setDepositAmount(""); setDepositMethod("cash"); setDepositNotes("");
       setCashAtCheckin(false); setCheckinPayAmount(""); setCheckinPayMethod("cash"); setCheckinPayNotes(""); setAiAcknowledged(false);
