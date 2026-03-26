@@ -1024,6 +1024,16 @@
     "pickupPendingDriver": "已申请接机 — 司机尚未分配。",
     "checkinPassed": "入住日期已过，请联系工作人员。",
     "unitNotAssigned": "房间待定",
-    "contactStaff": "有问题？给我们的团队发消息。"
+    "contactStaff": "有问题？给我们的团队发消息。",
+    "landed": "已到达 ✓",
+    "actions": {
+      "payDeposit": "支付押金",
+      "uploadId": "上传证件",
+      "landed": "我已到达",
+      "reportIssue": "需要帮助",
+      "askGlitch": "问 Kru Glitch",
+      "landedSuccess": "已确认！工作人员已收到通知，司机正在赶来。",
+      "alreadyLanded": "您已确认到达。"
+    }
   }
 }

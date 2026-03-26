@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { AmenityList } from "@/components/AmenityBadge";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -86,6 +86,20 @@ const GuestPortal = () => {
       setBookingFormOpen(true);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Active tab state (controlled for action-button navigation)
+  const [activeTab, setActiveTab] = useState("bookings");
+
+  // Listen for tab-switch events from action buttons
+  useEffect(() => {
+    const handler = (e: CustomEvent<{ tab: string }>) => {
+      const tab = e.detail?.tab;
+      if (tab) setActiveTab(tab);
+    };
+    window.addEventListener("guest-portal-action", handler as EventListener);
+    return () => window.removeEventListener("guest-portal-action", handler as EventListener);
+  }, []);
+
   // Messages tab state
   const [selectedThread, setSelectedThread] = useState<string | null>(null);
   const markRead = useMarkMessagesRead();
@@ -228,7 +242,7 @@ const GuestPortal = () => {
         {/* Passive Layer: Your Stay Summary */}
         <GuestStaySummary />
 
-        <Tabs defaultValue="bookings" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="flex-wrap">
             <TabsTrigger value="bookings">{t("guestPortal.myBookings")}</TabsTrigger>
             <TabsTrigger value="listings">{t("guestPortal.listings")}</TabsTrigger>

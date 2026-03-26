@@ -1024,6 +1024,16 @@
     "pickupPendingDriver": "Traslado solicitado — conductor aún no asignado.",
     "checkinPassed": "La fecha de check-in ya pasó. Contacta al equipo.",
     "unitNotAssigned": "Habitación pendiente",
-    "contactStaff": "¿Preguntas? Envía un mensaje a nuestro equipo."
+    "contactStaff": "¿Preguntas? Envía un mensaje a nuestro equipo.",
+    "landed": "Aterrizó ✓",
+    "actions": {
+      "payDeposit": "Pagar depósito",
+      "uploadId": "Subir identificación",
+      "landed": "He llegado",
+      "reportIssue": "Necesito ayuda",
+      "askGlitch": "Preguntar a Kru Glitch",
+      "landedSuccess": "¡Confirmado! El personal ha sido notificado. Tu conductor está en camino.",
+      "alreadyLanded": "Ya confirmaste tu llegada."
+    }
   }
 }

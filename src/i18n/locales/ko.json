@@ -1203,6 +1203,16 @@
     "pickupPendingDriver": "픽업 요청됨 — 드라이버 미배정.",
     "checkinPassed": "체크인 날짜가 지났습니다. 직원에게 연락하세요.",
     "unitNotAssigned": "객실 미정",
-    "contactStaff": "질문이 있으신가요? 팀에 메시지를 보내세요."
+    "contactStaff": "질문이 있으신가요? 팀에 메시지를 보내세요.",
+    "landed": "도착 ✓",
+    "actions": {
+      "payDeposit": "보증금 납부",
+      "uploadId": "신분증 업로드",
+      "landed": "도착했습니다",
+      "reportIssue": "도움 필요",
+      "askGlitch": "Kru Glitch에 물어보기",
+      "landedSuccess": "확인! 직원에게 알렸습니다. 드라이버가 오고 있습니다.",
+      "alreadyLanded": "이미 도착을 확인했습니다."
+    }
   }
 }

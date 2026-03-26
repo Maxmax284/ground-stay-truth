@@ -1203,6 +1203,16 @@
     "pickupPendingDriver": "Transfer angefragt — Fahrer noch nicht zugewiesen.",
     "checkinPassed": "Das Check-in-Datum ist überschritten. Bitte kontaktieren Sie das Team.",
     "unitNotAssigned": "Unterkunft ausstehend",
-    "contactStaff": "Fragen? Schreiben Sie unserem Team."
+    "contactStaff": "Fragen? Schreiben Sie unserem Team.",
+    "landed": "Gelandet ✓",
+    "actions": {
+      "payDeposit": "Anzahlung leisten",
+      "uploadId": "Ausweis hochladen",
+      "landed": "Ich bin gelandet",
+      "reportIssue": "Hilfe benötigt",
+      "askGlitch": "Kru Glitch fragen",
+      "landedSuccess": "Bestätigt! Das Team wurde benachrichtigt. Ihr Fahrer ist unterwegs.",
+      "alreadyLanded": "Sie haben Ihre Landung bereits bestätigt."
+    }
   }
 }

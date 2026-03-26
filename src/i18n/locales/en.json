@@ -1271,6 +1271,16 @@
     "pickupPendingDriver": "Pickup requested — driver not yet assigned.",
     "checkinPassed": "Check-in date has passed. Please contact staff.",
     "unitNotAssigned": "Unit pending",
-    "contactStaff": "Questions? Message our team for help."
+    "contactStaff": "Questions? Message our team for help.",
+    "landed": "Landed ✓",
+    "actions": {
+      "payDeposit": "Pay Deposit",
+      "uploadId": "Upload ID",
+      "landed": "I've Landed",
+      "reportIssue": "Need Help",
+      "askGlitch": "Ask Kru Glitch",
+      "landedSuccess": "Confirmed! Staff has been notified. Your driver is on the way.",
+      "alreadyLanded": "You've already confirmed your landing."
+    }
   }
 }
