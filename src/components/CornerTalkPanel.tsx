@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Swords, ChevronDown, ChevronUp, AlertCircle, Clock, CheckCircle2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,6 +48,32 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem(STORAGE_KEY) === "true"; } catch { return false; }
   });
+
+  // Track previous attention keys to detect new items
+  const prevKeysRef = useRef<Set<string>>(new Set());
+  const [newKeys, setNewKeys] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!data?.attention) return;
+    const currentKeys = new Set(data.attention.map((a) => a.messageKey));
+    const fresh = new Set<string>();
+    currentKeys.forEach((k) => {
+      if (!prevKeysRef.current.has(k)) fresh.add(k);
+    });
+    if (fresh.size > 0 && prevKeysRef.current.size > 0) {
+      setNewKeys(fresh);
+      const timer = setTimeout(() => setNewKeys(new Set()), 1500);
+      return () => clearTimeout(timer);
+    }
+    prevKeysRef.current = currentKeys;
+  }, [data?.attention]);
+
+  // Also update prevKeys when newKeys animation ends
+  useEffect(() => {
+    if (newKeys.size === 0 && data?.attention) {
+      prevKeysRef.current = new Set(data.attention.map((a) => a.messageKey));
+    }
+  }, [newKeys, data?.attention]);
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, String(collapsed)); } catch {}
@@ -120,11 +146,13 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
               <div className="space-y-1.5">
                 {data.attention.map((item, i) => (
                   <button
-                    key={`att-${i}`}
+                    key={`att-${item.messageKey}`}
                     onClick={() =>
                       onAskGlitch?.(`Tell me more about: ${item.text}`)
                     }
-                    className={`flex items-start gap-2.5 w-full text-left pl-2 py-1 rounded-sm hover:bg-accent/40 transition-colors ${severityBorderClass(item.severity)}`}
+                    className={`flex items-start gap-2.5 w-full text-left pl-2 py-1 rounded-sm hover:bg-accent/40 transition-colors ${severityBorderClass(item.severity)} ${
+                      newKeys.has(item.messageKey) ? "animate-fade-in" : ""
+                    }`}
                   >
                     <SeverityDot severity={item.severity} />
                     <span className={`text-sm leading-snug ${severityTextClass(item.severity)}`}>
