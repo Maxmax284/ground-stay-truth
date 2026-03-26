@@ -12,7 +12,7 @@ import {
   CalendarDays, CreditCard, Plane, Shield, ArrowRight, CheckCircle2,
   Clock, AlertCircle, MapPin,
 } from "lucide-react";
-import { format, differenceInDays } from "date-fns";
+import { format, differenceInDays, isPast, isToday, parseISO } from "date-fns";
 
 interface BookingWithUnit {
   id: string;
