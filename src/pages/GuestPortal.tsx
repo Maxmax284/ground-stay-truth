@@ -48,6 +48,7 @@ import {
   Clock, ListChecks, Shield, MapPin, Heart, Star,
 } from "lucide-react";
 import { GuestStaySupport } from "@/components/GuestStaySupport";
+import { GuestStaySummary } from "@/components/GuestStaySummary";
 import { GuestPickupCard } from "@/components/GuestPickupCard";
 import { GuestPaymentButton } from "@/components/GuestPaymentButton";
 import { GuestPaymentSummary } from "@/components/GuestPaymentSummary";
@@ -223,6 +224,9 @@ const GuestPortal = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Passive Layer: Your Stay Summary */}
+        <GuestStaySummary />
 
         <Tabs defaultValue="bookings" className="space-y-4">
           <TabsList className="flex-wrap">

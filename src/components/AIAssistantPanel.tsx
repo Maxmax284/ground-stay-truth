@@ -296,9 +296,17 @@ function AIAssistantPanelInner() {
         </div>
       </div>
 
-      {/* Mode selector */}
+      {/* Mode selector — filter staff-only modes for guests */}
       <div className="flex gap-1 px-3 py-2 border-b overflow-x-auto">
-        {(Object.keys(MODE_LABELS) as AIMode[]).map((m) => (
+        {(Object.keys(MODE_LABELS) as AIMode[])
+          .filter((m) => {
+            if (role === "guest") {
+              // Guests only see explain, summarize, camp
+              return ["explain", "summarize", "camp"].includes(m);
+            }
+            return true;
+          })
+          .map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}

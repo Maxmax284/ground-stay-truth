@@ -28,7 +28,23 @@ const ROLE_RULES: Record<string, string> = {
   manager: `ROLE: Manager — Operator frame active. Full operational data access. Provide strategic framing on resource allocation, scheduling, and staff coordination. Escalate financial specifics only when directly asked.`,
   front_desk_supervisor: `ROLE: Front Desk Supervisor — Operational focus. Do NOT include raw payment amounts in responses. You can confirm payment existence or gaps. Escalate policy questions — do not answer policy questions yourself.`,
   front_desk: `ROLE: Front Desk — Guest-facing operations only. Do NOT include payment amounts in responses. Only mention if payments exist or are missing. Escalate policy questions to a supervisor. Focus on check-in/out, guest requests, and unit status.`,
-  guest: `ROLE: Guest — Do NOT include internal notes, audit details, staff decisions, internal workflows, or audit trails in your responses. Focus on the guest's own bookings, camp info, and general guidance.`,
+  guest: `ROLE: Guest Concierge — You are the guest's personal digital concierge. Your job is to proactively help them understand their stay.
+
+STRICT DATA BOUNDARIES:
+- You can ONLY discuss this guest's own bookings, payments, pickup, and deposit info.
+- You CANNOT access other guests' data, revenue figures, staff actions, internal notes, system logs, or analytics.
+- If asked about anything outside this guest's scope, say: "I don't have access to that information."
+
+CONCIERGE BEHAVIOR:
+- Lead with what the guest needs to know RIGHT NOW (upcoming check-in, outstanding balance, pickup status).
+- Explain policies in plain, friendly language when relevant.
+- If a request needs staff action (approval, modification, special arrangement), say: "I'll flag this for staff" or "That needs staff approval — they'll get back to you."
+- Never promise outcomes, approve requests, or modify bookings.
+- Never expose payment amounts of other guests, internal staff decisions, or override reasons.
+
+TONE: Clear, calm, slightly casual, human-like. Not corporate. Like a helpful front desk person who knows your booking.
+Example GOOD: "Your pickup is confirmed — driver will contact you before arrival."
+Example BAD: "Your transportation logistics have been successfully coordinated."`,
   trainer: `ROLE: Trainer — You have authority on fighter readiness and health decisions. Discuss training load, recovery, and performance with a discipline-first lens. Safety overrides ego. You can reference booking data to understand who is in camp, but defer operational/admin matters to management.`,
   fighter: `ROLE: Fighter — Discipline-first framing on all performance topics. Safety overrides ego in weight cuts, overtraining, and health decisions. No hype on dangerous behavior. Accountability over affirmation. Defer admin or operational questions to staff.`,
   maintenance: `ROLE: Maintenance — Focus on maintenance requests, unit condition, and repair priorities. Defer guest-facing or financial questions to front desk or management.`,
@@ -333,8 +349,16 @@ Deposit policy: ${depositMode}. Currency: ${currencySymbol}.`;
     const now = new Date();
 
     if (role === "guest") {
-      // Guest's own bookings + checklist + documents
-      const [guestBookingsRes, checklistRes, docsRes] = await Promise.all([
+      // First fetch booking IDs for this guest
+      const { data: guestBookingIds } = await adminClient
+        .from("bookings")
+        .select("id")
+        .eq("guest_id", userData.user.id)
+        .limit(10);
+      const bookingIds = (guestBookingIds ?? []).map((b: any) => b.id);
+
+      // Fetch all guest-scoped data in parallel
+      const [guestBookingsRes, checklistRes, docsRes, paymentsRes, pickupsRes, depositsRes, policiesRes] = await Promise.all([
         adminClient
           .from("bookings")
           .select("id, state, check_in, check_out, unit_id, units(name), num_guests, total_price")
@@ -344,16 +368,46 @@ Deposit policy: ${depositMode}. Currency: ${currencySymbol}.`;
         adminClient
           .from("pre_arrival_checklist")
           .select("item_key, completed")
-          .in("booking_id", (await adminClient.from("bookings").select("id").eq("guest_id", userData.user.id).limit(5)).data?.map((b: any) => b.id) || []),
+          .in("booking_id", bookingIds),
         adminClient
           .from("guest_documents")
           .select("file_name, verification_status")
-          .in("booking_id", (await adminClient.from("bookings").select("id").eq("guest_id", userData.user.id).limit(5)).data?.map((b: any) => b.id) || []),
+          .in("booking_id", bookingIds),
+        // Phase 1: Payments scoped to guest's bookings
+        adminClient
+          .from("payments")
+          .select("id, booking_id, amount, status, payment_type, method, refund_amount, created_at")
+          .in("booking_id", bookingIds)
+          .order("created_at", { ascending: false }),
+        // Phase 1: Airport pickups scoped to guest's bookings
+        adminClient
+          .from("airport_pickups")
+          .select("id, booking_id, status, fee, flight_number, arrival_datetime, passenger_count, driver_id, drivers(name, phone, vehicle_type)")
+          .in("booking_id", bookingIds),
+        // Phase 1: Security deposits scoped to guest's bookings
+        adminClient
+          .from("security_deposits")
+          .select("id, booking_id, amount_held, amount_deducted, status, deduction_reason")
+          .in("booking_id", bookingIds),
+        // Phase 1: Public policies for guest reference
+        adminClient
+          .from("policy_settings")
+          .select("key, value")
+          .in("key", [
+            "free_cancellation_days", "partial_refund_days", "no_refund_hours",
+            "check_in_time", "check_out_time", "deposit_percentage",
+            "security_deposit_amount", "security_deposit_required",
+            "transport_base_fee", "transport_free_pickup_min_nights",
+          ]),
       ]);
 
       const guestBookings = guestBookingsRes.data ?? [];
       const checklist = checklistRes.data ?? [];
       const docs = docsRes.data ?? [];
+      const payments = paymentsRes.data ?? [];
+      const pickups = pickupsRes.data ?? [];
+      const deposits = depositsRes.data ?? [];
+      const guestPolicies = policiesRes.data ?? [];
       const completedItems = checklist.filter((c: any) => c.completed).length;
       const totalItems = checklist.length;
       const verifiedDocs = docs.filter((d: any) => d.verification_status === "verified").length;
@@ -364,6 +418,57 @@ Deposit policy: ${depositMode}. Currency: ${currencySymbol}.`;
       }
       if (docs.length > 0) {
         contextData += `\nDocuments: ${docs.length} uploaded, ${verifiedDocs} verified.`;
+      }
+
+      // Payment context
+      if (payments.length > 0) {
+        const recorded = payments.filter((p: any) => p.status === "recorded" || p.status === "partially_refunded");
+        const totalPaid = recorded.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+        const totalRefunded = payments.filter((p: any) => p.status === "refunded" || p.status === "partially_refunded")
+          .reduce((sum: number, p: any) => sum + Number(p.refund_amount ?? 0), 0);
+        contextData += `\n\nYOUR PAYMENTS:`;
+        contextData += `\nTotal paid: ${currencySymbol}${totalPaid.toLocaleString()}. Refunded: ${currencySymbol}${totalRefunded.toLocaleString()}.`;
+        contextData += `\nPayment records: ${JSON.stringify(payments.map((p: any) => ({ booking_id: p.booking_id, amount: p.amount, status: p.status, type: p.payment_type, method: p.method })))}`;
+        // Calculate outstanding per booking
+        for (const b of guestBookings) {
+          const bPayments = payments.filter((p: any) => p.booking_id === b.id);
+          const bPaid = bPayments.filter((p: any) => p.status === "recorded" || p.status === "partially_refunded").reduce((s: number, p: any) => s + Number(p.amount), 0);
+          const bRefunded = bPayments.filter((p: any) => p.status === "refunded" || p.status === "partially_refunded").reduce((s: number, p: any) => s + Number(p.refund_amount ?? 0), 0);
+          const outstanding = Math.max(0, Number(b.total_price ?? 0) - bPaid + bRefunded);
+          if (outstanding > 0) {
+            contextData += `\nBooking ${(b as any).units?.name ?? b.id}: outstanding balance ${currencySymbol}${outstanding.toLocaleString()}.`;
+          }
+        }
+      }
+
+      // Pickup context
+      if (pickups.length > 0) {
+        contextData += `\n\nYOUR AIRPORT PICKUPS:`;
+        for (const p of pickups) {
+          const driverInfo = (p as any).drivers ? `Driver: ${(p as any).drivers.name}${(p as any).drivers.phone ? `, phone: ${(p as any).drivers.phone}` : ""}${(p as any).drivers.vehicle_type ? `, vehicle: ${(p as any).drivers.vehicle_type}` : ""}` : "Driver not yet assigned";
+          contextData += `\nPickup for booking ${p.booking_id}: status=${p.status}, flight=${p.flight_number ?? "not set"}, arrival=${p.arrival_datetime ?? "not set"}, passengers=${p.passenger_count ?? 1}. ${driverInfo}.`;
+        }
+      }
+
+      // Security deposit context
+      if (deposits.length > 0) {
+        contextData += `\n\nYOUR SECURITY DEPOSITS:`;
+        for (const d of deposits) {
+          contextData += `\nDeposit for booking ${d.booking_id}: ${currencySymbol}${d.amount_held} held, status=${d.status}${d.amount_deducted ? `, deducted: ${currencySymbol}${d.amount_deducted} (${d.deduction_reason ?? "no reason"})` : ""}.`;
+        }
+      }
+
+      // Policy context for guest reference
+      if (guestPolicies.length > 0) {
+        const pMap = new Map(guestPolicies.map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]));
+        contextData += `\n\nPOLICIES (for your reference):`;
+        if (pMap.has("check_in_time")) contextData += `\nCheck-in time: ${pMap.get("check_in_time")}`;
+        if (pMap.has("check_out_time")) contextData += `\nCheck-out time: ${pMap.get("check_out_time")}`;
+        if (pMap.has("free_cancellation_days")) contextData += `\nFree cancellation: up to ${pMap.get("free_cancellation_days")} days before check-in`;
+        if (pMap.has("deposit_percentage")) contextData += `\nDeposit required: ${pMap.get("deposit_percentage")}% of total`;
+        if (pMap.has("security_deposit_required") && pMap.get("security_deposit_required") === "true") {
+          contextData += `\nSecurity deposit: ${currencySymbol}${pMap.get("security_deposit_amount") ?? "TBD"} (refundable after checkout inspection)`;
+        }
       }
 
       // Pricing info for quote generation
