@@ -290,8 +290,63 @@ export function GuestStaySummary() {
 
   if (!bookings?.length) return null;
 
+  // Find first checked-in booking's unit ID for essentials
+  const checkedInBooking = bookings?.find((b) => b.state === "checked_in") ?? bookings?.find((b) => b.state === "confirmed");
+  const { data: essentials } = useStayEssentials(checkedInBooking?.unit_id);
+
   return (
     <div className="space-y-2 sm:space-y-3">
+      {/* Stay Essentials Card — visible when checked in or confirmed */}
+      {essentials && checkedInBooking && (essentials.wifi_network || essentials.house_rules || essentials.emergency_phone) && (
+        <Card className="border-primary/20 overflow-hidden">
+          <CardContent className="p-3 sm:p-4 space-y-2.5">
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0" />
+              <span className="font-semibold text-sm sm:text-base text-foreground">{t("guestStay.essentials.title", "Stay Essentials")}</span>
+            </div>
+
+            <div className="grid gap-2">
+              {/* WiFi */}
+              {essentials.wifi_network && (
+                <div className="flex items-start gap-2 bg-success/5 rounded-lg p-2.5">
+                  <Wifi className="h-3.5 w-3.5 text-[hsl(var(--success))] mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[11px] text-muted-foreground">{t("guestStay.essentials.wifi", "WiFi")}</p>
+                    <p className="text-xs font-semibold">{essentials.wifi_network}</p>
+                    {essentials.wifi_password && (
+                      <p className="text-xs font-mono text-muted-foreground">{essentials.wifi_password}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* House Rules */}
+              {essentials.house_rules && (
+                <div className="flex items-start gap-2 bg-muted/50 rounded-lg p-2.5">
+                  <ScrollText className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[11px] text-muted-foreground">{t("guestStay.essentials.rules", "House Rules")}</p>
+                    <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-line">{essentials.house_rules}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Emergency Contact */}
+              {essentials.emergency_phone && (
+                <div className="flex items-start gap-2 bg-destructive/5 rounded-lg p-2.5">
+                  <Phone className="h-3.5 w-3.5 text-destructive mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[11px] text-muted-foreground">{t("guestStay.essentials.emergency", "Emergency")}</p>
+                    <p className="text-xs font-semibold">{essentials.emergency_name}</p>
+                    <p className="text-xs text-muted-foreground">{essentials.emergency_phone}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {bookings.map((booking) => {
         const bPayments = (payments ?? []).filter((p) => p.booking_id === booking.id);
         const { outstanding } = calculateOutstanding(

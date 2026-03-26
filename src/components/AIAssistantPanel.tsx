@@ -339,6 +339,19 @@ function AIAssistantPanelInner() {
               <Sparkles className="h-8 w-8 mx-auto text-muted-foreground/40 mb-3" />
               <p className="text-sm text-muted-foreground">{t("ai.welcomeMessage")}</p>
               <p className="text-xs text-muted-foreground mt-1">{t("ai.disclaimer")}</p>
+              {isGuest && (
+                <button
+                  onClick={() => {
+                    const q = "Show me my stay essentials — WiFi password, house rules, and emergency contacts.";
+                    setInput("");
+                    sendMessage(q, mode, undefined, langCodeToName(language));
+                  }}
+                  className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+                >
+                  <Wifi className="h-3 w-3" />
+                  {t("ai.stayEssentials", "Stay Essentials")}
+                </button>
+              )}
             </div>
           )}
           {messages.map((msg, i) => (
