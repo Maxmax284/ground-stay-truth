@@ -1234,5 +1234,10 @@
     "messageRejected": "Draft message discarded",
     "send": "Send",
     "discard": "Discard"
+  },
+  "cornerTalk": {
+    "allClear": "All clear",
+    "comingUp": "Coming up",
+    "allOperationsNormal": "All operations running normally"
   }
 }

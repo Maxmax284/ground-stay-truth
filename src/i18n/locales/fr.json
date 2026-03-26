@@ -894,72 +894,282 @@
   "tutorial": {
     "welcome": "Bienvenue sur Ground Stay !",
     "letsGetStarted": "Laissez-nous vous faire visiter. Nous parcourrons chaque section pour que vous sachiez où tout se trouve.",
-    "next": "Suivant", "back": "Retour", "skip": "Passer le tutoriel", "finish": "Commencer",
+    "next": "Suivant",
+    "back": "Retour",
+    "skip": "Passer le tutoriel",
+    "finish": "Commencer",
     "stepOf": "Étape {{current}} sur {{total}}",
-    "resetTutorial": "Réinitialiser le tutoriel", "resetTutorialDesc": "Relancer la visite guidée pour revoir chaque section.", "tutorialReset": "Le tutoriel s'affichera au prochain chargement",
+    "resetTutorial": "Réinitialiser le tutoriel",
+    "resetTutorialDesc": "Relancer la visite guidée pour revoir chaque section.",
+    "tutorialReset": "Le tutoriel s'affichera au prochain chargement",
     "roleBadge": "Votre rôle : {{role}}",
     "yourRole": {
-      "admin": { "title": "Votre rôle : Administrateur", "point1": "Contrôle total de la propriété : utilisateurs, politiques, logements, tarifs et configuration système", "point2": "Approuver les réservations, gérer les comptes du personnel et définir les règles opérationnelles", "point3": "Accès à toutes les sections de la plateforme sans restriction" },
-      "manager": { "title": "Votre rôle : Gestionnaire", "point1": "Superviser les opérations quotidiennes : approuver les réservations, gérer les logements et fixer les tarifs", "point2": "Consulter les rapports de revenus, les tendances d'occupation et les analyses de paiements", "point3": "Configurer les intégrations et coordonner les flux de travail du personnel" },
-      "front_desk_supervisor": { "title": "Votre rôle : Superviseur", "point1": "Gérer les arrivées, départs et enregistrer les paiements d'acompte", "point2": "Gérer les réservations quotidiennes et la coordination des clients", "point3": "Visibilité en lecture seule sur les files d'approbation et les messages" },
-      "front_desk": { "title": "Votre rôle : Réception", "point1": "Gérer les réservations, messages et la coordination des clients au quotidien", "point2": "Créer des demandes, changer les états des réservations et télécharger des documents", "point3": "Communiquer avec les clients en temps réel avec traduction automatique" },
-      "maintenance": { "title": "Votre rôle : Maintenance", "point1": "Traiter les demandes de maintenance par ordre de priorité", "point2": "Consulter le calendrier pour planifier autour des réservations et blocages", "point3": "Suivre les demandes de blanchisserie et mettre à jour les statuts" },
-      "viewer": { "title": "Votre rôle : Observateur", "point1": "Accès en lecture seule aux réservations, calendrier et rapports", "point2": "Surveiller l'occupation, les revenus et les tendances", "point3": "Aucune possibilité de créer ou modifier des réservations ou paramètres" },
-      "guest": { "title": "Votre rôle : Client", "point1": "Gérer vos réservations, contacter le personnel et télécharger des documents", "point2": "Demander la maintenance, la blanchisserie et obtenir de l'aide pendant votre séjour", "point3": "Suivre votre réservation de la demande au départ" }
+      "admin": {
+        "title": "Votre rôle : Administrateur",
+        "point1": "Contrôle total de la propriété : utilisateurs, politiques, logements, tarifs et configuration système",
+        "point2": "Approuver les réservations, gérer les comptes du personnel et définir les règles opérationnelles",
+        "point3": "Accès à toutes les sections de la plateforme sans restriction"
+      },
+      "manager": {
+        "title": "Votre rôle : Gestionnaire",
+        "point1": "Superviser les opérations quotidiennes : approuver les réservations, gérer les logements et fixer les tarifs",
+        "point2": "Consulter les rapports de revenus, les tendances d'occupation et les analyses de paiements",
+        "point3": "Configurer les intégrations et coordonner les flux de travail du personnel"
+      },
+      "front_desk_supervisor": {
+        "title": "Votre rôle : Superviseur",
+        "point1": "Gérer les arrivées, départs et enregistrer les paiements d'acompte",
+        "point2": "Gérer les réservations quotidiennes et la coordination des clients",
+        "point3": "Visibilité en lecture seule sur les files d'approbation et les messages"
+      },
+      "front_desk": {
+        "title": "Votre rôle : Réception",
+        "point1": "Gérer les réservations, messages et la coordination des clients au quotidien",
+        "point2": "Créer des demandes, changer les états des réservations et télécharger des documents",
+        "point3": "Communiquer avec les clients en temps réel avec traduction automatique"
+      },
+      "maintenance": {
+        "title": "Votre rôle : Maintenance",
+        "point1": "Traiter les demandes de maintenance par ordre de priorité",
+        "point2": "Consulter le calendrier pour planifier autour des réservations et blocages",
+        "point3": "Suivre les demandes de blanchisserie et mettre à jour les statuts"
+      },
+      "viewer": {
+        "title": "Votre rôle : Observateur",
+        "point1": "Accès en lecture seule aux réservations, calendrier et rapports",
+        "point2": "Surveiller l'occupation, les revenus et les tendances",
+        "point3": "Aucune possibilité de créer ou modifier des réservations ou paramètres"
+      },
+      "guest": {
+        "title": "Votre rôle : Client",
+        "point1": "Gérer vos réservations, contacter le personnel et télécharger des documents",
+        "point2": "Demander la maintenance, la blanchisserie et obtenir de l'aide pendant votre séjour",
+        "point3": "Suivre votre réservation de la demande au départ"
+      }
     },
     "dashboard": {
-      "title": "Tableau de bord", "point1": "Voyez les arrivées, départs et réservations actives d'un coup d'œil", "point2": "Accédez aux actions rapides pour créer des réservations ou gérer les logements", "point3": "Suivez les demandes de maintenance et la file d'attente de blanchisserie",
-      "admin": { "point1": "Surveillez toutes les files, approuvez les réservations et gérez les alertes", "point2": "Suivez l'occupation et les revenus de tous les logements", "point3": "Examinez l'activité système et les escalades en attente" },
-      "manager": { "point1": "Surveillez l'occupation, les arrivées/départs et les approbations en attente", "point2": "Accès rapide pour créer des réservations et gérer les logements", "point3": "Suivez les demandes et les requêtes de maintenance" },
-      "front_desk_supervisor": { "point1": "Suivez les arrivées, départs et réservations actives du jour", "point2": "Accédez aux outils de gestion et de coordination", "point3": "Consultez les acomptes en attente et les demandes escaladées" },
-      "front_desk": { "point1": "Voyez les arrivées et départs du jour d'un coup d'œil", "point2": "Répondez aux demandes et gérez les états de réservation", "point3": "Actions rapides pour créer des réservations et voir le calendrier" },
-      "maintenance": { "point1": "Consultez votre file de maintenance prioritaire", "point2": "Suivez les demandes de blanchisserie et mettez à jour les statuts", "point3": "Voyez les blocages de maintenance planifiés" },
-      "viewer": { "point1": "Consultez les arrivées, départs et l'occupation du jour", "point2": "Surveillez les réservations actives de tous les logements", "point3": "Accès en lecture seule — aucune action disponible" }
+      "title": "Tableau de bord",
+      "point1": "Voyez les arrivées, départs et réservations actives d'un coup d'œil",
+      "point2": "Accédez aux actions rapides pour créer des réservations ou gérer les logements",
+      "point3": "Suivez les demandes de maintenance et la file d'attente de blanchisserie",
+      "admin": {
+        "point1": "Surveillez toutes les files, approuvez les réservations et gérez les alertes",
+        "point2": "Suivez l'occupation et les revenus de tous les logements",
+        "point3": "Examinez l'activité système et les escalades en attente"
+      },
+      "manager": {
+        "point1": "Surveillez l'occupation, les arrivées/départs et les approbations en attente",
+        "point2": "Accès rapide pour créer des réservations et gérer les logements",
+        "point3": "Suivez les demandes et les requêtes de maintenance"
+      },
+      "front_desk_supervisor": {
+        "point1": "Suivez les arrivées, départs et réservations actives du jour",
+        "point2": "Accédez aux outils de gestion et de coordination",
+        "point3": "Consultez les acomptes en attente et les demandes escaladées"
+      },
+      "front_desk": {
+        "point1": "Voyez les arrivées et départs du jour d'un coup d'œil",
+        "point2": "Répondez aux demandes et gérez les états de réservation",
+        "point3": "Actions rapides pour créer des réservations et voir le calendrier"
+      },
+      "maintenance": {
+        "point1": "Consultez votre file de maintenance prioritaire",
+        "point2": "Suivez les demandes de blanchisserie et mettez à jour les statuts",
+        "point3": "Voyez les blocages de maintenance planifiés"
+      },
+      "viewer": {
+        "point1": "Consultez les arrivées, départs et l'occupation du jour",
+        "point2": "Surveillez les réservations actives de tous les logements",
+        "point3": "Accès en lecture seule — aucune action disponible"
+      }
     },
-    "units": { "title": "Logements", "point1": "Ajoutez, modifiez et organisez vos logements", "point2": "Téléchargez des photos et gérez les équipements", "point3": "Regroupez les logements par type et contrôlez la disponibilité" },
+    "units": {
+      "title": "Logements",
+      "point1": "Ajoutez, modifiez et organisez vos logements",
+      "point2": "Téléchargez des photos et gérez les équipements",
+      "point3": "Regroupez les logements par type et contrôlez la disponibilité"
+    },
     "bookings": {
-      "title": "Réservations", "point1": "Gérez les réservations tout au long de leur cycle de vie", "point2": "Transition des états : demande → confirmé → enregistré", "point3": "Consultez la file d'approbation et gérez les acomptes",
-      "admin": { "point1": "Contrôle total avec possibilité de forçage administrateur", "point2": "Approuver/rejeter les réservations et gérer les escalades", "point3": "Forcer les états et gérer les exceptions" },
-      "manager": { "point1": "Examiner et approuver les réservations en attente", "point2": "Gérer le cycle de vie et les exigences d'acompte", "point3": "Superviser toutes les réservations et les cas particuliers" },
-      "front_desk_supervisor": { "point1": "Gérer les réservations, compléter les arrivées et départs", "point2": "Enregistrer les paiements d'acompte et avancer les états", "point3": "Gestion quotidienne des réservations" },
-      "front_desk": { "point1": "Créer des demandes et gérer les réservations existantes", "point2": "Transitionner les réservations via le flux standard", "point3": "Télécharger les documents et coordonner les arrivées" },
-      "viewer": { "point1": "Consulter toutes les réservations en lecture seule", "point2": "Filtrer par état, logement et plage de dates", "point3": "Surveiller les tendances sans droit de modification" }
+      "title": "Réservations",
+      "point1": "Gérez les réservations tout au long de leur cycle de vie",
+      "point2": "Transition des états : demande → confirmé → enregistré",
+      "point3": "Consultez la file d'approbation et gérez les acomptes",
+      "admin": {
+        "point1": "Contrôle total avec possibilité de forçage administrateur",
+        "point2": "Approuver/rejeter les réservations et gérer les escalades",
+        "point3": "Forcer les états et gérer les exceptions"
+      },
+      "manager": {
+        "point1": "Examiner et approuver les réservations en attente",
+        "point2": "Gérer le cycle de vie et les exigences d'acompte",
+        "point3": "Superviser toutes les réservations et les cas particuliers"
+      },
+      "front_desk_supervisor": {
+        "point1": "Gérer les réservations, compléter les arrivées et départs",
+        "point2": "Enregistrer les paiements d'acompte et avancer les états",
+        "point3": "Gestion quotidienne des réservations"
+      },
+      "front_desk": {
+        "point1": "Créer des demandes et gérer les réservations existantes",
+        "point2": "Transitionner les réservations via le flux standard",
+        "point3": "Télécharger les documents et coordonner les arrivées"
+      },
+      "viewer": {
+        "point1": "Consulter toutes les réservations en lecture seule",
+        "point2": "Filtrer par état, logement et plage de dates",
+        "point3": "Surveiller les tendances sans droit de modification"
+      }
     },
     "calendar": {
-      "title": "Calendrier", "point1": "Vue d'ensemble visuelle de la disponibilité", "point2": "Basculez entre les vues chronologie, mois et jour", "point3": "Créez et gérez les blocages de maintenance",
-      "maintenance": { "point1": "Consultez les blocages et réservations à venir", "point2": "Planifiez votre travail autour des arrivées et départs", "point3": "Basculez entre les vues chronologie, mois et jour" },
-      "viewer": { "point1": "Consultez la disponibilité en lecture seule", "point2": "Basculez entre les vues chronologie, mois et jour", "point3": "Surveillez les patterns d'occupation et les fenêtres de maintenance" }
+      "title": "Calendrier",
+      "point1": "Vue d'ensemble visuelle de la disponibilité",
+      "point2": "Basculez entre les vues chronologie, mois et jour",
+      "point3": "Créez et gérez les blocages de maintenance",
+      "maintenance": {
+        "point1": "Consultez les blocages et réservations à venir",
+        "point2": "Planifiez votre travail autour des arrivées et départs",
+        "point3": "Basculez entre les vues chronologie, mois et jour"
+      },
+      "viewer": {
+        "point1": "Consultez la disponibilité en lecture seule",
+        "point2": "Basculez entre les vues chronologie, mois et jour",
+        "point3": "Surveillez les patterns d'occupation et les fenêtres de maintenance"
+      }
     },
-    "pricing": { "title": "Tarifs et politiques", "point1": "Configurez les tarifs saisonniers et remises longs séjours", "point2": "Définissez les politiques opérationnelles", "point3": "Gérez les exigences d'acompte et les règles d'annulation" },
+    "pricing": {
+      "title": "Tarifs et politiques",
+      "point1": "Configurez les tarifs saisonniers et remises longs séjours",
+      "point2": "Définissez les politiques opérationnelles",
+      "point3": "Gérez les exigences d'acompte et les règles d'annulation"
+    },
     "reports": {
-      "title": "Rapports", "point1": "Suivez les taux d'occupation et revenus par logement", "point2": "Consultez la répartition des états de réservation", "point3": "Accédez au recensement des comptes et rapports d'activité",
-      "viewer": { "point1": "Surveillez l'occupation et les revenus en lecture seule", "point2": "Consultez les tendances et analyses de réservation", "point3": "Accédez aux données de recensement sans modification" }
+      "title": "Rapports",
+      "point1": "Suivez les taux d'occupation et revenus par logement",
+      "point2": "Consultez la répartition des états de réservation",
+      "point3": "Accédez au recensement des comptes et rapports d'activité",
+      "viewer": {
+        "point1": "Surveillez l'occupation et les revenus en lecture seule",
+        "point2": "Consultez les tendances et analyses de réservation",
+        "point3": "Accédez aux données de recensement sans modification"
+      }
     },
-    "messages": { "title": "Messages", "point1": "Communiquez avec les clients en temps réel", "point2": "Ajoutez des notes internes visibles uniquement par le personnel", "point3": "Traduction automatique des messages" },
-    "embeds": { "title": "Intégrations", "point1": "Générez des widgets pour les sites externes", "point2": "Personnalisez l'apparence du widget de réservation", "point3": "Copiez le code et prévisualisez avant publication" },
+    "messages": {
+      "title": "Messages",
+      "point1": "Communiquez avec les clients en temps réel",
+      "point2": "Ajoutez des notes internes visibles uniquement par le personnel",
+      "point3": "Traduction automatique des messages"
+    },
+    "embeds": {
+      "title": "Intégrations",
+      "point1": "Générez des widgets pour les sites externes",
+      "point2": "Personnalisez l'apparence du widget de réservation",
+      "point3": "Copiez le code et prévisualisez avant publication"
+    },
     "settings": {
-      "title": "Paramètres", "point1": "Mettez à jour votre profil et coordonnées", "point2": "Gérez les rôles et comptes du personnel", "point3": "Configurez les politiques système et la gestion des avis",
-      "front_desk_supervisor": { "point1": "Mettez à jour votre profil et coordonnées", "point2": "Consultez l'annuaire et les contacts de l'équipe", "point3": "Accédez aux préférences de votre compte" },
-      "front_desk": { "point1": "Mettez à jour votre profil et coordonnées", "point2": "Consultez l'annuaire et les contacts de l'équipe", "point3": "Accédez aux préférences de votre compte" }
+      "title": "Paramètres",
+      "point1": "Mettez à jour votre profil et coordonnées",
+      "point2": "Gérez les rôles et comptes du personnel",
+      "point3": "Configurez les politiques système et la gestion des avis",
+      "front_desk_supervisor": {
+        "point1": "Mettez à jour votre profil et coordonnées",
+        "point2": "Consultez l'annuaire et les contacts de l'équipe",
+        "point3": "Accédez aux préférences de votre compte"
+      },
+      "front_desk": {
+        "point1": "Mettez à jour votre profil et coordonnées",
+        "point2": "Consultez l'annuaire et les contacts de l'équipe",
+        "point3": "Accédez aux préférences de votre compte"
+      }
     },
     "kruGlitch": {
-      "title": "Kru Glitch AI", "point1": "Votre assistant intelligent pour les opérations", "point2": "Posez des questions sur les réservations, la disponibilité et les tendances", "point3": "Obtenez des réponses adaptées à votre rôle",
-      "admin": { "point1": "Renseignez-vous sur l'état du système, les webhooks et les paiements échoués", "point2": "Obtenez des résumés de configuration et des rapports d'activité du personnel", "point3": "Consultez les analyses de revenus et les métriques opérationnelles" },
-      "manager": { "point1": "Renseignez-vous sur les revenus, les tendances d'occupation et les analyses sur 30 jours", "point2": "Obtenez le statut du pipeline et l'aperçu des approbations", "point3": "Consultez les rapports de paiement et l'efficacité des tarifs" },
-      "front_desk_supervisor": { "point1": "Renseignez-vous sur les arrivées, départs et la disponibilité sur 14 jours", "point2": "Obtenez les résumés d'acomptes et les actions en attente", "point3": "Consultez rapidement l'historique des clients et les détails de réservation" },
-      "front_desk": { "point1": "Renseignez-vous sur les arrivées, départs et les prochains check-ins", "point2": "Recherche rapide de réservations et vérification de disponibilité", "point3": "Rédigez des messages et obtenez des suggestions de réponse" },
-      "maintenance": { "point1": "Renseignez-vous sur votre file de maintenance prioritaire", "point2": "Vérifiez les demandes en retard et les blocages à venir", "point3": "Obtenez des résumés de statut et des informations de planification" },
-      "viewer": { "point1": "Renseignez-vous sur les tendances et les statistiques de réservation", "point2": "Obtenez des résumés de rapports et des insights", "point3": "Consultez les données historiques sans modification" },
-      "guest": { "point1": "Renseignez-vous sur votre réservation, les tarifs et la disponibilité", "point2": "Obtenez le statut de votre checklist pré-arrivée et les documents requis", "point3": "Posez des questions sur les horaires, les politiques et les informations locales" }
+      "title": "Kru Glitch AI",
+      "point1": "Votre assistant intelligent pour les opérations",
+      "point2": "Posez des questions sur les réservations, la disponibilité et les tendances",
+      "point3": "Obtenez des réponses adaptées à votre rôle",
+      "admin": {
+        "point1": "Renseignez-vous sur l'état du système, les webhooks et les paiements échoués",
+        "point2": "Obtenez des résumés de configuration et des rapports d'activité du personnel",
+        "point3": "Consultez les analyses de revenus et les métriques opérationnelles"
+      },
+      "manager": {
+        "point1": "Renseignez-vous sur les revenus, les tendances d'occupation et les analyses sur 30 jours",
+        "point2": "Obtenez le statut du pipeline et l'aperçu des approbations",
+        "point3": "Consultez les rapports de paiement et l'efficacité des tarifs"
+      },
+      "front_desk_supervisor": {
+        "point1": "Renseignez-vous sur les arrivées, départs et la disponibilité sur 14 jours",
+        "point2": "Obtenez les résumés d'acomptes et les actions en attente",
+        "point3": "Consultez rapidement l'historique des clients et les détails de réservation"
+      },
+      "front_desk": {
+        "point1": "Renseignez-vous sur les arrivées, départs et les prochains check-ins",
+        "point2": "Recherche rapide de réservations et vérification de disponibilité",
+        "point3": "Rédigez des messages et obtenez des suggestions de réponse"
+      },
+      "maintenance": {
+        "point1": "Renseignez-vous sur votre file de maintenance prioritaire",
+        "point2": "Vérifiez les demandes en retard et les blocages à venir",
+        "point3": "Obtenez des résumés de statut et des informations de planification"
+      },
+      "viewer": {
+        "point1": "Renseignez-vous sur les tendances et les statistiques de réservation",
+        "point2": "Obtenez des résumés de rapports et des insights",
+        "point3": "Consultez les données historiques sans modification"
+      },
+      "guest": {
+        "point1": "Renseignez-vous sur votre réservation, les tarifs et la disponibilité",
+        "point2": "Obtenez le statut de votre checklist pré-arrivée et les documents requis",
+        "point3": "Posez des questions sur les horaires, les politiques et les informations locales"
+      }
     },
     "guest": {
-      "bookings": { "title": "Mes réservations", "point1": "Consultez vos réservations actuelles et passées", "point2": "Demandez de nouvelles réservations ou annulez", "point3": "Suivez le statut de la demande au départ" },
-      "messages": { "title": "Messages", "point1": "Discutez directement avec le personnel", "point2": "Recevez des mises à jour en temps réel", "point3": "Les messages sont traduits automatiquement si nécessaire" },
-      "documents": { "title": "Documents", "point1": "Téléchargez votre pièce d'identité pour vérification", "point2": "Suivez le statut de vérification", "point3": "Requis pour l'enregistrement" },
-      "staySupport": { "title": "Assistance séjour", "point1": "Signalez des problèmes de chambre : plomberie, électricité, propreté", "point2": "Demandez un service de blanchisserie et suivez le retrait", "point3": "Toutes les demandes sont suivies et le personnel est notifié automatiquement" },
-      "payments": { "title": "Paiements", "point1": "Consultez les exigences d'acompte et le statut des paiements", "point2": "Payez en ligne ou à la réception", "point3": "Suivez l'éligibilité au remboursement selon le délai d'annulation" },
-      "reviews": { "title": "Avis", "point1": "Laissez un avis après votre séjour (disponible 24h après le départ)", "point2": "Évaluez votre expérience et partagez vos commentaires", "point3": "Les avis sont modérés par la direction avant publication" },
-      "profile": { "title": "Profil", "point1": "Mettez à jour vos coordonnées et préférences", "point2": "Choisissez votre langue préférée", "point3": "Gérez vos contacts WhatsApp et LINE" }
+      "bookings": {
+        "title": "Mes réservations",
+        "point1": "Consultez vos réservations actuelles et passées",
+        "point2": "Demandez de nouvelles réservations ou annulez",
+        "point3": "Suivez le statut de la demande au départ"
+      },
+      "messages": {
+        "title": "Messages",
+        "point1": "Discutez directement avec le personnel",
+        "point2": "Recevez des mises à jour en temps réel",
+        "point3": "Les messages sont traduits automatiquement si nécessaire"
+      },
+      "documents": {
+        "title": "Documents",
+        "point1": "Téléchargez votre pièce d'identité pour vérification",
+        "point2": "Suivez le statut de vérification",
+        "point3": "Requis pour l'enregistrement"
+      },
+      "staySupport": {
+        "title": "Assistance séjour",
+        "point1": "Signalez des problèmes de chambre : plomberie, électricité, propreté",
+        "point2": "Demandez un service de blanchisserie et suivez le retrait",
+        "point3": "Toutes les demandes sont suivies et le personnel est notifié automatiquement"
+      },
+      "payments": {
+        "title": "Paiements",
+        "point1": "Consultez les exigences d'acompte et le statut des paiements",
+        "point2": "Payez en ligne ou à la réception",
+        "point3": "Suivez l'éligibilité au remboursement selon le délai d'annulation"
+      },
+      "reviews": {
+        "title": "Avis",
+        "point1": "Laissez un avis après votre séjour (disponible 24h après le départ)",
+        "point2": "Évaluez votre expérience et partagez vos commentaires",
+        "point3": "Les avis sont modérés par la direction avant publication"
+      },
+      "profile": {
+        "title": "Profil",
+        "point1": "Mettez à jour vos coordonnées et préférences",
+        "point2": "Choisissez votre langue préférée",
+        "point3": "Gérez vos contacts WhatsApp et LINE"
+      }
     }
+  },
+  "cornerTalk": {
+    "allClear": "Tout est en ordre",
+    "comingUp": "À venir",
+    "allOperationsNormal": "Toutes les opérations fonctionnent normalement"
   }
 }

@@ -163,8 +163,19 @@
     "cleaningBuffer": "Reinigungspuffer",
     "maintenance": "Wartung",
     "unavailable": "Nicht verfügbar",
-    "viewMode": { "timeline": "Zeitleiste", "month": "Monat", "day": "Tag" },
-    "dayView": { "occupied": "belegt", "arriving": "ankommend", "departing": "abreisend", "blocked": "gesperrt", "checkIn": "Check-in", "checkOut": "Check-out" }
+    "viewMode": {
+      "timeline": "Zeitleiste",
+      "month": "Monat",
+      "day": "Tag"
+    },
+    "dayView": {
+      "occupied": "belegt",
+      "arriving": "ankommend",
+      "departing": "abreisend",
+      "blocked": "gesperrt",
+      "checkIn": "Check-in",
+      "checkOut": "Check-out"
+    }
   },
   "units": {
     "title": "Unterkünfte",
@@ -248,7 +259,12 @@
     "policiesDesc": "Änderungen werden mit Ihrer Benutzer-ID protokolliert.",
     "noPolicies": "Keine Richtlinien konfiguriert.",
     "policyUpdated": "Richtlinie aktualisiert",
-    "priceSources": { "override": "Manuelle Überschreibung", "seasonal": "Saisonal", "weekend": "Wochenende", "base": "Grundpreis" }
+    "priceSources": {
+      "override": "Manuelle Überschreibung",
+      "seasonal": "Saisonal",
+      "weekend": "Wochenende",
+      "base": "Grundpreis"
+    }
   },
   "policyLabels": {
     "soft_hold_expiration_hours": "Ablauf vorläufige Reservierung (Stunden)",
@@ -408,7 +424,12 @@
     "paymentNotes": "Zahlungsnotizen (optional)",
     "paymentRecorded": "Zahlung erfasst",
     "enterValidAmount": "Geben Sie einen gültigen Betrag ein",
-    "methods": { "offline": "Offline", "bank_transfer": "Überweisung", "cash": "Bar", "card": "Karte" }
+    "methods": {
+      "offline": "Offline",
+      "bank_transfer": "Überweisung",
+      "cash": "Bar",
+      "card": "Karte"
+    }
   },
   "messages": {
     "title": "Nachrichten",
@@ -704,8 +725,21 @@
     "noIssues": "Keine Zimmerprobleme gemeldet.",
     "noLaundry": "Keine Wäscheanfragen.",
     "resolution": "Lösung",
-    "categories": { "plumbing": "Sanitär", "electrical": "Elektrik", "appliance": "Gerät", "cleanliness": "Sauberkeit", "other": "Sonstiges" },
-    "statuses": { "open": "Offen", "in_progress": "In Bearbeitung", "resolved": "Gelöst", "received": "Empfangen", "ready_for_pickup": "Abholbereit", "collected": "Abgeholt" },
+    "categories": {
+      "plumbing": "Sanitär",
+      "electrical": "Elektrik",
+      "appliance": "Gerät",
+      "cleanliness": "Sauberkeit",
+      "other": "Sonstiges"
+    },
+    "statuses": {
+      "open": "Offen",
+      "in_progress": "In Bearbeitung",
+      "resolved": "Gelöst",
+      "received": "Empfangen",
+      "ready_for_pickup": "Abholbereit",
+      "collected": "Abgeholt"
+    },
     "maintenanceQueue": "Wartungsanfragen",
     "laundryPanel": "Wäscheverfolgung",
     "noRequests": "Keine offenen Wartungsanfragen.",
@@ -738,7 +772,14 @@
     "disclaimer": "Ich berate nur — ich führe keine Aktionen aus.",
     "inputPlaceholder": "Fragen Sie Kru Glitch…",
     "language": "Antwortsprache",
-    "modes": { "explain": "Erklären", "summarize": "Zusammenfassung", "validate": "Validieren", "draft": "Entwurf", "digest": "Überblick", "camp": "Camp" },
+    "modes": {
+      "explain": "Erklären",
+      "summarize": "Zusammenfassung",
+      "validate": "Validieren",
+      "draft": "Entwurf",
+      "digest": "Überblick",
+      "camp": "Camp"
+    },
     "draftWithAI": "Mit KI entwerfen",
     "drafting": "Entwerfen…",
     "preFlightTitle": "Vorab-Prüfung",
@@ -853,72 +894,282 @@
   "tutorial": {
     "welcome": "Willkommen bei Ground Stay!",
     "letsGetStarted": "Lassen Sie uns Ihnen alles zeigen. Wir gehen jeden Bereich durch, damit Sie wissen, wo alles ist.",
-    "next": "Weiter", "back": "Zurück", "skip": "Tutorial überspringen", "finish": "Los geht's",
+    "next": "Weiter",
+    "back": "Zurück",
+    "skip": "Tutorial überspringen",
+    "finish": "Los geht's",
     "stepOf": "Schritt {{current}} von {{total}}",
-    "resetTutorial": "Tutorial zurücksetzen", "resetTutorialDesc": "Starten Sie die geführte Tour erneut.", "tutorialReset": "Tutorial wird beim nächsten Laden angezeigt",
+    "resetTutorial": "Tutorial zurücksetzen",
+    "resetTutorialDesc": "Starten Sie die geführte Tour erneut.",
+    "tutorialReset": "Tutorial wird beim nächsten Laden angezeigt",
     "roleBadge": "Ihre Rolle: {{role}}",
     "yourRole": {
-      "admin": { "title": "Ihre Rolle: Administrator", "point1": "Volle Kontrolle über die Unterkunft: Benutzer, Richtlinien, Unterkünfte, Preise und Systemkonfiguration", "point2": "Buchungen genehmigen, Mitarbeiterkonten verwalten und Betriebsregeln festlegen", "point3": "Zugriff auf alle Bereiche der Plattform ohne Einschränkungen" },
-      "manager": { "title": "Ihre Rolle: Manager", "point1": "Täglichen Betrieb überwachen: Buchungen genehmigen, Unterkünfte verwalten und Preise festlegen", "point2": "Umsatzberichte, Auslastungstrends und Zahlungsanalysen einsehen", "point3": "Einbettungen konfigurieren und Mitarbeiter-Workflows koordinieren" },
-      "front_desk_supervisor": { "title": "Ihre Rolle: Supervisor", "point1": "Check-ins, Check-outs und Anzahlungszahlungen abwickeln", "point2": "Tägliche Buchungsverwaltung und Gästekoordination", "point3": "Lesezugriff auf Genehmigungswarteschlangen und Nachrichten" },
-      "front_desk": { "title": "Ihre Rolle: Rezeption", "point1": "Tägliche Buchungen, Nachrichten und Gästekoordination verwalten", "point2": "Anfragen erstellen, Buchungsstatus ändern und Dokumente hochladen", "point3": "Echtzeit-Kommunikation mit Gästen mit automatischer Übersetzung" },
-      "maintenance": { "title": "Ihre Rolle: Wartung", "point1": "Wartungsanfragen nach Dringlichkeit bearbeiten", "point2": "Kalender zur Planung um Buchungen und Blockierungen einsehen", "point3": "Wäscheanfragen verfolgen und Aufgabenstatus aktualisieren" },
-      "viewer": { "title": "Ihre Rolle: Betrachter", "point1": "Lesezugriff auf Buchungen, Kalender und Berichte", "point2": "Auslastung, Umsatz und Buchungstrends überwachen", "point3": "Keine Möglichkeit, Buchungen oder Einstellungen zu erstellen oder zu ändern" },
-      "guest": { "title": "Ihre Rolle: Gast", "point1": "Buchungen verwalten, Personal kontaktieren und Dokumente hochladen", "point2": "Wartung, Wäsche anfordern und Unterstützung während des Aufenthalts erhalten", "point3": "Buchung von der Anfrage bis zum Check-out verfolgen" }
+      "admin": {
+        "title": "Ihre Rolle: Administrator",
+        "point1": "Volle Kontrolle über die Unterkunft: Benutzer, Richtlinien, Unterkünfte, Preise und Systemkonfiguration",
+        "point2": "Buchungen genehmigen, Mitarbeiterkonten verwalten und Betriebsregeln festlegen",
+        "point3": "Zugriff auf alle Bereiche der Plattform ohne Einschränkungen"
+      },
+      "manager": {
+        "title": "Ihre Rolle: Manager",
+        "point1": "Täglichen Betrieb überwachen: Buchungen genehmigen, Unterkünfte verwalten und Preise festlegen",
+        "point2": "Umsatzberichte, Auslastungstrends und Zahlungsanalysen einsehen",
+        "point3": "Einbettungen konfigurieren und Mitarbeiter-Workflows koordinieren"
+      },
+      "front_desk_supervisor": {
+        "title": "Ihre Rolle: Supervisor",
+        "point1": "Check-ins, Check-outs und Anzahlungszahlungen abwickeln",
+        "point2": "Tägliche Buchungsverwaltung und Gästekoordination",
+        "point3": "Lesezugriff auf Genehmigungswarteschlangen und Nachrichten"
+      },
+      "front_desk": {
+        "title": "Ihre Rolle: Rezeption",
+        "point1": "Tägliche Buchungen, Nachrichten und Gästekoordination verwalten",
+        "point2": "Anfragen erstellen, Buchungsstatus ändern und Dokumente hochladen",
+        "point3": "Echtzeit-Kommunikation mit Gästen mit automatischer Übersetzung"
+      },
+      "maintenance": {
+        "title": "Ihre Rolle: Wartung",
+        "point1": "Wartungsanfragen nach Dringlichkeit bearbeiten",
+        "point2": "Kalender zur Planung um Buchungen und Blockierungen einsehen",
+        "point3": "Wäscheanfragen verfolgen und Aufgabenstatus aktualisieren"
+      },
+      "viewer": {
+        "title": "Ihre Rolle: Betrachter",
+        "point1": "Lesezugriff auf Buchungen, Kalender und Berichte",
+        "point2": "Auslastung, Umsatz und Buchungstrends überwachen",
+        "point3": "Keine Möglichkeit, Buchungen oder Einstellungen zu erstellen oder zu ändern"
+      },
+      "guest": {
+        "title": "Ihre Rolle: Gast",
+        "point1": "Buchungen verwalten, Personal kontaktieren und Dokumente hochladen",
+        "point2": "Wartung, Wäsche anfordern und Unterstützung während des Aufenthalts erhalten",
+        "point3": "Buchung von der Anfrage bis zum Check-out verfolgen"
+      }
     },
     "dashboard": {
-      "title": "Dashboard", "point1": "Sehen Sie Ankünfte, Abreisen und aktive Buchungen auf einen Blick", "point2": "Schnellaktionen für Buchungen und Verwaltung", "point3": "Wartungsanfragen und Wäschequeue überwachen",
-      "admin": { "point1": "Alle Warteschlangen überwachen, Buchungen genehmigen, Personal-Alerts verwalten", "point2": "Auslastung und Umsatz aller Unterkünfte auf einen Blick", "point3": "Systemweite Aktivität und ausstehende Eskalationen prüfen" },
-      "manager": { "point1": "Auslastung, heutige Ankünfte/Abreisen und ausstehende Genehmigungen überwachen", "point2": "Schnellzugriff auf Buchungserstellung, Kalender und Verwaltung", "point3": "Anfragen und Wartungsanfragen verfolgen" },
-      "front_desk_supervisor": { "point1": "Heutige Check-ins, Check-outs und aktive Buchungen verfolgen", "point2": "Buchungsverwaltungs- und Koordinationstools nutzen", "point3": "Ausstehende Anzahlungen und eskalierte Anfragen einsehen" },
-      "front_desk": { "point1": "Heutige Ankünfte und Abreisen auf einen Blick", "point2": "Auf Gästeanfragen reagieren und Buchungsstatus verwalten", "point3": "Schnellaktionen für Buchungen und Kalenderansicht" },
-      "maintenance": { "point1": "Priorisierte Wartungsqueue und offene Anfragen einsehen", "point2": "Wäscheanfragen verfolgen und Status aktualisieren", "point3": "Geplante Wartungsblöcke im Kalender sehen" },
-      "viewer": { "point1": "Heutige Ankünfte, Abreisen und Auslastungsüberblick", "point2": "Aktive Buchungen aller Unterkünfte überwachen", "point3": "Lesezugriff — keine Aktionen verfügbar" }
+      "title": "Dashboard",
+      "point1": "Sehen Sie Ankünfte, Abreisen und aktive Buchungen auf einen Blick",
+      "point2": "Schnellaktionen für Buchungen und Verwaltung",
+      "point3": "Wartungsanfragen und Wäschequeue überwachen",
+      "admin": {
+        "point1": "Alle Warteschlangen überwachen, Buchungen genehmigen, Personal-Alerts verwalten",
+        "point2": "Auslastung und Umsatz aller Unterkünfte auf einen Blick",
+        "point3": "Systemweite Aktivität und ausstehende Eskalationen prüfen"
+      },
+      "manager": {
+        "point1": "Auslastung, heutige Ankünfte/Abreisen und ausstehende Genehmigungen überwachen",
+        "point2": "Schnellzugriff auf Buchungserstellung, Kalender und Verwaltung",
+        "point3": "Anfragen und Wartungsanfragen verfolgen"
+      },
+      "front_desk_supervisor": {
+        "point1": "Heutige Check-ins, Check-outs und aktive Buchungen verfolgen",
+        "point2": "Buchungsverwaltungs- und Koordinationstools nutzen",
+        "point3": "Ausstehende Anzahlungen und eskalierte Anfragen einsehen"
+      },
+      "front_desk": {
+        "point1": "Heutige Ankünfte und Abreisen auf einen Blick",
+        "point2": "Auf Gästeanfragen reagieren und Buchungsstatus verwalten",
+        "point3": "Schnellaktionen für Buchungen und Kalenderansicht"
+      },
+      "maintenance": {
+        "point1": "Priorisierte Wartungsqueue und offene Anfragen einsehen",
+        "point2": "Wäscheanfragen verfolgen und Status aktualisieren",
+        "point3": "Geplante Wartungsblöcke im Kalender sehen"
+      },
+      "viewer": {
+        "point1": "Heutige Ankünfte, Abreisen und Auslastungsüberblick",
+        "point2": "Aktive Buchungen aller Unterkünfte überwachen",
+        "point3": "Lesezugriff — keine Aktionen verfügbar"
+      }
     },
-    "units": { "title": "Unterkünfte", "point1": "Unterkünfte hinzufügen, bearbeiten und organisieren", "point2": "Fotos hochladen und Ausstattung verwalten", "point3": "Unterkünfte gruppieren und Verfügbarkeit steuern" },
+    "units": {
+      "title": "Unterkünfte",
+      "point1": "Unterkünfte hinzufügen, bearbeiten und organisieren",
+      "point2": "Fotos hochladen und Ausstattung verwalten",
+      "point3": "Unterkünfte gruppieren und Verfügbarkeit steuern"
+    },
     "bookings": {
-      "title": "Buchungen", "point1": "Reservierungen über den gesamten Lebenszyklus verwalten", "point2": "Buchungsstatus ändern: Anfrage → bestätigt → eingecheckt", "point3": "Genehmigungsqueue und Anzahlungen verwalten",
-      "admin": { "point1": "Volle Kontrolle mit Admin-Override-Möglichkeit", "point2": "Ausstehende Buchungen genehmigen/ablehnen und Eskalationen verwalten", "point3": "Buchungsstatus überschreiben und Ausnahmen behandeln" },
-      "manager": { "point1": "Ausstehende Buchungen aus der Genehmigungsqueue prüfen und genehmigen", "point2": "Buchungslebenszyklus und Anzahlungsanforderungen verwalten", "point3": "Alle Reservierungen und Sonderfälle betreuen" },
-      "front_desk_supervisor": { "point1": "Buchungen verwalten, Check-ins und Check-outs abschließen", "point2": "Anzahlungszahlungen erfassen und Buchungsstatus vorantreiben", "point3": "Tägliche Reservierungsverwaltung" },
-      "front_desk": { "point1": "Neue Anfragen erstellen und bestehende Buchungen verwalten", "point2": "Buchungen durch Standard-Workflow-Status überführen", "point3": "Gästedokumente hochladen und Ankünfte koordinieren" },
-      "viewer": { "point1": "Alle Buchungen im Lesemodus einsehen", "point2": "Nach Status, Unterkunft und Zeitraum filtern", "point3": "Buchungstrends ohne Bearbeitungsrechte überwachen" }
+      "title": "Buchungen",
+      "point1": "Reservierungen über den gesamten Lebenszyklus verwalten",
+      "point2": "Buchungsstatus ändern: Anfrage → bestätigt → eingecheckt",
+      "point3": "Genehmigungsqueue und Anzahlungen verwalten",
+      "admin": {
+        "point1": "Volle Kontrolle mit Admin-Override-Möglichkeit",
+        "point2": "Ausstehende Buchungen genehmigen/ablehnen und Eskalationen verwalten",
+        "point3": "Buchungsstatus überschreiben und Ausnahmen behandeln"
+      },
+      "manager": {
+        "point1": "Ausstehende Buchungen aus der Genehmigungsqueue prüfen und genehmigen",
+        "point2": "Buchungslebenszyklus und Anzahlungsanforderungen verwalten",
+        "point3": "Alle Reservierungen und Sonderfälle betreuen"
+      },
+      "front_desk_supervisor": {
+        "point1": "Buchungen verwalten, Check-ins und Check-outs abschließen",
+        "point2": "Anzahlungszahlungen erfassen und Buchungsstatus vorantreiben",
+        "point3": "Tägliche Reservierungsverwaltung"
+      },
+      "front_desk": {
+        "point1": "Neue Anfragen erstellen und bestehende Buchungen verwalten",
+        "point2": "Buchungen durch Standard-Workflow-Status überführen",
+        "point3": "Gästedokumente hochladen und Ankünfte koordinieren"
+      },
+      "viewer": {
+        "point1": "Alle Buchungen im Lesemodus einsehen",
+        "point2": "Nach Status, Unterkunft und Zeitraum filtern",
+        "point3": "Buchungstrends ohne Bearbeitungsrechte überwachen"
+      }
     },
     "calendar": {
-      "title": "Kalender", "point1": "Visuelle Übersicht der Verfügbarkeit", "point2": "Zwischen Zeitleiste, Monats- und Tagesansicht wechseln", "point3": "Wartungsblöcke erstellen und verwalten",
-      "maintenance": { "point1": "Geplante Wartungsblöcke und Buchungen einsehen", "point2": "Arbeit um Check-ins und Check-outs planen", "point3": "Zwischen Zeitleiste, Monats- und Tagesansicht wechseln" },
-      "viewer": { "point1": "Verfügbarkeit aller Unterkünfte im Lesemodus", "point2": "Zwischen Zeitleiste, Monats- und Tagesansicht wechseln", "point3": "Auslastungsmuster und Wartungsfenster überwachen" }
+      "title": "Kalender",
+      "point1": "Visuelle Übersicht der Verfügbarkeit",
+      "point2": "Zwischen Zeitleiste, Monats- und Tagesansicht wechseln",
+      "point3": "Wartungsblöcke erstellen und verwalten",
+      "maintenance": {
+        "point1": "Geplante Wartungsblöcke und Buchungen einsehen",
+        "point2": "Arbeit um Check-ins und Check-outs planen",
+        "point3": "Zwischen Zeitleiste, Monats- und Tagesansicht wechseln"
+      },
+      "viewer": {
+        "point1": "Verfügbarkeit aller Unterkünfte im Lesemodus",
+        "point2": "Zwischen Zeitleiste, Monats- und Tagesansicht wechseln",
+        "point3": "Auslastungsmuster und Wartungsfenster überwachen"
+      }
     },
-    "pricing": { "title": "Preise & Richtlinien", "point1": "Saisonpreise und Langzeitrabatte konfigurieren", "point2": "Betriebsrichtlinien wie Check-out-Zeiten festlegen", "point3": "Anzahlungsanforderungen und Stornierungsregeln verwalten" },
+    "pricing": {
+      "title": "Preise & Richtlinien",
+      "point1": "Saisonpreise und Langzeitrabatte konfigurieren",
+      "point2": "Betriebsrichtlinien wie Check-out-Zeiten festlegen",
+      "point3": "Anzahlungsanforderungen und Stornierungsregeln verwalten"
+    },
     "reports": {
-      "title": "Berichte", "point1": "Auslastung und Umsatz pro Unterkunft verfolgen", "point2": "Buchungsstatusaufschlüsselung und Trends anzeigen", "point3": "Kontenzählung und Aktivitätsberichte abrufen",
-      "viewer": { "point1": "Auslastung und Umsatz im Lesemodus überwachen", "point2": "Buchungstrends und Statusanalysen einsehen", "point3": "Kontendaten ohne Bearbeitungsrechte abrufen" }
+      "title": "Berichte",
+      "point1": "Auslastung und Umsatz pro Unterkunft verfolgen",
+      "point2": "Buchungsstatusaufschlüsselung und Trends anzeigen",
+      "point3": "Kontenzählung und Aktivitätsberichte abrufen",
+      "viewer": {
+        "point1": "Auslastung und Umsatz im Lesemodus überwachen",
+        "point2": "Buchungstrends und Statusanalysen einsehen",
+        "point3": "Kontendaten ohne Bearbeitungsrechte abrufen"
+      }
     },
-    "messages": { "title": "Nachrichten", "point1": "Mit Gästen in Echtzeit kommunizieren", "point2": "Interne Notizen nur für Personal hinzufügen", "point3": "Automatische Übersetzung von Nachrichten" },
-    "embeds": { "title": "Einbettungen", "point1": "Embed-Widgets für externe Websites generieren", "point2": "Buchungswidget-Erscheinung anpassen", "point3": "Code kopieren und vor Veröffentlichung prüfen" },
+    "messages": {
+      "title": "Nachrichten",
+      "point1": "Mit Gästen in Echtzeit kommunizieren",
+      "point2": "Interne Notizen nur für Personal hinzufügen",
+      "point3": "Automatische Übersetzung von Nachrichten"
+    },
+    "embeds": {
+      "title": "Einbettungen",
+      "point1": "Embed-Widgets für externe Websites generieren",
+      "point2": "Buchungswidget-Erscheinung anpassen",
+      "point3": "Code kopieren und vor Veröffentlichung prüfen"
+    },
     "settings": {
-      "title": "Einstellungen", "point1": "Profil und Kontaktdaten aktualisieren", "point2": "Benutzerrollen und Mitarbeiterkonten verwalten", "point3": "Systemrichtlinien und Bewertungsverwaltung konfigurieren",
-      "front_desk_supervisor": { "point1": "Profil und Kontaktdaten aktualisieren", "point2": "Benutzerverzeichnis und Teamkontakte einsehen", "point3": "Kontoeinstellungen aufrufen" },
-      "front_desk": { "point1": "Profil und Kontaktdaten aktualisieren", "point2": "Benutzerverzeichnis und Teamkontakte einsehen", "point3": "Kontoeinstellungen aufrufen" }
+      "title": "Einstellungen",
+      "point1": "Profil und Kontaktdaten aktualisieren",
+      "point2": "Benutzerrollen und Mitarbeiterkonten verwalten",
+      "point3": "Systemrichtlinien und Bewertungsverwaltung konfigurieren",
+      "front_desk_supervisor": {
+        "point1": "Profil und Kontaktdaten aktualisieren",
+        "point2": "Benutzerverzeichnis und Teamkontakte einsehen",
+        "point3": "Kontoeinstellungen aufrufen"
+      },
+      "front_desk": {
+        "point1": "Profil und Kontaktdaten aktualisieren",
+        "point2": "Benutzerverzeichnis und Teamkontakte einsehen",
+        "point3": "Kontoeinstellungen aufrufen"
+      }
     },
     "kruGlitch": {
-      "title": "Kru Glitch AI", "point1": "Ihr intelligenter Assistent für den Betrieb", "point2": "Fragen zu Buchungen, Verfügbarkeit und Trends stellen", "point3": "Kontextbezogene Antworten basierend auf Ihrer Rolle",
-      "admin": { "point1": "Fragen zum Systemzustand, Webhooks und fehlgeschlagenen Zahlungen", "point2": "Richtlinien-Zusammenfassungen und Aktivitätsberichte erhalten", "point3": "Umsatzanalysen, Auslastungsdaten und Betriebskennzahlen abfragen" },
-      "manager": { "point1": "Fragen zu Umsatz, Auslastungstrends und 30-Tage-Analysen", "point2": "Pipeline-Status und Genehmigungsüberblick erhalten", "point3": "Zahlungsberichte und Preisregel-Effektivität abfragen" },
-      "front_desk_supervisor": { "point1": "Fragen zu heutigen Ankünften, Abreisen und 14-Tage-Verfügbarkeit", "point2": "Anzahlungsstatus und ausstehende Aktionen erhalten", "point3": "Gästehistorie und Buchungsdetails schnell abfragen" },
-      "front_desk": { "point1": "Fragen zu heutigen Ankünften, Abreisen und kommenden Check-ins", "point2": "Schnelle Buchungssuche und Verfügbarkeitsprüfung", "point3": "Gästenachrichten entwerfen und Antwortvorschläge erhalten" },
-      "maintenance": { "point1": "Fragen zur priorisierten Wartungsqueue", "point2": "Überfällige Anfragen und kommende Wartungsblöcke prüfen", "point3": "Unterkunftsstatus und Planungsinformationen erhalten" },
-      "viewer": { "point1": "Fragen zu Auslastungstrends und Buchungsstatistiken", "point2": "Berichtszusammenfassungen und Einblicke erhalten", "point3": "Historische Daten ohne Änderungen abfragen" },
-      "guest": { "point1": "Fragen zu Ihrer Buchung, Preisen und Verfügbarkeit", "point2": "Voranreise-Checkliste und Dokumentenanforderungen prüfen", "point3": "Fragen zu Zeitplänen, Richtlinien und lokalen Informationen" }
+      "title": "Kru Glitch AI",
+      "point1": "Ihr intelligenter Assistent für den Betrieb",
+      "point2": "Fragen zu Buchungen, Verfügbarkeit und Trends stellen",
+      "point3": "Kontextbezogene Antworten basierend auf Ihrer Rolle",
+      "admin": {
+        "point1": "Fragen zum Systemzustand, Webhooks und fehlgeschlagenen Zahlungen",
+        "point2": "Richtlinien-Zusammenfassungen und Aktivitätsberichte erhalten",
+        "point3": "Umsatzanalysen, Auslastungsdaten und Betriebskennzahlen abfragen"
+      },
+      "manager": {
+        "point1": "Fragen zu Umsatz, Auslastungstrends und 30-Tage-Analysen",
+        "point2": "Pipeline-Status und Genehmigungsüberblick erhalten",
+        "point3": "Zahlungsberichte und Preisregel-Effektivität abfragen"
+      },
+      "front_desk_supervisor": {
+        "point1": "Fragen zu heutigen Ankünften, Abreisen und 14-Tage-Verfügbarkeit",
+        "point2": "Anzahlungsstatus und ausstehende Aktionen erhalten",
+        "point3": "Gästehistorie und Buchungsdetails schnell abfragen"
+      },
+      "front_desk": {
+        "point1": "Fragen zu heutigen Ankünften, Abreisen und kommenden Check-ins",
+        "point2": "Schnelle Buchungssuche und Verfügbarkeitsprüfung",
+        "point3": "Gästenachrichten entwerfen und Antwortvorschläge erhalten"
+      },
+      "maintenance": {
+        "point1": "Fragen zur priorisierten Wartungsqueue",
+        "point2": "Überfällige Anfragen und kommende Wartungsblöcke prüfen",
+        "point3": "Unterkunftsstatus und Planungsinformationen erhalten"
+      },
+      "viewer": {
+        "point1": "Fragen zu Auslastungstrends und Buchungsstatistiken",
+        "point2": "Berichtszusammenfassungen und Einblicke erhalten",
+        "point3": "Historische Daten ohne Änderungen abfragen"
+      },
+      "guest": {
+        "point1": "Fragen zu Ihrer Buchung, Preisen und Verfügbarkeit",
+        "point2": "Voranreise-Checkliste und Dokumentenanforderungen prüfen",
+        "point3": "Fragen zu Zeitplänen, Richtlinien und lokalen Informationen"
+      }
     },
     "guest": {
-      "bookings": { "title": "Meine Buchungen", "point1": "Aktuelle und vergangene Reservierungen einsehen", "point2": "Neue Buchungen anfragen oder bestehende stornieren", "point3": "Buchungsstatus von Anfrage bis Check-out verfolgen" },
-      "messages": { "title": "Nachrichten", "point1": "Direkt mit dem Personal chatten", "point2": "Echtzeit-Updates zu Ihren Anfragen erhalten", "point3": "Nachrichten werden bei Bedarf automatisch übersetzt" },
-      "documents": { "title": "Dokumente", "point1": "Ausweis zur Vorab-Verifizierung hochladen", "point2": "Verifizierungsstatus verfolgen", "point3": "Erforderlich für den Check-in" },
-      "staySupport": { "title": "Aufenthalts-Support", "point1": "Zimmerprobleme melden: Sanitär, Elektrik, Sauberkeit", "point2": "Wäscheservice anfordern und Abholstatus verfolgen", "point3": "Alle Anfragen werden verfolgt und Personal wird automatisch benachrichtigt" },
-      "payments": { "title": "Zahlungen", "point1": "Anzahlungsanforderungen und Zahlungsstatus einsehen", "point2": "Online bezahlen oder an der Rezeption", "point3": "Erstattungsanspruch je nach Stornierungszeitpunkt verfolgen" },
-      "reviews": { "title": "Bewertungen", "point1": "Bewertung nach dem Aufenthalt abgeben (24h nach Check-out verfügbar)", "point2": "Erfahrung bewerten und Feedback teilen", "point3": "Bewertungen werden vor Veröffentlichung geprüft" },
-      "profile": { "title": "Profil", "point1": "Kontaktdaten und Einstellungen aktualisieren", "point2": "Bevorzugte Sprache wählen", "point3": "WhatsApp- und LINE-Kontaktdaten verwalten" }
+      "bookings": {
+        "title": "Meine Buchungen",
+        "point1": "Aktuelle und vergangene Reservierungen einsehen",
+        "point2": "Neue Buchungen anfragen oder bestehende stornieren",
+        "point3": "Buchungsstatus von Anfrage bis Check-out verfolgen"
+      },
+      "messages": {
+        "title": "Nachrichten",
+        "point1": "Direkt mit dem Personal chatten",
+        "point2": "Echtzeit-Updates zu Ihren Anfragen erhalten",
+        "point3": "Nachrichten werden bei Bedarf automatisch übersetzt"
+      },
+      "documents": {
+        "title": "Dokumente",
+        "point1": "Ausweis zur Vorab-Verifizierung hochladen",
+        "point2": "Verifizierungsstatus verfolgen",
+        "point3": "Erforderlich für den Check-in"
+      },
+      "staySupport": {
+        "title": "Aufenthalts-Support",
+        "point1": "Zimmerprobleme melden: Sanitär, Elektrik, Sauberkeit",
+        "point2": "Wäscheservice anfordern und Abholstatus verfolgen",
+        "point3": "Alle Anfragen werden verfolgt und Personal wird automatisch benachrichtigt"
+      },
+      "payments": {
+        "title": "Zahlungen",
+        "point1": "Anzahlungsanforderungen und Zahlungsstatus einsehen",
+        "point2": "Online bezahlen oder an der Rezeption",
+        "point3": "Erstattungsanspruch je nach Stornierungszeitpunkt verfolgen"
+      },
+      "reviews": {
+        "title": "Bewertungen",
+        "point1": "Bewertung nach dem Aufenthalt abgeben (24h nach Check-out verfügbar)",
+        "point2": "Erfahrung bewerten und Feedback teilen",
+        "point3": "Bewertungen werden vor Veröffentlichung geprüft"
+      },
+      "profile": {
+        "title": "Profil",
+        "point1": "Kontaktdaten und Einstellungen aktualisieren",
+        "point2": "Bevorzugte Sprache wählen",
+        "point3": "WhatsApp- und LINE-Kontaktdaten verwalten"
+      }
     }
+  },
+  "cornerTalk": {
+    "allClear": "Alles in Ordnung",
+    "comingUp": "Demnächst",
+    "allOperationsNormal": "Alle Abläufe laufen normal"
   }
 }
