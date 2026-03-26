@@ -86,6 +86,20 @@ const GuestPortal = () => {
       setBookingFormOpen(true);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Active tab state (controlled for action-button navigation)
+  const [activeTab, setActiveTab] = useState("bookings");
+
+  // Listen for tab-switch events from action buttons
+  useEffect(() => {
+    const handler = (e: CustomEvent<{ tab: string }>) => {
+      const tab = e.detail?.tab;
+      if (tab) setActiveTab(tab);
+    };
+    window.addEventListener("guest-portal-action", handler as EventListener);
+    return () => window.removeEventListener("guest-portal-action", handler as EventListener);
+  }, []);
+
   // Messages tab state
   const [selectedThread, setSelectedThread] = useState<string | null>(null);
   const markRead = useMarkMessagesRead();
