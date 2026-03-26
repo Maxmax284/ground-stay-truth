@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
+import { useStayEssentials } from "@/hooks/useStayEssentials";
 import { formatPrice } from "@/lib/currency";
 import { calculateOutstanding } from "@/lib/paymentTypes";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   CalendarDays, CreditCard, Plane, Shield, ArrowRight, CheckCircle2,
   Clock, AlertCircle, MapPin, Upload, PlaneLanding, Wrench, Sparkles,
+  Wifi, ScrollText, Phone,
 } from "lucide-react";
 import { format, differenceInDays, isPast, isToday, parseISO } from "date-fns";
 import { toast } from "sonner";
