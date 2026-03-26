@@ -1171,5 +1171,33 @@
     "allClear": "Alles in Ordnung",
     "comingUp": "Demnächst",
     "allOperationsNormal": "Alle Abläufe laufen normal"
+  },
+  "guestStay": {
+    "inquirySent": "Anfrage gesendet",
+    "softHold": "Vorläufige Reservierung",
+    "awaitingApproval": "Warten auf Genehmigung",
+    "depositRequired": "Anzahlung erforderlich",
+    "confirmed": "Bestätigt",
+    "checkedIn": "Eingecheckt",
+    "paidInFull": "Vollständig bezahlt",
+    "priceTBD": "Preis ausstehend",
+    "due": "{{amount}} fällig",
+    "pickupConfirmed": "Bestätigt",
+    "pickupAssigned": "Zugewiesen",
+    "pickupRequested": "Angefragt",
+    "noPickup": "Kein Transfer",
+    "depositHeld": "{{amount}} hinterlegt",
+    "depositReleased": "Freigegeben",
+    "depositNone": "Keine",
+    "waitingReview": "Ihre Anfrage wird vom Team geprüft.",
+    "beingReviewed": "Ihre Buchung wird geprüft. Sie erhalten bald Bescheid.",
+    "payDeposit": "Leisten Sie die Anzahlung, um die Buchung zu bestätigen.",
+    "depositProcessing": "Die Anzahlung wird verarbeitet.",
+    "checkinToday": "Heute ist Check-in! Melden Sie sich an der Rezeption.",
+    "checkinSoon": "Check-in in {{days}} Tag(en). Prüfen Sie Ihre Anreise-Checkliste.",
+    "allSet": "Alles bereit. Check-in am {{date}}.",
+    "outstandingBalance": "Sie haben einen offenen Betrag. Bitte begleichen Sie ihn vor dem Auschecken.",
+    "enjoyStay": "Genießen Sie Ihren Aufenthalt! Auschecken am {{date}}.",
+    "nights": "{{count}} Nächte"
   }
 }

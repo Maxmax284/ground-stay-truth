@@ -1171,5 +1171,33 @@
     "allClear": "เรียบร้อย",
     "comingUp": "กำลังจะมาถึง",
     "allOperationsNormal": "ทุกอย่างดำเนินไปตามปกติ"
+  },
+  "guestStay": {
+    "inquirySent": "ส่งคำขอแล้ว",
+    "softHold": "จองชั่วคราว",
+    "awaitingApproval": "รอการอนุมัติ",
+    "depositRequired": "ต้องชำระมัดจำ",
+    "confirmed": "ยืนยันแล้ว",
+    "checkedIn": "เช็คอินแล้ว",
+    "paidInFull": "ชำระเต็มจำนวน",
+    "priceTBD": "ราคายังไม่กำหนด",
+    "due": "ค้างชำระ {{amount}}",
+    "pickupConfirmed": "ยืนยันแล้ว",
+    "pickupAssigned": "มอบหมายแล้ว",
+    "pickupRequested": "ส่งคำขอแล้ว",
+    "noPickup": "ไม่มีรถรับ",
+    "depositHeld": "ค้ำประกัน {{amount}}",
+    "depositReleased": "คืนแล้ว",
+    "depositNone": "ไม่มี",
+    "waitingReview": "รอเจ้าหน้าที่ตรวจสอบคำขอของคุณ",
+    "beingReviewed": "การจองของคุณกำลังถูกตรวจสอบ จะแจ้งให้ทราบเร็วๆ นี้",
+    "payDeposit": "ชำระมัดจำเพื่อยืนยันการจอง",
+    "depositProcessing": "กำลังดำเนินการชำระมัดจำ",
+    "checkinToday": "วันนี้เช็คอิน! มาที่แผนกต้อนรับ",
+    "checkinSoon": "เช็คอินอีก {{days}} วัน อย่าลืมทำรายการก่อนเดินทาง",
+    "allSet": "พร้อมแล้ว เช็คอินวันที่ {{date}}",
+    "outstandingBalance": "คุณมียอดค้างชำระ กรุณาชำระก่อนเช็คเอาท์",
+    "enjoyStay": "ขอให้สนุกกับการเข้าพัก! เช็คเอาท์วันที่ {{date}}",
+    "nights": "{{count}} คืน"
   }
 }

@@ -992,5 +992,33 @@
     "allClear": "Todo en orden",
     "comingUp": "Próximamente",
     "allOperationsNormal": "Todas las operaciones funcionan con normalidad"
+  },
+  "guestStay": {
+    "inquirySent": "Consulta enviada",
+    "softHold": "Reserva provisional",
+    "awaitingApproval": "Esperando aprobación",
+    "depositRequired": "Depósito requerido",
+    "confirmed": "Confirmada",
+    "checkedIn": "Registrado",
+    "paidInFull": "Pagado en su totalidad",
+    "priceTBD": "Precio por confirmar",
+    "due": "{{amount}} pendiente",
+    "pickupConfirmed": "Confirmado",
+    "pickupAssigned": "Asignado",
+    "pickupRequested": "Solicitado",
+    "noPickup": "Sin traslado",
+    "depositHeld": "{{amount}} retenido",
+    "depositReleased": "Devuelto",
+    "depositNone": "Ninguno",
+    "waitingReview": "El equipo está revisando tu solicitud.",
+    "beingReviewed": "Tu reserva está siendo revisada. Te informaremos pronto.",
+    "payDeposit": "Paga el depósito para confirmar la reserva.",
+    "depositProcessing": "El pago del depósito se está procesando.",
+    "checkinToday": "¡Hoy es el check-in! Dirígete a la recepción.",
+    "checkinSoon": "Check-in en {{days}} día(s). Revisa tu lista de pre-llegada.",
+    "allSet": "Todo listo. Check-in el {{date}}.",
+    "outstandingBalance": "Tienes un saldo pendiente. Por favor, liquídalo antes del check-out.",
+    "enjoyStay": "¡Disfruta tu estancia! Check-out el {{date}}.",
+    "nights": "{{count}} noches"
   }
 }

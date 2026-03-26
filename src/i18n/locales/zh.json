@@ -992,5 +992,33 @@
     "allClear": "一切正常",
     "comingUp": "即将到来",
     "allOperationsNormal": "所有运营正常运行"
+  },
+  "guestStay": {
+    "inquirySent": "咨询已发送",
+    "softHold": "预留中",
+    "awaitingApproval": "等待审核",
+    "depositRequired": "需缴押金",
+    "confirmed": "已确认",
+    "checkedIn": "已入住",
+    "paidInFull": "已全额支付",
+    "priceTBD": "价格待定",
+    "due": "待付 {{amount}}",
+    "pickupConfirmed": "已确认",
+    "pickupAssigned": "已指派",
+    "pickupRequested": "已申请",
+    "noPickup": "无接机",
+    "depositHeld": "已扣押 {{amount}}",
+    "depositReleased": "已退还",
+    "depositNone": "无",
+    "waitingReview": "工作人员正在审核您的请求。",
+    "beingReviewed": "您的预订正在审核中，很快会有消息。",
+    "payDeposit": "支付押金以确认预订。",
+    "depositProcessing": "押金支付正在处理中。",
+    "checkinToday": "今天入住！请前往前台。",
+    "checkinSoon": "还有 {{days}} 天入住。请确认入住前清单。",
+    "allSet": "一切就绪。入住日期：{{date}}。",
+    "outstandingBalance": "您有未结余额，请在退房前结清。",
+    "enjoyStay": "祝您住宿愉快！退房日期：{{date}}。",
+    "nights": "{{count}} 晚"
   }
 }
