@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
@@ -7,12 +8,14 @@ import { formatPrice } from "@/lib/currency";
 import { calculateOutstanding } from "@/lib/paymentTypes";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   CalendarDays, CreditCard, Plane, Shield, ArrowRight, CheckCircle2,
-  Clock, AlertCircle, MapPin,
+  Clock, AlertCircle, MapPin, Upload, PlaneLanding, Wrench, Sparkles,
 } from "lucide-react";
 import { format, differenceInDays, isPast, isToday, parseISO } from "date-fns";
+import { toast } from "sonner";
 
 interface BookingWithUnit {
   id: string;
@@ -49,17 +52,14 @@ function getEdgeFlags(
   const checkinDate = parseISO(booking.check_in);
   const depositDeadlineHours = Number(policies?.find((p) => p.key === "deposit_deadline_hours")?.value ?? 24);
 
-  // Deposit overdue: state is pending_deposit AND outstanding > 0 AND booking created long enough ago
   const depositOverdue =
     booking.state === "pending_deposit" &&
     outstanding > 0 &&
     isPast(new Date(new Date(booking.check_in).getTime() - depositDeadlineHours * 3600_000));
 
-  // Check-in date passed but still in confirmed state (not checked in)
   const checkinPassed =
     booking.state === "confirmed" && isPast(checkinDate) && !isToday(checkinDate);
 
-  // Pickup requested but no driver assigned
   const pickupPendingDriver =
     !!pickup && pickup.status === "requested" && !pickup.driver_id;
 
@@ -74,7 +74,6 @@ function getNextStep(
   edge: EdgeFlags,
   t: (k: string, opts?: any) => string
 ): string {
-  // Edge cases take priority
   if (edge.checkinPassed) return t("guestStay.checkinPassed");
   if (edge.depositOverdue) return t("guestStay.depositOverdue");
 
@@ -101,10 +100,64 @@ function getNextStep(
   }
 }
 
+type ActionType = "pay_deposit" | "upload_id" | "landed" | "view_pickup" | "report_issue" | "ask_ai";
+
+interface GuestAction {
+  type: ActionType;
+  labelKey: string;
+  icon: typeof CreditCard;
+  variant?: "default" | "outline" | "destructive";
+}
+
+function deriveActions(
+  booking: BookingWithUnit,
+  outstanding: number,
+  pickup: any | undefined,
+  docs: any[] | undefined,
+): GuestAction[] {
+  const actions: GuestAction[] = [];
+
+  // Pay deposit
+  if (booking.state === "pending_deposit" && outstanding > 0) {
+    actions.push({ type: "pay_deposit", labelKey: "guestStay.actions.payDeposit", icon: CreditCard });
+  }
+
+  // Upload ID (if no verified doc and pre-arrival relevant states)
+  if (["pending_deposit", "confirmed"].includes(booking.state)) {
+    const hasVerified = (docs ?? []).some((d: any) => d.verification_status === "verified");
+    if (!hasVerified) {
+      actions.push({ type: "upload_id", labelKey: "guestStay.actions.uploadId", icon: Upload, variant: "outline" });
+    }
+  }
+
+  // I've landed (if pickup exists, not already landed, and around check-in time)
+  if (pickup && !pickup.guest_landed_at && ["requested", "assigned", "confirmed"].includes(pickup.status)) {
+    const checkinDate = parseISO(booking.check_in);
+    const daysBefore = differenceInDays(checkinDate, new Date());
+    // Show "I've landed" from 1 day before check-in through check-in day
+    if (daysBefore <= 1 && (booking.state === "confirmed" || isToday(checkinDate) || isPast(checkinDate))) {
+      actions.push({ type: "landed", labelKey: "guestStay.actions.landed", icon: PlaneLanding });
+    }
+  }
+
+  // Report issue / need help (checked in)
+  if (booking.state === "checked_in") {
+    actions.push({ type: "report_issue", labelKey: "guestStay.actions.reportIssue", icon: Wrench, variant: "outline" });
+  }
+
+  // Ask Kru Glitch (always available as last action)
+  if (actions.length < 4) {
+    actions.push({ type: "ask_ai", labelKey: "guestStay.actions.askGlitch", icon: Sparkles, variant: "outline" });
+  }
+
+  return actions.slice(0, 4);
+}
+
 export function GuestStaySummary() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { data: policies } = usePolicySettings();
+  const queryClient = useQueryClient();
 
   const { data: bookings } = useQuery({
     queryKey: ["guest-stay-summary-bookings", user?.id],
@@ -143,7 +196,7 @@ export function GuestStaySummary() {
     queryFn: async () => {
       const { data, error } = await (supabase
         .from("airport_pickups" as any)
-        .select("booking_id, status, driver_id, flight_number, arrival_datetime, drivers(name, vehicle_type)")
+        .select("booking_id, status, driver_id, flight_number, arrival_datetime, guest_landed_at, drivers(name, vehicle_type)")
         .in("booking_id", bookingIds) as any);
       if (error) throw error;
       return data as any[];
@@ -163,6 +216,73 @@ export function GuestStaySummary() {
     },
   });
 
+  const { data: guestDocs } = useQuery({
+    queryKey: ["guest-stay-summary-docs", bookingIds],
+    enabled: bookingIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("guest_documents")
+        .select("booking_id, verification_status")
+        .in("booking_id", bookingIds);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // "I've Landed" mutation
+  const landedMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/guest-landed`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ booking_id: bookingId }),
+        }
+      );
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to confirm landing");
+      }
+      return resp.json();
+    },
+    onSuccess: (data) => {
+      if (data.already) {
+        toast.info(t("guestStay.actions.alreadyLanded"));
+      } else {
+        toast.success(t("guestStay.actions.landedSuccess"));
+      }
+      queryClient.invalidateQueries({ queryKey: ["guest-stay-summary-pickups"] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
+  const handleAction = (type: ActionType, bookingId: string) => {
+    switch (type) {
+      case "pay_deposit":
+        window.dispatchEvent(new CustomEvent("guest-portal-action", { detail: { tab: "bookings" } }));
+        break;
+      case "upload_id":
+        window.dispatchEvent(new CustomEvent("guest-portal-action", { detail: { tab: "pre-arrival" } }));
+        break;
+      case "landed":
+        landedMutation.mutate(bookingId);
+        break;
+      case "report_issue":
+        window.dispatchEvent(new CustomEvent("guest-portal-action", { detail: { tab: "stay-support" } }));
+        break;
+      case "ask_ai":
+        window.dispatchEvent(new CustomEvent("ask-kru-glitch", { detail: { question: "" } }));
+        break;
+    }
+  };
+
   if (!bookings?.length) return null;
 
   return (
@@ -175,18 +295,23 @@ export function GuestStaySummary() {
         );
         const pickup = (pickups ?? []).find((p: any) => p.booking_id === booking.id);
         const deposit = (deposits ?? []).find((d) => d.booking_id === booking.id);
+        const bDocs = (guestDocs ?? []).filter((d) => d.booking_id === booking.id);
         const edge = getEdgeFlags(booking, outstanding, pickup, policies ?? undefined);
         const stateInfo = STATE_CONFIG[booking.state] ?? STATE_CONFIG.inquiry;
         const StateIcon = stateInfo.icon;
         const nextStep = getNextStep(booking, outstanding, edge, t);
         const nights = differenceInDays(parseISO(booking.check_out), parseISO(booking.check_in));
+        const actions = deriveActions(booking, outstanding, pickup, bDocs);
 
         const hasWarning = edge.depositOverdue || edge.checkinPassed;
+
+        // Show landed confirmation instead of actions if already landed
+        const alreadyLanded = pickup?.guest_landed_at;
 
         return (
           <Card key={booking.id} className={`overflow-hidden ${hasWarning ? "border-destructive/40" : "border-primary/20"}`}>
             <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
-              {/* Header: Unit + Status — single row, compact on mobile */}
+              {/* Header: Unit + Status */}
               <div className="flex items-center justify-between gap-1.5">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0" />
@@ -200,7 +325,7 @@ export function GuestStaySummary() {
                 </Badge>
               </div>
 
-              {/* Dates — compact inline */}
+              {/* Dates */}
               <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground">
                 <CalendarDays className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                 <span className="truncate">
@@ -213,7 +338,7 @@ export function GuestStaySummary() {
 
               <Separator />
 
-              {/* Status Row: horizontal scroll on mobile, grid on desktop */}
+              {/* Status Row */}
               <div className="flex sm:grid sm:grid-cols-3 gap-3 sm:gap-2 text-[11px] sm:text-xs overflow-x-auto scrollbar-hide pb-0.5">
                 <StatusPill
                   icon={<CreditCard className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />}
@@ -223,23 +348,27 @@ export function GuestStaySummary() {
                 <StatusPill
                   icon={<Plane className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />}
                   className={
-                    pickup
-                      ? (pickup.status === "confirmed" || pickup.status === "completed")
-                        ? "text-[hsl(var(--success))] font-medium"
-                        : pickup.status === "assigned" ? "text-primary font-medium"
-                        : edge.pickupPendingDriver ? "text-warning-foreground font-medium" : "text-muted-foreground"
-                      : "text-muted-foreground"
+                    alreadyLanded
+                      ? "text-[hsl(var(--success))] font-medium"
+                      : pickup
+                        ? (pickup.status === "confirmed" || pickup.status === "completed")
+                          ? "text-[hsl(var(--success))] font-medium"
+                          : pickup.status === "assigned" ? "text-primary font-medium"
+                          : edge.pickupPendingDriver ? "text-warning-foreground font-medium" : "text-muted-foreground"
+                        : "text-muted-foreground"
                   }
                   text={
-                    pickup
-                      ? (pickup.status === "confirmed" || pickup.status === "completed")
-                        ? `${t("guestStay.pickupConfirmed")}${pickup.drivers?.name ? ` — ${pickup.drivers.name}` : ""}`
-                        : pickup.status === "assigned"
-                          ? `${t("guestStay.pickupAssigned")}${pickup.drivers?.name ? ` — ${pickup.drivers.name}` : ""}`
-                          : edge.pickupPendingDriver
-                            ? t("guestStay.pickupPendingDriver")
-                            : t("guestStay.pickupRequested")
-                      : t("guestStay.noPickup")
+                    alreadyLanded
+                      ? t("guestStay.landed")
+                      : pickup
+                        ? (pickup.status === "confirmed" || pickup.status === "completed")
+                          ? `${t("guestStay.pickupConfirmed")}${pickup.drivers?.name ? ` — ${pickup.drivers.name}` : ""}`
+                          : pickup.status === "assigned"
+                            ? `${t("guestStay.pickupAssigned")}${pickup.drivers?.name ? ` — ${pickup.drivers.name}` : ""}`
+                            : edge.pickupPendingDriver
+                              ? t("guestStay.pickupPendingDriver")
+                              : t("guestStay.pickupRequested")
+                        : t("guestStay.noPickup")
                   }
                 />
                 <StatusPill
@@ -260,7 +389,7 @@ export function GuestStaySummary() {
                 />
               </div>
 
-              {/* Next Step — warning-styled for edge cases */}
+              {/* Next Step */}
               {nextStep && (
                 <>
                   <Separator />
@@ -273,6 +402,32 @@ export function GuestStaySummary() {
                   </div>
                 </>
               )}
+
+              {/* Context-based Action Buttons */}
+              {actions.length > 0 && (
+                <>
+                  <Separator />
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                    {actions.map((action) => {
+                      const Icon = action.icon;
+                      const isLanding = action.type === "landed" && landedMutation.isPending;
+                      return (
+                        <Button
+                          key={action.type}
+                          size="sm"
+                          variant={action.variant ?? "default"}
+                          className="h-7 sm:h-8 text-[11px] sm:text-xs gap-1 sm:gap-1.5"
+                          disabled={isLanding}
+                          onClick={() => handleAction(action.type, booking.id)}
+                        >
+                          <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                          {isLanding ? t("common.pleaseWait") : t(action.labelKey)}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         );
@@ -281,7 +436,7 @@ export function GuestStaySummary() {
   );
 }
 
-/** Inline status pill — prevents text wrapping on mobile */
+/** Inline status pill */
 function StatusPill({ icon, text, className }: { icon: React.ReactNode; text: string; className: string }) {
   return (
     <div className="flex items-center gap-1 whitespace-nowrap shrink-0">
