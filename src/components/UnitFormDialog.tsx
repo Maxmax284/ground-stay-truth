@@ -36,7 +36,7 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
   const [reviewsEnabled, setReviewsEnabled] = useState((unit as any)?.reviews_enabled ?? true);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
-    defaultValues: { name: unit?.name ?? "", description: unit?.description ?? "", capacity: unit?.capacity ?? 2, min_nights: unit?.min_nights ?? 1, base_price: unit?.base_price ?? 0, weekend_price: unit?.weekend_price ?? undefined, cleaning_fee: unit?.cleaning_fee ?? 0, weekly_rate: (unit as any)?.weekly_rate ?? undefined, monthly_rate: (unit as any)?.monthly_rate ?? undefined, sort_order: (unit as any)?.sort_order ?? 0, rules: unit?.rules ?? "" },
+    defaultValues: { name: unit?.name ?? "", description: unit?.description ?? "", capacity: unit?.capacity ?? 2, min_nights: unit?.min_nights ?? 1, base_price: unit?.base_price ?? 0, weekend_price: unit?.weekend_price ?? undefined, cleaning_fee: unit?.cleaning_fee ?? 0, weekly_rate: (unit as any)?.weekly_rate ?? undefined, monthly_rate: (unit as any)?.monthly_rate ?? undefined, sort_order: (unit as any)?.sort_order ?? 0, rules: unit?.rules ?? "", wifi_network: (unit as any)?.wifi_network ?? "", wifi_password: (unit as any)?.wifi_password ?? "", house_rules_detail: (unit as any)?.house_rules_detail ?? "", emergency_contact_name: (unit as any)?.emergency_contact_name ?? "", emergency_contact_phone: (unit as any)?.emergency_contact_phone ?? "" },
   });
 
   useEffect(() => {
