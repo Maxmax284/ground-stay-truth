@@ -34,6 +34,7 @@ const GROUPS: SettingGroup[] = [
       "deposit_percentage", "deposit_deadline_hours", "deposit_reminder_hours",
       "deposits_online_enabled", "deposits_manual_enabled", "deposits_require_online_when_enabled",
       "payment_provider", "security_deposit_required", "security_deposit_amount",
+      "bank_transfer_bank_name", "bank_transfer_account_name", "bank_transfer_account_number", "bank_transfer_notes",
     ],
     summary: (g) => {
       const pct = g("deposit_percentage");
