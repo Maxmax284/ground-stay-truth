@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Swords, ChevronDown, ChevronUp, AlertCircle, Clock, CheckCircle2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
