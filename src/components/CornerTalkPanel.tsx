@@ -146,11 +146,13 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
               <div className="space-y-1.5">
                 {data.attention.map((item, i) => (
                   <button
-                    key={`att-${i}`}
+                    key={`att-${item.messageKey}`}
                     onClick={() =>
                       onAskGlitch?.(`Tell me more about: ${item.text}`)
                     }
-                    className={`flex items-start gap-2.5 w-full text-left pl-2 py-1 rounded-sm hover:bg-accent/40 transition-colors ${severityBorderClass(item.severity)}`}
+                    className={`flex items-start gap-2.5 w-full text-left pl-2 py-1 rounded-sm hover:bg-accent/40 transition-colors ${severityBorderClass(item.severity)} ${
+                      newKeys.has(item.messageKey) ? "animate-fade-in" : ""
+                    }`}
                   >
                     <SeverityDot severity={item.severity} />
                     <span className={`text-sm leading-snug ${severityTextClass(item.severity)}`}>
