@@ -33,7 +33,51 @@ const STATE_CONFIG: Record<string, { key: string; variant: string; icon: typeof 
   checked_in: { key: "guestStay.checkedIn", variant: "bg-primary/15 text-primary", icon: CheckCircle2 },
 };
 
-function useNextStep(booking: BookingWithUnit, outstanding: number, t: (k: string, opts?: any) => string): string {
+interface EdgeFlags {
+  depositOverdue: boolean;
+  checkinPassed: boolean;
+  pickupPendingDriver: boolean;
+  missingUnit: boolean;
+}
+
+function getEdgeFlags(
+  booking: BookingWithUnit,
+  outstanding: number,
+  pickup: any | undefined,
+  policies: any[] | undefined
+): EdgeFlags {
+  const checkinDate = parseISO(booking.check_in);
+  const depositDeadlineHours = Number(policies?.find((p) => p.key === "deposit_deadline_hours")?.value ?? 24);
+
+  // Deposit overdue: state is pending_deposit AND outstanding > 0 AND booking created long enough ago
+  const depositOverdue =
+    booking.state === "pending_deposit" &&
+    outstanding > 0 &&
+    isPast(new Date(new Date(booking.check_in).getTime() - depositDeadlineHours * 3600_000));
+
+  // Check-in date passed but still in confirmed state (not checked in)
+  const checkinPassed =
+    booking.state === "confirmed" && isPast(checkinDate) && !isToday(checkinDate);
+
+  // Pickup requested but no driver assigned
+  const pickupPendingDriver =
+    !!pickup && pickup.status === "requested" && !pickup.driver_id;
+
+  const missingUnit = !booking.units?.name;
+
+  return { depositOverdue, checkinPassed, pickupPendingDriver, missingUnit };
+}
+
+function getNextStep(
+  booking: BookingWithUnit,
+  outstanding: number,
+  edge: EdgeFlags,
+  t: (k: string, opts?: any) => string
+): string {
+  // Edge cases take priority
+  if (edge.checkinPassed) return t("guestStay.checkinPassed");
+  if (edge.depositOverdue) return t("guestStay.depositOverdue");
+
   switch (booking.state) {
     case "inquiry":
     case "soft_hold":
@@ -43,17 +87,17 @@ function useNextStep(booking: BookingWithUnit, outstanding: number, t: (k: strin
     case "pending_deposit":
       return outstanding > 0 ? t("guestStay.payDeposit") : t("guestStay.depositProcessing");
     case "confirmed": {
-      const daysUntil = differenceInDays(new Date(booking.check_in), new Date());
+      const daysUntil = differenceInDays(parseISO(booking.check_in), new Date());
       if (daysUntil <= 0) return t("guestStay.checkinToday");
       if (daysUntil <= 3) return t("guestStay.checkinSoon", { days: daysUntil });
-      return t("guestStay.allSet", { date: format(new Date(booking.check_in), "MMM d") });
+      return t("guestStay.allSet", { date: format(parseISO(booking.check_in), "MMM d") });
     }
     case "checked_in":
       return outstanding > 0
         ? t("guestStay.outstandingBalance")
-        : t("guestStay.enjoyStay", { date: format(new Date(booking.check_out), "MMM d") });
+        : t("guestStay.enjoyStay", { date: format(parseISO(booking.check_out), "MMM d") });
     default:
-      return "";
+      return t("guestStay.contactStaff");
   }
 }
 
