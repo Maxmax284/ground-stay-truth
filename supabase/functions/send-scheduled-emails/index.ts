@@ -145,28 +145,65 @@ Deno.serve(async (req) => {
       const today = now.toISOString().split("T")[0];
       const { data: checkinBookings } = await supabase
         .from("bookings")
-        .select("id, guest_id, check_in, check_out, unit_id, units(name), profiles!bookings_guest_id_profiles_fkey(email, full_name, preferred_language)")
+        .select("id, guest_id, check_in, check_out, unit_id, units(name, wifi_network, wifi_password, house_rules_detail, emergency_contact_name, emergency_contact_phone), profiles!bookings_guest_id_profiles_fkey(email, full_name, preferred_language)")
         .eq("state", "confirmed")
         .eq("check_in", today);
 
       for (const booking of checkinBookings ?? []) {
         const guestEmail = (booking as any).profiles?.email;
         if (!guestEmail) continue;
+
+        // Per-unit overrides with global fallback
+        const unit = (booking as any).units;
+        const wifiNetwork = unit?.wifi_network || policyMap.get("wifi_network_name") || "";
+        const wifiPassword = unit?.wifi_password || policyMap.get("wifi_password") || "";
+        const houseRules = unit?.house_rules_detail || policyMap.get("house_rules_summary") || "";
+        const emergencyName = unit?.emergency_contact_name || policyMap.get("emergency_contact_name") || "Front Desk";
+        const emergencyPhone = unit?.emergency_contact_phone || policyMap.get("emergency_contact_phone") || "";
+
         const sent = await sendEmail("welcome_checkin", guestEmail, booking.id,
           (booking as any).profiles?.preferred_language || "en", {
             guest_name: (booking as any).profiles?.full_name || "Guest",
-            unit_name: (booking as any).units?.name || "Your Unit",
+            unit_name: unit?.name || "Your Unit",
             checkin_time: checkinTime,
             checkout_time: policyMap.get("checkout_time") || "11:00",
             check_in: booking.check_in,
             check_out: booking.check_out,
-            wifi_network: policyMap.get("wifi_network_name") || "",
-            wifi_password: policyMap.get("wifi_password") || "",
-            house_rules: policyMap.get("house_rules_summary") || "",
-            emergency_name: policyMap.get("emergency_contact_name") || "Front Desk",
-            emergency_phone: policyMap.get("emergency_contact_phone") || "",
+            wifi_network: wifiNetwork,
+            wifi_password: wifiPassword,
+            house_rules: houseRules,
+            emergency_name: emergencyName,
+            emergency_phone: emergencyPhone,
           });
         if (sent) welcomeMessagesSent++;
+
+        // Create in-app notification with essentials for the guest
+        if (booking.guest_id) {
+          const essentialsParts: string[] = [];
+          if (wifiNetwork) essentialsParts.push(`WiFi: ${wifiNetwork}${wifiPassword ? ` / ${wifiPassword}` : ""}`);
+          if (emergencyPhone) essentialsParts.push(`Emergency: ${emergencyName} ${emergencyPhone}`);
+          const notifMessage = essentialsParts.length > 0
+            ? `Welcome! Your stay essentials are ready. ${essentialsParts.join(" • ")}. View full details in Stay Essentials.`
+            : `Welcome to ${unit?.name || "your unit"}! Check Stay Essentials for WiFi, house rules & emergency contacts.`;
+
+          // Idempotency: check if we already sent this notification today
+          const { data: existingNotif } = await supabase
+            .from("notifications")
+            .select("id")
+            .eq("user_id", booking.guest_id)
+            .eq("type", "stay_essentials")
+            .eq("reference_id", booking.id)
+            .maybeSingle();
+
+          if (!existingNotif) {
+            await supabase.from("notifications").insert({
+              user_id: booking.guest_id,
+              type: "stay_essentials",
+              message: notifMessage,
+              reference_id: booking.id,
+            });
+          }
+        }
       }
     }
 

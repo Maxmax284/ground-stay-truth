@@ -56,6 +56,8 @@ const MESSAGES: Record<string, string> = {
   admin_overrides: "{count} override(s) logged in last 24h",
   unprocessed_events: "{count} unprocessed payment event(s)",
   early_checkin_pending: "{count} early check-in request(s) pending",
+  essentials_missing: "{count} check-in(s) today missing WiFi or emergency info",
+  essentials_ready: "Stay essentials ready for {count} check-in(s) today",
   upcoming_arrivals: "{count} arrival(s) tomorrow",
   upcoming_departures: "{count} departure(s) tomorrow",
   upcoming_maintenance_block: "Maintenance block starts {date} — {unit}",
@@ -419,6 +421,60 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
       params: { count: earlyCheckinCount },
       roles: ["admin", "manager"],
     });
+  }
+
+  // ── 🏠 STAY ESSENTIALS CHECK ──
+  // Check if today's check-ins have WiFi/emergency configured (unit-level or global)
+  if (arrivingToday.length > 0) {
+    const arrivingUnitIds = [...new Set(arrivingToday.map((b: any) => b.id))];
+    // Get units for today's arrivals
+    const { data: todayBookingsWithUnits } = await adminClient
+      .from("bookings")
+      .select("id, unit_id, units(wifi_network, wifi_password, emergency_contact_name, emergency_contact_phone)")
+      .eq("check_in", today)
+      .in("state", ["confirmed", "pending_deposit"]);
+
+    // Get global fallbacks
+    const { data: essentialsPolicies } = await adminClient
+      .from("policy_settings")
+      .select("key, value")
+      .in("key", ["wifi_network_name", "wifi_password", "emergency_contact_name", "emergency_contact_phone"]);
+
+    const epMap = new Map((essentialsPolicies ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]));
+    const globalWifi = epMap.get("wifi_network_name") || "";
+    const globalEmergency = epMap.get("emergency_contact_phone") || "";
+
+    let missingCount = 0;
+    let readyCount = 0;
+    for (const booking of todayBookingsWithUnits ?? []) {
+      const unit = (booking as any).units;
+      const hasWifi = (unit?.wifi_network || globalWifi);
+      const hasEmergency = (unit?.emergency_contact_phone || globalEmergency);
+      if (!hasWifi || !hasEmergency) {
+        missingCount++;
+      } else {
+        readyCount++;
+      }
+    }
+
+    if (missingCount > 0) {
+      signals.push({
+        severity: "attention",
+        category: "ops",
+        messageKey: "essentials_missing",
+        params: { count: missingCount },
+        roles: ["admin", "manager", "front_desk_supervisor", "front_desk"],
+      });
+    } else if (readyCount > 0) {
+      signals.push({
+        severity: "normal",
+        category: "ops",
+        messageKey: "essentials_ready",
+        params: { count: readyCount },
+        roles: ["admin", "manager", "front_desk"],
+        isUpcoming: true,
+      });
+    }
   }
 
   // ── UPCOMING ──
