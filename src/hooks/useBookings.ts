@@ -201,7 +201,11 @@ export function useTransitionBookingState() {
           const { data: emailPolicies } = await supabase
             .from("policy_settings")
             .select("key, value")
-            .in("key", ["earliest_checkin_time", "checkout_time", "currency_symbol"]);
+            .in("key", [
+              "earliest_checkin_time", "checkout_time", "currency_symbol",
+              "wifi_network_name", "wifi_password",
+              "house_rules_summary", "emergency_contact_name", "emergency_contact_phone",
+            ]);
           const pMap = new Map((emailPolicies ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]));
           const currSym = pMap.get("currency_symbol") || "฿";
 
