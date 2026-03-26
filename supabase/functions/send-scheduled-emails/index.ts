@@ -157,8 +157,14 @@ Deno.serve(async (req) => {
             guest_name: (booking as any).profiles?.full_name || "Guest",
             unit_name: (booking as any).units?.name || "Your Unit",
             checkin_time: checkinTime,
+            checkout_time: policyMap.get("checkout_time") || "11:00",
             check_in: booking.check_in,
             check_out: booking.check_out,
+            wifi_network: policyMap.get("wifi_network_name") || "",
+            wifi_password: policyMap.get("wifi_password") || "",
+            house_rules: policyMap.get("house_rules_summary") || "",
+            emergency_name: policyMap.get("emergency_contact_name") || "Front Desk",
+            emergency_phone: policyMap.get("emergency_contact_phone") || "",
           });
         if (sent) welcomeMessagesSent++;
       }
