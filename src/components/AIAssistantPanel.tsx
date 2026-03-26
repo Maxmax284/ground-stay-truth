@@ -240,7 +240,7 @@ function AIAssistantPanelInner() {
             aria-label={t("ai.openAssistant")}
           >
             <Sparkles className="h-5 w-5 pointer-events-none shrink-0" />
-            <span className="text-sm font-medium pointer-events-none whitespace-nowrap">{t("ai.askKruGlitch", "Ask Kru Glitch")}</span>
+            <span className="text-sm font-medium pointer-events-none whitespace-nowrap">{t("ai.openAssistant")}</span>
           </div>
         ) : (
           <div
