@@ -416,7 +416,7 @@ export function GuestStaySummary() {
                           key={action.type}
                           size="sm"
                           variant={action.variant ?? "default"}
-                          className="h-7 sm:h-8 text-[11px] sm:text-xs gap-1 sm:gap-1.5"
+                          className={`h-7 sm:h-8 text-[11px] sm:text-xs gap-1 sm:gap-1.5 animate-fade-up animate-stagger-${idx + 1}`}
                           disabled={isLanding}
                           onClick={() => handleAction(action.type, booking.id)}
                         >
