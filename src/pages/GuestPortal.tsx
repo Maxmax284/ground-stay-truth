@@ -242,7 +242,7 @@ const GuestPortal = () => {
         {/* Passive Layer: Your Stay Summary */}
         <GuestStaySummary />
 
-        <Tabs defaultValue="bookings" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="flex-wrap">
             <TabsTrigger value="bookings">{t("guestPortal.myBookings")}</TabsTrigger>
             <TabsTrigger value="listings">{t("guestPortal.listings")}</TabsTrigger>
