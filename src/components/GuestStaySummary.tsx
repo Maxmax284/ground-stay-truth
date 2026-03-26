@@ -408,7 +408,7 @@ export function GuestStaySummary() {
                 <>
                   <Separator />
                   <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                    {actions.map((action) => {
+                    {actions.map((action, idx) => {
                       const Icon = action.icon;
                       const isLanding = action.type === "landed" && landedMutation.isPending;
                       return (
