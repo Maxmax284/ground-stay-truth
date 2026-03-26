@@ -202,6 +202,11 @@ const FRIENDLY_LABELS: Record<string, string> = {
   bank_transfer_account_name: "Account Name",
   bank_transfer_account_number: "Account Number",
   bank_transfer_notes: "Transfer Instructions (shown to guest)",
+  wifi_network_name: "WiFi Network Name",
+  wifi_password: "WiFi Password",
+  house_rules_summary: "House Rules (global default)",
+  emergency_contact_name: "Emergency Contact Name",
+  emergency_contact_phone: "Emergency Contact Phone",
 };
 
 const SETTING_ICONS: Record<string, React.ReactNode> = {
