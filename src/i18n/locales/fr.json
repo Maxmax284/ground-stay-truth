@@ -1203,6 +1203,16 @@
     "pickupPendingDriver": "Transfert demandé — chauffeur non encore attribué.",
     "checkinPassed": "La date d'arrivée est dépassée. Veuillez contacter l'équipe.",
     "unitNotAssigned": "Logement en attente",
-    "contactStaff": "Des questions ? Envoyez un message à notre équipe."
+    "contactStaff": "Des questions ? Envoyez un message à notre équipe.",
+    "landed": "Atterri ✓",
+    "actions": {
+      "payDeposit": "Payer l'acompte",
+      "uploadId": "Télécharger pièce d'identité",
+      "landed": "J'ai atterri",
+      "reportIssue": "Besoin d'aide",
+      "askGlitch": "Demander à Kru Glitch",
+      "landedSuccess": "Confirmé ! L'équipe est informée. Votre chauffeur arrive.",
+      "alreadyLanded": "Vous avez déjà confirmé votre arrivée."
+    }
   }
 }

@@ -1024,6 +1024,16 @@
     "pickupPendingDriver": "送迎リクエスト済み — ドライバー未割当。",
     "checkinPassed": "チェックイン日を過ぎています。スタッフにご連絡ください。",
     "unitNotAssigned": "部屋未定",
-    "contactStaff": "ご質問は？チームにメッセージを送ってください。"
+    "contactStaff": "ご質問は？チームにメッセージを送ってください。",
+    "landed": "到着済み ✓",
+    "actions": {
+      "payDeposit": "デポジット支払い",
+      "uploadId": "身分証アップロード",
+      "landed": "到着しました",
+      "reportIssue": "ヘルプ",
+      "askGlitch": "Kru Glitch に聞く",
+      "landedSuccess": "確認済み！スタッフに通知しました。ドライバーが向かっています。",
+      "alreadyLanded": "すでに到着を確認済みです。"
+    }
   }
 }
