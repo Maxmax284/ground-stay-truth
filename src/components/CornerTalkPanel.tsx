@@ -49,6 +49,32 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
     try { return localStorage.getItem(STORAGE_KEY) === "true"; } catch { return false; }
   });
 
+  // Track previous attention keys to detect new items
+  const prevKeysRef = useRef<Set<string>>(new Set());
+  const [newKeys, setNewKeys] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!data?.attention) return;
+    const currentKeys = new Set(data.attention.map((a) => a.messageKey));
+    const fresh = new Set<string>();
+    currentKeys.forEach((k) => {
+      if (!prevKeysRef.current.has(k)) fresh.add(k);
+    });
+    if (fresh.size > 0 && prevKeysRef.current.size > 0) {
+      setNewKeys(fresh);
+      const timer = setTimeout(() => setNewKeys(new Set()), 1500);
+      return () => clearTimeout(timer);
+    }
+    prevKeysRef.current = currentKeys;
+  }, [data?.attention]);
+
+  // Also update prevKeys when newKeys animation ends
+  useEffect(() => {
+    if (newKeys.size === 0 && data?.attention) {
+      prevKeysRef.current = new Set(data.attention.map((a) => a.messageKey));
+    }
+  }, [newKeys, data?.attention]);
+
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, String(collapsed)); } catch {}
   }, [collapsed]);
