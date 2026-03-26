@@ -121,6 +121,24 @@ const GROUPS: SettingGroup[] = [
       ? `Active • ฿${g("transport_base_fee")} ${g("transport_fee_type")}${g("transport_night_surcharge_enabled") === "true" ? ` • ฿${g("transport_night_surcharge")} night surcharge` : ""}`
       : "Disabled",
   },
+  {
+    id: "stay_essentials",
+    label: "Stay Essentials",
+    icon: <Wifi className="h-4 w-4" />,
+    keys: [
+      "wifi_network_name", "wifi_password",
+      "house_rules_summary",
+      "emergency_contact_name", "emergency_contact_phone",
+    ],
+    summary: (g) => {
+      const wifi = g("wifi_network_name");
+      const emergency = g("emergency_contact_name");
+      const parts = [];
+      if (wifi) parts.push(`WiFi: ${wifi}`);
+      if (emergency) parts.push(`Emergency: ${emergency}`);
+      return parts.length ? parts.join(" • ") : "Not configured";
+    },
+  },
 ];
 
 /* Keys handled by cancellation editor or technical/sensitive */
