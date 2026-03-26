@@ -1171,5 +1171,33 @@
     "allClear": "Tout est en ordre",
     "comingUp": "À venir",
     "allOperationsNormal": "Toutes les opérations fonctionnent normalement"
+  },
+  "guestStay": {
+    "inquirySent": "Demande envoyée",
+    "softHold": "Pré-réservation",
+    "awaitingApproval": "En attente d'approbation",
+    "depositRequired": "Acompte requis",
+    "confirmed": "Confirmée",
+    "checkedIn": "Arrivée enregistrée",
+    "paidInFull": "Payé en totalité",
+    "priceTBD": "Prix à définir",
+    "due": "{{amount}} à payer",
+    "pickupConfirmed": "Confirmé",
+    "pickupAssigned": "Attribué",
+    "pickupRequested": "Demandé",
+    "noPickup": "Pas de transfert",
+    "depositHeld": "{{amount}} retenu",
+    "depositReleased": "Restitué",
+    "depositNone": "Aucun",
+    "waitingReview": "En attente de l'examen de votre demande par notre équipe.",
+    "beingReviewed": "Votre réservation est en cours d'examen. Vous serez informé bientôt.",
+    "payDeposit": "Versez votre acompte pour confirmer la réservation.",
+    "depositProcessing": "Le paiement de l'acompte est en cours de traitement.",
+    "checkinToday": "C'est le jour d'arrivée ! Rendez-vous à la réception.",
+    "checkinSoon": "Arrivée dans {{days}} jour(s). Vérifiez votre liste de pré-arrivée.",
+    "allSet": "Tout est prêt. Arrivée le {{date}}.",
+    "outstandingBalance": "Vous avez un solde impayé. Veuillez le régler avant le départ.",
+    "enjoyStay": "Bon séjour ! Départ le {{date}}.",
+    "nights": "{{count}} nuits"
   }
 }

@@ -1171,5 +1171,33 @@
     "allClear": "이상 없음",
     "comingUp": "예정",
     "allOperationsNormal": "모든 운영이 정상적으로 진행 중"
+  },
+  "guestStay": {
+    "inquirySent": "문의 전송됨",
+    "softHold": "임시 예약",
+    "awaitingApproval": "승인 대기 중",
+    "depositRequired": "보증금 필요",
+    "confirmed": "확정됨",
+    "checkedIn": "체크인 완료",
+    "paidInFull": "전액 결제 완료",
+    "priceTBD": "가격 미정",
+    "due": "{{amount}} 미결제",
+    "pickupConfirmed": "확정됨",
+    "pickupAssigned": "배정됨",
+    "pickupRequested": "요청됨",
+    "noPickup": "픽업 없음",
+    "depositHeld": "{{amount}} 보관 중",
+    "depositReleased": "반환됨",
+    "depositNone": "없음",
+    "waitingReview": "직원이 요청을 검토 중입니다.",
+    "beingReviewed": "예약을 검토 중입니다. 곧 연락드리겠습니다.",
+    "payDeposit": "예약을 확정하려면 보증금을 납부하세요.",
+    "depositProcessing": "보증금 결제를 처리 중입니다.",
+    "checkinToday": "오늘 체크인입니다! 프런트 데스크로 오세요.",
+    "checkinSoon": "체크인까지 {{days}}일 남았습니다. 사전 체크리스트를 확인하세요.",
+    "allSet": "준비 완료! 체크인 날짜: {{date}}.",
+    "outstandingBalance": "미결제 잔액이 있습니다. 체크아웃 전에 정산해 주세요.",
+    "enjoyStay": "즐거운 숙박 되세요! 체크아웃: {{date}}.",
+    "nights": "{{count}}박"
   }
 }

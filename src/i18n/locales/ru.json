@@ -992,5 +992,33 @@
     "allClear": "Всё в порядке",
     "comingUp": "Скоро",
     "allOperationsNormal": "Все операции работают штатно"
+  },
+  "guestStay": {
+    "inquirySent": "Запрос отправлен",
+    "softHold": "Предварительное бронирование",
+    "awaitingApproval": "Ожидает подтверждения",
+    "depositRequired": "Требуется задаток",
+    "confirmed": "Подтверждено",
+    "checkedIn": "Заселение",
+    "paidInFull": "Оплачено полностью",
+    "priceTBD": "Цена уточняется",
+    "due": "К оплате {{amount}}",
+    "pickupConfirmed": "Подтверждён",
+    "pickupAssigned": "Назначен",
+    "pickupRequested": "Запрошен",
+    "noPickup": "Нет трансфера",
+    "depositHeld": "{{amount}} удержано",
+    "depositReleased": "Возвращён",
+    "depositNone": "Нет",
+    "waitingReview": "Ваш запрос рассматривается персоналом.",
+    "beingReviewed": "Ваше бронирование проверяется. Мы скоро свяжемся с вами.",
+    "payDeposit": "Внесите задаток, чтобы подтвердить бронирование.",
+    "depositProcessing": "Платёж по задатку обрабатывается.",
+    "checkinToday": "Сегодня заселение! Подойдите на стойку регистрации.",
+    "checkinSoon": "Заселение через {{days}} дн. Проверьте контрольный список.",
+    "allSet": "Всё готово. Заселение {{date}}.",
+    "outstandingBalance": "У вас есть задолженность. Оплатите до выезда.",
+    "enjoyStay": "Приятного пребывания! Выезд {{date}}.",
+    "nights": "{{count}} ночей"
   }
 }

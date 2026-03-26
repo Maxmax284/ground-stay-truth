@@ -992,5 +992,33 @@
     "allClear": "問題なし",
     "comingUp": "予定",
     "allOperationsNormal": "すべての業務は正常に稼働中"
+  },
+  "guestStay": {
+    "inquirySent": "問い合わせ送信済み",
+    "softHold": "仮予約",
+    "awaitingApproval": "承認待ち",
+    "depositRequired": "デポジットが必要",
+    "confirmed": "確認済み",
+    "checkedIn": "チェックイン済み",
+    "paidInFull": "全額支払い済み",
+    "priceTBD": "料金未定",
+    "due": "{{amount}} 未払い",
+    "pickupConfirmed": "確認済み",
+    "pickupAssigned": "割り当て済み",
+    "pickupRequested": "リクエスト済み",
+    "noPickup": "送迎なし",
+    "depositHeld": "{{amount}} 保持中",
+    "depositReleased": "返金済み",
+    "depositNone": "なし",
+    "waitingReview": "スタッフがリクエストを確認中です。",
+    "beingReviewed": "予約を確認中です。まもなくご連絡いたします。",
+    "payDeposit": "予約を確定するにはデポジットをお支払いください。",
+    "depositProcessing": "デポジットの支払いを処理中です。",
+    "checkinToday": "本日チェックインです！フロントまでお越しください。",
+    "checkinSoon": "チェックインまであと{{days}}日です。到着前チェックリストをご確認ください。",
+    "allSet": "準備完了です。チェックインは{{date}}です。",
+    "outstandingBalance": "未払い残高があります。チェックアウト前にお支払いください。",
+    "enjoyStay": "ごゆっくりお過ごしください！チェックアウトは{{date}}です。",
+    "nights": "{{count}}泊"
   }
 }
