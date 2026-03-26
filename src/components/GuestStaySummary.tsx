@@ -226,7 +226,8 @@ export function GuestStaySummary() {
                     pickup
                       ? (pickup.status === "confirmed" || pickup.status === "completed")
                         ? "text-[hsl(var(--success))] font-medium"
-                        : pickup.status === "assigned" ? "text-primary font-medium" : "text-muted-foreground"
+                        : pickup.status === "assigned" ? "text-primary font-medium"
+                        : edge.pickupPendingDriver ? "text-warning-foreground font-medium" : "text-muted-foreground"
                       : "text-muted-foreground"
                   }
                   text={
@@ -235,7 +236,9 @@ export function GuestStaySummary() {
                         ? `${t("guestStay.pickupConfirmed")}${pickup.drivers?.name ? ` — ${pickup.drivers.name}` : ""}`
                         : pickup.status === "assigned"
                           ? `${t("guestStay.pickupAssigned")}${pickup.drivers?.name ? ` — ${pickup.drivers.name}` : ""}`
-                          : t("guestStay.pickupRequested")
+                          : edge.pickupPendingDriver
+                            ? t("guestStay.pickupPendingDriver")
+                            : t("guestStay.pickupRequested")
                       : t("guestStay.noPickup")
                   }
                 />
@@ -257,13 +260,16 @@ export function GuestStaySummary() {
                 />
               </div>
 
-              {/* Next Step — compact */}
+              {/* Next Step — warning-styled for edge cases */}
               {nextStep && (
                 <>
                   <Separator />
-                  <div className="flex items-start gap-1.5 text-[11px] sm:text-xs">
-                    <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary shrink-0 mt-0.5" />
-                    <span className="text-foreground/80 leading-tight">{nextStep}</span>
+                  <div className={`flex items-start gap-1.5 text-[11px] sm:text-xs ${hasWarning ? "text-destructive" : ""}`}>
+                    {hasWarning
+                      ? <AlertCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-destructive shrink-0 mt-0.5" />
+                      : <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary shrink-0 mt-0.5" />
+                    }
+                    <span className={hasWarning ? "font-medium leading-tight" : "text-foreground/80 leading-tight"}>{nextStep}</span>
                   </div>
                 </>
               )}
