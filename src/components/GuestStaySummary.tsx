@@ -282,6 +282,9 @@ export function GuestStaySummary() {
       case "ask_ai":
         window.dispatchEvent(new CustomEvent("ask-kru-glitch", { detail: { question: "" } }));
         break;
+      case "stay_essentials":
+        window.dispatchEvent(new CustomEvent("ask-kru-glitch", { detail: { question: "Show me my stay essentials — WiFi, house rules, and emergency contacts." } }));
+        break;
     }
   };
 
