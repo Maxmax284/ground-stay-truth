@@ -398,6 +398,8 @@ Deposit policy: ${depositMode}. Currency: ${currencySymbol}.`;
             "check_in_time", "check_out_time", "deposit_percentage",
             "security_deposit_amount", "security_deposit_required",
             "transport_base_fee", "transport_free_pickup_min_nights",
+            "wifi_network_name", "wifi_password",
+            "house_rules_summary", "emergency_contact_name", "emergency_contact_phone",
           ]),
       ]);
 
@@ -469,6 +471,36 @@ Deposit policy: ${depositMode}. Currency: ${currencySymbol}.`;
         if (pMap.has("security_deposit_required") && pMap.get("security_deposit_required") === "true") {
           contextData += `\nSecurity deposit: ${currencySymbol}${pMap.get("security_deposit_amount") ?? "TBD"} (refundable after checkout inspection)`;
         }
+
+        // Stay Essentials — unit-level overrides checked first, then global fallback
+        // Fetch unit-specific essentials for checked-in / confirmed bookings
+        const activeBooking = guestBookings.find((b: any) => b.state === "checked_in") ?? guestBookings.find((b: any) => b.state === "confirmed");
+        let essWifi = pMap.get("wifi_network_name") || "";
+        let essWifiPw = pMap.get("wifi_password") || "";
+        let essRules = pMap.get("house_rules_summary") || "";
+        let essEmName = pMap.get("emergency_contact_name") || "Front Desk";
+        let essEmPhone = pMap.get("emergency_contact_phone") || "";
+
+        if (activeBooking) {
+          const { data: unitEss } = await adminClient
+            .from("units")
+            .select("wifi_network, wifi_password, house_rules_detail, emergency_contact_name, emergency_contact_phone")
+            .eq("id", (activeBooking as any).unit_id)
+            .single();
+          if (unitEss) {
+            essWifi = (unitEss as any).wifi_network || essWifi;
+            essWifiPw = (unitEss as any).wifi_password || essWifiPw;
+            essRules = (unitEss as any).house_rules_detail || essRules;
+            essEmName = (unitEss as any).emergency_contact_name || essEmName;
+            essEmPhone = (unitEss as any).emergency_contact_phone || essEmPhone;
+          }
+        }
+
+        contextData += `\n\nSTAY ESSENTIALS (share when guest asks about WiFi, house rules, or emergencies):`;
+        if (essWifi) contextData += `\nWiFi Network: ${essWifi}`;
+        if (essWifiPw) contextData += `\nWiFi Password: ${essWifiPw}`;
+        if (essRules) contextData += `\nHouse Rules: ${essRules}`;
+        contextData += `\nEmergency Contact: ${essEmName}${essEmPhone ? ` — ${essEmPhone}` : ""}`;
       }
 
       // Pricing info for quote generation
