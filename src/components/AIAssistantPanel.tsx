@@ -219,6 +219,8 @@ function AIAssistantPanelInner() {
 
 
 
+  const isGuest = role === "guest";
+
   if (!isOpen) {
     return (
       <div
@@ -230,14 +232,24 @@ function AIAssistantPanelInner() {
         className={`${!bubblePos ? "fixed bottom-6 right-6 md:bottom-6 bottom-20" : ""} z-50 select-none touch-none`}
         onPointerDown={(e) => { setBubbleDragging(true); handleBubblePointerDown(e); }}
         onPointerMove={handleBubblePointerMove}
-        onPointerUp={(e) => { setBubbleDragging(false); handleBubblePointerUp(); }}
+        onPointerUp={() => { setBubbleDragging(false); handleBubblePointerUp(); }}
       >
-        <div
-          className={`h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl flex items-center justify-center animate-pulse-ring ${bubbleDragging ? "scale-110 cursor-grabbing" : "cursor-grab hover:scale-105"} transition-transform`}
-          aria-label={t("ai.openAssistant")}
-        >
-          <Sparkles className="h-6 w-6 pointer-events-none" />
-        </div>
+        {isGuest ? (
+          <div
+            className={`flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl px-4 py-3 ${bubbleDragging ? "scale-105 cursor-grabbing" : "cursor-grab hover:scale-105"} transition-transform`}
+            aria-label={t("ai.openAssistant")}
+          >
+            <Sparkles className="h-5 w-5 pointer-events-none shrink-0" />
+            <span className="text-sm font-medium pointer-events-none whitespace-nowrap">{t("ai.openAssistant")}</span>
+          </div>
+        ) : (
+          <div
+            className={`h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl flex items-center justify-center animate-pulse-ring ${bubbleDragging ? "scale-110 cursor-grabbing" : "cursor-grab hover:scale-105"} transition-transform`}
+            aria-label={t("ai.openAssistant")}
+          >
+            <Sparkles className="h-6 w-6 pointer-events-none" />
+          </div>
+        )}
       </div>
     );
   }
