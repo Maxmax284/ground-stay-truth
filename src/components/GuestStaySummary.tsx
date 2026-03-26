@@ -181,15 +181,17 @@ export function GuestStaySummary() {
         const nextStep = getNextStep(booking, outstanding, edge, t);
         const nights = differenceInDays(parseISO(booking.check_out), parseISO(booking.check_in));
 
+        const hasWarning = edge.depositOverdue || edge.checkinPassed;
+
         return (
-          <Card key={booking.id} className="overflow-hidden border-primary/20">
+          <Card key={booking.id} className={`overflow-hidden ${hasWarning ? "border-destructive/40" : "border-primary/20"}`}>
             <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
               {/* Header: Unit + Status — single row, compact on mobile */}
               <div className="flex items-center justify-between gap-1.5">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0" />
                   <span className="font-semibold text-sm sm:text-base text-foreground truncate">
-                    {booking.units?.name ?? "—"}
+                    {edge.missingUnit ? t("guestStay.unitNotAssigned") : (booking.units?.name ?? "—")}
                   </span>
                 </div>
                 <Badge className={`text-[10px] sm:text-xs shrink-0 ${stateInfo.variant}`}>
