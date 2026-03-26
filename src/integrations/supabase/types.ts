@@ -1282,7 +1282,10 @@ export type Database = {
           cleaning_fee: number | null
           created_at: string
           description: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
           group_id: string | null
+          house_rules_detail: string | null
           id: string
           is_active: boolean
           min_nights: number
@@ -1295,6 +1298,8 @@ export type Database = {
           updated_at: string
           weekend_price: number | null
           weekly_rate: number | null
+          wifi_network: string | null
+          wifi_password: string | null
         }
         Insert: {
           amenities?: string[] | null
@@ -1303,7 +1308,10 @@ export type Database = {
           cleaning_fee?: number | null
           created_at?: string
           description?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           group_id?: string | null
+          house_rules_detail?: string | null
           id?: string
           is_active?: boolean
           min_nights?: number
@@ -1316,6 +1324,8 @@ export type Database = {
           updated_at?: string
           weekend_price?: number | null
           weekly_rate?: number | null
+          wifi_network?: string | null
+          wifi_password?: string | null
         }
         Update: {
           amenities?: string[] | null
@@ -1324,7 +1334,10 @@ export type Database = {
           cleaning_fee?: number | null
           created_at?: string
           description?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           group_id?: string | null
+          house_rules_detail?: string | null
           id?: string
           is_active?: boolean
           min_nights?: number
@@ -1337,6 +1350,8 @@ export type Database = {
           updated_at?: string
           weekend_price?: number | null
           weekly_rate?: number | null
+          wifi_network?: string | null
+          wifi_password?: string | null
         }
         Relationships: [
           {
