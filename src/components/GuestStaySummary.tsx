@@ -122,7 +122,7 @@ export function GuestStaySummary() {
   if (!bookings?.length) return null;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2 sm:space-y-3">
       {bookings.map((booking) => {
         const bPayments = (payments ?? []).filter((p) => p.booking_id === booking.id);
         const { outstanding } = calculateOutstanding(
@@ -138,89 +138,85 @@ export function GuestStaySummary() {
 
         return (
           <Card key={booking.id} className="overflow-hidden border-primary/20">
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <MapPin className="h-4 w-4 text-primary shrink-0" />
-                  <span className="font-semibold text-foreground truncate">
+            <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+              {/* Header: Unit + Status — single row, compact on mobile */}
+              <div className="flex items-center justify-between gap-1.5">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0" />
+                  <span className="font-semibold text-sm sm:text-base text-foreground truncate">
                     {booking.units?.name ?? "—"}
                   </span>
                 </div>
-                <Badge className={`text-xs shrink-0 ${stateInfo.variant}`}>
-                  <StateIcon className="h-3 w-3 mr-1" />
+                <Badge className={`text-[10px] sm:text-xs shrink-0 ${stateInfo.variant}`}>
+                  <StateIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
                   {t(stateInfo.key)}
                 </Badge>
               </div>
 
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <CalendarDays className="h-3.5 w-3.5 shrink-0" />
-                <span>{format(new Date(booking.check_in), "MMM d")} <ArrowRight className="inline h-3 w-3" /> {format(new Date(booking.check_out), "MMM d, yyyy")}</span>
-                <span className="text-xs">({t("guestStay.nights", { count: nights })})</span>
+              {/* Dates — compact inline */}
+              <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground">
+                <CalendarDays className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                <span className="truncate">
+                  {format(new Date(booking.check_in), "MMM d")}
+                  <ArrowRight className="inline h-2.5 w-2.5 sm:h-3 sm:w-3 mx-0.5" />
+                  {format(new Date(booking.check_out), "MMM d")}
+                </span>
+                <span className="text-[10px] sm:text-xs whitespace-nowrap">({t("guestStay.nights", { count: nights })})</span>
               </div>
 
               <Separator />
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                <div className="flex items-center gap-1.5">
-                  <CreditCard className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  {outstanding > 0 ? (
-                    <span className="text-warning-foreground font-medium">
-                      {t("guestStay.due", { amount: formatPrice(outstanding, policies, { decimals: 0 }) })}
-                    </span>
-                  ) : booking.total_price ? (
-                    <span className="text-[hsl(var(--success))] font-medium">{t("guestStay.paidInFull")}</span>
-                  ) : (
-                    <span className="text-muted-foreground">{t("guestStay.priceTBD")}</span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <Plane className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  {pickup ? (
-                    <span className={pickup.status === "confirmed" || pickup.status === "completed"
-                      ? "text-[hsl(var(--success))] font-medium"
-                      : pickup.status === "assigned"
-                        ? "text-primary font-medium"
-                        : "text-muted-foreground"
-                    }>
-                      {pickup.status === "confirmed" || pickup.status === "completed"
+              {/* Status Row: horizontal scroll on mobile, grid on desktop */}
+              <div className="flex sm:grid sm:grid-cols-3 gap-3 sm:gap-2 text-[11px] sm:text-xs overflow-x-auto scrollbar-hide pb-0.5">
+                <StatusPill
+                  icon={<CreditCard className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />}
+                  className={outstanding > 0 ? "text-warning-foreground font-medium" : booking.total_price ? "text-[hsl(var(--success))] font-medium" : "text-muted-foreground"}
+                  text={outstanding > 0 ? t("guestStay.due", { amount: formatPrice(outstanding, policies, { decimals: 0 }) }) : booking.total_price ? t("guestStay.paidInFull") : t("guestStay.priceTBD")}
+                />
+                <StatusPill
+                  icon={<Plane className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />}
+                  className={
+                    pickup
+                      ? (pickup.status === "confirmed" || pickup.status === "completed")
+                        ? "text-[hsl(var(--success))] font-medium"
+                        : pickup.status === "assigned" ? "text-primary font-medium" : "text-muted-foreground"
+                      : "text-muted-foreground"
+                  }
+                  text={
+                    pickup
+                      ? (pickup.status === "confirmed" || pickup.status === "completed")
                         ? `${t("guestStay.pickupConfirmed")}${pickup.drivers?.name ? ` — ${pickup.drivers.name}` : ""}`
                         : pickup.status === "assigned"
                           ? `${t("guestStay.pickupAssigned")}${pickup.drivers?.name ? ` — ${pickup.drivers.name}` : ""}`
-                          : t("guestStay.pickupRequested")}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">{t("guestStay.noPickup")}</span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <Shield className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  {deposit ? (
-                    <span className={deposit.status === "released"
-                      ? "text-[hsl(var(--success))] font-medium"
-                      : deposit.status === "held"
-                        ? "text-primary font-medium"
-                        : "text-muted-foreground"
-                    }>
-                      {deposit.status === "held"
+                          : t("guestStay.pickupRequested")
+                      : t("guestStay.noPickup")
+                  }
+                />
+                <StatusPill
+                  icon={<Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />}
+                  className={
+                    deposit
+                      ? deposit.status === "released" ? "text-[hsl(var(--success))] font-medium"
+                        : deposit.status === "held" ? "text-primary font-medium" : "text-muted-foreground"
+                      : "text-muted-foreground"
+                  }
+                  text={
+                    deposit
+                      ? deposit.status === "held"
                         ? t("guestStay.depositHeld", { amount: formatPrice(deposit.amount_held, policies, { decimals: 0 }) })
-                        : deposit.status === "released"
-                          ? t("guestStay.depositReleased")
-                          : deposit.status}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">{t("guestStay.depositNone")}</span>
-                  )}
-                </div>
+                        : deposit.status === "released" ? t("guestStay.depositReleased") : deposit.status
+                      : t("guestStay.depositNone")
+                  }
+                />
               </div>
 
+              {/* Next Step — compact */}
               {nextStep && (
                 <>
                   <Separator />
-                  <div className="flex items-start gap-2 text-xs">
-                    <ArrowRight className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                    <span className="text-foreground/80">{nextStep}</span>
+                  <div className="flex items-start gap-1.5 text-[11px] sm:text-xs">
+                    <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary shrink-0 mt-0.5" />
+                    <span className="text-foreground/80 leading-tight">{nextStep}</span>
                   </div>
                 </>
               )}
@@ -228,6 +224,16 @@ export function GuestStaySummary() {
           </Card>
         );
       })}
+    </div>
+  );
+}
+
+/** Inline status pill — prevents text wrapping on mobile */
+function StatusPill({ icon, text, className }: { icon: React.ReactNode; text: string; className: string }) {
+  return (
+    <div className="flex items-center gap-1 whitespace-nowrap shrink-0">
+      {icon}
+      <span className={className}>{text}</span>
     </div>
   );
 }
