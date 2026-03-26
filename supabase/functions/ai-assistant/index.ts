@@ -398,6 +398,8 @@ Deposit policy: ${depositMode}. Currency: ${currencySymbol}.`;
             "check_in_time", "check_out_time", "deposit_percentage",
             "security_deposit_amount", "security_deposit_required",
             "transport_base_fee", "transport_free_pickup_min_nights",
+            "wifi_network_name", "wifi_password",
+            "house_rules_summary", "emergency_contact_name", "emergency_contact_phone",
           ]),
       ]);
 
