@@ -57,6 +57,15 @@ const Index = () => {
           <p className="text-muted-foreground mt-1">{t("dashboard.overview")}</p>
         </div>
 
+        {/* Corner Talk — role-based intelligence briefing */}
+        <CornerTalkPanel
+          onAskGlitch={(question) => {
+            window.dispatchEvent(
+              new CustomEvent("ask-kru-glitch", { detail: { question } })
+            );
+          }}
+        />
+
         {/* Maintenance role: simplified view */}
         {isMaintenance ? (
           <MaintenanceDashboard t={t} />
