@@ -12,7 +12,7 @@ import {
   CalendarDays, CreditCard, Plane, Shield, ArrowRight, CheckCircle2,
   Clock, AlertCircle, MapPin,
 } from "lucide-react";
-import { format, differenceInDays } from "date-fns";
+import { format, differenceInDays, isPast, isToday, parseISO } from "date-fns";
 
 interface BookingWithUnit {
   id: string;
@@ -33,7 +33,51 @@ const STATE_CONFIG: Record<string, { key: string; variant: string; icon: typeof 
   checked_in: { key: "guestStay.checkedIn", variant: "bg-primary/15 text-primary", icon: CheckCircle2 },
 };
 
-function useNextStep(booking: BookingWithUnit, outstanding: number, t: (k: string, opts?: any) => string): string {
+interface EdgeFlags {
+  depositOverdue: boolean;
+  checkinPassed: boolean;
+  pickupPendingDriver: boolean;
+  missingUnit: boolean;
+}
+
+function getEdgeFlags(
+  booking: BookingWithUnit,
+  outstanding: number,
+  pickup: any | undefined,
+  policies: any[] | undefined
+): EdgeFlags {
+  const checkinDate = parseISO(booking.check_in);
+  const depositDeadlineHours = Number(policies?.find((p) => p.key === "deposit_deadline_hours")?.value ?? 24);
+
+  // Deposit overdue: state is pending_deposit AND outstanding > 0 AND booking created long enough ago
+  const depositOverdue =
+    booking.state === "pending_deposit" &&
+    outstanding > 0 &&
+    isPast(new Date(new Date(booking.check_in).getTime() - depositDeadlineHours * 3600_000));
+
+  // Check-in date passed but still in confirmed state (not checked in)
+  const checkinPassed =
+    booking.state === "confirmed" && isPast(checkinDate) && !isToday(checkinDate);
+
+  // Pickup requested but no driver assigned
+  const pickupPendingDriver =
+    !!pickup && pickup.status === "requested" && !pickup.driver_id;
+
+  const missingUnit = !booking.units?.name;
+
+  return { depositOverdue, checkinPassed, pickupPendingDriver, missingUnit };
+}
+
+function getNextStep(
+  booking: BookingWithUnit,
+  outstanding: number,
+  edge: EdgeFlags,
+  t: (k: string, opts?: any) => string
+): string {
+  // Edge cases take priority
+  if (edge.checkinPassed) return t("guestStay.checkinPassed");
+  if (edge.depositOverdue) return t("guestStay.depositOverdue");
+
   switch (booking.state) {
     case "inquiry":
     case "soft_hold":
@@ -43,17 +87,17 @@ function useNextStep(booking: BookingWithUnit, outstanding: number, t: (k: strin
     case "pending_deposit":
       return outstanding > 0 ? t("guestStay.payDeposit") : t("guestStay.depositProcessing");
     case "confirmed": {
-      const daysUntil = differenceInDays(new Date(booking.check_in), new Date());
+      const daysUntil = differenceInDays(parseISO(booking.check_in), new Date());
       if (daysUntil <= 0) return t("guestStay.checkinToday");
       if (daysUntil <= 3) return t("guestStay.checkinSoon", { days: daysUntil });
-      return t("guestStay.allSet", { date: format(new Date(booking.check_in), "MMM d") });
+      return t("guestStay.allSet", { date: format(parseISO(booking.check_in), "MMM d") });
     }
     case "checked_in":
       return outstanding > 0
         ? t("guestStay.outstandingBalance")
-        : t("guestStay.enjoyStay", { date: format(new Date(booking.check_out), "MMM d") });
+        : t("guestStay.enjoyStay", { date: format(parseISO(booking.check_out), "MMM d") });
     default:
-      return "";
+      return t("guestStay.contactStaff");
   }
 }
 
@@ -131,20 +175,23 @@ export function GuestStaySummary() {
         );
         const pickup = (pickups ?? []).find((p: any) => p.booking_id === booking.id);
         const deposit = (deposits ?? []).find((d) => d.booking_id === booking.id);
+        const edge = getEdgeFlags(booking, outstanding, pickup, policies ?? undefined);
         const stateInfo = STATE_CONFIG[booking.state] ?? STATE_CONFIG.inquiry;
         const StateIcon = stateInfo.icon;
-        const nextStep = useNextStep(booking, outstanding, t);
-        const nights = differenceInDays(new Date(booking.check_out), new Date(booking.check_in));
+        const nextStep = getNextStep(booking, outstanding, edge, t);
+        const nights = differenceInDays(parseISO(booking.check_out), parseISO(booking.check_in));
+
+        const hasWarning = edge.depositOverdue || edge.checkinPassed;
 
         return (
-          <Card key={booking.id} className="overflow-hidden border-primary/20">
+          <Card key={booking.id} className={`overflow-hidden ${hasWarning ? "border-destructive/40" : "border-primary/20"}`}>
             <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
               {/* Header: Unit + Status — single row, compact on mobile */}
               <div className="flex items-center justify-between gap-1.5">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0" />
                   <span className="font-semibold text-sm sm:text-base text-foreground truncate">
-                    {booking.units?.name ?? "—"}
+                    {edge.missingUnit ? t("guestStay.unitNotAssigned") : (booking.units?.name ?? "—")}
                   </span>
                 </div>
                 <Badge className={`text-[10px] sm:text-xs shrink-0 ${stateInfo.variant}`}>
@@ -179,7 +226,8 @@ export function GuestStaySummary() {
                     pickup
                       ? (pickup.status === "confirmed" || pickup.status === "completed")
                         ? "text-[hsl(var(--success))] font-medium"
-                        : pickup.status === "assigned" ? "text-primary font-medium" : "text-muted-foreground"
+                        : pickup.status === "assigned" ? "text-primary font-medium"
+                        : edge.pickupPendingDriver ? "text-warning-foreground font-medium" : "text-muted-foreground"
                       : "text-muted-foreground"
                   }
                   text={
@@ -188,7 +236,9 @@ export function GuestStaySummary() {
                         ? `${t("guestStay.pickupConfirmed")}${pickup.drivers?.name ? ` — ${pickup.drivers.name}` : ""}`
                         : pickup.status === "assigned"
                           ? `${t("guestStay.pickupAssigned")}${pickup.drivers?.name ? ` — ${pickup.drivers.name}` : ""}`
-                          : t("guestStay.pickupRequested")
+                          : edge.pickupPendingDriver
+                            ? t("guestStay.pickupPendingDriver")
+                            : t("guestStay.pickupRequested")
                       : t("guestStay.noPickup")
                   }
                 />
@@ -210,13 +260,16 @@ export function GuestStaySummary() {
                 />
               </div>
 
-              {/* Next Step — compact */}
+              {/* Next Step — warning-styled for edge cases */}
               {nextStep && (
                 <>
                   <Separator />
-                  <div className="flex items-start gap-1.5 text-[11px] sm:text-xs">
-                    <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary shrink-0 mt-0.5" />
-                    <span className="text-foreground/80 leading-tight">{nextStep}</span>
+                  <div className={`flex items-start gap-1.5 text-[11px] sm:text-xs ${hasWarning ? "text-destructive" : ""}`}>
+                    {hasWarning
+                      ? <AlertCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-destructive shrink-0 mt-0.5" />
+                      : <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary shrink-0 mt-0.5" />
+                    }
+                    <span className={hasWarning ? "font-medium leading-tight" : "text-foreground/80 leading-tight"}>{nextStep}</span>
                   </div>
                 </>
               )}

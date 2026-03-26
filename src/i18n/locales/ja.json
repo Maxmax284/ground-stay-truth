@@ -1019,6 +1019,11 @@
     "allSet": "準備完了です。チェックインは{{date}}です。",
     "outstandingBalance": "未払い残高があります。チェックアウト前にお支払いください。",
     "enjoyStay": "ごゆっくりお過ごしください！チェックアウトは{{date}}です。",
-    "nights": "{{count}}泊"
+    "nights": "{{count}}泊",
+    "depositOverdue": "デポジット期限超過 — キャンセルを避けるためスタッフにご連絡ください。",
+    "pickupPendingDriver": "送迎リクエスト済み — ドライバー未割当。",
+    "checkinPassed": "チェックイン日を過ぎています。スタッフにご連絡ください。",
+    "unitNotAssigned": "部屋未定",
+    "contactStaff": "ご質問は？チームにメッセージを送ってください。"
   }
 }

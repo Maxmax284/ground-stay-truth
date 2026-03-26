@@ -1019,6 +1019,11 @@
     "allSet": "Todo listo. Check-in el {{date}}.",
     "outstandingBalance": "Tienes un saldo pendiente. Por favor, liquídalo antes del check-out.",
     "enjoyStay": "¡Disfruta tu estancia! Check-out el {{date}}.",
-    "nights": "{{count}} noches"
+    "nights": "{{count}} noches",
+    "depositOverdue": "Depósito vencido — contacta al equipo para evitar la cancelación.",
+    "pickupPendingDriver": "Traslado solicitado — conductor aún no asignado.",
+    "checkinPassed": "La fecha de check-in ya pasó. Contacta al equipo.",
+    "unitNotAssigned": "Habitación pendiente",
+    "contactStaff": "¿Preguntas? Envía un mensaje a nuestro equipo."
   }
 }

@@ -1198,6 +1198,11 @@
     "allSet": "준비 완료! 체크인 날짜: {{date}}.",
     "outstandingBalance": "미결제 잔액이 있습니다. 체크아웃 전에 정산해 주세요.",
     "enjoyStay": "즐거운 숙박 되세요! 체크아웃: {{date}}.",
-    "nights": "{{count}}박"
+    "nights": "{{count}}박",
+    "depositOverdue": "보증금 기한 초과 — 취소를 피하려면 직원에게 연락하세요.",
+    "pickupPendingDriver": "픽업 요청됨 — 드라이버 미배정.",
+    "checkinPassed": "체크인 날짜가 지났습니다. 직원에게 연락하세요.",
+    "unitNotAssigned": "객실 미정",
+    "contactStaff": "질문이 있으신가요? 팀에 메시지를 보내세요."
   }
 }

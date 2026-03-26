@@ -1198,6 +1198,11 @@
     "allSet": "Alles bereit. Check-in am {{date}}.",
     "outstandingBalance": "Sie haben einen offenen Betrag. Bitte begleichen Sie ihn vor dem Auschecken.",
     "enjoyStay": "Genießen Sie Ihren Aufenthalt! Auschecken am {{date}}.",
-    "nights": "{{count}} Nächte"
+    "nights": "{{count}} Nächte",
+    "depositOverdue": "Anzahlung überfällig — kontaktieren Sie das Team, um eine Stornierung zu vermeiden.",
+    "pickupPendingDriver": "Transfer angefragt — Fahrer noch nicht zugewiesen.",
+    "checkinPassed": "Das Check-in-Datum ist überschritten. Bitte kontaktieren Sie das Team.",
+    "unitNotAssigned": "Unterkunft ausstehend",
+    "contactStaff": "Fragen? Schreiben Sie unserem Team."
   }
 }

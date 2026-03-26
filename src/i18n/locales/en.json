@@ -1266,6 +1266,11 @@
     "allSet": "You're all set. Check-in is {{date}}.",
     "outstandingBalance": "You have an outstanding balance. Please settle before checkout.",
     "enjoyStay": "Enjoy your stay! Checkout is {{date}}.",
-    "nights": "{{count}} nights"
+    "nights": "{{count}} nights",
+    "depositOverdue": "Deposit overdue — contact staff to avoid cancellation.",
+    "pickupPendingDriver": "Pickup requested — driver not yet assigned.",
+    "checkinPassed": "Check-in date has passed. Please contact staff.",
+    "unitNotAssigned": "Unit pending",
+    "contactStaff": "Questions? Message our team for help."
   }
 }

@@ -1198,6 +1198,11 @@
     "allSet": "Tout est prêt. Arrivée le {{date}}.",
     "outstandingBalance": "Vous avez un solde impayé. Veuillez le régler avant le départ.",
     "enjoyStay": "Bon séjour ! Départ le {{date}}.",
-    "nights": "{{count}} nuits"
+    "nights": "{{count}} nuits",
+    "depositOverdue": "Acompte en retard — contactez l'équipe pour éviter l'annulation.",
+    "pickupPendingDriver": "Transfert demandé — chauffeur non encore attribué.",
+    "checkinPassed": "La date d'arrivée est dépassée. Veuillez contacter l'équipe.",
+    "unitNotAssigned": "Logement en attente",
+    "contactStaff": "Des questions ? Envoyez un message à notre équipe."
   }
 }
