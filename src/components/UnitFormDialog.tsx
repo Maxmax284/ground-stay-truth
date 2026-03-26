@@ -97,6 +97,21 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
           <div className="space-y-2"><Label>{t("units.amenities")}</Label><div className="flex flex-wrap gap-2">{allAmenityOptions.map((amenity) => <button key={amenity} type="button" onClick={() => toggleAmenity(amenity)} className={`px-3 py-1 rounded-full text-sm border transition-colors ${selectedAmenities.includes(amenity) ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:border-primary/50"}`}>{amenity}</button>)}</div><div className="flex gap-2 mt-2"><Input placeholder={t("units.customAmenityPlaceholder", { defaultValue: "Add custom amenity…" })} value={customAmenity} onChange={(e) => setCustomAmenity(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomAmenity(); } }} className="flex-1" /><Button type="button" size="sm" variant="outline" onClick={addCustomAmenity} disabled={!customAmenity.trim()}><Plus className="h-4 w-4" /></Button></div></div>
           <div className="space-y-2"><Label>{t("units.photos")}</Label>{savedUnitId ? <UnitPhotoUpload unitId={savedUnitId} photos={photos} onChange={setPhotos} /> : <p className="text-xs text-muted-foreground">{t("units.saveFirst")}</p>}</div>
           <div className="space-y-2"><Label htmlFor="rules">{t("units.houseRules")}</Label><Textarea id="rules" {...register("rules")} placeholder="No smoking, quiet hours after 10pm…" rows={2} /></div>
+
+          {/* Stay Essentials — per-unit overrides */}
+          <div className="space-y-3 rounded-lg border border-border/50 p-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Stay Essentials (per-unit overrides)</p>
+            <p className="text-[11px] text-muted-foreground -mt-2">Leave blank to use global defaults from Policy Settings.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1"><Label htmlFor="wifi_network" className="text-xs">WiFi Network</Label><Input id="wifi_network" {...register("wifi_network")} placeholder="Global default" className="h-8 text-sm" /></div>
+              <div className="space-y-1"><Label htmlFor="wifi_password" className="text-xs">WiFi Password</Label><Input id="wifi_password" {...register("wifi_password")} placeholder="Global default" className="h-8 text-sm" /></div>
+            </div>
+            <div className="space-y-1"><Label htmlFor="house_rules_detail" className="text-xs">House Rules</Label><Textarea id="house_rules_detail" {...register("house_rules_detail")} placeholder="Global default" rows={2} className="text-sm" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1"><Label htmlFor="emergency_contact_name" className="text-xs">Emergency Contact</Label><Input id="emergency_contact_name" {...register("emergency_contact_name")} placeholder="Global default" className="h-8 text-sm" /></div>
+              <div className="space-y-1"><Label htmlFor="emergency_contact_phone" className="text-xs">Emergency Phone</Label><Input id="emergency_contact_phone" {...register("emergency_contact_phone")} placeholder="Global default" className="h-8 text-sm" /></div>
+            </div>
+          </div>
           <div className="flex items-center justify-between"><Label htmlFor="is_active">{t("common.active")}</Label><Switch id="is_active" checked={isActive} onCheckedChange={setIsActive} /></div>
           <div className="flex items-center justify-between"><Label htmlFor="reviews_enabled">{t("units.reviewsEnabled", { defaultValue: "Reviews Enabled" })}</Label><Switch id="reviews_enabled" checked={reviewsEnabled} onCheckedChange={setReviewsEnabled} /></div>
           <div className="flex justify-end gap-2 pt-2"><Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button><Button type="submit" disabled={createUnit.isPending || updateUnit.isPending}>{isEditing || isEditingAfterCreate ? t("units.saveChanges") : t("units.addUnit")}</Button></div>
