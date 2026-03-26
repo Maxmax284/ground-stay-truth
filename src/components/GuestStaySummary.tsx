@@ -102,7 +102,7 @@ function getNextStep(
   }
 }
 
-type ActionType = "pay_deposit" | "upload_id" | "landed" | "view_pickup" | "report_issue" | "ask_ai";
+type ActionType = "pay_deposit" | "upload_id" | "landed" | "view_pickup" | "report_issue" | "ask_ai" | "stay_essentials";
 
 interface GuestAction {
   type: ActionType;
