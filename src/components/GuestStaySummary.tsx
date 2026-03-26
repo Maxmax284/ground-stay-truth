@@ -309,7 +309,7 @@ export function GuestStaySummary() {
         const alreadyLanded = pickup?.guest_landed_at;
 
         return (
-          <Card key={booking.id} className={`overflow-hidden ${hasWarning ? "border-destructive/40" : "border-primary/20"}`}>
+          <Card key={booking.id} className={`overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${hasWarning ? "border-destructive/40" : "border-primary/20"}`}>
             <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
               {/* Header: Unit + Status */}
               <div className="flex items-center justify-between gap-1.5">
