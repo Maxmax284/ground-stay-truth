@@ -40,7 +40,10 @@ export function useUpdateUnit() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["units"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["units"] });
+      qc.invalidateQueries({ queryKey: ["stay-essentials"] });
+    },
   });
 }
 

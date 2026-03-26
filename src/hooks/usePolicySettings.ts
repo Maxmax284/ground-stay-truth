@@ -33,6 +33,9 @@ export function useUpdatePolicySetting() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["policy_settings"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["policy_settings"] });
+      qc.invalidateQueries({ queryKey: ["stay-essentials"] });
+    },
   });
 }

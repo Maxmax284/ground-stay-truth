@@ -12,7 +12,7 @@ import { usePolicySettings, useUpdatePolicySetting, type PolicySetting } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Save, Banknote, Percent, Heart, Bot, Wrench, Mail, Receipt,
-  Clock, Shield, CreditCard, ToggleLeft, CalendarClock, Sparkles, Plane,
+  Clock, Shield, CreditCard, ToggleLeft, CalendarClock, Sparkles, Plane, Wifi, Phone, ScrollText,
 } from "lucide-react";
 
 /* ── Setting Groups ────────────────────────────────────────── */
@@ -121,6 +121,24 @@ const GROUPS: SettingGroup[] = [
       ? `Active • ฿${g("transport_base_fee")} ${g("transport_fee_type")}${g("transport_night_surcharge_enabled") === "true" ? ` • ฿${g("transport_night_surcharge")} night surcharge` : ""}`
       : "Disabled",
   },
+  {
+    id: "stay_essentials",
+    label: "Stay Essentials",
+    icon: <Wifi className="h-4 w-4" />,
+    keys: [
+      "wifi_network_name", "wifi_password",
+      "house_rules_summary",
+      "emergency_contact_name", "emergency_contact_phone",
+    ],
+    summary: (g) => {
+      const wifi = g("wifi_network_name");
+      const emergency = g("emergency_contact_name");
+      const parts = [];
+      if (wifi) parts.push(`WiFi: ${wifi}`);
+      if (emergency) parts.push(`Emergency: ${emergency}`);
+      return parts.length ? parts.join(" • ") : "Not configured";
+    },
+  },
 ];
 
 /* Keys handled by cancellation editor or technical/sensitive */
@@ -184,6 +202,11 @@ const FRIENDLY_LABELS: Record<string, string> = {
   bank_transfer_account_name: "Account Name",
   bank_transfer_account_number: "Account Number",
   bank_transfer_notes: "Transfer Instructions (shown to guest)",
+  wifi_network_name: "WiFi Network Name",
+  wifi_password: "WiFi Password",
+  house_rules_summary: "House Rules (global default)",
+  emergency_contact_name: "Emergency Contact Name",
+  emergency_contact_phone: "Emergency Contact Phone",
 };
 
 const SETTING_ICONS: Record<string, React.ReactNode> = {
@@ -192,6 +215,11 @@ const SETTING_ICONS: Record<string, React.ReactNode> = {
   deposit_reminder_hours: <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />,
   security_deposit_amount: <Shield className="h-3.5 w-3.5 text-muted-foreground" />,
   payment_provider: <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />,
+  wifi_network_name: <Wifi className="h-3.5 w-3.5 text-muted-foreground" />,
+  wifi_password: <Shield className="h-3.5 w-3.5 text-muted-foreground" />,
+  house_rules_summary: <ScrollText className="h-3.5 w-3.5 text-muted-foreground" />,
+  emergency_contact_name: <Phone className="h-3.5 w-3.5 text-muted-foreground" />,
+  emergency_contact_phone: <Phone className="h-3.5 w-3.5 text-muted-foreground" />,
 };
 
 /* ── Component ─────────────────────────────────────────────── */
