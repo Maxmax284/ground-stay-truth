@@ -52,7 +52,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        if (event === "TOKEN_REFRESHED" && !session) {
+          // Refresh failed — force sign out to clear stale state
+          await supabase.auth.signOut();
+          return;
+        }
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
