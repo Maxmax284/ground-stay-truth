@@ -175,10 +175,11 @@ export function GuestStaySummary() {
         );
         const pickup = (pickups ?? []).find((p: any) => p.booking_id === booking.id);
         const deposit = (deposits ?? []).find((d) => d.booking_id === booking.id);
+        const edge = getEdgeFlags(booking, outstanding, pickup, policies ?? undefined);
         const stateInfo = STATE_CONFIG[booking.state] ?? STATE_CONFIG.inquiry;
         const StateIcon = stateInfo.icon;
-        const nextStep = useNextStep(booking, outstanding, t);
-        const nights = differenceInDays(new Date(booking.check_out), new Date(booking.check_in));
+        const nextStep = getNextStep(booking, outstanding, edge, t);
+        const nights = differenceInDays(parseISO(booking.check_out), parseISO(booking.check_in));
 
         return (
           <Card key={booking.id} className="overflow-hidden border-primary/20">
