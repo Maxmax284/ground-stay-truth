@@ -56,6 +56,8 @@ const MESSAGES: Record<string, string> = {
   admin_overrides: "{count} override(s) logged in last 24h",
   unprocessed_events: "{count} unprocessed payment event(s)",
   early_checkin_pending: "{count} early check-in request(s) pending",
+  essentials_missing: "{count} check-in(s) today missing WiFi or emergency info",
+  essentials_ready: "Stay essentials ready for {count} check-in(s) today",
   upcoming_arrivals: "{count} arrival(s) tomorrow",
   upcoming_departures: "{count} departure(s) tomorrow",
   upcoming_maintenance_block: "Maintenance block starts {date} — {unit}",
