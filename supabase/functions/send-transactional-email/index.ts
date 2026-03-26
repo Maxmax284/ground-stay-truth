@@ -159,6 +159,84 @@ const templates: Record<string, Record<string, { subject: string; html: (data: a
         </div>`,
     },
   },
+  welcome_checkin: {
+    en: {
+      subject: "Welcome to Your Stay! 🏠",
+      html: (d) => `
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+          <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">Welcome, ${d.guest_name}!</h1>
+          <p style="color:#666;margin-bottom:24px">Today's the day — your stay at <strong>${d.unit_name}</strong> begins. Here's everything you need.</p>
+
+          <div style="background:#f0fdf4;border-radius:12px;padding:20px;margin-bottom:20px">
+            <h2 style="font-size:16px;margin:0 0 12px 0;color:#166534">📶 WiFi</h2>
+            <table style="width:100%;border-collapse:collapse">
+              <tr><td style="padding:4px 0;color:#666;width:40%">Network</td><td style="padding:4px 0;font-weight:600">${d.wifi_network || "—"}</td></tr>
+              <tr><td style="padding:4px 0;color:#666">Password</td><td style="padding:4px 0;font-weight:600;font-family:monospace">${d.wifi_password || "—"}</td></tr>
+            </table>
+          </div>
+
+          <div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:20px">
+            <h2 style="font-size:16px;margin:0 0 12px 0;color:#1a1a1a">📋 House Rules</h2>
+            <p style="color:#666;font-size:14px;line-height:1.6;margin:0;white-space:pre-line">${d.house_rules || "Please ask at front desk."}</p>
+          </div>
+
+          <div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:20px">
+            <h2 style="font-size:16px;margin:0 0 12px 0;color:#1a1a1a">⏰ Check-in / Check-out</h2>
+            <table style="width:100%;border-collapse:collapse">
+              <tr><td style="padding:4px 0;color:#666;width:40%">Check-in from</td><td style="padding:4px 0;font-weight:600">${d.checkin_time}</td></tr>
+              <tr><td style="padding:4px 0;color:#666">Check-out by</td><td style="padding:4px 0;font-weight:600">${d.checkout_time || "11:00"}</td></tr>
+              <tr><td style="padding:4px 0;color:#666">Your dates</td><td style="padding:4px 0;font-weight:600">${d.check_in} → ${d.check_out}</td></tr>
+            </table>
+          </div>
+
+          <div style="background:#fef2f2;border-radius:12px;padding:20px;margin-bottom:20px">
+            <h2 style="font-size:16px;margin:0 0 12px 0;color:#991b1b">🚨 Emergency Contact</h2>
+            <p style="color:#666;font-size:14px;margin:0"><strong>${d.emergency_name || "Front Desk"}</strong><br/>${d.emergency_phone || "See Guest Portal"}</p>
+          </div>
+
+          <p style="color:#666;font-size:14px">Need anything? Message us through the Guest Portal anytime.</p>
+          <p style="color:#999;font-size:12px;margin-top:24px">Ground Stay — Lamai Muay Thai Fight Camp</p>
+        </div>`,
+    },
+    th: {
+      subject: "ยินดีต้อนรับ! 🏠",
+      html: (d) => `
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+          <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">ยินดีต้อนรับ ${d.guest_name}!</h1>
+          <p style="color:#666;margin-bottom:24px">วันนี้เป็นวันเช็คอินของคุณที่ <strong>${d.unit_name}</strong> นี่คือข้อมูลที่จำเป็น</p>
+
+          <div style="background:#f0fdf4;border-radius:12px;padding:20px;margin-bottom:20px">
+            <h2 style="font-size:16px;margin:0 0 12px 0;color:#166534">📶 WiFi</h2>
+            <table style="width:100%;border-collapse:collapse">
+              <tr><td style="padding:4px 0;color:#666;width:40%">ชื่อเครือข่าย</td><td style="padding:4px 0;font-weight:600">${d.wifi_network || "—"}</td></tr>
+              <tr><td style="padding:4px 0;color:#666">รหัสผ่าน</td><td style="padding:4px 0;font-weight:600;font-family:monospace">${d.wifi_password || "—"}</td></tr>
+            </table>
+          </div>
+
+          <div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:20px">
+            <h2 style="font-size:16px;margin:0 0 12px 0;color:#1a1a1a">📋 กฎบ้าน</h2>
+            <p style="color:#666;font-size:14px;line-height:1.6;margin:0;white-space:pre-line">${d.house_rules || "กรุณาสอบถามที่แผนกต้อนรับ"}</p>
+          </div>
+
+          <div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:20px">
+            <h2 style="font-size:16px;margin:0 0 12px 0;color:#1a1a1a">⏰ เช็คอิน / เช็คเอาท์</h2>
+            <table style="width:100%;border-collapse:collapse">
+              <tr><td style="padding:4px 0;color:#666;width:40%">เช็คอินตั้งแต่</td><td style="padding:4px 0;font-weight:600">${d.checkin_time}</td></tr>
+              <tr><td style="padding:4px 0;color:#666">เช็คเอาท์ภายใน</td><td style="padding:4px 0;font-weight:600">${d.checkout_time || "11:00"}</td></tr>
+              <tr><td style="padding:4px 0;color:#666">วันที่</td><td style="padding:4px 0;font-weight:600">${d.check_in} → ${d.check_out}</td></tr>
+            </table>
+          </div>
+
+          <div style="background:#fef2f2;border-radius:12px;padding:20px;margin-bottom:20px">
+            <h2 style="font-size:16px;margin:0 0 12px 0;color:#991b1b">🚨 ติดต่อฉุกเฉิน</h2>
+            <p style="color:#666;font-size:14px;margin:0"><strong>${d.emergency_name || "แผนกต้อนรับ"}</strong><br/>${d.emergency_phone || "ดูใน Guest Portal"}</p>
+          </div>
+
+          <p style="color:#666;font-size:14px">ต้องการอะไรเพิ่มเติม? ส่งข้อความผ่าน Guest Portal ได้ตลอดเวลา</p>
+          <p style="color:#999;font-size:12px;margin-top:24px">Ground Stay — Lamai Muay Thai Fight Camp</p>
+        </div>`,
+    },
+  },
 };
 
 serve(async (req) => {

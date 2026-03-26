@@ -29,6 +29,8 @@ Deno.serve(async (req) => {
       .in("key", [
         "earliest_checkin_time", "checkout_time",
         "email_deposit_reminder_enabled", "email_welcome_enabled",
+        "wifi_network_name", "wifi_password",
+        "house_rules_summary", "emergency_contact_name", "emergency_contact_phone",
       ]);
 
     const policyMap = new Map((policies ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]));
