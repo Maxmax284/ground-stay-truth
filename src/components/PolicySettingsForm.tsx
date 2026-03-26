@@ -215,6 +215,11 @@ const SETTING_ICONS: Record<string, React.ReactNode> = {
   deposit_reminder_hours: <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />,
   security_deposit_amount: <Shield className="h-3.5 w-3.5 text-muted-foreground" />,
   payment_provider: <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />,
+  wifi_network_name: <Wifi className="h-3.5 w-3.5 text-muted-foreground" />,
+  wifi_password: <Shield className="h-3.5 w-3.5 text-muted-foreground" />,
+  house_rules_summary: <ScrollText className="h-3.5 w-3.5 text-muted-foreground" />,
+  emergency_contact_name: <Phone className="h-3.5 w-3.5 text-muted-foreground" />,
+  emergency_contact_phone: <Phone className="h-3.5 w-3.5 text-muted-foreground" />,
 };
 
 /* ── Component ─────────────────────────────────────────────── */
