@@ -182,6 +182,21 @@ function AIAssistantPanelInner() {
     }
   }, [profile.data?.preferred_language]);
 
+  // Listen for external "ask Kru Glitch" events (from Corner Talk)
+  useEffect(() => {
+    const handler = (e: CustomEvent<{ question: string }>) => {
+      setIsOpen(true);
+      setMode("digest");
+      const q = e.detail?.question;
+      if (q) {
+        setInput("");
+        sendMessage(q, "digest", undefined, langCodeToName(language));
+      }
+    };
+    window.addEventListener("ask-kru-glitch", handler as EventListener);
+    return () => window.removeEventListener("ask-kru-glitch", handler as EventListener);
+  }, [sendMessage, language]);
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;

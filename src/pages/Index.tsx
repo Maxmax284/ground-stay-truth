@@ -18,6 +18,7 @@ import { LaundryPanel } from "@/components/LaundryPanel";
 import { HousekeepingPanel } from "@/components/HousekeepingPanel";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { TodaysPickupsWidget } from "@/components/TodaysPickupsWidget";
+import { CornerTalkPanel } from "@/components/CornerTalkPanel";
 import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useDraftMessages, useApproveDraftMessage } from "@/hooks/useBookings";
@@ -55,6 +56,15 @@ const Index = () => {
           <h1 className="text-2xl font-bold text-foreground">{t("dashboard.welcome")}</h1>
           <p className="text-muted-foreground mt-1">{t("dashboard.overview")}</p>
         </div>
+
+        {/* Corner Talk — role-based intelligence briefing */}
+        <CornerTalkPanel
+          onAskGlitch={(question) => {
+            window.dispatchEvent(
+              new CustomEvent("ask-kru-glitch", { detail: { question } })
+            );
+          }}
+        />
 
         {/* Maintenance role: simplified view */}
         {isMaintenance ? (
