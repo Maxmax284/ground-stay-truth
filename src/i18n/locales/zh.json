@@ -1019,6 +1019,11 @@
     "allSet": "一切就绪。入住日期：{{date}}。",
     "outstandingBalance": "您有未结余额，请在退房前结清。",
     "enjoyStay": "祝您住宿愉快！退房日期：{{date}}。",
-    "nights": "{{count}} 晚"
+    "nights": "{{count}} 晚",
+    "depositOverdue": "押金已逾期 — 请联系工作人员以避免取消。",
+    "pickupPendingDriver": "已申请接机 — 司机尚未分配。",
+    "checkinPassed": "入住日期已过，请联系工作人员。",
+    "unitNotAssigned": "房间待定",
+    "contactStaff": "有问题？给我们的团队发消息。"
   }
 }
