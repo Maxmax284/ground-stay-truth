@@ -475,6 +475,7 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
         isUpcoming: true,
       });
     }
+  }
 
   // ── UPCOMING ──
 
