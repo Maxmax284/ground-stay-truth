@@ -201,7 +201,11 @@ export function useTransitionBookingState() {
           const { data: emailPolicies } = await supabase
             .from("policy_settings")
             .select("key, value")
-            .in("key", ["earliest_checkin_time", "checkout_time", "currency_symbol"]);
+            .in("key", [
+              "earliest_checkin_time", "checkout_time", "currency_symbol",
+              "wifi_network_name", "wifi_password",
+              "house_rules_summary", "emergency_contact_name", "emergency_contact_phone",
+            ]);
           const pMap = new Map((emailPolicies ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]));
           const currSym = pMap.get("currency_symbol") || "฿";
 
@@ -223,15 +227,21 @@ export function useTransitionBookingState() {
             };
           }
 
-          // 2. Check-in welcome email
+          // 2. Check-in welcome email (distinct from pre-arrival)
           if (toState === "checked_in") {
-            emailTemplate = "pre_arrival_reminder";
+            emailTemplate = "welcome_checkin";
             emailData = {
               guest_name: guestName,
               unit_name: unitName || "Your Unit",
               check_in: data.check_in,
               check_out: data.check_out,
               checkin_time: pMap.get("earliest_checkin_time") || "16:00",
+              checkout_time: pMap.get("checkout_time") || "11:00",
+              wifi_network: pMap.get("wifi_network_name") || "",
+              wifi_password: pMap.get("wifi_password") || "",
+              house_rules: pMap.get("house_rules_summary") || "",
+              emergency_name: pMap.get("emergency_contact_name") || "Front Desk",
+              emergency_phone: pMap.get("emergency_contact_phone") || "",
             };
           }
 
