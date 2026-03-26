@@ -180,6 +180,10 @@ const FRIENDLY_LABELS: Record<string, string> = {
   transport_night_surcharge_enabled: "Night Surcharge",
   transport_night_surcharge: "Night Surcharge Amount (฿)",
   transport_free_pickup_min_nights: "Free Pickup Min Nights (0 = off)",
+  bank_transfer_bank_name: "Bank Name",
+  bank_transfer_account_name: "Account Name",
+  bank_transfer_account_number: "Account Number",
+  bank_transfer_notes: "Transfer Instructions (shown to guest)",
 };
 
 const SETTING_ICONS: Record<string, React.ReactNode> = {
