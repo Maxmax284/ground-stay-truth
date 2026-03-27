@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMarkMessagesRead } from "@/hooks/useBookings";
 import { supabase } from "@/integrations/supabase/client";
+import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
@@ -75,7 +76,7 @@ function useInboxThreads() {
   });
 }
 
-function useMessagesRealtime() {
+function useMessagesRealtime(onNewMessage?: () => void) {
   const qc = useQueryClient();
   useEffect(() => {
     const channel = supabase.channel("inbox-realtime").on(
@@ -84,17 +85,20 @@ function useMessagesRealtime() {
         qc.invalidateQueries({ queryKey: ["inbox-threads"] });
         const bookingId = (payload.new as any)?.booking_id ?? (payload.old as any)?.booking_id;
         if (bookingId) qc.invalidateQueries({ queryKey: ["bookingMessages", bookingId] });
+        if (payload.eventType === "INSERT" && onNewMessage) onNewMessage();
       }
     ).subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [qc]);
+  }, [qc, onNewMessage]);
 }
 
 const Messages = () => {
   const { t } = useTranslation();
   const { isAdmin } = useAuth();
+  const { play } = useSoundEffects();
   const { data: threads, isLoading } = useInboxThreads();
-  useMessagesRealtime();
+  const handleNewMessage = useRef(() => play("message")).current;
+  useMessagesRealtime(handleNewMessage);
   const [search, setSearch] = useState("");
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const markRead = useMarkMessagesRead();
