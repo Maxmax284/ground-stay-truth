@@ -12,6 +12,7 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 import { TestimonialSection } from "@/components/TestimonialSection";
 import { AmenityList } from "@/components/AmenityBadge";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
+import { OfflineBanner } from "@/components/OfflineBanner";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -49,9 +50,24 @@ export default function Stay() {
           headers: { apikey: SUPABASE_KEY },
         });
         const data = await resp.json();
-        setUnits(data.units ?? []);
-        setCurrencySymbol(data.currencySymbol ?? "฿");
-      } catch { /* silent */ }
+        const fetchedUnits = data.units ?? [];
+        const fetchedSymbol = data.currencySymbol ?? "฿";
+        setUnits(fetchedUnits);
+        setCurrencySymbol(fetchedSymbol);
+        // Cache for offline use
+        try {
+          localStorage.setItem("gs_cache_units", JSON.stringify(fetchedUnits));
+          localStorage.setItem("gs_cache_currency", fetchedSymbol);
+        } catch { /* quota */ }
+      } catch {
+        // Offline or error — load from cache
+        try {
+          const cached = localStorage.getItem("gs_cache_units");
+          const cachedCurrency = localStorage.getItem("gs_cache_currency");
+          if (cached) setUnits(JSON.parse(cached));
+          if (cachedCurrency) setCurrencySymbol(cachedCurrency);
+        } catch { /* silent */ }
+      }
       setLoading(false);
     })();
   }, []);
@@ -94,6 +110,7 @@ export default function Stay() {
 
   return (
     <div className="min-h-screen bg-background">
+      <OfflineBanner />
       {/* SEO metadata handled by index.html; content structure for crawlers */}
       
       {/* Hero */}
