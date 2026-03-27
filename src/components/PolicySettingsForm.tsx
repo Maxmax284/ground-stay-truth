@@ -16,7 +16,7 @@ import {
   Volume2,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
-import { playGroundSound } from "@/lib/groundSounds";
+import { playGroundSound, SOUND_NAMES, type SoundName } from "@/lib/groundSounds";
 
 /* ── Setting Groups ────────────────────────────────────────── */
 
@@ -407,6 +407,47 @@ export function PolicySettingsForm() {
           <div className="grid gap-3 sm:grid-cols-2">
             {group.keys.map((key) => renderSetting(key))}
           </div>
+
+          {/* Sound picker for Ground Sounds tab */}
+          {group.id === "ground_sounds" && (
+            <Card>
+              <CardHeader className="pb-2 pt-4 px-5">
+                <CardTitle className="text-sm">Sound Library</CardTitle>
+                <CardDescription className="text-xs">Preview all available sounds. Tap any sound to hear it at current volume.</CardDescription>
+              </CardHeader>
+              <CardContent className="px-5 pb-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                  {SOUND_NAMES.map((name) => {
+                    const vol = (Number(getValue("sound_effects_volume") || "50")) / 100;
+                    const labels: Record<SoundName, string> = {
+                      notification: "Notification",
+                      payment: "Payment",
+                      booking_confirmed: "Booking Confirmed",
+                      check_in: "Check-in",
+                      issue_resolved: "Issue Resolved",
+                      error: "Error",
+                      briefing: "Briefing",
+                      landed: "Landed",
+                      message: "Message",
+                      state_change: "State Change",
+                    };
+                    return (
+                      <Button
+                        key={name}
+                        variant="outline"
+                        size="sm"
+                        className="h-auto py-2 px-3 flex flex-col items-center gap-1 text-xs hover:bg-primary/10 hover:border-primary/40 transition-colors"
+                        onClick={() => playGroundSound(name, vol)}
+                      >
+                        <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="truncate w-full text-center">{labels[name]}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       ))}
     </Tabs>
