@@ -95,8 +95,10 @@ function useMessagesRealtime(onNewMessage?: () => void) {
 const Messages = () => {
   const { t } = useTranslation();
   const { isAdmin } = useAuth();
+  const { play } = useSoundEffects();
   const { data: threads, isLoading } = useInboxThreads();
-  useMessagesRealtime();
+  const handleNewMessage = useRef(() => play("message")).current;
+  useMessagesRealtime(handleNewMessage);
   const [search, setSearch] = useState("");
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const markRead = useMarkMessagesRead();
