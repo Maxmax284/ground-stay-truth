@@ -20,6 +20,8 @@ interface GuestStaySupportProps {
     unit_id: string;
     units?: { name: string } | null;
   }>;
+  focusSection?: string | null;
+  onSectionFocused?: () => void;
 }
 
 const CATEGORIES = ["plumbing", "electrical", "appliance", "cleanliness", "other"];
