@@ -169,7 +169,11 @@ const BOOLEAN_KEYS = new Set([
   "security_deposit_required", "email_deposit_reminder_enabled", "email_welcome_enabled",
   "tax_included", "require_pre_arrival_completion_before_checkin",
   "transport_enabled", "transport_night_surcharge_enabled",
+  "sound_effects_enabled",
 ]);
+
+/** Keys that use a slider instead of text input */
+const SLIDER_KEYS = new Set(["sound_effects_volume"]);
 
 /* Nice display names */
 const FRIENDLY_LABELS: Record<string, string> = {
