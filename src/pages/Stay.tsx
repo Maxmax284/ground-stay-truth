@@ -296,6 +296,8 @@ export default function Stay() {
         <p>© {new Date().getFullYear()} Ground Stay · Lamai Muay Thai</p>
         <a href="/legal" className="text-primary hover:underline">Terms & Privacy</a>
       </footer>
+
+      <PWAInstallBanner />
     </div>
   );
 }
