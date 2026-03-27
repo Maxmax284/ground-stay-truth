@@ -352,6 +352,8 @@ const GuestPortal = () => {
           {activeBookings.length > 0 && (
             <TabsContent value="stay-support">
               <GuestStaySupport
+                focusSection={focusSection}
+                onSectionFocused={() => setFocusSection(null)}
                 bookings={activeBookings.map((b) => ({
                   id: b.id,
                   unit_id: b.unit_id,
