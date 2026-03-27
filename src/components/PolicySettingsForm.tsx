@@ -16,7 +16,7 @@ import {
   Volume2,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
-import { playGroundSound } from "@/lib/groundSounds";
+import { playGroundSound, SOUND_NAMES, type SoundName } from "@/lib/groundSounds";
 
 /* ── Setting Groups ────────────────────────────────────────── */
 
