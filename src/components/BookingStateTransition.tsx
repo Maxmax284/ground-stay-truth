@@ -37,6 +37,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
   const { data: policies } = usePolicySettings();
   const { isAIEnabled } = useAISettings(role);
   const aiAssistant = useAIAssistant();
+  const { play: playSound } = useSoundEffects();
 
   const { data: existingPayments } = useBookingPayments(bookingId);
   const createPayment = useCreatePayment();
