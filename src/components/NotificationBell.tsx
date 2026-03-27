@@ -104,6 +104,8 @@ export function NotificationBell() {
                   className={`w-full text-left px-4 py-3 hover:bg-accent/40 transition-colors flex items-start gap-3 ${!n.read ? "bg-primary/5" : ""}`}
                   onClick={() => {
                     if (!n.read) markRead.mutate(n.id);
+                    handleNotificationAction(n.type);
+                    setOpen(false);
                   }}
                 >
                   <span className="text-base shrink-0 mt-0.5">{TYPE_ICONS[n.type] ?? "📌"}</span>
