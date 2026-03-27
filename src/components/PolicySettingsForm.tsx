@@ -223,6 +223,8 @@ const FRIENDLY_LABELS: Record<string, string> = {
   house_rules_summary: "House Rules (global default)",
   emergency_contact_name: "Emergency Contact Name",
   emergency_contact_phone: "Emergency Contact Phone",
+  sound_effects_enabled: "Enable Ground Sounds",
+  sound_effects_volume: "Volume",
 };
 
 const SETTING_ICONS: Record<string, React.ReactNode> = {
@@ -236,6 +238,8 @@ const SETTING_ICONS: Record<string, React.ReactNode> = {
   house_rules_summary: <ScrollText className="h-3.5 w-3.5 text-muted-foreground" />,
   emergency_contact_name: <Phone className="h-3.5 w-3.5 text-muted-foreground" />,
   emergency_contact_phone: <Phone className="h-3.5 w-3.5 text-muted-foreground" />,
+  sound_effects_enabled: <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />,
+  sound_effects_volume: <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />,
 };
 
 /* ── Component ─────────────────────────────────────────────── */
