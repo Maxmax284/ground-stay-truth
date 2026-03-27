@@ -14,7 +14,32 @@ const TYPE_ICONS: Record<string, string> = {
   maintenance: "🔧",
   laundry: "👕",
   override: "⚠️",
+  stay_essentials: "🏠",
 };
+
+/** Dispatch a custom event when tapping an actionable notification type. */
+function handleNotificationAction(type: string) {
+  switch (type) {
+    case "stay_essentials":
+      window.dispatchEvent(
+        new CustomEvent("ask-kru-glitch", {
+          detail: { question: "Show me my stay essentials — WiFi, house rules, and emergency contacts." },
+        })
+      );
+      break;
+    case "booking":
+      window.dispatchEvent(new CustomEvent("guest-portal-action", { detail: { tab: "bookings" } }));
+      break;
+    case "maintenance":
+      window.dispatchEvent(new CustomEvent("guest-portal-action", { detail: { tab: "stay-support" } }));
+      break;
+    case "payment":
+      window.dispatchEvent(new CustomEvent("guest-portal-action", { detail: { tab: "bookings" } }));
+      break;
+    default:
+      break;
+  }
+}
 
 export function NotificationBell() {
   const { t } = useTranslation();
@@ -79,6 +104,8 @@ export function NotificationBell() {
                   className={`w-full text-left px-4 py-3 hover:bg-accent/40 transition-colors flex items-start gap-3 ${!n.read ? "bg-primary/5" : ""}`}
                   onClick={() => {
                     if (!n.read) markRead.mutate(n.id);
+                    handleNotificationAction(n.type);
+                    setOpen(false);
                   }}
                 >
                   <span className="text-base shrink-0 mt-0.5">{TYPE_ICONS[n.type] ?? "📌"}</span>
