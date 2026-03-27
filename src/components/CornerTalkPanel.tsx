@@ -45,6 +45,16 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
   const { t } = useTranslation();
   const { role } = useAuth();
   const { data, isLoading, error } = useCornerTalk();
+  const { play: playSound } = useSoundEffects();
+  const briefingPlayedRef = useRef(false);
+
+  // Play briefing sound when data loads for the first time
+  useEffect(() => {
+    if (data && !briefingPlayedRef.current) {
+      briefingPlayedRef.current = true;
+      playSound("briefing");
+    }
+  }, [data, playSound]);
 
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem(STORAGE_KEY) === "true"; } catch { return false; }
