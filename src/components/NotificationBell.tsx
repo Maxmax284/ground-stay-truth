@@ -36,6 +36,9 @@ function handleNotificationAction(type: string) {
     case "payment":
       window.dispatchEvent(new CustomEvent("guest-portal-action", { detail: { tab: "bookings" } }));
       break;
+    case "laundry":
+      window.dispatchEvent(new CustomEvent("guest-portal-action", { detail: { tab: "stay-support", section: "laundry" } }));
+      break;
     default:
       break;
   }
