@@ -82,8 +82,14 @@ export default function Stay() {
         const data = await resp.json();
         if (data?.[0]?.value) {
           setCampSummary(data[0].value);
+          try { localStorage.setItem("gs_cache_camp", JSON.stringify(data[0].value)); } catch { /* quota */ }
         }
-      } catch { /* silent */ }
+      } catch {
+        try {
+          const cached = localStorage.getItem("gs_cache_camp");
+          if (cached) setCampSummary(JSON.parse(cached));
+        } catch { /* silent */ }
+      }
     })();
   }, []);
 
