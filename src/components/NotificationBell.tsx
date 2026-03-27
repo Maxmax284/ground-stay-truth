@@ -14,7 +14,32 @@ const TYPE_ICONS: Record<string, string> = {
   maintenance: "🔧",
   laundry: "👕",
   override: "⚠️",
+  stay_essentials: "🏠",
 };
+
+/** Dispatch a custom event when tapping an actionable notification type. */
+function handleNotificationAction(type: string) {
+  switch (type) {
+    case "stay_essentials":
+      window.dispatchEvent(
+        new CustomEvent("ask-kru-glitch", {
+          detail: { question: "Show me my stay essentials — WiFi, house rules, and emergency contacts." },
+        })
+      );
+      break;
+    case "booking":
+      window.dispatchEvent(new CustomEvent("guest-portal-action", { detail: { tab: "bookings" } }));
+      break;
+    case "maintenance":
+      window.dispatchEvent(new CustomEvent("guest-portal-action", { detail: { tab: "stay-support" } }));
+      break;
+    case "payment":
+      window.dispatchEvent(new CustomEvent("guest-portal-action", { detail: { tab: "bookings" } }));
+      break;
+    default:
+      break;
+  }
+}
 
 export function NotificationBell() {
   const { t } = useTranslation();
