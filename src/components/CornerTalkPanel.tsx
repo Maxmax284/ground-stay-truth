@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCornerTalk, type Severity } from "@/hooks/useCornerTalk";
 import { useAuth } from "@/hooks/useAuth";
+import { useSoundEffects } from "@/hooks/useSoundEffects";
 
 const STORAGE_KEY = "corner-talk-collapsed";
 
