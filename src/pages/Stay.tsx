@@ -11,6 +11,7 @@ import { formatPriceSimple } from "@/lib/currency";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { TestimonialSection } from "@/components/TestimonialSection";
 import { AmenityList } from "@/components/AmenityBadge";
+import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -295,6 +296,8 @@ export default function Stay() {
         <p>© {new Date().getFullYear()} Ground Stay · Lamai Muay Thai</p>
         <a href="/legal" className="text-primary hover:underline">Terms & Privacy</a>
       </footer>
+
+      <PWAInstallBanner />
     </div>
   );
 }
