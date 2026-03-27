@@ -259,6 +259,7 @@ export function GuestStaySummary() {
         toast.info(t("guestStay.actions.alreadyLanded"));
       } else {
         toast.success(t("guestStay.actions.landedSuccess"));
+        playSound("landed");
       }
       queryClient.invalidateQueries({ queryKey: ["guest-stay-summary-pickups"] });
     },
