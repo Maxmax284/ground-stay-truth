@@ -297,6 +297,7 @@ export function PolicySettingsForm() {
     const s = byKey[key];
     if (!s || HIDDEN_KEYS.has(key)) return null;
     const isBool = BOOLEAN_KEYS.has(key);
+    const isSlider = SLIDER_KEYS.has(key);
     const boolValue = String(s.value) === "true";
     const currentValue = editValues[s.id] ?? String(typeof s.value === "object" ? JSON.stringify(s.value) : s.value);
     const isDirty = editValues[s.id] !== undefined;
@@ -315,12 +316,43 @@ export function PolicySettingsForm() {
             <div className="flex items-center gap-2 pt-0.5">
               <Switch
                 checked={boolValue}
-                onCheckedChange={(checked) => handleBoolToggle(s, checked)}
+                onCheckedChange={(checked) => {
+                  handleBoolToggle(s, checked);
+                  // Play a preview sound when enabling Ground Sounds
+                  if (key === "sound_effects_enabled" && checked) {
+                    setTimeout(() => playGroundSound("notification", 0.5), 300);
+                  }
+                }}
                 disabled={updateSetting.isPending}
               />
               <span className="text-xs font-medium text-muted-foreground">
                 {boolValue ? "Enabled" : "Disabled"}
               </span>
+            </div>
+          ) : isSlider ? (
+            <div className="flex items-center gap-3 pt-1">
+              <Slider
+                value={[Number(currentValue) || 50]}
+                min={0}
+                max={100}
+                step={5}
+                onValueChange={([val]) => setEditValues((prev) => ({ ...prev, [s.id]: String(val) }))}
+                className="max-w-[180px]"
+              />
+              <span className="text-xs font-mono text-muted-foreground w-8">{currentValue}%</span>
+              {isDirty && (
+                <Button size="sm" variant="default" onClick={() => handleSave(s)} disabled={updateSetting.isPending} className="h-7 gap-1 text-xs">
+                  <Save className="h-3 w-3" /> Save
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                onClick={() => playGroundSound("notification", (Number(currentValue) || 50) / 100)}
+              >
+                Preview
+              </Button>
             </div>
           ) : (
             <div className="flex items-center gap-2 pt-0.5">
