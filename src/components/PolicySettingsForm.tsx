@@ -142,6 +142,15 @@ const GROUPS: SettingGroup[] = [
       return parts.length ? parts.join(" • ") : "Not configured";
     },
   },
+  {
+    id: "ground_sounds",
+    label: "Ground Sounds",
+    icon: <Volume2 className="h-4 w-4" />,
+    keys: ["sound_effects_enabled", "sound_effects_volume"],
+    summary: (g) => g("sound_effects_enabled") === "true"
+      ? `Active • Volume: ${g("sound_effects_volume") || "50"}%`
+      : "Disabled",
+  },
 ];
 
 /* Keys handled by cancellation editor or technical/sensitive */
