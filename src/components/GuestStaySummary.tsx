@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -160,6 +161,7 @@ export function GuestStaySummary() {
   const { user, session } = useAuth();
   const { data: policies } = usePolicySettings();
   const queryClient = useQueryClient();
+  const { play: playSound } = useSoundEffects();
 
   const { data: bookings } = useQuery({
     queryKey: ["guest-stay-summary-bookings", user?.id],
@@ -257,6 +259,7 @@ export function GuestStaySummary() {
         toast.info(t("guestStay.actions.alreadyLanded"));
       } else {
         toast.success(t("guestStay.actions.landedSuccess"));
+        playSound("landed");
       }
       queryClient.invalidateQueries({ queryKey: ["guest-stay-summary-pickups"] });
     },

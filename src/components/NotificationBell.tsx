@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Bell, Check, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from "@/hooks/useNotifications";
+import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { formatDistanceToNow } from "date-fns";
+import type { SoundName } from "@/lib/groundSounds";
 
 const TYPE_ICONS: Record<string, string> = {
   booking: "📋",
@@ -44,13 +46,35 @@ function handleNotificationAction(type: string) {
   }
 }
 
+/** Map notification types to sound names */
+const TYPE_SOUNDS: Record<string, SoundName> = {
+  booking: "booking_confirmed",
+  payment: "payment",
+  maintenance: "error",
+  laundry: "message",
+  stay_essentials: "check_in",
+  override: "state_change",
+};
+
 export function NotificationBell() {
   const { t } = useTranslation();
   const { data: notifications, unreadCount } = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
+  const { play } = useSoundEffects();
   const [open, setOpen] = useState(false);
   const [showRead, setShowRead] = useState(false);
+  const prevCountRef = useRef(unreadCount);
+
+  // Play sound when a new notification arrives (unread count increases)
+  useEffect(() => {
+    if (unreadCount > prevCountRef.current && notifications?.length) {
+      const newest = notifications.find((n) => !n.read);
+      const soundName = TYPE_SOUNDS[newest?.type ?? ""] ?? "notification";
+      play(soundName);
+    }
+    prevCountRef.current = unreadCount;
+  }, [unreadCount, notifications, play]);
 
   const visibleNotifications = (notifications ?? []).filter(
     (n) => showRead || !n.read

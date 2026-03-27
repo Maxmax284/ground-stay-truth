@@ -13,7 +13,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Save, Banknote, Percent, Heart, Bot, Wrench, Mail, Receipt,
   Clock, Shield, CreditCard, ToggleLeft, CalendarClock, Sparkles, Plane, Wifi, Phone, ScrollText,
+  Volume2,
 } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { playGroundSound } from "@/lib/groundSounds";
 
 /* ── Setting Groups ────────────────────────────────────────── */
 
@@ -139,6 +142,15 @@ const GROUPS: SettingGroup[] = [
       return parts.length ? parts.join(" • ") : "Not configured";
     },
   },
+  {
+    id: "ground_sounds",
+    label: "Ground Sounds",
+    icon: <Volume2 className="h-4 w-4" />,
+    keys: ["sound_effects_enabled", "sound_effects_volume"],
+    summary: (g) => g("sound_effects_enabled") === "true"
+      ? `Active • Volume: ${g("sound_effects_volume") || "50"}%`
+      : "Disabled",
+  },
 ];
 
 /* Keys handled by cancellation editor or technical/sensitive */
@@ -157,7 +169,11 @@ const BOOLEAN_KEYS = new Set([
   "security_deposit_required", "email_deposit_reminder_enabled", "email_welcome_enabled",
   "tax_included", "require_pre_arrival_completion_before_checkin",
   "transport_enabled", "transport_night_surcharge_enabled",
+  "sound_effects_enabled",
 ]);
+
+/** Keys that use a slider instead of text input */
+const SLIDER_KEYS = new Set(["sound_effects_volume"]);
 
 /* Nice display names */
 const FRIENDLY_LABELS: Record<string, string> = {
@@ -207,6 +223,8 @@ const FRIENDLY_LABELS: Record<string, string> = {
   house_rules_summary: "House Rules (global default)",
   emergency_contact_name: "Emergency Contact Name",
   emergency_contact_phone: "Emergency Contact Phone",
+  sound_effects_enabled: "Enable Ground Sounds",
+  sound_effects_volume: "Volume",
 };
 
 const SETTING_ICONS: Record<string, React.ReactNode> = {
@@ -220,6 +238,8 @@ const SETTING_ICONS: Record<string, React.ReactNode> = {
   house_rules_summary: <ScrollText className="h-3.5 w-3.5 text-muted-foreground" />,
   emergency_contact_name: <Phone className="h-3.5 w-3.5 text-muted-foreground" />,
   emergency_contact_phone: <Phone className="h-3.5 w-3.5 text-muted-foreground" />,
+  sound_effects_enabled: <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />,
+  sound_effects_volume: <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />,
 };
 
 /* ── Component ─────────────────────────────────────────────── */
@@ -277,6 +297,7 @@ export function PolicySettingsForm() {
     const s = byKey[key];
     if (!s || HIDDEN_KEYS.has(key)) return null;
     const isBool = BOOLEAN_KEYS.has(key);
+    const isSlider = SLIDER_KEYS.has(key);
     const boolValue = String(s.value) === "true";
     const currentValue = editValues[s.id] ?? String(typeof s.value === "object" ? JSON.stringify(s.value) : s.value);
     const isDirty = editValues[s.id] !== undefined;
@@ -295,12 +316,43 @@ export function PolicySettingsForm() {
             <div className="flex items-center gap-2 pt-0.5">
               <Switch
                 checked={boolValue}
-                onCheckedChange={(checked) => handleBoolToggle(s, checked)}
+                onCheckedChange={(checked) => {
+                  handleBoolToggle(s, checked);
+                  // Play a preview sound when enabling Ground Sounds
+                  if (key === "sound_effects_enabled" && checked) {
+                    setTimeout(() => playGroundSound("notification", 0.5), 300);
+                  }
+                }}
                 disabled={updateSetting.isPending}
               />
               <span className="text-xs font-medium text-muted-foreground">
                 {boolValue ? "Enabled" : "Disabled"}
               </span>
+            </div>
+          ) : isSlider ? (
+            <div className="flex items-center gap-3 pt-1">
+              <Slider
+                value={[Number(currentValue) || 50]}
+                min={0}
+                max={100}
+                step={5}
+                onValueChange={([val]) => setEditValues((prev) => ({ ...prev, [s.id]: String(val) }))}
+                className="max-w-[180px]"
+              />
+              <span className="text-xs font-mono text-muted-foreground w-8">{currentValue}%</span>
+              {isDirty && (
+                <Button size="sm" variant="default" onClick={() => handleSave(s)} disabled={updateSetting.isPending} className="h-7 gap-1 text-xs">
+                  <Save className="h-3 w-3" /> Save
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                onClick={() => playGroundSound("notification", (Number(currentValue) || 50) / 100)}
+              >
+                Preview
+              </Button>
             </div>
           ) : (
             <div className="flex items-center gap-2 pt-0.5">

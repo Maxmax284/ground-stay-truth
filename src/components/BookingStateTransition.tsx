@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,6 +37,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
   const { data: policies } = usePolicySettings();
   const { isAIEnabled } = useAISettings(role);
   const aiAssistant = useAIAssistant();
+  const { play: playSound } = useSoundEffects();
 
   const { data: existingPayments } = useBookingPayments(bookingId);
   const createPayment = useCreatePayment();
@@ -351,6 +353,9 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
       ].filter(Boolean).join(" ");
       await transition.mutateAsync({ bookingId, fromState: currentState, toState: targetState as BookingState, reason: reasonText });
       toast({ title: t("stateTransition.stateUpdated"), description: t("stateTransition.movedTo", { state: t(`states.${targetState}`) }) });
+      // Play contextual sound based on target state
+      const stateSound = targetState === "confirmed" ? "booking_confirmed" : targetState === "checked_in" ? "check_in" : "state_change";
+      playSound(stateSound as any);
       // Email triggers now handled centrally in useTransitionBookingState
       setTargetState(""); setReason(""); setAdminOverride(false); setDepositOverride(false); setDepositOverrideReason("");
       setDepositAmount(""); setDepositMethod("cash"); setDepositNotes("");
