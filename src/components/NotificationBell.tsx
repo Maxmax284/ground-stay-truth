@@ -46,13 +46,35 @@ function handleNotificationAction(type: string) {
   }
 }
 
+/** Map notification types to sound names */
+const TYPE_SOUNDS: Record<string, SoundName> = {
+  booking: "booking_confirmed",
+  payment: "payment",
+  maintenance: "error",
+  laundry: "message",
+  stay_essentials: "check_in",
+  override: "state_change",
+};
+
 export function NotificationBell() {
   const { t } = useTranslation();
   const { data: notifications, unreadCount } = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
+  const { play } = useSoundEffects();
   const [open, setOpen] = useState(false);
   const [showRead, setShowRead] = useState(false);
+  const prevCountRef = useRef(unreadCount);
+
+  // Play sound when a new notification arrives (unread count increases)
+  useEffect(() => {
+    if (unreadCount > prevCountRef.current && notifications?.length) {
+      const newest = notifications.find((n) => !n.read);
+      const soundName = TYPE_SOUNDS[newest?.type ?? ""] ?? "notification";
+      play(soundName);
+    }
+    prevCountRef.current = unreadCount;
+  }, [unreadCount, notifications, play]);
 
   const visibleNotifications = (notifications ?? []).filter(
     (n) => showRead || !n.read
