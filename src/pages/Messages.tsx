@@ -76,7 +76,7 @@ function useInboxThreads() {
   });
 }
 
-function useMessagesRealtime() {
+function useMessagesRealtime(onNewMessage?: () => void) {
   const qc = useQueryClient();
   useEffect(() => {
     const channel = supabase.channel("inbox-realtime").on(
@@ -85,10 +85,11 @@ function useMessagesRealtime() {
         qc.invalidateQueries({ queryKey: ["inbox-threads"] });
         const bookingId = (payload.new as any)?.booking_id ?? (payload.old as any)?.booking_id;
         if (bookingId) qc.invalidateQueries({ queryKey: ["bookingMessages", bookingId] });
+        if (payload.eventType === "INSERT" && onNewMessage) onNewMessage();
       }
     ).subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [qc]);
+  }, [qc, onNewMessage]);
 }
 
 const Messages = () => {
