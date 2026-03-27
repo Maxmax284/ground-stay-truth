@@ -161,6 +161,7 @@ export function GuestStaySummary() {
   const { user, session } = useAuth();
   const { data: policies } = usePolicySettings();
   const queryClient = useQueryClient();
+  const { play: playSound } = useSoundEffects();
 
   const { data: bookings } = useQuery({
     queryKey: ["guest-stay-summary-bookings", user?.id],
