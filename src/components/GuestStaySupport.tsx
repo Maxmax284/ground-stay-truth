@@ -35,10 +35,18 @@ const STATUS_STYLES: Record<string, { className: string; icon: any }> = {
   collected: { className: "bg-green-100 text-green-800 border-green-200", icon: CheckCircle2 },
 };
 
-export function GuestStaySupport({ bookings }: GuestStaySupportProps) {
+export function GuestStaySupport({ bookings, focusSection, onSectionFocused }: GuestStaySupportProps) {
   const { t } = useTranslation();
   const [selectedBookingId, setSelectedBookingId] = useState(bookings[0]?.id);
   const selectedBooking = bookings.find((b) => b.id === selectedBookingId) ?? bookings[0];
+  const laundryRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (focusSection === "laundry" && laundryRef.current) {
+      laundryRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      onSectionFocused?.();
+    }
+  }, [focusSection, onSectionFocused]);
 
   if (!selectedBooking) return null;
 
@@ -61,7 +69,9 @@ export function GuestStaySupport({ bookings }: GuestStaySupportProps) {
 
       <MaintenanceSection bookingId={selectedBooking.id} unitId={selectedBooking.unit_id} t={t} />
       <Separator />
-      <LaundrySection bookingId={selectedBooking.id} unitId={selectedBooking.unit_id} t={t} />
+      <div ref={laundryRef}>
+        <LaundrySection bookingId={selectedBooking.id} unitId={selectedBooking.unit_id} t={t} />
+      </div>
     </div>
   );
 }
