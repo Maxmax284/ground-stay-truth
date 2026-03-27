@@ -90,11 +90,14 @@ const GuestPortal = () => {
   // Active tab state (controlled for action-button navigation)
   const [activeTab, setActiveTab] = useState("bookings");
 
+  const [focusSection, setFocusSection] = useState<string | null>(null);
+
   // Listen for tab-switch events from action buttons
   useEffect(() => {
-    const handler = (e: CustomEvent<{ tab: string }>) => {
+    const handler = (e: CustomEvent<{ tab: string; section?: string }>) => {
       const tab = e.detail?.tab;
       if (tab) setActiveTab(tab);
+      setFocusSection(e.detail?.section ?? null);
     };
     window.addEventListener("guest-portal-action", handler as EventListener);
     return () => window.removeEventListener("guest-portal-action", handler as EventListener);
