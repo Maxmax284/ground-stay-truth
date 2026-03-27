@@ -110,6 +110,7 @@ export default function Stay() {
 
   return (
     <div className="min-h-screen bg-background">
+      <OfflineBanner />
       {/* SEO metadata handled by index.html; content structure for crawlers */}
       
       {/* Hero */}
