@@ -50,9 +50,24 @@ export default function Stay() {
           headers: { apikey: SUPABASE_KEY },
         });
         const data = await resp.json();
-        setUnits(data.units ?? []);
-        setCurrencySymbol(data.currencySymbol ?? "฿");
-      } catch { /* silent */ }
+        const fetchedUnits = data.units ?? [];
+        const fetchedSymbol = data.currencySymbol ?? "฿";
+        setUnits(fetchedUnits);
+        setCurrencySymbol(fetchedSymbol);
+        // Cache for offline use
+        try {
+          localStorage.setItem("gs_cache_units", JSON.stringify(fetchedUnits));
+          localStorage.setItem("gs_cache_currency", fetchedSymbol);
+        } catch { /* quota */ }
+      } catch {
+        // Offline or error — load from cache
+        try {
+          const cached = localStorage.getItem("gs_cache_units");
+          const cachedCurrency = localStorage.getItem("gs_cache_currency");
+          if (cached) setUnits(JSON.parse(cached));
+          if (cachedCurrency) setCurrencySymbol(cachedCurrency);
+        } catch { /* silent */ }
+      }
       setLoading(false);
     })();
   }, []);
