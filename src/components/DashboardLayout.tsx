@@ -44,6 +44,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <div className="flex-1 flex flex-col">
           {/* Thai flag accent stripe */}
           <div className="thai-stripe" />
+          {/* Security freeze banner */}
+          <SecurityFreezeBanner />
           {/* Preview mode banner */}
           {isPreviewMode && (
             <div className="bg-amber-500/90 text-amber-950 px-4 py-2 flex items-center justify-between text-sm font-medium">
