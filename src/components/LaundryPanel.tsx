@@ -74,7 +74,7 @@ export function LaundryPanel() {
   };
 
   return (
-    <Card>
+    <Card id="laundry-panel">
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <Shirt className="h-5 w-5 text-muted-foreground" />

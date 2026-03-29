@@ -103,7 +103,7 @@ export function MaintenanceQueue() {
   };
 
   return (
-    <Card>
+    <Card id="maintenance-panel">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2">
           <Wrench className="h-5 w-5 text-muted-foreground" />

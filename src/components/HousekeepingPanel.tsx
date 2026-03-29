@@ -40,7 +40,7 @@ export function HousekeepingPanel() {
   const completedTasks = (tasks ?? []).filter((t) => t.status === "completed" || t.status === "skipped");
 
   return (
-    <Card>
+    <Card id="housekeeping-panel">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" /> Housekeeping
