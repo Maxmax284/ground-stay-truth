@@ -207,6 +207,88 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 5. Daily staff digest notifications
+    let staffDigestsSent = 0;
+    const today = now.toISOString().split("T")[0];
+
+    // Check if digest was already sent today (idempotency)
+    const { data: existingDigest } = await supabase
+      .from("notifications")
+      .select("id")
+      .eq("type", "daily_digest")
+      .gte("created_at", `${today}T00:00:00Z`)
+      .limit(1);
+
+    if (!existingDigest?.length) {
+      // Gather today's operational counts
+      const { count: checkInsCount } = await supabase
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("check_in", today)
+        .in("state", ["confirmed", "pending_deposit"]);
+
+      const { count: checkOutsCount } = await supabase
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("check_out", today)
+        .in("state", ["checked_in", "confirmed"]);
+
+      const { count: housekeepingCount } = await supabase
+        .from("housekeeping_tasks")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["pending", "in_progress"]);
+
+      const { count: maintenanceCount } = await supabase
+        .from("maintenance_requests")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["open", "in_progress"]);
+
+      const { count: laundryCount } = await supabase
+        .from("laundry_requests")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["pending", "picked_up"]);
+
+      const ci = checkInsCount ?? 0;
+      const co = checkOutsCount ?? 0;
+      const hk = housekeepingCount ?? 0;
+      const mx = maintenanceCount ?? 0;
+      const lr = laundryCount ?? 0;
+
+      const parts: string[] = [];
+      if (ci > 0) parts.push(`${ci} check-in${ci > 1 ? "s" : ""}`);
+      if (co > 0) parts.push(`${co} check-out${co > 1 ? "s" : ""}`);
+      if (hk > 0) parts.push(`${hk} housekeeping`);
+      if (mx > 0) parts.push(`${mx} maintenance`);
+      if (lr > 0) parts.push(`${lr} laundry`);
+
+      const digestMessage = parts.length > 0
+        ? `📋 Daily briefing: ${parts.join(" • ")}`
+        : "📋 Daily briefing: No pending tasks today — all clear!";
+
+      // Get all staff users (non-guest roles)
+      const { data: staffRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .neq("role", "guest");
+
+      const staffIds = [...new Set((staffRoles ?? []).map((r: any) => r.user_id))];
+
+      if (staffIds.length > 0) {
+        const notifications = staffIds.map((uid: string) => ({
+          user_id: uid,
+          type: "daily_digest",
+          message: digestMessage,
+          reference_id: today,
+        }));
+
+        const { error: insertErr } = await supabase
+          .from("notifications")
+          .insert(notifications);
+
+        if (!insertErr) staffDigestsSent = staffIds.length;
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -214,6 +296,7 @@ Deno.serve(async (req) => {
         review_requests_sent: reviewRequestsSent,
         deposit_reminders_sent: depositRemindersSent,
         welcome_messages_sent: welcomeMessagesSent,
+        staff_digests_sent: staffDigestsSent,
         timestamp: now.toISOString(),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
