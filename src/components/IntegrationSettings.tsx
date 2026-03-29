@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { VapidKeySettings } from "@/components/VapidKeySettings";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -212,6 +213,8 @@ export function IntegrationSettings() {
           </div>
         </CardContent>
       </Card>
+
+      <VapidKeySettings />
     </div>
   );
 }

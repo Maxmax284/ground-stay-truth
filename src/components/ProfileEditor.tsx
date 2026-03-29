@@ -25,6 +25,7 @@ import { useTutorial } from "@/hooks/useTutorial";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Trash2, RotateCcw } from "lucide-react";
+import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 
 const LANGUAGES = [
   { code: "en", label: "English" },
@@ -164,6 +165,8 @@ export default function ProfileEditor() {
           </Button>
         </CardContent>
       </Card>
+
+      <PushNotificationToggle />
 
       <Card className="border-destructive/30">
         <CardHeader>
