@@ -213,6 +213,8 @@ export function IntegrationSettings() {
           </div>
         </CardContent>
       </Card>
+
+      <VapidKeySettings />
     </div>
   );
 }
