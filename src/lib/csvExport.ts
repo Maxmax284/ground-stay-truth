@@ -1,8 +1,20 @@
 /**
  * Generate and download a CSV file from array of row objects.
  */
-export function downloadCSV(rows: Record<string, string | number | null | undefined>[], filename: string) {
+import { emitBulkGuestExport } from "@/lib/fenrir/events";
+
+export function downloadCSV(
+  rows: Record<string, string | number | null | undefined>[],
+  filename: string,
+  actorContext?: { userId: string; email?: string; role: any },
+  includesPii = false
+) {
   if (rows.length === 0) return;
+
+  // Emit Fenrir event for bulk exports (>10 records)
+  if (rows.length > 10 && actorContext) {
+    emitBulkGuestExport(actorContext, rows.length, "csv", includesPii);
+  }
   const headers = Object.keys(rows[0]);
   const csvLines = [
     headers.join(","),

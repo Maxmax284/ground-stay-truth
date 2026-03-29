@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
+import { useAuth } from "@/hooks/useAuth";
+import { emitPrivilegeEscalation } from "@/lib/fenrir/events";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -16,6 +18,7 @@ export interface UserRoleRow {
 
 export function useUserRoles() {
   const qc = useQueryClient();
+  const { user, role: currentRole } = useAuth();
 
   const roles = useQuery({
     queryKey: ["user-roles"],
@@ -47,9 +50,17 @@ export function useUserRoles() {
       const { error } = await supabase.from("user_roles").insert({ user_id, role });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["user-roles"] });
       toast.success("Role assigned");
+      if (user) {
+        emitPrivilegeEscalation(
+          { userId: user.id, email: user.email, role: currentRole },
+          variables.user_id,
+          variables.role,
+          "added"
+        );
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });

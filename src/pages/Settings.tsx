@@ -9,6 +9,7 @@ import { ReviewsManager } from "@/components/ReviewsManager";
 import { IntegrationSettings } from "@/components/IntegrationSettings";
 import { TrainingPackagesManager } from "@/components/TrainingPackagesManager";
 import { DriverManager } from "@/components/DriverManager";
+import { SecurityEventLog } from "@/components/SecurityEventLog";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 
@@ -39,6 +40,7 @@ const Settings = () => {
             {isAdmin && <TabsTrigger value="training">Training</TabsTrigger>}
             {isAdmin && <TabsTrigger value="integrations">Integrations</TabsTrigger>}
             {canManageReviews && <TabsTrigger value="reviews">{t("settings.reviewsTab")}</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="security">Security</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="profile"><ProfileEditor /></TabsContent>
@@ -49,6 +51,7 @@ const Settings = () => {
           {isAdmin && <TabsContent value="training"><TrainingPackagesManager /></TabsContent>}
           {isAdmin && <TabsContent value="integrations"><IntegrationSettings /></TabsContent>}
           {canManageReviews && <TabsContent value="reviews"><ReviewsManager /></TabsContent>}
+          {isAdmin && <TabsContent value="security"><SecurityEventLog /></TabsContent>}
         </Tabs>
       </div>
     </DashboardLayout>

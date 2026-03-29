@@ -10,6 +10,8 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { TutorialOverlay } from "@/components/TutorialOverlay";
 import { useRolePreview } from "@/hooks/useRolePreview";
 import { Button } from "@/components/ui/button";
+import { SecurityFreezeBanner } from "@/components/SecurityFreezeBanner";
+import { useFenrirConfig } from "@/lib/fenrir";
 
 const routeTitleKeys: Record<string, string> = {
   "/dashboard": "nav.dashboard",
@@ -31,6 +33,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const titleKey = routeTitleKeys[location.pathname] || "nav.dashboard";
   const { isPreviewMode, previewRole, setPreviewRole } = useRolePreview();
+  
+  // Initialize Fenrir Lock telemetry from policy_settings
+  useFenrirConfig();
 
   return (
     <SidebarProvider>
@@ -39,6 +44,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <div className="flex-1 flex flex-col">
           {/* Thai flag accent stripe */}
           <div className="thai-stripe" />
+          {/* Security freeze banner */}
+          <SecurityFreezeBanner />
           {/* Preview mode banner */}
           {isPreviewMode && (
             <div className="bg-amber-500/90 text-amber-950 px-4 py-2 flex items-center justify-between text-sm font-medium">

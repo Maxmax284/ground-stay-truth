@@ -18,6 +18,8 @@ const TYPE_ICONS: Record<string, string> = {
   override: "⚠️",
   stay_essentials: "🏠",
   daily_digest: "📊",
+  security_freeze: "🚨",
+  security_unfreeze: "✅",
 };
 
 /** Dispatch a custom event when tapping an actionable notification type. */

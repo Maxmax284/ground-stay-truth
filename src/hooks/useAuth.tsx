@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
+import { emitStaffLogin, emitStaffLoginFailed, emitAfterHoursAccess } from "@/lib/fenrir/events";
 import type { AppRole } from "@/lib/permissions";
 
 interface AuthContextType {
@@ -94,7 +95,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      emitStaffLoginFailed(email);
+    } else if (data.user) {
+      // Emit login event after role is resolved (deferred)
+      const userId = data.user.id;
+      const userEmail = data.user.email;
+      setTimeout(() => {
+        emitStaffLogin({ userId, email: userEmail, role }, "password");
+        emitAfterHoursAccess({ userId, email: userEmail, role }, "login");
+      }, 500);
+    }
     return { error: error as Error | null };
   };
 
