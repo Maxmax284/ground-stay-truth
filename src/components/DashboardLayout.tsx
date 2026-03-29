@@ -10,6 +10,8 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { TutorialOverlay } from "@/components/TutorialOverlay";
 import { useRolePreview } from "@/hooks/useRolePreview";
 import { Button } from "@/components/ui/button";
+import { SecurityFreezeBanner } from "@/components/SecurityFreezeBanner";
+import { useFenrirConfig } from "@/lib/fenrir";
 
 const routeTitleKeys: Record<string, string> = {
   "/dashboard": "nav.dashboard",
