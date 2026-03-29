@@ -50,9 +50,17 @@ export function useUserRoles() {
       const { error } = await supabase.from("user_roles").insert({ user_id, role });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["user-roles"] });
       toast.success("Role assigned");
+      if (user) {
+        emitPrivilegeEscalation(
+          { userId: user.id, email: user.email, role: currentRole },
+          variables.user_id,
+          variables.role,
+          "added"
+        );
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
