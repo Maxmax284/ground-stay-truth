@@ -166,6 +166,8 @@ export default function ProfileEditor() {
         </CardContent>
       </Card>
 
+      <PushNotificationToggle />
+
       <Card className="border-destructive/30">
         <CardHeader>
           <CardTitle className="text-lg text-destructive">{t("profile.dangerZone")}</CardTitle>

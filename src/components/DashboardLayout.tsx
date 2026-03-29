@@ -71,6 +71,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       </div>
       <AIAssistantPanel />
       <TutorialOverlay variant="staff" />
+      <PWAInstallBanner />
     </SidebarProvider>
   );
 };
