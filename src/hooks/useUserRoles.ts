@@ -18,6 +18,7 @@ export interface UserRoleRow {
 
 export function useUserRoles() {
   const qc = useQueryClient();
+  const { user, role: currentRole } = useAuth();
 
   const roles = useQuery({
     queryKey: ["user-roles"],
