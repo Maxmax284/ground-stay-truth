@@ -13,7 +13,7 @@ import { usePolicySettings, useUpdatePolicySetting } from "@/hooks/usePolicySett
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreditCard, Mail, Eye, EyeOff, Save, CheckCircle2, XCircle, ExternalLink, ShieldCheck } from "lucide-react";
 
-const SECRET_KEYS = ["stripe_secret_key", "stripe_publishable_key", "stripe_webhook_secret", "resend_api_key"];
+const SECRET_KEYS = ["stripe_secret_key", "stripe_publishable_key", "stripe_webhook_secret", "resend_api_key", "fenrir_api_key", "fenrir_receive_token"];
 
 export function IntegrationSettings() {
   const { t } = useTranslation();
@@ -259,7 +259,8 @@ export function IntegrationSettings() {
                 The URL where security events are sent for analysis
               </p>
             </div>
-            {renderSecretField("fenrir_api_key", "API Key", "flk_...")}
+            {renderSecretField("fenrir_api_key", "Outbound API Key", "flk_...")}
+            {renderSecretField("fenrir_receive_token", "Inbound Webhook Token", "frt_...")}
             <Separator />
             <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1.5">
               <p className="font-medium text-foreground">What this does</p>
