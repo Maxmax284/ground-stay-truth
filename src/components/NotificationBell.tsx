@@ -17,6 +17,7 @@ const TYPE_ICONS: Record<string, string> = {
   laundry: "👕",
   override: "⚠️",
   stay_essentials: "🏠",
+  daily_digest: "📊",
 };
 
 /** Dispatch a custom event when tapping an actionable notification type. */
