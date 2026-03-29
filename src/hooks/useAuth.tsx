@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
+import { emitStaffLogin, emitStaffLoginFailed, emitAfterHoursAccess } from "@/lib/fenrir/events";
 import type { AppRole } from "@/lib/permissions";
 
 interface AuthContextType {
