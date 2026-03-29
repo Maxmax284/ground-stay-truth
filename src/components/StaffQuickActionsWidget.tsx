@@ -20,6 +20,7 @@ interface QuickStat {
 }
 
 export function StaffQuickActionsWidget() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const today = format(new Date(), "yyyy-MM-dd");
 
