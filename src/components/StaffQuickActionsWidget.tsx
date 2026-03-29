@@ -124,11 +124,11 @@ export function StaffQuickActionsWidget() {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            Today's Tasks
+            {t("dashboard.todaysTasks")}
           </CardTitle>
           {totalPending > 0 && (
             <Badge variant="secondary" className="text-xs">
-              {totalPending} pending
+              {t("dashboard.pending", { count: totalPending })}
             </Badge>
           )}
         </div>
