@@ -121,7 +121,14 @@
     "noRecentActivity": "Sin actividad reciente. El registro de auditoría aparecerá aquí.",
     "arrivingToday": "Llegan hoy",
     "departingToday": "Salen hoy",
-    "createdAs": "Creado como {{state}}"
+    "createdAs": "Creado como {{state}}",
+    "todaysTasks": "Tareas de hoy",
+    "pending": "{{count}} pendiente(s)",
+    "checkIns": "Llegadas",
+    "checkOuts": "Salidas",
+    "housekeeping": "Limpieza",
+    "maintenance": "Mantenimiento",
+    "laundry": "Lavandería"
   },
   "bookings": {
     "title": "Reservas",

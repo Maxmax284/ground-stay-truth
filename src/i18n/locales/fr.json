@@ -121,7 +121,14 @@
     "noRecentActivity": "Aucune activité récente. Le journal d'audit apparaîtra ici.",
     "arrivingToday": "Arrivées aujourd'hui",
     "departingToday": "Départs aujourd'hui",
-    "createdAs": "Créé en tant que {{state}}"
+    "createdAs": "Créé en tant que {{state}}",
+    "todaysTasks": "Tâches du jour",
+    "pending": "{{count}} en attente",
+    "checkIns": "Arrivées",
+    "checkOuts": "Départs",
+    "housekeeping": "Ménage",
+    "maintenance": "Maintenance",
+    "laundry": "Blanchisserie"
   },
   "bookings": {
     "title": "Réservations",

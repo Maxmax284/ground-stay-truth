@@ -121,7 +121,14 @@
     "noRecentActivity": "아직 최근 활동이 없습니다. 감사 로그가 여기에 표시됩니다.",
     "arrivingToday": "오늘 도착 예정",
     "departingToday": "오늘 출발 예정",
-    "createdAs": "{{state}}(으)로 생성됨"
+    "createdAs": "{{state}}(으)로 생성됨",
+    "todaysTasks": "오늘의 작업",
+    "pending": "{{count}}개 대기 중",
+    "checkIns": "체크인",
+    "checkOuts": "체크아웃",
+    "housekeeping": "하우스키핑",
+    "maintenance": "유지보수",
+    "laundry": "세탁"
   },
   "bookings": {
     "title": "예약",

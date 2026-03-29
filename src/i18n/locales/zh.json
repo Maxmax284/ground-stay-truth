@@ -121,7 +121,14 @@
     "noRecentActivity": "暂无活动。审计日志将在此显示。",
     "arrivingToday": "今日到达",
     "departingToday": "今日离开",
-    "createdAs": "创建为 {{state}}"
+    "createdAs": "创建为 {{state}}",
+    "todaysTasks": "今日任务",
+    "pending": "{{count}} 待处理",
+    "checkIns": "入住",
+    "checkOuts": "退房",
+    "housekeeping": "客房清洁",
+    "maintenance": "维修",
+    "laundry": "洗衣"
   },
   "bookings": {
     "title": "预订",

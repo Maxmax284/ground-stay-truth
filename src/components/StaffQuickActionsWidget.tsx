@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useCountUp } from "@/hooks/useCountUp";
+import { useTranslation } from "react-i18next";
 
 interface QuickStat {
   label: string;
