@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { usePolicySettings, useUpdatePolicySetting } from "@/hooks/usePolicySettings";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CreditCard, Mail, Eye, EyeOff, Save, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
+import { CreditCard, Mail, Eye, EyeOff, Save, CheckCircle2, XCircle, ExternalLink, ShieldCheck } from "lucide-react";
 
 const SECRET_KEYS = ["stripe_secret_key", "stripe_publishable_key", "stripe_webhook_secret", "resend_api_key"];
 
@@ -212,6 +212,62 @@ export function IntegrationSettings() {
             </p>
           </div>
         </CardContent>
+      </Card>
+
+      {/* Security Telemetry Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-base">Security Monitoring</CardTitle>
+                <CardDescription>Real-time threat detection and security event telemetry</CardDescription>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Label htmlFor="fenrir-toggle" className="text-sm text-muted-foreground">Enabled</Label>
+              <Switch
+                id="fenrir-toggle"
+                checked={getValue("fenrir_enabled") === "true"}
+                onCheckedChange={(checked) => handleToggle("fenrir_enabled", checked)}
+                disabled={updateSetting.isPending}
+              />
+            </div>
+          </div>
+        </CardHeader>
+        {getValue("fenrir_enabled") === "true" && (
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Ingestion Endpoint</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  value={getEditValue("fenrir_endpoint")}
+                  onChange={(e) => setEditValues((prev) => ({ ...prev, fenrir_endpoint: e.target.value }))}
+                  placeholder="https://your-endpoint.supabase.co/functions/v1/ingest-webhook"
+                  className="flex-1 font-mono text-xs"
+                />
+                {isDirty("fenrir_endpoint") && (
+                  <Button size="icon" variant="outline" onClick={() => handleSave("fenrir_endpoint")} disabled={updateSetting.isPending}>
+                    <Save className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                The URL where security events are sent for analysis
+              </p>
+            </div>
+            {renderSecretField("fenrir_api_key", "API Key", "flk_...")}
+            <Separator />
+            <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1.5">
+              <p className="font-medium text-foreground">What this does</p>
+              <p>When enabled, security-relevant events — such as logins, role changes, payment anomalies, and data exports — are streamed to your monitoring endpoint for threat analysis and compliance auditing.</p>
+              <p>Events are batched and sent in the background. Telemetry failures never affect normal platform operations.</p>
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       <VapidKeySettings />
