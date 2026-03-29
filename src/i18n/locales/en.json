@@ -953,58 +953,73 @@
   },
   "tutorial": {
     "welcome": "Welcome to Ground Stay!",
+    "welcomeSubtitle": "Your sovereign property management operating system",
     "letsGetStarted": "Let us show you around. We'll walk through each section so you know where everything is.",
     "next": "Next",
     "back": "Back",
     "skip": "Skip Tutorial",
     "finish": "Get Started",
+    "goThere": "Go There",
     "stepOf": "Step {{current}} of {{total}}",
     "resetTutorial": "Reset Tutorial",
     "resetTutorialDesc": "Re-launch the guided walkthrough to revisit each section.",
     "tutorialReset": "Tutorial will show on next page load",
     "roleBadge": "Your role: {{role}}",
+    "category": {
+      "gettingStarted": "Getting Started",
+      "operations": "Operations",
+      "communication": "Communication",
+      "intelligence": "Intelligence"
+    },
     "yourRole": {
       "admin": {
         "title": "Your Role: Administrator",
         "point1": "Full control over the property: users, policies, units, pricing, and system configuration",
         "point2": "Approve bookings, manage staff accounts, and set operational rules",
-        "point3": "Access every section of the platform with no restrictions"
+        "point3": "Access every section of the platform with no restrictions",
+        "proTip": "Use the Role Preview dropdown in the sidebar to see the platform from any staff role's perspective."
       },
       "manager": {
         "title": "Your Role: Manager",
         "point1": "Oversee daily operations: approve bookings, manage units, and set pricing",
         "point2": "View revenue reports, occupancy trends, and payment analytics",
-        "point3": "Configure embeds and coordinate staff workflows"
+        "point3": "Configure embeds and coordinate staff workflows",
+        "proTip": "Corner Talk on the dashboard gives you a daily operational briefing — check it every morning."
       },
       "front_desk_supervisor": {
         "title": "Your Role: Supervisor",
         "point1": "Handle check-ins, check-outs, and record deposit payments",
         "point2": "Manage day-to-day bookings and guest coordination",
-        "point3": "Read-only visibility on approval queues and messages"
+        "point3": "Read-only visibility on approval queues and messages",
+        "proTip": "You can record in-person deposit payments directly from the booking detail view."
       },
       "front_desk": {
         "title": "Your Role: Front Desk",
         "point1": "Manage day-to-day bookings, messages, and guest coordination",
         "point2": "Create inquiries, transition booking states, and upload documents",
-        "point3": "Communicate with guests in real-time with auto-translation"
+        "point3": "Communicate with guests in real-time with auto-translation",
+        "proTip": "Guest messages you send go to Admin for approval first — internal notes are sent immediately."
       },
       "maintenance": {
         "title": "Your Role: Maintenance",
         "point1": "Handle room maintenance requests prioritized by urgency",
         "point2": "View the calendar for scheduling around bookings and blocks",
-        "point3": "Track laundry requests and update task statuses"
+        "point3": "Track laundry requests and update task statuses",
+        "proTip": "The dashboard shows your prioritized queue — high-priority items are always at the top."
       },
       "viewer": {
         "title": "Your Role: Viewer",
         "point1": "Read-only access to bookings, calendar, and reports",
         "point2": "Monitor occupancy, revenue, and booking trends",
-        "point3": "No ability to create or modify bookings or settings"
+        "point3": "No ability to create or modify bookings or settings",
+        "proTip": "Use Kru Glitch to ask questions about data — it can summarize trends for you."
       },
       "guest": {
         "title": "Your Role: Guest",
         "point1": "Manage your bookings, message staff, and upload documents",
         "point2": "Request maintenance, laundry, and get support during your stay",
-        "point3": "Track your booking from inquiry through to check-out"
+        "point3": "Track your booking from inquiry through to check-out",
+        "proTip": "Upload your ID early — it's required before check-in and speeds up your arrival."
       }
     },
     "dashboard": {
@@ -1012,6 +1027,7 @@
       "point1": "See today's arrivals, departures, and active bookings at a glance",
       "point2": "Access quick actions to create bookings or manage units",
       "point3": "Monitor maintenance requests and laundry queue",
+      "proTip": "Click any stat card to jump directly to the relevant booking or unit list.",
       "admin": {
         "point1": "Monitor all queues, approve bookings, and manage staff alerts",
         "point2": "Track occupancy and revenue across all units at a glance",
@@ -1047,13 +1063,15 @@
       "title": "Units",
       "point1": "Add, edit, and organize your accommodation units",
       "point2": "Upload photos and manage amenities for each unit",
-      "point3": "Group units by type and control availability"
+      "point3": "Group units by type and control availability",
+      "proTip": "Set WiFi credentials on each unit — guests see them automatically in the Stay portal."
     },
     "bookings": {
       "title": "Bookings",
       "point1": "Manage reservations through their full lifecycle",
       "point2": "Transition booking states: inquiry → confirmed → checked in",
       "point3": "Review the approval queue and handle deposits",
+      "proTip": "Soft holds auto-expire in 12 hours and pending deposits in 24 — no manual cleanup needed.",
       "admin": {
         "point1": "Full control over all bookings with admin override capability",
         "point2": "Approve or reject pending bookings and manage escalations",
@@ -1085,6 +1103,7 @@
       "point1": "Visual overview of availability across all units",
       "point2": "Switch between timeline, month, and day views",
       "point3": "Create and manage maintenance blocks",
+      "proTip": "Drag bookings on the timeline view to reschedule — the system checks for conflicts automatically.",
       "maintenance": {
         "point1": "View scheduled maintenance blocks and upcoming bookings",
         "point2": "Plan your work around check-ins and check-outs",
@@ -1100,13 +1119,15 @@
       "title": "Pricing & Policies",
       "point1": "Configure seasonal pricing rules and long-stay discounts",
       "point2": "Set operational policies like check-out times and buffers",
-      "point3": "Manage deposit requirements and cancellation rules"
+      "point3": "Manage deposit requirements and cancellation rules",
+      "proTip": "Create overlapping seasonal rules — the system applies the most specific match for each night."
     },
     "reports": {
       "title": "Reports",
       "point1": "Track occupancy rates and revenue by unit",
       "point2": "View booking state breakdowns and trends",
       "point3": "Access account census and activity reports",
+      "proTip": "Export any report to CSV for your accountant or owner updates.",
       "viewer": {
         "point1": "Monitor occupancy rates and revenue in read-only mode",
         "point2": "View booking trends and state breakdowns",
@@ -1117,19 +1138,22 @@
       "title": "Messages",
       "point1": "Communicate with guests through real-time chat",
       "point2": "Add internal notes visible only to staff",
-      "point3": "Auto-translate messages across languages"
+      "point3": "Auto-translate messages across 9 languages",
+      "proTip": "Use internal notes to leave shift handover information — only staff can see them."
     },
     "embeds": {
       "title": "Embeds",
       "point1": "Generate embed widgets for external websites",
       "point2": "Customize the booking widget appearance",
-      "point3": "Copy embed code and preview before publishing"
+      "point3": "Copy embed code and preview before publishing",
+      "proTip": "Embed the availability calendar on your gym's website so guests can book directly."
     },
     "settings": {
       "title": "Settings",
       "point1": "Update your profile and contact information",
       "point2": "Manage user roles and staff accounts",
       "point3": "Configure system policies and review management",
+      "proTip": "You can reset this tutorial anytime from your Profile section in Settings.",
       "front_desk_supervisor": {
         "point1": "Update your profile and contact information",
         "point2": "View user directory and team contacts",
@@ -1146,6 +1170,7 @@
       "point1": "Your intelligent assistant for property operations",
       "point2": "Ask questions about bookings, availability, and trends",
       "point3": "Get context-aware answers based on your role",
+      "proTip": "Switch to Camp mode to answer guest questions about training schedules, gym rules, and local tips.",
       "admin": {
         "point1": "Ask about system health, webhook status, and failed payments",
         "point2": "Get policy configuration summaries and staff activity reports",
@@ -1187,43 +1212,50 @@
         "title": "My Bookings",
         "point1": "View your current and past reservations",
         "point2": "Request new bookings or cancel existing ones",
-        "point3": "Track booking status from inquiry to check-out"
+        "point3": "Track booking status from inquiry to check-out",
+        "proTip": "You can message staff directly from any booking card for quick questions."
       },
       "messages": {
         "title": "Messages",
         "point1": "Chat directly with the property staff",
         "point2": "Get real-time updates on your requests",
-        "point3": "Messages are translated automatically if needed"
+        "point3": "Messages are translated automatically if needed",
+        "proTip": "Staff typically respond within minutes during business hours."
       },
       "documents": {
         "title": "Documents",
         "point1": "Upload your ID for pre-arrival verification",
         "point2": "Track document verification status",
-        "point3": "Required for check-in completion"
+        "point3": "Required for check-in completion",
+        "proTip": "Take a clear, well-lit photo of your passport — blurry images cause verification delays."
       },
       "staySupport": {
         "title": "Stay Support",
         "point1": "Report room issues like plumbing, electrical, or cleanliness",
         "point2": "Request laundry drop-off and track pickup status",
-        "point3": "All requests are tracked and staff are notified automatically"
+        "point3": "All requests are tracked and staff are notified automatically",
+        "proTip": "Add a photo to maintenance requests — it helps the team prepare the right tools."
       },
       "payments": {
         "title": "Payments",
         "point1": "View deposit requirements and payment status for your bookings",
         "point2": "Pay deposits online or arrange in-person payment at the front desk",
-        "point3": "Track refund eligibility based on cancellation timing"
+        "point3": "Track refund eligibility based on cancellation timing",
+        "proTip": "Deposits are required within 24 hours of approval — pay promptly to hold your spot."
       },
       "reviews": {
         "title": "Reviews",
         "point1": "Leave a review after your stay (available 24h after checkout)",
         "point2": "Rate your experience and share feedback with future guests",
-        "point3": "Reviews are moderated by management before publishing"
+        "point3": "Reviews are moderated by management before publishing",
+        "proTip": "Detailed reviews help future fighters choose the right room and training package."
       },
       "profile": {
         "title": "Profile",
         "point1": "Update your contact details and preferences",
         "point2": "Choose your preferred language",
-        "point3": "Manage your WhatsApp and LINE contact info"
+        "point3": "Manage your WhatsApp and LINE contact info",
+        "proTip": "Add your WhatsApp number so staff can reach you quickly about pickup and arrival details."
       }
     }
   },
