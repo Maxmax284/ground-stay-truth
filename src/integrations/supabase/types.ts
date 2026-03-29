@@ -1194,6 +1194,45 @@ export type Database = {
           },
         ]
       }
+      security_events: {
+        Row: {
+          actor_email: string | null
+          actor_id: string | null
+          actor_role: string | null
+          confidence_score: number | null
+          created_at: string
+          details: Json | null
+          event_type: string
+          id: string
+          severity: string
+          source_ip: string | null
+        }
+        Insert: {
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          details?: Json | null
+          event_type: string
+          id?: string
+          severity?: string
+          source_ip?: string | null
+        }
+        Update: {
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          severity?: string
+          source_ip?: string | null
+        }
+        Relationships: []
+      }
       stay_support_log: {
         Row: {
           action: string
