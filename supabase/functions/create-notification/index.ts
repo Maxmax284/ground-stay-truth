@@ -89,6 +89,49 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Fire-and-forget: send push notifications to all targeted users
+    const uniqueUserIds = [...new Set(rows.map((r: any) => r.user_id))];
+    const pushTypes: Record<string, string> = {
+      booking: "📋 Booking",
+      payment: "💳 Payment",
+      maintenance: "🔧 Maintenance",
+      laundry: "👕 Laundry",
+      override: "⚠️ Override",
+      stay_essentials: "🏠 Stay Info",
+    };
+
+    // Group messages by user for a cleaner push
+    const byUser = new Map<string, string[]>();
+    for (const r of rows) {
+      const msgs = byUser.get(r.user_id) ?? [];
+      msgs.push(r.message);
+      byUser.set(r.user_id, msgs);
+    }
+
+    try {
+      const firstNotif = rows[0];
+      const typeLabel = pushTypes[firstNotif.type] || "Notification";
+
+      await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${serviceRoleKey}`,
+        },
+        body: JSON.stringify({
+          user_ids: uniqueUserIds,
+          title: `Ground Stay — ${typeLabel}`,
+          body: rows.length === 1
+            ? firstNotif.message
+            : `${rows.length} new notifications`,
+          data: { type: firstNotif.type, reference_id: firstNotif.reference_id },
+        }),
+      });
+    } catch (pushErr) {
+      // Non-blocking: log but don't fail the notification creation
+      console.error("[create-notification] Push delivery error:", pushErr);
+    }
+
     return new Response(JSON.stringify({ ok: true, count: rows.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
