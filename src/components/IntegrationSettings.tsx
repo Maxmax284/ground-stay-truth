@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { usePolicySettings, useUpdatePolicySetting } from "@/hooks/usePolicySettings";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CreditCard, Mail, Eye, EyeOff, Save, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
+import { CreditCard, Mail, Eye, EyeOff, Save, CheckCircle2, XCircle, ExternalLink, ShieldCheck } from "lucide-react";
 
 const SECRET_KEYS = ["stripe_secret_key", "stripe_publishable_key", "stripe_webhook_secret", "resend_api_key"];
 
