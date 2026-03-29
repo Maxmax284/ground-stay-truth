@@ -259,7 +259,8 @@ export function IntegrationSettings() {
                 The URL where security events are sent for analysis
               </p>
             </div>
-            {renderSecretField("fenrir_api_key", "API Key", "flk_...")}
+            {renderSecretField("fenrir_api_key", "Outbound API Key", "flk_...")}
+            {renderSecretField("fenrir_receive_token", "Inbound Webhook Token", "frt_...")}
             <Separator />
             <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1.5">
               <p className="font-medium text-foreground">What this does</p>
