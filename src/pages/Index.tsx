@@ -19,6 +19,7 @@ import { HousekeepingPanel } from "@/components/HousekeepingPanel";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { TodaysPickupsWidget } from "@/components/TodaysPickupsWidget";
 import { CornerTalkPanel } from "@/components/CornerTalkPanel";
+import { StaffQuickActionsWidget } from "@/components/StaffQuickActionsWidget";
 import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useDraftMessages, useApproveDraftMessage } from "@/hooks/useBookings";
@@ -71,6 +72,9 @@ const Index = () => {
           <MaintenanceDashboard t={t} />
         ) : (
           <>
+            {/* Staff Quick Actions Widget */}
+            {!isViewer && <StaffQuickActionsWidget />}
+
             {/* Stats Row — clickable */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <StatCard
