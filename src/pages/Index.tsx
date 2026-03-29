@@ -72,6 +72,9 @@ const Index = () => {
           <MaintenanceDashboard t={t} />
         ) : (
           <>
+            {/* Staff Quick Actions Widget */}
+            {!isViewer && <StaffQuickActionsWidget />}
+
             {/* Stats Row — clickable */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <StatCard
