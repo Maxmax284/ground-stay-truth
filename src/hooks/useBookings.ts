@@ -393,6 +393,18 @@ export function useCreatePayment() {
       }
       await createNotifications(batch);
 
+      // Emit Fenrir security event for payment
+      if (user) {
+        const { data: userRoles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+        const actorRole = userRoles?.[0]?.role ?? null;
+        emitPaymentProcessed(
+          { userId: user.id, email: user.email ?? undefined, role: actorRole },
+          payment.amount,
+          payment.method,
+          payment.booking_id
+        );
+      }
+
       return data;
     },
     onSuccess: (_, vars) => {
