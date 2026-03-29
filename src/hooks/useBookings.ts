@@ -469,6 +469,18 @@ export function useRefundPayment() {
       }
       await createNotifications(batch);
 
+      // Emit Fenrir security event for refund
+      if (user) {
+        const { data: userRoles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+        const actorRole = userRoles?.[0]?.role ?? null;
+        emitRefundIssued(
+          { userId: user.id, email: user.email ?? undefined, role: actorRole },
+          params.refundAmount,
+          params.reason,
+          params.bookingId
+        );
+      }
+
       return data;
     },
     onSuccess: (_, vars) => {
