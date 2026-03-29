@@ -19,6 +19,7 @@ import { HousekeepingPanel } from "@/components/HousekeepingPanel";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { TodaysPickupsWidget } from "@/components/TodaysPickupsWidget";
 import { CornerTalkPanel } from "@/components/CornerTalkPanel";
+import { StaffQuickActionsWidget } from "@/components/StaffQuickActionsWidget";
 import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useDraftMessages, useApproveDraftMessage } from "@/hooks/useBookings";
