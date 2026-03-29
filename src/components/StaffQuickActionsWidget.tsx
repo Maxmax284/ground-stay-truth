@@ -69,7 +69,7 @@ export function StaffQuickActionsWidget() {
 
   const stats: QuickStat[] = [
     {
-      label: "Check-ins",
+      label: t("dashboard.checkIns"),
       count: data?.checkIns ?? 0,
       icon: LogIn,
       color: "text-emerald-600 dark:text-emerald-400",
@@ -77,7 +77,7 @@ export function StaffQuickActionsWidget() {
       urgent: (data?.checkIns ?? 0) > 0,
     },
     {
-      label: "Check-outs",
+      label: t("dashboard.checkOuts"),
       count: data?.checkOuts ?? 0,
       icon: LogOut,
       color: "text-amber-600 dark:text-amber-400",
@@ -85,7 +85,7 @@ export function StaffQuickActionsWidget() {
       urgent: (data?.checkOuts ?? 0) > 0,
     },
     {
-      label: "Housekeeping",
+      label: t("dashboard.housekeeping"),
       count: data?.housekeeping ?? 0,
       icon: ClipboardList,
       color: "text-blue-600 dark:text-blue-400",
@@ -95,7 +95,7 @@ export function StaffQuickActionsWidget() {
       },
     },
     {
-      label: "Maintenance",
+      label: t("dashboard.maintenance"),
       count: data?.maintenance ?? 0,
       icon: Wrench,
       color: "text-orange-600 dark:text-orange-400",
@@ -105,7 +105,7 @@ export function StaffQuickActionsWidget() {
       },
     },
     {
-      label: "Laundry",
+      label: t("dashboard.laundry"),
       count: data?.laundry ?? 0,
       icon: Shirt,
       color: "text-violet-600 dark:text-violet-400",
