@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS push_subscriptions_user_endpoint_idx ON public.push_subscriptions (user_id, endpoint);
