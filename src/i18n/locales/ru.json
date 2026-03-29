@@ -121,7 +121,14 @@
     "noRecentActivity": "Пока нет активности. Журнал аудита появится здесь.",
     "arrivingToday": "Заезжают сегодня",
     "departingToday": "Выезжают сегодня",
-    "createdAs": "Создано как {{state}}"
+    "createdAs": "Создано как {{state}}",
+    "todaysTasks": "Задачи на сегодня",
+    "pending": "{{count}} ожидает",
+    "checkIns": "Заезды",
+    "checkOuts": "Выезды",
+    "housekeeping": "Уборка",
+    "maintenance": "Обслуживание",
+    "laundry": "Прачечная"
   },
   "bookings": {
     "title": "Бронирования",

@@ -121,7 +121,14 @@
     "noRecentActivity": "ยังไม่มีกิจกรรมล่าสุด บันทึกการตรวจสอบจะปรากฏที่นี่",
     "arrivingToday": "เดินทางมาถึงวันนี้",
     "departingToday": "เดินทางออกวันนี้",
-    "createdAs": "สร้างเป็น {{state}}"
+    "createdAs": "สร้างเป็น {{state}}",
+    "todaysTasks": "งานวันนี้",
+    "pending": "{{count}} รอดำเนินการ",
+    "checkIns": "เช็คอิน",
+    "checkOuts": "เช็คเอาท์",
+    "housekeeping": "แม่บ้าน",
+    "maintenance": "ซ่อมบำรุง",
+    "laundry": "ซักผ้า"
   },
   "bookings": {
     "title": "การจอง",

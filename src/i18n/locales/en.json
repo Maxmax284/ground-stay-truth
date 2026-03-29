@@ -124,7 +124,14 @@
     "departingToday": "Departing Today",
     "createdAs": "Created as {{state}}",
     "openInquiries": "Open Inquiries",
-    "awaitingResponse": "Awaiting staff response"
+    "awaitingResponse": "Awaiting staff response",
+    "todaysTasks": "Today's Tasks",
+    "pending": "{{count}} pending",
+    "checkIns": "Check-ins",
+    "checkOuts": "Check-outs",
+    "housekeeping": "Housekeeping",
+    "maintenance": "Maintenance",
+    "laundry": "Laundry"
   },
   "bookings": {
     "title": "Bookings",

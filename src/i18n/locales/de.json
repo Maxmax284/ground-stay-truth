@@ -121,7 +121,14 @@
     "noRecentActivity": "Noch keine Aktivität. Das Audit-Log erscheint hier.",
     "arrivingToday": "Ankunft heute",
     "departingToday": "Abreise heute",
-    "createdAs": "Erstellt als {{state}}"
+    "createdAs": "Erstellt als {{state}}",
+    "todaysTasks": "Heutige Aufgaben",
+    "pending": "{{count}} ausstehend",
+    "checkIns": "Check-ins",
+    "checkOuts": "Check-outs",
+    "housekeeping": "Housekeeping",
+    "maintenance": "Wartung",
+    "laundry": "Wäsche"
   },
   "bookings": {
     "title": "Buchungen",

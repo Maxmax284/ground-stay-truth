@@ -121,7 +121,14 @@
     "noRecentActivity": "まだアクティビティはありません。監査ログがここに表示されます。",
     "arrivingToday": "本日到着",
     "departingToday": "本日出発",
-    "createdAs": "{{state}} として作成"
+    "createdAs": "{{state}} として作成",
+    "todaysTasks": "今日のタスク",
+    "pending": "{{count}} 件未対応",
+    "checkIns": "チェックイン",
+    "checkOuts": "チェックアウト",
+    "housekeeping": "ハウスキーピング",
+    "maintenance": "メンテナンス",
+    "laundry": "ランドリー"
   },
   "bookings": {
     "title": "予約",
