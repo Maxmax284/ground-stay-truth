@@ -18,6 +18,7 @@ import { LaundryPanel } from "@/components/LaundryPanel";
 import { HousekeepingPanel } from "@/components/HousekeepingPanel";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { TodaysPickupsWidget } from "@/components/TodaysPickupsWidget";
+import { FlightForecastWidget } from "@/components/FlightForecastWidget";
 import { CornerTalkPanel } from "@/components/CornerTalkPanel";
 import { StaffQuickActionsWidget } from "@/components/StaffQuickActionsWidget";
 import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
