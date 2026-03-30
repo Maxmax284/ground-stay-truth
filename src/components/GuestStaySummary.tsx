@@ -508,6 +508,22 @@ export function GuestStaySummary() {
           </Card>
         );
       })}
+
+      {/* Arrival Welcome Card — shown for landed guests */}
+      {bookings?.map((booking) => {
+        const pickup = pickups?.find((p: any) => p.booking_id === booking.id);
+        if (!pickup?.guest_landed_at) return null;
+        const airport = detectAirport(booking);
+        if (!airport) return null;
+        return <ArrivalWelcomeCard key={`welcome-${booking.id}`} airport={airport} compact />;
+      })}
+
+      {/* Arrival Welcome Dialog */}
+      <ArrivalWelcomeDialog
+        open={welcomeDialogOpen}
+        onOpenChange={setWelcomeDialogOpen}
+        airport={welcomeAirport}
+      />
     </div>
   );
 }
