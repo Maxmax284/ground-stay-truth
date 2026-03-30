@@ -163,10 +163,11 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
       .eq("check_in", today)
       .in("state", ["confirmed", "pending_deposit"]),
 
-    // ⏳ Pickups today
+    // ⏳ Pickups today — exclude cancelled/completed pickups
     adminClient.from("airport_pickups")
-      .select("id, status, driver_id, booking_id, bookings!inner(check_in)")
+      .select("id, status, driver_id, booking_id, bookings!inner(check_in, state)")
       .eq("bookings.check_in", today)
+      .not("status", "in", '("cancelled","completed")')
       .is("driver_id", null),
 
     // ⏳ Departures today
