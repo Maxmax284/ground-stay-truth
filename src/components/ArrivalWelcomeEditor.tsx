@@ -389,7 +389,7 @@ export function ArrivalWelcomeEditor() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setAllSectionsExpanded(airport.id, prev => !prev)}
+                        onClick={() => setAllSectionsExpanded(prev => ({ ...prev, [airport.id]: prev[airport.id] !== false ? false : true }))}
                         className="h-7 gap-1 text-xs text-muted-foreground"
                       >
                         {allSectionsExpanded[airport.id] !== false ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
