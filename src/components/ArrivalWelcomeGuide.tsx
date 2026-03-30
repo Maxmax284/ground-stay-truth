@@ -186,7 +186,7 @@ export function ArrivalWelcomeCard({ airport, compact = false }: ArrivalWelcomeC
     return parseTemplate(setting?.value);
   }, [airport, settings]);
 
-  if (!template) return null;
+  if (!template || !template.enabled) return null;
 
   if (compact) {
     return (
