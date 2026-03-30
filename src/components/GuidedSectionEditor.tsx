@@ -33,6 +33,9 @@ interface Props {
   context: string;
   onUpdate: (title: string, content: string) => void;
   onRemove: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  totalSections: number;
 }
 
 /** Resolve a fact value into string or string[] for form display */
