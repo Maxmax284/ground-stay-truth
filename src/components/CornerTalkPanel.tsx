@@ -355,13 +355,26 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
                       >
                         <Undo2 className="h-3.5 w-3.5" />
                       </button>
-                      <button
-                        onClick={() => hardDismiss(item.messageKey)}
-                        className="p-1.5 rounded hover:bg-destructive/10 shrink-0 text-muted-foreground/60 hover:text-destructive transition-colors"
-                        title={t("cornerTalk.removeForGood", "Remove for good")}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button
+                            className="p-1.5 rounded hover:bg-destructive/10 shrink-0 text-muted-foreground/60 hover:text-destructive transition-colors"
+                            title={t("cornerTalk.removeForGood", "Remove for good")}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>{t("cornerTalk.confirmRemoveTitle", "Remove this alert?")}</AlertDialogTitle>
+                            <AlertDialogDescription>{t("cornerTalk.confirmRemoveDesc", "This will permanently hide this alert for you. It won't come back unless new data triggers it.")}</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>{t("common.cancel", "Cancel")}</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => hardDismiss(item.messageKey)}>{t("cornerTalk.removeForGood", "Remove for good")}</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   ))}
                 </div>
