@@ -179,18 +179,35 @@ const GuestPortal = () => {
     },
   });
 
-  const groupedUnits = useMemo(() => {
+  // Build one card per room type, sorted highest price → lowest (premium first)
+  const roomTypeCards = useMemo(() => {
     if (!units) return [];
-    const map = new Map<string, { name: string; units: typeof units }>();
-    const ungrouped: typeof units = [];
+    const map = new Map<string, { groupId: string; name: string; description: string | null; units: typeof units }>();
     for (const u of units) {
       if (u.group_id && u.unit_groups?.name) {
-        if (!map.has(u.group_id)) map.set(u.group_id, { name: u.unit_groups.name, units: [] });
+        if (!map.has(u.group_id)) map.set(u.group_id, { groupId: u.group_id, name: u.unit_groups.name, description: u.description, units: [] });
         map.get(u.group_id)!.units.push(u);
-      } else { ungrouped.push(u); }
+      }
     }
-    return [...Array.from(map.values()), ...(ungrouped.length ? [{ name: t("common.other"), units: ungrouped }] : [])];
-  }, [units, t]);
+    return Array.from(map.values())
+      .map((g) => {
+        const rep = g.units.reduce((best, u) => (u.base_price > best.base_price ? u : best), g.units[0]);
+        return {
+          groupId: g.groupId,
+          name: g.name,
+          description: g.description ?? rep.description,
+          capacity: rep.capacity,
+          base_price: rep.base_price,
+          weekend_price: rep.weekend_price,
+          cleaning_fee: rep.cleaning_fee,
+          min_nights: rep.min_nights,
+          amenities: rep.amenities,
+          photos: rep.photos,
+          unitCount: g.units.length,
+        };
+      })
+      .sort((a, b) => b.base_price - a.base_price);
+  }, [units]);
 
   const cancellationSummary = useMemo(() => {
     if (!policies) return null;
