@@ -212,6 +212,11 @@ export function calculatePricing(
     return { date: dateStr, price: Number(unit.base_price), source: "base" as const };
   });
 
+  // Apply per-person multiplier to each night
+  if (isPerPerson) {
+    nights.forEach((n) => { n.price = Math.round(n.price * guestMultiplier * 100) / 100; });
+  }
+
   const subtotal = nights.reduce((sum, n) => sum + n.price, 0);
   const cleaningFee = Number(unit.cleaning_fee ?? 0);
 

@@ -85,9 +85,20 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
             <div className="space-y-2"><Label htmlFor="capacity">{t("units.capacity")}</Label><Input id="capacity" type="number" min={1} {...register("capacity")} /></div>
             <div className="space-y-2"><Label htmlFor="min_nights">{t("units.minNights")}</Label><Input id="min_nights" type="number" min={1} {...register("min_nights")} /></div>
           </div>
+          <div className="space-y-2">
+            <Label>Pricing Type</Label>
+            <Select value={pricingType} onValueChange={setPricingType}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="per_room">Per Room</SelectItem>
+                <SelectItem value="per_person">Per Person</SelectItem>
+              </SelectContent>
+            </Select>
+            {pricingType === "per_person" && <p className="text-xs text-muted-foreground">Prices below are per person. Total will be calculated × capacity automatically.</p>}
+          </div>
           <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2"><Label htmlFor="base_price">{t("units.basePrice")}</Label><Input id="base_price" type="number" step="0.01" min={0} {...register("base_price")} /></div>
-            <div className="space-y-2"><Label htmlFor="weekend_price">{t("units.weekendPrice")}</Label><Input id="weekend_price" type="number" step="0.01" min={0} {...register("weekend_price")} /></div>
+            <div className="space-y-2"><Label htmlFor="base_price">{pricingType === "per_person" ? "Base Price / Person" : t("units.basePrice")}</Label><Input id="base_price" type="number" step="0.01" min={0} {...register("base_price")} /></div>
+            <div className="space-y-2"><Label htmlFor="weekend_price">{pricingType === "per_person" ? "Weekend / Person" : t("units.weekendPrice")}</Label><Input id="weekend_price" type="number" step="0.01" min={0} {...register("weekend_price")} /></div>
             <div className="space-y-2"><Label htmlFor="cleaning_fee">{t("units.cleaningFee")}</Label><Input id="cleaning_fee" type="number" step="0.01" min={0} {...register("cleaning_fee")} /></div>
           </div>
           <div className="grid grid-cols-3 gap-4">
