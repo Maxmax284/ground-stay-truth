@@ -36,7 +36,10 @@ const Index = () => {
   const { role } = useAuth();
   const { effectiveRole } = useRolePreview();
   const { arrivals, departures, activeBookings, unitCount, recentActivity, pendingApproval, pendingInquiry, inquiryCount } = useDashboardStats();
+  const { data: policySettings } = usePolicySettings();
   const [detailBookingId, setDetailBookingId] = useState<string | null>(null);
+
+  const flightForecastEnabled = policySettings?.find(s => s.key === "flight_forecast_enabled")?.value === "true";
 
   const arrivalsCount = arrivals.data?.length ?? 0;
   const departuresCount = departures.data?.length ?? 0;
