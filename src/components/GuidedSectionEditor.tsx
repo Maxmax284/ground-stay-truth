@@ -36,6 +36,7 @@ interface Props {
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   totalSections: number;
+  forceExpanded?: boolean;
 }
 
 /** Resolve a fact value into string or string[] for form display */
@@ -82,7 +83,7 @@ function detectSectionType(title: string, airport: string): SectionTypeId | null
 }
 
 export function GuidedSectionEditor({
-  airport, sectionIndex, sectionTitle, sectionContent, tone, context, onUpdate, onRemove, onMoveUp, onMoveDown, totalSections,
+  airport, sectionIndex, sectionTitle, sectionContent, tone, context, onUpdate, onRemove, onMoveUp, onMoveDown, totalSections, forceExpanded,
 }: Props) {
   const { session } = useAuth();
   const { toast } = useToast();
@@ -95,6 +96,10 @@ export function GuidedSectionEditor({
   const [fieldValues, setFieldValues] = useState<FieldValues>({});
   const [generating, setGenerating] = useState(false);
   const [expanded, setExpanded] = useState(true);
+
+  useEffect(() => {
+    if (forceExpanded !== undefined) setExpanded(forceExpanded);
+  }, [forceExpanded]);
 
   const template = useMemo(() =>
     selectedType ? SECTION_TEMPLATES.find(t => t.id === selectedType) : null,
