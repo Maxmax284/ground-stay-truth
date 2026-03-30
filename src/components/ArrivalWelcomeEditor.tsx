@@ -14,9 +14,11 @@ import { usePolicySettings, useUpdatePolicySetting } from "@/hooks/usePolicySett
 import { useAuth } from "@/hooks/useAuth";
 import { AIStudioPanel } from "./AIStudioPanel";
 import { AIRefinementChat } from "./AIRefinementChat";
+import { GuidedSectionEditor } from "./GuidedSectionEditor";
+import { SECTION_TEMPLATES, getJourneyTemplates, getSituationalTemplates } from "@/lib/airportFactSheets";
 import {
   Plane, Save, Plus, X, Sparkles, Loader2, GripVertical, Image as ImageIcon, MapPin, RefreshCw, Tag,
-  Check, Lightbulb,
+  Check, Lightbulb, ChevronDown, ChevronUp, BookOpen,
 } from "lucide-react";
 
 export interface WelcomePhoto {
