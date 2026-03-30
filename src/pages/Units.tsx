@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useUnits, useUpdateUnit, useDeleteUnit, type Unit } from "@/hooks/useUnits";
+import { useUnits, useUpdateUnit, type Unit } from "@/hooks/useUnits";
 import { useUnitGroups } from "@/hooks/useUnitGroups";
 import { UnitFormDialog } from "@/components/UnitFormDialog";
 import { UnitGroupManager } from "@/components/UnitGroupManager";
