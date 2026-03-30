@@ -47,6 +47,7 @@ function parseTemplate(value: unknown): WelcomeTemplate {
       welcome_message: parsed.welcome_message || "",
       sections: Array.isArray(parsed.sections) ? parsed.sections : [],
       photos: Array.isArray(parsed.photos) ? parsed.photos : [],
+      enabled: parsed.enabled !== false, // default true for backwards compat
     };
   } catch {
     return { ...DEFAULT_TEMPLATE };
