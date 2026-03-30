@@ -59,7 +59,9 @@ export function GuestDepositSection({ policies, depositAmount, bookingId }: Gues
 
   const hasBankDetails = !!(bankName || accountNumber);
   const hasOnline = depositPol.onlineEnabled;
-  const showTabs = hasOnline && hasBankDetails;
+  const isOnlineRequired = depositPol.effectiveMode === "online_required";
+  // When online is required, never show bank transfer tab — guests must pay online
+  const showTabs = hasOnline && hasBankDetails && !isOnlineRequired;
 
   // Determine the default/only tab
   const defaultTab = hasOnline ? "online" : "bank";
