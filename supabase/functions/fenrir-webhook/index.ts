@@ -19,15 +19,17 @@ Deno.serve(async (req) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const receiveToken = Deno.env.get("FENRIR_RECEIVE_TOKEN") || "";
 
-  // Validate auth token (constant-time comparison)
-  const authHeader = req.headers.get("authorization") || "";
-  const providedToken = authHeader.replace(/^Bearer\s+/i, "");
+  // Validate auth token only when FENRIR_RECEIVE_TOKEN is configured
+  if (receiveToken) {
+    const authHeader = req.headers.get("authorization") || "";
+    const providedToken = authHeader.replace(/^Bearer\s+/i, "");
 
-  if (!receiveToken || !constantTimeEqual(providedToken, receiveToken)) {
-    return new Response(
-      JSON.stringify({ status: "error", message: "Unauthorized" }),
-      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    if (!constantTimeEqual(providedToken, receiveToken)) {
+      return new Response(
+        JSON.stringify({ status: "error", message: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
   }
 
   try {
