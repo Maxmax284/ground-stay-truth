@@ -160,9 +160,9 @@ const CalendarView = () => {
   const [mobileUnitId, setMobileUnitId] = useState<string>("");
   const selectedMobileUnit = useMemo(() => {
     if (!isMobile) return null;
-    const id = mobileUnitId || activeUnits[0]?.id;
-    return activeUnits.find((u) => u.id === id) ?? activeUnits[0] ?? null;
-  }, [isMobile, mobileUnitId, activeUnits]);
+    const id = mobileUnitId || allUnits[0]?.id;
+    return allUnits.find((u) => u.id === id) ?? allUnits[0] ?? null;
+  }, [isMobile, mobileUnitId, allUnits]);
 
   // Compute date range based on view mode
   const dateRange = useMemo(() => {
@@ -334,13 +334,13 @@ const CalendarView = () => {
           </div>
         </div>
 
-        {viewMode === "timeline" && isMobile && activeUnits.length > 0 && (
+        {viewMode === "timeline" && isMobile && allUnits.length > 0 && (
           <Select value={selectedMobileUnit?.id ?? ""} onValueChange={setMobileUnitId}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder={t("calendar.selectUnit")} />
             </SelectTrigger>
             <SelectContent>
-              {activeUnits.map((u) => (
+              {allUnits.map((u) => (
                 <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
               ))}
             </SelectContent>
@@ -406,7 +406,7 @@ const CalendarView = () => {
             </div>
           ) : (
             <CalendarGrid
-              units={activeUnits}
+              units={allUnits}
               bookings={bookings ?? []}
               maintenanceBlocks={maintenanceBlocks ?? []}
               startDate={startDate}
@@ -436,7 +436,7 @@ const CalendarView = () => {
         {viewMode === "day" && (
           <CalendarDayView
             date={selectedDay}
-            units={activeUnits}
+            units={allUnits}
             bookings={bookings ?? []}
             maintenanceBlocks={maintenanceBlocks ?? []}
             onBookingClick={handleBookingClick}
@@ -462,7 +462,7 @@ const CalendarView = () => {
       <MaintenanceBlockDialog
         open={showMaintenanceDialog}
         onOpenChange={setShowMaintenanceDialog}
-        units={activeUnits}
+        units={allUnits}
       />
 
       <AlertDialog open={showDragConfirm} onOpenChange={setShowDragConfirm}>
