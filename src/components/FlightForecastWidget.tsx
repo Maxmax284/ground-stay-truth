@@ -99,15 +99,24 @@ export function FlightForecastWidget({ onClickBooking }: Props) {
             No flight data yet. Traffic data refreshes every 30 minutes.
           </p>
         ) : (
-          <Tabs defaultValue="arrivals" className="w-full">
-            <TabsList className="w-full grid grid-cols-2 mb-3">
-              <TabsTrigger value="arrivals" className="text-xs gap-1">
-                <PlaneLanding className="h-3.5 w-3.5" /> Arrivals ({arrivals.length})
-              </TabsTrigger>
-              <TabsTrigger value="departures" className="text-xs gap-1">
-                <PlaneTakeoff className="h-3.5 w-3.5" /> Departures ({departures.length})
-              </TabsTrigger>
-            </TabsList>
+          <>
+            {isFallbackMode && (
+              <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 p-2.5 mb-3">
+                <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  <span className="font-medium text-foreground">Pickup-only mode:</span> Airport-wide scan unavailable. Showing {flights.length} flight{flights.length !== 1 ? "s" : ""} linked to today's guest pickups.
+                </p>
+              </div>
+            )}
+            <Tabs defaultValue="arrivals" className="w-full">
+              <TabsList className="w-full grid grid-cols-2 mb-3">
+                <TabsTrigger value="arrivals" className="text-xs gap-1">
+                  <PlaneLanding className="h-3.5 w-3.5" /> Arrivals ({arrivals.length})
+                </TabsTrigger>
+                <TabsTrigger value="departures" className="text-xs gap-1">
+                  <PlaneTakeoff className="h-3.5 w-3.5" /> Departures ({departures.length})
+                </TabsTrigger>
+              </TabsList>
             <TabsContent value="arrivals" className="mt-0">
               <FlightList flights={arrivals} direction="arrival" />
             </TabsContent>
