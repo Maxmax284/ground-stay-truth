@@ -1353,10 +1353,12 @@ export type Database = {
           description: string | null
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
+          extra_bed_fee: number | null
           group_id: string | null
           house_rules_detail: string | null
           id: string
           is_active: boolean
+          max_extra_beds: number
           min_nights: number
           monthly_rate: number | null
           name: string
@@ -1380,10 +1382,12 @@ export type Database = {
           description?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
+          extra_bed_fee?: number | null
           group_id?: string | null
           house_rules_detail?: string | null
           id?: string
           is_active?: boolean
+          max_extra_beds?: number
           min_nights?: number
           monthly_rate?: number | null
           name: string
@@ -1407,10 +1411,12 @@ export type Database = {
           description?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
+          extra_bed_fee?: number | null
           group_id?: string | null
           house_rules_detail?: string | null
           id?: string
           is_active?: boolean
+          max_extra_beds?: number
           min_nights?: number
           monthly_rate?: number | null
           name?: string

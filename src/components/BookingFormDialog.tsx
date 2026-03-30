@@ -25,7 +25,7 @@ import { formatPrice } from "@/lib/currency";
 import { AlertTriangle } from "lucide-react";
 
 interface BookingFormDialogProps { open: boolean; onOpenChange: (open: boolean) => void; defaultUnitId?: string; defaultCheckIn?: string; defaultCheckOut?: string; }
-interface FormValues { unit_id: string; check_in: string; check_out: string; num_guests: number; notes: string; guest_id: string; }
+interface FormValues { unit_id: string; check_in: string; check_out: string; num_guests: number; extra_beds: number; notes: string; guest_id: string; }
 
 export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCheckIn, defaultCheckOut }: BookingFormDialogProps) {
   const { t } = useTranslation();
@@ -49,7 +49,7 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
   });
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
-    defaultValues: { unit_id: defaultUnitId ?? "", check_in: defaultCheckIn ?? "", check_out: defaultCheckOut ?? "", num_guests: 1, notes: "", guest_id: "" },
+    defaultValues: { unit_id: defaultUnitId ?? "", check_in: defaultCheckIn ?? "", check_out: defaultCheckOut ?? "", num_guests: 1, extra_beds: 0, notes: "", guest_id: "" },
   });
 
   const selectedUnitId = watch("unit_id");
@@ -57,6 +57,7 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
   const checkIn = watch("check_in");
   const checkOut = watch("check_out");
   const numGuests = watch("num_guests");
+  const extraBeds = watch("extra_beds");
   const activeUnits = units?.filter((u) => u.is_active) ?? [];
   const selectedUnit = activeUnits.find((u) => u.id === selectedUnitId);
 
@@ -123,9 +124,9 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
   }, [isAdminRole, selectedUnit, checkIn, checkOut, existingBookings.data, cleaningBufferHours, t]);
 
   const pricing: PricingSummary = useMemo(() => {
-    if (!selectedUnit || !checkIn || !checkOut || validationErrors.length > 0) return { nights: [], subtotal: 0, cleaningFee: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
-    return calculatePricing(selectedUnit, checkIn, checkOut, allPricingRules ?? [], undefined, policies);
-  }, [selectedUnit, checkIn, checkOut, allPricingRules, validationErrors, policies]);
+    if (!selectedUnit || !checkIn || !checkOut || validationErrors.length > 0) return { nights: [], subtotal: 0, cleaningFee: 0, extraBedTotal: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
+    return calculatePricing(selectedUnit, checkIn, checkOut, allPricingRules ?? [], undefined, policies, undefined, Number(extraBeds) || 0);
+  }, [selectedUnit, checkIn, checkOut, allPricingRules, validationErrors, policies, extraBeds]);
 
   const onSubmit = async (data: FormValues) => {
     if (validationErrors.length > 0) return;
@@ -162,7 +163,16 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
             <div className="space-y-2"><Label htmlFor="check_in">{t("bookingForm.checkIn")} *</Label><Input id="check_in" type="date" {...register("check_in", { required: true })} />{errors.check_in && <p className="text-sm text-destructive">{t("common.required")}</p>}</div>
             <div className="space-y-2"><Label htmlFor="check_out">{t("bookingForm.checkOut")} *</Label><Input id="check_out" type="date" {...register("check_out", { required: true })} />{errors.check_out && <p className="text-sm text-destructive">{t("common.required")}</p>}</div>
           </div>
-          <div className="space-y-2"><Label htmlFor="num_guests">{t("bookingForm.numGuests")}</Label><Input id="num_guests" type="number" min={1} max={selectedUnit?.capacity ?? 99} {...register("num_guests")} /></div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2"><Label htmlFor="num_guests">{t("bookingForm.numGuests")}</Label><Input id="num_guests" type="number" min={1} max={selectedUnit?.capacity ?? 99} {...register("num_guests")} /></div>
+            {selectedUnit && (selectedUnit as any).max_extra_beds > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="extra_beds">Extra Beds</Label>
+                <Input id="extra_beds" type="number" min={0} max={(selectedUnit as any).max_extra_beds} {...register("extra_beds")} />
+                <p className="text-xs text-muted-foreground">{formatPrice(Number((selectedUnit as any).extra_bed_fee) || 0, policies)}/bed/night (max {(selectedUnit as any).max_extra_beds})</p>
+              </div>
+            )}
+          </div>
           {validationErrors.length > 0 && (
             <div className="rounded-md border border-destructive/50 bg-destructive/5 p-3 space-y-1">{validationErrors.map((err, i) => <div key={i} className="flex items-center gap-2 text-sm text-destructive"><AlertTriangle className="h-4 w-4 shrink-0" /><span>{err}</span></div>)}</div>
           )}
@@ -176,6 +186,7 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
               <Separator />
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("bookingForm.subtotal")} ({pricing.nights.length} {pricing.nights.length > 1 ? t("common.nights") : t("common.night")})</span><span className="font-medium">{formatPrice(pricing.subtotal, policies)}</span></div>
               {pricing.cleaningFee > 0 && <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("bookingForm.cleaningFee")}</span><span className="font-medium">{formatPrice(pricing.cleaningFee, policies)}</span></div>}
+              {pricing.extraBedTotal > 0 && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Extra Beds ({extraBeds} × {pricing.nights.length} {pricing.nights.length > 1 ? t("common.nights") : t("common.night")})</span><span className="font-medium">{formatPrice(pricing.extraBedTotal, policies)}</span></div>}
               {pricing.longStayDiscount && (
                 <div className="flex justify-between text-sm text-[hsl(var(--success))]">
                   <span>{t("pricing.longStayDiscount", { tier: pricing.longStayDiscount.tierLabel, pct: pricing.longStayDiscount.percentage })}</span>

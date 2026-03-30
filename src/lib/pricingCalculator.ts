@@ -28,6 +28,7 @@ export interface PricingSummary {
   nights: NightBreakdown[];
   subtotal: number;
   cleaningFee: number;
+  extraBedTotal: number;
   longStayDiscount: LongStayDiscount | null;
   loyaltyDiscount: LoyaltyDiscount | null;
   total: number;
@@ -124,17 +125,18 @@ export function calculatePricing(
   pricingRules: PricingRule[],
   priceOverride?: number | null,
   policies?: PolicySetting[] | null,
-  completedStays?: number
+  completedStays?: number,
+  extraBeds?: number
 ): PricingSummary {
   if (!checkIn || !checkOut) {
-    return { nights: [], subtotal: 0, cleaningFee: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
+    return { nights: [], subtotal: 0, cleaningFee: 0, extraBedTotal: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
   }
 
   const startDate = parseISO(checkIn);
   const endDate = parseISO(checkOut);
 
   if (endDate <= startDate) {
-    return { nights: [], subtotal: 0, cleaningFee: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
+    return { nights: [], subtotal: 0, cleaningFee: 0, extraBedTotal: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
   }
 
   const nightDates = eachDayOfInterval({ start: startDate, end: new Date(endDate.getTime() - 86400000) });
@@ -254,12 +256,18 @@ export function calculatePricing(
     discountAmount = (longStayDiscount?.amount ?? 0) + (loyaltyDiscount?.amount ?? 0);
   }
 
+  // Extra bed surcharge
+  const bedCount = Math.min(extraBeds ?? 0, (unit as any).max_extra_beds ?? 0);
+  const extraBedFee = Number((unit as any).extra_bed_fee) || 0;
+  const extraBedTotal = bedCount * extraBedFee * nights.length;
+
   return {
     nights,
     subtotal,
     cleaningFee,
+    extraBedTotal,
     longStayDiscount: appliedLongStay,
     loyaltyDiscount: appliedLoyalty,
-    total: subtotal - discountAmount + cleaningFee,
+    total: subtotal - discountAmount + cleaningFee + extraBedTotal,
   };
 }
