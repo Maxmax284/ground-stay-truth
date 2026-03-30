@@ -83,7 +83,7 @@ function detectSectionType(title: string, airport: string): SectionTypeId | null
 }
 
 export function GuidedSectionEditor({
-  airport, sectionIndex, sectionTitle, sectionContent, tone, context, onUpdate, onRemove, onMoveUp, onMoveDown, totalSections,
+  airport, sectionIndex, sectionTitle, sectionContent, tone, context, onUpdate, onRemove, onMoveUp, onMoveDown, totalSections, forceExpanded,
 }: Props) {
   const { session } = useAuth();
   const { toast } = useToast();
@@ -98,8 +98,8 @@ export function GuidedSectionEditor({
   const [expanded, setExpanded] = useState(true);
 
   useEffect(() => {
-    if (props.forceExpanded !== undefined) setExpanded(props.forceExpanded);
-  }, [props.forceExpanded]);
+    if (forceExpanded !== undefined) setExpanded(forceExpanded);
+  }, [forceExpanded]);
 
   const template = useMemo(() =>
     selectedType ? SECTION_TEMPLATES.find(t => t.id === selectedType) : null,

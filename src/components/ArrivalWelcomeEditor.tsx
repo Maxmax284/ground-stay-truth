@@ -112,6 +112,7 @@ export function ArrivalWelcomeEditor() {
   const [localEdits, setLocalEdits] = useState<Record<string, WelcomeTemplate>>({});
   const [suggestions, setSuggestions] = useState<SectionSuggestion[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+  const [allSectionsExpanded, setAllSectionsExpanded] = useState<Record<string, boolean>>({});
 
   const byKey = useMemo(() => {
     const map: Record<string, any> = {};
