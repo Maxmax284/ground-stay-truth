@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -158,7 +158,7 @@ function deriveActions(
   return actions.slice(0, 4);
 }
 
-export function GuestStaySummary() {
+export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSection?: string | null; onSectionFocused?: () => void }) {
   const { t } = useTranslation();
   const { user, session } = useAuth();
   const { data: policies } = usePolicySettings();
@@ -166,6 +166,7 @@ export function GuestStaySummary() {
   const { play: playSound } = useSoundEffects();
   const [welcomeDialogOpen, setWelcomeDialogOpen] = useState(false);
   const [welcomeAirport, setWelcomeAirport] = useState<"bkk" | "samui" | null>(null);
+  const [pendingLanded, setPendingLanded] = useState(false);
 
   const { data: bookings } = useQuery({
     queryKey: ["guest-stay-summary-bookings", user?.id],
@@ -278,6 +279,20 @@ export function GuestStaySummary() {
       toast.error(err.message);
     },
   });
+  // Auto-trigger "I've Landed" when deep-linked from notification
+  useEffect(() => {
+    if (focusSection === "landed" && bookings?.length && pickups) {
+      // Find the first booking with an active pickup that hasn't landed yet
+      const eligibleBooking = bookings.find((b) => {
+        const pickup = pickups.find((p: any) => p.booking_id === b.id);
+        return pickup && !pickup.guest_landed_at && ["requested", "assigned", "confirmed"].includes(pickup.status);
+      });
+      if (eligibleBooking && !landedMutation.isPending) {
+        landedMutation.mutate(eligibleBooking.id);
+      }
+      onSectionFocused?.();
+    }
+  }, [focusSection, bookings, pickups]);
 
   const handleAction = (type: ActionType, bookingId: string) => {
     switch (type) {

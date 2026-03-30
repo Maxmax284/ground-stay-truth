@@ -20,6 +20,7 @@ const TYPE_ICONS: Record<string, string> = {
   daily_digest: "📊",
   security_freeze: "🚨",
   security_unfreeze: "✅",
+  flight_landed: "✈️",
 };
 
 /** Dispatch a custom event when tapping an actionable notification type. */
@@ -43,6 +44,9 @@ function handleNotificationAction(type: string) {
       break;
     case "laundry":
       window.dispatchEvent(new CustomEvent("guest-portal-action", { detail: { tab: "stay-support", section: "laundry" } }));
+      break;
+    case "flight_landed":
+      window.dispatchEvent(new CustomEvent("guest-portal-action", { detail: { tab: "bookings", section: "landed" } }));
       break;
     default:
       break;
