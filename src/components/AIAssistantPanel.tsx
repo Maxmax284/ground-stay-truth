@@ -354,17 +354,31 @@ function AIAssistantPanelInner() {
               )}
             </div>
           )}
-          {messages.map((msg, i) => (
-            <div key={i} className={`text-sm animate-fade-up ${msg.role === "user" ? "ml-8" : "mr-4"}`}>
-              <div className={`rounded-lg px-3 py-2 ${
-                msg.role === "user"
-                  ? "bg-primary/10 text-foreground"
-                  : "bg-muted text-foreground"
-              }`}>
-                <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+          {messages.map((msg, i) => {
+            // Show "Want more detail?" on short assistant responses that are the last message and not streaming
+            const isLastAssistant = msg.role === "assistant" && i === messages.length - 1 && !isStreaming;
+            const isShortResponse = isLastAssistant && msg.content.length < 400;
+            return (
+              <div key={i} className={`text-sm animate-fade-up ${msg.role === "user" ? "ml-8" : "mr-4"}`}>
+                <div className={`rounded-lg px-3 py-2 ${
+                  msg.role === "user"
+                    ? "bg-primary/10 text-foreground"
+                    : "bg-muted text-foreground"
+                }`}>
+                  <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                </div>
+                {isShortResponse && (
+                  <button
+                    onClick={() => sendMessage("Go deeper — give me the full details on that.", mode, undefined, langCodeToName(language))}
+                    className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    {t("ai.wantMoreDetail", "Want more detail?")}
+                  </button>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
           {isStreaming && messages[messages.length - 1]?.role !== "assistant" && (
             <div className="mr-4">
               <div className="bg-muted rounded-lg px-3 py-2">
