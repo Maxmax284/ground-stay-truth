@@ -35,7 +35,15 @@ interface Props {
 
 export function FlightForecastWidget({ onClickBooking }: Props) {
   const [selectedAirport, setSelectedAirport] = useState<string>("USM");
-  const { data: flights, isLoading } = useAirportTraffic(selectedAirport);
+  const { data: trafficFlights, isLoading: trafficLoading } = useAirportTraffic(selectedAirport);
+
+  // Fallback: when airport-wide scan returns no data, use individual pickup flight lookups
+  const trafficEmpty = !trafficLoading && (!trafficFlights || trafficFlights.length === 0);
+  const { data: fallbackFlights, isLoading: fallbackLoading } = usePickupFlightsFallback(trafficEmpty);
+
+  const isFallbackMode = trafficEmpty && (fallbackFlights?.length ?? 0) > 0;
+  const flights = isFallbackMode ? fallbackFlights : trafficFlights;
+  const isLoading = trafficLoading || (trafficEmpty && fallbackLoading);
 
   const arrivals = (flights ?? []).filter(f => f.direction === "arrival");
   const departures = (flights ?? []).filter(f => f.direction === "departure");
