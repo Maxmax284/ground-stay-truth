@@ -172,7 +172,7 @@ function CTAButton({ cfg, contactUrl, fallbackLabel }: { cfg: StyleConfig; conta
 // ── Full Listing ──
 function FullListing({ unit, blocked, cfg, contactUrl, cs }: { unit: UnitData; blocked: BlockedRange[]; cfg: StyleConfig; contactUrl: string; cs: string }) {
   const h = cfg.hidden;
-  const defaultCtaLabel = contactUrl.includes("/auth/guest") ? "Book Now" : "Check Availability";
+  const defaultCtaLabel = contactUrl.includes("/stay") ? "View Listings" : contactUrl.includes("/auth/guest") ? "Book Now" : "Check Availability";
   return (
     <div style={containerStyle(cfg)}>
       {!h.has("photo") && unit.photos && unit.photos.length > 0 && (
