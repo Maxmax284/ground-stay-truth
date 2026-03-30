@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { usePolicySettings, useUpdatePolicySetting } from "@/hooks/usePolicySettings";
 import { supabase } from "@/integrations/supabase/client";
