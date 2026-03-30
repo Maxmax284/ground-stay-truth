@@ -14,15 +14,14 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateBooking } from "@/hooks/useBookings";
-import { useUnits } from "@/hooks/useUnits";
 import { usePricingRules } from "@/hooks/usePricingRules";
-import { useMaintenanceBlocks } from "@/hooks/useMaintenanceBlocks";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { useAuth } from "@/hooks/useAuth";
+import { useUnitGroups, useAutoAssignUnit } from "@/hooks/useAutoAssignUnit";
 import { supabase } from "@/integrations/supabase/client";
 import { calculatePricing, type PricingSummary } from "@/lib/pricingCalculator";
 import { formatPrice } from "@/lib/currency";
-import { AlertTriangle, CalendarPlus, Plane, Luggage } from "lucide-react";
+import { AlertTriangle, CalendarPlus, Plane, CheckCircle2, XCircle } from "lucide-react";
 
 interface GuestBookingRequestFormProps {
   open: boolean;
@@ -31,7 +30,7 @@ interface GuestBookingRequestFormProps {
 }
 
 interface FormValues {
-  unit_id: string;
+  group_id: string;
   check_in: string;
   check_out: string;
   num_guests: number;
@@ -53,13 +52,13 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
   const { toast } = useToast();
   const { user } = useAuth();
   const createBooking = useCreateBooking();
-  const { data: units } = useUnits();
+  const { data: unitGroups } = useUnitGroups();
   const { data: allPricingRules } = usePricingRules();
   const { data: policies } = usePolicySettings();
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
     defaultValues: {
-      unit_id: defaultUnitId ?? "", check_in: "", check_out: "", num_guests: 1,
+      group_id: "", check_in: "", check_out: "", num_guests: 1,
       guest_type: "training_guest", notes: "", arrival_flight: "", arrival_time: "",
       emergency_contact: "", airport_pickup: false, pickup_flight_number: "",
       pickup_arrival_datetime: "", pickup_passenger_count: 1, pickup_luggage_notes: "",
@@ -67,70 +66,58 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
     },
   });
 
-  // Pre-fill unit when defaultUnitId changes
-  useEffect(() => {
-    if (defaultUnitId) {
-      setValue("unit_id", defaultUnitId);
-    }
-  }, [defaultUnitId, setValue]);
-
-  const selectedUnitId = watch("unit_id");
+  const selectedGroupId = watch("group_id");
   const checkIn = watch("check_in");
   const checkOut = watch("check_out");
   const numGuests = watch("num_guests");
   const airportPickup = watch("airport_pickup");
-  const activeUnits = units?.filter((u) => u.is_active) ?? [];
-  const selectedUnit = activeUnits.find((u) => u.id === selectedUnitId);
 
-  const { data: maintenanceBlocks } = useMaintenanceBlocks({ unitId: selectedUnitId || undefined, dateFrom: checkIn || undefined, dateTo: checkOut || undefined });
-  const existingBookings = useQuery({
-    queryKey: ["unit-bookings-for-validation", selectedUnitId, checkIn, checkOut],
-    enabled: !!selectedUnitId && !!checkIn && !!checkOut,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("bookings").select("id, check_in, check_out, state").eq("unit_id", selectedUnitId).not("state", "in", '("cancelled","no_show")').gte("check_out", checkIn).lte("check_in", checkOut);
-      if (error) throw error;
-      return data;
-    },
-  });
+  const selectedGroup = unitGroups?.find((g) => g.id === selectedGroupId);
 
-  const cleaningBufferHours = useMemo(() => {
-    const setting = policies?.find((p) => p.key === "cleaning_buffer_hours");
-    return setting ? Number(setting.value) : 4;
-  }, [policies]);
+  // Auto-assign: find available unit for group + dates
+  const { data: assignResult, isLoading: assignLoading } = useAutoAssignUnit(
+    selectedGroupId || undefined,
+    checkIn,
+    checkOut
+  );
+
+  // Build a "fake" unit object for pricing calculation from the group representative
+  const pricingUnit = useMemo(() => {
+    if (!selectedGroup) return null;
+    return {
+      id: selectedGroup.representativeUnitId ?? "",
+      name: selectedGroup.name,
+      base_price: selectedGroup.base_price,
+      capacity: selectedGroup.capacity,
+      min_nights: selectedGroup.min_nights,
+      cleaning_fee: selectedGroup.cleaning_fee,
+      weekend_price: selectedGroup.weekend_price,
+      pricing_type: "per_room" as const,
+      weekly_rate: null,
+      monthly_rate: null,
+      max_extra_beds: 0,
+      extra_bed_fee: 0,
+    };
+  }, [selectedGroup]);
 
   const validationErrors = useMemo(() => {
     const errs: string[] = [];
-    if (!selectedUnit || !checkIn || !checkOut) return errs;
+    if (!selectedGroup || !checkIn || !checkOut) return errs;
     const nights = differenceInCalendarDays(new Date(checkOut), new Date(checkIn));
     if (nights <= 0) errs.push(t("bookingForm.checkoutAfterCheckin"));
-    else if (nights < selectedUnit.min_nights) errs.push(t("bookingForm.minStay", { count: selectedUnit.min_nights }));
-    if (Number(numGuests) > selectedUnit.capacity) errs.push(t("bookingForm.maxCapacity", { count: selectedUnit.capacity }));
-    if (maintenanceBlocks?.length) {
-      for (const block of maintenanceBlocks) {
-        if (block.start_date <= checkOut && block.end_date >= checkIn) {
-          errs.push(t("bookingForm.maintenanceConflict", { start: block.start_date, end: block.end_date, reason: block.reason ? ` (${block.reason})` : "" }));
-          break;
-        }
-      }
-    }
-    if (existingBookings.data?.length && cleaningBufferHours > 0) {
-      for (const existing of existingBookings.data) {
-        const existingCheckOut = new Date(existing.check_out);
-        const bufferEnd = addHours(existingCheckOut, cleaningBufferHours);
-        const newCheckIn = startOfDay(parseISO(checkIn));
-        if (newCheckIn >= existingCheckOut && newCheckIn < startOfDay(bufferEnd)) {
-          errs.push(t("bookingForm.bufferConflict", { hours: cleaningBufferHours, date: existing.check_out }));
-          break;
-        }
-      }
+    else if (nights < selectedGroup.min_nights) errs.push(t("bookingForm.minStay", { count: selectedGroup.min_nights }));
+    if (Number(numGuests) > selectedGroup.capacity) errs.push(t("bookingForm.maxCapacity", { count: selectedGroup.capacity }));
+    // Check availability result
+    if (assignResult && !assignResult.available) {
+      errs.push(t("bookingForm.noAvailability", { defaultValue: "No rooms of this type are available for the selected dates" }));
     }
     return errs;
-  }, [selectedUnit, checkIn, checkOut, numGuests, maintenanceBlocks, existingBookings.data, cleaningBufferHours, t]);
+  }, [selectedGroup, checkIn, checkOut, numGuests, assignResult, t]);
 
   const pricing: PricingSummary = useMemo(() => {
-    if (!selectedUnit || !checkIn || !checkOut || validationErrors.length > 0) return { nights: [], subtotal: 0, cleaningFee: 0, extraBedTotal: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
-    return calculatePricing(selectedUnit, checkIn, checkOut, allPricingRules ?? [], undefined, policies);
-  }, [selectedUnit, checkIn, checkOut, allPricingRules, validationErrors, policies]);
+    if (!pricingUnit || !checkIn || !checkOut || validationErrors.length > 0) return { nights: [], subtotal: 0, cleaningFee: 0, extraBedTotal: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
+    return calculatePricing(pricingUnit as any, checkIn, checkOut, allPricingRules ?? [], undefined, policies);
+  }, [pricingUnit, checkIn, checkOut, allPricingRules, validationErrors, policies]);
 
   const pricingSources = useMemo(() => {
     const sources = new Map<string, number>();
@@ -145,15 +132,17 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
   }, [pricing.nights]);
 
   const onSubmit = async (data: FormValues) => {
-    if (validationErrors.length > 0 || !user) return;
+    if (validationErrors.length > 0 || !user || !assignResult?.unit_id) return;
+
     const arrivalDetails: Record<string, any> = {};
     if (data.arrival_flight) arrivalDetails.flight_info = data.arrival_flight;
     if (data.arrival_time) arrivalDetails.arrival_time = data.arrival_time;
     if (data.emergency_contact) arrivalDetails.emergency_contact = data.emergency_contact;
     if (data.airport_pickup) arrivalDetails.airport_pickup = true;
+
     try {
       const bookingResult = await createBooking.mutateAsync({
-        unit_id: data.unit_id,
+        unit_id: assignResult.unit_id, // Auto-assigned unit
         check_in: data.check_in,
         check_out: data.check_out,
         num_guests: Number(data.num_guests),
@@ -204,28 +193,24 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/* Room Type Selection */}
           <div className="space-y-2">
-            <Label>{t("bookingForm.unit")} *</Label>
-            {defaultUnitId && selectedUnit ? (
-              <div className="flex items-center gap-2 rounded-md border border-input bg-muted/50 px-3 py-2">
-                <span className="font-medium text-sm">{selectedUnit.name}</span>
-                <span className="text-muted-foreground text-xs">(max {selectedUnit.capacity}, min {selectedUnit.min_nights}n)</span>
-              </div>
-            ) : (
-              <Select value={selectedUnitId} onValueChange={(v) => setValue("unit_id", v)}>
-                <SelectTrigger><SelectValue placeholder={t("bookingForm.selectUnit")} /></SelectTrigger>
-                <SelectContent>
-                  {activeUnits.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.name}
-                      <span className="text-muted-foreground ml-1 text-xs">(max {u.capacity}, min {u.min_nights}n)</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            <input type="hidden" {...register("unit_id", { required: true })} />
-            {errors.unit_id && <p className="text-sm text-destructive">{t("bookingForm.unitRequired")}</p>}
+            <Label>{t("bookingForm.roomType", { defaultValue: "Room Type" })} *</Label>
+            <Select value={selectedGroupId} onValueChange={(v) => setValue("group_id", v)}>
+              <SelectTrigger><SelectValue placeholder={t("bookingForm.selectRoomType", { defaultValue: "Select room type" })} /></SelectTrigger>
+              <SelectContent>
+                {unitGroups?.map((g) => (
+                  <SelectItem key={g.id} value={g.id}>
+                    {g.name}
+                    <span className="text-muted-foreground ml-1 text-xs">
+                      ({g.unitCount} {g.unitCount === 1 ? "room" : "rooms"}, max {g.capacity})
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <input type="hidden" {...register("group_id", { required: true })} />
+            {errors.group_id && <p className="text-sm text-destructive">{t("bookingForm.unitRequired")}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -241,9 +226,32 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
             </div>
           </div>
 
+          {/* Availability indicator */}
+          {selectedGroupId && checkIn && checkOut && (
+            <div className={`flex items-center gap-2 text-sm rounded-md border p-2 ${
+              assignLoading ? "border-border bg-muted/30 text-muted-foreground" :
+              assignResult?.available ? "border-success/50 bg-success/5 text-success" :
+              "border-destructive/50 bg-destructive/5 text-destructive"
+            }`}>
+              {assignLoading ? (
+                <span>{t("common.checking", { defaultValue: "Checking availability..." })}</span>
+              ) : assignResult?.available ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>{assignResult.available_count} of {assignResult.total_count} {t("bookingForm.roomsAvailable", { defaultValue: "rooms available" })}</span>
+                </>
+              ) : (
+                <>
+                  <XCircle className="h-4 w-4" />
+                  <span>{t("bookingForm.noRoomsAvailable", { defaultValue: "No rooms available for these dates" })}</span>
+                </>
+              )}
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="guest_num_guests">{t("bookingForm.numGuests")}</Label>
-            <Input id="guest_num_guests" type="number" min={1} max={selectedUnit?.capacity ?? 99} {...register("num_guests")} />
+            <Input id="guest_num_guests" type="number" min={1} max={selectedGroup?.capacity ?? 99} {...register("num_guests")} />
           </div>
 
           {validationErrors.length > 0 && (
@@ -382,7 +390,10 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
-            <Button type="submit" disabled={createBooking.isPending || validationErrors.length > 0}>
+            <Button
+              type="submit"
+              disabled={createBooking.isPending || validationErrors.length > 0 || !assignResult?.available || assignLoading}
+            >
               {createBooking.isPending ? t("common.sending") : t("guestBooking.submitRequest")}
             </Button>
           </div>
