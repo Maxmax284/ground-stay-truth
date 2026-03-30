@@ -180,13 +180,17 @@ export function ArrivalWelcomeEditor() {
 
       <Tabs value={activeAirport} onValueChange={setActiveAirport}>
         <TabsList className="bg-muted/50">
-          {AIRPORTS.map((a) => (
-            <TabsTrigger key={a.id} value={a.id} className="gap-1.5">
-              <span>{a.icon}</span>
-              {a.label}
-              {isDirty(a.id) && <Badge variant="secondary" className="text-[9px] px-1 py-0 ml-1">unsaved</Badge>}
-            </TabsTrigger>
-          ))}
+          {AIRPORTS.map((a) => {
+            const tmpl = getTemplate(a.id);
+            return (
+              <TabsTrigger key={a.id} value={a.id} className="gap-1.5">
+                <span>{a.icon}</span>
+                {a.label}
+                {!tmpl.enabled && <Badge variant="outline" className="text-[9px] px-1 py-0 ml-1 border-muted-foreground/30">Off</Badge>}
+                {isDirty(a.id) && <Badge variant="secondary" className="text-[9px] px-1 py-0 ml-1">unsaved</Badge>}
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
 
         {AIRPORTS.map((airport) => {
