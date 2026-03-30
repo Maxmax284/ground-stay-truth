@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Sparkles, Loader2, ChevronDown, ChevronUp, Info, Plus, X,
-  FileText, Lightbulb, RefreshCw, BookOpen, Eye, EyeOff,
+  FileText, Lightbulb, RefreshCw, BookOpen, Eye, EyeOff, ArrowUp, ArrowDown,
 } from "lucide-react";
 import {
   type SectionTemplate, type SectionTypeId, type GuidedField,
