@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { usePolicySettings, useUpdatePolicySetting } from "@/hooks/usePolicySettings";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CreditCard, Mail, Eye, EyeOff, Save, CheckCircle2, XCircle, ExternalLink, ShieldCheck } from "lucide-react";
+import { CreditCard, Mail, Eye, EyeOff, Save, CheckCircle2, XCircle, ExternalLink, ShieldCheck, Plane } from "lucide-react";
 
 const SECRET_KEYS = ["stripe_secret_key", "stripe_publishable_key", "stripe_webhook_secret", "resend_api_key", "fenrir_api_key", "fenrir_receive_token"];
 
@@ -272,6 +272,33 @@ export function IntegrationSettings() {
       </Card>
 
       <VapidKeySettings />
+
+      {/* Flight Forecast Toggle */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div className="flex items-center gap-3">
+            <Plane className="h-5 w-5 text-primary" />
+            <div>
+              <CardTitle className="text-base">Flight Forecast</CardTitle>
+              <CardDescription className="text-xs">
+                Airport traffic monitor for BKK &amp; Samui
+              </CardDescription>
+            </div>
+          </div>
+          <Switch
+            checked={getValue("flight_forecast_enabled") === "true"}
+            onCheckedChange={(checked) => handleToggle("flight_forecast_enabled", checked)}
+            disabled={updateSetting.isPending}
+          />
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1.5">
+            <p className="font-medium text-foreground">What this does</p>
+            <p>When enabled, the dashboard shows a live flight board with all arrivals and departures at BKK and USM airports. Flights linked to guest bookings are highlighted automatically. Data refreshes every 30 minutes via AviationStack (requires a paid plan for airport-level queries).</p>
+            <p>Disable this to hide the widget and conserve API usage.</p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

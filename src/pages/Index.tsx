@@ -10,6 +10,7 @@ import { useDashboardStats } from "@/hooks/useDashboard";
 import { type BookingState } from "@/lib/bookingStateMachine";
 import { canAccessRoute, permissions } from "@/lib/permissions";
 import { useAuth } from "@/hooks/useAuth";
+import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { useRolePreview } from "@/hooks/useRolePreview";
 import { ApprovalQueue } from "@/components/ApprovalQueue";
 import { InquiryQueue } from "@/components/InquiryQueue";
@@ -35,7 +36,10 @@ const Index = () => {
   const { role } = useAuth();
   const { effectiveRole } = useRolePreview();
   const { arrivals, departures, activeBookings, unitCount, recentActivity, pendingApproval, pendingInquiry, inquiryCount } = useDashboardStats();
+  const { data: policySettings } = usePolicySettings();
   const [detailBookingId, setDetailBookingId] = useState<string | null>(null);
+
+  const flightForecastEnabled = policySettings?.find(s => s.key === "flight_forecast_enabled")?.value === "true";
 
   const arrivalsCount = arrivals.data?.length ?? 0;
   const departuresCount = departures.data?.length ?? 0;
@@ -135,8 +139,8 @@ const Index = () => {
             {/* Today's Pickups widget */}
             {!isViewer && <TodaysPickupsWidget onClickBooking={setDetailBookingId} />}
 
-            {/* Flight Forecast — airport traffic monitor */}
-            {!isViewer && <FlightForecastWidget />}
+            {/* Flight Forecast — airport traffic monitor (admin-toggled) */}
+            {!isViewer && flightForecastEnabled && <FlightForecastWidget />}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Front Desk / Supervisor: arrivals/departures first */}
