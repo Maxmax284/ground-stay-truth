@@ -1361,6 +1361,7 @@ export type Database = {
           monthly_rate: number | null
           name: string
           photos: string[] | null
+          pricing_type: string
           reviews_enabled: boolean
           rules: string | null
           sort_order: number
@@ -1387,6 +1388,7 @@ export type Database = {
           monthly_rate?: number | null
           name: string
           photos?: string[] | null
+          pricing_type?: string
           reviews_enabled?: boolean
           rules?: string | null
           sort_order?: number
@@ -1413,6 +1415,7 @@ export type Database = {
           monthly_rate?: number | null
           name?: string
           photos?: string[] | null
+          pricing_type?: string
           reviews_enabled?: boolean
           rules?: string | null
           sort_order?: number

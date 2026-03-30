@@ -1,0 +1,1 @@
+ALTER TABLE public.units ADD COLUMN pricing_type text NOT NULL DEFAULT 'per_room';

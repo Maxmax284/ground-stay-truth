@@ -34,13 +34,14 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
   const [isEditingAfterCreate, setIsEditingAfterCreate] = useState(false);
   const [isActive, setIsActive] = useState(unit?.is_active ?? true);
   const [reviewsEnabled, setReviewsEnabled] = useState((unit as any)?.reviews_enabled ?? true);
+  const [pricingType, setPricingType] = useState<string>((unit as any)?.pricing_type ?? "per_room");
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     defaultValues: { name: unit?.name ?? "", description: unit?.description ?? "", capacity: unit?.capacity ?? 2, min_nights: unit?.min_nights ?? 1, base_price: unit?.base_price ?? 0, weekend_price: unit?.weekend_price ?? undefined, cleaning_fee: unit?.cleaning_fee ?? 0, weekly_rate: (unit as any)?.weekly_rate ?? undefined, monthly_rate: (unit as any)?.monthly_rate ?? undefined, sort_order: (unit as any)?.sort_order ?? 0, rules: unit?.rules ?? "", wifi_network: (unit as any)?.wifi_network ?? "", wifi_password: (unit as any)?.wifi_password ?? "", house_rules_detail: (unit as any)?.house_rules_detail ?? "", emergency_contact_name: (unit as any)?.emergency_contact_name ?? "", emergency_contact_phone: (unit as any)?.emergency_contact_phone ?? "" },
   });
 
   useEffect(() => {
-    setSelectedAmenities(unit?.amenities ?? []); setCustomAmenity(""); setSelectedGroupId(unit?.group_id ?? "none"); setPhotos(unit?.photos ?? []); setSavedUnitId(unit?.id); setIsEditingAfterCreate(false); setIsActive(unit?.is_active ?? true); setReviewsEnabled((unit as any)?.reviews_enabled ?? true);
+    setSelectedAmenities(unit?.amenities ?? []); setCustomAmenity(""); setSelectedGroupId(unit?.group_id ?? "none"); setPhotos(unit?.photos ?? []); setSavedUnitId(unit?.id); setIsEditingAfterCreate(false); setIsActive(unit?.is_active ?? true); setReviewsEnabled((unit as any)?.reviews_enabled ?? true); setPricingType((unit as any)?.pricing_type ?? "per_room");
     reset({ name: unit?.name ?? "", description: unit?.description ?? "", capacity: unit?.capacity ?? 2, min_nights: unit?.min_nights ?? 1, base_price: unit?.base_price ?? 0, weekend_price: unit?.weekend_price ?? undefined, cleaning_fee: unit?.cleaning_fee ?? 0, weekly_rate: (unit as any)?.weekly_rate ?? undefined, monthly_rate: (unit as any)?.monthly_rate ?? undefined, sort_order: (unit as any)?.sort_order ?? 0, rules: unit?.rules ?? "", wifi_network: (unit as any)?.wifi_network ?? "", wifi_password: (unit as any)?.wifi_password ?? "", house_rules_detail: (unit as any)?.house_rules_detail ?? "", emergency_contact_name: (unit as any)?.emergency_contact_name ?? "", emergency_contact_phone: (unit as any)?.emergency_contact_phone ?? "" });
   }, [unit, reset]);
 
@@ -60,7 +61,7 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
 
   const onSubmit = async (data: any) => {
     try {
-      const payload = { ...data, amenities: selectedAmenities, photos, group_id: selectedGroupId === "none" ? null : selectedGroupId, base_price: Number(data.base_price), weekend_price: data.weekend_price ? Number(data.weekend_price) : null, cleaning_fee: Number(data.cleaning_fee), weekly_rate: data.weekly_rate ? Number(data.weekly_rate) : null, monthly_rate: data.monthly_rate ? Number(data.monthly_rate) : null, sort_order: Number(data.sort_order ?? 0), capacity: Number(data.capacity), min_nights: Number(data.min_nights), is_active: isActive, reviews_enabled: reviewsEnabled, wifi_network: data.wifi_network || null, wifi_password: data.wifi_password || null, house_rules_detail: data.house_rules_detail || null, emergency_contact_name: data.emergency_contact_name || null, emergency_contact_phone: data.emergency_contact_phone || null };
+      const payload = { ...data, amenities: selectedAmenities, photos, group_id: selectedGroupId === "none" ? null : selectedGroupId, base_price: Number(data.base_price), weekend_price: data.weekend_price ? Number(data.weekend_price) : null, cleaning_fee: Number(data.cleaning_fee), weekly_rate: data.weekly_rate ? Number(data.weekly_rate) : null, monthly_rate: data.monthly_rate ? Number(data.monthly_rate) : null, sort_order: Number(data.sort_order ?? 0), capacity: Number(data.capacity), min_nights: Number(data.min_nights), is_active: isActive, reviews_enabled: reviewsEnabled, pricing_type: pricingType, wifi_network: data.wifi_network || null, wifi_password: data.wifi_password || null, house_rules_detail: data.house_rules_detail || null, emergency_contact_name: data.emergency_contact_name || null, emergency_contact_phone: data.emergency_contact_phone || null };
       if ((isEditing || isEditingAfterCreate) && (unit || savedUnitId)) {
         const id = unit?.id ?? savedUnitId!;
         await updateUnit.mutateAsync({ id, ...payload }); toast({ title: t("units.unitUpdated") }); reset(); onOpenChange(false);
@@ -84,9 +85,20 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
             <div className="space-y-2"><Label htmlFor="capacity">{t("units.capacity")}</Label><Input id="capacity" type="number" min={1} {...register("capacity")} /></div>
             <div className="space-y-2"><Label htmlFor="min_nights">{t("units.minNights")}</Label><Input id="min_nights" type="number" min={1} {...register("min_nights")} /></div>
           </div>
+          <div className="space-y-2">
+            <Label>Pricing Type</Label>
+            <Select value={pricingType} onValueChange={setPricingType}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="per_room">Per Room</SelectItem>
+                <SelectItem value="per_person">Per Person</SelectItem>
+              </SelectContent>
+            </Select>
+            {pricingType === "per_person" && <p className="text-xs text-muted-foreground">Prices below are per person. Total will be calculated × capacity automatically.</p>}
+          </div>
           <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2"><Label htmlFor="base_price">{t("units.basePrice")}</Label><Input id="base_price" type="number" step="0.01" min={0} {...register("base_price")} /></div>
-            <div className="space-y-2"><Label htmlFor="weekend_price">{t("units.weekendPrice")}</Label><Input id="weekend_price" type="number" step="0.01" min={0} {...register("weekend_price")} /></div>
+            <div className="space-y-2"><Label htmlFor="base_price">{pricingType === "per_person" ? "Base Price / Person" : t("units.basePrice")}</Label><Input id="base_price" type="number" step="0.01" min={0} {...register("base_price")} /></div>
+            <div className="space-y-2"><Label htmlFor="weekend_price">{pricingType === "per_person" ? "Weekend / Person" : t("units.weekendPrice")}</Label><Input id="weekend_price" type="number" step="0.01" min={0} {...register("weekend_price")} /></div>
             <div className="space-y-2"><Label htmlFor="cleaning_fee">{t("units.cleaningFee")}</Label><Input id="cleaning_fee" type="number" step="0.01" min={0} {...register("cleaning_fee")} /></div>
           </div>
           <div className="grid grid-cols-3 gap-4">
