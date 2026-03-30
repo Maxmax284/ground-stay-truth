@@ -739,6 +739,15 @@ serve(async (req) => {
 
     const { language } = await req.json().catch(() => ({ language: "en" }));
 
+    // Check server-side cache first
+    const cacheKey = `${role}:${language || "en"}`;
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return new Response(JSON.stringify(cached), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Extract all signals
     const allSignals = await extractSignals(adminClient);
 
@@ -752,6 +761,9 @@ serve(async (req) => {
     if (lovableApiKey && language && language !== "en") {
       output = await translateOutput(output, language, lovableApiKey);
     }
+
+    // Cache the result
+    setCache(cacheKey, output);
 
     return new Response(JSON.stringify(output), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
