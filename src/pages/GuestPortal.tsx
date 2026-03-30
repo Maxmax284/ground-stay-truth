@@ -18,7 +18,8 @@ import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { calculateRefund } from "@/lib/refundCalculator";
 import { formatPrice } from "@/lib/currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
+import { CarouselDots } from "@/components/CarouselDots";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -60,6 +61,35 @@ import { useGuestReviews } from "@/hooks/useReviews";
 import { useProfile } from "@/hooks/useProfile";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { toast } from "sonner";
+
+// Inline photo carousel for room type cards
+function RoomPhotoCarousel({ photos, name }: { photos: string[]; name: string }) {
+  const [api, setApi] = useState<CarouselApi>();
+  return (
+    <div>
+      <div className="relative">
+        <Carousel className="w-full" opts={{ loop: true }} setApi={setApi}>
+          <CarouselContent>
+            {photos.map((photo, i) => (
+              <CarouselItem key={i}>
+                <div className="aspect-[16/9] overflow-hidden">
+                  <img src={photo} alt={`${name} ${i + 1}`} className="w-full h-full object-cover" />
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          {photos.length > 1 && (
+            <>
+              <CarouselPrevious className="left-2 h-8 w-8 opacity-70 hover:opacity-100" />
+              <CarouselNext className="right-2 h-8 w-8 opacity-70 hover:opacity-100" />
+            </>
+          )}
+        </Carousel>
+      </div>
+      <CarouselDots api={api} count={photos.length} />
+    </div>
+  );
+}
 
 const GuestPortal = () => {
   const { t } = useTranslation();
@@ -323,28 +353,7 @@ const GuestPortal = () => {
               {roomTypeCards.map((room) => (
                 <Card key={room.groupId} className="overflow-hidden">
                   {room.photos && room.photos.length > 0 && (
-                    <div className="relative">
-                      <Carousel className="w-full" opts={{ loop: true }}>
-                        <CarouselContent>
-                          {room.photos.map((photo, i) => (
-                            <CarouselItem key={i}>
-                              <div className="aspect-[16/9] overflow-hidden">
-                                <img src={photo} alt={`${room.name} ${i + 1}`} className="w-full h-full object-cover" />
-                              </div>
-                            </CarouselItem>
-                          ))}
-                        </CarouselContent>
-                        {room.photos.length > 1 && (
-                          <>
-                            <CarouselPrevious className="left-2 h-8 w-8 opacity-70 hover:opacity-100" />
-                            <CarouselNext className="right-2 h-8 w-8 opacity-70 hover:opacity-100" />
-                            <div className="absolute bottom-2 right-3 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">
-                              {room.photos.length} photos
-                            </div>
-                          </>
-                        )}
-                      </Carousel>
-                    </div>
+                    <RoomPhotoCarousel photos={room.photos} name={room.name} />
                   )}
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg flex items-center gap-2"><Home className="h-4 w-4 text-primary" />{room.name}</CardTitle>
