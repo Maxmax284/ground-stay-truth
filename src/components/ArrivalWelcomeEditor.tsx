@@ -472,7 +472,7 @@ export function ArrivalWelcomeEditor() {
                 {/* Section editors */}
                 {template.sections.map((section, idx) => (
                   <GuidedSectionEditor
-                    key={idx}
+                    key={`${airport.id}-${idx}-${section.title}`}
                     airport={airport.id}
                     sectionIndex={idx}
                     sectionTitle={section.title}
@@ -485,6 +485,28 @@ export function ArrivalWelcomeEditor() {
                       setTemplate(airport.id, { ...template, sections });
                     }}
                     onRemove={() => removeSection(airport.id, idx)}
+                    onMoveUp={idx > 0 ? () => {
+                      const sections = [...template.sections];
+                      [sections[idx - 1], sections[idx]] = [sections[idx], sections[idx - 1]];
+                      // Also update photo section_index references
+                      const photos = template.photos.map(p => {
+                        if (p.section_index === idx) return { ...p, section_index: idx - 1 };
+                        if (p.section_index === idx - 1) return { ...p, section_index: idx };
+                        return p;
+                      });
+                      setTemplate(airport.id, { ...template, sections, photos });
+                    } : undefined}
+                    onMoveDown={idx < template.sections.length - 1 ? () => {
+                      const sections = [...template.sections];
+                      [sections[idx], sections[idx + 1]] = [sections[idx + 1], sections[idx]];
+                      const photos = template.photos.map(p => {
+                        if (p.section_index === idx) return { ...p, section_index: idx + 1 };
+                        if (p.section_index === idx + 1) return { ...p, section_index: idx };
+                        return p;
+                      });
+                      setTemplate(airport.id, { ...template, sections, photos });
+                    } : undefined}
+                    totalSections={template.sections.length}
                   />
                 ))}
 
