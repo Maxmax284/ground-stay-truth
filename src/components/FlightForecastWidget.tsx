@@ -6,7 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAirportTraffic, type AirportTrafficFlight } from "@/hooks/useAirportTraffic";
-import { Plane, PlaneLanding, PlaneTakeoff, Clock, Link2, AlertTriangle } from "lucide-react";
+import { usePickupFlightsFallback } from "@/hooks/usePickupFlightsFallback";
+import { Plane, PlaneLanding, PlaneTakeoff, Clock, Link2, AlertTriangle, Info } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: "bg-muted text-muted-foreground",
