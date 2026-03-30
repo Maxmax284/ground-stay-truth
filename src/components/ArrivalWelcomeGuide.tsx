@@ -21,15 +21,22 @@ interface WelcomeTemplate {
   photos: string[];
 }
 
+interface WelcomeTemplate {
+  welcome_message: string;
+  sections: WelcomeSection[];
+  photos: string[];
+  enabled: boolean;
+}
+
 function parseTemplate(value: unknown): WelcomeTemplate | null {
   if (!value) return null;
   try {
     const parsed = typeof value === "string" ? JSON.parse(String(value)) : value;
-    if (!parsed.welcome_message && !parsed.sections?.length) return null;
     return {
       welcome_message: parsed.welcome_message || "",
       sections: Array.isArray(parsed.sections) ? parsed.sections : [],
       photos: Array.isArray(parsed.photos) ? parsed.photos : [],
+      enabled: parsed.enabled !== false,
     };
   } catch {
     return null;
