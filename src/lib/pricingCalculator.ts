@@ -256,12 +256,18 @@ export function calculatePricing(
     discountAmount = (longStayDiscount?.amount ?? 0) + (loyaltyDiscount?.amount ?? 0);
   }
 
+  // Extra bed surcharge
+  const bedCount = Math.min(extraBeds ?? 0, (unit as any).max_extra_beds ?? 0);
+  const extraBedFee = Number((unit as any).extra_bed_fee) || 0;
+  const extraBedTotal = bedCount * extraBedFee * nights.length;
+
   return {
     nights,
     subtotal,
     cleaningFee,
+    extraBedTotal,
     longStayDiscount: appliedLongStay,
     loyaltyDiscount: appliedLoyalty,
-    total: subtotal - discountAmount + cleaningFee,
+    total: subtotal - discountAmount + cleaningFee + extraBedTotal,
   };
 }
