@@ -199,10 +199,11 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
     adminClient.from("housekeeping_tasks").select("id", { count: "exact", head: true })
       .eq("status", "pending").lt("due_by", now.toISOString()),
 
-    // 🏠 Pickups tomorrow no driver
+    // 🏠 Pickups tomorrow no driver — exclude cancelled/completed pickups
     adminClient.from("airport_pickups")
-      .select("id, booking_id, bookings!inner(check_in)")
+      .select("id, booking_id, bookings!inner(check_in, state)")
       .eq("bookings.check_in", tomorrow)
+      .not("status", "in", '("cancelled","completed")')
       .is("driver_id", null),
 
     // ⚙️ Overrides (24h)
