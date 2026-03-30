@@ -164,6 +164,8 @@ export function GuestStaySummary() {
   const { data: policies } = usePolicySettings();
   const queryClient = useQueryClient();
   const { play: playSound } = useSoundEffects();
+  const [welcomeDialogOpen, setWelcomeDialogOpen] = useState(false);
+  const [welcomeAirport, setWelcomeAirport] = useState<"bkk" | "samui" | null>(null);
 
   const { data: bookings } = useQuery({
     queryKey: ["guest-stay-summary-bookings", user?.id],
