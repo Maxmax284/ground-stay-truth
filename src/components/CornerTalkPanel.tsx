@@ -3,6 +3,10 @@ import { useTranslation } from "react-i18next";
 import { Swords, ChevronDown, ChevronUp, Clock, CheckCircle2, EyeOff, Undo2, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useCornerTalk, type Severity } from "@/hooks/useCornerTalk";
 import { useAuth } from "@/hooks/useAuth";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
@@ -310,13 +314,26 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
                       >
                         <Undo2 className="h-3.5 w-3.5" />
                       </button>
-                      <button
-                        onClick={() => hardDismiss(item.messageKey)}
-                        className="p-1.5 rounded hover:bg-destructive/10 shrink-0 text-muted-foreground/60 hover:text-destructive transition-colors"
-                        title={t("cornerTalk.removeForGood", "Remove for good")}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button
+                            className="p-1.5 rounded hover:bg-destructive/10 shrink-0 text-muted-foreground/60 hover:text-destructive transition-colors"
+                            title={t("cornerTalk.removeForGood", "Remove for good")}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>{t("cornerTalk.confirmRemoveTitle", "Remove this alert?")}</AlertDialogTitle>
+                            <AlertDialogDescription>{t("cornerTalk.confirmRemoveDesc", "This will permanently hide this alert for you. It won't come back unless new data triggers it.")}</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>{t("common.cancel", "Cancel")}</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => hardDismiss(item.messageKey)}>{t("cornerTalk.removeForGood", "Remove for good")}</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   ))}
                   {greyedUpcoming.map((item) => (
@@ -338,13 +355,26 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
                       >
                         <Undo2 className="h-3.5 w-3.5" />
                       </button>
-                      <button
-                        onClick={() => hardDismiss(item.messageKey)}
-                        className="p-1.5 rounded hover:bg-destructive/10 shrink-0 text-muted-foreground/60 hover:text-destructive transition-colors"
-                        title={t("cornerTalk.removeForGood", "Remove for good")}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button
+                            className="p-1.5 rounded hover:bg-destructive/10 shrink-0 text-muted-foreground/60 hover:text-destructive transition-colors"
+                            title={t("cornerTalk.removeForGood", "Remove for good")}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>{t("cornerTalk.confirmRemoveTitle", "Remove this alert?")}</AlertDialogTitle>
+                            <AlertDialogDescription>{t("cornerTalk.confirmRemoveDesc", "This will permanently hide this alert for you. It won't come back unless new data triggers it.")}</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>{t("common.cancel", "Cancel")}</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => hardDismiss(item.messageKey)}>{t("cornerTalk.removeForGood", "Remove for good")}</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   ))}
                 </div>
