@@ -198,6 +198,24 @@ export function ArrivalWelcomeEditor() {
           const template = getTemplate(airport.id);
           return (
             <TabsContent key={airport.id} value={airport.id} className="space-y-4 mt-3">
+              {/* Enable/Disable Toggle */}
+              <Card className={`${template.enabled ? "border-primary/20 bg-primary/5" : "border-muted bg-muted/30"}`}>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-medium">{airport.label} Arrival Guide</p>
+                    <p className="text-xs text-muted-foreground">
+                      {template.enabled
+                        ? "Guests landing here will see the welcome guide after confirming their arrival."
+                        : "Disabled — guests will still confirm their location but won't see a welcome guide."}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={template.enabled}
+                    onCheckedChange={(checked) => updateField(airport.id, "enabled", checked)}
+                  />
+                </CardContent>
+              </Card>
+
               {/* AI Draft Section */}
               <Card className="border-dashed">
                 <CardContent className="p-4 space-y-3">
