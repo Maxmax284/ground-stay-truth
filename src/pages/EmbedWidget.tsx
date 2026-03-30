@@ -230,7 +230,7 @@ function FullListing({ unit, blocked, cfg, contactUrl, cs }: { unit: UnitData; b
 // ── Compact Card ──
 function CompactCard({ unit, cfg, contactUrl, cs }: { unit: UnitData; blocked: BlockedRange[]; cfg: StyleConfig; contactUrl: string; cs: string }) {
   const h = cfg.hidden;
-  const defaultCtaLabel = contactUrl.includes("/auth/guest") ? "Book Now" : "Check Availability";
+  const defaultCtaLabel = contactUrl.includes("/stay") ? "View Listings" : contactUrl.includes("/auth/guest") ? "Book Now" : "Check Availability";
   return (
     <div style={{ ...containerStyle(cfg), padding: 0, overflow: "hidden", maxWidth: Math.min(cfg.maxWidth, 320) }}>
       {!h.has("photo") && unit.photos && unit.photos.length > 0 && (
