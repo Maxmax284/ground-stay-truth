@@ -81,7 +81,7 @@ export function EmbedCodeGenerator() {
         </div>
         <div className="flex flex-wrap gap-2">{WIDGET_TYPES.map((w) => <Badge key={w.value} variant={w.value === selectedType ? "default" : "outline"} className="cursor-pointer" onClick={() => setSelectedType(w.value)}>{w.label}</Badge>)}</div>
         <p className="text-sm text-muted-foreground">{widget.description}</p>
-        {selectedUnit && (
+        {canGenerate && (
           <>
             <Separator />
             <div className="space-y-2">
