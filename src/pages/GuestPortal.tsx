@@ -206,7 +206,7 @@ const GuestPortal = () => {
           unitCount: g.units.length,
         };
       })
-      .sort((a, b) => b.base_price - a.base_price);
+      .sort((a, b) => a.base_price - b.base_price);
   }, [units]);
 
   const cancellationSummary = useMemo(() => {
