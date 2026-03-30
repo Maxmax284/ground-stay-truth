@@ -20,6 +20,7 @@ const TYPE_ICONS: Record<string, string> = {
   daily_digest: "📊",
   security_freeze: "🚨",
   security_unfreeze: "✅",
+  flight_landed: "✈️",
 };
 
 /** Dispatch a custom event when tapping an actionable notification type. */
