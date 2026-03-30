@@ -81,9 +81,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => fetchRole(session.user.id), 0);
+          // Clear stale role immediately on user/session change to avoid wrong redirects
+          setRole(null);
+          setRoleResolved(false);
+          setTimeout(() => {
+            void fetchRole(session.user.id);
+          }, 0);
         } else {
           setRole(null);
+          setRoleResolved(true);
         }
         setLoading(false);
       }
@@ -93,7 +99,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchRole(session.user.id);
+        setRole(null);
+        setRoleResolved(false);
+        void fetchRole(session.user.id);
+      } else {
+        setRole(null);
+        setRoleResolved(true);
       }
       setLoading(false);
     });
