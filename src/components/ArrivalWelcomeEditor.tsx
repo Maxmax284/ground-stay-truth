@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { usePolicySettings, useUpdatePolicySetting } from "@/hooks/usePolicySettings";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +25,7 @@ interface WelcomeTemplate {
   welcome_message: string;
   sections: WelcomeSection[];
   photos: string[];
+  enabled: boolean;
 }
 
 const AIRPORTS = [
@@ -35,6 +37,7 @@ const DEFAULT_TEMPLATE: WelcomeTemplate = {
   welcome_message: "",
   sections: [],
   photos: [],
+  enabled: true,
 };
 
 function parseTemplate(value: unknown): WelcomeTemplate {
@@ -45,6 +48,7 @@ function parseTemplate(value: unknown): WelcomeTemplate {
       welcome_message: parsed.welcome_message || "",
       sections: Array.isArray(parsed.sections) ? parsed.sections : [],
       photos: Array.isArray(parsed.photos) ? parsed.photos : [],
+      enabled: parsed.enabled !== false, // default true for backwards compat
     };
   } catch {
     return { ...DEFAULT_TEMPLATE };
@@ -177,19 +181,41 @@ export function ArrivalWelcomeEditor() {
 
       <Tabs value={activeAirport} onValueChange={setActiveAirport}>
         <TabsList className="bg-muted/50">
-          {AIRPORTS.map((a) => (
-            <TabsTrigger key={a.id} value={a.id} className="gap-1.5">
-              <span>{a.icon}</span>
-              {a.label}
-              {isDirty(a.id) && <Badge variant="secondary" className="text-[9px] px-1 py-0 ml-1">unsaved</Badge>}
-            </TabsTrigger>
-          ))}
+          {AIRPORTS.map((a) => {
+            const tmpl = getTemplate(a.id);
+            return (
+              <TabsTrigger key={a.id} value={a.id} className="gap-1.5">
+                <span>{a.icon}</span>
+                {a.label}
+                {!tmpl.enabled && <Badge variant="outline" className="text-[9px] px-1 py-0 ml-1 border-muted-foreground/30">Off</Badge>}
+                {isDirty(a.id) && <Badge variant="secondary" className="text-[9px] px-1 py-0 ml-1">unsaved</Badge>}
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
 
         {AIRPORTS.map((airport) => {
           const template = getTemplate(airport.id);
           return (
             <TabsContent key={airport.id} value={airport.id} className="space-y-4 mt-3">
+              {/* Enable/Disable Toggle */}
+              <Card className={`${template.enabled ? "border-primary/20 bg-primary/5" : "border-muted bg-muted/30"}`}>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-medium">{airport.label} Arrival Guide</p>
+                    <p className="text-xs text-muted-foreground">
+                      {template.enabled
+                        ? "Guests landing here will see the welcome guide after confirming their arrival."
+                        : "Disabled — guests will still confirm their location but won't see a welcome guide."}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={template.enabled}
+                    onCheckedChange={(checked) => updateField(airport.id, "enabled", checked)}
+                  />
+                </CardContent>
+              </Card>
+
               {/* AI Draft Section */}
               <Card className="border-dashed">
                 <CardContent className="p-4 space-y-3">
