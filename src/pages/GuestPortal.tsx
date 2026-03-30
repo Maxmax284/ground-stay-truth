@@ -322,7 +322,30 @@ const GuestPortal = () => {
             <div className="space-y-4">
               {roomTypeCards.map((room) => (
                 <Card key={room.groupId} className="overflow-hidden">
-                  {room.photos && room.photos.length > 0 && <div className="aspect-[16/9] overflow-hidden"><img src={room.photos[0]} alt={room.name} className="w-full h-full object-cover" /></div>}
+                  {room.photos && room.photos.length > 0 && (
+                    <div className="relative">
+                      <Carousel className="w-full" opts={{ loop: true }}>
+                        <CarouselContent>
+                          {room.photos.map((photo, i) => (
+                            <CarouselItem key={i}>
+                              <div className="aspect-[16/9] overflow-hidden">
+                                <img src={photo} alt={`${room.name} ${i + 1}`} className="w-full h-full object-cover" />
+                              </div>
+                            </CarouselItem>
+                          ))}
+                        </CarouselContent>
+                        {room.photos.length > 1 && (
+                          <>
+                            <CarouselPrevious className="left-2 h-8 w-8 opacity-70 hover:opacity-100" />
+                            <CarouselNext className="right-2 h-8 w-8 opacity-70 hover:opacity-100" />
+                            <div className="absolute bottom-2 right-3 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">
+                              {room.photos.length} photos
+                            </div>
+                          </>
+                        )}
+                      </Carousel>
+                    </div>
+                  )}
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg flex items-center gap-2"><Home className="h-4 w-4 text-primary" />{room.name}</CardTitle>
                     {room.unitCount > 1 && <p className="text-xs text-muted-foreground">{room.unitCount} {t("guestPortal.roomsAvailable", { defaultValue: "rooms available" })}</p>}
