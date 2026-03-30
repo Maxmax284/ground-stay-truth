@@ -136,7 +136,7 @@ export function calculatePricing(
   const endDate = parseISO(checkOut);
 
   if (endDate <= startDate) {
-    return { nights: [], subtotal: 0, cleaningFee: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
+    return { nights: [], subtotal: 0, cleaningFee: 0, extraBedTotal: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
   }
 
   const nightDates = eachDayOfInterval({ start: startDate, end: new Date(endDate.getTime() - 86400000) });
