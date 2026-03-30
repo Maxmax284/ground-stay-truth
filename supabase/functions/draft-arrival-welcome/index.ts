@@ -71,17 +71,56 @@ async function callAI(messages: any[], tools?: any[], toolChoice?: any) {
   return resp.json();
 }
 
+function cleanJsonString(str: string): string {
+  // Remove trailing commas before } or ]
+  return str.replace(/,\s*([}\]])/g, "$1");
+}
+
 function extractToolArgs(aiData: any): any {
+  console.log("AI response structure:", JSON.stringify({
+    hasChoices: !!aiData.choices,
+    choiceCount: aiData.choices?.length,
+    finishReason: aiData.choices?.[0]?.finish_reason,
+    hasToolCalls: !!aiData.choices?.[0]?.message?.tool_calls,
+    hasContent: !!aiData.choices?.[0]?.message?.content,
+  }));
+
   const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
   if (toolCall?.function?.arguments) {
-    return typeof toolCall.function.arguments === "string"
-      ? JSON.parse(toolCall.function.arguments)
-      : toolCall.function.arguments;
+    const args = toolCall.function.arguments;
+    if (typeof args === "object") return args;
+    try {
+      return JSON.parse(args);
+    } catch {
+      // Try cleaning common JSON issues
+      try {
+        return JSON.parse(cleanJsonString(args));
+      } catch (e2) {
+        console.error("Failed to parse tool_call arguments:", args.substring(0, 500));
+        throw new Error("Could not parse tool call arguments");
+      }
+    }
   }
+
+  // Fallback: extract from content
   const content = aiData.choices?.[0]?.message?.content || "";
-  const jsonMatch = content.match(/\{[\s\S]*\}/);
-  if (jsonMatch) return JSON.parse(jsonMatch[0]);
-  throw new Error("Could not parse AI response");
+  if (content) {
+    console.log("Falling back to content extraction, content length:", content.length);
+    // Try to find JSON in markdown code blocks first
+    const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (codeBlockMatch) {
+      try { return JSON.parse(cleanJsonString(codeBlockMatch[1].trim())); } catch {}
+    }
+    // Try raw JSON match
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try { return JSON.parse(cleanJsonString(jsonMatch[0])); } catch {}
+    }
+    // For refine_chat: if no JSON found, treat entire content as the reply
+    return { reply: content, updated_template: null };
+  }
+
+  throw new Error("Could not parse AI response - no tool calls or content found");
 }
 
 function extractContent(aiData: any): string {
