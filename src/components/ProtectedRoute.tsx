@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { canAccessRoute, permissions } from "@/lib/permissions";
@@ -11,9 +12,20 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children, requiredPath, guestOnly = false }: ProtectedRouteProps) => {
   const { t } = useTranslation();
-  const { user, loading, role } = useAuth();
+  const { user, loading, role, roleResolved } = useAuth();
   const [searchParams] = useSearchParams();
+  const [timedOut, setTimedOut] = useState(false);
   const isPreview = searchParams.get("preview") === "true";
+
+  useEffect(() => {
+    if (loading || !user || roleResolved) {
+      setTimedOut(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setTimedOut(true), 7000);
+    return () => window.clearTimeout(timer);
+  }, [loading, user, roleResolved]);
 
   if (loading) {
     return (
@@ -25,11 +37,22 @@ const ProtectedRoute = ({ children, requiredPath, guestOnly = false }: Protected
 
   if (!user) return <Navigate to="/auth" replace />;
 
-  // Wait for role to resolve after authentication before making role-based decisions
-  if (user && role === null && !guestOnly) {
+  if (user && !roleResolved && !timedOut) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="roundhouse-spinner" />
+      </div>
+    );
+  }
+
+  if (user && !roleResolved && timedOut) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-6">
+        <div className="text-center space-y-3 max-w-md">
+          <h2 className="text-xl font-semibold text-foreground">Still checking your access</h2>
+          <p className="text-muted-foreground">Please refresh or sign in again from the Staff Login page.</p>
+          <a href="/auth" className="text-sm font-medium text-primary hover:underline">Go to Staff Login</a>
+        </div>
       </div>
     );
   }
