@@ -59,7 +59,9 @@ export function GuestDepositSection({ policies, depositAmount, bookingId }: Gues
 
   const hasBankDetails = !!(bankName || accountNumber);
   const hasOnline = depositPol.onlineEnabled;
-  const showTabs = hasOnline && hasBankDetails;
+  const isOnlineRequired = depositPol.effectiveMode === "online_required";
+  // When online is required, never show bank transfer tab — guests must pay online
+  const showTabs = hasOnline && hasBankDetails && !isOnlineRequired;
 
   // Determine the default/only tab
   const defaultTab = hasOnline ? "online" : "bank";
@@ -112,8 +114,8 @@ export function GuestDepositSection({ policies, depositAmount, bookingId }: Gues
       ) : hasOnline ? (
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">
-            {depositPol.effectiveMode === "online_required"
-              ? t("deposit.guestInstructionsOnlineRequired")
+            {isOnlineRequired
+              ? t("deposit.guestInstructionsOnlineRequired", { defaultValue: "Online payment is required to hold your booking. Please pay securely below." })
               : t("deposit.guestInstructionsOnlineOptional")}
           </p>
           <GuestPaymentButton
