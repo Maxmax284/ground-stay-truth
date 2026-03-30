@@ -56,7 +56,10 @@ const GuestAuth = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center auth-hero-bg-guest px-4 relative overflow-hidden corner-accent">
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        <a href="/auth" className="inline-flex items-center gap-1 text-xs font-medium text-primary-foreground/70 hover:text-primary-foreground transition-colors">
+          Staff Login
+        </a>
         <LanguageSelector />
       </div>
       <div className="w-full max-w-md space-y-6 relative z-10">
