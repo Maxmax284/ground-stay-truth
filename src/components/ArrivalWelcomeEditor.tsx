@@ -18,8 +18,9 @@ import { GuidedSectionEditor } from "./GuidedSectionEditor";
 import { SECTION_TEMPLATES, getJourneyTemplates, getSituationalTemplates } from "@/lib/airportFactSheets";
 import {
   Plane, Save, Plus, X, Sparkles, Loader2, GripVertical, Image as ImageIcon, MapPin, RefreshCw, Tag,
-  Check, Lightbulb, ChevronDown, ChevronUp, BookOpen,
+  Check, Lightbulb, ChevronDown, ChevronUp, BookOpen, Eye, Smartphone,
 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export interface WelcomePhoto {
   url: string;
@@ -110,6 +111,7 @@ export function ArrivalWelcomeEditor() {
   const [aiTone, setAiTone] = useState("friendly");
   const [localEdits, setLocalEdits] = useState<Record<string, WelcomeTemplate>>({});
   const [suggestions, setSuggestions] = useState<SectionSuggestion[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
 
   const byKey = useMemo(() => {
     const map: Record<string, any> = {};
@@ -615,6 +617,136 @@ export function ArrivalWelcomeEditor() {
                 >
                   <Plus className="h-3 w-3" /> Add Photo
                 </Button>
+              </div>
+
+              <Separator />
+
+              {/* Guest Preview */}
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowPreview(!showPreview)}
+                  className="h-8 gap-1.5 text-xs w-full"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  {showPreview ? "Hide" : "Show"} Guest Preview
+                  <Smartphone className="h-3.5 w-3.5 ml-auto text-muted-foreground" />
+                </Button>
+
+                {showPreview && (
+                  <Card className="border-primary/30 overflow-hidden">
+                    <div className="bg-primary/10 px-3 py-2 border-b border-primary/20 flex items-center gap-2">
+                      <Smartphone className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs font-medium text-primary">Guest View — {airport.label}</span>
+                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 ml-auto border-primary/30 text-primary">
+                        Preview
+                      </Badge>
+                    </div>
+                    <CardContent className="p-0">
+                      {/* Simulated phone frame */}
+                      <div className="bg-background mx-auto max-w-sm">
+                        <ScrollArea className="h-[480px]">
+                          <div className="p-4 space-y-4">
+                            {/* Dialog header simulation */}
+                            <div className="flex items-center gap-2">
+                              <div className="p-2 rounded-full bg-primary/10">
+                                <Plane className="h-5 w-5 text-primary" />
+                              </div>
+                              <div>
+                                <h3 className="text-lg font-semibold">Welcome! 🎉</h3>
+                                <p className="text-xs text-muted-foreground">
+                                  Your arrival guide for {airport.label}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Welcome message */}
+                            {template.welcome_message && (
+                              <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+                                <p className="text-sm font-medium leading-relaxed">
+                                  {template.welcome_message}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Sections */}
+                            {template.sections.map((section, idx) => {
+                              const sPhotos = template.photos.filter(p => p.section_index === idx && p.url);
+                              return (
+                                <div key={idx} className="space-y-1.5">
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                                      {idx + 1}
+                                    </div>
+                                    <h4 className="text-sm font-semibold">{section.title || `Section ${idx + 1}`}</h4>
+                                  </div>
+                                  <div className="pl-7">
+                                    <p className="text-xs text-muted-foreground whitespace-pre-line leading-relaxed">
+                                      {section.content || "(empty)"}
+                                    </p>
+                                    {sPhotos.length > 0 && (
+                                      <div className="grid grid-cols-2 gap-2 mt-2">
+                                        {sPhotos.map((photo, pi) => (
+                                          <div key={pi} className="space-y-1">
+                                            <img
+                                              src={photo.url}
+                                              alt={photo.alt || photo.caption || `Photo ${pi + 1}`}
+                                              className="rounded-lg border object-cover aspect-video w-full"
+                                            />
+                                            {photo.caption && (
+                                              <p className="text-[10px] text-muted-foreground italic text-center leading-tight px-1">
+                                                {photo.caption}
+                                              </p>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            {/* General photos */}
+                            {template.photos.filter(p => p.section_index === null && p.url).length > 0 && (
+                              <>
+                                <Separator />
+                                <div className="grid grid-cols-2 gap-2">
+                                  {template.photos.filter(p => p.section_index === null && p.url).map((photo, pi) => (
+                                    <div key={pi} className="space-y-1">
+                                      <img
+                                        src={photo.url}
+                                        alt={photo.alt || photo.caption || `Photo ${pi + 1}`}
+                                        className="rounded-lg border object-cover aspect-video w-full"
+                                      />
+                                      {photo.caption && (
+                                        <p className="text-[10px] text-muted-foreground italic text-center leading-tight px-1">
+                                          {photo.caption}
+                                        </p>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+
+                            {template.sections.length === 0 && !template.welcome_message && (
+                              <p className="text-sm text-muted-foreground italic text-center py-8">
+                                No content yet — add sections and a welcome message above
+                              </p>
+                            )}
+
+                            {/* CTA button simulation */}
+                            <Button className="w-full gap-1.5 pointer-events-none">
+                              <Check className="h-4 w-4" /> Got it, thanks!
+                            </Button>
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
 
               <Separator />
