@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => ({
         background_color: "#1a1a2e",
         display: "standalone",
         scope: "/",
-        start_url: "/stay",
+        start_url: "/", // open installed app at role-aware root redirect
         icons: [
           {
             src: "pwa-192x192.png",

@@ -10,6 +10,8 @@ interface AuthContextType {
   loading: boolean;
   /** The user's highest-authority role, or null if none assigned */
   role: AppRole | null;
+  /** True when role lookup has completed for current session */
+  roleResolved: boolean;
   /** Convenience: true if role is "admin" */
   isAdmin: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
@@ -34,21 +36,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [roleResolved, setRoleResolved] = useState(false);
 
   const fetchRole = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
-    if (data && data.length > 0) {
-      // Pick the highest-authority role
-      const best = data.reduce((acc, cur) =>
-        ROLE_PRIORITY[cur.role as AppRole] > ROLE_PRIORITY[acc.role as AppRole] ? cur : acc
-      );
-      setRole(best.role as AppRole);
-    } else {
-      setRole(null);
+    // Retry role lookup a few times for slower mobile/PWA session restore
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+
+      if (!error) {
+        if (data && data.length > 0) {
+          // Pick the highest-authority role
+          const best = data.reduce((acc, cur) =>
+            ROLE_PRIORITY[cur.role as AppRole] > ROLE_PRIORITY[acc.role as AppRole] ? cur : acc
+          );
+          setRole(best.role as AppRole);
+        } else {
+          setRole(null);
+        }
+        setRoleResolved(true);
+        return;
+      }
+
+      if (attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+      }
     }
+
+    // Final fallback on persistent failure
+    setRole(null);
+    setRoleResolved(true);
   }, []);
 
   useEffect(() => {
@@ -62,9 +81,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => fetchRole(session.user.id), 0);
+          // Clear stale role immediately on user/session change to avoid wrong redirects
+          setRole(null);
+          setRoleResolved(false);
+          setTimeout(() => {
+            void fetchRole(session.user.id);
+          }, 0);
         } else {
           setRole(null);
+          setRoleResolved(true);
         }
         setLoading(false);
       }
@@ -74,7 +99,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchRole(session.user.id);
+        setRole(null);
+        setRoleResolved(false);
+        void fetchRole(session.user.id);
+      } else {
+        setRole(null);
+        setRoleResolved(true);
       }
       setLoading(false);
     });
@@ -117,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = role === "admin";
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, role, isAdmin, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, role, roleResolved, isAdmin, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
