@@ -32,10 +32,13 @@ export function EmbedCodeGenerator() {
 
   const baseUrl = window.location.origin;
   const widget = WIDGET_TYPES.find((w) => w.value === selectedType)!;
+  const needsUnit = widget.requiresUnit;
   const resolvedContactUrl = ctaTarget === "register" ? `${baseUrl}/auth/guest` : ctaTarget === "listings" ? `${baseUrl}/stay` : contactUrl;
-  const contactParam = resolvedContactUrl ? `&contact_url=${encodeURIComponent(resolvedContactUrl)}` : "";
-  const embedUrl = `${baseUrl}/embed/${selectedType}/${selectedUnit}${contactParam ? `?${contactParam.slice(1)}` : ""}`;
-  const iframeCode = selectedUnit ? `<iframe src="${embedUrl}" width="100%" height="${widget.height}" style="border:none;border-radius:12px;overflow:hidden;" loading="lazy" title="Ground Stay - ${widget.label}"></iframe>` : "";
+  const contactParam = resolvedContactUrl ? `contact_url=${encodeURIComponent(resolvedContactUrl)}` : "";
+  const embedPath = needsUnit ? `/embed/${selectedType}/${selectedUnit}` : `/embed/${selectedType}`;
+  const embedUrl = `${baseUrl}${embedPath}${contactParam ? `?${contactParam}` : ""}`;
+  const canGenerate = needsUnit ? !!selectedUnit : true;
+  const iframeCode = canGenerate ? `<iframe src="${embedUrl}" width="100%" height="${widget.height}" style="border:none;border-radius:12px;overflow:hidden;" loading="lazy" title="Ground Stay - ${widget.label}"></iframe>` : "";
 
   const copyCode = () => { navigator.clipboard.writeText(iframeCode); toast({ title: t("common.copied"), description: t("embed.copiedToClipboard") }); };
 
