@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.ical-export]
 verify_jwt = false
+
+[functions.poll-flights]
+verify_jwt = false
