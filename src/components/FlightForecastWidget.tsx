@@ -6,7 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAirportTraffic, type AirportTrafficFlight } from "@/hooks/useAirportTraffic";
-import { Plane, PlaneLanding, PlaneTakeoff, Clock, Link2, AlertTriangle } from "lucide-react";
+import { usePickupFlightsFallback } from "@/hooks/usePickupFlightsFallback";
+import { Plane, PlaneLanding, PlaneTakeoff, Clock, Link2, AlertTriangle, Info } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: "bg-muted text-muted-foreground",
@@ -34,7 +35,15 @@ interface Props {
 
 export function FlightForecastWidget({ onClickBooking }: Props) {
   const [selectedAirport, setSelectedAirport] = useState<string>("USM");
-  const { data: flights, isLoading } = useAirportTraffic(selectedAirport);
+  const { data: trafficFlights, isLoading: trafficLoading } = useAirportTraffic(selectedAirport);
+
+  // Fallback: when airport-wide scan returns no data, use individual pickup flight lookups
+  const trafficEmpty = !trafficLoading && (!trafficFlights || trafficFlights.length === 0);
+  const { data: fallbackFlights, isLoading: fallbackLoading } = usePickupFlightsFallback(trafficEmpty);
+
+  const isFallbackMode = trafficEmpty && (fallbackFlights?.length ?? 0) > 0;
+  const flights = isFallbackMode ? fallbackFlights : trafficFlights;
+  const isLoading = trafficLoading || (trafficEmpty && fallbackLoading);
 
   const arrivals = (flights ?? []).filter(f => f.direction === "arrival");
   const departures = (flights ?? []).filter(f => f.direction === "departure");
@@ -90,22 +99,32 @@ export function FlightForecastWidget({ onClickBooking }: Props) {
             No flight data yet. Traffic data refreshes every 30 minutes.
           </p>
         ) : (
-          <Tabs defaultValue="arrivals" className="w-full">
-            <TabsList className="w-full grid grid-cols-2 mb-3">
-              <TabsTrigger value="arrivals" className="text-xs gap-1">
-                <PlaneLanding className="h-3.5 w-3.5" /> Arrivals ({arrivals.length})
-              </TabsTrigger>
-              <TabsTrigger value="departures" className="text-xs gap-1">
-                <PlaneTakeoff className="h-3.5 w-3.5" /> Departures ({departures.length})
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="arrivals" className="mt-0">
-              <FlightList flights={arrivals} direction="arrival" />
-            </TabsContent>
-            <TabsContent value="departures" className="mt-0">
-              <FlightList flights={departures} direction="departure" />
-            </TabsContent>
-          </Tabs>
+          <>
+            {isFallbackMode && (
+              <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 p-2.5 mb-3">
+                <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  <span className="font-medium text-foreground">Pickup-only mode:</span> Airport-wide scan unavailable. Showing {flights.length} flight{flights.length !== 1 ? "s" : ""} linked to today's guest pickups.
+                </p>
+              </div>
+            )}
+            <Tabs defaultValue="arrivals" className="w-full">
+              <TabsList className="w-full grid grid-cols-2 mb-3">
+                <TabsTrigger value="arrivals" className="text-xs gap-1">
+                  <PlaneLanding className="h-3.5 w-3.5" /> Arrivals ({arrivals.length})
+                </TabsTrigger>
+                <TabsTrigger value="departures" className="text-xs gap-1">
+                  <PlaneTakeoff className="h-3.5 w-3.5" /> Departures ({departures.length})
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="arrivals" className="mt-0">
+                <FlightList flights={arrivals} direction="arrival" />
+              </TabsContent>
+              <TabsContent value="departures" className="mt-0">
+                <FlightList flights={departures} direction="departure" />
+              </TabsContent>
+            </Tabs>
+          </>
         )}
       </CardContent>
     </Card>
