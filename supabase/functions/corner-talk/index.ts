@@ -7,6 +7,33 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ─── SERVER-SIDE CACHE ──────────────────────────────────────────────────────
+// Cache responses per role+language for 2 minutes to prevent excessive DB queries
+
+const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
+const responseCache = new Map<string, { data: any; expiresAt: number }>();
+
+function getCached(key: string): any | null {
+  const entry = responseCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    responseCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCache(key: string, data: any): void {
+  // Evict old entries if cache grows too large
+  if (responseCache.size > 50) {
+    const now = Date.now();
+    for (const [k, v] of responseCache) {
+      if (now > v.expiresAt) responseCache.delete(k);
+    }
+  }
+  responseCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
 type Severity = "urgent" | "attention" | "normal";
