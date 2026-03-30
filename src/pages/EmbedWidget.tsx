@@ -264,7 +264,7 @@ function CompactCard({ unit, cfg, contactUrl, cs }: { unit: UnitData; blocked: B
 
 // ── Calendar Only ──
 function CalendarOnly({ unit, blocked, cfg, contactUrl }: { unit: UnitData; blocked: BlockedRange[]; cfg: StyleConfig; contactUrl: string; cs: string }) {
-  const defaultCtaLabel = contactUrl.includes("/auth/guest") ? "Book Now" : "Check Availability";
+  const defaultCtaLabel = contactUrl.includes("/stay") ? "View Listings" : contactUrl.includes("/auth/guest") ? "Book Now" : "Check Availability";
   return (
     <div style={{ ...containerStyle(cfg), maxWidth: Math.min(cfg.maxWidth, 340) }}>
       <h3 style={{ fontSize: getFontSize(cfg.font) - 1, fontWeight: 600, margin: "0 0 12px" }}>
