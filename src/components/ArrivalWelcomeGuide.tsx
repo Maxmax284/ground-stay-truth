@@ -123,10 +123,11 @@ export function ArrivalWelcomeDialog({ open, onOpenChange, airport }: ArrivalWel
     return parseTemplate(setting?.value);
   }, [airport, settings]);
 
-  if (!template) return null;
-
   const airportLabel = airport === "bkk" ? "BKK (Suvarnabhumi)" : "Samui (USM)";
+  const guideEnabled = template?.enabled ?? false;
+  const hasContent = guideEnabled && (template?.welcome_message || (template?.sections?.length ?? 0) > 0);
 
+  // Always show dialog (for location confirmation), but only show guide content if enabled
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[85vh] p-0">
@@ -136,16 +137,29 @@ export function ArrivalWelcomeDialog({ open, onOpenChange, airport }: ArrivalWel
               <Plane className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <DialogTitle className="text-lg">Welcome! 🎉</DialogTitle>
+              <DialogTitle className="text-lg">
+                {hasContent ? "Welcome! 🎉" : "Landing Confirmed! ✅"}
+              </DialogTitle>
               <DialogDescription className="text-xs">
-                Your arrival guide for {airportLabel}
+                {hasContent
+                  ? `Your arrival guide for ${airportLabel}`
+                  : `You've confirmed your arrival at ${airportLabel}. Your driver has been notified!`}
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
-        <ScrollArea className="max-h-[60vh] px-5 pb-5">
-          <WelcomeContent template={template} />
-        </ScrollArea>
+        {hasContent && template && (
+          <ScrollArea className="max-h-[60vh] px-5 pb-5">
+            <WelcomeContent template={template} />
+          </ScrollArea>
+        )}
+        {!hasContent && (
+          <div className="px-5 pb-2">
+            <p className="text-sm text-muted-foreground">
+              Sit tight — your driver is on the way. If you need anything, tap "Ask Kru Glitch" in the portal.
+            </p>
+          </div>
+        )}
         <div className="px-5 pb-5">
           <Button onClick={() => onOpenChange(false)} className="w-full gap-1.5">
             <CheckCircle2 className="h-4 w-4" /> Got it, thanks!
