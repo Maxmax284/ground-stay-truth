@@ -12,15 +12,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { usePolicySettings, useUpdatePolicySetting } from "@/hooks/usePolicySettings";
 import { useAuth } from "@/hooks/useAuth";
+import { AIStudioPanel } from "./AIStudioPanel";
+import { AIRefinementChat } from "./AIRefinementChat";
 import {
   Plane, Save, Plus, X, Sparkles, Loader2, GripVertical, Image as ImageIcon, MapPin, RefreshCw, Tag,
+  Check, Lightbulb,
 } from "lucide-react";
 
 export interface WelcomePhoto {
   url: string;
   caption: string;
   alt: string;
-  section_index: number | null; // null = general / unlinked
+  section_index: number | null;
   tag: "landmark" | "direction" | "vehicle" | "map" | "sign" | "other";
 }
 
@@ -57,7 +60,6 @@ const DEFAULT_TEMPLATE: WelcomeTemplate = {
   enabled: true,
 };
 
-/** Migrate old flat string[] photos to new WelcomePhoto[] format */
 function migratePhotos(photos: unknown): WelcomePhoto[] {
   if (!Array.isArray(photos)) return [];
   return photos.map((p: any) => {
@@ -89,6 +91,12 @@ function parseTemplate(value: unknown): WelcomeTemplate {
   }
 }
 
+interface SectionSuggestion {
+  title: string;
+  description: string;
+  content: string;
+}
+
 export function ArrivalWelcomeEditor() {
   const { data: settings } = usePolicySettings();
   const updateSetting = useUpdatePolicySetting();
@@ -98,7 +106,9 @@ export function ArrivalWelcomeEditor() {
   const [drafting, setDrafting] = useState(false);
   const [rewritingIdx, setRewritingIdx] = useState<number | null>(null);
   const [aiContext, setAiContext] = useState("");
+  const [aiTone, setAiTone] = useState("friendly");
   const [localEdits, setLocalEdits] = useState<Record<string, WelcomeTemplate>>({});
+  const [suggestions, setSuggestions] = useState<SectionSuggestion[]>([]);
 
   const byKey = useMemo(() => {
     const map: Record<string, any> = {};
@@ -138,7 +148,6 @@ export function ArrivalWelcomeEditor() {
 
   const removeSection = (airport: string, idx: number) => {
     const current = getTemplate(airport);
-    // Also unlink any photos assigned to the removed section, and shift indices
     const photos = current.photos.map((p) => {
       if (p.section_index === idx) return { ...p, section_index: null };
       if (p.section_index !== null && p.section_index > idx) return { ...p, section_index: p.section_index - 1 };
@@ -151,7 +160,6 @@ export function ArrivalWelcomeEditor() {
     });
   };
 
-  // Photo helpers
   const updatePhoto = (airport: string, idx: number, field: keyof WelcomePhoto, value: any) => {
     const current = getTemplate(airport);
     const photos = [...current.photos];
@@ -191,42 +199,6 @@ export function ArrivalWelcomeEditor() {
     }
   };
 
-  // Full AI draft
-  const handleAIDraft = async (airport: string) => {
-    setDrafting(true);
-    try {
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/draft-arrival-welcome`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({ airport, context: aiContext }),
-        }
-      );
-      if (!resp.ok) {
-        const body = await resp.json().catch(() => ({}));
-        throw new Error(body.error || "AI draft failed");
-      }
-      const { draft } = await resp.json();
-      const current = getTemplate(airport);
-      setTemplate(airport, {
-        ...current,
-        welcome_message: draft.welcome_message || current.welcome_message,
-        sections: draft.sections || current.sections,
-      });
-      toast({ title: "AI Draft Ready", description: "Review and edit the generated content, then save." });
-    } catch (err: any) {
-      toast({ title: "AI Draft Failed", description: err.message, variant: "destructive" });
-    } finally {
-      setDrafting(false);
-    }
-  };
-
-  // Section-level AI rewrite
   const handleSectionRewrite = async (airport: string, sectionIdx: number) => {
     const template = getTemplate(airport);
     const section = template.sections[sectionIdx];
@@ -250,6 +222,7 @@ export function ArrivalWelcomeEditor() {
             mode: "rewrite_section",
             section: { title: section.title, content: section.content },
             context: aiContext,
+            tone: aiTone,
           }),
         }
       );
@@ -274,6 +247,34 @@ export function ArrivalWelcomeEditor() {
     }
   };
 
+  const handleDraftGenerated = (airport: string, draft: { welcome_message?: string; sections?: any[] }) => {
+    const current = getTemplate(airport);
+    setTemplate(airport, {
+      ...current,
+      welcome_message: draft.welcome_message || current.welcome_message,
+      sections: draft.sections || current.sections,
+    });
+  };
+
+  const handleChatTemplateUpdate = (airport: string, partial: Partial<WelcomeTemplate>) => {
+    const current = getTemplate(airport);
+    setTemplate(airport, {
+      ...current,
+      ...(partial.welcome_message !== undefined ? { welcome_message: partial.welcome_message } : {}),
+      ...(partial.sections !== undefined ? { sections: partial.sections } : {}),
+    });
+  };
+
+  const acceptSuggestion = (airport: string, suggestion: SectionSuggestion) => {
+    const current = getTemplate(airport);
+    setTemplate(airport, {
+      ...current,
+      sections: [...current.sections, { title: suggestion.title, content: suggestion.content }],
+    });
+    setSuggestions((prev) => prev.filter((s) => s.title !== suggestion.title));
+    toast({ title: "Section added", description: `"${suggestion.title}" added to the guide.` });
+  };
+
   const isDirty = (airport: string) => !!localEdits[airport];
 
   return (
@@ -294,7 +295,7 @@ export function ArrivalWelcomeEditor() {
         </CardHeader>
       </Card>
 
-      <Tabs value={activeAirport} onValueChange={setActiveAirport}>
+      <Tabs value={activeAirport} onValueChange={(v) => { setActiveAirport(v); setSuggestions([]); }}>
         <TabsList className="bg-muted/50">
           {AIRPORTS.map((a) => {
             const tmpl = getTemplate(a.id);
@@ -331,35 +332,71 @@ export function ArrivalWelcomeEditor() {
                 </CardContent>
               </Card>
 
-              {/* AI Draft Section */}
-              <Card className="border-dashed">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">AI Draft Assistant</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Generate a full draft for the {airport.label} arrival guide, or use the ✨ button on individual sections to rewrite them.
-                  </p>
-                  <div className="flex gap-2">
-                    <Input
-                      value={aiContext}
-                      onChange={(e) => setAiContext(e.target.value)}
-                      placeholder="Optional context (e.g., 'mention the new gym entrance', 'rainy season tips')"
-                      className="h-9 text-sm"
-                    />
-                    <Button
-                      onClick={() => handleAIDraft(airport.id)}
-                      disabled={drafting || rewritingIdx !== null}
-                      size="sm"
-                      className="h-9 gap-1.5 shrink-0"
-                    >
-                      {drafting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                      {drafting ? "Drafting..." : "Generate Full Draft"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* AI Studio Panel */}
+              <AIStudioPanel
+                airport={airport.id}
+                airportLabel={airport.label}
+                template={template}
+                tone={aiTone}
+                onToneChange={setAiTone}
+                context={aiContext}
+                onContextChange={setAiContext}
+                onDraftGenerated={(draft) => handleDraftGenerated(airport.id, draft)}
+                onSuggestionsReceived={setSuggestions}
+                drafting={drafting}
+                setDrafting={setDrafting}
+              />
+
+              {/* Section suggestions */}
+              {suggestions.length > 0 && (
+                <Card className="border-accent/30 bg-accent/5">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Lightbulb className="h-4 w-4 text-accent-foreground" />
+                      <span className="text-sm font-medium">Suggested Sections</span>
+                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-accent/30 text-accent-foreground">
+                        {suggestions.length} ideas
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSuggestions([])}
+                        className="ml-auto h-6 text-xs text-muted-foreground"
+                      >
+                        Dismiss
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      {suggestions.map((s, i) => (
+                        <div key={i} className="flex items-start gap-3 p-2.5 rounded-lg bg-background/60 border border-border/50">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">{s.title}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{s.description}</p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => acceptSuggestion(airport.id, s)}
+                            className="h-7 gap-1 text-xs shrink-0 border-primary/30 text-primary hover:bg-primary/5"
+                          >
+                            <Check className="h-3 w-3" /> Add
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Refinement Chat */}
+              <AIRefinementChat
+                airport={airport.id}
+                airportLabel={airport.label}
+                template={template}
+                tone={aiTone}
+                context={aiContext}
+                onTemplateUpdate={(partial) => handleChatTemplateUpdate(airport.id, partial)}
+              />
 
               {/* Welcome Message */}
               <div className="space-y-1.5">
@@ -431,7 +468,6 @@ export function ArrivalWelcomeEditor() {
                           rows={4}
                           className="text-sm"
                         />
-                        {/* Section-linked photos preview */}
                         {sectionPhotos.length > 0 && (
                           <div className="flex gap-2 flex-wrap pt-1">
                             {sectionPhotos.map((p, pi) => (
@@ -472,7 +508,6 @@ export function ArrivalWelcomeEditor() {
                   <Card key={idx} className="border-border/50">
                     <CardContent className="p-3 space-y-2">
                       <div className="flex gap-3">
-                        {/* Preview */}
                         <div className="shrink-0">
                           {photo.url ? (
                             <img src={photo.url} alt={photo.alt || `Photo ${idx + 1}`} className="h-20 w-28 rounded object-cover border" />
@@ -482,7 +517,6 @@ export function ArrivalWelcomeEditor() {
                             </div>
                           )}
                         </div>
-                        {/* Fields */}
                         <div className="flex-1 space-y-1.5 min-w-0">
                           <Input
                             value={photo.url}
