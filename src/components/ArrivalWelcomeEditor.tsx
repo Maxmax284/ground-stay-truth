@@ -140,13 +140,15 @@ export function ArrivalWelcomeEditor() {
     setTemplate(airport, { ...current, sections });
   };
 
-  const addSection = (airport: string) => {
+  const addSection = (airport: string, title?: string) => {
     const current = getTemplate(airport);
     setTemplate(airport, {
       ...current,
-      sections: [...current.sections, { title: "", content: "" }],
+      sections: [...current.sections, { title: title || "", content: "" }],
     });
   };
+
+  const [showAddSectionPicker, setShowAddSectionPicker] = useState(false);
 
   const removeSection = (airport: string, idx: number) => {
     const current = getTemplate(airport);
