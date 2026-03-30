@@ -124,9 +124,9 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
   }, [isAdminRole, selectedUnit, checkIn, checkOut, existingBookings.data, cleaningBufferHours, t]);
 
   const pricing: PricingSummary = useMemo(() => {
-    if (!selectedUnit || !checkIn || !checkOut || validationErrors.length > 0) return { nights: [], subtotal: 0, cleaningFee: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
-    return calculatePricing(selectedUnit, checkIn, checkOut, allPricingRules ?? [], undefined, policies);
-  }, [selectedUnit, checkIn, checkOut, allPricingRules, validationErrors, policies]);
+    if (!selectedUnit || !checkIn || !checkOut || validationErrors.length > 0) return { nights: [], subtotal: 0, cleaningFee: 0, extraBedTotal: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
+    return calculatePricing(selectedUnit, checkIn, checkOut, allPricingRules ?? [], undefined, policies, undefined, Number(extraBeds) || 0);
+  }, [selectedUnit, checkIn, checkOut, allPricingRules, validationErrors, policies, extraBeds]);
 
   const onSubmit = async (data: FormValues) => {
     if (validationErrors.length > 0) return;
