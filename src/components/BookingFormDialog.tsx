@@ -163,7 +163,16 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
             <div className="space-y-2"><Label htmlFor="check_in">{t("bookingForm.checkIn")} *</Label><Input id="check_in" type="date" {...register("check_in", { required: true })} />{errors.check_in && <p className="text-sm text-destructive">{t("common.required")}</p>}</div>
             <div className="space-y-2"><Label htmlFor="check_out">{t("bookingForm.checkOut")} *</Label><Input id="check_out" type="date" {...register("check_out", { required: true })} />{errors.check_out && <p className="text-sm text-destructive">{t("common.required")}</p>}</div>
           </div>
-          <div className="space-y-2"><Label htmlFor="num_guests">{t("bookingForm.numGuests")}</Label><Input id="num_guests" type="number" min={1} max={selectedUnit?.capacity ?? 99} {...register("num_guests")} /></div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2"><Label htmlFor="num_guests">{t("bookingForm.numGuests")}</Label><Input id="num_guests" type="number" min={1} max={selectedUnit?.capacity ?? 99} {...register("num_guests")} /></div>
+            {selectedUnit && (selectedUnit as any).max_extra_beds > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="extra_beds">Extra Beds</Label>
+                <Input id="extra_beds" type="number" min={0} max={(selectedUnit as any).max_extra_beds} {...register("extra_beds")} />
+                <p className="text-xs text-muted-foreground">{formatPrice(Number((selectedUnit as any).extra_bed_fee) || 0, policies)}/bed/night (max {(selectedUnit as any).max_extra_beds})</p>
+              </div>
+            )}
+          </div>
           {validationErrors.length > 0 && (
             <div className="rounded-md border border-destructive/50 bg-destructive/5 p-3 space-y-1">{validationErrors.map((err, i) => <div key={i} className="flex items-center gap-2 text-sm text-destructive"><AlertTriangle className="h-4 w-4 shrink-0" /><span>{err}</span></div>)}</div>
           )}
