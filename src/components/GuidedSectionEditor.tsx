@@ -36,6 +36,7 @@ interface Props {
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   totalSections: number;
+  forceExpanded?: boolean;
 }
 
 /** Resolve a fact value into string or string[] for form display */
