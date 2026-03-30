@@ -117,13 +117,14 @@ export function FlightForecastWidget({ onClickBooking }: Props) {
                   <PlaneTakeoff className="h-3.5 w-3.5" /> Departures ({departures.length})
                 </TabsTrigger>
               </TabsList>
-            <TabsContent value="arrivals" className="mt-0">
-              <FlightList flights={arrivals} direction="arrival" />
-            </TabsContent>
-            <TabsContent value="departures" className="mt-0">
-              <FlightList flights={departures} direction="departure" />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="arrivals" className="mt-0">
+                <FlightList flights={arrivals} direction="arrival" />
+              </TabsContent>
+              <TabsContent value="departures" className="mt-0">
+                <FlightList flights={departures} direction="departure" />
+              </TabsContent>
+            </Tabs>
+          </>
         )}
       </CardContent>
     </Card>
