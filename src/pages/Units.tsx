@@ -25,7 +25,7 @@ const Units = () => {
   const { role } = useAuth();
   const { data: groups } = useUnitGroups();
   const updateUnit = useUpdateUnit();
-  const deleteUnit = useDeleteUnit();
+  const { toast } = useToast();
   const { toast } = useToast();
   const [formOpen, setFormOpen] = useState(false);
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
