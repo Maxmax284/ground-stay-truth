@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { playGroundSound, SOUND_NAMES, type SoundName } from "@/lib/groundSounds";
+import { StayEssentialsEditor } from "@/components/StayEssentialsEditor";
 
 /* ── Setting Groups ────────────────────────────────────────── */
 
