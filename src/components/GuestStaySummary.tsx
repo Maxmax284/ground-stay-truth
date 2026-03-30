@@ -158,7 +158,7 @@ function deriveActions(
   return actions.slice(0, 4);
 }
 
-export function GuestStaySummary() {
+export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSection?: string | null; onSectionFocused?: () => void }) {
   const { t } = useTranslation();
   const { user, session } = useAuth();
   const { data: policies } = usePolicySettings();
@@ -166,6 +166,7 @@ export function GuestStaySummary() {
   const { play: playSound } = useSoundEffects();
   const [welcomeDialogOpen, setWelcomeDialogOpen] = useState(false);
   const [welcomeAirport, setWelcomeAirport] = useState<"bkk" | "samui" | null>(null);
+  const [pendingLanded, setPendingLanded] = useState(false);
 
   const { data: bookings } = useQuery({
     queryKey: ["guest-stay-summary-bookings", user?.id],
