@@ -366,11 +366,11 @@ export function GuidedSectionEditor({
 
             {/* Airport reference facts (collapsible) */}
             {showFacts && template && facts && (
-              <Card className="border-blue-500/20 bg-blue-500/5">
+              <Card className="border-primary/20 bg-primary/5">
                 <CardContent className="p-3 space-y-1.5">
                   <div className="flex items-center gap-1.5">
-                    <Info className="h-3.5 w-3.5 text-blue-500" />
-                    <span className="text-xs font-medium text-blue-700 dark:text-blue-400">
+                    <Info className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-xs font-medium text-primary">
                       {facts.fullName} — Reference Data
                     </span>
                   </div>
