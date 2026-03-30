@@ -259,14 +259,40 @@ export function GuidedSectionEditor({
               <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{template.description}</p>
             )}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => { e.stopPropagation(); onRemove(); }}
-            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive shrink-0"
-          >
-            <X className="h-3.5 w-3.5" />
-          </Button>
+          {/* Reorder + remove buttons */}
+          <div className="flex items-center gap-0.5 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => { e.stopPropagation(); onMoveUp?.(); }}
+              disabled={!onMoveUp}
+              className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30"
+              title="Move up"
+            >
+              <ArrowUp className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => { e.stopPropagation(); onMoveDown?.(); }}
+              disabled={!onMoveDown}
+              className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30"
+              title="Move down"
+            >
+              <ArrowDown className="h-3 w-3" />
+            </Button>
+            <Badge variant="secondary" className="text-[9px] px-1 py-0 mx-0.5">
+              {sectionIndex + 1}/{totalSections}
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => { e.stopPropagation(); onRemove(); }}
+              className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
           {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
         </div>
 
