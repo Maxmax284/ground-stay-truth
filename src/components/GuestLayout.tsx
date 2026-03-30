@@ -1,7 +1,8 @@
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, Target } from "lucide-react";
+import { LogOut, Target, Download, Smartphone, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -9,6 +10,13 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AIAssistantPanel } from "@/components/AIAssistantPanel";
 import { TutorialOverlay } from "@/components/TutorialOverlay";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface GuestLayoutProps {
   children: React.ReactNode;
@@ -18,6 +26,16 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
   const { t } = useTranslation();
   const { signOut, user } = useAuth();
   const location = useLocation();
+
+  const isStandalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as any).standalone === true;
+
+  const isIOS =
+    /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+  const isAndroid = /android/i.test(navigator.userAgent);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -30,6 +48,47 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
           {t("auth.groundStay")}
         </h1>
         <div className="flex items-center gap-3">
+          {!isStandalone && (isIOS || isAndroid) && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <button
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  title="Install App"
+                >
+                  <Download className="h-4 w-4" />
+                </button>
+              </DialogTrigger>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Smartphone className="h-5 w-5 text-primary" />
+                    Install Ground Stay
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3 text-sm text-muted-foreground">
+                  {isIOS ? (
+                    <>
+                      <p>To install this app on your iPhone or iPad:</p>
+                      <ol className="list-decimal pl-5 space-y-2">
+                        <li>Tap the <span className="font-semibold text-foreground">Share</span> button <span className="inline-block px-1.5 py-0.5 rounded bg-muted text-xs">⬆</span> at the bottom of Safari</li>
+                        <li>Scroll down and tap <span className="font-semibold text-foreground">Add to Home Screen</span></li>
+                        <li>Tap <span className="font-semibold text-foreground">Add</span> in the top right</li>
+                      </ol>
+                      <p className="text-xs">Note: This must be done in Safari. Other browsers on iOS don't support app installation.</p>
+                    </>
+                  ) : (
+                    <>
+                      <p>To install this app on your Android device:</p>
+                      <ol className="list-decimal pl-5 space-y-2">
+                        <li>Tap the <span className="font-semibold text-foreground">menu</span> (⋮) in your browser</li>
+                        <li>Tap <span className="font-semibold text-foreground">Install app</span> or <span className="font-semibold text-foreground">Add to Home Screen</span></li>
+                      </ol>
+                    </>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
           <Link
             to="/simulation"
             className="text-muted-foreground hover:text-foreground transition-colors"
