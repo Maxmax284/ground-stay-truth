@@ -20,8 +20,10 @@ export function PWAInstallBanner() {
       (navigator as any).standalone === true;
     setIsStandalone(standalone);
 
-    // Detect iOS (no beforeinstallprompt support)
-    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    // Detect iOS (no beforeinstallprompt support) — includes iPad on iPadOS
+    const ios =
+      /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     setIsIOS(ios);
 
     // Check if previously dismissed this session
