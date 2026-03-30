@@ -106,6 +106,11 @@ export default function EmbedWidget() {
   const cfg = useStyleConfig(searchParams);
   const contactUrl = searchParams.get("contact_url") || "";
 
+  // Grid type doesn't need a unit
+  if (type === "grid") {
+    return <GridOverview cfg={cfg} contactUrl={contactUrl} />;
+  }
+
   const [unit, setUnit] = useState<UnitData | null>(null);
   const [blocked, setBlocked] = useState<BlockedRange[]>([]);
   const [currencySymbol, setCurrencySymbol] = useState("฿");
