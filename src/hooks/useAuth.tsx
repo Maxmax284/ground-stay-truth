@@ -10,6 +10,8 @@ interface AuthContextType {
   loading: boolean;
   /** The user's highest-authority role, or null if none assigned */
   role: AppRole | null;
+  /** True when role lookup has completed for current session */
+  roleResolved: boolean;
   /** Convenience: true if role is "admin" */
   isAdmin: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
