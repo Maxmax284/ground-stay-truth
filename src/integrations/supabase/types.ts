@@ -383,6 +383,89 @@ export type Database = {
           },
         ]
       }
+      flight_tracking: {
+        Row: {
+          actual_arrival: string | null
+          actual_departure: string | null
+          airline_name: string | null
+          arrival_airport: string | null
+          arrival_iata: string | null
+          created_at: string
+          delay_minutes: number | null
+          departure_airport: string | null
+          departure_iata: string | null
+          estimated_arrival: string | null
+          estimated_departure: string | null
+          flight_number: string
+          flight_status: string
+          gate: string | null
+          id: string
+          last_checked_at: string
+          pickup_id: string
+          raw_response: Json | null
+          scheduled_arrival: string | null
+          scheduled_departure: string | null
+          terminal: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_arrival?: string | null
+          actual_departure?: string | null
+          airline_name?: string | null
+          arrival_airport?: string | null
+          arrival_iata?: string | null
+          created_at?: string
+          delay_minutes?: number | null
+          departure_airport?: string | null
+          departure_iata?: string | null
+          estimated_arrival?: string | null
+          estimated_departure?: string | null
+          flight_number: string
+          flight_status?: string
+          gate?: string | null
+          id?: string
+          last_checked_at?: string
+          pickup_id: string
+          raw_response?: Json | null
+          scheduled_arrival?: string | null
+          scheduled_departure?: string | null
+          terminal?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_arrival?: string | null
+          actual_departure?: string | null
+          airline_name?: string | null
+          arrival_airport?: string | null
+          arrival_iata?: string | null
+          created_at?: string
+          delay_minutes?: number | null
+          departure_airport?: string | null
+          departure_iata?: string | null
+          estimated_arrival?: string | null
+          estimated_departure?: string | null
+          flight_number?: string
+          flight_status?: string
+          gate?: string | null
+          id?: string
+          last_checked_at?: string
+          pickup_id?: string
+          raw_response?: Json | null
+          scheduled_arrival?: string | null
+          scheduled_departure?: string | null
+          terminal?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flight_tracking_pickup_id_fkey"
+            columns: ["pickup_id"]
+            isOneToOne: true
+            referencedRelation: "airport_pickups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guest_documents: {
         Row: {
           booking_id: string
