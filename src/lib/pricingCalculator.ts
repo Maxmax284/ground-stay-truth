@@ -140,6 +140,11 @@ export function calculatePricing(
   const nightDates = eachDayOfInterval({ start: startDate, end: new Date(endDate.getTime() - 86400000) });
   const nightCount = nightDates.length;
 
+  // Per-person pricing: multiply all per-night prices by the unit capacity
+  const pricingType = (unit as any).pricing_type as string | undefined;
+  const isPerPerson = pricingType === "per_person";
+  const guestMultiplier = isPerPerson ? (unit.capacity || 2) : 1;
+
   // Check if weekly or monthly flat rate applies
   const weeklyRate = unit.weekly_rate != null ? Number(unit.weekly_rate) : null;
   const monthlyRate = unit.monthly_rate != null ? Number(unit.monthly_rate) : null;
