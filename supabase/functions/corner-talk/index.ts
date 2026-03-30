@@ -191,9 +191,12 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
     adminClient.from("maintenance_requests").select("id", { count: "exact", head: true })
       .eq("status", "open").eq("priority", "urgent").lt("created_at", fourHoursAgo),
 
-    // 🏠 Stale laundry (>24h)
-    adminClient.from("laundry_requests").select("id", { count: "exact", head: true })
-      .eq("status", "in_progress").lt("created_at", twentyFourHoursAgo),
+    // 🏠 Stale laundry (>24h) — only for active bookings
+    adminClient.from("laundry_requests")
+      .select("id, bookings!inner(state)", { count: "exact", head: true })
+      .eq("status", "in_progress")
+      .in("bookings.state", ["confirmed", "checked_in"])
+      .lt("created_at", twentyFourHoursAgo),
 
     // 🏠 Overdue housekeeping
     adminClient.from("housekeeping_tasks").select("id", { count: "exact", head: true })
