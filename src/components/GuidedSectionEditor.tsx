@@ -82,7 +82,7 @@ function detectSectionType(title: string, airport: string): SectionTypeId | null
 }
 
 export function GuidedSectionEditor({
-  airport, sectionIndex, sectionTitle, sectionContent, tone, context, onUpdate, onRemove,
+  airport, sectionIndex, sectionTitle, sectionContent, tone, context, onUpdate, onRemove, onMoveUp, onMoveDown, totalSections,
 }: Props) {
   const { session } = useAuth();
   const { toast } = useToast();
