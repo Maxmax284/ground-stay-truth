@@ -42,8 +42,8 @@ export function SecurityDepositSection({ bookingId, bookingState }: { bookingId:
   const depositAmount = Number(depositSetting?.value ?? 0);
   const isRequired = String(policies?.find((p) => p.key === "security_deposit_required")?.value) === "true";
 
-  // Don't show if deposit system is disabled
-  if (depositAmount <= 0 && !deposit) return null;
+  // Don't show unless security deposits are explicitly enabled in policy settings
+  if (!isRequired && !deposit) return null;
 
   const canManage = permissions.canApproveOverride(role); // Manager+
   const canCollect = permissions.canTransitionState(role); // Front Desk+
