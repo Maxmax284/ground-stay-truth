@@ -290,7 +290,7 @@ function CalendarOnly({ unit, blocked, cfg, contactUrl }: { unit: UnitData; bloc
 
 // ── CTA Only ──
 function CTAOnly({ unit, cfg, contactUrl, cs }: { unit: UnitData; blocked: BlockedRange[]; cfg: StyleConfig; contactUrl: string; cs: string }) {
-  const defaultCtaLabel = contactUrl.includes("/auth/guest") ? "Book Now" : "Check Availability";
+  const defaultCtaLabel = contactUrl.includes("/stay") ? "View Listings" : contactUrl.includes("/auth/guest") ? "Book Now" : "Check Availability";
   return (
     <div style={{ ...containerStyle(cfg), maxWidth: Math.min(cfg.maxWidth, 280), padding: 16, textAlign: "center" }}>
       <h3 style={{ fontSize: getFontSize(cfg.font) + 1, fontWeight: 600, margin: "0 0 4px" }}>{unit.name}</h3>
