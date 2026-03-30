@@ -18,23 +18,27 @@ export function EmbedCodeGenerator() {
   const activeUnits = units?.filter((u) => u.is_active) ?? [];
 
   const WIDGET_TYPES = [
-    { value: "listing", label: t("embed.widgetTypes.listing"), description: t("embed.widgetTypes.listingDesc"), height: 600 },
-    { value: "compact", label: t("embed.widgetTypes.compact"), description: t("embed.widgetTypes.compactDesc"), height: 200 },
-    { value: "calendar", label: t("embed.widgetTypes.calendar"), description: t("embed.widgetTypes.calendarDesc"), height: 380 },
-    { value: "cta", label: t("embed.widgetTypes.cta"), description: t("embed.widgetTypes.ctaDesc"), height: 160 },
+    { value: "grid", label: "Browse All", description: "Grid overview showing all room types — no unit selection needed.", height: 700, requiresUnit: false },
+    { value: "listing", label: t("embed.widgetTypes.listing"), description: t("embed.widgetTypes.listingDesc"), height: 600, requiresUnit: true },
+    { value: "compact", label: t("embed.widgetTypes.compact"), description: t("embed.widgetTypes.compactDesc"), height: 200, requiresUnit: true },
+    { value: "calendar", label: t("embed.widgetTypes.calendar"), description: t("embed.widgetTypes.calendarDesc"), height: 380, requiresUnit: true },
+    { value: "cta", label: t("embed.widgetTypes.cta"), description: t("embed.widgetTypes.ctaDesc"), height: 160, requiresUnit: true },
   ];
 
   const [selectedUnit, setSelectedUnit] = useState("");
-  const [selectedType, setSelectedType] = useState("listing");
+  const [selectedType, setSelectedType] = useState("grid");
   const [contactUrl, setContactUrl] = useState("");
   const [ctaTarget, setCtaTarget] = useState<"contact" | "register" | "listings">("listings");
 
   const baseUrl = window.location.origin;
   const widget = WIDGET_TYPES.find((w) => w.value === selectedType)!;
+  const needsUnit = widget.requiresUnit;
   const resolvedContactUrl = ctaTarget === "register" ? `${baseUrl}/auth/guest` : ctaTarget === "listings" ? `${baseUrl}/stay` : contactUrl;
-  const contactParam = resolvedContactUrl ? `&contact_url=${encodeURIComponent(resolvedContactUrl)}` : "";
-  const embedUrl = `${baseUrl}/embed/${selectedType}/${selectedUnit}${contactParam ? `?${contactParam.slice(1)}` : ""}`;
-  const iframeCode = selectedUnit ? `<iframe src="${embedUrl}" width="100%" height="${widget.height}" style="border:none;border-radius:12px;overflow:hidden;" loading="lazy" title="Ground Stay - ${widget.label}"></iframe>` : "";
+  const contactParam = resolvedContactUrl ? `contact_url=${encodeURIComponent(resolvedContactUrl)}` : "";
+  const embedPath = needsUnit ? `/embed/${selectedType}/${selectedUnit}` : `/embed/${selectedType}`;
+  const embedUrl = `${baseUrl}${embedPath}${contactParam ? `?${contactParam}` : ""}`;
+  const canGenerate = needsUnit ? !!selectedUnit : true;
+  const iframeCode = canGenerate ? `<iframe src="${embedUrl}" width="100%" height="${widget.height}" style="border:none;border-radius:12px;overflow:hidden;" loading="lazy" title="Ground Stay - ${widget.label}"></iframe>` : "";
 
   const copyCode = () => { navigator.clipboard.writeText(iframeCode); toast({ title: t("common.copied"), description: t("embed.copiedToClipboard") }); };
 
@@ -47,7 +51,9 @@ export function EmbedCodeGenerator() {
       </CardHeader>
       <CardContent className="space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2"><Label>{t("embed.unit")}</Label><Select value={selectedUnit} onValueChange={setSelectedUnit}><SelectTrigger><SelectValue placeholder={t("bookingForm.selectUnit")} /></SelectTrigger><SelectContent>{activeUnits.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent></Select></div>
+          {needsUnit && (
+            <div className="space-y-2"><Label>{t("embed.unit")}</Label><Select value={selectedUnit} onValueChange={setSelectedUnit}><SelectTrigger><SelectValue placeholder={t("bookingForm.selectUnit")} /></SelectTrigger><SelectContent>{activeUnits.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent></Select></div>
+          )}
           <div className="space-y-2"><Label>{t("embed.widgetType")}</Label><Select value={selectedType} onValueChange={setSelectedType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{WIDGET_TYPES.map((w) => <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>)}</SelectContent></Select></div>
         </div>
         <div className="space-y-3">
@@ -75,7 +81,7 @@ export function EmbedCodeGenerator() {
         </div>
         <div className="flex flex-wrap gap-2">{WIDGET_TYPES.map((w) => <Badge key={w.value} variant={w.value === selectedType ? "default" : "outline"} className="cursor-pointer" onClick={() => setSelectedType(w.value)}>{w.label}</Badge>)}</div>
         <p className="text-sm text-muted-foreground">{widget.description}</p>
-        {selectedUnit && (
+        {canGenerate && (
           <>
             <Separator />
             <div className="space-y-2">

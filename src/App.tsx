@@ -61,6 +61,7 @@ const App = () => (
 
                 {/* Public pages — no auth required */}
                 <Route path="/embed/:type/:unitId" element={<EmbedWidget />} />
+                <Route path="/embed/:type" element={<EmbedWidget />} />
                 <Route path="/stay" element={<Stay />} />
                 <Route path="/legal" element={<Legal />} />
 

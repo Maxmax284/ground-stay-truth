@@ -106,6 +106,14 @@ export default function EmbedWidget() {
   const cfg = useStyleConfig(searchParams);
   const contactUrl = searchParams.get("contact_url") || "";
 
+  if (type === "grid") {
+    return <GridOverview cfg={cfg} contactUrl={contactUrl} />;
+  }
+
+  return <SingleUnitWidget type={type} unitId={unitId} cfg={cfg} contactUrl={contactUrl} />;
+}
+
+function SingleUnitWidget({ type, unitId, cfg, contactUrl }: { type?: string; unitId?: string; cfg: StyleConfig; contactUrl: string }) {
   const [unit, setUnit] = useState<UnitData | null>(null);
   const [blocked, setBlocked] = useState<BlockedRange[]>([]);
   const [currencySymbol, setCurrencySymbol] = useState("฿");
@@ -148,6 +156,121 @@ export default function EmbedWidget() {
     case "cta": return <CTAOnly {...props} />;
     default: return <p style={{ color: mutedColor(cfg.dark) }}>Unknown widget type</p>;
   }
+}
+
+// ── Grid Overview (multi-unit) ──
+interface RoomType {
+  id: string;
+  name: string;
+  description: string | null;
+  base_price: number;
+  capacity: number;
+  min_nights: number;
+  amenities: string[];
+  photos: string[];
+  cleaning_fee: number;
+  unitCount: number;
+}
+
+function GridOverview({ cfg, contactUrl }: { cfg: StyleConfig; contactUrl: string }) {
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
+  const [currencySymbol, setCurrencySymbol] = useState("฿");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/get-availability?mode=groups`, {
+          headers: { apikey: SUPABASE_KEY },
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || "Failed to load");
+        setRoomTypes(json.roomTypes ?? []);
+        if (json.currencySymbol) setCurrencySymbol(json.currencySymbol);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) return <div style={containerStyle(cfg)}><p style={{ color: mutedColor(cfg.dark) }}>Loading…</p></div>;
+  if (error) return <div style={containerStyle(cfg)}><p style={{ color: "#dc2626" }}>{error}</p></div>;
+  if (roomTypes.length === 0) return <div style={containerStyle(cfg)}><p style={{ color: mutedColor(cfg.dark) }}>No rooms available</p></div>;
+
+  const defaultCtaLabel = contactUrl.includes("/stay") ? "View Listings" : contactUrl.includes("/auth/guest") ? "Book Now" : "Check Availability";
+
+  return (
+    <div style={{
+      fontFamily: "'Source Sans 3', system-ui, sans-serif",
+      fontSize: getFontSize(cfg.font),
+      padding: 20,
+      background: cfg.dark ? "#1f2937" : "#fff",
+      color: cfg.dark ? "#f3f4f6" : "#1f2937",
+    }}>
+      <h2 style={{ fontSize: getFontSize(cfg.font) + 6, fontWeight: 700, margin: "0 0 16px", color: cfg.accent }}>
+        Our Rooms
+      </h2>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
+        {roomTypes.map((rt) => (
+          <div key={rt.id} style={{
+            borderRadius: cfg.radius,
+            border: `1px solid ${borderColor(cfg.dark)}`,
+            boxShadow: getShadow(cfg.shadow),
+            overflow: "hidden",
+            background: cfg.dark ? "#1f2937" : "#fff",
+          }}>
+            {rt.photos.length > 0 && (
+              <img src={rt.photos[0]} alt={rt.name} style={{ width: "100%", height: 160, objectFit: "cover", display: "block" }} />
+            )}
+            <div style={{ padding: 14 }}>
+              <h3 style={{ fontSize: getFontSize(cfg.font) + 1, fontWeight: 600, margin: "0 0 4px" }}>{rt.name}</h3>
+              {rt.description && (
+                <p style={{
+                  color: mutedColor(cfg.dark),
+                  fontSize: getFontSize(cfg.font) - 2,
+                  marginBottom: 8,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical" as any,
+                  overflow: "hidden",
+                  margin: "0 0 8px",
+                }}>
+                  {rt.description}
+                </p>
+              )}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
+                <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, border: `1px solid ${badgeBorder(cfg.dark)}`, color: cfg.dark ? "#d1d5db" : "#374151", background: badgeBg(cfg.dark) }}>
+                  {rt.capacity} guest{rt.capacity > 1 ? "s" : ""}
+                </span>
+                <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, border: `1px solid ${badgeBorder(cfg.dark)}`, color: cfg.dark ? "#d1d5db" : "#374151", background: badgeBg(cfg.dark) }}>
+                  {rt.unitCount} available
+                </span>
+                {rt.min_nights > 1 && (
+                  <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, border: `1px solid ${badgeBorder(cfg.dark)}`, color: cfg.dark ? "#d1d5db" : "#374151", background: badgeBg(cfg.dark) }}>
+                    Min {rt.min_nights}n
+                  </span>
+                )}
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: getFontSize(cfg.font) + 3, fontWeight: 700 }}>
+                  {currencySymbol}{rt.base_price}<span style={{ color: mutedColor(cfg.dark), fontSize: 12 }}>/night</span>
+                </span>
+              </div>
+              {contactUrl && (
+                <div style={{ marginTop: 10 }}>
+                  <CTAButton cfg={cfg} contactUrl={contactUrl} fallbackLabel={defaultCtaLabel} />
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function CTAButton({ cfg, contactUrl, fallbackLabel }: { cfg: StyleConfig; contactUrl: string; fallbackLabel: string }) {
