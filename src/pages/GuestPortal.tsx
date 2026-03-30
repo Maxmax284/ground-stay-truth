@@ -18,6 +18,7 @@ import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { calculateRefund } from "@/lib/refundCalculator";
 import { formatPrice } from "@/lib/currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
