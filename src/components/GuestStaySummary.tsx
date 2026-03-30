@@ -28,6 +28,7 @@ interface BookingWithUnit {
   check_out: string;
   total_price: number | null;
   unit_id: string;
+  arrival_details?: any;
   units?: { name: string } | null;
 }
 
