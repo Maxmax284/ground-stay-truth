@@ -57,6 +57,7 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
   const checkIn = watch("check_in");
   const checkOut = watch("check_out");
   const numGuests = watch("num_guests");
+  const extraBeds = watch("extra_beds");
   const activeUnits = units?.filter((u) => u.is_active) ?? [];
   const selectedUnit = activeUnits.find((u) => u.id === selectedUnitId);
 
