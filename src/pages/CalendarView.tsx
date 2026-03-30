@@ -177,9 +177,15 @@ const CalendarView = () => {
     return { from: format(startDate, "yyyy-MM-dd"), to: format(timelineEnd, "yyyy-MM-dd") };
   }, [viewMode, currentMonth, selectedDay, startDate, timelineEnd]);
 
-  const { data: bookings } = useBookings({ dateFrom: dateRange.from, dateTo: dateRange.to });
+  const { data: allBookings } = useBookings({ dateFrom: dateRange.from, dateTo: dateRange.to });
   const { data: maintenanceBlocks } = useMaintenanceBlocks({ dateFrom: dateRange.from, dateTo: dateRange.to });
-  const bookingIds = useMemo(() => (bookings ?? []).map((b) => b.id), [bookings]);
+
+  // Hide cancelled & no-show bookings from calendar views (they remain in Bookings page for audit)
+  const bookings = useMemo(
+    () => (allBookings ?? []).filter((b) => b.state !== "cancelled" && b.state !== "no_show"),
+    [allBookings]
+  );
+  const bookingIds = useMemo(() => bookings.map((b) => b.id), [bookings]);
   const { data: paymentSummaries } = useCalendarPayments(bookingIds);
 
   // Confirmation dialog for checked-in bookings
