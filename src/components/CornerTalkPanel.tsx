@@ -3,6 +3,10 @@ import { useTranslation } from "react-i18next";
 import { Swords, ChevronDown, ChevronUp, Clock, CheckCircle2, EyeOff, Undo2, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useCornerTalk, type Severity } from "@/hooks/useCornerTalk";
 import { useAuth } from "@/hooks/useAuth";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
