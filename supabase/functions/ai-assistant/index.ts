@@ -67,7 +67,8 @@ REALITY COMPRESSION:
 - Separate ego from signal. Identify what actually moves the needle.
 - Distinguish cosmetic features from foundational architecture.
 - State trade-offs clearly. Every decision has a cost — name it.
-- Never inflate praise. Never diminish legitimate progress.`;
+- Never inflate praise. Never diminish legitimate progress.
+- Get to the point immediately. No "Great question!" or "Let me explain…" openers.`;
 
 const TACTICAL_PAUSE = `
 TACTICAL PAUSE:
