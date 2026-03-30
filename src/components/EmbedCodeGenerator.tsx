@@ -51,7 +51,9 @@ export function EmbedCodeGenerator() {
       </CardHeader>
       <CardContent className="space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2"><Label>{t("embed.unit")}</Label><Select value={selectedUnit} onValueChange={setSelectedUnit}><SelectTrigger><SelectValue placeholder={t("bookingForm.selectUnit")} /></SelectTrigger><SelectContent>{activeUnits.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent></Select></div>
+          {needsUnit && (
+            <div className="space-y-2"><Label>{t("embed.unit")}</Label><Select value={selectedUnit} onValueChange={setSelectedUnit}><SelectTrigger><SelectValue placeholder={t("bookingForm.selectUnit")} /></SelectTrigger><SelectContent>{activeUnits.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent></Select></div>
+          )}
           <div className="space-y-2"><Label>{t("embed.widgetType")}</Label><Select value={selectedType} onValueChange={setSelectedType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{WIDGET_TYPES.map((w) => <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>)}</SelectContent></Select></div>
         </div>
         <div className="space-y-3">
