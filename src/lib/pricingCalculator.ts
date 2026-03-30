@@ -28,6 +28,7 @@ export interface PricingSummary {
   nights: NightBreakdown[];
   subtotal: number;
   cleaningFee: number;
+  extraBedTotal: number;
   longStayDiscount: LongStayDiscount | null;
   loyaltyDiscount: LoyaltyDiscount | null;
   total: number;
