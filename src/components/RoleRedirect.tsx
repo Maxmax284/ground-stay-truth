@@ -9,12 +9,14 @@ import { permissions } from "@/lib/permissions";
  * - No role yet (loading/new user) → /dashboard (will be caught by ProtectedRoute)
  */
 const RoleRedirect = () => {
-  const { role, loading } = useAuth();
+  const { role, loading, user } = useAuth();
 
-  if (loading) {
+  // Wait for both auth AND role to be resolved before redirecting
+  // When user just logged in, role may still be null briefly while fetchRole runs
+  if (loading || (user && role === null)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-muted-foreground">Loading…</p>
+        <div className="roundhouse-spinner" />
       </div>
     );
   }
@@ -23,7 +25,7 @@ const RoleRedirect = () => {
     return <Navigate to="/guest" replace />;
   }
 
-  // Staff or no role assigned yet
+  // Staff or genuinely no role assigned
   return <Navigate to="/dashboard" replace />;
 };
 

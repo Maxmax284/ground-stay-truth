@@ -25,6 +25,15 @@ const ProtectedRoute = ({ children, requiredPath, guestOnly = false }: Protected
 
   if (!user) return <Navigate to="/auth" replace />;
 
+  // Wait for role to resolve after authentication before making role-based decisions
+  if (user && role === null && !guestOnly) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="roundhouse-spinner" />
+      </div>
+    );
+  }
+
   if (requiredPath && role === "guest") {
     return <Navigate to="/guest" replace />;
   }
