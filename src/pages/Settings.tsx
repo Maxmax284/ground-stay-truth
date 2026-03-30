@@ -9,6 +9,7 @@ import { ReviewsManager } from "@/components/ReviewsManager";
 import { IntegrationSettings } from "@/components/IntegrationSettings";
 import { TrainingPackagesManager } from "@/components/TrainingPackagesManager";
 import { DriverManager } from "@/components/DriverManager";
+import { ArrivalWelcomeEditor } from "@/components/ArrivalWelcomeEditor";
 import { SecurityEventLog } from "@/components/SecurityEventLog";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
