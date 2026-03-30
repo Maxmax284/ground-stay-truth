@@ -51,6 +51,7 @@ const Settings = () => {
           {canManagePolicies && <TabsContent value="policies"><PolicySettingsForm /></TabsContent>}
           {isAdmin && <TabsContent value="drivers"><DriverManager /></TabsContent>}
           {isAdmin && <TabsContent value="training"><TrainingPackagesManager /></TabsContent>}
+          {isAdmin && <TabsContent value="arrival"><ArrivalWelcomeEditor /></TabsContent>}
           {isAdmin && <TabsContent value="integrations"><IntegrationSettings /></TabsContent>}
           {canManageReviews && <TabsContent value="reviews"><ReviewsManager /></TabsContent>}
           {isAdmin && <TabsContent value="security"><SecurityEventLog /></TabsContent>}
