@@ -43,7 +43,7 @@ const CalendarView = () => {
   const { data: policies } = usePolicySettings();
   const { data: unitGroupsData } = useUnitGroups();
   const isMobile = useIsMobile();
-  const activeUnits = useMemo(() => (units ?? []).filter((u) => u.is_active), [units]);
+  const allUnits = useMemo(() => units ?? [], [units]);
   const queryClient = useQueryClient();
 
   // Drag-and-drop permission: admin or manager only
