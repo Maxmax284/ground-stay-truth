@@ -179,18 +179,35 @@ const GuestPortal = () => {
     },
   });
 
-  const groupedUnits = useMemo(() => {
+  // Build one card per room type, sorted highest price → lowest (premium first)
+  const roomTypeCards = useMemo(() => {
     if (!units) return [];
-    const map = new Map<string, { name: string; units: typeof units }>();
-    const ungrouped: typeof units = [];
+    const map = new Map<string, { groupId: string; name: string; description: string | null; units: typeof units }>();
     for (const u of units) {
       if (u.group_id && u.unit_groups?.name) {
-        if (!map.has(u.group_id)) map.set(u.group_id, { name: u.unit_groups.name, units: [] });
+        if (!map.has(u.group_id)) map.set(u.group_id, { groupId: u.group_id, name: u.unit_groups.name, description: u.description, units: [] });
         map.get(u.group_id)!.units.push(u);
-      } else { ungrouped.push(u); }
+      }
     }
-    return [...Array.from(map.values()), ...(ungrouped.length ? [{ name: t("common.other"), units: ungrouped }] : [])];
-  }, [units, t]);
+    return Array.from(map.values())
+      .map((g) => {
+        const rep = g.units.reduce((best, u) => (u.base_price > best.base_price ? u : best), g.units[0]);
+        return {
+          groupId: g.groupId,
+          name: g.name,
+          description: g.description ?? rep.description,
+          capacity: rep.capacity,
+          base_price: rep.base_price,
+          weekend_price: rep.weekend_price,
+          cleaning_fee: rep.cleaning_fee,
+          min_nights: rep.min_nights,
+          amenities: rep.amenities,
+          photos: rep.photos,
+          unitCount: g.units.length,
+        };
+      })
+      .sort((a, b) => b.base_price - a.base_price);
+  }, [units]);
 
   const cancellationSummary = useMemo(() => {
     if (!policies) return null;
@@ -301,50 +318,34 @@ const GuestPortal = () => {
 
           {/* ── Listings Tab ── */}
           <TabsContent value="listings">
-            <div className="space-y-6">
-              {groupedUnits.map((group) => (
-                <div key={group.name}>
-                  {groupedUnits.length > 1 && <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">{group.name}</h3>}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {group.units.map((unit) => (
-                      <Card key={unit.id} className="overflow-hidden">
-                        {unit.photos && unit.photos.length > 0 && <div className="aspect-[16/9] overflow-hidden"><img src={unit.photos[0]} alt={unit.name} className="w-full h-full object-cover" /></div>}
-                        <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><Home className="h-4 w-4 text-primary" />{unit.name}</CardTitle></CardHeader>
-                        <CardContent className="space-y-3">
-                          {unit.description && <p className="text-sm text-muted-foreground">{unit.description}</p>}
-                          <div className="flex flex-wrap gap-2 text-xs">
-                            <Badge variant="outline">{t("units.upToGuests", { count: unit.capacity })}</Badge>
-                            <Badge variant="outline">{t("units.minNightsLabel", { count: unit.min_nights })}</Badge>
-                          </div>
-                          <AmenityList amenities={unit.amenities} max={8} />
-                          <Separator />
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">{t("common.from")}</span>
-                            <span className="font-semibold text-foreground">{formatPrice(unit.base_price, policies, { decimals: 0 })}{t("common.perNight")}</span>
-                          </div>
-                          {Number(unit.weekend_price ?? 0) > 0 && (
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <span>{t("guestPortal.weekendRate")}</span>
-                              <span>{formatPrice(unit.weekend_price, policies, { decimals: 0 })}{t("common.perNight")}</span>
-                            </div>
-                          )}
-                          {Number(unit.cleaning_fee ?? 0) > 0 && (
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <span>{t("guestPortal.cleaningFee")}</span>
-                              <span>{formatPrice(unit.cleaning_fee, policies, { decimals: 0 })}</span>
-                            </div>
-                          )}
-                          <Button onClick={() => openBookingForm(unit.id)} size="sm" className="w-full mt-2">
-                            <CalendarPlus className="h-4 w-4 mr-1.5" />
-                            {t("guestBooking.requestBooking")}
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
+            <div className="space-y-4">
+              {roomTypeCards.map((room) => (
+                <Card key={room.groupId} className="overflow-hidden">
+                  {room.photos && room.photos.length > 0 && <div className="aspect-[16/9] overflow-hidden"><img src={room.photos[0]} alt={room.name} className="w-full h-full object-cover" /></div>}
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2"><Home className="h-4 w-4 text-primary" />{room.name}</CardTitle>
+                    {room.unitCount > 1 && <p className="text-xs text-muted-foreground">{room.unitCount} {t("guestPortal.roomsAvailable", { defaultValue: "rooms available" })}</p>}
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {room.description && <p className="text-sm text-muted-foreground">{room.description}</p>}
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      <Badge variant="outline">{t("units.upToGuests", { count: room.capacity })}</Badge>
+                      <Badge variant="outline">{t("units.minNightsLabel", { count: room.min_nights })}</Badge>
+                    </div>
+                    <AmenityList amenities={room.amenities} max={8} />
+                    <Separator />
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">{t("common.from")}</span>
+                      <span className="text-lg font-bold text-foreground">{formatPrice(room.base_price, policies, { decimals: 0 })}<span className="text-sm font-normal text-muted-foreground">{t("common.perNight")}</span></span>
+                    </div>
+                    <Button onClick={() => openBookingForm()} size="sm" className="w-full mt-2">
+                      <CalendarPlus className="h-4 w-4 mr-1.5" />
+                      {t("guestBooking.requestBooking")}
+                    </Button>
+                  </CardContent>
+                </Card>
               ))}
-              {!units?.length && <p className="text-sm text-muted-foreground text-center py-8">{t("guestPortal.noListings")}</p>}
+              {!roomTypeCards.length && <p className="text-sm text-muted-foreground text-center py-8">{t("guestPortal.noListings")}</p>}
             </div>
           </TabsContent>
 
