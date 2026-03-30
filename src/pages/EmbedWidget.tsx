@@ -106,46 +106,6 @@ export default function EmbedWidget() {
   const cfg = useStyleConfig(searchParams);
   const contactUrl = searchParams.get("contact_url") || "";
 
-  // Grid type doesn't need a unit
-  if (type === "grid") {
-    return <GridOverview cfg={cfg} contactUrl={contactUrl} />;
-  }
-
-  const [unit, setUnit] = useState<UnitData | null>(null);
-  const [blocked, setBlocked] = useState<BlockedRange[]>([]);
-  const [currencySymbol, setCurrencySymbol] = useState("฿");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const params = unitId ? `?unit_id=${unitId}` : "";
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/get-availability${params}`, {
-          headers: { apikey: SUPABASE_KEY },
-        });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || "Failed to load");
-        if (json.currencySymbol) setCurrencySymbol(json.currencySymbol);
-        if (unitId) {
-          setUnit(json.unit);
-          setBlocked(json.blockedRanges ?? []);
-        }
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [unitId]);
-
-export default function EmbedWidget() {
-  const { type, unitId } = useParams<{ type: string; unitId: string }>();
-  const [searchParams] = useSearchParams();
-  const cfg = useStyleConfig(searchParams);
-  const contactUrl = searchParams.get("contact_url") || "";
-
   if (type === "grid") {
     return <GridOverview cfg={cfg} contactUrl={contactUrl} />;
   }
