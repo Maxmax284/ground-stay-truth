@@ -25,7 +25,7 @@ import { formatPrice } from "@/lib/currency";
 import { AlertTriangle } from "lucide-react";
 
 interface BookingFormDialogProps { open: boolean; onOpenChange: (open: boolean) => void; defaultUnitId?: string; defaultCheckIn?: string; defaultCheckOut?: string; }
-interface FormValues { unit_id: string; check_in: string; check_out: string; num_guests: number; notes: string; guest_id: string; }
+interface FormValues { unit_id: string; check_in: string; check_out: string; num_guests: number; extra_beds: number; notes: string; guest_id: string; }
 
 export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCheckIn, defaultCheckOut }: BookingFormDialogProps) {
   const { t } = useTranslation();
