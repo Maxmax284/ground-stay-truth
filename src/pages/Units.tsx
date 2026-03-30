@@ -26,7 +26,6 @@ const Units = () => {
   const { data: groups } = useUnitGroups();
   const updateUnit = useUpdateUnit();
   const { toast } = useToast();
-  const { toast } = useToast();
   const [formOpen, setFormOpen] = useState(false);
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
