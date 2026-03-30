@@ -27,11 +27,11 @@ export function EmbedCodeGenerator() {
   const [selectedUnit, setSelectedUnit] = useState("");
   const [selectedType, setSelectedType] = useState("listing");
   const [contactUrl, setContactUrl] = useState("");
-  const [ctaTarget, setCtaTarget] = useState<"contact" | "register">("contact");
+  const [ctaTarget, setCtaTarget] = useState<"contact" | "register" | "listings">("listings");
 
   const baseUrl = window.location.origin;
   const widget = WIDGET_TYPES.find((w) => w.value === selectedType)!;
-  const resolvedContactUrl = ctaTarget === "register" ? `${baseUrl}/auth/guest` : contactUrl;
+  const resolvedContactUrl = ctaTarget === "register" ? `${baseUrl}/auth/guest` : ctaTarget === "listings" ? `${baseUrl}/stay` : contactUrl;
   const contactParam = resolvedContactUrl ? `&contact_url=${encodeURIComponent(resolvedContactUrl)}` : "";
   const embedUrl = `${baseUrl}/embed/${selectedType}/${selectedUnit}${contactParam ? `?${contactParam.slice(1)}` : ""}`;
   const iframeCode = selectedUnit ? `<iframe src="${embedUrl}" width="100%" height="${widget.height}" style="border:none;border-radius:12px;overflow:hidden;" loading="lazy" title="Ground Stay - ${widget.label}"></iframe>` : "";
@@ -53,9 +53,10 @@ export function EmbedCodeGenerator() {
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>{t("embed.ctaTarget")}</Label>
-            <Select value={ctaTarget} onValueChange={(v) => setCtaTarget(v as "contact" | "register")}>
+            <Select value={ctaTarget} onValueChange={(v) => setCtaTarget(v as "contact" | "register" | "listings")}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
+                <SelectItem value="listings">{t("embed.ctaTargetListings", { defaultValue: "View All Listings" })}</SelectItem>
                 <SelectItem value="contact">{t("embed.ctaTargetContact")}</SelectItem>
                 <SelectItem value="register">{t("embed.ctaTargetRegister")}</SelectItem>
               </SelectContent>
