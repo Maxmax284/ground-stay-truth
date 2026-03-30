@@ -171,7 +171,7 @@ export function GuestStaySummary() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bookings")
-        .select("id, state, check_in, check_out, total_price, unit_id, units(name)")
+        .select("id, state, check_in, check_out, total_price, unit_id, arrival_details, units(name)")
         .eq("guest_id", user!.id)
         .in("state", ["inquiry", "soft_hold", "pending_approval", "pending_deposit", "confirmed", "checked_in"])
         .order("check_in", { ascending: true })
