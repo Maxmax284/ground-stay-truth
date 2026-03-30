@@ -373,7 +373,7 @@ export function ArrivalWelcomeEditor() {
 
               {/* Sections */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
+               <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium flex items-center gap-1.5">
                     <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
                     Content Sections
@@ -383,16 +383,29 @@ export function ArrivalWelcomeEditor() {
                       </Badge>
                     )}
                   </Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowAddSectionPicker(!showAddSectionPicker)}
-                    className="h-7 gap-1 text-xs"
-                  >
-                    <Plus className="h-3 w-3" />
-                    Add Section
-                    {showAddSectionPicker ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                  </Button>
+                  <div className="flex items-center gap-1.5">
+                    {template.sections.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setAllSectionsExpanded(airport.id, prev => !prev)}
+                        className="h-7 gap-1 text-xs text-muted-foreground"
+                      >
+                        {allSectionsExpanded[airport.id] !== false ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                        {allSectionsExpanded[airport.id] !== false ? "Collapse All" : "Expand All"}
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAddSectionPicker(!showAddSectionPicker)}
+                      className="h-7 gap-1 text-xs"
+                    >
+                      <Plus className="h-3 w-3" />
+                      Add Section
+                      {showAddSectionPicker ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Section type picker for adding */}

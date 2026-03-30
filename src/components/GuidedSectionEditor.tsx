@@ -97,6 +97,10 @@ export function GuidedSectionEditor({
   const [generating, setGenerating] = useState(false);
   const [expanded, setExpanded] = useState(true);
 
+  useEffect(() => {
+    if (props.forceExpanded !== undefined) setExpanded(props.forceExpanded);
+  }, [props.forceExpanded]);
+
   const template = useMemo(() =>
     selectedType ? SECTION_TEMPLATES.find(t => t.id === selectedType) : null,
     [selectedType]
