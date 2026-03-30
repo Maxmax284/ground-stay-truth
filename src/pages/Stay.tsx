@@ -121,7 +121,16 @@ export default function Stay() {
       
       {/* Hero */}
       <header className="relative auth-hero-bg text-primary-foreground overflow-hidden">
-        <div className="absolute top-4 right-4 z-10">
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 text-xs"
+            onClick={() => navigate("/auth")}
+          >
+            <LogIn className="h-3.5 w-3.5 mr-1" />
+            Staff Login
+          </Button>
           <LanguageSelector />
         </div>
         <div className="relative z-10 max-w-5xl mx-auto px-4 py-16 sm:py-24 text-center space-y-4">
