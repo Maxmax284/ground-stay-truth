@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import type { EmblaCarouselType } from "embla-carousel";
 import { cn } from "@/lib/utils";
+import type { CarouselApi } from "@/components/ui/carousel";
 
 interface CarouselDotsProps {
-  api: EmblaCarouselType | undefined;
+  api: CarouselApi | undefined;
   count: number;
 }
 
