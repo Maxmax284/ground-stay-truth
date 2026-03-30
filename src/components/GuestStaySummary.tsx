@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { format, differenceInDays, isPast, isToday, parseISO } from "date-fns";
 import { toast } from "sonner";
+import { ArrivalWelcomeDialog, ArrivalWelcomeCard, detectAirport } from "@/components/ArrivalWelcomeGuide";
 
 interface BookingWithUnit {
   id: string;
