@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { format, differenceInDays, isPast, isToday, parseISO } from "date-fns";
 import { toast } from "sonner";
+import { ArrivalWelcomeDialog, ArrivalWelcomeCard, detectAirport } from "@/components/ArrivalWelcomeGuide";
 
 interface BookingWithUnit {
   id: string;
@@ -27,6 +28,7 @@ interface BookingWithUnit {
   check_out: string;
   total_price: number | null;
   unit_id: string;
+  arrival_details?: any;
   units?: { name: string } | null;
 }
 
@@ -162,6 +164,8 @@ export function GuestStaySummary() {
   const { data: policies } = usePolicySettings();
   const queryClient = useQueryClient();
   const { play: playSound } = useSoundEffects();
+  const [welcomeDialogOpen, setWelcomeDialogOpen] = useState(false);
+  const [welcomeAirport, setWelcomeAirport] = useState<"bkk" | "samui" | null>(null);
 
   const { data: bookings } = useQuery({
     queryKey: ["guest-stay-summary-bookings", user?.id],
@@ -169,7 +173,7 @@ export function GuestStaySummary() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bookings")
-        .select("id, state, check_in, check_out, total_price, unit_id, units(name)")
+        .select("id, state, check_in, check_out, total_price, unit_id, arrival_details, units(name)")
         .eq("guest_id", user!.id)
         .in("state", ["inquiry", "soft_hold", "pending_approval", "pending_deposit", "confirmed", "checked_in"])
         .order("check_in", { ascending: true })
@@ -254,12 +258,19 @@ export function GuestStaySummary() {
       }
       return resp.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data, bookingId) => {
       if (data.already) {
         toast.info(t("guestStay.actions.alreadyLanded"));
       } else {
         toast.success(t("guestStay.actions.landedSuccess"));
         playSound("landed");
+        // Show arrival welcome dialog
+        const booking = bookings?.find((b) => b.id === bookingId);
+        const airport = detectAirport(booking);
+        if (airport) {
+          setWelcomeAirport(airport);
+          setWelcomeDialogOpen(true);
+        }
       }
       queryClient.invalidateQueries({ queryKey: ["guest-stay-summary-pickups"] });
     },
@@ -497,6 +508,22 @@ export function GuestStaySummary() {
           </Card>
         );
       })}
+
+      {/* Arrival Welcome Card — shown for landed guests */}
+      {bookings?.map((booking) => {
+        const pickup = pickups?.find((p: any) => p.booking_id === booking.id);
+        if (!pickup?.guest_landed_at) return null;
+        const airport = detectAirport(booking);
+        if (!airport) return null;
+        return <ArrivalWelcomeCard key={`welcome-${booking.id}`} airport={airport} compact />;
+      })}
+
+      {/* Arrival Welcome Dialog */}
+      <ArrivalWelcomeDialog
+        open={welcomeDialogOpen}
+        onOpenChange={setWelcomeDialogOpen}
+        airport={welcomeAirport}
+      />
     </div>
   );
 }

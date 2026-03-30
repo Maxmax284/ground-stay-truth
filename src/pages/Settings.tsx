@@ -9,6 +9,7 @@ import { ReviewsManager } from "@/components/ReviewsManager";
 import { IntegrationSettings } from "@/components/IntegrationSettings";
 import { TrainingPackagesManager } from "@/components/TrainingPackagesManager";
 import { DriverManager } from "@/components/DriverManager";
+import { ArrivalWelcomeEditor } from "@/components/ArrivalWelcomeEditor";
 import { SecurityEventLog } from "@/components/SecurityEventLog";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
@@ -38,6 +39,7 @@ const Settings = () => {
             {canManagePolicies && <TabsTrigger value="policies">{t("settings.policiesTab")}</TabsTrigger>}
             {isAdmin && <TabsTrigger value="drivers">Drivers</TabsTrigger>}
             {isAdmin && <TabsTrigger value="training">Training</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="arrival">Arrival Welcome</TabsTrigger>}
             {isAdmin && <TabsTrigger value="integrations">Integrations</TabsTrigger>}
             {canManageReviews && <TabsTrigger value="reviews">{t("settings.reviewsTab")}</TabsTrigger>}
             {isAdmin && <TabsTrigger value="security">Security</TabsTrigger>}
@@ -49,6 +51,7 @@ const Settings = () => {
           {canManagePolicies && <TabsContent value="policies"><PolicySettingsForm /></TabsContent>}
           {isAdmin && <TabsContent value="drivers"><DriverManager /></TabsContent>}
           {isAdmin && <TabsContent value="training"><TrainingPackagesManager /></TabsContent>}
+          {isAdmin && <TabsContent value="arrival"><ArrivalWelcomeEditor /></TabsContent>}
           {isAdmin && <TabsContent value="integrations"><IntegrationSettings /></TabsContent>}
           {canManageReviews && <TabsContent value="reviews"><ReviewsManager /></TabsContent>}
           {isAdmin && <TabsContent value="security"><SecurityEventLog /></TabsContent>}
