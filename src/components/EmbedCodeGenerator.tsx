@@ -53,9 +53,10 @@ export function EmbedCodeGenerator() {
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>{t("embed.ctaTarget")}</Label>
-            <Select value={ctaTarget} onValueChange={(v) => setCtaTarget(v as "contact" | "register")}>
+            <Select value={ctaTarget} onValueChange={(v) => setCtaTarget(v as "contact" | "register" | "listings")}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
+                <SelectItem value="listings">{t("embed.ctaTargetListings", { defaultValue: "View All Listings" })}</SelectItem>
                 <SelectItem value="contact">{t("embed.ctaTargetContact")}</SelectItem>
                 <SelectItem value="register">{t("embed.ctaTargetRegister")}</SelectItem>
               </SelectContent>
