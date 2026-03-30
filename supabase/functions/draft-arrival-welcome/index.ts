@@ -271,14 +271,92 @@ If the request is unclear or just a question, respond conversationally without u
       });
     }
 
+    // ── Mode: generate_section ──
+    if (mode === "generate_section") {
+      const { section_type, section_title, guided_fields, airport_facts } = body;
+
+      // Build a structured prompt from the guided fields
+      let fieldsSummary = "";
+      if (guided_fields && typeof guided_fields === "object") {
+        for (const [key, value] of Object.entries(guided_fields)) {
+          if (!value || (Array.isArray(value) && value.length === 0) || value === "") continue;
+          const displayVal = Array.isArray(value) ? value.join("\n  • ") : value;
+          fieldsSummary += `\n${key}: ${Array.isArray(value) ? "\n  • " + displayVal : displayVal}`;
+        }
+      }
+
+      const genPrompt = `${baseContext}
+
+You are writing a specific section of an arrival welcome guide for guests arriving at ${airport.toUpperCase()}.
+
+Section type: ${section_type}
+Section title: "${section_title}"
+
+Here are the structured facts and details to include in this section:
+${fieldsSummary || "(No specific fields provided — use your best judgment based on the airport context)"}
+
+${context ? `Admin notes: ${context}` : ""}
+
+Write a well-structured, practical section that:
+- Uses the provided facts accurately (DO NOT make up prices, times, or details not provided)
+- Is formatted with clear numbered steps or bullet points where appropriate
+- Feels natural and helpful, not like a data dump
+- Uses emoji sparingly and appropriately
+- Is concise but thorough — every sentence should be useful`;
+
+      const aiData = await callAI(
+        [{ role: "system", content: genPrompt }, { role: "user", content: `Write the "${section_title}" section.` }],
+        [{
+          type: "function",
+          function: {
+            name: "write_section",
+            description: "Return the written section",
+            parameters: {
+              type: "object",
+              properties: {
+                title: { type: "string", description: "Section title (can refine the provided title)" },
+                content: { type: "string", description: "Full section content" },
+              },
+              required: ["title", "content"],
+            },
+          },
+        }],
+        { type: "function", function: { name: "write_section" } }
+      );
+
+      const draft = extractToolArgs(aiData);
+      return new Response(JSON.stringify({ draft }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ── Mode: rewrite_section ──
-    if (mode === "rewrite_section" && section) {
+    if (mode === "rewrite_section") {
+      const sectionToRewrite = section || body.section;
+      if (!sectionToRewrite) {
+        return new Response(JSON.stringify({ error: "section is required for rewrite_section mode" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Include guided fields context if available
+      let fieldsContext = "";
+      if (body.guided_fields && typeof body.guided_fields === "object") {
+        for (const [key, value] of Object.entries(body.guided_fields)) {
+          if (!value || (Array.isArray(value) && value.length === 0) || value === "") continue;
+          const displayVal = Array.isArray(value) ? value.join(", ") : value;
+          fieldsContext += `\n${key}: ${displayVal}`;
+        }
+      }
+
       const sectionPrompt = `${baseContext}
 
 Rewrite/improve the following section from an arrival welcome guide for guests landing at ${airport.toUpperCase()}.
 
-Current section title: "${section.title}"
-Current section content: "${section.content}"
+Current section title: "${sectionToRewrite.title}"
+Current section content: "${sectionToRewrite.content}"
+
+${fieldsContext ? `Reference facts to ensure accuracy:\n${fieldsContext}` : ""}
 
 Return an improved version. Keep the same topic but make it clearer, more practical, and friendlier. Use concise numbered steps where appropriate. Don't be corporate. Use emoji sparingly.
 ${context ? `\nAdmin notes: ${context}` : ""}`;
