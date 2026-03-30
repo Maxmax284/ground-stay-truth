@@ -18,10 +18,11 @@ export function EmbedCodeGenerator() {
   const activeUnits = units?.filter((u) => u.is_active) ?? [];
 
   const WIDGET_TYPES = [
-    { value: "listing", label: t("embed.widgetTypes.listing"), description: t("embed.widgetTypes.listingDesc"), height: 600 },
-    { value: "compact", label: t("embed.widgetTypes.compact"), description: t("embed.widgetTypes.compactDesc"), height: 200 },
-    { value: "calendar", label: t("embed.widgetTypes.calendar"), description: t("embed.widgetTypes.calendarDesc"), height: 380 },
-    { value: "cta", label: t("embed.widgetTypes.cta"), description: t("embed.widgetTypes.ctaDesc"), height: 160 },
+    { value: "grid", label: "Browse All", description: "Grid overview showing all room types — no unit selection needed.", height: 700, requiresUnit: false },
+    { value: "listing", label: t("embed.widgetTypes.listing"), description: t("embed.widgetTypes.listingDesc"), height: 600, requiresUnit: true },
+    { value: "compact", label: t("embed.widgetTypes.compact"), description: t("embed.widgetTypes.compactDesc"), height: 200, requiresUnit: true },
+    { value: "calendar", label: t("embed.widgetTypes.calendar"), description: t("embed.widgetTypes.calendarDesc"), height: 380, requiresUnit: true },
+    { value: "cta", label: t("embed.widgetTypes.cta"), description: t("embed.widgetTypes.ctaDesc"), height: 160, requiresUnit: true },
   ];
 
   const [selectedUnit, setSelectedUnit] = useState("");
