@@ -106,7 +106,6 @@ export function ArrivalWelcomeEditor() {
   const { session } = useAuth();
   const [activeAirport, setActiveAirport] = useState<string>("bkk");
   const [drafting, setDrafting] = useState(false);
-  const [rewritingIdx, setRewritingIdx] = useState<number | null>(null);
   const [aiContext, setAiContext] = useState("");
   const [aiTone, setAiTone] = useState("friendly");
   const [localEdits, setLocalEdits] = useState<Record<string, WelcomeTemplate>>({});
