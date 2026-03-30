@@ -420,80 +420,125 @@ export function ArrivalWelcomeEditor() {
               {/* Sections */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">Content Sections</Label>
+                  <Label className="text-sm font-medium flex items-center gap-1.5">
+                    <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                    Content Sections
+                    {template.sections.length > 0 && (
+                      <Badge variant="secondary" className="text-[9px] px-1.5 py-0">
+                        {template.sections.length}
+                      </Badge>
+                    )}
+                  </Label>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => addSection(airport.id)}
+                    onClick={() => setShowAddSectionPicker(!showAddSectionPicker)}
                     className="h-7 gap-1 text-xs"
                   >
-                    <Plus className="h-3 w-3" /> Add Section
+                    <Plus className="h-3 w-3" />
+                    Add Section
+                    {showAddSectionPicker ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                   </Button>
                 </div>
 
-                {template.sections.map((section, idx) => {
-                  const sectionPhotos = photosForSection(template, idx);
-                  const isRewriting = rewritingIdx === idx;
-                  return (
-                    <Card key={idx} className="border-border/50">
-                      <CardContent className="p-3 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <GripVertical className="h-4 w-4 text-muted-foreground/40 shrink-0" />
-                          <Input
-                            value={section.title}
-                            onChange={(e) => updateSection(airport.id, idx, "title", e.target.value)}
-                            placeholder="Section title (e.g., 'What to Do Now')"
-                            className="h-8 text-sm font-medium"
-                          />
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleSectionRewrite(airport.id, idx)}
-                            disabled={isRewriting || drafting}
-                            className="h-8 gap-1 text-xs shrink-0"
-                            title="AI rewrite this section"
-                          >
-                            {isRewriting ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                            <Sparkles className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeSection(airport.id, idx)}
-                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive shrink-0"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                        <Textarea
-                          value={section.content}
-                          onChange={(e) => updateSection(airport.id, idx, "content", e.target.value)}
-                          placeholder="Step-by-step instructions, tips, or directions..."
-                          rows={4}
-                          className="text-sm"
-                        />
-                        {sectionPhotos.length > 0 && (
-                          <div className="flex gap-2 flex-wrap pt-1">
-                            {sectionPhotos.map((p, pi) => (
-                              <div key={pi} className="relative group">
-                                <img src={p.url} alt={p.alt || p.caption} className="h-12 w-16 rounded object-cover border" />
-                                {p.caption && (
-                                  <span className="absolute bottom-0 left-0 right-0 bg-background/80 text-[8px] text-center truncate px-0.5">
-                                    {p.caption}
-                                  </span>
+                {/* Section type picker for adding */}
+                {showAddSectionPicker && (
+                  <Card className="border-primary/20 bg-primary/5">
+                    <CardContent className="p-3 space-y-2.5">
+                      <p className="text-xs font-medium">Choose a section type:</p>
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Journey Flow</p>
+                        <div className="grid gap-1">
+                          {getJourneyTemplates(airport.id as any).map(t => {
+                            const alreadyExists = template.sections.some(s =>
+                              s.title.toLowerCase().includes(t.title.toLowerCase().split(" ")[0])
+                            );
+                            return (
+                              <button
+                                key={t.id}
+                                onClick={() => {
+                                  addSection(airport.id, t.defaultTitle);
+                                  setShowAddSectionPicker(false);
+                                }}
+                                className={`flex items-center gap-2 p-2 rounded-md border text-left transition-colors ${
+                                  alreadyExists
+                                    ? "border-border/30 bg-muted/30 opacity-60"
+                                    : "border-border/50 hover:bg-primary/10 hover:border-primary/30"
+                                }`}
+                              >
+                                <span className="text-sm">{t.icon}</span>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-medium">{t.title}</p>
+                                  <p className="text-[10px] text-muted-foreground truncate">{t.description}</p>
+                                </div>
+                                {alreadyExists && (
+                                  <Badge variant="outline" className="text-[9px] px-1 py-0 shrink-0">Added</Badge>
                                 )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Situational</p>
+                        <div className="grid gap-1">
+                          {getSituationalTemplates(airport.id as any).map(t => (
+                            <button
+                              key={t.id}
+                              onClick={() => {
+                                addSection(airport.id, t.defaultTitle);
+                                setShowAddSectionPicker(false);
+                              }}
+                              className="flex items-center gap-2 p-2 rounded-md border border-border/50 hover:bg-accent/10 hover:border-accent/30 transition-colors text-left"
+                            >
+                              <span className="text-sm">{t.icon}</span>
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium">{t.title}</p>
+                                <p className="text-[10px] text-muted-foreground truncate">{t.description}</p>
                               </div>
-                            ))}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          addSection(airport.id);
+                          setShowAddSectionPicker(false);
+                        }}
+                        className="flex items-center gap-2 p-2 rounded-md border border-dashed border-border/50 hover:bg-muted/30 transition-colors text-left w-full"
+                      >
+                        <span className="text-sm">✏️</span>
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium">Custom Section</p>
+                          <p className="text-[10px] text-muted-foreground">Free-form content — no guided fields</p>
+                        </div>
+                      </button>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Section editors */}
+                {template.sections.map((section, idx) => (
+                  <GuidedSectionEditor
+                    key={idx}
+                    airport={airport.id}
+                    sectionIndex={idx}
+                    sectionTitle={section.title}
+                    sectionContent={section.content}
+                    tone={aiTone}
+                    context={aiContext}
+                    onUpdate={(title, content) => {
+                      const sections = [...template.sections];
+                      sections[idx] = { title, content };
+                      setTemplate(airport.id, { ...template, sections });
+                    }}
+                    onRemove={() => removeSection(airport.id, idx)}
+                  />
+                ))}
 
                 {template.sections.length === 0 && (
-                  <p className="text-sm text-muted-foreground italic text-center py-4 border border-dashed rounded-lg">
-                    No sections yet. Add one or use AI to generate a draft.
+                  <p className="text-sm text-muted-foreground italic text-center py-6 border border-dashed rounded-lg">
+                    No sections yet. Click "Add Section" above to start building your guide, or use the AI Studio to generate a full draft.
                   </p>
                 )}
               </div>
