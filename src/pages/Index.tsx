@@ -10,6 +10,7 @@ import { useDashboardStats } from "@/hooks/useDashboard";
 import { type BookingState } from "@/lib/bookingStateMachine";
 import { canAccessRoute, permissions } from "@/lib/permissions";
 import { useAuth } from "@/hooks/useAuth";
+import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { useRolePreview } from "@/hooks/useRolePreview";
 import { ApprovalQueue } from "@/components/ApprovalQueue";
 import { InquiryQueue } from "@/components/InquiryQueue";
