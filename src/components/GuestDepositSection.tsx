@@ -114,8 +114,8 @@ export function GuestDepositSection({ policies, depositAmount, bookingId }: Gues
       ) : hasOnline ? (
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">
-            {depositPol.effectiveMode === "online_required"
-              ? t("deposit.guestInstructionsOnlineRequired")
+            {isOnlineRequired
+              ? t("deposit.guestInstructionsOnlineRequired", { defaultValue: "Online payment is required to hold your booking. Please pay securely below." })
               : t("deposit.guestInstructionsOnlineOptional")}
           </p>
           <GuestPaymentButton
