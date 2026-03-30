@@ -434,22 +434,24 @@ export function GuestStaySummary() {
                         : t("guestStay.noPickup")
                   }
                 />
-                <StatusPill
-                  icon={<Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />}
-                  className={
-                    deposit
-                      ? deposit.status === "released" ? "text-[hsl(var(--success))] font-medium"
-                        : deposit.status === "held" ? "text-primary font-medium" : "text-muted-foreground"
-                      : "text-muted-foreground"
-                  }
-                  text={
-                    deposit
-                      ? deposit.status === "held"
-                        ? t("guestStay.depositHeld", { amount: formatPrice(deposit.amount_held, policies, { decimals: 0 }) })
-                        : deposit.status === "released" ? t("guestStay.depositReleased") : deposit.status
-                      : t("guestStay.depositNone")
-                  }
-                />
+                {(String(policies?.find((p) => p.key === "security_deposit_required")?.value) === "true" || deposit) && (
+                  <StatusPill
+                    icon={<Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />}
+                    className={
+                      deposit
+                        ? deposit.status === "released" ? "text-[hsl(var(--success))] font-medium"
+                          : deposit.status === "held" ? "text-primary font-medium" : "text-muted-foreground"
+                        : "text-muted-foreground"
+                    }
+                    text={
+                      deposit
+                        ? deposit.status === "held"
+                          ? t("guestStay.depositHeld", { amount: formatPrice(deposit.amount_held, policies, { decimals: 0 }) })
+                          : deposit.status === "released" ? t("guestStay.depositReleased") : deposit.status
+                        : t("guestStay.depositNone")
+                    }
+                  />
+                )}
               </div>
 
               {/* Next Step */}
