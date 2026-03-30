@@ -258,12 +258,19 @@ export function GuestStaySummary() {
       }
       return resp.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data, bookingId) => {
       if (data.already) {
         toast.info(t("guestStay.actions.alreadyLanded"));
       } else {
         toast.success(t("guestStay.actions.landedSuccess"));
         playSound("landed");
+        // Show arrival welcome dialog
+        const booking = bookings?.find((b) => b.id === bookingId);
+        const airport = detectAirport(booking);
+        if (airport) {
+          setWelcomeAirport(airport);
+          setWelcomeDialogOpen(true);
+        }
       }
       queryClient.invalidateQueries({ queryKey: ["guest-stay-summary-pickups"] });
     },
