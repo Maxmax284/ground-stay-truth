@@ -222,6 +222,15 @@ export function AppSidebar() {
           <Target className="h-3.5 w-3.5" />
           {t("nav.warRoomSim", "War Room Sim")}
         </Link>
+        {showInstall && (
+          <button
+            onClick={() => setInstallDialogOpen(true)}
+            className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors w-full text-left"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Install App
+          </button>
+        )}
         {isAdmin && (
           <>
             <Link to="/guest?preview=true" className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
@@ -261,5 +270,71 @@ export function AppSidebar() {
         </Button>
       </SidebarFooter>
     </Sidebar>
+
+    {/* Install App Dialog — auto-opens on first mobile login */}
+    <Dialog open={installDialogOpen} onOpenChange={setInstallDialogOpen}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Smartphone className="h-5 w-5 text-primary" />
+            Get the App
+          </DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          Install Ground Stay on your phone for faster access — it only takes a few seconds.
+        </p>
+
+        {isIOS ? (
+          <div className="space-y-4 mt-2">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">1</div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Tap Share</p>
+                <p className="text-xs text-muted-foreground">The square icon with an arrow at the bottom of Safari</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">2</div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Add to Home Screen</p>
+                <p className="text-xs text-muted-foreground">Scroll down in the menu and tap it</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">3</div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Tap Add</p>
+                <p className="text-xs text-muted-foreground">That's it — the app will appear on your home screen</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">
+              ⚠️ Must use <span className="font-semibold text-foreground">Safari</span> — Chrome and other browsers on iPhone don't support this.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4 mt-2">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">1</div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Tap the menu</p>
+                <p className="text-xs text-muted-foreground">The three dots (⋮) at the top right of Chrome</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">2</div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Install app</p>
+                <p className="text-xs text-muted-foreground">Tap "Install app" or "Add to Home Screen"</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <Button onClick={() => setInstallDialogOpen(false)} className="w-full mt-2">
+          Got it
+        </Button>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
