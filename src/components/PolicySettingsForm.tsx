@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { playGroundSound, SOUND_NAMES, type SoundName } from "@/lib/groundSounds";
+import { StayEssentialsEditor } from "@/components/StayEssentialsEditor";
 
 /* ── Setting Groups ────────────────────────────────────────── */
 
@@ -403,10 +404,14 @@ export function PolicySettingsForm() {
             </CardHeader>
           </Card>
 
-          {/* Settings grid */}
-          <div className="grid gap-3 sm:grid-cols-2">
-            {group.keys.map((key) => renderSetting(key))}
-          </div>
+          {/* Settings grid — use custom editor for Stay Essentials */}
+          {group.id === "stay_essentials" ? (
+            <StayEssentialsEditor />
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {group.keys.map((key) => renderSetting(key))}
+            </div>
+          )}
 
           {/* Sound picker for Ground Sounds tab */}
           {group.id === "ground_sounds" && (
