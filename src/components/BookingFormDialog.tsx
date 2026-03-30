@@ -186,6 +186,7 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
               <Separator />
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("bookingForm.subtotal")} ({pricing.nights.length} {pricing.nights.length > 1 ? t("common.nights") : t("common.night")})</span><span className="font-medium">{formatPrice(pricing.subtotal, policies)}</span></div>
               {pricing.cleaningFee > 0 && <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("bookingForm.cleaningFee")}</span><span className="font-medium">{formatPrice(pricing.cleaningFee, policies)}</span></div>}
+              {pricing.extraBedTotal > 0 && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Extra Beds ({extraBeds} × {pricing.nights.length} {pricing.nights.length > 1 ? t("common.nights") : t("common.night")})</span><span className="font-medium">{formatPrice(pricing.extraBedTotal, policies)}</span></div>}
               {pricing.longStayDiscount && (
                 <div className="flex justify-between text-sm text-[hsl(var(--success))]">
                   <span>{t("pricing.longStayDiscount", { tier: pricing.longStayDiscount.tierLabel, pct: pricing.longStayDiscount.percentage })}</span>
