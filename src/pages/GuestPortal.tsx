@@ -110,11 +110,16 @@ const GuestPortal = () => {
   const [bookingFormUnitId, setBookingFormUnitId] = useState<string | undefined>();
 
   // Auto-open booking form when arriving with ?unit=<id> from the Stay page
+  // Also handle ?action=landed for deep-linking from flight landed notifications
   useEffect(() => {
     const unitFromUrl = searchParams.get("unit");
     if (unitFromUrl && !bookingFormOpen) {
       setBookingFormUnitId(unitFromUrl);
       setBookingFormOpen(true);
+    }
+    const actionFromUrl = searchParams.get("action");
+    if (actionFromUrl === "landed") {
+      setFocusSection("landed");
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
