@@ -71,25 +71,28 @@ export function AIRefinementChat({ airport, airportLabel, template, tone, contex
 
       if (!resp.ok) {
         const body = await resp.json().catch(() => ({}));
-        throw new Error(body.error || "Chat failed");
+        throw new Error(body.error || `Request failed with status ${resp.status}`);
       }
 
-      const { reply, updated_template } = await resp.json();
+      const data = await resp.json();
+      console.log("Refinement chat response:", JSON.stringify(data).substring(0, 300));
+      
+      const reply = data.reply || data.error || "No response received from AI";
       
       const assistantMsg: ChatMessage = {
         role: "assistant",
         content: reply,
-        hasUpdate: !!updated_template,
+        hasUpdate: !!data.updated_template,
       };
       setMessages(prev => [...prev, assistantMsg]);
 
-      if (updated_template) {
-        onTemplateUpdate(updated_template);
+      if (data.updated_template) {
+        onTemplateUpdate(data.updated_template);
         toast({ title: "Content updated", description: "The guide has been updated based on your request." });
       }
     } catch (err: any) {
-      toast({ title: "Chat Error", description: err.message, variant: "destructive" });
-      // Remove the user message on error
+      console.error("Refinement chat error:", err);
+      toast({ title: "Chat Error", description: err.message || "Unknown error", variant: "destructive" });
       setMessages(messages);
     } finally {
       setLoading(false);
