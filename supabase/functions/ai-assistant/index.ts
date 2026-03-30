@@ -820,6 +820,7 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
           ...(messages ?? []),
         ],
         stream: true,
+        max_tokens: mode === "digest" || mode === "summarize" ? 600 : 400,
       }),
     });
 
