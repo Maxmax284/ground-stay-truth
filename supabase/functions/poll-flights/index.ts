@@ -1,0 +1,158 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const AVIATIONSTACK_BASE = "http://api.aviationstack.com/v1";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const AVIATIONSTACK_KEY = Deno.env.get("AVIATIONSTACK_API_KEY");
+    if (!AVIATIONSTACK_KEY) {
+      return new Response(JSON.stringify({ error: "AviationStack API key not configured" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    // Get today's pickups with flight numbers that aren't in a terminal state
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setUTCHours(23, 59, 59, 999);
+
+    const { data: pickups, error: pickupsError } = await serviceClient
+      .from("airport_pickups")
+      .select("id, flight_number, arrival_datetime")
+      .not("flight_number", "is", null)
+      .gte("arrival_datetime", todayStart.toISOString())
+      .lte("arrival_datetime", todayEnd.toISOString())
+      .in("status", ["requested", "assigned", "confirmed"]);
+
+    if (pickupsError) throw pickupsError;
+
+    if (!pickups?.length) {
+      return new Response(JSON.stringify({ message: "No active flights to poll today", checked: 0 }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Filter out flights already in terminal status in flight_tracking
+    const pickupIds = pickups.map(p => p.id);
+    const { data: existingTracking } = await serviceClient
+      .from("flight_tracking")
+      .select("pickup_id, flight_status")
+      .in("pickup_id", pickupIds);
+
+    const terminalStatuses = new Set(["landed", "cancelled", "diverted"]);
+    const terminalPickupIds = new Set(
+      (existingTracking ?? [])
+        .filter(ft => terminalStatuses.has(ft.flight_status))
+        .map(ft => ft.pickup_id)
+    );
+
+    const activePickups = pickups.filter(p => !terminalPickupIds.has(p.id));
+
+    if (!activePickups.length) {
+      return new Response(JSON.stringify({ message: "All today's flights already in terminal state", checked: 0 }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const statusMap: Record<string, string> = {
+      scheduled: "scheduled",
+      active: "in_air",
+      landed: "landed",
+      cancelled: "cancelled",
+      incident: "incident",
+      diverted: "diverted",
+    };
+
+    const results: Array<{ pickup_id: string; flight_number: string; status: string; success: boolean }> = [];
+
+    for (const pickup of activePickups) {
+      const cleanFlight = pickup.flight_number!.replace(/\s+/g, "").toUpperCase();
+
+      try {
+        const apiUrl = `${AVIATIONSTACK_BASE}/flights?access_key=${AVIATIONSTACK_KEY}&flight_iata=${cleanFlight}&limit=1`;
+        const apiResp = await fetch(apiUrl);
+
+        if (!apiResp.ok) {
+          console.error(`API error for ${cleanFlight}:`, apiResp.status);
+          results.push({ pickup_id: pickup.id, flight_number: cleanFlight, status: "api_error", success: false });
+          continue;
+        }
+
+        const apiData = await apiResp.json();
+
+        if (apiData.error || !apiData.data?.[0]) {
+          results.push({ pickup_id: pickup.id, flight_number: cleanFlight, status: "not_found", success: false });
+          continue;
+        }
+
+        const fd = apiData.data[0];
+        const delayMinutes = fd.arrival?.delay ?? fd.departure?.delay ?? 0;
+
+        const record = {
+          pickup_id: pickup.id,
+          flight_number: cleanFlight,
+          airline_name: fd.airline?.name ?? null,
+          departure_airport: fd.departure?.airport ?? null,
+          departure_iata: fd.departure?.iata ?? null,
+          arrival_airport: fd.arrival?.airport ?? null,
+          arrival_iata: fd.arrival?.iata ?? null,
+          scheduled_departure: fd.departure?.scheduled ?? null,
+          estimated_departure: fd.departure?.estimated ?? null,
+          actual_departure: fd.departure?.actual ?? null,
+          scheduled_arrival: fd.arrival?.scheduled ?? null,
+          estimated_arrival: fd.arrival?.estimated ?? null,
+          actual_arrival: fd.arrival?.actual ?? null,
+          flight_status: statusMap[fd.flight_status] ?? fd.flight_status ?? "unknown",
+          delay_minutes: delayMinutes,
+          terminal: fd.arrival?.terminal ?? null,
+          gate: fd.arrival?.gate ?? null,
+          raw_response: fd,
+          last_checked_at: new Date().toISOString(),
+        };
+
+        // Check if tracking record exists
+        const existing = (existingTracking ?? []).find(ft => ft.pickup_id === pickup.id);
+
+        if (existing) {
+          await serviceClient.from("flight_tracking").update(record).eq("pickup_id", pickup.id);
+        } else {
+          await serviceClient.from("flight_tracking").insert(record);
+        }
+
+        results.push({ pickup_id: pickup.id, flight_number: cleanFlight, status: record.flight_status, success: true });
+      } catch (err) {
+        console.error(`Error polling ${cleanFlight}:`, err);
+        results.push({ pickup_id: pickup.id, flight_number: cleanFlight, status: "error", success: false });
+      }
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    console.log(`Poll complete: ${successCount}/${activePickups.length} flights updated`);
+
+    return new Response(JSON.stringify({
+      message: `Polled ${activePickups.length} flights, ${successCount} updated successfully`,
+      checked: activePickups.length,
+      results,
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    console.error("poll-flights error:", err);
+    return new Response(JSON.stringify({ error: String(err) }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
