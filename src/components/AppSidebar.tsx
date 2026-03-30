@@ -118,7 +118,42 @@ export function AppSidebar() {
 
   const visibleNavItems = navItems.filter((item) => canAccessRoute(effectiveRole, item.url));
 
+  // Mobile install detection
+  const isStandalone =
+    typeof window !== "undefined" &&
+    (window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as any).standalone === true);
+
+  const isIOS =
+    typeof navigator !== "undefined" &&
+    (/iphone|ipad|ipod/i.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+
+  const isAndroid =
+    typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+
+  const isMobileDevice = isIOS || isAndroid;
+  const showInstall = isMobileDevice && !isStandalone;
+
+  // Auto-popup on first login for mobile users
+  const [installDialogOpen, setInstallDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (showInstall && user) {
+      const key = `pwa-install-shown-${user.id}`;
+      if (!localStorage.getItem(key)) {
+        // Small delay so the dashboard loads first
+        const timer = setTimeout(() => {
+          setInstallDialogOpen(true);
+          localStorage.setItem(key, "1");
+        }, 1500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [showInstall, user]);
+
   return (
+    <>
     <Sidebar>
       <div className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-2">
