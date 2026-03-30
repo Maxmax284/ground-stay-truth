@@ -202,53 +202,6 @@ export function ArrivalWelcomeEditor() {
     }
   };
 
-  const handleSectionRewrite = async (airport: string, sectionIdx: number) => {
-    const template = getTemplate(airport);
-    const section = template.sections[sectionIdx];
-    if (!section?.title && !section?.content) {
-      toast({ title: "Nothing to rewrite", description: "Add a title or content first.", variant: "destructive" });
-      return;
-    }
-    setRewritingIdx(sectionIdx);
-    try {
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/draft-arrival-welcome`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({
-            airport,
-            mode: "rewrite_section",
-            section: { title: section.title, content: section.content },
-            context: aiContext,
-            tone: aiTone,
-          }),
-        }
-      );
-      if (!resp.ok) {
-        const body = await resp.json().catch(() => ({}));
-        throw new Error(body.error || "Section rewrite failed");
-      }
-      const { draft } = await resp.json();
-      if (draft?.title || draft?.content) {
-        const sections = [...template.sections];
-        sections[sectionIdx] = {
-          title: draft.title || section.title,
-          content: draft.content || section.content,
-        };
-        setTemplate(airport, { ...template, sections });
-        toast({ title: "Section rewritten", description: "Review the updated content." });
-      }
-    } catch (err: any) {
-      toast({ title: "Rewrite Failed", description: err.message, variant: "destructive" });
-    } finally {
-      setRewritingIdx(null);
-    }
-  };
 
   const handleDraftGenerated = (airport: string, draft: { welcome_message?: string; sections?: any[] }) => {
     const current = getTemplate(airport);
