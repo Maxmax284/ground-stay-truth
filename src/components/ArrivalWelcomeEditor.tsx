@@ -523,6 +523,7 @@ export function ArrivalWelcomeEditor() {
                       setTemplate(airport.id, { ...template, sections, photos });
                     } : undefined}
                     totalSections={template.sections.length}
+                    forceExpanded={allSectionsExpanded[airport.id]}
                   />
                 ))}
 
