@@ -135,6 +135,9 @@ const Index = () => {
             {/* Today's Pickups widget */}
             {!isViewer && <TodaysPickupsWidget onClickBooking={setDetailBookingId} />}
 
+            {/* Flight Forecast — airport traffic monitor */}
+            {!isViewer && <FlightForecastWidget />}
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Front Desk / Supervisor: arrivals/departures first */}
               {!isViewer && arrivalsCount > 0 && (
