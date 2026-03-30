@@ -31,7 +31,7 @@ serve(async (req) => {
 
     const { data: pickups, error: pickupsError } = await serviceClient
       .from("airport_pickups")
-      .select("id, flight_number, arrival_datetime")
+      .select("id, flight_number, arrival_datetime, booking_id")
       .not("flight_number", "is", null)
       .gte("arrival_datetime", todayStart.toISOString())
       .lte("arrival_datetime", todayEnd.toISOString())
@@ -45,7 +45,7 @@ serve(async (req) => {
       });
     }
 
-    // Filter out flights already in terminal status in flight_tracking
+    // Get existing tracking to detect status changes
     const pickupIds = pickups.map(p => p.id);
     const { data: existingTracking } = await serviceClient
       .from("flight_tracking")
@@ -53,10 +53,13 @@ serve(async (req) => {
       .in("pickup_id", pickupIds);
 
     const terminalStatuses = new Set(["landed", "cancelled", "diverted"]);
+    const existingStatusMap: Record<string, string> = {};
+    (existingTracking ?? []).forEach(ft => { existingStatusMap[ft.pickup_id] = ft.flight_status; });
+
     const terminalPickupIds = new Set(
-      (existingTracking ?? [])
-        .filter(ft => terminalStatuses.has(ft.flight_status))
-        .map(ft => ft.pickup_id)
+      Object.entries(existingStatusMap)
+        .filter(([, status]) => terminalStatuses.has(status))
+        .map(([id]) => id)
     );
 
     const activePickups = pickups.filter(p => !terminalPickupIds.has(p.id));
@@ -76,7 +79,7 @@ serve(async (req) => {
       diverted: "diverted",
     };
 
-    const results: Array<{ pickup_id: string; flight_number: string; status: string; success: boolean }> = [];
+    const results: Array<{ pickup_id: string; flight_number: string; status: string; success: boolean; notified?: boolean }> = [];
 
     for (const pickup of activePickups) {
       const cleanFlight = pickup.flight_number!.replace(/\s+/g, "").toUpperCase();
@@ -100,6 +103,8 @@ serve(async (req) => {
 
         const fd = apiData.data[0];
         const delayMinutes = fd.arrival?.delay ?? fd.departure?.delay ?? 0;
+        const newStatus = statusMap[fd.flight_status] ?? fd.flight_status ?? "unknown";
+        const previousStatus = existingStatusMap[pickup.id];
 
         const record = {
           pickup_id: pickup.id,
@@ -115,7 +120,7 @@ serve(async (req) => {
           scheduled_arrival: fd.arrival?.scheduled ?? null,
           estimated_arrival: fd.arrival?.estimated ?? null,
           actual_arrival: fd.arrival?.actual ?? null,
-          flight_status: statusMap[fd.flight_status] ?? fd.flight_status ?? "unknown",
+          flight_status: newStatus,
           delay_minutes: delayMinutes,
           terminal: fd.arrival?.terminal ?? null,
           gate: fd.arrival?.gate ?? null,
@@ -123,16 +128,20 @@ serve(async (req) => {
           last_checked_at: new Date().toISOString(),
         };
 
-        // Check if tracking record exists
-        const existing = (existingTracking ?? []).find(ft => ft.pickup_id === pickup.id);
-
+        const existing = existingTracking?.find(ft => ft.pickup_id === pickup.id);
         if (existing) {
           await serviceClient.from("flight_tracking").update(record).eq("pickup_id", pickup.id);
         } else {
           await serviceClient.from("flight_tracking").insert(record);
         }
 
-        results.push({ pickup_id: pickup.id, flight_number: cleanFlight, status: record.flight_status, success: true });
+        // Detect landed transition → notify guest
+        let notified = false;
+        if (newStatus === "landed" && previousStatus !== "landed") {
+          notified = await notifyGuestLanded(serviceClient, supabaseUrl, pickup.booking_id, cleanFlight);
+        }
+
+        results.push({ pickup_id: pickup.id, flight_number: cleanFlight, status: newStatus, success: true, notified });
       } catch (err) {
         console.error(`Error polling ${cleanFlight}:`, err);
         results.push({ pickup_id: pickup.id, flight_number: cleanFlight, status: "error", success: false });
@@ -156,3 +165,51 @@ serve(async (req) => {
     });
   }
 });
+
+/** Notify guest that their flight has landed */
+async function notifyGuestLanded(
+  serviceClient: any,
+  supabaseUrl: string,
+  bookingId: string,
+  flightNumber: string,
+): Promise<boolean> {
+  try {
+    // Look up guest_id from booking
+    const { data: booking } = await serviceClient
+      .from("bookings")
+      .select("guest_id")
+      .eq("id", bookingId)
+      .single();
+
+    if (!booking?.guest_id) {
+      console.log(`No guest_id for booking ${bookingId}, skipping notification`);
+      return false;
+    }
+
+    // Create notification via edge function
+    const notifResp = await fetch(`${supabaseUrl}/functions/v1/create-notification`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      },
+      body: JSON.stringify({
+        user_id: booking.guest_id,
+        type: "flight_landed",
+        message: `✈️ Your flight ${flightNumber} has landed! Tap here to confirm you're ready for pickup.`,
+        reference_id: bookingId,
+      }),
+    });
+
+    if (!notifResp.ok) {
+      console.error("Failed to create landed notification:", await notifResp.text());
+      return false;
+    }
+
+    console.log(`Landed notification sent to guest ${booking.guest_id} for flight ${flightNumber}`);
+    return true;
+  } catch (err) {
+    console.error("Error sending landed notification:", err);
+    return false;
+  }
+}
