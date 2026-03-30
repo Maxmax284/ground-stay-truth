@@ -7,6 +7,33 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ─── SERVER-SIDE CACHE ──────────────────────────────────────────────────────
+// Cache responses per role+language for 2 minutes to prevent excessive DB queries
+
+const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
+const responseCache = new Map<string, { data: any; expiresAt: number }>();
+
+function getCached(key: string): any | null {
+  const entry = responseCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    responseCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCache(key: string, data: any): void {
+  // Evict old entries if cache grows too large
+  if (responseCache.size > 50) {
+    const now = Date.now();
+    for (const [k, v] of responseCache) {
+      if (now > v.expiresAt) responseCache.delete(k);
+    }
+  }
+  responseCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
 type Severity = "urgent" | "attention" | "normal";
@@ -108,8 +135,9 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
     departingTomorrowRes,
     upcomingBlocksRes,
   ] = await Promise.all([
-    // 💰 Unpaid deposits
-    adminClient.from("bookings").select("id", { count: "exact", head: true }).eq("state", "pending_deposit"),
+    // 💰 Unpaid deposits (exclude cancelled/completed/no_show)
+    adminClient.from("bookings").select("id", { count: "exact", head: true })
+      .eq("state", "pending_deposit"),
 
     // 💰 Arriving today (to check outstanding)
     adminClient.from("bookings")
@@ -135,10 +163,11 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
       .eq("check_in", today)
       .in("state", ["confirmed", "pending_deposit"]),
 
-    // ⏳ Pickups today
+    // ⏳ Pickups today — exclude cancelled/completed pickups
     adminClient.from("airport_pickups")
-      .select("id, status, driver_id, booking_id, bookings!inner(check_in)")
+      .select("id, status, driver_id, booking_id, bookings!inner(check_in, state)")
       .eq("bookings.check_in", today)
+      .not("status", "in", '("cancelled","completed")')
       .is("driver_id", null),
 
     // ⏳ Departures today
@@ -162,18 +191,22 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
     adminClient.from("maintenance_requests").select("id", { count: "exact", head: true })
       .eq("status", "open").eq("priority", "urgent").lt("created_at", fourHoursAgo),
 
-    // 🏠 Stale laundry (>24h)
-    adminClient.from("laundry_requests").select("id", { count: "exact", head: true })
-      .eq("status", "in_progress").lt("created_at", twentyFourHoursAgo),
+    // 🏠 Stale laundry (>24h) — only for active bookings
+    adminClient.from("laundry_requests")
+      .select("id, bookings!inner(state)", { count: "exact", head: true })
+      .eq("status", "in_progress")
+      .in("bookings.state", ["confirmed", "checked_in"])
+      .lt("created_at", twentyFourHoursAgo),
 
     // 🏠 Overdue housekeeping
     adminClient.from("housekeeping_tasks").select("id", { count: "exact", head: true })
       .eq("status", "pending").lt("due_by", now.toISOString()),
 
-    // 🏠 Pickups tomorrow no driver
+    // 🏠 Pickups tomorrow no driver — exclude cancelled/completed pickups
     adminClient.from("airport_pickups")
-      .select("id, booking_id, bookings!inner(check_in)")
+      .select("id, booking_id, bookings!inner(check_in, state)")
       .eq("bookings.check_in", tomorrow)
+      .not("status", "in", '("cancelled","completed")')
       .is("driver_id", null),
 
     // ⚙️ Overrides (24h)
@@ -706,6 +739,15 @@ serve(async (req) => {
 
     const { language } = await req.json().catch(() => ({ language: "en" }));
 
+    // Check server-side cache first
+    const cacheKey = `${role}:${language || "en"}`;
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return new Response(JSON.stringify(cached), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Extract all signals
     const allSignals = await extractSignals(adminClient);
 
@@ -719,6 +761,9 @@ serve(async (req) => {
     if (lovableApiKey && language && language !== "en") {
       output = await translateOutput(output, language, lovableApiKey);
     }
+
+    // Cache the result
+    setCache(cacheKey, output);
 
     return new Response(JSON.stringify(output), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

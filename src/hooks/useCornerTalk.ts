@@ -53,9 +53,11 @@ export function useCornerTalk() {
       return resp.json();
     },
     enabled: !!session && !!role && role !== "guest",
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 3 * 60 * 1000, // 3 minutes — server caches for 2min, so this aligns
+    gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchOnMount: false, // Don't refetch on every mount, rely on staleTime
+    refetchInterval: false, // No automatic polling — only on window focus
     retry: 1,
   });
 }
