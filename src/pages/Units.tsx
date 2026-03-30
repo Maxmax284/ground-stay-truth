@@ -85,16 +85,21 @@ const Units = () => {
   };
 
   const handleDelete = async (unit: Unit) => {
-    if (!confirm(t("units.removeConfirm", { name: unit.name }))) return;
+    if (!confirm(t("units.deactivateConfirm", { defaultValue: `Deactivate "${unit.name}"? It will remain on the calendar but won't be available for new bookings.` }).replace("{name}", unit.name))) return;
     try {
-      await deleteUnit.mutateAsync(unit.id);
-      toast({ title: t("units.unitRemoved") });
+      await updateUnit.mutateAsync({ id: unit.id, is_active: false });
+      toast({ title: t("units.unitDeactivated", { defaultValue: "Unit deactivated" }) });
     } catch (err: any) {
-      if (err.message === "UNIT_HAS_HISTORY") {
-        toast({ title: t("units.cannotRemove"), variant: "destructive" });
-      } else {
-        toast({ title: t("common.error"), description: err.message, variant: "destructive" });
-      }
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleRestore = async (unit: Unit) => {
+    try {
+      await updateUnit.mutateAsync({ id: unit.id, is_active: true });
+      toast({ title: t("units.unitActivated", { defaultValue: "Unit restored" }) });
+    } catch (err: any) {
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     }
   };
 
