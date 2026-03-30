@@ -101,6 +101,92 @@ export type Database = {
           },
         ]
       }
+      airport_traffic: {
+        Row: {
+          actual_arrival: string | null
+          airline_name: string | null
+          airport_iata: string
+          arrival_airport: string | null
+          arrival_iata: string | null
+          created_at: string
+          delay_minutes: number | null
+          departure_airport: string | null
+          departure_iata: string | null
+          direction: string
+          estimated_arrival: string | null
+          flight_date: string
+          flight_iata: string
+          flight_status: string
+          gate: string | null
+          id: string
+          last_checked_at: string
+          linked_pickup_id: string | null
+          raw_response: Json | null
+          scheduled_arrival: string | null
+          scheduled_departure: string | null
+          terminal: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_arrival?: string | null
+          airline_name?: string | null
+          airport_iata: string
+          arrival_airport?: string | null
+          arrival_iata?: string | null
+          created_at?: string
+          delay_minutes?: number | null
+          departure_airport?: string | null
+          departure_iata?: string | null
+          direction: string
+          estimated_arrival?: string | null
+          flight_date?: string
+          flight_iata: string
+          flight_status?: string
+          gate?: string | null
+          id?: string
+          last_checked_at?: string
+          linked_pickup_id?: string | null
+          raw_response?: Json | null
+          scheduled_arrival?: string | null
+          scheduled_departure?: string | null
+          terminal?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_arrival?: string | null
+          airline_name?: string | null
+          airport_iata?: string
+          arrival_airport?: string | null
+          arrival_iata?: string | null
+          created_at?: string
+          delay_minutes?: number | null
+          departure_airport?: string | null
+          departure_iata?: string | null
+          direction?: string
+          estimated_arrival?: string | null
+          flight_date?: string
+          flight_iata?: string
+          flight_status?: string
+          gate?: string | null
+          id?: string
+          last_checked_at?: string
+          linked_pickup_id?: string | null
+          raw_response?: Json | null
+          scheduled_arrival?: string | null
+          scheduled_departure?: string | null
+          terminal?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "airport_traffic_linked_pickup_id_fkey"
+            columns: ["linked_pickup_id"]
+            isOneToOne: false
+            referencedRelation: "airport_pickups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_state_log: {
         Row: {
           booking_id: string

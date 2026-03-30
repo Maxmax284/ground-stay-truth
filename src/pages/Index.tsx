@@ -18,6 +18,7 @@ import { LaundryPanel } from "@/components/LaundryPanel";
 import { HousekeepingPanel } from "@/components/HousekeepingPanel";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { TodaysPickupsWidget } from "@/components/TodaysPickupsWidget";
+import { FlightForecastWidget } from "@/components/FlightForecastWidget";
 import { CornerTalkPanel } from "@/components/CornerTalkPanel";
 import { StaffQuickActionsWidget } from "@/components/StaffQuickActionsWidget";
 import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
@@ -133,6 +134,9 @@ const Index = () => {
 
             {/* Today's Pickups widget */}
             {!isViewer && <TodaysPickupsWidget onClickBooking={setDetailBookingId} />}
+
+            {/* Flight Forecast — airport traffic monitor */}
+            {!isViewer && <FlightForecastWidget />}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Front Desk / Supervisor: arrivals/departures first */}
