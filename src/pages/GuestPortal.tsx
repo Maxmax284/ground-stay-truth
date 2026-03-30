@@ -62,6 +62,35 @@ import { useProfile } from "@/hooks/useProfile";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { toast } from "sonner";
 
+// Inline photo carousel for room type cards
+function RoomPhotoCarousel({ photos, name }: { photos: string[]; name: string }) {
+  const [api, setApi] = useState<CarouselApi>();
+  return (
+    <div>
+      <div className="relative">
+        <Carousel className="w-full" opts={{ loop: true }} setApi={setApi}>
+          <CarouselContent>
+            {photos.map((photo, i) => (
+              <CarouselItem key={i}>
+                <div className="aspect-[16/9] overflow-hidden">
+                  <img src={photo} alt={`${name} ${i + 1}`} className="w-full h-full object-cover" />
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          {photos.length > 1 && (
+            <>
+              <CarouselPrevious className="left-2 h-8 w-8 opacity-70 hover:opacity-100" />
+              <CarouselNext className="right-2 h-8 w-8 opacity-70 hover:opacity-100" />
+            </>
+          )}
+        </Carousel>
+      </div>
+      <CarouselDots api={api} count={photos.length} />
+    </div>
+  );
+}
+
 const GuestPortal = () => {
   const { t } = useTranslation();
   const { user, role } = useAuth();
