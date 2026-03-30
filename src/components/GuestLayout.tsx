@@ -27,6 +27,16 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
   const { signOut, user } = useAuth();
   const location = useLocation();
 
+  const isStandalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as any).standalone === true;
+
+  const isIOS =
+    /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+  const isAndroid = /android/i.test(navigator.userAgent);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <div className="thai-stripe" />
