@@ -24,6 +24,7 @@ interface WelcomeTemplate {
   welcome_message: string;
   sections: WelcomeSection[];
   photos: string[];
+  enabled: boolean;
 }
 
 const AIRPORTS = [
@@ -35,6 +36,7 @@ const DEFAULT_TEMPLATE: WelcomeTemplate = {
   welcome_message: "",
   sections: [],
   photos: [],
+  enabled: true,
 };
 
 function parseTemplate(value: unknown): WelcomeTemplate {
