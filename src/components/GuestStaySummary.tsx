@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
