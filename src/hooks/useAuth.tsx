@@ -36,21 +36,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [roleResolved, setRoleResolved] = useState(false);
 
   const fetchRole = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
-    if (data && data.length > 0) {
-      // Pick the highest-authority role
-      const best = data.reduce((acc, cur) =>
-        ROLE_PRIORITY[cur.role as AppRole] > ROLE_PRIORITY[acc.role as AppRole] ? cur : acc
-      );
-      setRole(best.role as AppRole);
-    } else {
-      setRole(null);
+    // Retry role lookup a few times for slower mobile/PWA session restore
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+
+      if (!error) {
+        if (data && data.length > 0) {
+          // Pick the highest-authority role
+          const best = data.reduce((acc, cur) =>
+            ROLE_PRIORITY[cur.role as AppRole] > ROLE_PRIORITY[acc.role as AppRole] ? cur : acc
+          );
+          setRole(best.role as AppRole);
+        } else {
+          setRole(null);
+        }
+        setRoleResolved(true);
+        return;
+      }
+
+      if (attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+      }
     }
+
+    // Final fallback on persistent failure
+    setRole(null);
+    setRoleResolved(true);
   }, []);
 
   useEffect(() => {
