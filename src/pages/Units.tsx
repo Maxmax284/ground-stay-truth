@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useUnits, useUpdateUnit, useDeleteUnit, type Unit } from "@/hooks/useUnits";
+import { useUnits, useUpdateUnit, type Unit } from "@/hooks/useUnits";
 import { useUnitGroups } from "@/hooks/useUnitGroups";
 import { UnitFormDialog } from "@/components/UnitFormDialog";
 import { UnitGroupManager } from "@/components/UnitGroupManager";
@@ -25,7 +25,6 @@ const Units = () => {
   const { role } = useAuth();
   const { data: groups } = useUnitGroups();
   const updateUnit = useUpdateUnit();
-  const deleteUnit = useDeleteUnit();
   const { toast } = useToast();
   const [formOpen, setFormOpen] = useState(false);
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
@@ -85,16 +84,21 @@ const Units = () => {
   };
 
   const handleDelete = async (unit: Unit) => {
-    if (!confirm(t("units.removeConfirm", { name: unit.name }))) return;
+    if (!confirm(t("units.deactivateConfirm", { defaultValue: `Deactivate "${unit.name}"? It will remain on the calendar but won't be available for new bookings.` }).replace("{name}", unit.name))) return;
     try {
-      await deleteUnit.mutateAsync(unit.id);
-      toast({ title: t("units.unitRemoved") });
+      await updateUnit.mutateAsync({ id: unit.id, is_active: false });
+      toast({ title: t("units.unitDeactivated", { defaultValue: "Unit deactivated" }) });
     } catch (err: any) {
-      if (err.message === "UNIT_HAS_HISTORY") {
-        toast({ title: t("units.cannotRemove"), variant: "destructive" });
-      } else {
-        toast({ title: t("common.error"), description: err.message, variant: "destructive" });
-      }
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleRestore = async (unit: Unit) => {
+    try {
+      await updateUnit.mutateAsync({ id: unit.id, is_active: true });
+      toast({ title: t("units.unitActivated", { defaultValue: "Unit restored" }) });
+    } catch (err: any) {
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     }
   };
 
@@ -133,12 +137,15 @@ const Units = () => {
         )}
         <div className="flex gap-2 pt-1 flex-wrap">
           <Button size="sm" variant="outline" onClick={() => handleEdit(unit)}>{t("common.edit")}</Button>
-          <Button size="sm" variant="ghost" onClick={() => handleToggleActive(unit)}>
-            {unit.is_active ? t("units.deactivate") : t("units.activate")}
-          </Button>
-          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => handleDelete(unit)}>
-            {t("common.remove")}
-          </Button>
+          {unit.is_active ? (
+            <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => handleDelete(unit)}>
+              {t("units.deactivate", { defaultValue: "Deactivate" })}
+            </Button>
+          ) : (
+            <Button size="sm" variant="ghost" className="text-green-600 hover:text-green-700" onClick={() => handleRestore(unit)}>
+              {t("units.restore", { defaultValue: "Restore" })}
+            </Button>
+          )}
           {(role === "admin" || role === "manager") && (
             <TooltipProvider>
               <Tooltip>
