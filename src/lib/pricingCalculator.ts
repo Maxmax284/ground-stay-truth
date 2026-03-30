@@ -125,10 +125,11 @@ export function calculatePricing(
   pricingRules: PricingRule[],
   priceOverride?: number | null,
   policies?: PolicySetting[] | null,
-  completedStays?: number
+  completedStays?: number,
+  extraBeds?: number
 ): PricingSummary {
   if (!checkIn || !checkOut) {
-    return { nights: [], subtotal: 0, cleaningFee: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
+    return { nights: [], subtotal: 0, cleaningFee: 0, extraBedTotal: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
   }
 
   const startDate = parseISO(checkIn);
