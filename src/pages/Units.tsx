@@ -138,12 +138,15 @@ const Units = () => {
         )}
         <div className="flex gap-2 pt-1 flex-wrap">
           <Button size="sm" variant="outline" onClick={() => handleEdit(unit)}>{t("common.edit")}</Button>
-          <Button size="sm" variant="ghost" onClick={() => handleToggleActive(unit)}>
-            {unit.is_active ? t("units.deactivate") : t("units.activate")}
-          </Button>
-          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => handleDelete(unit)}>
-            {t("common.remove")}
-          </Button>
+          {unit.is_active ? (
+            <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => handleDelete(unit)}>
+              {t("units.deactivate", { defaultValue: "Deactivate" })}
+            </Button>
+          ) : (
+            <Button size="sm" variant="ghost" className="text-green-600 hover:text-green-700" onClick={() => handleRestore(unit)}>
+              {t("units.restore", { defaultValue: "Restore" })}
+            </Button>
+          )}
           {(role === "admin" || role === "manager") && (
             <TooltipProvider>
               <Tooltip>
