@@ -349,12 +349,12 @@ export function ArrivalWelcomeEditor() {
 
               {/* Section suggestions */}
               {suggestions.length > 0 && (
-                <Card className="border-amber-500/30 bg-amber-500/5">
+                <Card className="border-accent/30 bg-accent/5">
                   <CardContent className="p-4 space-y-3">
                     <div className="flex items-center gap-2">
-                      <Lightbulb className="h-4 w-4 text-amber-500" />
+                      <Lightbulb className="h-4 w-4 text-accent-foreground" />
                       <span className="text-sm font-medium">Suggested Sections</span>
-                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-500/30 text-amber-600">
+                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-accent/30 text-accent-foreground">
                         {suggestions.length} ideas
                       </Badge>
                       <Button
