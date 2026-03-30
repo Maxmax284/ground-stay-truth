@@ -26,7 +26,7 @@ export function EmbedCodeGenerator() {
   ];
 
   const [selectedUnit, setSelectedUnit] = useState("");
-  const [selectedType, setSelectedType] = useState("listing");
+  const [selectedType, setSelectedType] = useState("grid");
   const [contactUrl, setContactUrl] = useState("");
   const [ctaTarget, setCtaTarget] = useState<"contact" | "register" | "listings">("listings");
 
