@@ -8,23 +8,31 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { usePolicySettings, useUpdatePolicySetting } from "@/hooks/usePolicySettings";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  Plane, Save, Plus, X, Sparkles, Loader2, GripVertical, Image as ImageIcon, MapPin,
+  Plane, Save, Plus, X, Sparkles, Loader2, GripVertical, Image as ImageIcon, MapPin, RefreshCw, Tag,
 } from "lucide-react";
 
-interface WelcomeSection {
+export interface WelcomePhoto {
+  url: string;
+  caption: string;
+  alt: string;
+  section_index: number | null; // null = general / unlinked
+  tag: "landmark" | "direction" | "vehicle" | "map" | "sign" | "other";
+}
+
+export interface WelcomeSection {
   title: string;
   content: string;
 }
 
-interface WelcomeTemplate {
+export interface WelcomeTemplate {
   welcome_message: string;
   sections: WelcomeSection[];
-  photos: string[];
+  photos: WelcomePhoto[];
   enabled: boolean;
 }
 
@@ -33,12 +41,38 @@ const AIRPORTS = [
   { id: "samui", label: "Samui (USM)", icon: "🌴" },
 ] as const;
 
+const PHOTO_TAGS: { value: WelcomePhoto["tag"]; label: string }[] = [
+  { value: "landmark", label: "Landmark" },
+  { value: "direction", label: "Direction" },
+  { value: "vehicle", label: "Vehicle" },
+  { value: "map", label: "Map" },
+  { value: "sign", label: "Sign" },
+  { value: "other", label: "Other" },
+];
+
 const DEFAULT_TEMPLATE: WelcomeTemplate = {
   welcome_message: "",
   sections: [],
   photos: [],
   enabled: true,
 };
+
+/** Migrate old flat string[] photos to new WelcomePhoto[] format */
+function migratePhotos(photos: unknown): WelcomePhoto[] {
+  if (!Array.isArray(photos)) return [];
+  return photos.map((p: any) => {
+    if (typeof p === "string") {
+      return { url: p, caption: "", alt: "", section_index: null, tag: "other" as const };
+    }
+    return {
+      url: p.url || "",
+      caption: p.caption || "",
+      alt: p.alt || "",
+      section_index: p.section_index ?? null,
+      tag: p.tag || "other",
+    };
+  });
+}
 
 function parseTemplate(value: unknown): WelcomeTemplate {
   if (!value) return { ...DEFAULT_TEMPLATE };
@@ -47,8 +81,8 @@ function parseTemplate(value: unknown): WelcomeTemplate {
     return {
       welcome_message: parsed.welcome_message || "",
       sections: Array.isArray(parsed.sections) ? parsed.sections : [],
-      photos: Array.isArray(parsed.photos) ? parsed.photos : [],
-      enabled: parsed.enabled !== false, // default true for backwards compat
+      photos: migratePhotos(parsed.photos),
+      enabled: parsed.enabled !== false,
     };
   } catch {
     return { ...DEFAULT_TEMPLATE };
@@ -62,6 +96,7 @@ export function ArrivalWelcomeEditor() {
   const { session } = useAuth();
   const [activeAirport, setActiveAirport] = useState<string>("bkk");
   const [drafting, setDrafting] = useState(false);
+  const [rewritingIdx, setRewritingIdx] = useState<number | null>(null);
   const [aiContext, setAiContext] = useState("");
   const [localEdits, setLocalEdits] = useState<Record<string, WelcomeTemplate>>({});
 
@@ -103,11 +138,42 @@ export function ArrivalWelcomeEditor() {
 
   const removeSection = (airport: string, idx: number) => {
     const current = getTemplate(airport);
+    // Also unlink any photos assigned to the removed section, and shift indices
+    const photos = current.photos.map((p) => {
+      if (p.section_index === idx) return { ...p, section_index: null };
+      if (p.section_index !== null && p.section_index > idx) return { ...p, section_index: p.section_index - 1 };
+      return p;
+    });
     setTemplate(airport, {
       ...current,
       sections: current.sections.filter((_, i) => i !== idx),
+      photos,
     });
   };
+
+  // Photo helpers
+  const updatePhoto = (airport: string, idx: number, field: keyof WelcomePhoto, value: any) => {
+    const current = getTemplate(airport);
+    const photos = [...current.photos];
+    photos[idx] = { ...photos[idx], [field]: value };
+    setTemplate(airport, { ...current, photos });
+  };
+
+  const addPhoto = (airport: string) => {
+    const current = getTemplate(airport);
+    setTemplate(airport, {
+      ...current,
+      photos: [...current.photos, { url: "", caption: "", alt: "", section_index: null, tag: "other" }],
+    });
+  };
+
+  const removePhoto = (airport: string, idx: number) => {
+    const current = getTemplate(airport);
+    setTemplate(airport, { ...current, photos: current.photos.filter((_, i) => i !== idx) });
+  };
+
+  const photosForSection = (template: WelcomeTemplate, sectionIdx: number) =>
+    template.photos.filter((p) => p.section_index === sectionIdx && p.url);
 
   const handleSave = async (airport: string) => {
     const setting = byKey[`arrival_welcome_${airport}`];
@@ -125,6 +191,7 @@ export function ArrivalWelcomeEditor() {
     }
   };
 
+  // Full AI draft
   const handleAIDraft = async (airport: string) => {
     setDrafting(true);
     try {
@@ -156,6 +223,54 @@ export function ArrivalWelcomeEditor() {
       toast({ title: "AI Draft Failed", description: err.message, variant: "destructive" });
     } finally {
       setDrafting(false);
+    }
+  };
+
+  // Section-level AI rewrite
+  const handleSectionRewrite = async (airport: string, sectionIdx: number) => {
+    const template = getTemplate(airport);
+    const section = template.sections[sectionIdx];
+    if (!section?.title && !section?.content) {
+      toast({ title: "Nothing to rewrite", description: "Add a title or content first.", variant: "destructive" });
+      return;
+    }
+    setRewritingIdx(sectionIdx);
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/draft-arrival-welcome`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            airport,
+            mode: "rewrite_section",
+            section: { title: section.title, content: section.content },
+            context: aiContext,
+          }),
+        }
+      );
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => ({}));
+        throw new Error(body.error || "Section rewrite failed");
+      }
+      const { draft } = await resp.json();
+      if (draft?.title || draft?.content) {
+        const sections = [...template.sections];
+        sections[sectionIdx] = {
+          title: draft.title || section.title,
+          content: draft.content || section.content,
+        };
+        setTemplate(airport, { ...template, sections });
+        toast({ title: "Section rewritten", description: "Review the updated content." });
+      }
+    } catch (err: any) {
+      toast({ title: "Rewrite Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setRewritingIdx(null);
     }
   };
 
@@ -224,23 +339,23 @@ export function ArrivalWelcomeEditor() {
                     <span className="text-sm font-medium">AI Draft Assistant</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Let AI generate a starting draft for the {airport.label} arrival guide. You can edit everything after.
+                    Generate a full draft for the {airport.label} arrival guide, or use the ✨ button on individual sections to rewrite them.
                   </p>
                   <div className="flex gap-2">
                     <Input
                       value={aiContext}
                       onChange={(e) => setAiContext(e.target.value)}
-                      placeholder="Optional context (e.g., 'mention the new gym entrance', 'include taxi backup option')"
+                      placeholder="Optional context (e.g., 'mention the new gym entrance', 'rainy season tips')"
                       className="h-9 text-sm"
                     />
                     <Button
                       onClick={() => handleAIDraft(airport.id)}
-                      disabled={drafting}
+                      disabled={drafting || rewritingIdx !== null}
                       size="sm"
                       className="h-9 gap-1.5 shrink-0"
                     >
                       {drafting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                      {drafting ? "Drafting..." : "Generate Draft"}
+                      {drafting ? "Drafting..." : "Generate Full Draft"}
                     </Button>
                   </div>
                 </CardContent>
@@ -275,36 +390,66 @@ export function ArrivalWelcomeEditor() {
                   </Button>
                 </div>
 
-                {template.sections.map((section, idx) => (
-                  <Card key={idx} className="border-border/50">
-                    <CardContent className="p-3 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <GripVertical className="h-4 w-4 text-muted-foreground/40 shrink-0" />
-                        <Input
-                          value={section.title}
-                          onChange={(e) => updateSection(airport.id, idx, "title", e.target.value)}
-                          placeholder="Section title (e.g., 'What to Do Now')"
-                          className="h-8 text-sm font-medium"
+                {template.sections.map((section, idx) => {
+                  const sectionPhotos = photosForSection(template, idx);
+                  const isRewriting = rewritingIdx === idx;
+                  return (
+                    <Card key={idx} className="border-border/50">
+                      <CardContent className="p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <GripVertical className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+                          <Input
+                            value={section.title}
+                            onChange={(e) => updateSection(airport.id, idx, "title", e.target.value)}
+                            placeholder="Section title (e.g., 'What to Do Now')"
+                            className="h-8 text-sm font-medium"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSectionRewrite(airport.id, idx)}
+                            disabled={isRewriting || drafting}
+                            className="h-8 gap-1 text-xs shrink-0"
+                            title="AI rewrite this section"
+                          >
+                            {isRewriting ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                            <Sparkles className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeSection(airport.id, idx)}
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive shrink-0"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                        <Textarea
+                          value={section.content}
+                          onChange={(e) => updateSection(airport.id, idx, "content", e.target.value)}
+                          placeholder="Step-by-step instructions, tips, or directions..."
+                          rows={4}
+                          className="text-sm"
                         />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeSection(airport.id, idx)}
-                          className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive shrink-0"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                      <Textarea
-                        value={section.content}
-                        onChange={(e) => updateSection(airport.id, idx, "content", e.target.value)}
-                        placeholder="Step-by-step instructions, tips, or directions..."
-                        rows={4}
-                        className="text-sm"
-                      />
-                    </CardContent>
-                  </Card>
-                ))}
+                        {/* Section-linked photos preview */}
+                        {sectionPhotos.length > 0 && (
+                          <div className="flex gap-2 flex-wrap pt-1">
+                            {sectionPhotos.map((p, pi) => (
+                              <div key={pi} className="relative group">
+                                <img src={p.url} alt={p.alt || p.caption} className="h-12 w-16 rounded object-cover border" />
+                                {p.caption && (
+                                  <span className="absolute bottom-0 left-0 right-0 bg-background/80 text-[8px] text-center truncate px-0.5">
+                                    {p.caption}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
 
                 {template.sections.length === 0 && (
                   <p className="text-sm text-muted-foreground italic text-center py-4 border border-dashed rounded-lg">
@@ -313,49 +458,105 @@ export function ArrivalWelcomeEditor() {
                 )}
               </div>
 
-              {/* Photo URLs */}
-              <div className="space-y-2">
+              {/* Photo Manager */}
+              <div className="space-y-3">
                 <Label className="text-sm font-medium flex items-center gap-1.5">
                   <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
                   Reference Photos
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  Add photo URLs that will be shown in the arrival guide (e.g., signs, meeting points, landmarks).
+                  Add photos with captions and link them to specific sections. Guests see these inline with directions.
                 </p>
-                {template.photos.map((url, idx) => (
-                  <div key={idx} className="flex gap-2 items-center">
-                    {url && (
-                      <img src={url} alt={`Photo ${idx + 1}`} className="h-10 w-10 rounded object-cover border shrink-0" />
-                    )}
-                    <Input
-                      value={url}
-                      onChange={(e) => {
-                        const photos = [...template.photos];
-                        photos[idx] = e.target.value;
-                        updateField(airport.id, "photos", photos);
-                      }}
-                      placeholder="https://example.com/photo.jpg"
-                      className="h-9 text-sm"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        updateField(airport.id, "photos", template.photos.filter((_, i) => i !== idx));
-                      }}
-                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive shrink-0"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
+
+                {template.photos.map((photo, idx) => (
+                  <Card key={idx} className="border-border/50">
+                    <CardContent className="p-3 space-y-2">
+                      <div className="flex gap-3">
+                        {/* Preview */}
+                        <div className="shrink-0">
+                          {photo.url ? (
+                            <img src={photo.url} alt={photo.alt || `Photo ${idx + 1}`} className="h-20 w-28 rounded object-cover border" />
+                          ) : (
+                            <div className="h-20 w-28 rounded border border-dashed flex items-center justify-center text-muted-foreground/40">
+                              <ImageIcon className="h-6 w-6" />
+                            </div>
+                          )}
+                        </div>
+                        {/* Fields */}
+                        <div className="flex-1 space-y-1.5 min-w-0">
+                          <Input
+                            value={photo.url}
+                            onChange={(e) => updatePhoto(airport.id, idx, "url", e.target.value)}
+                            placeholder="https://example.com/photo.jpg"
+                            className="h-8 text-xs"
+                          />
+                          <div className="flex gap-1.5">
+                            <Input
+                              value={photo.caption}
+                              onChange={(e) => updatePhoto(airport.id, idx, "caption", e.target.value)}
+                              placeholder="Caption (e.g., 'Look for this green sign')"
+                              className="h-7 text-xs flex-1"
+                            />
+                            <Input
+                              value={photo.alt}
+                              onChange={(e) => updatePhoto(airport.id, idx, "alt", e.target.value)}
+                              placeholder="Alt text"
+                              className="h-7 text-xs w-32"
+                            />
+                          </div>
+                          <div className="flex gap-1.5 items-center">
+                            <Select
+                              value={photo.section_index !== null ? String(photo.section_index) : "none"}
+                              onValueChange={(v) => updatePhoto(airport.id, idx, "section_index", v === "none" ? null : Number(v))}
+                            >
+                              <SelectTrigger className="h-7 text-xs flex-1">
+                                <SelectValue placeholder="Link to section..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">No section (general)</SelectItem>
+                                {template.sections.map((s, si) => (
+                                  <SelectItem key={si} value={String(si)}>
+                                    {s.title || `Section ${si + 1}`}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Select
+                              value={photo.tag}
+                              onValueChange={(v) => updatePhoto(airport.id, idx, "tag", v)}
+                            >
+                              <SelectTrigger className="h-7 text-xs w-28">
+                                <Tag className="h-3 w-3 mr-1 shrink-0" />
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {PHOTO_TAGS.map((t) => (
+                                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removePhoto(airport.id, idx)}
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive shrink-0"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
+
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => updateField(airport.id, "photos", [...template.photos, ""])}
+                  onClick={() => addPhoto(airport.id)}
                   className="h-7 gap-1 text-xs"
                 >
-                  <Plus className="h-3 w-3" /> Add Photo URL
+                  <Plus className="h-3 w-3" /> Add Photo
                 </Button>
               </div>
 

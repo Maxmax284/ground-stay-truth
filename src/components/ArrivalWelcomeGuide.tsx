@@ -10,6 +10,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plane, MapPin, CheckCircle2, ChevronRight } from "lucide-react";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 
+interface WelcomePhoto {
+  url: string;
+  caption: string;
+  alt: string;
+  section_index: number | null;
+  tag: string;
+}
+
 interface WelcomeSection {
   title: string;
   content: string;
@@ -18,14 +26,25 @@ interface WelcomeSection {
 interface WelcomeTemplate {
   welcome_message: string;
   sections: WelcomeSection[];
-  photos: string[];
+  photos: WelcomePhoto[];
+  enabled: boolean;
 }
 
-interface WelcomeTemplate {
-  welcome_message: string;
-  sections: WelcomeSection[];
-  photos: string[];
-  enabled: boolean;
+/** Migrate old flat string[] photos to new format */
+function migratePhotos(photos: unknown): WelcomePhoto[] {
+  if (!Array.isArray(photos)) return [];
+  return photos.map((p: any) => {
+    if (typeof p === "string") {
+      return { url: p, caption: "", alt: "", section_index: null, tag: "other" };
+    }
+    return {
+      url: p.url || "",
+      caption: p.caption || "",
+      alt: p.alt || "",
+      section_index: p.section_index ?? null,
+      tag: p.tag || "other",
+    };
+  });
 }
 
 function parseTemplate(value: unknown): WelcomeTemplate | null {
@@ -35,7 +54,7 @@ function parseTemplate(value: unknown): WelcomeTemplate | null {
     return {
       welcome_message: parsed.welcome_message || "",
       sections: Array.isArray(parsed.sections) ? parsed.sections : [],
-      photos: Array.isArray(parsed.photos) ? parsed.photos : [],
+      photos: migratePhotos(parsed.photos),
       enabled: parsed.enabled !== false,
     };
   } catch {
@@ -57,7 +76,33 @@ export function detectAirport(booking: any): "bkk" | "samui" | null {
   return null;
 }
 
+function SectionPhotos({ photos }: { photos: WelcomePhoto[] }) {
+  if (!photos.length) return null;
+  return (
+    <div className="grid grid-cols-2 gap-2 mt-2">
+      {photos.map((photo, idx) => (
+        <div key={idx} className="space-y-1">
+          <img
+            src={photo.url}
+            alt={photo.alt || photo.caption || `Reference ${idx + 1}`}
+            className="rounded-lg border object-cover aspect-video w-full"
+          />
+          {photo.caption && (
+            <p className="text-[10px] text-muted-foreground italic text-center leading-tight px-1">
+              {photo.caption}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function WelcomeContent({ template }: { template: WelcomeTemplate }) {
+  const photosForSection = (idx: number) =>
+    template.photos.filter((p) => p.section_index === idx && p.url);
+  const generalPhotos = template.photos.filter((p) => p.section_index === null && p.url);
+
   return (
     <div className="space-y-4">
       {/* Welcome message */}
@@ -69,37 +114,32 @@ function WelcomeContent({ template }: { template: WelcomeTemplate }) {
         </div>
       )}
 
-      {/* Sections */}
-      {template.sections.map((section, idx) => (
-        <div key={idx} className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-              {idx + 1}
+      {/* Sections with inline photos */}
+      {template.sections.map((section, idx) => {
+        const sPhotos = photosForSection(idx);
+        return (
+          <div key={idx} className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                {idx + 1}
+              </div>
+              <h4 className="text-sm font-semibold text-foreground">{section.title}</h4>
             </div>
-            <h4 className="text-sm font-semibold text-foreground">{section.title}</h4>
+            <div className="pl-7">
+              <p className="text-xs text-muted-foreground whitespace-pre-line leading-relaxed">
+                {section.content}
+              </p>
+              <SectionPhotos photos={sPhotos} />
+            </div>
           </div>
-          <div className="pl-7">
-            <p className="text-xs text-muted-foreground whitespace-pre-line leading-relaxed">
-              {section.content}
-            </p>
-          </div>
-        </div>
-      ))}
+        );
+      })}
 
-      {/* Photos */}
-      {template.photos.filter(Boolean).length > 0 && (
+      {/* General (unlinked) photos */}
+      {generalPhotos.length > 0 && (
         <>
           <Separator />
-          <div className="grid grid-cols-2 gap-2">
-            {template.photos.filter(Boolean).map((url, idx) => (
-              <img
-                key={idx}
-                src={url}
-                alt={`Arrival reference ${idx + 1}`}
-                className="rounded-lg border object-cover aspect-video w-full"
-              />
-            ))}
-          </div>
+          <SectionPhotos photos={generalPhotos} />
         </>
       )}
     </div>
@@ -127,7 +167,6 @@ export function ArrivalWelcomeDialog({ open, onOpenChange, airport }: ArrivalWel
   const guideEnabled = template?.enabled ?? false;
   const hasContent = guideEnabled && (template?.welcome_message || (template?.sections?.length ?? 0) > 0);
 
-  // Always show dialog (for location confirmation), but only show guide content if enabled
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[85vh] p-0">
