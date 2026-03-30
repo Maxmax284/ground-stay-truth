@@ -296,7 +296,7 @@ const GuestPortal = () => {
         )}
 
         {/* Passive Layer: Your Stay Summary */}
-        <GuestStaySummary />
+        <GuestStaySummary focusSection={focusSection} onSectionFocused={() => setFocusSection(null)} />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="flex-wrap">
