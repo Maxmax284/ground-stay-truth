@@ -111,6 +111,7 @@ export function ArrivalWelcomeEditor() {
   const [aiTone, setAiTone] = useState("friendly");
   const [localEdits, setLocalEdits] = useState<Record<string, WelcomeTemplate>>({});
   const [suggestions, setSuggestions] = useState<SectionSuggestion[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
 
   const byKey = useMemo(() => {
     const map: Record<string, any> = {};
