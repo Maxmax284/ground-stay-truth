@@ -68,11 +68,18 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
             Today's Pickups
             <Badge variant="secondary" className="text-xs ml-1">{pickups.length}</Badge>
           </CardTitle>
-          {needsAttention > 0 && (
-            <Badge variant="destructive" className="text-xs animate-pulse">
-              {needsAttention} need{needsAttention > 1 ? "" : "s"} driver
-            </Badge>
-          )}
+          <div className="flex items-center gap-1.5">
+            {pickups.filter((p: any) => (p as any).international_flight_number && !p.flight_number).length > 0 && (
+              <Badge variant="outline" className="text-[10px] border-warning/50 text-warning-foreground">
+                {pickups.filter((p: any) => (p as any).international_flight_number && !p.flight_number).length} missing domestic
+              </Badge>
+            )}
+            {needsAttention > 0 && (
+              <Badge variant="destructive" className="text-xs animate-pulse">
+                {needsAttention} need{needsAttention > 1 ? "" : "s"} driver
+              </Badge>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-2">

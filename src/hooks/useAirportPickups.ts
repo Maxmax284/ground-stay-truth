@@ -12,6 +12,8 @@ export interface AirportPickup {
   fee_override_reason: string | null;
   fee_override_by: string | null;
   flight_number: string | null;
+  international_flight_number: string | null;
+  final_flight_confirmed: boolean;
   arrival_datetime: string | null;
   passenger_count: number;
   luggage_notes: string | null;
@@ -19,6 +21,8 @@ export interface AirportPickup {
   assigned_by: string | null;
   assigned_at: string | null;
   confirmed_at: string | null;
+  confirmed_airport: string | null;
+  guest_landed_at: string | null;
   completed_at: string | null;
   completed_by: string | null;
   created_at: string;
