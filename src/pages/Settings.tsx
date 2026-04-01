@@ -11,7 +11,7 @@ import { TrainingPackagesManager } from "@/components/TrainingPackagesManager";
 import { DriverManager } from "@/components/DriverManager";
 import { ArrivalWelcomeEditor } from "@/components/ArrivalWelcomeEditor";
 import { SecurityEventLog } from "@/components/SecurityEventLog";
-import PropertyAssignmentManager from "@/components/PropertyAssignmentManager";
+import PropertyManagementPanel from "@/components/PropertyManagementPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 
@@ -52,7 +52,7 @@ const Settings = () => {
           {canManagePolicies && <TabsContent value="cancellation"><CancellationPolicyEditor /></TabsContent>}
           {canManagePolicies && <TabsContent value="policies"><PolicySettingsForm /></TabsContent>}
           {isAdmin && <TabsContent value="drivers"><DriverManager /></TabsContent>}
-          {isAdmin && <TabsContent value="properties"><PropertyAssignmentManager /></TabsContent>}
+          {isAdmin && <TabsContent value="properties"><PropertyManagementPanel /></TabsContent>}
           {isAdmin && <TabsContent value="training"><TrainingPackagesManager /></TabsContent>}
           {isAdmin && <TabsContent value="arrival"><ArrivalWelcomeEditor /></TabsContent>}
           {isAdmin && <TabsContent value="integrations"><IntegrationSettings /></TabsContent>}
