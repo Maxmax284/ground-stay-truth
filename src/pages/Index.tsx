@@ -152,11 +152,25 @@ const Index = () => {
             {/* Admin-only: Pending Admin Actions (draft messages) */}
             {canApprove && <PendingAdminActions t={t} />}
 
-            {/* Today's Pickups widget */}
-            {!isViewer && <TodaysPickupsWidget onClickBooking={setDetailBookingId} />}
+            {/* Today's Pickups widget — high-turnover emphasis */}
+            {!isViewer && !isLongStay && <TodaysPickupsWidget onClickBooking={setDetailBookingId} />}
 
-            {/* Flight Forecast — airport traffic monitor (admin-toggled) */}
-            {!isViewer && flightForecastEnabled && <FlightForecastWidget />}
+            {/* Flight Forecast — airport traffic monitor (admin-toggled, high-turnover) */}
+            {!isViewer && !isLongStay && flightForecastEnabled && <FlightForecastWidget />}
+
+            {/* Long-stay: Housekeeping and Maintenance first */}
+            {!isViewer && !isMaintenance && isLongStay && (
+              <>
+                <HousekeepingPanel />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <MaintenanceQueue />
+                  <LaundryPanel />
+                </div>
+              </>
+            )}
+
+            {/* Long-stay: Pickups still available but lower priority */}
+            {!isViewer && isLongStay && <TodaysPickupsWidget onClickBooking={setDetailBookingId} />}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Front Desk / Supervisor: arrivals/departures first */}
@@ -194,11 +208,11 @@ const Index = () => {
               )}
             </div>
 
-            {/* Housekeeping, Maintenance & Laundry panels for all non-viewer, non-maintenance staff */}
-            {!isViewer && !isMaintenance && (
+            {/* High-turnover: Housekeeping, Maintenance & Laundry panels at bottom */}
+            {!isViewer && !isMaintenance && !isLongStay && (
               <HousekeepingPanel />
             )}
-            {!isViewer && !isMaintenance && (
+            {!isViewer && !isMaintenance && !isLongStay && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <MaintenanceQueue />
                 <LaundryPanel />
