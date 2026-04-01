@@ -14,7 +14,7 @@ import { useAirportPickup, useUpsertAirportPickup, logPickupAction, type Airport
 import { useDrivers } from "@/hooks/useDrivers";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
-import { Plane, Car, MessageSquare, User, Clock, AlertTriangle } from "lucide-react";
+import { Plane, Car, MessageSquare, User, Clock, AlertTriangle, ArrowRight, CheckCircle2, MapPin } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
   requested: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
@@ -22,6 +22,11 @@ const STATUS_COLORS: Record<string, string> = {
   confirmed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
   completed: "bg-muted text-muted-foreground",
   cancelled: "bg-destructive/10 text-destructive",
+};
+
+const AIRPORT_LABELS: Record<string, string> = {
+  bkk: "Bangkok (BKK)",
+  usm: "Koh Samui (USM)",
 };
 
 interface Props {
@@ -39,6 +44,9 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
   const [editingFee, setEditingFee] = useState(false);
   const [feeValue, setFeeValue] = useState("");
   const [feeReason, setFeeReason] = useState("");
+  const [editingFlights, setEditingFlights] = useState(false);
+  const [intlFlight, setIntlFlight] = useState("");
+  const [domesticFlight, setDomesticFlight] = useState("");
 
   const canManage = permissions.canTransitionState(role); // front_desk+
 
@@ -85,12 +93,18 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
   }
 
   const driver = pickup.drivers;
+  const internationalFlight = (pickup as any).international_flight_number as string | null;
+  const finalFlightConfirmed = !!(pickup as any).final_flight_confirmed;
+  const confirmedAirport = (pickup as any).confirmed_airport as string | null;
+  const guestLandedAt = (pickup as any).guest_landed_at as string | null;
+  const hasConnection = !!internationalFlight;
+  const isInTransit = hasConnection && confirmedAirport?.toLowerCase() === "bkk";
 
   const handleAssignDriver = async (driverId: string) => {
     try {
       const prevStatus = pickup.status;
       const newStatus = prevStatus === "requested" ? "assigned" : prevStatus;
-      const result = await upsert.mutateAsync({
+      await upsert.mutateAsync({
         booking_id: bookingId,
         driver_id: driverId,
         status: newStatus,
@@ -160,6 +174,28 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
     }
   };
 
+  const handleSaveFlights = async () => {
+    try {
+      const updates: any = { booking_id: bookingId };
+      updates.international_flight_number = intlFlight.trim().toUpperCase() || null;
+      updates.flight_number = domesticFlight.trim().toUpperCase() || null;
+      if (domesticFlight.trim()) {
+        updates.final_flight_confirmed = true;
+      }
+      await upsert.mutateAsync(updates);
+      await logPickupAction({
+        bookingId,
+        pickupId: pickup.id,
+        action: "flights_updated",
+        note: `Flights updated: Int'l ${intlFlight.trim().toUpperCase() || "—"}, Final ${domesticFlight.trim().toUpperCase() || "—"}`,
+      });
+      toast({ title: "Flight numbers updated" });
+      setEditingFlights(false);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
   const whatsappLink = driver?.whatsapp
     ? `https://wa.me/${driver.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(
         `Hi, pickup for ${guestName ?? "guest"} arriving at Lamai Muay Thai.${pickup.flight_number ? ` Flight ${pickup.flight_number}.` : ""}`
@@ -182,53 +218,139 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
           <Badge className={STATUS_COLORS[pickup.status] ?? ""}>{pickup.status}</Badge>
         </div>
 
-        {/* Connecting flight context */}
-        {(pickup as any).international_flight_number && (
-          <div className="flex items-center gap-1.5 bg-muted/30 rounded-md p-2 text-xs text-muted-foreground">
-            <Plane className="h-3 w-3 shrink-0" />
-            <span>Int'l: {(pickup as any).international_flight_number}</span>
-            <span className="text-primary">→</span>
-            <span className="font-medium text-foreground">
-              {pickup.flight_number ? `Final: ${pickup.flight_number}` : "Final flight TBD"}
-            </span>
-            {!(pickup as any).final_flight_confirmed && (
-              <Badge variant="outline" className="text-[9px] ml-auto border-warning/50 text-warning-foreground">
-                <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
-                Unconfirmed
+        {/* Transit status & confirmed airport */}
+        {guestLandedAt && (
+          <div className={`flex items-center gap-2 rounded-lg p-2.5 text-xs ${
+            isInTransit
+              ? "bg-warning/10 border border-warning/30"
+              : "bg-[hsl(var(--success)/0.08)] border border-[hsl(var(--success)/0.3)]"
+          }`}>
+            <MapPin className={`h-3.5 w-3.5 shrink-0 ${isInTransit ? "text-warning-foreground" : "text-[hsl(var(--success))]"}`} />
+            <div className="flex-1">
+              {isInTransit ? (
+                <span className="font-medium text-warning-foreground">
+                  Guest in transit at Bangkok — awaiting connection to Samui
+                </span>
+              ) : (
+                <span className="font-medium text-[hsl(var(--success))]">
+                  Guest landed{confirmedAirport ? ` at ${AIRPORT_LABELS[confirmedAirport.toLowerCase()] ?? confirmedAirport.toUpperCase()}` : ""}
+                </span>
+              )}
+              <span className="block text-muted-foreground mt-0.5">
+                {new Date(guestLandedAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+              </span>
+            </div>
+            {isInTransit && (
+              <Badge variant="outline" className="text-[9px] border-warning/50 text-warning-foreground shrink-0">
+                In Transit
               </Badge>
             )}
           </div>
         )}
 
-        {/* Flight details */}
-        <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-          {pickup.flight_number && !(pickup as any).international_flight_number && (
-            <div className="flex items-center gap-1"><Plane className="h-3 w-3" /> {pickup.flight_number}</div>
+        {/* Flight route display */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs font-medium">Flight Details</Label>
+            {canManage && !editingFlights && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs"
+                onClick={() => {
+                  setIntlFlight(internationalFlight ?? "");
+                  setDomesticFlight(pickup.flight_number ?? "");
+                  setEditingFlights(true);
+                }}
+              >
+                Edit
+              </Button>
+            )}
+          </div>
+
+          {!editingFlights ? (
+            <div className="bg-muted/30 rounded-lg p-2.5 space-y-1.5">
+              {/* International leg */}
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-muted-foreground w-20 shrink-0">International</span>
+                {internationalFlight ? (
+                  <span className="font-mono text-foreground">{internationalFlight}</span>
+                ) : (
+                  <span className="text-muted-foreground italic">Not set</span>
+                )}
+              </div>
+              {/* Domestic / final leg */}
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-muted-foreground w-20 shrink-0">Final flight</span>
+                {pickup.flight_number ? (
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono font-medium text-foreground">{pickup.flight_number}</span>
+                    {finalFlightConfirmed && (
+                      <CheckCircle2 className="h-3 w-3 text-[hsl(var(--success))]" />
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-warning-foreground italic">Not confirmed</span>
+                    <AlertTriangle className="h-3 w-3 text-warning-foreground" />
+                  </div>
+                )}
+              </div>
+              {/* Route summary if both exist */}
+              {hasConnection && pickup.flight_number && (
+                <div className="flex items-center gap-1.5 pt-1 border-t border-border/50 text-xs text-muted-foreground">
+                  <Plane className="h-3 w-3" />
+                  <span>{internationalFlight}</span>
+                  <ArrowRight className="h-3 w-3 text-primary" />
+                  <span className="font-medium text-foreground">{pickup.flight_number}</span>
+                  <Badge variant="secondary" className="text-[9px] ml-auto">Connecting</Badge>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2 bg-muted/30 rounded-lg p-2.5">
+              <div className="space-y-1">
+                <Label className="text-[11px] text-muted-foreground">International Flight (e.g. TG925)</Label>
+                <Input
+                  value={intlFlight}
+                  onChange={(e) => setIntlFlight(e.target.value)}
+                  placeholder="TG925"
+                  className="h-7 text-sm font-mono uppercase"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[11px] text-muted-foreground">Final Flight to Samui (e.g. PG123)</Label>
+                <Input
+                  value={domesticFlight}
+                  onChange={(e) => setDomesticFlight(e.target.value)}
+                  placeholder="PG123"
+                  className="h-7 text-sm font-mono uppercase"
+                />
+              </div>
+              <div className="flex gap-1">
+                <Button size="sm" className="h-7 text-xs" onClick={handleSaveFlights} disabled={upsert.isPending}>
+                  Save Flights
+                </Button>
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingFlights(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
           )}
+        </div>
+
+        {/* Arrival time & passengers */}
+        <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
           {pickup.arrival_datetime && (
             <div className="flex items-center gap-1"><Clock className="h-3 w-3" /> {new Date(pickup.arrival_datetime).toLocaleString()}</div>
           )}
-          {pickup.passenger_count > 1 && (
+          {(pickup.passenger_count ?? 0) > 1 && (
             <div className="flex items-center gap-1"><User className="h-3 w-3" /> {pickup.passenger_count} pax</div>
           )}
           {pickup.luggage_notes && <div>🧳 {pickup.luggage_notes}</div>}
         </div>
         {pickup.special_instructions && (
           <p className="text-xs italic text-muted-foreground">{pickup.special_instructions}</p>
-        )}
-
-        {/* Guest landed info */}
-        {(pickup as any).guest_landed_at && (
-          <div className="flex items-center gap-1.5 text-xs">
-            <Badge variant="secondary" className="text-[10px]">
-              ✅ Landed{(pickup as any).confirmed_airport ? ` at ${(pickup as any).confirmed_airport.toUpperCase()}` : ""}
-            </Badge>
-            {(pickup as any).confirmed_airport && (pickup as any).international_flight_number && (pickup as any).confirmed_airport.toLowerCase() === "bkk" && (
-              <Badge variant="outline" className="text-[10px] border-warning/50 text-warning-foreground">
-                ⚠️ In Transit
-              </Badge>
-            )}
-          </div>
         )}
 
         <Separator />
