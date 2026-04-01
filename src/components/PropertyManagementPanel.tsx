@@ -133,7 +133,7 @@ function PropertyDetailsSection() {
   const qc = useQueryClient();
 
   const updateProperty = useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Property> & { id: string }) => {
+    mutationFn: async ({ id, ...updates }: PropertyUpdate) => {
       const { error } = await supabase.from("properties").update(updates).eq("id", id);
       if (error) throw error;
     },
