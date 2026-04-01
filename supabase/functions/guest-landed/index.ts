@@ -36,13 +36,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { booking_id } = await req.json();
+    const { booking_id, confirmed_airport } = await req.json();
     if (!booking_id) {
       return new Response(JSON.stringify({ error: "booking_id required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const airportCode = confirmed_airport || null;
 
     const serviceClient = createClient(supabaseUrl, serviceRoleKey);
 
