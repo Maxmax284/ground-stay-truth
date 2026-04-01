@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ACTIVE_STATES } from "@/lib/bookingStateMachine";
+import { useProperty } from "@/hooks/useProperty";
 
 export function useDashboardStats() {
   const today = format(new Date(), "yyyy-MM-dd");
