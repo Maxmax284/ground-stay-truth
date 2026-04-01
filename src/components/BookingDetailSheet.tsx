@@ -142,6 +142,9 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
               {softHoldInfo.isExpired ? t("bookingDetail.softHoldExpired") : t("bookingDetail.softHoldExpires", { hours: softHoldInfo.remaining })}
             </div>
           )}
+          {(booking.state as BookingState) === "soft_hold" && (
+            <p className="text-xs text-muted-foreground italic">{t("bookingDetail.softHoldDisclaimer", { defaultValue: "This hold does not guarantee availability until the booking is confirmed with a deposit." })}</p>
+          )}
           {depositDeadlineInfo && (
             <div className={`flex items-center gap-2 text-sm ${depositDeadlineInfo.isExpired ? "text-destructive" : "text-warning-foreground"}`}>
               <AlertTriangle className="h-4 w-4" />
