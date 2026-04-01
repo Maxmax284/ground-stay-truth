@@ -217,6 +217,10 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
     },
   });
 
+  // Flight tracking for guest's pickups (for airport cross-check)
+  const pickupIds = (pickups ?? []).map((p: any) => p.id);
+  const { data: flightMap } = useFlightTrackingBatch(pickupIds);
+
   const { data: deposits } = useQuery({
     queryKey: ["guest-stay-summary-deposits", bookingIds],
     enabled: bookingIds.length > 0,
@@ -243,9 +247,9 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
     },
   });
 
-  // "I've Landed" mutation
+  // "I've Landed" mutation — now accepts confirmed airport
   const landedMutation = useMutation({
-    mutationFn: async (bookingId: string) => {
+    mutationFn: async ({ bookingId, confirmed_airport }: { bookingId: string; confirmed_airport: string }) => {
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/guest-landed`,
         {
@@ -255,7 +259,7 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
             Authorization: `Bearer ${session?.access_token}`,
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ booking_id: bookingId }),
+          body: JSON.stringify({ booking_id: bookingId, confirmed_airport }),
         }
       );
       if (!resp.ok) {
@@ -264,15 +268,16 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
       }
       return resp.json();
     },
-    onSuccess: (data, bookingId) => {
+    onSuccess: (data, { bookingId, confirmed_airport }) => {
+      setLandedDialogOpen(false);
+      setLandedBookingId(null);
       if (data.already) {
         toast.info(t("guestStay.actions.alreadyLanded"));
       } else {
         toast.success(t("guestStay.actions.landedSuccess"));
         playSound("landed");
-        // Show arrival welcome dialog
-        const booking = bookings?.find((b) => b.id === bookingId);
-        const airport = detectAirport(booking);
+        // Show arrival welcome dialog — use confirmed airport
+        const airport = (confirmed_airport === "bkk" ? "bkk" : confirmed_airport === "usm" || confirmed_airport === "samui" ? "samui" : null) as "bkk" | "samui" | null;
         if (airport) {
           setWelcomeAirport(airport);
           setWelcomeDialogOpen(true);
@@ -284,16 +289,32 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
       toast.error(err.message);
     },
   });
+
+  // Helper: open the landing confirmation dialog instead of firing immediately
+  const openLandedDialog = (bookingId: string) => {
+    setLandedBookingId(bookingId);
+    setLandedDialogOpen(true);
+  };
+
+  // Get flight/booking airport info for the dialog
+  const landedBooking = bookings?.find((b) => b.id === landedBookingId);
+  const landedPickup = (pickups ?? []).find((p: any) => p.booking_id === landedBookingId);
+  const landedFlightTracking = landedPickup ? flightMap?.[landedPickup.id] : null;
+  const landedFlightAirport = landedFlightTracking?.arrival_iata
+    ? (landedFlightTracking.arrival_iata.toUpperCase() === "BKK" ? "bkk" as const
+      : landedFlightTracking.arrival_iata.toUpperCase() === "USM" ? "samui" as const : null)
+    : null;
+  const landedBookingAirport = detectAirport(landedBooking);
+
   // Auto-trigger "I've Landed" when deep-linked from notification
   useEffect(() => {
     if (focusSection === "landed" && bookings?.length && pickups) {
-      // Find the first booking with an active pickup that hasn't landed yet
       const eligibleBooking = bookings.find((b) => {
         const pickup = pickups.find((p: any) => p.booking_id === b.id);
         return pickup && !pickup.guest_landed_at && ["requested", "assigned", "confirmed"].includes(pickup.status);
       });
-      if (eligibleBooking && !landedMutation.isPending) {
-        landedMutation.mutate(eligibleBooking.id);
+      if (eligibleBooking) {
+        openLandedDialog(eligibleBooking.id);
       }
       onSectionFocused?.();
     }
@@ -308,7 +329,7 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
         window.dispatchEvent(new CustomEvent("guest-portal-action", { detail: { tab: "pre-arrival" } }));
         break;
       case "landed":
-        landedMutation.mutate(bookingId);
+        openLandedDialog(bookingId);
         break;
       case "report_issue":
         window.dispatchEvent(new CustomEvent("guest-portal-action", { detail: { tab: "stay-support" } }));
