@@ -125,9 +125,6 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
     }
   }, [booking, documents, payments, softHoldInfo, depositDeadlineInfo, openMaintenanceCount, laundryReadyCount, t]);
 
-  if (!booking) return null;
-  const guestName = (booking as any).profiles?.full_name;
-
   const travelInfo = useMemo(() => {
     if (!pickup) return null;
     return getTravelState({
@@ -140,6 +137,9 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
       arrival_datetime: pickup.arrival_datetime,
     });
   }, [pickup]);
+
+  if (!booking) return null;
+  const guestName = (booking as any).profiles?.full_name;
 
   const TRAVEL_BADGE_STYLES: Record<string, string> = {
     info: "bg-primary/10 text-primary border-primary/20",
