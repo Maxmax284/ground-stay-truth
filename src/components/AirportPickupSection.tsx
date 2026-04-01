@@ -101,7 +101,17 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
   const confirmedAirport = (pickup as any).confirmed_airport as string | null;
   const guestLandedAt = (pickup as any).guest_landed_at as string | null;
   const hasConnection = !!internationalFlight;
-  const isInTransit = hasConnection && confirmedAirport?.toLowerCase() === "bkk";
+
+  // Centralized travel state
+  const travelInfo = getTravelState({
+    status: pickup.status,
+    flight_number: pickup.flight_number,
+    international_flight_number: internationalFlight,
+    final_flight_confirmed: finalFlightConfirmed,
+    confirmed_airport: confirmedAirport,
+    guest_landed_at: guestLandedAt,
+    arrival_datetime: pickup.arrival_datetime,
+  });
 
   const handleAssignDriver = async (driverId: string) => {
     try {
