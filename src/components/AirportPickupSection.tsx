@@ -15,6 +15,7 @@ import { useDrivers } from "@/hooks/useDrivers";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
 import { Plane, Car, MessageSquare, User, Clock, AlertTriangle, ArrowRight, CheckCircle2, MapPin } from "lucide-react";
+import { getTravelState } from "@/lib/travelState";
 
 const STATUS_COLORS: Record<string, string> = {
   requested: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
@@ -100,7 +101,17 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
   const confirmedAirport = (pickup as any).confirmed_airport as string | null;
   const guestLandedAt = (pickup as any).guest_landed_at as string | null;
   const hasConnection = !!internationalFlight;
-  const isInTransit = hasConnection && confirmedAirport?.toLowerCase() === "bkk";
+
+  // Centralized travel state
+  const travelInfo = getTravelState({
+    status: pickup.status,
+    flight_number: pickup.flight_number,
+    international_flight_number: internationalFlight,
+    final_flight_confirmed: finalFlightConfirmed,
+    confirmed_airport: confirmedAirport,
+    guest_landed_at: guestLandedAt,
+    arrival_datetime: pickup.arrival_datetime,
+  });
 
   const handleAssignDriver = async (driverId: string) => {
     try {
@@ -222,31 +233,41 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
           <Badge className={STATUS_COLORS[pickup.status] ?? ""}>{pickup.status}</Badge>
         </div>
 
-        {/* Transit status & confirmed airport */}
-        {guestLandedAt && (
+        {/* Travel state — centralized awareness */}
+        {travelInfo.state !== "pre_departure" && travelInfo.state !== "awaiting_departure" && travelInfo.state !== "cancelled" && (
           <div className={`flex items-center gap-2 rounded-lg p-2.5 text-xs ${
-            isInTransit
+            travelInfo.isInTransit || travelInfo.state === "missing_final_flight"
               ? "bg-warning/10 border border-warning/30"
-              : "bg-[hsl(var(--success)/0.08)] border border-[hsl(var(--success)/0.3)]"
+              : travelInfo.state === "arriving" || travelInfo.state === "arrived"
+                ? "bg-[hsl(var(--success)/0.08)] border border-[hsl(var(--success)/0.3)]"
+                : "bg-muted/50 border border-border"
           }`}>
-            <MapPin className={`h-3.5 w-3.5 shrink-0 ${isInTransit ? "text-warning-foreground" : "text-[hsl(var(--success))]"}`} />
+            <MapPin className={`h-3.5 w-3.5 shrink-0 ${
+              travelInfo.isInTransit || travelInfo.state === "missing_final_flight" ? "text-warning-foreground" : "text-[hsl(var(--success))]"
+            }`} />
             <div className="flex-1">
-              {isInTransit ? (
-                <span className="font-medium text-warning-foreground">
-                  Guest in transit at Bangkok — awaiting connection to Samui
-                </span>
-              ) : (
-                <span className="font-medium text-[hsl(var(--success))]">
-                  Guest landed{confirmedAirport ? ` at ${AIRPORT_LABELS[confirmedAirport.toLowerCase()] ?? confirmedAirport.toUpperCase()}` : ""}
+              <span className={`font-medium ${
+                travelInfo.isInTransit || travelInfo.state === "missing_final_flight" ? "text-warning-foreground" : "text-[hsl(var(--success))]"
+              }`}>
+                {travelInfo.staffLabel}
+              </span>
+              <span className="block text-muted-foreground mt-0.5 text-[11px]">
+                {travelInfo.staffDetail}
+              </span>
+              {guestLandedAt && (
+                <span className="block text-muted-foreground mt-0.5">
+                  {new Date(guestLandedAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                 </span>
               )}
-              <span className="block text-muted-foreground mt-0.5">
-                {new Date(guestLandedAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-              </span>
             </div>
-            {isInTransit && (
+            {travelInfo.isInTransit && (
               <Badge variant="outline" className="text-[9px] border-warning/50 text-warning-foreground shrink-0">
                 In Transit
+              </Badge>
+            )}
+            {!travelInfo.operationallyReady && travelInfo.state !== "arrived" && (
+              <Badge variant="outline" className="text-[9px] border-destructive/50 text-destructive shrink-0">
+                No Dispatch
               </Badge>
             )}
           </div>

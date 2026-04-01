@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTodaysPickups } from "@/hooks/useAirportPickups";
 import { useFlightTrackingBatch, useCheckFlightStatus, FLIGHT_STATUS_CONFIG } from "@/hooks/useFlightTracking";
+import { getTravelState } from "@/lib/travelState";
 import { Plane, MessageSquare, Car, Clock, User, RefreshCw, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -143,24 +144,47 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
                     </span>
                   )}
                 </div>
-                {/* Guest landed / transit status */}
-                {(p as any).guest_landed_at && (
-                  <div className="text-[11px] flex items-center gap-1">
-                    {(p as any).confirmed_airport && (p as any).international_flight_number && (p as any).confirmed_airport.toLowerCase() === "bkk" ? (
-                      <span className="text-warning-foreground font-medium">🔄 In transit (landed BKK, connecting to USM)</span>
-                    ) : (
-                      <span className="text-[hsl(var(--success))] font-medium">
-                        ✅ Landed{(p as any).confirmed_airport ? ` at ${(p as any).confirmed_airport.toUpperCase()}` : ""}
-                      </span>
-                    )}
-                  </div>
-                )}
-                {/* Unconfirmed final flight warning */}
-                {(p as any).international_flight_number && !p.flight_number && !(p as any).guest_landed_at && (
-                  <div className="text-[11px] text-warning-foreground font-medium">
-                    ⚠️ Final domestic flight not yet confirmed
-                  </div>
-                )}
+                {/* Travel state — centralized awareness */}
+                {(() => {
+                  const travelInfo = getTravelState({
+                    status: p.status,
+                    flight_number: p.flight_number,
+                    international_flight_number: (p as any).international_flight_number,
+                    final_flight_confirmed: (p as any).final_flight_confirmed ?? false,
+                    confirmed_airport: (p as any).confirmed_airport,
+                    guest_landed_at: (p as any).guest_landed_at,
+                    arrival_datetime: p.arrival_datetime,
+                  });
+                  if (travelInfo.state === "in_transit_bkk") {
+                    return (
+                      <div className="text-[11px] text-warning-foreground font-medium">
+                        🔄 {travelInfo.staffLabel} — {p.flight_number ? `connecting via ${p.flight_number}` : "awaiting domestic flight"}
+                      </div>
+                    );
+                  }
+                  if (travelInfo.state === "arriving") {
+                    return (
+                      <div className="text-[11px] text-[hsl(var(--success))] font-medium">
+                        ✅ {travelInfo.staffLabel} — ready for dispatch
+                      </div>
+                    );
+                  }
+                  if (travelInfo.state === "missing_final_flight") {
+                    return (
+                      <div className="text-[11px] text-warning-foreground font-medium">
+                        ⚠️ {travelInfo.staffLabel} — pickup timing unavailable
+                      </div>
+                    );
+                  }
+                  if (travelInfo.state === "pre_departure" && !p.flight_number && !(p as any).international_flight_number) {
+                    return (
+                      <div className="text-[11px] text-muted-foreground italic">
+                        No flight details provided
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
                 {/* Flight delay info */}
                 {ft && ft.delay_minutes > 0 && (
                   <div className="text-[11px] text-orange-600 dark:text-orange-400 flex items-center gap-1">
