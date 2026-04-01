@@ -108,6 +108,30 @@ export function SecurityDepositSection({ bookingId, bookingState }: { bookingId:
     }
   };
 
+  const handleEvidenceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!deposit || !e.target.files?.length) return;
+    setUploadingEvidence(true);
+    try {
+      const file = e.target.files[0];
+      const path = `${bookingId}/${Date.now()}_${file.name}`;
+      const { error: uploadErr } = await supabase.storage.from("maintenance-photos").upload(path, file);
+      if (uploadErr) throw uploadErr;
+      const { data: urlData } = supabase.storage.from("maintenance-photos").getPublicUrl(path);
+      const existingUrls = (deposit as any).deduction_evidence_urls ?? [];
+      await supabase
+        .from("security_deposits")
+        .update({ deduction_evidence_urls: [...existingUrls, urlData.publicUrl] } as any)
+        .eq("id", deposit.id);
+      toast({ title: "Evidence photo uploaded" });
+      // Refresh
+      await updateDeposit.mutateAsync({ id: deposit.id, booking_id: bookingId });
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setUploadingEvidence(false);
+    }
+  };
+
   if (isLoading) return null;
 
   return (
