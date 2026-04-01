@@ -1313,6 +1313,7 @@ export type Database = {
           amount_held: number
           booking_id: string
           created_at: string
+          deduction_evidence_urls: string[] | null
           deduction_reason: string | null
           held_at: string
           id: string
@@ -1328,6 +1329,7 @@ export type Database = {
           amount_held?: number
           booking_id: string
           created_at?: string
+          deduction_evidence_urls?: string[] | null
           deduction_reason?: string | null
           held_at?: string
           id?: string
@@ -1343,6 +1345,7 @@ export type Database = {
           amount_held?: number
           booking_id?: string
           created_at?: string
+          deduction_evidence_urls?: string[] | null
           deduction_reason?: string | null
           held_at?: string
           id?: string
