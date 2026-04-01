@@ -53,12 +53,14 @@ export function useDashboardStats() {
   });
 
   const unitCount = useQuery({
-    queryKey: ["dashboard", "units"],
+    queryKey: ["dashboard", "units", activePropertyId],
     queryFn: async () => {
-      const { count, error } = await supabase
+      let query = supabase
         .from("units")
         .select("*", { count: "exact", head: true })
         .eq("is_active", true);
+      if (activePropertyId) query = query.eq("property_id", activePropertyId);
+      const { count, error } = await query;
       if (error) throw error;
       return count ?? 0;
     },
