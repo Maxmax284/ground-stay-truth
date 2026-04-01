@@ -36,13 +36,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { booking_id } = await req.json();
+    const { booking_id, confirmed_airport } = await req.json();
     if (!booking_id) {
       return new Response(JSON.stringify({ error: "booking_id required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const airportCode = confirmed_airport || null;
 
     const serviceClient = createClient(supabaseUrl, serviceRoleKey);
 
@@ -81,11 +83,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Update guest_landed_at
+    // Update guest_landed_at and confirmed_airport
     const now = new Date().toISOString();
+    const updatePayload: Record<string, any> = { guest_landed_at: now };
+    if (airportCode) updatePayload.confirmed_airport = airportCode;
+
     const { error: updateError } = await serviceClient
       .from("airport_pickups")
-      .update({ guest_landed_at: now })
+      .update(updatePayload)
       .eq("id", pickup.id);
 
     if (updateError) {
@@ -93,6 +98,24 @@ Deno.serve(async (req) => {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Cross-check: if flight tracking exists, compare arrival_iata with confirmed airport
+    let airportMismatch = false;
+    if (airportCode) {
+      const { data: flightTrack } = await serviceClient
+        .from("flight_tracking")
+        .select("arrival_iata")
+        .eq("pickup_id", pickup.id)
+        .maybeSingle();
+
+      if (flightTrack?.arrival_iata) {
+        const flightIata = flightTrack.arrival_iata.toUpperCase();
+        const confirmedIata = airportCode.toUpperCase() === "SAMUI" ? "USM" : airportCode.toUpperCase();
+        if (flightIata !== confirmedIata && flightIata !== "") {
+          airportMismatch = true;
+        }
+      }
     }
 
     // Get guest name
@@ -105,6 +128,13 @@ Deno.serve(async (req) => {
     const guestName = profile?.full_name || "A guest";
     const unitName = (booking as any).units?.name || "unknown unit";
 
+    const airportDisplayMap: Record<string, string> = {
+      bkk: "BKK (Suvarnabhumi)",
+      usm: "USM (Koh Samui)",
+      samui: "USM (Koh Samui)",
+    };
+    const airportDisplay = airportCode ? (airportDisplayMap[airportCode.toLowerCase()] ?? airportCode) : "unknown airport";
+
     // Notify all staff (admin + manager + front_desk_supervisor + front_desk)
     const { data: staffRoles } = await serviceClient
       .from("user_roles")
@@ -114,17 +144,22 @@ Deno.serve(async (req) => {
     const uniqueStaffIds = [...new Set((staffRoles ?? []).map((r: any) => r.user_id))];
 
     if (uniqueStaffIds.length > 0) {
+      let message = `${guestName} has landed at ${airportDisplay} and is ready for pickup (${unitName}).`;
+      if (airportMismatch) {
+        message += ` ⚠️ MISMATCH: Guest selected ${airportDisplay} but flight data shows a different airport. Please verify.`;
+      }
+
       const notifications = uniqueStaffIds.map((staffId) => ({
         user_id: staffId,
         type: "guest_landed",
         reference_id: booking_id,
-        message: `${guestName} has landed and is ready for pickup (${unitName}).`,
+        message,
       }));
 
       await serviceClient.from("notifications").insert(notifications);
     }
 
-    return new Response(JSON.stringify({ ok: true, landed_at: now }), {
+    return new Response(JSON.stringify({ ok: true, landed_at: now, airport_mismatch: airportMismatch }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {

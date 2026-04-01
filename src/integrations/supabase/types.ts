@@ -22,6 +22,7 @@ export type Database = {
           booking_id: string
           completed_at: string | null
           completed_by: string | null
+          confirmed_airport: string | null
           confirmed_at: string | null
           created_at: string
           driver_id: string | null
@@ -45,6 +46,7 @@ export type Database = {
           booking_id: string
           completed_at?: string | null
           completed_by?: string | null
+          confirmed_airport?: string | null
           confirmed_at?: string | null
           created_at?: string
           driver_id?: string | null
@@ -68,6 +70,7 @@ export type Database = {
           booking_id?: string
           completed_at?: string | null
           completed_by?: string | null
+          confirmed_airport?: string | null
           confirmed_at?: string | null
           created_at?: string
           driver_id?: string | null
