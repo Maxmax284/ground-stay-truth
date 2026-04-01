@@ -39,6 +39,7 @@ const Settings = () => {
             {canManagePolicies && <TabsTrigger value="cancellation">Cancellation</TabsTrigger>}
             {canManagePolicies && <TabsTrigger value="policies">{t("settings.policiesTab")}</TabsTrigger>}
             {isAdmin && <TabsTrigger value="drivers">Drivers</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="properties">Properties</TabsTrigger>}
             {isAdmin && <TabsTrigger value="training">Training</TabsTrigger>}
             {isAdmin && <TabsTrigger value="arrival">Arrival Welcome</TabsTrigger>}
             {isAdmin && <TabsTrigger value="integrations">Integrations</TabsTrigger>}
