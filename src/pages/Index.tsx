@@ -284,6 +284,48 @@ function PendingAdminActions({ t }: { t: any }) {
   );
 }
 
+function LongStayStats({ activeCount, arrivalsCount, units, isLoading, navigate, t }: {
+  activeCount: number; arrivalsCount: number; units: number; isLoading: boolean; navigate: any; t: any;
+}) {
+  const { data: openMaintenance } = useOpenMaintenanceCount();
+  const { data: pendingHousekeeping } = usePendingHousekeepingCount();
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <StatCard
+        label={t("dashboard.activeBookings", { defaultValue: "Active Guests" })}
+        value={isLoading ? null : activeCount}
+        icon={Users}
+        description={t("dashboard.longTermGuests", { defaultValue: "Currently staying" })}
+        stagger={1}
+        onClick={() => navigate("/bookings?filter=active")}
+      />
+      <StatCard
+        label={t("dashboard.upcomingArrivals", { defaultValue: "Upcoming Arrivals" })}
+        value={isLoading ? null : arrivalsCount}
+        icon={LogIn}
+        description={t("dashboard.arrivingThisWeek", { defaultValue: "Arriving soon" })}
+        stagger={2}
+        onClick={() => navigate("/bookings?filter=arriving_today")}
+      />
+      <StatCard
+        label={t("dashboard.scheduledHousekeeping", { defaultValue: "Housekeeping" })}
+        value={pendingHousekeeping ?? 0}
+        icon={Clock}
+        description={t("dashboard.pendingTasks", { defaultValue: "Pending tasks" })}
+        stagger={3}
+      />
+      <StatCard
+        label={t("dashboard.openMaintenance", { defaultValue: "Open Maintenance" })}
+        value={openMaintenance ?? 0}
+        icon={Wrench}
+        description={t("dashboard.issuesTracked", { defaultValue: "Issues tracked" })}
+        stagger={4}
+      />
+    </div>
+  );
+}
+
 function MaintenanceDashboard({ t }: { t: any }) {
   return (
     <div className="space-y-4">
