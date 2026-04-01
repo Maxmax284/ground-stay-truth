@@ -11,7 +11,7 @@ import { TrainingPackagesManager } from "@/components/TrainingPackagesManager";
 import { DriverManager } from "@/components/DriverManager";
 import { ArrivalWelcomeEditor } from "@/components/ArrivalWelcomeEditor";
 import { SecurityEventLog } from "@/components/SecurityEventLog";
-import PropertyAssignmentManager from "@/components/PropertyAssignmentManager";
+import PropertyManagementPanel from "@/components/PropertyManagementPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 
