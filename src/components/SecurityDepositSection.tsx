@@ -39,7 +39,6 @@ export function SecurityDepositSection({ bookingId, bookingState }: { bookingId:
   const [collectionMethod, setCollectionMethod] = useState("cash");
   const [inspectionNotes, setInspectionNotes] = useState("");
   const [uploadingEvidence, setUploadingEvidence] = useState(false);
-  const [inspectionNotes, setInspectionNotes] = useState("");
 
   const depositSetting = policies?.find((p) => p.key === "security_deposit_amount");
   const depositAmount = Number(depositSetting?.value ?? 0);
