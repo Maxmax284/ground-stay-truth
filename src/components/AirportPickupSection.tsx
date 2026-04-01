@@ -181,6 +181,8 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
       const updates: any = { booking_id: bookingId };
       updates.international_flight_number = intlFlight.trim().toUpperCase() || null;
       updates.flight_number = domesticFlight.trim().toUpperCase() || null;
+      updates.arrival_datetime = arrivalDt ? new Date(arrivalDt).toISOString() : null;
+      updates.passenger_count = Math.max(1, parseInt(paxCount) || 1);
       if (domesticFlight.trim()) {
         updates.final_flight_confirmed = true;
       }
@@ -189,9 +191,9 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
         bookingId,
         pickupId: pickup.id,
         action: "flights_updated",
-        note: `Flights updated: Int'l ${intlFlight.trim().toUpperCase() || "—"}, Final ${domesticFlight.trim().toUpperCase() || "—"}`,
+        note: `Flights updated: Int'l ${intlFlight.trim().toUpperCase() || "—"}, Final ${domesticFlight.trim().toUpperCase() || "—"}, Arrival ${arrivalDt || "—"}, Pax ${paxCount}`,
       });
-      toast({ title: "Flight numbers updated" });
+      toast({ title: "Flight details updated" });
       setEditingFlights(false);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
