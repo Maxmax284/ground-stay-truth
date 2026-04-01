@@ -63,8 +63,9 @@ export function useUpsertAirportPickup() {
       qc.invalidateQueries({ queryKey: ["airport_pickup", vars.booking_id] });
       qc.invalidateQueries({ queryKey: ["todays_pickups"] });
 
-      // Auto-complete the "confirm_domestic_flight" checklist item when final flight is set
-      if (vars.flight_number || (result as any)?.flight_number) {
+      // Sync "confirm_domestic_flight" checklist item with final flight number
+      if ("flight_number" in vars) {
+        const finalFlight = vars.flight_number || (result as any)?.flight_number;
         try {
           await supabase
             .from("pre_arrival_checklist")
@@ -72,9 +73,9 @@ export function useUpsertAirportPickup() {
               {
                 booking_id: vars.booking_id,
                 item_key: "confirm_domestic_flight",
-                completed: true,
-                completed_at: new Date().toISOString(),
-                data: { flight_number: vars.flight_number || (result as any)?.flight_number },
+                completed: !!finalFlight,
+                completed_at: finalFlight ? new Date().toISOString() : null,
+                data: finalFlight ? { flight_number: finalFlight } : null,
               },
               { onConflict: "booking_id,item_key" }
             );
