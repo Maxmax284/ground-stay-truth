@@ -114,11 +114,12 @@ describe("GuestPickupCard — Travel State Guidance", () => {
     expect(screen.getByText(/driver is on the way/i)).toBeInTheDocument();
   });
 
-  it("completed: does not render (card hidden)", () => {
+  it("completed: shows completed badge, no guidance message", () => {
     mockPickup.status = "completed";
-    const { container } = renderCard();
-    // The component returns null for completed status
-    expect(container.innerHTML).toBe("");
+    renderCard();
+    expect(screen.getByText("Completed")).toBeInTheDocument();
+    // Guidance is suppressed for arrived/completed state
+    expect(screen.queryByText(/driver is on the way/i)).not.toBeInTheDocument();
   });
 
   it("cancelled: does not render (card hidden)", () => {
