@@ -333,6 +333,26 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
                   className="h-7 text-sm font-mono uppercase"
                 />
               </div>
+              <div className="space-y-1">
+                <Label className="text-[11px] text-muted-foreground">Arrival Date & Time</Label>
+                <Input
+                  type="datetime-local"
+                  value={arrivalDt}
+                  onChange={(e) => setArrivalDt(e.target.value)}
+                  className="h-7 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[11px] text-muted-foreground">Passengers</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={paxCount}
+                  onChange={(e) => setPaxCount(e.target.value)}
+                  className="h-7 text-sm w-20"
+                />
+              </div>
               <div className="flex gap-1">
                 <Button size="sm" className="h-7 text-xs" onClick={handleSaveFlights} disabled={upsert.isPending}>
                   Save Flights
