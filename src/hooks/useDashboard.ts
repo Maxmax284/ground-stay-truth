@@ -24,13 +24,15 @@ export function useDashboardStats() {
   });
 
   const departures = useQuery({
-    queryKey: ["dashboard", "departures", today],
+    queryKey: ["dashboard", "departures", today, activePropertyId],
     queryFn: async () => {
-      const { data, error } = await (supabase
+      let query = (supabase
         .from("bookings")
         .select("id, unit_id, num_guests, state, guest_id, units(name), profiles!bookings_guest_id_profiles_fkey(full_name)") as any)
         .eq("check_out", today)
         .eq("state", "checked_in");
+      if (activePropertyId) query = query.eq("property_id", activePropertyId);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
