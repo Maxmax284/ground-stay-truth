@@ -39,12 +39,14 @@ export function useDashboardStats() {
   });
 
   const activeBookings = useQuery({
-    queryKey: ["dashboard", "active"],
+    queryKey: ["dashboard", "active", activePropertyId],
     queryFn: async () => {
-      const { count, error } = await supabase
+      let query = supabase
         .from("bookings")
         .select("*", { count: "exact", head: true })
         .in("state", ACTIVE_STATES);
+      if (activePropertyId) query = query.eq("property_id", activePropertyId);
+      const { count, error } = await query;
       if (error) throw error;
       return count ?? 0;
     },
