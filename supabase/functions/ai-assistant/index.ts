@@ -7,6 +7,75 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ─── AIRPORT COORDINATES FOR WEATHER ─────────────────────────────────────────
+const AIRPORT_COORDS: Record<string, { lat: number; lon: number; name: string }> = {
+  BKK: { lat: 13.6900, lon: 100.7501, name: "Bangkok (Suvarnabhumi)" },
+  USM: { lat: 9.5478, lon: 100.0623, name: "Koh Samui" },
+  DMK: { lat: 13.9126, lon: 100.6071, name: "Bangkok (Don Mueang)" },
+};
+
+// AQI interpretation helper
+function aqiLabel(aqi: number): string {
+  if (aqi <= 50) return "Good";
+  if (aqi <= 100) return "Moderate";
+  if (aqi <= 150) return "Unhealthy for Sensitive Groups";
+  if (aqi <= 200) return "Unhealthy";
+  return "Very Unhealthy";
+}
+
+/**
+ * Fetch live weather + AQI from Open-Meteo (free, no API key).
+ * Returns a text block for injection into the AI context, or empty string on failure.
+ */
+async function fetchWeatherContext(airportCode: string): Promise<string> {
+  const coords = AIRPORT_COORDS[airportCode.toUpperCase()];
+  if (!coords) return "";
+
+  try {
+    const [weatherRes, aqiRes] = await Promise.all([
+      fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code,uv_index_max&timezone=Asia%2FBangkok&forecast_days=3`
+      ),
+      fetch(
+        `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${coords.lat}&longitude=${coords.lon}&current=pm2_5,us_aqi&timezone=Asia%2FBangkok`
+      ),
+    ]);
+
+    let weatherText = `\n\nLIVE WEATHER — ${coords.name} (${airportCode}):`;
+
+    if (weatherRes.ok) {
+      const w = await weatherRes.json();
+      const current = w.current;
+      const daily = w.daily;
+      weatherText += `\nNow: ${current.temperature_2m}°C (feels like ${current.apparent_temperature}°C), humidity ${current.relative_humidity_2m}%, wind ${current.wind_speed_10m} km/h.`;
+
+      if (daily && daily.time) {
+        for (let i = 0; i < Math.min(3, daily.time.length); i++) {
+          weatherText += `\n${daily.time[i]}: ${daily.temperature_2m_min[i]}–${daily.temperature_2m_max[i]}°C, rain ${daily.precipitation_sum[i]}mm, UV ${daily.uv_index_max[i]}.`;
+        }
+      }
+    }
+
+    if (aqiRes.ok) {
+      const a = await aqiRes.json();
+      const aCurrent = a.current;
+      if (aCurrent) {
+        weatherText += `\nAir Quality: AQI ${aCurrent.us_aqi} (${aqiLabel(aCurrent.us_aqi)}), PM2.5: ${aCurrent.pm2_5} µg/m³.`;
+        if (aCurrent.us_aqi > 100) {
+          weatherText += ` ⚠️ Air quality is poor — suggest guests with respiratory conditions consider wearing a mask outdoors.`;
+        }
+      }
+    }
+
+    weatherText += `\nUse this data when guests ask about weather, what to pack, or current conditions. Always cite the data, don't guess.`;
+    return weatherText;
+  } catch (e) {
+    console.error("Weather fetch failed:", e);
+    return "";
+  }
+}
+};
+
 // ─── LAYER 1: IDENTITY ───────────────────────────────────────────────────────
 const IDENTITY = `You are Kru Glitch — the camp's resident advisor at Ground Stay, a Muay Thai fight camp accommodation.`;
 
