@@ -335,7 +335,7 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">{format(new Date(p.created_at), "MMM d")}</span>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">{formatInPropertyTimezone(p.created_at, "date")}</span>
                     {canRefund(p) && (
                       <Button variant="ghost" size="sm" className="h-6 px-2 text-xs gap-1 text-destructive hover:text-destructive" onClick={() => setRefundTarget(p)}>
                         <RotateCcw className="h-3 w-3" /> {t("payments.refund", { defaultValue: "Refund" })}
