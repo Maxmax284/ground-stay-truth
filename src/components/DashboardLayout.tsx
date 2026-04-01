@@ -11,6 +11,7 @@ import { TutorialOverlay } from "@/components/TutorialOverlay";
 import { useRolePreview } from "@/hooks/useRolePreview";
 import { Button } from "@/components/ui/button";
 import { SecurityFreezeBanner } from "@/components/SecurityFreezeBanner";
+import { PropertyIndicator } from "@/components/PropertyIndicator";
 import { useFenrirConfig } from "@/lib/fenrir";
 
 const routeTitleKeys: Record<string, string> = {
@@ -62,6 +63,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <Menu className="h-5 w-5" />
               <span className="md:hidden">{t("common.menu")}</span>
             </SidebarTrigger>
+            <PropertyIndicator />
             <span className="md:hidden text-sm font-semibold text-primary">{t("auth.groundStay")}</span>
             <span className="md:ml-0 text-sm font-medium text-muted-foreground">{t(titleKey)}</span>
             <div className="ml-auto flex items-center gap-1">

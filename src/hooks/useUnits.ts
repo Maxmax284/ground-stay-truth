@@ -1,19 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { useProperty } from "@/hooks/useProperty";
 
 export type Unit = Tables<"units"> & { unit_groups?: { name: string } | null };
 export type UnitInsert = TablesInsert<"units">;
 export type UnitUpdate = TablesUpdate<"units">;
 
 export function useUnits() {
+  const { activePropertyId } = useProperty();
   return useQuery({
-    queryKey: ["units"],
+    queryKey: ["units", activePropertyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("units")
         .select("*, unit_groups(name)")
         .order("created_at", { ascending: false });
+      if (activePropertyId) {
+        query = query.eq("property_id", activePropertyId);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data as Unit[];
     },

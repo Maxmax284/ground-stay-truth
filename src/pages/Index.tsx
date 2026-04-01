@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Building2, BookOpen, CalendarDays, TrendingUp, ArrowRight, Plus, LogIn, LogOut, Wrench, Shirt, MessageSquare, ShieldCheck, Check, X, FileText } from "lucide-react";
+import { Building2, BookOpen, CalendarDays, TrendingUp, ArrowRight, Plus, LogIn, LogOut, Wrench, Shirt, MessageSquare, ShieldCheck, Check, X, FileText, Clock, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { canAccessRoute, permissions } from "@/lib/permissions";
 import { useAuth } from "@/hooks/useAuth";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { useRolePreview } from "@/hooks/useRolePreview";
+import { useProperty } from "@/hooks/useProperty";
 import { ApprovalQueue } from "@/components/ApprovalQueue";
 import { InquiryQueue } from "@/components/InquiryQueue";
 import { MaintenanceQueue } from "@/components/MaintenanceQueue";
@@ -23,6 +24,7 @@ import { FlightForecastWidget } from "@/components/FlightForecastWidget";
 import { CornerTalkPanel } from "@/components/CornerTalkPanel";
 import { StaffQuickActionsWidget } from "@/components/StaffQuickActionsWidget";
 import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
+import { usePendingHousekeepingCount } from "@/hooks/useHousekeepingTasks";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useDraftMessages, useApproveDraftMessage } from "@/hooks/useBookings";
 import { format } from "date-fns";
@@ -35,6 +37,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { role } = useAuth();
   const { effectiveRole } = useRolePreview();
+  const { operationalMode } = useProperty();
   const { arrivals, departures, activeBookings, unitCount, recentActivity, pendingApproval, pendingInquiry, inquiryCount } = useDashboardStats();
   const { data: policySettings } = usePolicySettings();
   const [detailBookingId, setDetailBookingId] = useState<string | null>(null);
@@ -54,6 +57,8 @@ const Index = () => {
   const isMaintenance = effectiveRole === "maintenance";
   const isViewer = effectiveRole === "viewer";
   const isAdmin = canApprove;
+
+  const isLongStay = operationalMode === "long_stay";
 
   return (
     <DashboardLayout>
@@ -80,49 +85,60 @@ const Index = () => {
             {/* Staff Quick Actions Widget */}
             {!isViewer && <StaffQuickActionsWidget />}
 
-            {/* Stats Row — clickable */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              <StatCard
-                label={t("dashboard.todaysArrivals")}
-                value={isLoading ? null : arrivalsCount}
-                icon={LogIn}
-                description={t("dashboard.checkInsToday", { count: arrivalsCount })}
-                stagger={1}
-                onClick={() => navigate("/bookings?filter=arriving_today")}
+            {/* Stats Row — adapted by operational mode */}
+            {isLongStay ? (
+              <LongStayStats
+                activeCount={activeCount}
+                arrivalsCount={arrivalsCount}
+                units={units}
+                isLoading={isLoading}
+                navigate={navigate}
+                t={t}
               />
-              <StatCard
-                label={t("dashboard.todaysDepartures")}
-                value={isLoading ? null : departuresCount}
-                icon={LogOut}
-                description={t("dashboard.checkOutsToday", { count: departuresCount })}
-                stagger={2}
-                onClick={() => navigate("/bookings?filter=departing_today")}
-              />
-              <StatCard
-                label={t("dashboard.activeBookings")}
-                value={isLoading ? null : activeCount}
-                icon={BookOpen}
-                description={t("dashboard.acrossAllUnits")}
-                stagger={3}
-                onClick={() => navigate("/bookings?filter=active")}
-              />
-              <StatCard
-                label={t("dashboard.openInquiries")}
-                value={isLoading ? null : inquiries}
-                icon={MessageSquare}
-                description={t("dashboard.awaitingResponse")}
-                stagger={4}
-                onClick={() => navigate("/bookings?filter=inquiry")}
-              />
-              <StatCard
-                label={t("dashboard.activeUnits")}
-                value={isLoading ? null : units}
-                icon={Building2}
-                description={t("dashboard.unitsConfigured", { count: units })}
-                stagger={5}
-                onClick={() => navigate("/units")}
-              />
-            </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <StatCard
+                  label={t("dashboard.todaysArrivals")}
+                  value={isLoading ? null : arrivalsCount}
+                  icon={LogIn}
+                  description={t("dashboard.checkInsToday", { count: arrivalsCount })}
+                  stagger={1}
+                  onClick={() => navigate("/bookings?filter=arriving_today")}
+                />
+                <StatCard
+                  label={t("dashboard.todaysDepartures")}
+                  value={isLoading ? null : departuresCount}
+                  icon={LogOut}
+                  description={t("dashboard.checkOutsToday", { count: departuresCount })}
+                  stagger={2}
+                  onClick={() => navigate("/bookings?filter=departing_today")}
+                />
+                <StatCard
+                  label={t("dashboard.activeBookings")}
+                  value={isLoading ? null : activeCount}
+                  icon={BookOpen}
+                  description={t("dashboard.acrossAllUnits")}
+                  stagger={3}
+                  onClick={() => navigate("/bookings?filter=active")}
+                />
+                <StatCard
+                  label={t("dashboard.openInquiries")}
+                  value={isLoading ? null : inquiries}
+                  icon={MessageSquare}
+                  description={t("dashboard.awaitingResponse")}
+                  stagger={4}
+                  onClick={() => navigate("/bookings?filter=inquiry")}
+                />
+                <StatCard
+                  label={t("dashboard.activeUnits")}
+                  value={isLoading ? null : units}
+                  icon={Building2}
+                  description={t("dashboard.unitsConfigured", { count: units })}
+                  stagger={5}
+                  onClick={() => navigate("/units")}
+                />
+              </div>
+            )}
 
             {/* Admin/Manager layout: Approval queue prominent */}
             {canViewQueues && (
@@ -136,11 +152,25 @@ const Index = () => {
             {/* Admin-only: Pending Admin Actions (draft messages) */}
             {canApprove && <PendingAdminActions t={t} />}
 
-            {/* Today's Pickups widget */}
-            {!isViewer && <TodaysPickupsWidget onClickBooking={setDetailBookingId} />}
+            {/* Today's Pickups widget — high-turnover emphasis */}
+            {!isViewer && !isLongStay && <TodaysPickupsWidget onClickBooking={setDetailBookingId} />}
 
-            {/* Flight Forecast — airport traffic monitor (admin-toggled) */}
-            {!isViewer && flightForecastEnabled && <FlightForecastWidget />}
+            {/* Flight Forecast — airport traffic monitor (admin-toggled, high-turnover) */}
+            {!isViewer && !isLongStay && flightForecastEnabled && <FlightForecastWidget />}
+
+            {/* Long-stay: Housekeeping and Maintenance first */}
+            {!isViewer && !isMaintenance && isLongStay && (
+              <>
+                <HousekeepingPanel />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <MaintenanceQueue />
+                  <LaundryPanel />
+                </div>
+              </>
+            )}
+
+            {/* Long-stay: Pickups still available but lower priority */}
+            {!isViewer && isLongStay && <TodaysPickupsWidget onClickBooking={setDetailBookingId} />}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Front Desk / Supervisor: arrivals/departures first */}
@@ -178,11 +208,11 @@ const Index = () => {
               )}
             </div>
 
-            {/* Housekeeping, Maintenance & Laundry panels for all non-viewer, non-maintenance staff */}
-            {!isViewer && !isMaintenance && (
+            {/* High-turnover: Housekeeping, Maintenance & Laundry panels at bottom */}
+            {!isViewer && !isMaintenance && !isLongStay && (
               <HousekeepingPanel />
             )}
-            {!isViewer && !isMaintenance && (
+            {!isViewer && !isMaintenance && !isLongStay && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <MaintenanceQueue />
                 <LaundryPanel />
@@ -251,6 +281,48 @@ function PendingAdminActions({ t }: { t: any }) {
         ))}
       </CardContent>
     </Card>
+  );
+}
+
+function LongStayStats({ activeCount, arrivalsCount, units, isLoading, navigate, t }: {
+  activeCount: number; arrivalsCount: number; units: number; isLoading: boolean; navigate: any; t: any;
+}) {
+  const { data: openMaintenance } = useOpenMaintenanceCount();
+  const { data: pendingHousekeeping } = usePendingHousekeepingCount();
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <StatCard
+        label={t("dashboard.activeBookings", { defaultValue: "Active Guests" })}
+        value={isLoading ? null : activeCount}
+        icon={Users}
+        description={t("dashboard.longTermGuests", { defaultValue: "Currently staying" })}
+        stagger={1}
+        onClick={() => navigate("/bookings?filter=active")}
+      />
+      <StatCard
+        label={t("dashboard.upcomingArrivals", { defaultValue: "Upcoming Arrivals" })}
+        value={isLoading ? null : arrivalsCount}
+        icon={LogIn}
+        description={t("dashboard.arrivingThisWeek", { defaultValue: "Arriving soon" })}
+        stagger={2}
+        onClick={() => navigate("/bookings?filter=arriving_today")}
+      />
+      <StatCard
+        label={t("dashboard.scheduledHousekeeping", { defaultValue: "Housekeeping" })}
+        value={pendingHousekeeping ?? 0}
+        icon={Clock}
+        description={t("dashboard.pendingTasks", { defaultValue: "Pending tasks" })}
+        stagger={3}
+      />
+      <StatCard
+        label={t("dashboard.openMaintenance", { defaultValue: "Open Maintenance" })}
+        value={openMaintenance ?? 0}
+        icon={Wrench}
+        description={t("dashboard.issuesTracked", { defaultValue: "Issues tracked" })}
+        stagger={4}
+      />
+    </div>
   );
 }
 

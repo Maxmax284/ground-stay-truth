@@ -1,14 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useProperty } from "@/hooks/useProperty";
 
 export function useHousekeepingTasks() {
+  const { activePropertyId } = useProperty();
   return useQuery({
-    queryKey: ["housekeeping_tasks"],
+    queryKey: ["housekeeping_tasks", activePropertyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("housekeeping_tasks")
         .select("*, units(name), booking_out:bookings!housekeeping_tasks_booking_out_id_fkey(id, check_out, guest_id, profiles:profiles!bookings_guest_id_profiles_fkey(full_name)), booking_in:bookings!housekeeping_tasks_booking_in_id_fkey(id, check_in, guest_id, profiles:profiles!bookings_guest_id_profiles_fkey(full_name))")
         .order("created_at", { ascending: false });
+      if (activePropertyId) query = query.eq("property_id", activePropertyId);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -38,13 +42,16 @@ export function useUpdateHousekeepingTask() {
 }
 
 export function usePendingHousekeepingCount() {
+  const { activePropertyId } = useProperty();
   return useQuery({
-    queryKey: ["housekeeping_tasks", "pending_count"],
+    queryKey: ["housekeeping_tasks", "pending_count", activePropertyId],
     queryFn: async () => {
-      const { count, error } = await supabase
+      let query = supabase
         .from("housekeeping_tasks")
         .select("*", { count: "exact", head: true })
         .in("status", ["pending", "in_progress"]);
+      if (activePropertyId) query = query.eq("property_id", activePropertyId);
+      const { count, error } = await query;
       if (error) throw error;
       return count ?? 0;
     },

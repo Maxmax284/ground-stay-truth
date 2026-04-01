@@ -138,8 +138,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
     });
   }, [pickup]);
 
-  if (!booking) return null;
-  const guestName = (booking as any).profiles?.full_name;
+  const guestName = (booking as any)?.profiles?.full_name;
 
   const TRAVEL_BADGE_STYLES: Record<string, string> = {
     info: "bg-primary/10 text-primary border-primary/20",
@@ -148,6 +147,8 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
     muted: "bg-muted text-muted-foreground",
     destructive: "bg-destructive/10 text-destructive",
   };
+
+  if (!booking) return null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

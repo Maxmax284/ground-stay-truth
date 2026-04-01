@@ -37,6 +37,7 @@ export type Database = {
           international_flight_number: string | null
           luggage_notes: string | null
           passenger_count: number | null
+          property_id: string | null
           special_instructions: string | null
           status: string
           updated_at: string
@@ -63,6 +64,7 @@ export type Database = {
           international_flight_number?: string | null
           luggage_notes?: string | null
           passenger_count?: number | null
+          property_id?: string | null
           special_instructions?: string | null
           status?: string
           updated_at?: string
@@ -89,6 +91,7 @@ export type Database = {
           international_flight_number?: string | null
           luggage_notes?: string | null
           passenger_count?: number | null
+          property_id?: string | null
           special_instructions?: string | null
           status?: string
           updated_at?: string
@@ -106,6 +109,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "airport_pickups_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
         ]
@@ -293,6 +303,7 @@ export type Database = {
           num_guests: number
           pre_arrival_status: string
           price_override: number | null
+          property_id: string | null
           state: Database["public"]["Enums"]["booking_state"]
           total_price: number | null
           unit_id: string
@@ -311,6 +322,7 @@ export type Database = {
           num_guests?: number
           pre_arrival_status?: string
           price_override?: number | null
+          property_id?: string | null
           state?: Database["public"]["Enums"]["booking_state"]
           total_price?: number | null
           unit_id: string
@@ -329,6 +341,7 @@ export type Database = {
           num_guests?: number
           pre_arrival_status?: string
           price_override?: number | null
+          property_id?: string | null
           state?: Database["public"]["Enums"]["booking_state"]
           total_price?: number | null
           unit_id?: string
@@ -343,10 +356,53 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "bookings_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bookings_unit_id_fkey"
             columns: ["unit_id"]
             isOneToOne: false
             referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_property_assignments: {
+        Row: {
+          created_at: string
+          driver_id: string
+          id: string
+          property_id: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          id?: string
+          property_id: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          id?: string
+          property_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_property_assignments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_property_assignments_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
         ]
@@ -615,6 +671,7 @@ export type Database = {
           due_by: string | null
           id: string
           notes: string | null
+          property_id: string | null
           status: string
           unit_id: string
           updated_at: string
@@ -628,6 +685,7 @@ export type Database = {
           due_by?: string | null
           id?: string
           notes?: string | null
+          property_id?: string | null
           status?: string
           unit_id: string
           updated_at?: string
@@ -641,6 +699,7 @@ export type Database = {
           due_by?: string | null
           id?: string
           notes?: string | null
+          property_id?: string | null
           status?: string
           unit_id?: string
           updated_at?: string
@@ -661,6 +720,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "housekeeping_tasks_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "housekeeping_tasks_unit_id_fkey"
             columns: ["unit_id"]
             isOneToOne: false
@@ -677,6 +743,7 @@ export type Database = {
           created_by: string | null
           id: string
           note: string | null
+          property_id: string | null
           status: string
           unit_id: string
           updated_at: string
@@ -689,6 +756,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           note?: string | null
+          property_id?: string | null
           status?: string
           unit_id: string
           updated_at?: string
@@ -701,6 +769,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           note?: string | null
+          property_id?: string | null
           status?: string
           unit_id?: string
           updated_at?: string
@@ -712,6 +781,13 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "laundry_requests_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
           {
@@ -771,6 +847,7 @@ export type Database = {
           id: string
           photo_url: string | null
           priority: string
+          property_id: string | null
           resolution_note: string | null
           resolved_by: string | null
           status: string
@@ -786,6 +863,7 @@ export type Database = {
           id?: string
           photo_url?: string | null
           priority?: string
+          property_id?: string | null
           resolution_note?: string | null
           resolved_by?: string | null
           status?: string
@@ -801,6 +879,7 @@ export type Database = {
           id?: string
           photo_url?: string | null
           priority?: string
+          property_id?: string | null
           resolution_note?: string | null
           resolved_by?: string | null
           status?: string
@@ -813,6 +892,13 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_requests_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
           {
@@ -833,6 +919,7 @@ export type Database = {
           draft: boolean
           id: string
           is_internal: boolean
+          property_id: string | null
           read_at: string | null
           sender_id: string | null
         }
@@ -844,6 +931,7 @@ export type Database = {
           draft?: boolean
           id?: string
           is_internal?: boolean
+          property_id?: string | null
           read_at?: string | null
           sender_id?: string | null
         }
@@ -855,6 +943,7 @@ export type Database = {
           draft?: boolean
           id?: string
           is_internal?: boolean
+          property_id?: string | null
           read_at?: string | null
           sender_id?: string | null
         }
@@ -864,6 +953,13 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
         ]
@@ -1021,6 +1117,7 @@ export type Database = {
           description: string | null
           id: string
           key: string
+          property_id: string | null
           updated_at: string
           updated_by: string | null
           value: Json
@@ -1029,6 +1126,7 @@ export type Database = {
           description?: string | null
           id?: string
           key: string
+          property_id?: string | null
           updated_at?: string
           updated_by?: string | null
           value: Json
@@ -1037,11 +1135,20 @@ export type Database = {
           description?: string | null
           id?: string
           key?: string
+          property_id?: string | null
           updated_at?: string
           updated_by?: string | null
           value?: Json
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "policy_settings_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pre_arrival_checklist: {
         Row: {
@@ -1179,6 +1286,39 @@ export type Database = {
           updated_at?: string
           user_id?: string
           whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      properties: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          operational_mode: string
+          settings: Json
+          slug: string
+          timezone: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          operational_mode?: string
+          settings?: Json
+          slug: string
+          timezone?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          operational_mode?: string
+          settings?: Json
+          slug?: string
+          timezone?: string
         }
         Relationships: []
       }
@@ -1530,6 +1670,7 @@ export type Database = {
           base_price: number
           capacity: number
           cleaning_fee: number | null
+          cleaning_mode: string
           created_at: string
           description: string | null
           emergency_contact_name: string | null
@@ -1545,6 +1686,7 @@ export type Database = {
           name: string
           photos: string[] | null
           pricing_type: string
+          property_id: string | null
           reviews_enabled: boolean
           rules: string | null
           sort_order: number
@@ -1559,6 +1701,7 @@ export type Database = {
           base_price?: number
           capacity?: number
           cleaning_fee?: number | null
+          cleaning_mode?: string
           created_at?: string
           description?: string | null
           emergency_contact_name?: string | null
@@ -1574,6 +1717,7 @@ export type Database = {
           name: string
           photos?: string[] | null
           pricing_type?: string
+          property_id?: string | null
           reviews_enabled?: boolean
           rules?: string | null
           sort_order?: number
@@ -1588,6 +1732,7 @@ export type Database = {
           base_price?: number
           capacity?: number
           cleaning_fee?: number | null
+          cleaning_mode?: string
           created_at?: string
           description?: string | null
           emergency_contact_name?: string | null
@@ -1603,6 +1748,7 @@ export type Database = {
           name?: string
           photos?: string[] | null
           pricing_type?: string
+          property_id?: string | null
           reviews_enabled?: boolean
           rules?: string | null
           sort_order?: number
@@ -1618,6 +1764,45 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "unit_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "units_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_property_assignments: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          property_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          property_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          property_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_property_assignments_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
         ]
@@ -1648,6 +1833,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_property_access: {
+        Args: { _property_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

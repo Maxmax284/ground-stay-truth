@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification, createNotifications } from "@/hooks/useNotifications";
+import { useProperty } from "@/hooks/useProperty";
 
 export interface MaintenanceRequest {
   id: string;
@@ -35,8 +36,9 @@ export function useMaintenanceRequests(bookingId?: string | null) {
 }
 
 export function useAllMaintenanceRequests(statusFilter?: string[]) {
+  const { activePropertyId } = useProperty();
   return useQuery({
-    queryKey: ["maintenance-requests-all", statusFilter],
+    queryKey: ["maintenance-requests-all", statusFilter, activePropertyId],
     queryFn: async () => {
       let query = supabase
         .from("maintenance_requests")
@@ -45,6 +47,7 @@ export function useAllMaintenanceRequests(statusFilter?: string[]) {
       if (statusFilter && statusFilter.length > 0) {
         query = query.in("status", statusFilter);
       }
+      if (activePropertyId) query = query.eq("property_id", activePropertyId);
       const { data, error } = await query;
       if (error) throw error;
 
@@ -69,13 +72,16 @@ export function useAllMaintenanceRequests(statusFilter?: string[]) {
 }
 
 export function useOpenMaintenanceCount() {
+  const { activePropertyId } = useProperty();
   return useQuery({
-    queryKey: ["maintenance-open-count"],
+    queryKey: ["maintenance-open-count", activePropertyId],
     queryFn: async () => {
-      const { count, error } = await supabase
+      let query = supabase
         .from("maintenance_requests")
         .select("*", { count: "exact", head: true })
         .in("status", ["open", "in_progress"]);
+      if (activePropertyId) query = query.eq("property_id", activePropertyId);
+      const { count, error } = await query;
       if (error) throw error;
       return count ?? 0;
     },

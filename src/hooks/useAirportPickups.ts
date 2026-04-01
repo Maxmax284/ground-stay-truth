@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { useProperty } from "@/hooks/useProperty";
 
 export interface AirportPickup {
   id: string;
@@ -90,19 +91,22 @@ export function useUpsertAirportPickup() {
 
 export function useTodaysPickups() {
   const today = format(new Date(), "yyyy-MM-dd");
+  const { activePropertyId } = useProperty();
   return useQuery({
-    queryKey: ["todays_pickups", today],
+    queryKey: ["todays_pickups", today, activePropertyId],
     queryFn: async () => {
       // Query by arrival_datetime date OR booking check_in date
       const startOfDay = `${today}T00:00:00`;
       const endOfDay = `${today}T23:59:59`;
-      const { data, error } = await (supabase
+      let query = (supabase
         .from("airport_pickups" as any)
         .select("*, drivers(name, whatsapp, vehicle_type, license_plate), bookings!inner(id, check_in, guest_id, units(name), profiles!bookings_guest_id_profiles_fkey(full_name))")
         .neq("status", "cancelled")
         .neq("status", "completed")
         .or(`arrival_datetime.gte.${startOfDay},arrival_datetime.lte.${endOfDay},arrival_datetime.is.null`)
         .order("arrival_datetime", { ascending: true, nullsFirst: false }) as any);
+      if (activePropertyId) query = query.eq("property_id", activePropertyId);
+      const { data, error } = await query;
       if (error) throw error;
       // Filter: if arrival_datetime is null, fall back to check_in matching today
       return (data ?? []).filter((p: any) => {
