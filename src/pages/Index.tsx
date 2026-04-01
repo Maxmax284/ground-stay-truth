@@ -37,6 +37,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { role } = useAuth();
   const { effectiveRole } = useRolePreview();
+  const { operationalMode } = useProperty();
   const { arrivals, departures, activeBookings, unitCount, recentActivity, pendingApproval, pendingInquiry, inquiryCount } = useDashboardStats();
   const { data: policySettings } = usePolicySettings();
   const [detailBookingId, setDetailBookingId] = useState<string | null>(null);
@@ -56,6 +57,8 @@ const Index = () => {
   const isMaintenance = effectiveRole === "maintenance";
   const isViewer = effectiveRole === "viewer";
   const isAdmin = canApprove;
+
+  const isLongStay = operationalMode === "long_stay";
 
   return (
     <DashboardLayout>
