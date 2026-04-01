@@ -9,13 +9,15 @@ export function useDashboardStats() {
   const { activePropertyId } = useProperty();
 
   const arrivals = useQuery({
-    queryKey: ["dashboard", "arrivals", today],
+    queryKey: ["dashboard", "arrivals", today, activePropertyId],
     queryFn: async () => {
-      const { data, error } = await (supabase
+      let query = (supabase
         .from("bookings")
         .select("id, unit_id, num_guests, state, guest_id, units(name), profiles!bookings_guest_id_profiles_fkey(full_name)") as any)
         .eq("check_in", today)
         .in("state", ["confirmed", "pending_deposit"]);
+      if (activePropertyId) query = query.eq("property_id", activePropertyId);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
