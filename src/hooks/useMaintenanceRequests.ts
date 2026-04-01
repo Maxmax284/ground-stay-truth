@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification, createNotifications } from "@/hooks/useNotifications";
+import { useProperty } from "@/hooks/useProperty";
 
 export interface MaintenanceRequest {
   id: string;
