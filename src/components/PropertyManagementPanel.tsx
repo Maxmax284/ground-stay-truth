@@ -29,6 +29,13 @@ interface Property {
   settings: Record<string, unknown>;
 }
 
+type PropertyUpdate = {
+  id: string;
+  operational_mode?: string;
+  timezone?: string;
+  is_active?: boolean;
+};
+
 interface UserAssignment {
   id: string;
   user_id: string;
