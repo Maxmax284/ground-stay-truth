@@ -182,9 +182,27 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
           <Badge className={STATUS_COLORS[pickup.status] ?? ""}>{pickup.status}</Badge>
         </div>
 
+        {/* Connecting flight context */}
+        {(pickup as any).international_flight_number && (
+          <div className="flex items-center gap-1.5 bg-muted/30 rounded-md p-2 text-xs text-muted-foreground">
+            <Plane className="h-3 w-3 shrink-0" />
+            <span>Int'l: {(pickup as any).international_flight_number}</span>
+            <span className="text-primary">→</span>
+            <span className="font-medium text-foreground">
+              {pickup.flight_number ? `Final: ${pickup.flight_number}` : "Final flight TBD"}
+            </span>
+            {!(pickup as any).final_flight_confirmed && (
+              <Badge variant="outline" className="text-[9px] ml-auto border-warning/50 text-warning-foreground">
+                <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
+                Unconfirmed
+              </Badge>
+            )}
+          </div>
+        )}
+
         {/* Flight details */}
         <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-          {pickup.flight_number && (
+          {pickup.flight_number && !(pickup as any).international_flight_number && (
             <div className="flex items-center gap-1"><Plane className="h-3 w-3" /> {pickup.flight_number}</div>
           )}
           {pickup.arrival_datetime && (
@@ -197,6 +215,20 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
         </div>
         {pickup.special_instructions && (
           <p className="text-xs italic text-muted-foreground">{pickup.special_instructions}</p>
+        )}
+
+        {/* Guest landed info */}
+        {(pickup as any).guest_landed_at && (
+          <div className="flex items-center gap-1.5 text-xs">
+            <Badge variant="secondary" className="text-[10px]">
+              ✅ Landed{(pickup as any).confirmed_airport ? ` at ${(pickup as any).confirmed_airport.toUpperCase()}` : ""}
+            </Badge>
+            {(pickup as any).confirmed_airport && (pickup as any).international_flight_number && (pickup as any).confirmed_airport.toLowerCase() === "bkk" && (
+              <Badge variant="outline" className="text-[10px] border-warning/50 text-warning-foreground">
+                ⚠️ In Transit
+              </Badge>
+            )}
+          </div>
         )}
 
         <Separator />

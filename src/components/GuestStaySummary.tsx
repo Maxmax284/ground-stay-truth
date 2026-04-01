@@ -567,6 +567,8 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
         flightAirport={landedFlightAirport}
         bookingAirport={landedBookingAirport}
         flightNumber={landedPickup?.flight_number}
+        hasConnectingFlight={!!(landedPickup as any)?.international_flight_number}
+        internationalFlightNumber={(landedPickup as any)?.international_flight_number}
         isPending={landedMutation.isPending}
         onConfirm={(confirmedAirport) => {
           if (landedBookingId) {

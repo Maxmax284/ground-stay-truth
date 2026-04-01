@@ -111,11 +111,19 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
                       <Clock className="h-3 w-3" /> {time}
                     </span>
                   )}
-                  {p.flight_number && (
+                  {/* Show connecting flight route or single flight */}
+                  {(p as any).international_flight_number ? (
+                    <span className="flex items-center gap-1">
+                      <Plane className="h-3 w-3" />
+                      <span className="text-muted-foreground">{(p as any).international_flight_number}</span>
+                      <span className="text-primary">→</span>
+                      <span className="font-medium text-foreground">{p.flight_number || "TBD"}</span>
+                    </span>
+                  ) : p.flight_number ? (
                     <span className="flex items-center gap-1">
                       <Plane className="h-3 w-3" /> {p.flight_number}
                     </span>
-                  )}
+                  ) : null}
                   {p.passenger_count > 1 && (
                     <span className="flex items-center gap-1">
                       <User className="h-3 w-3" /> {p.passenger_count} pax
@@ -128,6 +136,24 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
                     </span>
                   )}
                 </div>
+                {/* Guest landed / transit status */}
+                {(p as any).guest_landed_at && (
+                  <div className="text-[11px] flex items-center gap-1">
+                    {(p as any).confirmed_airport && (p as any).international_flight_number && (p as any).confirmed_airport.toLowerCase() === "bkk" ? (
+                      <span className="text-warning-foreground font-medium">🔄 In transit (landed BKK, connecting to USM)</span>
+                    ) : (
+                      <span className="text-[hsl(var(--success))] font-medium">
+                        ✅ Landed{(p as any).confirmed_airport ? ` at ${(p as any).confirmed_airport.toUpperCase()}` : ""}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {/* Unconfirmed final flight warning */}
+                {(p as any).international_flight_number && !p.flight_number && !(p as any).guest_landed_at && (
+                  <div className="text-[11px] text-warning-foreground font-medium">
+                    ⚠️ Final domestic flight not yet confirmed
+                  </div>
+                )}
                 {/* Flight delay info */}
                 {ft && ft.delay_minutes > 0 && (
                   <div className="text-[11px] text-orange-600 dark:text-orange-400 flex items-center gap-1">
