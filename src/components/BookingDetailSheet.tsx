@@ -1,5 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { toast as sonnerToast } from "sonner";
+import { getTravelState } from "@/lib/travelState";
+import { useAirportPickup } from "@/hooks/useAirportPickups";
 import { useGuestHistory } from "@/hooks/useGuestHistory";
 import { useTranslation } from "react-i18next";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -47,6 +49,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
   const { t } = useTranslation();
   const { role } = useAuth();
   const { data: booking } = useBooking(bookingId);
+  const { data: pickup } = useAirportPickup(bookingId);
   const guestId = (booking as any)?.guest_id;
   const { data: guestHistory } = useGuestHistory(guestId);
   const { data: stateLog } = useBookingStateLog(bookingId);
@@ -122,16 +125,42 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
     }
   }, [booking, documents, payments, softHoldInfo, depositDeadlineInfo, openMaintenanceCount, laundryReadyCount, t]);
 
+  const travelInfo = useMemo(() => {
+    if (!pickup) return null;
+    return getTravelState({
+      status: pickup.status,
+      flight_number: pickup.flight_number,
+      international_flight_number: (pickup as any).international_flight_number,
+      final_flight_confirmed: (pickup as any).final_flight_confirmed ?? false,
+      confirmed_airport: (pickup as any).confirmed_airport,
+      guest_landed_at: (pickup as any).guest_landed_at,
+      arrival_datetime: pickup.arrival_datetime,
+    });
+  }, [pickup]);
+
   if (!booking) return null;
   const guestName = (booking as any).profiles?.full_name;
+
+  const TRAVEL_BADGE_STYLES: Record<string, string> = {
+    info: "bg-primary/10 text-primary border-primary/20",
+    warning: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+    success: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
+    muted: "bg-muted text-muted-foreground",
+    destructive: "bg-destructive/10 text-destructive",
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader className="pb-4">
-          <SheetTitle className="flex items-center gap-3">
+          <SheetTitle className="flex items-center gap-3 flex-wrap">
             <span>{booking.units?.name ?? t("bookingDetail.unknownUnit")}</span>
             <Badge className={STATE_VARIANTS[booking.state as BookingState]}>{t(`states.${booking.state}`)}</Badge>
+            {travelInfo && travelInfo.state !== "cancelled" && (
+              <Badge className={`text-[10px] ${TRAVEL_BADGE_STYLES[travelInfo.severity]}`} title={travelInfo.staffDetail}>
+                ✈ {travelInfo.staffLabel}
+              </Badge>
+            )}
             {isCheckedIn && <StaySupportBadge bookingId={booking.id} />}
             {booking.guest_type === "training_guest" && <TrainingBadge />}
           </SheetTitle>
