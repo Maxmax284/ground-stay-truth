@@ -11,7 +11,8 @@ import { permissions } from "@/lib/permissions";
 import { useSecurityDeposit, useCreateSecurityDeposit, useUpdateSecurityDeposit } from "@/hooks/useSecurityDeposit";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
-import { Shield, Check, AlertTriangle, Banknote, CreditCard, HandCoins } from "lucide-react";
+import { Shield, Check, AlertTriangle, Banknote, CreditCard, HandCoins, ImagePlus, ExternalLink } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const STATUS_COLORS: Record<string, string> = {
   held: "bg-warning/15 text-warning-foreground",
