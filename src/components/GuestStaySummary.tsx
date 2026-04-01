@@ -554,10 +554,26 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
       {bookings?.map((booking) => {
         const pickup = pickups?.find((p: any) => p.booking_id === booking.id);
         if (!pickup?.guest_landed_at) return null;
-        const airport = detectAirport(booking);
+        const ft = pickup ? flightMap?.[pickup.id] : null;
+        const airport = detectAirport(booking, ft, pickup?.confirmed_airport);
         if (!airport) return null;
         return <ArrivalWelcomeCard key={`welcome-${booking.id}`} airport={airport} compact />;
       })}
+
+      {/* Landing Confirmation Dialog */}
+      <LandedConfirmationDialog
+        open={landedDialogOpen}
+        onOpenChange={(v) => { setLandedDialogOpen(v); if (!v) setLandedBookingId(null); }}
+        flightAirport={landedFlightAirport}
+        bookingAirport={landedBookingAirport}
+        flightNumber={landedPickup?.flight_number}
+        isPending={landedMutation.isPending}
+        onConfirm={(confirmedAirport) => {
+          if (landedBookingId) {
+            landedMutation.mutate({ bookingId: landedBookingId, confirmed_airport: confirmedAirport });
+          }
+        }}
+      />
 
       {/* Arrival Welcome Dialog */}
       <ArrivalWelcomeDialog
