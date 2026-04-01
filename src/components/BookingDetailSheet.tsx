@@ -226,7 +226,7 @@ function StateHistoryTab({ logs }: { logs: any[] }) {
                 </div>
                 {log.reason && <p className="text-muted-foreground mt-1">{log.reason}</p>}
                 <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-xs text-muted-foreground">{format(new Date(log.created_at), "MMM d, yyyy 'at' h:mm a")}</p>
+                  <p className="text-xs text-muted-foreground">{formatInPropertyTimezone(log.created_at)}</p>
                   {log.changed_by_name && <span className="text-xs text-muted-foreground">— {log.changed_by_name}</span>}
                 </div>
               </div>
