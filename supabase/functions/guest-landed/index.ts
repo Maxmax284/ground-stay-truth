@@ -128,6 +128,13 @@ Deno.serve(async (req) => {
     const guestName = profile?.full_name || "A guest";
     const unitName = (booking as any).units?.name || "unknown unit";
 
+    const airportDisplayMap: Record<string, string> = {
+      bkk: "BKK (Suvarnabhumi)",
+      usm: "USM (Koh Samui)",
+      samui: "USM (Koh Samui)",
+    };
+    const airportDisplay = airportCode ? (airportDisplayMap[airportCode.toLowerCase()] ?? airportCode) : "unknown airport";
+
     // Notify all staff (admin + manager + front_desk_supervisor + front_desk)
     const { data: staffRoles } = await serviceClient
       .from("user_roles")
@@ -137,17 +144,22 @@ Deno.serve(async (req) => {
     const uniqueStaffIds = [...new Set((staffRoles ?? []).map((r: any) => r.user_id))];
 
     if (uniqueStaffIds.length > 0) {
+      let message = `${guestName} has landed at ${airportDisplay} and is ready for pickup (${unitName}).`;
+      if (airportMismatch) {
+        message += ` ⚠️ MISMATCH: Guest selected ${airportDisplay} but flight data shows a different airport. Please verify.`;
+      }
+
       const notifications = uniqueStaffIds.map((staffId) => ({
         user_id: staffId,
         type: "guest_landed",
         reference_id: booking_id,
-        message: `${guestName} has landed and is ready for pickup (${unitName}).`,
+        message,
       }));
 
       await serviceClient.from("notifications").insert(notifications);
     }
 
-    return new Response(JSON.stringify({ ok: true, landed_at: now }), {
+    return new Response(JSON.stringify({ ok: true, landed_at: now, airport_mismatch: airportMismatch }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
