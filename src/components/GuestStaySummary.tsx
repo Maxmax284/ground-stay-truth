@@ -169,6 +169,9 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
   const [welcomeDialogOpen, setWelcomeDialogOpen] = useState(false);
   const [welcomeAirport, setWelcomeAirport] = useState<"bkk" | "samui" | null>(null);
   const [pendingLanded, setPendingLanded] = useState(false);
+  // Landing confirmation dialog state
+  const [landedDialogOpen, setLandedDialogOpen] = useState(false);
+  const [landedBookingId, setLandedBookingId] = useState<string | null>(null);
 
   const { data: bookings } = useQuery({
     queryKey: ["guest-stay-summary-bookings", user?.id],
