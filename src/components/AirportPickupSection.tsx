@@ -47,6 +47,8 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
   const [editingFlights, setEditingFlights] = useState(false);
   const [intlFlight, setIntlFlight] = useState("");
   const [domesticFlight, setDomesticFlight] = useState("");
+  const [arrivalDt, setArrivalDt] = useState("");
+  const [paxCount, setPaxCount] = useState("1");
 
   const canManage = permissions.canTransitionState(role); // front_desk+
 
