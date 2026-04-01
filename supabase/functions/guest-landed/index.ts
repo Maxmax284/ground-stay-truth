@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
     // Find pickup for this booking
     const { data: pickup, error: pickupError } = await serviceClient
       .from("airport_pickups")
-      .select("id, status, guest_landed_at, driver_id")
+      .select("id, status, guest_landed_at, driver_id, flight_number, international_flight_number, final_flight_confirmed")
       .eq("booking_id", booking_id)
       .single();
 
@@ -100,9 +100,14 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Determine travel state for notifications
+    const hasConnectingFlight = !!pickup.international_flight_number;
+    const isInTransit = hasConnectingFlight && airportCode && airportCode.toLowerCase() === "bkk";
+    const isAtFinalDestination = !isInTransit;
+
     // Cross-check: if flight tracking exists, compare arrival_iata with confirmed airport
     let airportMismatch = false;
-    if (airportCode) {
+    if (airportCode && !isInTransit) {
       const { data: flightTrack } = await serviceClient
         .from("flight_tracking")
         .select("arrival_iata")
@@ -135,7 +140,7 @@ Deno.serve(async (req) => {
     };
     const airportDisplay = airportCode ? (airportDisplayMap[airportCode.toLowerCase()] ?? airportCode) : "unknown airport";
 
-    // Notify all staff (admin + manager + front_desk_supervisor + front_desk)
+    // Notify all staff
     const { data: staffRoles } = await serviceClient
       .from("user_roles")
       .select("user_id, role")
@@ -144,7 +149,25 @@ Deno.serve(async (req) => {
     const uniqueStaffIds = [...new Set((staffRoles ?? []).map((r: any) => r.user_id))];
 
     if (uniqueStaffIds.length > 0) {
-      let message = `${guestName} has landed at ${airportDisplay} and is ready for pickup (${unitName}).`;
+      let message: string;
+
+      if (isInTransit) {
+        // Guest landed at BKK, still needs connecting flight to Samui
+        message = `🔄 ${guestName} has landed at BKK (Suvarnabhumi) on ${pickup.international_flight_number}. They are IN TRANSIT — awaiting connection to Koh Samui`;
+        if (pickup.flight_number) {
+          message += ` on ${pickup.flight_number}`;
+        } else {
+          message += ` (domestic flight not yet confirmed)`;
+        }
+        message += ` (${unitName}).`;
+      } else if (hasConnectingFlight && isAtFinalDestination) {
+        // Guest arrived at final destination after connecting
+        message = `✅ ${guestName} has arrived at ${airportDisplay} — final destination reached (${unitName}). Ready for pickup.`;
+      } else {
+        // Direct flight — standard message
+        message = `${guestName} has landed at ${airportDisplay} and is ready for pickup (${unitName}).`;
+      }
+
       if (airportMismatch) {
         message += ` ⚠️ MISMATCH: Guest selected ${airportDisplay} but flight data shows a different airport. Please verify.`;
       }
@@ -159,7 +182,12 @@ Deno.serve(async (req) => {
       await serviceClient.from("notifications").insert(notifications);
     }
 
-    return new Response(JSON.stringify({ ok: true, landed_at: now, airport_mismatch: airportMismatch }), {
+    return new Response(JSON.stringify({
+      ok: true,
+      landed_at: now,
+      airport_mismatch: airportMismatch,
+      in_transit: isInTransit,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
