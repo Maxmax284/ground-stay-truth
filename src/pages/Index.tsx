@@ -85,49 +85,60 @@ const Index = () => {
             {/* Staff Quick Actions Widget */}
             {!isViewer && <StaffQuickActionsWidget />}
 
-            {/* Stats Row — clickable */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              <StatCard
-                label={t("dashboard.todaysArrivals")}
-                value={isLoading ? null : arrivalsCount}
-                icon={LogIn}
-                description={t("dashboard.checkInsToday", { count: arrivalsCount })}
-                stagger={1}
-                onClick={() => navigate("/bookings?filter=arriving_today")}
+            {/* Stats Row — adapted by operational mode */}
+            {isLongStay ? (
+              <LongStayStats
+                activeCount={activeCount}
+                arrivalsCount={arrivalsCount}
+                units={units}
+                isLoading={isLoading}
+                navigate={navigate}
+                t={t}
               />
-              <StatCard
-                label={t("dashboard.todaysDepartures")}
-                value={isLoading ? null : departuresCount}
-                icon={LogOut}
-                description={t("dashboard.checkOutsToday", { count: departuresCount })}
-                stagger={2}
-                onClick={() => navigate("/bookings?filter=departing_today")}
-              />
-              <StatCard
-                label={t("dashboard.activeBookings")}
-                value={isLoading ? null : activeCount}
-                icon={BookOpen}
-                description={t("dashboard.acrossAllUnits")}
-                stagger={3}
-                onClick={() => navigate("/bookings?filter=active")}
-              />
-              <StatCard
-                label={t("dashboard.openInquiries")}
-                value={isLoading ? null : inquiries}
-                icon={MessageSquare}
-                description={t("dashboard.awaitingResponse")}
-                stagger={4}
-                onClick={() => navigate("/bookings?filter=inquiry")}
-              />
-              <StatCard
-                label={t("dashboard.activeUnits")}
-                value={isLoading ? null : units}
-                icon={Building2}
-                description={t("dashboard.unitsConfigured", { count: units })}
-                stagger={5}
-                onClick={() => navigate("/units")}
-              />
-            </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <StatCard
+                  label={t("dashboard.todaysArrivals")}
+                  value={isLoading ? null : arrivalsCount}
+                  icon={LogIn}
+                  description={t("dashboard.checkInsToday", { count: arrivalsCount })}
+                  stagger={1}
+                  onClick={() => navigate("/bookings?filter=arriving_today")}
+                />
+                <StatCard
+                  label={t("dashboard.todaysDepartures")}
+                  value={isLoading ? null : departuresCount}
+                  icon={LogOut}
+                  description={t("dashboard.checkOutsToday", { count: departuresCount })}
+                  stagger={2}
+                  onClick={() => navigate("/bookings?filter=departing_today")}
+                />
+                <StatCard
+                  label={t("dashboard.activeBookings")}
+                  value={isLoading ? null : activeCount}
+                  icon={BookOpen}
+                  description={t("dashboard.acrossAllUnits")}
+                  stagger={3}
+                  onClick={() => navigate("/bookings?filter=active")}
+                />
+                <StatCard
+                  label={t("dashboard.openInquiries")}
+                  value={isLoading ? null : inquiries}
+                  icon={MessageSquare}
+                  description={t("dashboard.awaitingResponse")}
+                  stagger={4}
+                  onClick={() => navigate("/bookings?filter=inquiry")}
+                />
+                <StatCard
+                  label={t("dashboard.activeUnits")}
+                  value={isLoading ? null : units}
+                  icon={Building2}
+                  description={t("dashboard.unitsConfigured", { count: units })}
+                  stagger={5}
+                  onClick={() => navigate("/units")}
+                />
+              </div>
+            )}
 
             {/* Admin/Manager layout: Approval queue prominent */}
             {canViewQueues && (
