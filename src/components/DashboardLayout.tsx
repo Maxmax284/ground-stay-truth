@@ -63,6 +63,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <Menu className="h-5 w-5" />
               <span className="md:hidden">{t("common.menu")}</span>
             </SidebarTrigger>
+            <PropertyIndicator />
             <span className="md:hidden text-sm font-semibold text-primary">{t("auth.groundStay")}</span>
             <span className="md:ml-0 text-sm font-medium text-muted-foreground">{t(titleKey)}</span>
             <div className="ml-auto flex items-center gap-1">
