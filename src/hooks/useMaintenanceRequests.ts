@@ -36,8 +36,9 @@ export function useMaintenanceRequests(bookingId?: string | null) {
 }
 
 export function useAllMaintenanceRequests(statusFilter?: string[]) {
+  const { activePropertyId } = useProperty();
   return useQuery({
-    queryKey: ["maintenance-requests-all", statusFilter],
+    queryKey: ["maintenance-requests-all", statusFilter, activePropertyId],
     queryFn: async () => {
       let query = supabase
         .from("maintenance_requests")
@@ -46,6 +47,7 @@ export function useAllMaintenanceRequests(statusFilter?: string[]) {
       if (statusFilter && statusFilter.length > 0) {
         query = query.in("status", statusFilter);
       }
+      if (activePropertyId) query = query.eq("property_id", activePropertyId);
       const { data, error } = await query;
       if (error) throw error;
 
