@@ -32,6 +32,7 @@ export const STATE_LABELS: Record<BookingState, string> = {
 
 /** States that block calendar dates (overlap protection) */
 export const BLOCKING_STATES: BookingState[] = [
+  "soft_hold",
   "pending_approval",
   "pending_deposit",
   "confirmed",

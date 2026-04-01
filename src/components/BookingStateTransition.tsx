@@ -408,8 +408,12 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
             <div className={`flex items-start gap-2 text-sm rounded-md p-3 ${refundInfo.tier === "free" ? "bg-success/10 text-[hsl(var(--success))]" : refundInfo.tier === "partial" ? "bg-warning/10 text-warning-foreground" : "bg-destructive/10 text-destructive"}`}>
               <DollarSign className="h-4 w-4 shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium">{refundInfo.label}</p>
-                {refundInfo.refundAmount != null && <p className="text-xs mt-1">{t("refund.refundAmount")}: <strong>{formatPrice(refundInfo.refundAmount, policies)}</strong>{totalPrice != null && ` ${t("refund.ofTotal", { total: formatPrice(totalPrice, policies) })}`}</p>}
+                <p className="font-medium">
+                  {targetState === "no_show"
+                    ? t("noShow.depositConsequence", { defaultValue: `No-show — ${refundInfo.tier === "none" ? "deposit forfeited" : refundInfo.tier === "partial" ? "partial refund applies" : "full refund applies"}` })
+                    : refundInfo.label}
+                </p>
+                {refundInfo.refundAmount != null && <p className="text-xs mt-1">{targetState === "no_show" ? t("noShow.refundAmount", { defaultValue: "Refund due" }) : t("refund.refundAmount")}: <strong>{formatPrice(refundInfo.refundAmount, policies)}</strong>{totalPrice != null && ` ${t("refund.ofTotal", { total: formatPrice(totalPrice, policies) })}`}</p>}
               </div>
             </div>
           )}
