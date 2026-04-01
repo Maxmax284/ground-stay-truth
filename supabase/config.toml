@@ -46,6 +46,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.poll-airport-traffic]
+verify_jwt = false
 
 [functions.guest-landed]
 verify_jwt = false
