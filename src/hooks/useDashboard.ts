@@ -6,6 +6,7 @@ import { useProperty } from "@/hooks/useProperty";
 
 export function useDashboardStats() {
   const today = format(new Date(), "yyyy-MM-dd");
+  const { activePropertyId } = useProperty();
 
   const arrivals = useQuery({
     queryKey: ["dashboard", "arrivals", today],
