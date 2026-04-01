@@ -257,6 +257,26 @@ export function SecurityDepositSection({ bookingId, bookingState }: { bookingId:
                     placeholder="Reason for deduction"
                   />
                 </div>
+                {/* Evidence upload */}
+                <div className="space-y-1">
+                  <Label className="text-xs flex items-center gap-1"><ImagePlus className="h-3 w-3" /> Evidence photos</Label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleEvidenceUpload}
+                    disabled={uploadingEvidence}
+                    className="h-8 text-xs"
+                  />
+                  {((deposit as any).deduction_evidence_urls ?? []).length > 0 && (
+                    <div className="flex gap-1 flex-wrap mt-1">
+                      {((deposit as any).deduction_evidence_urls as string[]).map((url, i) => (
+                        <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline flex items-center gap-0.5">
+                          <ExternalLink className="h-3 w-3" /> Photo {i + 1}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <Button
                   size="sm"
                   variant="destructive"
