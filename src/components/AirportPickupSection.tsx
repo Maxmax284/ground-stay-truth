@@ -262,6 +262,8 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
                 onClick={() => {
                   setIntlFlight(internationalFlight ?? "");
                   setDomesticFlight(pickup.flight_number ?? "");
+                  setArrivalDt(pickup.arrival_datetime ? pickup.arrival_datetime.slice(0, 16) : "");
+                  setPaxCount(String(pickup.passenger_count ?? 1));
                   setEditingFlights(true);
                 }}
               >
