@@ -47,6 +47,8 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
   const [editingFlights, setEditingFlights] = useState(false);
   const [intlFlight, setIntlFlight] = useState("");
   const [domesticFlight, setDomesticFlight] = useState("");
+  const [arrivalDt, setArrivalDt] = useState("");
+  const [paxCount, setPaxCount] = useState("1");
 
   const canManage = permissions.canTransitionState(role); // front_desk+
 
@@ -179,6 +181,8 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
       const updates: any = { booking_id: bookingId };
       updates.international_flight_number = intlFlight.trim().toUpperCase() || null;
       updates.flight_number = domesticFlight.trim().toUpperCase() || null;
+      updates.arrival_datetime = arrivalDt ? new Date(arrivalDt).toISOString() : null;
+      updates.passenger_count = Math.max(1, parseInt(paxCount) || 1);
       if (domesticFlight.trim()) {
         updates.final_flight_confirmed = true;
       }
@@ -187,9 +191,9 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
         bookingId,
         pickupId: pickup.id,
         action: "flights_updated",
-        note: `Flights updated: Int'l ${intlFlight.trim().toUpperCase() || "—"}, Final ${domesticFlight.trim().toUpperCase() || "—"}`,
+        note: `Flights updated: Int'l ${intlFlight.trim().toUpperCase() || "—"}, Final ${domesticFlight.trim().toUpperCase() || "—"}, Arrival ${arrivalDt || "—"}, Pax ${paxCount}`,
       });
-      toast({ title: "Flight numbers updated" });
+      toast({ title: "Flight details updated" });
       setEditingFlights(false);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -260,6 +264,8 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
                 onClick={() => {
                   setIntlFlight(internationalFlight ?? "");
                   setDomesticFlight(pickup.flight_number ?? "");
+                  setArrivalDt(pickup.arrival_datetime ? pickup.arrival_datetime.slice(0, 16) : "");
+                  setPaxCount(String(pickup.passenger_count ?? 1));
                   setEditingFlights(true);
                 }}
               >
@@ -325,6 +331,26 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
                   onChange={(e) => setDomesticFlight(e.target.value)}
                   placeholder="PG123"
                   className="h-7 text-sm font-mono uppercase"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[11px] text-muted-foreground">Arrival Date & Time</Label>
+                <Input
+                  type="datetime-local"
+                  value={arrivalDt}
+                  onChange={(e) => setArrivalDt(e.target.value)}
+                  className="h-7 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[11px] text-muted-foreground">Passengers</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={paxCount}
+                  onChange={(e) => setPaxCount(e.target.value)}
+                  className="h-7 text-sm w-20"
                 />
               </div>
               <div className="flex gap-1">
