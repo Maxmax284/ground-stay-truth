@@ -7,6 +7,7 @@ import { createNotification, createNotifications } from "@/hooks/useNotification
 import { formatPrice } from "@/lib/currency";
 import { calculateOutstanding } from "@/lib/paymentTypes";
 import { emitPaymentProcessed, emitRefundIssued } from "@/lib/fenrir/events";
+import { useProperty } from "@/hooks/useProperty";
 
 export type Booking = Tables<"bookings">;
 export type BookingInsert = TablesInsert<"bookings">;
