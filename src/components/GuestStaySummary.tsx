@@ -20,6 +20,8 @@ import {
 import { format, differenceInDays, isPast, isToday, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { ArrivalWelcomeDialog, ArrivalWelcomeCard, detectAirport } from "@/components/ArrivalWelcomeGuide";
+import { LandedConfirmationDialog } from "@/components/LandedConfirmationDialog";
+import { useFlightTrackingBatch } from "@/hooks/useFlightTracking";
 
 interface BookingWithUnit {
   id: string;
