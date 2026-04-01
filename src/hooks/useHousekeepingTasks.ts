@@ -42,13 +42,16 @@ export function useUpdateHousekeepingTask() {
 }
 
 export function usePendingHousekeepingCount() {
+  const { activePropertyId } = useProperty();
   return useQuery({
-    queryKey: ["housekeeping_tasks", "pending_count"],
+    queryKey: ["housekeeping_tasks", "pending_count", activePropertyId],
     queryFn: async () => {
-      const { count, error } = await supabase
+      let query = supabase
         .from("housekeeping_tasks")
         .select("*", { count: "exact", head: true })
         .in("status", ["pending", "in_progress"]);
+      if (activePropertyId) query = query.eq("property_id", activePropertyId);
+      const { count, error } = await query;
       if (error) throw error;
       return count ?? 0;
     },

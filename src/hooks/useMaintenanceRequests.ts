@@ -72,13 +72,16 @@ export function useAllMaintenanceRequests(statusFilter?: string[]) {
 }
 
 export function useOpenMaintenanceCount() {
+  const { activePropertyId } = useProperty();
   return useQuery({
-    queryKey: ["maintenance-open-count"],
+    queryKey: ["maintenance-open-count", activePropertyId],
     queryFn: async () => {
-      const { count, error } = await supabase
+      let query = supabase
         .from("maintenance_requests")
         .select("*", { count: "exact", head: true })
         .in("status", ["open", "in_progress"]);
+      if (activePropertyId) query = query.eq("property_id", activePropertyId);
+      const { count, error } = await query;
       if (error) throw error;
       return count ?? 0;
     },

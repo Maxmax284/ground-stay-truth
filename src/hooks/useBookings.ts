@@ -26,14 +26,16 @@ export function useBookings(filters?: {
   dateFrom?: string | null;
   dateTo?: string | null;
 }) {
+  const { activePropertyId } = useProperty();
   return useQuery({
-    queryKey: ["bookings", filters],
+    queryKey: ["bookings", filters, activePropertyId],
     queryFn: async () => {
       let query = (supabase
         .from("bookings")
         .select("*, units(name), profiles!bookings_guest_id_profiles_fkey(full_name, email)")
         .order("created_at", { ascending: false })) as any;
 
+      if (activePropertyId) query = query.eq("property_id", activePropertyId);
       if (filters?.state) query = query.eq("state", filters.state);
       if (filters?.unitId) query = query.eq("unit_id", filters.unitId);
       if (filters?.dateFrom) query = query.gte("check_in", filters.dateFrom);

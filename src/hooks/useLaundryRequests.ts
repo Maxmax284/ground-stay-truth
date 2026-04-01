@@ -35,13 +35,16 @@ export function useLaundryRequests(bookingId?: string | null) {
 }
 
 export function useAllLaundryRequests() {
+  const { activePropertyId } = useProperty();
   return useQuery({
-    queryKey: ["laundry-requests-all"],
+    queryKey: ["laundry-requests-all", activePropertyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("laundry_requests")
         .select("*, bookings!inner(guest_id, units(name))")
         .order("created_at", { ascending: false });
+      if (activePropertyId) query = query.eq("property_id", activePropertyId);
+      const { data, error } = await query;
       if (error) throw error;
 
       const guestIds = [...new Set((data ?? []).map((r: any) => r.bookings?.guest_id).filter(Boolean))];
