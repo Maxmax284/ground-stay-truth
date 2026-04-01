@@ -74,7 +74,6 @@ async function fetchWeatherContext(airportCode: string): Promise<string> {
     return "";
   }
 }
-};
 
 // ─── LAYER 1: IDENTITY ───────────────────────────────────────────────────────
 const IDENTITY = `You are Kru Glitch — the camp's resident advisor at Ground Stay, a Muay Thai fight camp accommodation.`;
