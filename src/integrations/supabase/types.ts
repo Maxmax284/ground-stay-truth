@@ -30,9 +30,11 @@ export type Database = {
           fee_override: boolean
           fee_override_by: string | null
           fee_override_reason: string | null
+          final_flight_confirmed: boolean
           flight_number: string | null
           guest_landed_at: string | null
           id: string
+          international_flight_number: string | null
           luggage_notes: string | null
           passenger_count: number | null
           special_instructions: string | null
@@ -54,9 +56,11 @@ export type Database = {
           fee_override?: boolean
           fee_override_by?: string | null
           fee_override_reason?: string | null
+          final_flight_confirmed?: boolean
           flight_number?: string | null
           guest_landed_at?: string | null
           id?: string
+          international_flight_number?: string | null
           luggage_notes?: string | null
           passenger_count?: number | null
           special_instructions?: string | null
@@ -78,9 +82,11 @@ export type Database = {
           fee_override?: boolean
           fee_override_by?: string | null
           fee_override_reason?: string | null
+          final_flight_confirmed?: boolean
           flight_number?: string | null
           guest_landed_at?: string | null
           id?: string
+          international_flight_number?: string | null
           luggage_notes?: string | null
           passenger_count?: number | null
           special_instructions?: string | null

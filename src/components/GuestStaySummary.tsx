@@ -210,7 +210,7 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
     queryFn: async () => {
       const { data, error } = await (supabase
         .from("airport_pickups" as any)
-        .select("id, booking_id, status, driver_id, flight_number, arrival_datetime, guest_landed_at, confirmed_airport, drivers(name, vehicle_type)")
+        .select("id, booking_id, status, driver_id, flight_number, international_flight_number, final_flight_confirmed, arrival_datetime, guest_landed_at, confirmed_airport, drivers(name, vehicle_type)")
         .in("booking_id", bookingIds) as any);
       if (error) throw error;
       return data as any[];
@@ -567,6 +567,8 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
         flightAirport={landedFlightAirport}
         bookingAirport={landedBookingAirport}
         flightNumber={landedPickup?.flight_number}
+        hasConnectingFlight={!!(landedPickup as any)?.international_flight_number}
+        internationalFlightNumber={(landedPickup as any)?.international_flight_number}
         isPending={landedMutation.isPending}
         onConfirm={(confirmedAirport) => {
           if (landedBookingId) {
