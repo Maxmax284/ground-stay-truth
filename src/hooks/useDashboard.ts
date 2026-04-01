@@ -67,27 +67,27 @@ export function useDashboardStats() {
   });
 
   const recentActivity = useQuery({
-    queryKey: ["dashboard", "activity"],
+    queryKey: ["dashboard", "activity", activePropertyId],
     queryFn: async () => {
-      // Fetch booking state logs
-      const { data: stateLogs, error: stateErr } = await supabase
+      let stateQuery = supabase
         .from("booking_state_log")
-        .select("*, bookings(unit_id, units(name))")
+        .select("*, bookings(unit_id, property_id, units(name))")
         .order("created_at", { ascending: false })
         .limit(10);
-      if (stateErr) throw stateErr;
 
-      // Fetch recent pickup activity from stay_support_log
-      const { data: pickupLogs, error: pickupErr } = await supabase
+      let pickupQuery = supabase
         .from("stay_support_log")
-        .select("*, bookings(unit_id, units(name))")
+        .select("*, bookings(unit_id, property_id, units(name))")
         .eq("request_type", "airport_pickup")
         .order("created_at", { ascending: false })
         .limit(5);
+
+      const [{ data: stateLogs, error: stateErr }, { data: pickupLogs, error: pickupErr }] = await Promise.all([stateQuery, pickupQuery]);
+      if (stateErr) throw stateErr;
       if (pickupErr) throw pickupErr;
 
       // Merge and sort by created_at, take top 12
-      const merged = [
+      let merged = [
         ...(stateLogs ?? []).map((l: any) => ({ ...l, _type: "state" })),
         ...(pickupLogs ?? []).map((l: any) => ({
           ...l,
@@ -96,10 +96,16 @@ export function useDashboardStats() {
           to_state: l.to_status ?? l.action,
           reason: l.note,
         })),
-      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-       .slice(0, 12);
+      ];
 
-      return merged;
+      // Filter by active property if set
+      if (activePropertyId) {
+        merged = merged.filter((l: any) => l.bookings?.property_id === activePropertyId);
+      }
+
+      return merged
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 12);
     },
   });
 
