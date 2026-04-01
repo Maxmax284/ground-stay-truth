@@ -1,0 +1,1 @@
+ALTER TABLE public.airport_pickups ADD COLUMN IF NOT EXISTS confirmed_airport text DEFAULT NULL;
