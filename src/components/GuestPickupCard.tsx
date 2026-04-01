@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Plane, Car, Clock, User, MessageSquare, CheckCircle2, Loader2 } from "lucide-react";
+import { Plane, Car, Clock, User, MessageSquare, CheckCircle2, Loader2, AlertTriangle, ArrowRight } from "lucide-react";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Plane }> = {
   requested: { label: "Pickup Requested", color: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300", icon: Loader2 },
@@ -30,6 +30,12 @@ export function GuestPickupCard({ bookingId, guestName }: Props) {
   const config = STATUS_CONFIG[pickup.status] ?? STATUS_CONFIG.requested;
   const driver = pickup.drivers;
 
+  // Connecting flight logic
+  const hasInternationalFlight = !!(pickup as any).international_flight_number;
+  const finalFlightConfirmed = !!(pickup as any).final_flight_confirmed;
+  const needsDomesticFlight = hasInternationalFlight && !pickup.flight_number;
+  const isConnecting = hasInternationalFlight && !!pickup.flight_number;
+
   const whatsappLink = driver?.whatsapp
     ? `https://wa.me/${driver.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(
         `Hi, I'm ${guestName ?? "your guest"}, arriving at Lamai Muay Thai.${pickup.flight_number ? ` Flight ${pickup.flight_number}.` : ""}`
@@ -48,9 +54,34 @@ export function GuestPickupCard({ bookingId, guestName }: Props) {
           <Badge className={config.color}>{config.label}</Badge>
         </div>
 
+        {/* Connecting flight info */}
+        {isConnecting && (
+          <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg p-2 text-xs text-muted-foreground">
+            <Plane className="h-3 w-3 shrink-0" />
+            <span>{(pickup as any).international_flight_number}</span>
+            <ArrowRight className="h-3 w-3 shrink-0 text-primary" />
+            <span className="font-medium text-foreground">{pickup.flight_number}</span>
+            <Badge variant="secondary" className="text-[9px] ml-auto">Connecting</Badge>
+          </div>
+        )}
+
+        {/* Missing domestic flight nudge */}
+        {needsDomesticFlight && (
+          <div className="flex items-start gap-2 bg-warning/10 border border-warning/30 rounded-lg p-2.5 text-xs">
+            <AlertTriangle className="h-3.5 w-3.5 text-warning-foreground shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              <p className="font-medium text-warning-foreground">Domestic flight needed</p>
+              <p className="text-muted-foreground">
+                Your international flight ({(pickup as any).international_flight_number}) lands in Bangkok. 
+                Please book a domestic flight to Koh Samui (USM) and update your booking details so we can arrange your pickup.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Flight details */}
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          {pickup.flight_number && (
+          {pickup.flight_number && !isConnecting && (
             <span className="flex items-center gap-1">
               <Plane className="h-3 w-3" /> {pickup.flight_number}
             </span>

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const CHECKLIST_ITEMS = [
   { key: "confirm_arrival_time", label: "Confirm arrival time" },
   { key: "upload_id", label: "Upload ID / Passport" },
+  { key: "confirm_domestic_flight", label: "Confirm domestic flight to Koh Samui (if connecting)" },
   { key: "review_checkin_time", label: "Review check-in time" },
   { key: "camp_rules_ack", label: "Camp rules acknowledgment" },
   { key: "emergency_contact", label: "Emergency contact confirmation" },
