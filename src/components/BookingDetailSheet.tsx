@@ -293,10 +293,16 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
             <span className="font-medium text-[hsl(var(--success))]">{formatPrice(balance.totalPaid, policies)}</span>
           </div>
           {balance.totalRefunded > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{t("payments.totalRefunded", { defaultValue: "Refunded" })}</span>
-              <span className="font-medium text-[hsl(var(--info))]">−{formatPrice(balance.totalRefunded, policies)}</span>
-            </div>
+            <>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{t("payments.totalRefunded", { defaultValue: "Refunded" })}</span>
+                <span className="font-medium text-[hsl(var(--info))]">−{formatPrice(balance.totalRefunded, policies)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{t("payments.netPaid", { defaultValue: "Net Paid" })}</span>
+                <span className="font-medium">{formatPrice(balance.totalPaid - balance.totalRefunded, policies)}</span>
+              </div>
+            </>
           )}
           <Separator className="my-1" />
           <div className="flex justify-between text-sm">
