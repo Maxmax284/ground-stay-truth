@@ -46,6 +46,10 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
       if (!resp.ok) {
         if (data.error === "Online payments not configured") {
           toast.error(t("deposit.onlineNotConfigured", "Online payments are not available yet. Please contact the front desk."));
+        } else if (data.error === "Booking is not awaiting deposit") {
+          toast.error(t("deposit.sessionExpired", "This booking session has expired or the status has changed. Please refresh and try again."));
+        } else if (data.error === "Payment already recorded") {
+          toast.error(t("deposit.alreadyPaid", "A payment has already been recorded for this booking."));
         } else {
           toast.error(data.error || "Payment failed");
         }

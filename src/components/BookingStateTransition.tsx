@@ -124,7 +124,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
   const earlyCheckinApproved = earlyCheckinRequest?.status === "approved";
 
   const refundInfo = useMemo(() => {
-    if (targetState !== "cancelled" || !checkInDate || !policies) return null;
+    if ((targetState !== "cancelled" && targetState !== "no_show") || !checkInDate || !policies) return null;
     return calculateRefund(checkInDate, totalPrice ?? null, policies);
   }, [targetState, checkInDate, totalPrice, policies]);
 
@@ -349,7 +349,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
         showDepositForm ? `[DEPOSIT: ${formatPrice(Number(depositAmount), policies)} via ${depositMethod}]` : "",
         cashAtCheckin && checkinPayAmount ? `[CASH AT CHECK-IN: ${formatPrice(Number(checkinPayAmount), policies)} via ${checkinPayMethod}]` : "",
         reason,
-        refundInfo ? `[Refund: ${refundInfo.label}${refundInfo.refundAmount != null ? ` — ${formatPrice(refundInfo.refundAmount, policies)}` : ""}]` : "",
+        refundInfo ? `[${targetState === "no_show" ? "No-show deposit" : "Refund"}: ${refundInfo.label}${refundInfo.refundAmount != null ? ` — ${formatPrice(refundInfo.refundAmount, policies)}` : ""}]` : "",
       ].filter(Boolean).join(" ");
       await transition.mutateAsync({ bookingId, fromState: currentState, toState: targetState as BookingState, reason: reasonText });
       toast({ title: t("stateTransition.stateUpdated"), description: t("stateTransition.movedTo", { state: t(`states.${targetState}`) }) });
@@ -360,7 +360,20 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
       setTargetState(""); setReason(""); setAdminOverride(false); setDepositOverride(false); setDepositOverrideReason("");
       setDepositAmount(""); setDepositMethod("cash"); setDepositNotes("");
       setCashAtCheckin(false); setCheckinPayAmount(""); setCheckinPayMethod("cash"); setCheckinPayNotes(""); setAiAcknowledged(false);
-    } catch (err: any) { toast({ title: t("stateTransition.transitionFailed"), description: err.message, variant: "destructive" }); }
+    } catch (err: any) {
+      const msg = err.message || "";
+      const isOverlap = msg.includes("overlap") || msg.includes("Booking dates overlap");
+      const isOccupancy = msg.includes("exceeds maximum allowed");
+      toast({
+        title: t("stateTransition.transitionFailed"),
+        description: isOverlap
+          ? t("bookingForm.overlapError", { defaultValue: "These dates are no longer available. Another booking has already been confirmed for this unit." })
+          : isOccupancy
+            ? t("bookingForm.occupancyError", { defaultValue: "Guest count exceeds the maximum allowed for this unit." })
+            : msg,
+        variant: "destructive",
+      });
+    }
   };
 
   // Determine if current target is admin-gated and user is not admin
@@ -395,8 +408,12 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
             <div className={`flex items-start gap-2 text-sm rounded-md p-3 ${refundInfo.tier === "free" ? "bg-success/10 text-[hsl(var(--success))]" : refundInfo.tier === "partial" ? "bg-warning/10 text-warning-foreground" : "bg-destructive/10 text-destructive"}`}>
               <DollarSign className="h-4 w-4 shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium">{refundInfo.label}</p>
-                {refundInfo.refundAmount != null && <p className="text-xs mt-1">{t("refund.refundAmount")}: <strong>{formatPrice(refundInfo.refundAmount, policies)}</strong>{totalPrice != null && ` ${t("refund.ofTotal", { total: formatPrice(totalPrice, policies) })}`}</p>}
+                <p className="font-medium">
+                  {targetState === "no_show"
+                    ? t("noShow.depositConsequence", { defaultValue: `No-show — ${refundInfo.tier === "none" ? "deposit forfeited" : refundInfo.tier === "partial" ? "partial refund applies" : "full refund applies"}` })
+                    : refundInfo.label}
+                </p>
+                {refundInfo.refundAmount != null && <p className="text-xs mt-1">{targetState === "no_show" ? t("noShow.refundAmount", { defaultValue: "Refund due" }) : t("refund.refundAmount")}: <strong>{formatPrice(refundInfo.refundAmount, policies)}</strong>{totalPrice != null && ` ${t("refund.ofTotal", { total: formatPrice(totalPrice, policies) })}`}</p>}
               </div>
             </div>
           )}

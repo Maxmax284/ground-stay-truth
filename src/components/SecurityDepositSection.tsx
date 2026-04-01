@@ -11,7 +11,8 @@ import { permissions } from "@/lib/permissions";
 import { useSecurityDeposit, useCreateSecurityDeposit, useUpdateSecurityDeposit } from "@/hooks/useSecurityDeposit";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
-import { Shield, Check, AlertTriangle, Banknote, CreditCard, HandCoins } from "lucide-react";
+import { Shield, Check, AlertTriangle, Banknote, CreditCard, HandCoins, ImagePlus, ExternalLink } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const STATUS_COLORS: Record<string, string> = {
   held: "bg-warning/15 text-warning-foreground",
@@ -37,6 +38,7 @@ export function SecurityDepositSection({ bookingId, bookingState }: { bookingId:
   const [deductionReason, setDeductionReason] = useState("");
   const [collectionMethod, setCollectionMethod] = useState("cash");
   const [inspectionNotes, setInspectionNotes] = useState("");
+  const [uploadingEvidence, setUploadingEvidence] = useState(false);
 
   const depositSetting = policies?.find((p) => p.key === "security_deposit_amount");
   const depositAmount = Number(depositSetting?.value ?? 0);
@@ -102,6 +104,30 @@ export function SecurityDepositSection({ bookingId, bookingState }: { bookingId:
       toast({ title: "Deduction recorded" });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleEvidenceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!deposit || !e.target.files?.length) return;
+    setUploadingEvidence(true);
+    try {
+      const file = e.target.files[0];
+      const path = `${bookingId}/${Date.now()}_${file.name}`;
+      const { error: uploadErr } = await supabase.storage.from("maintenance-photos").upload(path, file);
+      if (uploadErr) throw uploadErr;
+      const { data: urlData } = supabase.storage.from("maintenance-photos").getPublicUrl(path);
+      const existingUrls = (deposit as any).deduction_evidence_urls ?? [];
+      await supabase
+        .from("security_deposits")
+        .update({ deduction_evidence_urls: [...existingUrls, urlData.publicUrl] } as any)
+        .eq("id", deposit.id);
+      toast({ title: "Evidence photo uploaded" });
+      // Refresh
+      await updateDeposit.mutateAsync({ id: deposit.id, booking_id: bookingId });
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setUploadingEvidence(false);
     }
   };
 
@@ -229,6 +255,26 @@ export function SecurityDepositSection({ bookingId, bookingState }: { bookingId:
                     className="h-8 text-xs flex-1"
                     placeholder="Reason for deduction"
                   />
+                </div>
+                {/* Evidence upload */}
+                <div className="space-y-1">
+                  <Label className="text-xs flex items-center gap-1"><ImagePlus className="h-3 w-3" /> Evidence photos</Label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleEvidenceUpload}
+                    disabled={uploadingEvidence}
+                    className="h-8 text-xs"
+                  />
+                  {((deposit as any).deduction_evidence_urls ?? []).length > 0 && (
+                    <div className="flex gap-1 flex-wrap mt-1">
+                      {((deposit as any).deduction_evidence_urls as string[]).map((url, i) => (
+                        <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline flex items-center gap-0.5">
+                          <ExternalLink className="h-3 w-3" /> Photo {i + 1}
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <Button
                   size="sm"

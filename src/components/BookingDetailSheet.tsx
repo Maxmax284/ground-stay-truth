@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 import { format, differenceInHours } from "date-fns";
+import { formatInPropertyTimezone } from "@/lib/timezone";
 import { useBooking, useBookingStateLog, useBookingPayments, useBookingMessages, useCreatePayment, useRefundPayment, useCreateMessage, useMarkMessagesRead } from "@/hooks/useBookings";
 import { BookingStateTransition } from "@/components/BookingStateTransition";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
@@ -141,6 +142,9 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
               {softHoldInfo.isExpired ? t("bookingDetail.softHoldExpired") : t("bookingDetail.softHoldExpires", { hours: softHoldInfo.remaining })}
             </div>
           )}
+          {(booking.state as BookingState) === "soft_hold" && (
+            <p className="text-xs text-muted-foreground italic">{t("bookingDetail.softHoldDisclaimer", { defaultValue: "This hold does not guarantee availability until the booking is confirmed with a deposit." })}</p>
+          )}
           {depositDeadlineInfo && (
             <div className={`flex items-center gap-2 text-sm ${depositDeadlineInfo.isExpired ? "text-destructive" : "text-warning-foreground"}`}>
               <AlertTriangle className="h-4 w-4" />
@@ -225,7 +229,7 @@ function StateHistoryTab({ logs }: { logs: any[] }) {
                 </div>
                 {log.reason && <p className="text-muted-foreground mt-1">{log.reason}</p>}
                 <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-xs text-muted-foreground">{format(new Date(log.created_at), "MMM d, yyyy 'at' h:mm a")}</p>
+                  <p className="text-xs text-muted-foreground">{formatInPropertyTimezone(log.created_at)}</p>
                   {log.changed_by_name && <span className="text-xs text-muted-foreground">— {log.changed_by_name}</span>}
                 </div>
               </div>
@@ -289,10 +293,16 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
             <span className="font-medium text-[hsl(var(--success))]">{formatPrice(balance.totalPaid, policies)}</span>
           </div>
           {balance.totalRefunded > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{t("payments.totalRefunded", { defaultValue: "Refunded" })}</span>
-              <span className="font-medium text-[hsl(var(--info))]">−{formatPrice(balance.totalRefunded, policies)}</span>
-            </div>
+            <>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{t("payments.totalRefunded", { defaultValue: "Refunded" })}</span>
+                <span className="font-medium text-[hsl(var(--info))]">−{formatPrice(balance.totalRefunded, policies)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{t("payments.netPaid", { defaultValue: "Net Paid" })}</span>
+                <span className="font-medium">{formatPrice(balance.totalPaid - balance.totalRefunded, policies)}</span>
+              </div>
+            </>
           )}
           <Separator className="my-1" />
           <div className="flex justify-between text-sm">
@@ -334,7 +344,7 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">{format(new Date(p.created_at), "MMM d")}</span>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">{formatInPropertyTimezone(p.created_at, "date")}</span>
                     {canRefund(p) && (
                       <Button variant="ghost" size="sm" className="h-6 px-2 text-xs gap-1 text-destructive hover:text-destructive" onClick={() => setRefundTarget(p)}>
                         <RotateCcw className="h-3 w-3" /> {t("payments.refund", { defaultValue: "Refund" })}
