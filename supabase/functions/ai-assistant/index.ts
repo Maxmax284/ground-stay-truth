@@ -758,6 +758,41 @@ Deposit policy: ${depositMode}. Currency: ${currencySymbol}.`;
       contextData += `\nStart with the most urgent and oldest items first.`;
     }
 
+    // ─── WEATHER CONTEXT (all roles) ────────────────────────────────────────
+    // Detect airport from guest pickup data or context, default to USM (camp location)
+    let weatherAirport = "USM"; // Camp is on Samui
+    if (context?.airport_code) {
+      weatherAirport = String(context.airport_code).toUpperCase();
+    } else if (role === "guest") {
+      // Try to detect from guest's pickup flight number or arrival airport
+      const { data: guestPickups } = await adminClient
+        .from("airport_pickups")
+        .select("flight_number")
+        .in("booking_id", (await adminClient.from("bookings").select("id").eq("guest_id", userData.user.id).limit(5)).data?.map((b: any) => b.id) ?? [])
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      const flightNum = guestPickups?.[0]?.flight_number?.toUpperCase() ?? "";
+      // If flight ends at BKK (connecting), note both; otherwise default to USM
+      if (flightNum) {
+        const { data: flightRecord } = await adminClient
+          .from("flight_tracking")
+          .select("arrival_iata")
+          .eq("flight_number", flightNum)
+          .limit(1)
+          .maybeSingle();
+        if (flightRecord?.arrival_iata) {
+          weatherAirport = flightRecord.arrival_iata;
+        }
+      }
+    }
+
+    // Fetch weather in parallel with nothing — it's a standalone call
+    const weatherContext = await fetchWeatherContext(weatherAirport);
+    if (weatherContext) {
+      contextData += weatherContext;
+    }
+
     // ─── MODE-SPECIFIC EXPANSIONS ───────────────────────────────────────────
     if (mode === "digest" || mode === "summarize") {
       const [detBookingsRes, detMaintenanceRes, detLaundryRes] = await Promise.all([
