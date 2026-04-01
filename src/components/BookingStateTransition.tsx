@@ -124,7 +124,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
   const earlyCheckinApproved = earlyCheckinRequest?.status === "approved";
 
   const refundInfo = useMemo(() => {
-    if (targetState !== "cancelled" || !checkInDate || !policies) return null;
+    if ((targetState !== "cancelled" && targetState !== "no_show") || !checkInDate || !policies) return null;
     return calculateRefund(checkInDate, totalPrice ?? null, policies);
   }, [targetState, checkInDate, totalPrice, policies]);
 
