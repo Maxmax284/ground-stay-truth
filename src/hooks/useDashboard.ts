@@ -110,13 +110,15 @@ export function useDashboardStats() {
   });
 
   const pendingApproval = useQuery({
-    queryKey: ["dashboard", "pendingApproval"],
+    queryKey: ["dashboard", "pendingApproval", activePropertyId],
     queryFn: async () => {
-      const { data, error } = await (supabase
+      let query = (supabase
         .from("bookings")
         .select("id, unit_id, check_in, check_out, num_guests, state, guest_id, created_at, units(name), profiles!bookings_guest_id_profiles_fkey(full_name)")
         .eq("state", "pending_approval")
         .order("created_at", { ascending: true })) as any;
+      if (activePropertyId) query = query.eq("property_id", activePropertyId);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
