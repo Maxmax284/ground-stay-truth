@@ -83,11 +83,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Update guest_landed_at
+    // Update guest_landed_at and confirmed_airport
     const now = new Date().toISOString();
+    const updatePayload: Record<string, any> = { guest_landed_at: now };
+    if (airportCode) updatePayload.confirmed_airport = airportCode;
+
     const { error: updateError } = await serviceClient
       .from("airport_pickups")
-      .update({ guest_landed_at: now })
+      .update(updatePayload)
       .eq("id", pickup.id);
 
     if (updateError) {
@@ -95,6 +98,24 @@ Deno.serve(async (req) => {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Cross-check: if flight tracking exists, compare arrival_iata with confirmed airport
+    let airportMismatch = false;
+    if (airportCode) {
+      const { data: flightTrack } = await serviceClient
+        .from("flight_tracking")
+        .select("arrival_iata")
+        .eq("pickup_id", pickup.id)
+        .maybeSingle();
+
+      if (flightTrack?.arrival_iata) {
+        const flightIata = flightTrack.arrival_iata.toUpperCase();
+        const confirmedIata = airportCode.toUpperCase() === "SAMUI" ? "USM" : airportCode.toUpperCase();
+        if (flightIata !== confirmedIata && flightIata !== "") {
+          airportMismatch = true;
+        }
+      }
     }
 
     // Get guest name
