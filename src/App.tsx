@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import { RolePreviewProvider } from "@/hooks/useRolePreview";
+import { PropertyProvider } from "@/hooks/useProperty";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleRedirect from "@/components/RoleRedirect";
 import Index from "./pages/Index";
