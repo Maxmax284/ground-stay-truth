@@ -62,8 +62,30 @@ function parseTemplate(value: unknown): WelcomeTemplate | null {
   }
 }
 
-/** Detect airport from arrival details or flight number */
-export function detectAirport(booking: any): "bkk" | "samui" | null {
+/**
+ * Detect airport from flight tracking data (primary), arrival details (fallback),
+ * or confirmed_airport stored on pickup (highest priority if set).
+ */
+export function detectAirport(
+  booking: any,
+  flightTracking?: { arrival_iata?: string | null } | null,
+  confirmedAirport?: string | null,
+): "bkk" | "samui" | null {
+  // 1. If staff/guest already confirmed, use that
+  if (confirmedAirport) {
+    const ca = confirmedAirport.toLowerCase();
+    if (ca === "bkk" || ca === "suvarnabhumi") return "bkk";
+    if (ca === "usm" || ca === "samui") return "samui";
+  }
+
+  // 2. Flight tracking arrival_iata (from AviationStack — most reliable)
+  if (flightTracking?.arrival_iata) {
+    const iata = flightTracking.arrival_iata.toUpperCase();
+    if (iata === "BKK") return "bkk";
+    if (iata === "USM") return "samui";
+  }
+
+  // 3. Fallback: booking arrival_details text
   const details = booking?.arrival_details;
   if (typeof details === "object" && details !== null) {
     const airport = (details as any).airport || (details as any).arrival_airport;
@@ -74,6 +96,13 @@ export function detectAirport(booking: any): "bkk" | "samui" | null {
     }
   }
   return null;
+}
+
+/** Get human-readable airport label */
+export function airportLabel(code: "bkk" | "samui" | null): string {
+  if (code === "bkk") return "BKK (Suvarnabhumi)";
+  if (code === "samui") return "USM (Koh Samui)";
+  return "Unknown";
 }
 
 function SectionPhotos({ photos }: { photos: WelcomePhoto[] }) {
