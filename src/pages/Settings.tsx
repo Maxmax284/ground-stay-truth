@@ -52,7 +52,7 @@ const Settings = () => {
           {canManagePolicies && <TabsContent value="cancellation"><CancellationPolicyEditor /></TabsContent>}
           {canManagePolicies && <TabsContent value="policies"><PolicySettingsForm /></TabsContent>}
           {isAdmin && <TabsContent value="drivers"><DriverManager /></TabsContent>}
-          {isAdmin && <TabsContent value="properties"><PropertyAssignmentManager /></TabsContent>}
+          {isAdmin && <TabsContent value="properties"><PropertyManagementPanel /></TabsContent>}
           {isAdmin && <TabsContent value="training"><TrainingPackagesManager /></TabsContent>}
           {isAdmin && <TabsContent value="arrival"><ArrivalWelcomeEditor /></TabsContent>}
           {isAdmin && <TabsContent value="integrations"><IntegrationSettings /></TabsContent>}
