@@ -349,7 +349,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
         showDepositForm ? `[DEPOSIT: ${formatPrice(Number(depositAmount), policies)} via ${depositMethod}]` : "",
         cashAtCheckin && checkinPayAmount ? `[CASH AT CHECK-IN: ${formatPrice(Number(checkinPayAmount), policies)} via ${checkinPayMethod}]` : "",
         reason,
-        refundInfo ? `[Refund: ${refundInfo.label}${refundInfo.refundAmount != null ? ` — ${formatPrice(refundInfo.refundAmount, policies)}` : ""}]` : "",
+        refundInfo ? `[${targetState === "no_show" ? "No-show deposit" : "Refund"}: ${refundInfo.label}${refundInfo.refundAmount != null ? ` — ${formatPrice(refundInfo.refundAmount, policies)}` : ""}]` : "",
       ].filter(Boolean).join(" ");
       await transition.mutateAsync({ bookingId, fromState: currentState, toState: targetState as BookingState, reason: reasonText });
       toast({ title: t("stateTransition.stateUpdated"), description: t("stateTransition.movedTo", { state: t(`states.${targetState}`) }) });
@@ -360,7 +360,20 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
       setTargetState(""); setReason(""); setAdminOverride(false); setDepositOverride(false); setDepositOverrideReason("");
       setDepositAmount(""); setDepositMethod("cash"); setDepositNotes("");
       setCashAtCheckin(false); setCheckinPayAmount(""); setCheckinPayMethod("cash"); setCheckinPayNotes(""); setAiAcknowledged(false);
-    } catch (err: any) { toast({ title: t("stateTransition.transitionFailed"), description: err.message, variant: "destructive" }); }
+    } catch (err: any) {
+      const msg = err.message || "";
+      const isOverlap = msg.includes("overlap") || msg.includes("Booking dates overlap");
+      const isOccupancy = msg.includes("exceeds maximum allowed");
+      toast({
+        title: t("stateTransition.transitionFailed"),
+        description: isOverlap
+          ? t("bookingForm.overlapError", { defaultValue: "These dates are no longer available. Another booking has already been confirmed for this unit." })
+          : isOccupancy
+            ? t("bookingForm.occupancyError", { defaultValue: "Guest count exceeds the maximum allowed for this unit." })
+            : msg,
+        variant: "destructive",
+      });
+    }
   };
 
   // Determine if current target is admin-gated and user is not admin
