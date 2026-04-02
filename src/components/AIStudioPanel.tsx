@@ -96,6 +96,7 @@ export function AIStudioPanel({
             airport,
             context: overrideContext || context,
             tone,
+            property_id: propertyId,
           }),
         }
       );
