@@ -31,6 +31,7 @@ import { RefundDialog } from "@/components/RefundDialog";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { SecurityDepositSection } from "@/components/SecurityDepositSection";
 import { BookingTrainingSection } from "@/components/BookingTrainingSection";
+import { useBookingTrainingLinks } from "@/hooks/useTrainingPackages";
 import { AirportPickupSection } from "@/components/AirportPickupSection";
 import { useGuestDocuments } from "@/hooks/useGuestDocuments";
 import { useMaintenanceRequests, useUpdateMaintenanceStatus } from "@/hooks/useMaintenanceRequests";
