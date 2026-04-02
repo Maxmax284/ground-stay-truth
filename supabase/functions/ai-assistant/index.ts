@@ -648,24 +648,28 @@ Deposit policy: ${depositMode}. Currency: ${currencySymbol}.`;
     }
 
     if (role === "front_desk_supervisor") {
-      // Escalation digest: stale requests, pending approvals
+      // Escalation digest: stale requests, pending approvals (property-scoped)
       const staleThreshold = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
-      const [staleMaintenanceRes, staleLaundryRes, pendingApprovalsRes] = await Promise.all([
-        adminClient
+      let staleMaintQ = adminClient
           .from("maintenance_requests")
           .select("id, category, priority, unit_id, units(name), created_at")
           .in("status", ["open", "in_progress"])
-          .lt("created_at", staleThreshold),
-        adminClient
+          .lt("created_at", staleThreshold);
+      let staleLaundryQ = adminClient
           .from("laundry_requests")
           .select("id, unit_id, units(name), status, created_at")
           .in("status", ["in_progress", "ready_for_pickup"])
-          .lt("created_at", staleThreshold),
-        adminClient
+          .lt("created_at", staleThreshold);
+      let pendingAppQ = adminClient
           .from("bookings")
           .select("id, unit_id, units(name), check_in, guest_id")
-          .eq("state", "pending_approval"),
-      ]);
+          .eq("state", "pending_approval");
+      if (property_id) {
+        staleMaintQ = staleMaintQ.eq("property_id", property_id);
+        staleLaundryQ = staleLaundryQ.eq("property_id", property_id);
+        pendingAppQ = pendingAppQ.eq("property_id", property_id);
+      }
+      const [staleMaintenanceRes, staleLaundryRes, pendingApprovalsRes] = await Promise.all([staleMaintQ, staleLaundryQ, pendingAppQ]);
 
       contextData += `\n\nESCALATION DIGEST:`;
       contextData += `\nStale maintenance (>24h): ${(staleMaintenanceRes.data ?? []).length}. ${JSON.stringify(staleMaintenanceRes.data ?? [])}`;
