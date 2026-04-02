@@ -210,13 +210,33 @@ export function AIRefinementChat({ airport, airportLabel, template, tone, contex
 
         <Separator />
 
+        {/* Interim voice text */}
+        {isListening && interimText && (
+          <div className="px-3 pt-1">
+            <p className="text-xs text-muted-foreground italic animate-pulse truncate">
+              🎙️ {interimText}
+            </p>
+          </div>
+        )}
+
         {/* Input */}
         <div className="p-3 flex gap-2">
+          {micSupported && (
+            <Button
+              variant={isListening ? "destructive" : "ghost"}
+              size="sm"
+              onClick={toggleMic}
+              className="h-9 w-9 p-0 shrink-0"
+              title={isListening ? "Stop listening" : "Voice input"}
+            >
+              {isListening ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+            </Button>
+          )}
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Tell the AI what to change..."
+            placeholder={isListening ? "Listening…" : "Tell the AI what to change..."}
             className="h-9 text-sm"
             disabled={loading}
           />
