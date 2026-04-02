@@ -164,6 +164,17 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
             <input type="hidden" {...register("unit_id", { required: true })} />
             {errors.unit_id && <p className="text-sm text-destructive">{t("bookingForm.unitRequired")}</p>}
           </div>
+          <div className="space-y-2">
+            <Label>{t("bookingForm.guestType", { defaultValue: "Guest Type" })}</Label>
+            <Select value={watch("guest_type")} onValueChange={(v) => setValue("guest_type", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {guestTypeOptions.map((gt) => (
+                  <SelectItem key={gt.value} value={gt.value}>{t(gt.labelKey)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2"><Label htmlFor="check_in">{t("bookingForm.checkIn")} *</Label><Input id="check_in" type="date" {...register("check_in", { required: true })} />{errors.check_in && <p className="text-sm text-destructive">{t("common.required")}</p>}</div>
             <div className="space-y-2"><Label htmlFor="check_out">{t("bookingForm.checkOut")} *</Label><Input id="check_out" type="date" {...register("check_out", { required: true })} />{errors.check_out && <p className="text-sm text-destructive">{t("common.required")}</p>}</div>
