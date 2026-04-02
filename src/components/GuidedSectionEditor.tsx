@@ -254,6 +254,51 @@ export function GuidedSectionEditor({
     }
   };
 
+  // Quick Draft: natural language → structured section
+  const handleQuickDraft = async () => {
+    if (!session || !quickDraft.trim()) return;
+    setGenerating(true);
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/draft-arrival-welcome`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            airport,
+            mode: "generate_section",
+            tone,
+            context,
+            property_id: propertyId,
+            section_type: selectedType || "custom",
+            section_title: sectionTitle || template?.defaultTitle || "Custom Section",
+            guided_fields: {},
+            quick_draft: quickDraft.trim(),
+            airport_facts: facts ? { code: facts.code, name: facts.name, type: facts.type } : null,
+          }),
+        }
+      );
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => ({}));
+        throw new Error(body.error || "Quick draft failed");
+      }
+      const data = await resp.json();
+      if (data.draft) {
+        onUpdate(data.draft.title || sectionTitle, data.draft.content || sectionContent);
+        setQuickDraft("");
+        toast({ title: "Section drafted", description: "Generated from your description. Review and edit below." });
+      }
+    } catch (err: any) {
+      toast({ title: "Quick draft failed", description: err.message, variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const journeyTemplates = getJourneyTemplates(airport as any);
   const situationalTemplates = getSituationalTemplates(airport as any);
 
