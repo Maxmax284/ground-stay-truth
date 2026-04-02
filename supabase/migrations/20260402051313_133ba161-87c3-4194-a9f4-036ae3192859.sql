@@ -1,0 +1,1 @@
+ALTER TABLE public.bookings ALTER COLUMN guest_type DROP DEFAULT;

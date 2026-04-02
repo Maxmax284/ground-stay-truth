@@ -18,10 +18,12 @@ import { usePricingRules } from "@/hooks/usePricingRules";
 import { useMaintenanceBlocks } from "@/hooks/useMaintenanceBlocks";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { useAuth } from "@/hooks/useAuth";
+import { useProperty } from "@/hooks/useProperty";
 import { permissions } from "@/lib/permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { calculatePricing, type PricingSummary } from "@/lib/pricingCalculator";
 import { formatPrice } from "@/lib/currency";
+import { getGuestTypesForMode, DEFAULT_GUEST_TYPE } from "@/lib/guestTypes";
 import { AlertTriangle } from "lucide-react";
 
 interface BookingFormDialogProps { open: boolean; onOpenChange: (open: boolean) => void; defaultUnitId?: string; defaultCheckIn?: string; defaultCheckOut?: string; }
