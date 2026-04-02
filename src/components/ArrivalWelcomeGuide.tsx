@@ -225,7 +225,7 @@ export function ArrivalWelcomeDialog({ open, onOpenChange, airport, propertyId }
         {!hasContent && (
           <div className="px-5 pb-2">
             <p className="text-sm text-muted-foreground">
-              Sit tight — your driver is on the way. If you need anything, tap "Ask Kru Glitch" in the portal.
+              Sit tight — your driver is on the way. If you need anything, use the messaging feature in your portal.
             </p>
           </div>
         )}

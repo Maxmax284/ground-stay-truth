@@ -62,7 +62,7 @@ export function GuestPickupCard({ bookingId, guestName }: Props) {
 
   const whatsappLink = driver?.whatsapp
     ? `https://wa.me/${driver.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(
-        `Hi, I'm ${guestName ?? "your guest"}, arriving at Lamai Muay Thai.${pickup.flight_number ? ` Flight ${pickup.flight_number}.` : ""}`
+        `Hi, I'm ${guestName ?? "your guest"}, arriving soon.${pickup.flight_number ? ` Flight ${pickup.flight_number}.` : ""}`
       )}`
     : null;
 
