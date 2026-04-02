@@ -678,25 +678,29 @@ Deposit policy: ${depositMode}. Currency: ${currencySymbol}.`;
     }
 
     if (role === "manager") {
-      // Revenue analytics from payments
+      // Revenue analytics (property-scoped)
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const [paymentsRes, completedRes, allBookingsRes] = await Promise.all([
-        adminClient
+      let mgrPaymentsQ = adminClient
           .from("payments")
-          .select("amount, created_at, provider")
+          .select("amount, created_at, provider, booking_id, bookings!inner(property_id)")
           .eq("status", "recorded")
-          .gte("created_at", thirtyDaysAgo),
-        adminClient
+          .gte("created_at", thirtyDaysAgo);
+      let mgrCompletedQ = adminClient
           .from("bookings")
           .select("id, check_in, check_out, total_price, unit_id")
           .eq("state", "completed")
-          .gte("updated_at", thirtyDaysAgo),
-        adminClient
+          .gte("updated_at", thirtyDaysAgo);
+      let mgrAllBookingsQ = adminClient
           .from("bookings")
           .select("id, state, check_in, check_out, unit_id")
           .in("state", ["confirmed", "checked_in", "completed"])
-          .gte("check_in", thirtyDaysAgo),
-      ]);
+          .gte("check_in", thirtyDaysAgo);
+      if (property_id) {
+        mgrPaymentsQ = mgrPaymentsQ.eq("bookings.property_id", property_id);
+        mgrCompletedQ = mgrCompletedQ.eq("property_id", property_id);
+        mgrAllBookingsQ = mgrAllBookingsQ.eq("property_id", property_id);
+      }
+      const [paymentsRes, completedRes, allBookingsRes] = await Promise.all([mgrPaymentsQ, mgrCompletedQ, mgrAllBookingsQ]);
 
       const payments = paymentsRes.data ?? [];
       const totalRevenue = payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
