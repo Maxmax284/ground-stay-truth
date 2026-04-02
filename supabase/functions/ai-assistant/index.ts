@@ -217,7 +217,10 @@ function buildSystemPrompt(role: string, language: string, contextData: string, 
   const roleKey = role && ROLE_RULES[role] ? role : "guest";
   layers.push(ROLE_RULES[roleKey]);
 
-  layers.push(GYM_INTELLIGENCE);
+  // Only include gym-specific intelligence for high-turnover (gym) properties
+  if (operationalMode !== "long_stay") {
+    layers.push(GYM_INTELLIGENCE);
+  }
   layers.push(REALITY_COMPRESSION);
   layers.push(TACTICAL_PAUSE);
   layers.push(DEPTH_CALIBRATION);
