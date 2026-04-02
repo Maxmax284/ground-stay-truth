@@ -18,24 +18,29 @@ import { usePricingRules } from "@/hooks/usePricingRules";
 import { useMaintenanceBlocks } from "@/hooks/useMaintenanceBlocks";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { useAuth } from "@/hooks/useAuth";
+import { useProperty } from "@/hooks/useProperty";
 import { permissions } from "@/lib/permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { calculatePricing, type PricingSummary } from "@/lib/pricingCalculator";
 import { formatPrice } from "@/lib/currency";
+import { getGuestTypesForMode, DEFAULT_GUEST_TYPE } from "@/lib/guestTypes";
 import { AlertTriangle } from "lucide-react";
 
 interface BookingFormDialogProps { open: boolean; onOpenChange: (open: boolean) => void; defaultUnitId?: string; defaultCheckIn?: string; defaultCheckOut?: string; }
-interface FormValues { unit_id: string; check_in: string; check_out: string; num_guests: number; extra_beds: number; notes: string; guest_id: string; }
+interface FormValues { unit_id: string; check_in: string; check_out: string; num_guests: number; extra_beds: number; notes: string; guest_id: string; guest_type: string; }
 
 export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCheckIn, defaultCheckOut }: BookingFormDialogProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const { role } = useAuth();
+  const { operationalMode } = useProperty();
   const createBooking = useCreateBooking();
   const { data: units } = useUnits();
   const { data: allPricingRules } = usePricingRules();
   const { data: policies } = usePolicySettings();
   const [guestSearch, setGuestSearch] = useState("");
+  const guestTypeOptions = getGuestTypesForMode(operationalMode);
+  const defaultGuestType = DEFAULT_GUEST_TYPE[operationalMode ?? "high_turnover"] ?? guestTypeOptions[0]?.value ?? "";
 
   const guestProfiles = useQuery({
     queryKey: ["guest-profiles"],
@@ -49,7 +54,7 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
   });
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
-    defaultValues: { unit_id: defaultUnitId ?? "", check_in: defaultCheckIn ?? "", check_out: defaultCheckOut ?? "", num_guests: 1, extra_beds: 0, notes: "", guest_id: "" },
+    defaultValues: { unit_id: defaultUnitId ?? "", check_in: defaultCheckIn ?? "", check_out: defaultCheckOut ?? "", num_guests: 1, extra_beds: 0, notes: "", guest_id: "", guest_type: defaultGuestType },
   });
 
   const selectedUnitId = watch("unit_id");
@@ -131,7 +136,7 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
   const onSubmit = async (data: FormValues) => {
     if (validationErrors.length > 0) return;
     try {
-      await createBooking.mutateAsync({ unit_id: data.unit_id, check_in: data.check_in, check_out: data.check_out, num_guests: Number(data.num_guests), notes: data.notes || null, guest_id: data.guest_id || null, total_price: pricing.total > 0 ? pricing.total : null, state: "inquiry" });
+      await createBooking.mutateAsync({ unit_id: data.unit_id, check_in: data.check_in, check_out: data.check_out, num_guests: Number(data.num_guests), notes: data.notes || null, guest_id: data.guest_id || null, guest_type: data.guest_type || null, total_price: pricing.total > 0 ? pricing.total : null, state: "inquiry" });
       toast({ title: t("bookingForm.bookingCreated"), description: t("bookingForm.bookingCreatedDesc") });
       reset(); onOpenChange(false);
     } catch (err: any) {
@@ -158,6 +163,17 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
             </Select>
             <input type="hidden" {...register("unit_id", { required: true })} />
             {errors.unit_id && <p className="text-sm text-destructive">{t("bookingForm.unitRequired")}</p>}
+          </div>
+          <div className="space-y-2">
+            <Label>{t("bookingForm.guestType", { defaultValue: "Guest Type" })}</Label>
+            <Select value={watch("guest_type")} onValueChange={(v) => setValue("guest_type", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {guestTypeOptions.map((gt) => (
+                  <SelectItem key={gt.value} value={gt.value}>{t(gt.labelKey)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2"><Label htmlFor="check_in">{t("bookingForm.checkIn")} *</Label><Input id="check_in" type="date" {...register("check_in", { required: true })} />{errors.check_in && <p className="text-sm text-destructive">{t("common.required")}</p>}</div>

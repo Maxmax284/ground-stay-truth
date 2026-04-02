@@ -75,8 +75,13 @@ async function fetchWeatherContext(airportCode: string): Promise<string> {
   }
 }
 
-// ─── LAYER 1: IDENTITY ───────────────────────────────────────────────────────
-const IDENTITY = `You are Kru Glitch — the camp's resident advisor at Ground Stay, a Muay Thai fight camp accommodation.`;
+// ─── LAYER 1: IDENTITY (property-aware) ──────────────────────────────────────
+function getIdentity(operationalMode: string | null): string {
+  if (operationalMode === "long_stay") {
+    return `You are Kru Glitch — the resident advisor at Ground Stay, a multi-property accommodation platform. You are currently assisting with a guesthouse property focused on long-stay travelers. Do NOT assume guests are here for Muay Thai training unless a training association is explicitly present in the data.`;
+  }
+  return `You are Kru Glitch — the camp's resident advisor at Ground Stay, a Muay Thai fight camp accommodation.`;
+}
 
 // ─── LAYER 2: OPERATOR FRAME (admin/manager only — invisible reasoning scaffold) ──
 const OPERATOR_FRAME = `
@@ -202,8 +207,8 @@ ACCURACY:
 - Never make up unit names, counts, booking details, or any operational data.`;
 
 // ─── PROMPT ASSEMBLY ─────────────────────────────────────────────────────────
-function buildSystemPrompt(role: string, language: string, contextData: string): string {
-  const layers: string[] = [IDENTITY];
+function buildSystemPrompt(role: string, language: string, contextData: string, operationalMode: string | null = null): string {
+  const layers: string[] = [getIdentity(operationalMode)];
 
   if (role === "admin" || role === "manager") {
     layers.push(OPERATOR_FRAME);
@@ -212,7 +217,10 @@ function buildSystemPrompt(role: string, language: string, contextData: string):
   const roleKey = role && ROLE_RULES[role] ? role : "guest";
   layers.push(ROLE_RULES[roleKey]);
 
-  layers.push(GYM_INTELLIGENCE);
+  // Only include gym-specific intelligence for high-turnover (gym) properties
+  if (operationalMode !== "long_stay") {
+    layers.push(GYM_INTELLIGENCE);
+  }
   layers.push(REALITY_COMPRESSION);
   layers.push(TACTICAL_PAUSE);
   layers.push(DEPTH_CALIBRATION);
@@ -272,7 +280,7 @@ serve(async (req) => {
       });
     }
 
-    const { mode, role, messages, context, language } = await req.json();
+    const { mode, role, messages, context, language, property_id, operational_mode } = await req.json();
     const responseLang = language || "English";
 
     // ─── SIMULATION ACTOR MODE ─────────────────────────────────────────────
@@ -387,12 +395,24 @@ serve(async (req) => {
       });
     }
 
-    // ─── BASELINE SNAPSHOT (all roles) ──────────────────────────────────────
+    // ─── BASELINE SNAPSHOT (all roles, scoped by property) ─────────────────
+    let unitsQuery = adminClient.from("units").select("name, is_active, base_price, capacity");
+    let bookingsQuery = adminClient.from("bookings").select("state").in("state", ["pending_approval", "pending_deposit", "confirmed", "checked_in"]);
+    let maintenanceQuery = adminClient.from("maintenance_requests").select("status").in("status", ["open", "in_progress"]);
+    let laundryQuery = adminClient.from("laundry_requests").select("status").neq("status", "collected");
+
+    if (property_id) {
+      unitsQuery = unitsQuery.eq("property_id", property_id);
+      bookingsQuery = bookingsQuery.eq("property_id", property_id);
+      maintenanceQuery = maintenanceQuery.eq("property_id", property_id);
+      laundryQuery = laundryQuery.eq("property_id", property_id);
+    }
+
     const [unitsRes, bookingsRes, maintenanceRes, laundryRes, depositPoliciesRes] = await Promise.all([
-      adminClient.from("units").select("name, is_active, base_price, capacity"),
-      adminClient.from("bookings").select("state").in("state", ["pending_approval", "pending_deposit", "confirmed", "checked_in"]),
-      adminClient.from("maintenance_requests").select("status").in("status", ["open", "in_progress"]),
-      adminClient.from("laundry_requests").select("status").neq("status", "collected"),
+      unitsQuery,
+      bookingsQuery,
+      maintenanceQuery,
+      laundryQuery,
       adminClient.from("policy_settings").select("key, value").in("key", ["deposits_online_enabled", "deposits_manual_enabled", "deposits_require_online_when_enabled", "currency_symbol", "deposit_percentage"]),
     ]);
 
@@ -582,24 +602,29 @@ Deposit policy: ${depositMode}. Currency: ${currencySymbol}.`;
     }
 
     if (role === "front_desk" || role === "front_desk_supervisor") {
-      // Today's arrivals/departures + availability
+      // Today's arrivals/departures + availability (property-scoped)
       const today = now.toISOString().split("T")[0];
-      const [arrivalsRes, departuresRes, blocksRes] = await Promise.all([
-        adminClient
+      let arrivalsQ = adminClient
           .from("bookings")
           .select("id, check_in, unit_id, units(name), guest_id, profiles!bookings_guest_id_profiles_fkey(full_name), state")
           .eq("check_in", today)
-          .in("state", ["confirmed", "checked_in"]),
-        adminClient
+          .in("state", ["confirmed", "checked_in"]);
+      let departuresQ = adminClient
           .from("bookings")
           .select("id, check_out, unit_id, units(name), state")
           .eq("check_out", today)
-          .in("state", ["checked_in", "completed"]),
-        adminClient
+          .in("state", ["checked_in", "completed"]);
+      let blocksQ = adminClient
           .from("maintenance_blocks")
           .select("unit_id, start_date, end_date, units(name)")
-          .gte("end_date", today),
-      ]);
+          .gte("end_date", today);
+
+      if (property_id) {
+        arrivalsQ = arrivalsQ.eq("property_id", property_id);
+        departuresQ = departuresQ.eq("property_id", property_id);
+      }
+
+      const [arrivalsRes, departuresRes, blocksRes] = await Promise.all([arrivalsQ, departuresQ, blocksQ]);
 
       contextData += `\n\nTODAY'S OPERATIONS (${today}):`;
       contextData += `\nArrivals today: ${(arrivalsRes.data ?? []).length}. ${JSON.stringify(arrivalsRes.data ?? [])}`;
@@ -607,12 +632,14 @@ Deposit policy: ${depositMode}. Currency: ${currencySymbol}.`;
 
       // Availability check: next 14 days
       const next14 = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-      const { data: upcomingBookings } = await adminClient
+      let upcomingQ = adminClient
         .from("bookings")
         .select("unit_id, check_in, check_out, units(name)")
         .in("state", ["pending_approval", "pending_deposit", "confirmed", "checked_in"])
         .lte("check_in", next14)
         .gte("check_out", today);
+      if (property_id) upcomingQ = upcomingQ.eq("property_id", property_id);
+      const { data: upcomingBookings } = await upcomingQ;
 
       contextData += `\n\nAVAILABILITY (next 14 days):`;
       contextData += `\nBlocked bookings: ${JSON.stringify(upcomingBookings ?? [])}`;
@@ -621,24 +648,28 @@ Deposit policy: ${depositMode}. Currency: ${currencySymbol}.`;
     }
 
     if (role === "front_desk_supervisor") {
-      // Escalation digest: stale requests, pending approvals
+      // Escalation digest: stale requests, pending approvals (property-scoped)
       const staleThreshold = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
-      const [staleMaintenanceRes, staleLaundryRes, pendingApprovalsRes] = await Promise.all([
-        adminClient
+      let staleMaintQ = adminClient
           .from("maintenance_requests")
           .select("id, category, priority, unit_id, units(name), created_at")
           .in("status", ["open", "in_progress"])
-          .lt("created_at", staleThreshold),
-        adminClient
+          .lt("created_at", staleThreshold);
+      let staleLaundryQ = adminClient
           .from("laundry_requests")
           .select("id, unit_id, units(name), status, created_at")
           .in("status", ["in_progress", "ready_for_pickup"])
-          .lt("created_at", staleThreshold),
-        adminClient
+          .lt("created_at", staleThreshold);
+      let pendingAppQ = adminClient
           .from("bookings")
           .select("id, unit_id, units(name), check_in, guest_id")
-          .eq("state", "pending_approval"),
-      ]);
+          .eq("state", "pending_approval");
+      if (property_id) {
+        staleMaintQ = staleMaintQ.eq("property_id", property_id);
+        staleLaundryQ = staleLaundryQ.eq("property_id", property_id);
+        pendingAppQ = pendingAppQ.eq("property_id", property_id);
+      }
+      const [staleMaintenanceRes, staleLaundryRes, pendingApprovalsRes] = await Promise.all([staleMaintQ, staleLaundryQ, pendingAppQ]);
 
       contextData += `\n\nESCALATION DIGEST:`;
       contextData += `\nStale maintenance (>24h): ${(staleMaintenanceRes.data ?? []).length}. ${JSON.stringify(staleMaintenanceRes.data ?? [])}`;
@@ -647,25 +678,29 @@ Deposit policy: ${depositMode}. Currency: ${currencySymbol}.`;
     }
 
     if (role === "manager") {
-      // Revenue analytics from payments
+      // Revenue analytics (property-scoped)
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const [paymentsRes, completedRes, allBookingsRes] = await Promise.all([
-        adminClient
+      let mgrPaymentsQ = adminClient
           .from("payments")
-          .select("amount, created_at, provider")
+          .select("amount, created_at, provider, booking_id, bookings!inner(property_id)")
           .eq("status", "recorded")
-          .gte("created_at", thirtyDaysAgo),
-        adminClient
+          .gte("created_at", thirtyDaysAgo);
+      let mgrCompletedQ = adminClient
           .from("bookings")
           .select("id, check_in, check_out, total_price, unit_id")
           .eq("state", "completed")
-          .gte("updated_at", thirtyDaysAgo),
-        adminClient
+          .gte("updated_at", thirtyDaysAgo);
+      let mgrAllBookingsQ = adminClient
           .from("bookings")
           .select("id, state, check_in, check_out, unit_id")
           .in("state", ["confirmed", "checked_in", "completed"])
-          .gte("check_in", thirtyDaysAgo),
-      ]);
+          .gte("check_in", thirtyDaysAgo);
+      if (property_id) {
+        mgrPaymentsQ = mgrPaymentsQ.eq("bookings.property_id", property_id);
+        mgrCompletedQ = mgrCompletedQ.eq("property_id", property_id);
+        mgrAllBookingsQ = mgrAllBookingsQ.eq("property_id", property_id);
+      }
+      const [paymentsRes, completedRes, allBookingsRes] = await Promise.all([mgrPaymentsQ, mgrCompletedQ, mgrAllBookingsQ]);
 
       const payments = paymentsRes.data ?? [];
       const totalRevenue = payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
@@ -906,7 +941,7 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
       });
     }
 
-    const fullSystemPrompt = buildSystemPrompt(role || "", responseLang, contextData);
+    const fullSystemPrompt = buildSystemPrompt(role || "", responseLang, contextData, operational_mode || null);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

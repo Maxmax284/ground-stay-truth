@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useProperty } from "@/hooks/useProperty";
 import { supabase } from "@/integrations/supabase/client";
 
 export type AIMode = "explain" | "summarize" | "validate" | "draft" | "digest" | "camp";
@@ -11,6 +12,7 @@ export interface AIMessage {
 
 export function useAIAssistant() {
   const { session, role } = useAuth();
+  const { activePropertyId, operationalMode } = useProperty();
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +43,8 @@ export function useAIAssistant() {
           body: JSON.stringify({
             mode,
             role,
+            property_id: activePropertyId,
+            operational_mode: operationalMode,
             messages: [...messages, userMsg].map((m) => ({ role: m.role, content: m.content })),
             context,
             language,
@@ -113,7 +117,7 @@ export function useAIAssistant() {
       setIsStreaming(false);
       abortRef.current = null;
     }
-  }, [session, role, messages]);
+  }, [session, role, messages, activePropertyId, operationalMode]);
 
   const cancel = useCallback(() => {
     abortRef.current?.abort();
