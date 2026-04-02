@@ -392,3 +392,62 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
     </Dialog>
   );
 }
+
+/** Property-contextual guest type selector */
+function GuestTypeSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useTranslation();
+
+  // Fetch properties to determine operational mode — for guests we show all unique modes' types
+  const { data: properties } = useQuery({
+    queryKey: ["properties-modes"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("properties").select("operational_mode").eq("is_active", true);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const modes = useMemo(() => {
+    const set = new Set((properties ?? []).map((p) => p.operational_mode));
+    return Array.from(set);
+  }, [properties]);
+
+  // Merge guest types from all active property modes, deduplicated
+  const guestTypes = useMemo(() => {
+    const seen = new Set<string>();
+    const result: { value: string; labelKey: string }[] = [];
+    for (const mode of modes.length > 0 ? modes : ["high_turnover"]) {
+      for (const gt of getGuestTypesForMode(mode)) {
+        if (!seen.has(gt.value)) {
+          seen.add(gt.value);
+          result.push(gt);
+        }
+      }
+    }
+    return result;
+  }, [modes]);
+
+  // Set default when value is empty
+  useEffect(() => {
+    if (!value && guestTypes.length > 0) {
+      const defaultMode = modes.includes("long_stay") ? "long_stay" : "high_turnover";
+      onChange(DEFAULT_GUEST_TYPE[defaultMode] ?? guestTypes[0].value);
+    }
+  }, [value, guestTypes, modes, onChange]);
+
+  return (
+    <div className="space-y-2">
+      <Label>{t("guestBooking.guestType")}</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {guestTypes.map((gt) => (
+            <SelectItem key={gt.value} value={gt.value}>
+              {t(gt.labelKey, { defaultValue: gt.value })}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
