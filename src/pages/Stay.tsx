@@ -43,6 +43,7 @@ interface BlockedRange { start: string; end: string; }
 export default function Stay() {
   const navigate = useNavigate();
   const [units, setUnits] = useState<UnitData[]>([]);
+  const [properties, setProperties] = useState<PropertyData[]>([]);
   const [loading, setLoading] = useState(true);
   const [currencySymbol, setCurrencySymbol] = useState("฿");
   const [blockedByUnit, setBlockedByUnit] = useState<Record<string, BlockedRange[]>>({});
