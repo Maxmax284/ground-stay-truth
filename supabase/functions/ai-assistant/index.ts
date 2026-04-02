@@ -395,12 +395,24 @@ serve(async (req) => {
       });
     }
 
-    // ─── BASELINE SNAPSHOT (all roles) ──────────────────────────────────────
+    // ─── BASELINE SNAPSHOT (all roles, scoped by property) ─────────────────
+    let unitsQuery = adminClient.from("units").select("name, is_active, base_price, capacity");
+    let bookingsQuery = adminClient.from("bookings").select("state").in("state", ["pending_approval", "pending_deposit", "confirmed", "checked_in"]);
+    let maintenanceQuery = adminClient.from("maintenance_requests").select("status").in("status", ["open", "in_progress"]);
+    let laundryQuery = adminClient.from("laundry_requests").select("status").neq("status", "collected");
+
+    if (property_id) {
+      unitsQuery = unitsQuery.eq("property_id", property_id);
+      bookingsQuery = bookingsQuery.eq("property_id", property_id);
+      maintenanceQuery = maintenanceQuery.eq("property_id", property_id);
+      laundryQuery = laundryQuery.eq("property_id", property_id);
+    }
+
     const [unitsRes, bookingsRes, maintenanceRes, laundryRes, depositPoliciesRes] = await Promise.all([
-      adminClient.from("units").select("name, is_active, base_price, capacity"),
-      adminClient.from("bookings").select("state").in("state", ["pending_approval", "pending_deposit", "confirmed", "checked_in"]),
-      adminClient.from("maintenance_requests").select("status").in("status", ["open", "in_progress"]),
-      adminClient.from("laundry_requests").select("status").neq("status", "collected"),
+      unitsQuery,
+      bookingsQuery,
+      maintenanceQuery,
+      laundryQuery,
       adminClient.from("policy_settings").select("key, value").in("key", ["deposits_online_enabled", "deposits_manual_enabled", "deposits_require_online_when_enabled", "currency_symbol", "deposit_percentage"]),
     ]);
 
