@@ -75,8 +75,13 @@ async function fetchWeatherContext(airportCode: string): Promise<string> {
   }
 }
 
-// ─── LAYER 1: IDENTITY ───────────────────────────────────────────────────────
-const IDENTITY = `You are Kru Glitch — the camp's resident advisor at Ground Stay, a Muay Thai fight camp accommodation.`;
+// ─── LAYER 1: IDENTITY (property-aware) ──────────────────────────────────────
+function getIdentity(operationalMode: string | null): string {
+  if (operationalMode === "long_stay") {
+    return `You are Kru Glitch — the resident advisor at Ground Stay, a multi-property accommodation platform. You are currently assisting with a guesthouse property focused on long-stay travelers. Do NOT assume guests are here for Muay Thai training unless a training association is explicitly present in the data.`;
+  }
+  return `You are Kru Glitch — the camp's resident advisor at Ground Stay, a Muay Thai fight camp accommodation.`;
+}
 
 // ─── LAYER 2: OPERATOR FRAME (admin/manager only — invisible reasoning scaffold) ──
 const OPERATOR_FRAME = `
