@@ -67,6 +67,7 @@ interface Props {
   onSuggestionsReceived: (suggestions: any[]) => void;
   drafting: boolean;
   setDrafting: (v: boolean) => void;
+  propertyId?: string | null;
 }
 
 export function AIStudioPanel({
