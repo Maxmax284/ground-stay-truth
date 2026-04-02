@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useProperty } from "@/hooks/useProperty";
 
 export interface Review {
   id: string;
@@ -57,17 +58,20 @@ export function getReviewTimeGate(checkOut: string): { canReview: boolean; reaso
   return { canReview: true };
 }
 
-/** Fetch approved reviews for the public /stay page */
+/** Fetch approved reviews for the public /stay page — scoped to active property */
 export function useApprovedReviews() {
+  const { activePropertyId } = useProperty();
   return useQuery({
-    queryKey: ["reviews", "approved"],
+    queryKey: ["reviews", "approved", activePropertyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("reviews" as any)
-        .select("*")
+        .select("*, bookings!inner(property_id)")
         .eq("status", "approved")
         .order("created_at", { ascending: false })
-        .limit(6);
+        .limit(6) as any;
+      if (activePropertyId) q = q.eq("bookings.property_id", activePropertyId);
+      const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as unknown as Review[];
     },
@@ -91,18 +95,20 @@ export function useGuestReviews(guestId?: string) {
   });
 }
 
-/** Fetch all reviews for admin management */
+/** Fetch all reviews for admin management — scoped to active property */
 export function useAllReviews(statusFilter?: string) {
+  const { activePropertyId } = useProperty();
   return useQuery({
-    queryKey: ["reviews", "all", statusFilter],
+    queryKey: ["reviews", "all", statusFilter, activePropertyId],
     queryFn: async () => {
       let q = supabase
         .from("reviews" as any)
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select("*, bookings!inner(property_id)")
+        .order("created_at", { ascending: false }) as any;
       if (statusFilter && statusFilter !== "all") {
         q = q.eq("status", statusFilter);
       }
+      if (activePropertyId) q = q.eq("bookings.property_id", activePropertyId);
       const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as unknown as Review[];
@@ -255,7 +261,6 @@ export function useRespondToReview() {
         performed_by: performedBy,
         metadata: { admin_response: response },
       });
-      // Fire-and-forget notification for new/updated responses (not removals)
       if (!isRemoval) {
         supabase.functions.invoke("notify-review-response", {
           body: { review_id: id, admin_response: response },
