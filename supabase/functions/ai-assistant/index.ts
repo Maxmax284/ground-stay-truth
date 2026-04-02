@@ -602,24 +602,29 @@ Deposit policy: ${depositMode}. Currency: ${currencySymbol}.`;
     }
 
     if (role === "front_desk" || role === "front_desk_supervisor") {
-      // Today's arrivals/departures + availability
+      // Today's arrivals/departures + availability (property-scoped)
       const today = now.toISOString().split("T")[0];
-      const [arrivalsRes, departuresRes, blocksRes] = await Promise.all([
-        adminClient
+      let arrivalsQ = adminClient
           .from("bookings")
           .select("id, check_in, unit_id, units(name), guest_id, profiles!bookings_guest_id_profiles_fkey(full_name), state")
           .eq("check_in", today)
-          .in("state", ["confirmed", "checked_in"]),
-        adminClient
+          .in("state", ["confirmed", "checked_in"]);
+      let departuresQ = adminClient
           .from("bookings")
           .select("id, check_out, unit_id, units(name), state")
           .eq("check_out", today)
-          .in("state", ["checked_in", "completed"]),
-        adminClient
+          .in("state", ["checked_in", "completed"]);
+      let blocksQ = adminClient
           .from("maintenance_blocks")
           .select("unit_id, start_date, end_date, units(name)")
-          .gte("end_date", today),
-      ]);
+          .gte("end_date", today);
+
+      if (property_id) {
+        arrivalsQ = arrivalsQ.eq("property_id", property_id);
+        departuresQ = departuresQ.eq("property_id", property_id);
+      }
+
+      const [arrivalsRes, departuresRes, blocksRes] = await Promise.all([arrivalsQ, departuresQ, blocksQ]);
 
       contextData += `\n\nTODAY'S OPERATIONS (${today}):`;
       contextData += `\nArrivals today: ${(arrivalsRes.data ?? []).length}. ${JSON.stringify(arrivalsRes.data ?? [])}`;
