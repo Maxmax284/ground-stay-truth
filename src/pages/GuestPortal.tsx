@@ -157,6 +157,23 @@ const GuestPortal = () => {
   });
 
   const bookingIds = bookings?.map((b) => b.id) ?? [];
+
+  // Check if any of the guest's bookings have training links
+  const { data: guestTrainingLinks } = useQuery({
+    queryKey: ["guest-training-links", bookingIds],
+    enabled: bookingIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("booking_training_links")
+        .select("id, booking_id, training_packages(name, duration_days, price)")
+        .in("booking_id", bookingIds);
+      if (error) throw error;
+      return data;
+    },
+  });
+  const hasTrainingAssociation = (guestTrainingLinks ?? []).length > 0;
+
+
   const { data: messages } = useQuery({
     queryKey: ["guest-messages", bookingIds], enabled: bookingIds.length > 0,
     queryFn: async () => {
