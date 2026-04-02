@@ -926,7 +926,7 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
       });
     }
 
-    const fullSystemPrompt = buildSystemPrompt(role || "", responseLang, contextData);
+    const fullSystemPrompt = buildSystemPrompt(role || "", responseLang, contextData, operational_mode || null);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
