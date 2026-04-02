@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useProperty } from "@/hooks/useProperty";
 import { supabase } from "@/integrations/supabase/client";
 
 export type AIMode = "explain" | "summarize" | "validate" | "draft" | "digest" | "camp";
