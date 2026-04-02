@@ -632,12 +632,14 @@ Deposit policy: ${depositMode}. Currency: ${currencySymbol}.`;
 
       // Availability check: next 14 days
       const next14 = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-      const { data: upcomingBookings } = await adminClient
+      let upcomingQ = adminClient
         .from("bookings")
         .select("unit_id, check_in, check_out, units(name)")
         .in("state", ["pending_approval", "pending_deposit", "confirmed", "checked_in"])
         .lte("check_in", next14)
         .gte("check_out", today);
+      if (property_id) upcomingQ = upcomingQ.eq("property_id", property_id);
+      const { data: upcomingBookings } = await upcomingQ;
 
       contextData += `\n\nAVAILABILITY (next 14 days):`;
       contextData += `\nBlocked bookings: ${JSON.stringify(upcomingBookings ?? [])}`;
