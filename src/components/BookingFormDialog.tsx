@@ -136,7 +136,7 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
   const onSubmit = async (data: FormValues) => {
     if (validationErrors.length > 0) return;
     try {
-      await createBooking.mutateAsync({ unit_id: data.unit_id, check_in: data.check_in, check_out: data.check_out, num_guests: Number(data.num_guests), notes: data.notes || null, guest_id: data.guest_id || null, total_price: pricing.total > 0 ? pricing.total : null, state: "inquiry" });
+      await createBooking.mutateAsync({ unit_id: data.unit_id, check_in: data.check_in, check_out: data.check_out, num_guests: Number(data.num_guests), notes: data.notes || null, guest_id: data.guest_id || null, guest_type: data.guest_type || null, total_price: pricing.total > 0 ? pricing.total : null, state: "inquiry" });
       toast({ title: t("bookingForm.bookingCreated"), description: t("bookingForm.bookingCreatedDesc") });
       reset(); onOpenChange(false);
     } catch (err: any) {
