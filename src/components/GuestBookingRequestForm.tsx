@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { getGuestTypesForMode, DEFAULT_GUEST_TYPE } from "@/lib/guestTypes";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
@@ -59,7 +60,7 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
     defaultValues: {
       group_id: "", check_in: "", check_out: "", num_guests: 1,
-      guest_type: "training_guest", notes: "", arrival_flight: "", arrival_time: "",
+      guest_type: "", notes: "", arrival_flight: "", arrival_time: "",
       emergency_contact: "", airport_pickup: false, pickup_flight_number: "",
       pickup_arrival_datetime: "", pickup_passenger_count: 1, pickup_luggage_notes: "",
       pickup_special_instructions: "",
@@ -310,18 +311,7 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label>{t("guestBooking.guestType")}</Label>
-            <Select value={watch("guest_type")} onValueChange={(v) => setValue("guest_type", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="fighter">{t("guestBooking.guestTypes.fighter")}</SelectItem>
-                <SelectItem value="training_guest">{t("guestBooking.guestTypes.training_guest")}</SelectItem>
-                <SelectItem value="spectator">{t("guestBooking.guestTypes.spectator")}</SelectItem>
-                <SelectItem value="long_term">{t("guestBooking.guestTypes.long_term")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <GuestTypeSelect value={watch("guest_type")} onChange={(v) => setValue("guest_type", v)} />
 
           <Separator />
           <h4 className="text-sm font-semibold text-foreground">{t("guestBooking.arrivalDetails")}</h4>
@@ -400,5 +390,64 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Property-contextual guest type selector */
+function GuestTypeSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useTranslation();
+
+  // Fetch properties to determine operational mode — for guests we show all unique modes' types
+  const { data: properties } = useQuery({
+    queryKey: ["properties-modes"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("properties").select("operational_mode").eq("is_active", true);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const modes = useMemo(() => {
+    const set = new Set((properties ?? []).map((p) => p.operational_mode));
+    return Array.from(set);
+  }, [properties]);
+
+  // Merge guest types from all active property modes, deduplicated
+  const guestTypes = useMemo(() => {
+    const seen = new Set<string>();
+    const result: { value: string; labelKey: string }[] = [];
+    for (const mode of modes.length > 0 ? modes : ["high_turnover"]) {
+      for (const gt of getGuestTypesForMode(mode)) {
+        if (!seen.has(gt.value)) {
+          seen.add(gt.value);
+          result.push(gt);
+        }
+      }
+    }
+    return result;
+  }, [modes]);
+
+  // Set default when value is empty
+  useEffect(() => {
+    if (!value && guestTypes.length > 0) {
+      const defaultMode = modes.includes("long_stay") ? "long_stay" : "high_turnover";
+      onChange(DEFAULT_GUEST_TYPE[defaultMode] ?? guestTypes[0].value);
+    }
+  }, [value, guestTypes, modes, onChange]);
+
+  return (
+    <div className="space-y-2">
+      <Label>{t("guestBooking.guestType")}</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {guestTypes.map((gt) => (
+            <SelectItem key={gt.value} value={gt.value}>
+              {t(gt.labelKey, { defaultValue: gt.value })}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }

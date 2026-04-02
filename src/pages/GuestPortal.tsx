@@ -157,6 +157,23 @@ const GuestPortal = () => {
   });
 
   const bookingIds = bookings?.map((b) => b.id) ?? [];
+
+  // Check if any of the guest's bookings have training links
+  const { data: guestTrainingLinks } = useQuery({
+    queryKey: ["guest-training-links", bookingIds],
+    enabled: bookingIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("booking_training_links")
+        .select("id, booking_id, training_packages(name, duration_days, price)")
+        .in("booking_id", bookingIds);
+      if (error) throw error;
+      return data;
+    },
+  });
+  const hasTrainingAssociation = (guestTrainingLinks ?? []).length > 0;
+
+
   const { data: messages } = useQuery({
     queryKey: ["guest-messages", bookingIds], enabled: bookingIds.length > 0,
     queryFn: async () => {
@@ -321,7 +338,9 @@ const GuestPortal = () => {
               </TabsTrigger>
             )}
             <TabsTrigger value="calendar">{t("nav.calendar")}</TabsTrigger>
-            <TabsTrigger value="camp-info">{t("guestPortal.campInfo")}</TabsTrigger>
+            {hasTrainingAssociation && (
+              <TabsTrigger value="camp-info">{t("guestPortal.campInfo")}</TabsTrigger>
+            )}
             <TabsTrigger value="policies">{t("guestPortal.policies")}</TabsTrigger>
             <TabsTrigger value="profile">{t("guestPortal.profile")}</TabsTrigger>
           </TabsList>
@@ -509,25 +528,27 @@ const GuestPortal = () => {
             </div>
           </TabsContent>
 
-          {/* ── Camp Info Tab ── */}
-          <TabsContent value="camp-info">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2"><Info className="h-4 w-4 text-primary" />{t("guestPortal.campInfo")}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 text-sm">
-                <CampInfoAccordion policies={policies ?? []} />
-                <Separator />
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-foreground">{t("guestPortal.checkInOut")}</h4>
-                  <ul className="space-y-1.5 text-muted-foreground list-disc pl-5">
-                    <li>{t("guestPortal.checkInFrom")} <span className="font-medium text-foreground">{String(policies?.find((p) => p.key === "earliest_checkin_time")?.value ?? "16:00").replace(/^"|"$/g, "")}</span></li>
-                    <li>{t("guestPortal.checkOutBy")} <span className="font-medium text-foreground">{String(policies?.find((p) => p.key === "checkout_time")?.value ?? "11:00").replace(/^"|"$/g, "")}</span></li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {/* ── Camp Info Tab (only for guests with training links) ── */}
+          {hasTrainingAssociation && (
+            <TabsContent value="camp-info">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2"><Info className="h-4 w-4 text-primary" />{t("guestPortal.campInfo")}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm">
+                  <CampInfoAccordion policies={policies ?? []} />
+                  <Separator />
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-foreground">{t("guestPortal.checkInOut")}</h4>
+                    <ul className="space-y-1.5 text-muted-foreground list-disc pl-5">
+                      <li>{t("guestPortal.checkInFrom")} <span className="font-medium text-foreground">{String(policies?.find((p) => p.key === "earliest_checkin_time")?.value ?? "16:00").replace(/^"|"$/g, "")}</span></li>
+                      <li>{t("guestPortal.checkOutBy")} <span className="font-medium text-foreground">{String(policies?.find((p) => p.key === "checkout_time")?.value ?? "11:00").replace(/^"|"$/g, "")}</span></li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
           {/* ── Policies Tab ── */}
           <TabsContent value="policies">
@@ -602,6 +623,19 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
   const [showMessages, setShowMessages] = useState(false);
   const [reply, setReply] = useState("");
   const [reviewOpen, setReviewOpen] = useState(false);
+
+  // Training association check
+  const { data: bookingTrainingLinks } = useQuery({
+    queryKey: ["booking_training_links", booking.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("booking_training_links")
+        .select("*, training_packages(name, duration_days, price)")
+        .eq("booking_id", booking.id);
+      if (error) throw error;
+      return data;
+    },
+  });
   const queryClient = useQueryClient();
   const state = booking.state as BookingState;
   const showDocUpload = ["confirmed", "pending_deposit", "pending_approval"].includes(state);
@@ -704,7 +738,25 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
           <GuestPickupCard bookingId={booking.id} guestName={guestName} />
         )}
 
-        {/* Document Upload for applicable states */}
+        {/* Training Program info (only shown if booking has training links) */}
+        {(bookingTrainingLinks ?? []).length > 0 && !["cancelled", "no_show"].includes(state) && (
+          <div className="border rounded-md p-3 space-y-2 bg-accent/30">
+            <div className="flex items-center gap-2">
+              <Badge className="gap-1 bg-fight-gold text-fight-dark hover:bg-fight-gold/90 text-[10px]">
+                🥊 {t("training.programLinked", { defaultValue: "Training Program" })}
+              </Badge>
+            </div>
+            {(bookingTrainingLinks ?? []).map((link: any) => (
+              <div key={link.id} className="text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">{link.training_packages?.name}</span>
+                {" · "}{link.training_packages?.duration_days} {t("common.days", { defaultValue: "days" })}
+                {link.trainer_name && ` · Trainer: ${link.trainer_name}`}
+                {link.start_date && ` · Starts ${link.start_date}`}
+              </div>
+            ))}
+          </div>
+        )}
+
         {showDocUpload && (
           <div className="border rounded-md p-3">
             <GuestDocumentUpload bookingId={booking.id} showRequirement />
