@@ -228,12 +228,16 @@ export function ArrivalWelcomeDialog({ open, onOpenChange, airport, propertyId, 
     const setting = settings.find((s) => s.key === `arrival_welcome_${airport}`);
     const parsed = parseTemplate(setting?.value);
     if (!parsed || !isReturningGuest) return parsed;
-    // Filter out introductory sections for returning guests
     return {
       ...parsed,
       sections: parsed.sections.filter(s => !isIntroductorySection(s.title)),
     };
   }, [airport, settings, isReturningGuest]);
+
+  const { translated, isTranslating } = useWelcomeTranslation(
+    template?.welcome_message ?? "",
+    template?.sections ?? [],
+  );
 
   const airportLabel = airport === "bkk" ? "BKK (Suvarnabhumi)" : "Samui (USM)";
   const guideEnabled = template?.enabled ?? false;
@@ -263,7 +267,12 @@ export function ArrivalWelcomeDialog({ open, onOpenChange, airport, propertyId, 
         </DialogHeader>
         {hasContent && template && (
           <ScrollArea className="max-h-[60vh] px-5 pb-5">
-            <WelcomeContent template={template} />
+            <WelcomeContent
+              template={template}
+              translatedMessage={translated?.welcome_message}
+              translatedSections={translated?.sections}
+              isTranslating={isTranslating}
+            />
           </ScrollArea>
         )}
         {!hasContent && (
