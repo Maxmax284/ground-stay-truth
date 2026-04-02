@@ -2,20 +2,24 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfMonth, endOfMonth, eachDayOfInterval, format, subMonths, differenceInDays } from "date-fns";
 import { BLOCKING_STATES, type BookingState } from "@/lib/bookingStateMachine";
+import { useProperty } from "@/hooks/useProperty";
 
 export function useReports(monthOffset = 0) {
   const refDate = subMonths(new Date(), monthOffset);
   const rangeStart = format(startOfMonth(refDate), "yyyy-MM-dd");
   const rangeEnd = format(endOfMonth(refDate), "yyyy-MM-dd");
+  const { activePropertyId } = useProperty();
 
   const bookings = useQuery({
-    queryKey: ["reports", "bookings", rangeStart, rangeEnd],
+    queryKey: ["reports", "bookings", rangeStart, rangeEnd, activePropertyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("bookings")
         .select("id, unit_id, check_in, check_out, state, total_price, price_override, units(name)")
         .lte("check_in", rangeEnd)
         .gte("check_out", rangeStart);
+      if (activePropertyId) query = query.eq("property_id", activePropertyId);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -23,7 +27,7 @@ export function useReports(monthOffset = 0) {
 
   // Fetch payments with refund data for net revenue calculation
   const payments = useQuery({
-    queryKey: ["reports", "payments", rangeStart, rangeEnd],
+    queryKey: ["reports", "payments", rangeStart, rangeEnd, activePropertyId],
     queryFn: async () => {
       const bookingIds = bookings.data?.map((b) => b.id) ?? [];
       if (bookingIds.length === 0) return [];
@@ -38,28 +42,38 @@ export function useReports(monthOffset = 0) {
   });
 
   const units = useQuery({
-    queryKey: ["reports", "units"],
+    queryKey: ["reports", "units", activePropertyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("units")
         .select("id, name, base_price")
         .eq("is_active", true);
+      if (activePropertyId) query = query.eq("property_id", activePropertyId);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
   });
 
   const maintenanceBlocks = useQuery({
-    queryKey: ["reports", "maintenance_blocks", rangeStart, rangeEnd],
+    queryKey: ["reports", "maintenance_blocks", rangeStart, rangeEnd, activePropertyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("maintenance_blocks")
         .select("id, unit_id, start_date, end_date")
         .lte("start_date", rangeEnd)
         .gte("end_date", rangeStart);
+      // Filter by units belonging to active property
+      if (activePropertyId) {
+        const unitIds = (units.data ?? []).map((u) => u.id);
+        if (unitIds.length > 0) query = query.in("unit_id", unitIds);
+        else return [];
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
+    enabled: !activePropertyId || !!units.data,
   });
 
   // Derived: occupancy per day
@@ -94,10 +108,8 @@ export function useReports(monthOffset = 0) {
     const revenue = unitBookings.reduce((sum, b) => {
       const paymentData = paymentsByBooking.get(b.id);
       if (paymentData) {
-        // Use actual payment data: gross minus refunds
         return sum + paymentData.gross - paymentData.refunds;
       }
-      // Fall back to booking price if no payment records
       const price = b.price_override ?? b.total_price ?? 0;
       return sum + Number(price);
     }, 0);
@@ -162,16 +174,18 @@ export function useReports(monthOffset = 0) {
 
   // ── 30-day Forward Occupancy Forecast ──
   const forecastBookings = useQuery({
-    queryKey: ["reports", "forecast"],
+    queryKey: ["reports", "forecast", activePropertyId],
     queryFn: async () => {
       const today = format(new Date(), "yyyy-MM-dd");
       const futureEnd = format(new Date(Date.now() + 30 * 86400000), "yyyy-MM-dd");
-      const { data, error } = await supabase
+      let query = supabase
         .from("bookings")
         .select("unit_id, check_in, check_out, state")
         .in("state", ["confirmed", "pending_deposit", "checked_in"])
         .lte("check_in", futureEnd)
         .gte("check_out", today);
+      if (activePropertyId) query = query.eq("property_id", activePropertyId);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -206,7 +220,6 @@ export function useReports(monthOffset = 0) {
     totalRevenue,
     forecastOccupancy,
     forecastLoading: forecastBookings.isLoading,
-    // Expose raw data for CSV export
     rawBookings: bookings.data ?? [],
   };
 }
