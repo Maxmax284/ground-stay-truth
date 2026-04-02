@@ -29,7 +29,7 @@ interface Props {
   propertyId?: string | null;
 }
 
-export function AIRefinementChat({ airport, airportLabel, template, tone, context, onTemplateUpdate }: Props) {
+export function AIRefinementChat({ airport, airportLabel, template, tone, context, onTemplateUpdate, propertyId }: Props) {
   const { session } = useAuth();
   const { toast } = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
