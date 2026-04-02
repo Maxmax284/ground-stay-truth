@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { getGuestTypesForMode, DEFAULT_GUEST_TYPE } from "@/lib/guestTypes";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
