@@ -418,11 +418,11 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
   },
   {
     id: "transport",
-    title: "Transport to Camp",
-    description: "All transport options from the airport to Ground Stay",
+    title: "Transport to Accommodation",
+    description: "All transport options from the airport to your accommodation",
     category: "journey",
     icon: "🚗",
-    defaultTitle: "Getting to Camp",
+    defaultTitle: "Getting There",
     airports: ["bkk", "samui"],
     guidedFields: [
       { key: "transportOptions", label: "Transport options", type: "transport_options", factPath: "transport.toCamp" },
