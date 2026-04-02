@@ -128,24 +128,44 @@ function SectionPhotos({ photos }: { photos: WelcomePhoto[] }) {
   );
 }
 
-function WelcomeContent({ template }: { template: WelcomeTemplate }) {
+function WelcomeContent({
+  template,
+  translatedMessage,
+  translatedSections,
+  isTranslating,
+}: {
+  template: WelcomeTemplate;
+  translatedMessage?: string;
+  translatedSections?: { title: string; content: string }[];
+  isTranslating?: boolean;
+}) {
   const photosForSection = (idx: number) =>
     template.photos.filter((p) => p.section_index === idx && p.url);
   const generalPhotos = template.photos.filter((p) => p.section_index === null && p.url);
 
+  const displayMessage = translatedMessage || template.welcome_message;
+  const displaySections = translatedSections || template.sections;
+
   return (
     <div className="space-y-4">
+      {isTranslating && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          <span>Translating guide…</span>
+        </div>
+      )}
+
       {/* Welcome message */}
-      {template.welcome_message && (
+      {displayMessage && (
         <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
           <p className="text-sm font-medium text-foreground leading-relaxed">
-            {template.welcome_message}
+            {displayMessage}
           </p>
         </div>
       )}
 
       {/* Sections with inline photos */}
-      {template.sections.map((section, idx) => {
+      {displaySections.map((section, idx) => {
         const sPhotos = photosForSection(idx);
         return (
           <div key={idx} className="space-y-1.5">
