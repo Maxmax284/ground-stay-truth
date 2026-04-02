@@ -58,6 +58,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
   const { data: messages } = useBookingMessages(bookingId);
   const { data: policies } = usePolicySettings();
   const { data: documents } = useGuestDocuments(bookingId ?? "");
+  const { data: trainingLinks } = useBookingTrainingLinks(bookingId);
   const markRead = useMarkMessagesRead();
 
   const canSeeAmounts = permissions.canViewPaymentAmounts(role);
