@@ -244,10 +244,11 @@ export function ArrivalWelcomeDialog({ open, onOpenChange, airport, propertyId }
 interface ArrivalWelcomeCardProps {
   airport: "bkk" | "samui" | null;
   compact?: boolean;
+  propertyId?: string | null;
 }
 
-export function ArrivalWelcomeCard({ airport, compact = false }: ArrivalWelcomeCardProps) {
-  const { data: settings } = usePolicySettings();
+export function ArrivalWelcomeCard({ airport, compact = false, propertyId }: ArrivalWelcomeCardProps) {
+  const { data: settings } = usePolicySettings(propertyId);
 
   const template = useMemo(() => {
     if (!airport || !settings) return null;
