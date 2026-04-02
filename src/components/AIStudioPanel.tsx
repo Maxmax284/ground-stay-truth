@@ -73,7 +73,7 @@ interface Props {
 export function AIStudioPanel({
   airport, airportLabel, template, tone, onToneChange,
   context, onContextChange, onDraftGenerated, onSuggestionsReceived,
-  drafting, setDrafting,
+  drafting, setDrafting, propertyId,
 }: Props) {
   const { session } = useAuth();
   const { toast } = useToast();
