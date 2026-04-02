@@ -448,16 +448,16 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
   {
     id: "arrival_first_hour",
     title: "Arrival & First Hour",
-    description: "What happens when the guest arrives at Ground Stay",
+    description: "What happens when the guest arrives at the accommodation",
     category: "journey",
     icon: "🏠",
-    defaultTitle: "Your First Hour at Camp",
+    defaultTitle: "Your First Hour",
     airports: ["bkk", "samui"],
     guidedFields: [
-      { key: "checkinProcess", label: "Check-in process", type: "textarea", placeholder: "Describe what happens when they arrive at the camp..." },
+      { key: "checkinProcess", label: "Check-in process", type: "textarea", placeholder: "Describe what happens when they arrive..." },
       { key: "essentials", label: "Essential first things to do", type: "list", placeholder: "E.g. settle in, tour the facilities, meet the team..." },
       { key: "facilities", label: "Key facilities to point out", type: "list", placeholder: "E.g. gym, dining area, pool, WiFi..." },
-      { key: "schedule", label: "First day schedule note", type: "textarea", placeholder: "E.g. evening training session, dinner time..." },
+      { key: "schedule", label: "First day schedule note", type: "textarea", placeholder: "E.g. evening session, dinner time..." },
     ],
   },
 
