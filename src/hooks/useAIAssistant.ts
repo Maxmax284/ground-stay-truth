@@ -12,6 +12,7 @@ export interface AIMessage {
 
 export function useAIAssistant() {
   const { session, role } = useAuth();
+  const { activePropertyId, operationalMode } = useProperty();
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
