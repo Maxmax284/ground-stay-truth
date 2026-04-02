@@ -311,18 +311,7 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label>{t("guestBooking.guestType")}</Label>
-            <Select value={watch("guest_type")} onValueChange={(v) => setValue("guest_type", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="fighter">{t("guestBooking.guestTypes.fighter")}</SelectItem>
-                <SelectItem value="training_guest">{t("guestBooking.guestTypes.training_guest")}</SelectItem>
-                <SelectItem value="spectator">{t("guestBooking.guestTypes.spectator")}</SelectItem>
-                <SelectItem value="long_term">{t("guestBooking.guestTypes.long_term")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <GuestTypeSelect value={watch("guest_type")} onChange={(v) => setValue("guest_type", v)} />
 
           <Separator />
           <h4 className="text-sm font-semibold text-foreground">{t("guestBooking.arrivalDetails")}</h4>
