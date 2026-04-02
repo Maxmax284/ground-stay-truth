@@ -169,98 +169,79 @@ export default function Stay() {
         <div className="thai-stripe" />
       </header>
 
-      {/* Units Grid */}
-      <main className="max-w-5xl mx-auto px-4 py-10 space-y-8">
-        <section>
-          <h2 className="font-serif text-2xl font-bold text-foreground mb-6">Available Rooms</h2>
-          
-          {loading ? (
+      {/* Units Grid — grouped by property */}
+      <main className="max-w-5xl mx-auto px-4 py-10 space-y-10">
+        {loading ? (
+          <section>
+            <Skeleton className="h-8 w-48 mb-6" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-80 w-full rounded-xl" />)}
             </div>
-          ) : units.length === 0 ? (
-            <p className="text-muted-foreground text-center py-16">No rooms available at this time.</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {units.map((unit) => (
-                <Card key={unit.id} className="overflow-hidden hover-lift">
-                  {unit.photos && unit.photos.length > 0 && (
-                    <div className="aspect-[16/9] overflow-hidden">
-                      <img
-                        src={unit.photos[0]}
-                        alt={`${unit.name} accommodation`}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    </div>
-                  )}
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      <Home className="h-5 w-5 text-primary" />
-                      {unit.name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {unit.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">{unit.description}</p>
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline" className="text-xs">
-                        <Users className="h-3 w-3 mr-1" /> Up to {unit.capacity}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        <Moon className="h-3 w-3 mr-1" /> Min {unit.min_nights} night{unit.min_nights > 1 ? "s" : ""}
-                      </Badge>
-                    </div>
-                    <AmenityList amenities={unit.amenities} max={6} />
-                    <Separator />
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-lg font-bold text-foreground">
-                          {formatPriceSimple(unit.base_price, currencySymbol)}
-                        </span>
-                        <span className="text-sm text-muted-foreground">/night</span>
-                      </div>
-                      {Number(unit.weekend_price ?? 0) > 0 && (
-                        <span className="text-xs text-muted-foreground">
-                          Weekend: {formatPriceSimple(unit.weekend_price, currencySymbol)}
-                        </span>
+          </section>
+        ) : units.length === 0 ? (
+          <p className="text-muted-foreground text-center py-16">No rooms available at this time.</p>
+        ) : (
+          <>
+            {/* Group units by property */}
+            {(() => {
+              const PROPERTY_META: Record<string, { tagline: string; icon: typeof Home }> = {
+                "lamai-muay-thai": { tagline: "Fighter's quarters — steps from the gym", icon: Home },
+                "koh-shanti-guesthouse": { tagline: "Peaceful long-stay living on Koh Samui", icon: Building2 },
+              };
+
+              // Build sections: known properties first, then any unassigned units
+              const grouped = new Map<string | null, UnitData[]>();
+              for (const u of units) {
+                const key = u.property_id;
+                if (!grouped.has(key)) grouped.set(key, []);
+                grouped.get(key)!.push(u);
+              }
+
+              // Order: properties in order, then null
+              const orderedKeys: (string | null)[] = [
+                ...properties.map((p) => p.id).filter((id) => grouped.has(id)),
+                ...(grouped.has(null) ? [null] : []),
+              ];
+
+              return orderedKeys.map((propId) => {
+                const sectionUnits = grouped.get(propId) ?? [];
+                const prop = properties.find((p) => p.id === propId);
+                const meta = prop ? PROPERTY_META[prop.slug] : undefined;
+
+                return (
+                  <section key={propId ?? "unassigned"} className="space-y-6">
+                    <div className="space-y-1">
+                      <h2 className="font-serif text-2xl font-bold text-foreground flex items-center gap-2">
+                        {meta?.icon ? <meta.icon className="h-5 w-5 text-primary" /> : <Home className="h-5 w-5 text-primary" />}
+                        {prop?.name ?? "Available Rooms"}
+                      </h2>
+                      {meta?.tagline && (
+                        <p className="text-sm text-muted-foreground">{meta.tagline}</p>
+                      )}
+                      {prop?.operational_mode === "long_stay" && (
+                        <Badge variant="secondary" className="text-xs">Long-Stay Friendly</Badge>
                       )}
                     </div>
-                    {Number(unit.cleaning_fee ?? 0) > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        + {formatPriceSimple(unit.cleaning_fee, currencySymbol)} cleaning fee
-                      </p>
-                    )}
-                    <div className="flex gap-2 pt-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => toggleAvailability(unit.id)}
-                      >
-                        <CalendarDays className="h-4 w-4 mr-1" />
-                        {expandedUnit === unit.id ? "Hide" : "Availability"}
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => handleRequestBooking(unit.id)}
-                      >
-                        Request Booking <ArrowRight className="h-4 w-4 ml-1" />
-                      </Button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {sectionUnits.map((unit) => (
+                        <UnitCard
+                          key={unit.id}
+                          unit={unit}
+                          currencySymbol={currencySymbol}
+                          expandedUnit={expandedUnit}
+                          blockedByUnit={blockedByUnit}
+                          onToggleAvailability={toggleAvailability}
+                          onRequestBooking={handleRequestBooking}
+                        />
+                      ))}
                     </div>
-                    {expandedUnit === unit.id && (
-                      <MiniCalendar
-                        blockedRanges={blockedByUnit[unit.id] ?? []}
-                      />
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </section>
+                    {propId !== orderedKeys[orderedKeys.length - 1] && <Separator className="mt-4" />}
+                  </section>
+                );
+              });
+            })()}
+          </>
+        )}
 
         {/* Camp Info Summary */}
         {campSummary && (
