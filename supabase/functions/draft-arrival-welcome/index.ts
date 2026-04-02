@@ -303,7 +303,7 @@ If the request is unclear or just a question, respond conversationally without u
 
     // ── Mode: generate_section ──
     if (mode === "generate_section") {
-      const { section_type, section_title, guided_fields, airport_facts } = body;
+      const { section_type, section_title, guided_fields, airport_facts, quick_draft } = body;
 
       let fieldsSummary = "";
       if (guided_fields && typeof guided_fields === "object") {
