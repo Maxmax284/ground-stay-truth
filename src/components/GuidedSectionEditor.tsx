@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,9 +9,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import {
   Sparkles, Loader2, ChevronDown, ChevronUp, Info, Plus, X,
   FileText, Lightbulb, RefreshCw, BookOpen, Eye, EyeOff, ArrowUp, ArrowDown,
+  Mic, MicOff, MessageSquare,
 } from "lucide-react";
 import {
   type SectionTemplate, type SectionTypeId, type GuidedField,
