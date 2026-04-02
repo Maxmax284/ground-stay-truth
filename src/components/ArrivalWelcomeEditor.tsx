@@ -20,7 +20,7 @@ import { GuidedSectionEditor } from "./GuidedSectionEditor";
 import { SECTION_TEMPLATES, getJourneyTemplates, getSituationalTemplates } from "@/lib/airportFactSheets";
 import {
   Plane, Save, Plus, X, Sparkles, Loader2, GripVertical, Image as ImageIcon, MapPin, RefreshCw, Tag,
-  Check, Lightbulb, ChevronDown, ChevronUp, BookOpen, Eye, Smartphone,
+  Check, Lightbulb, ChevronDown, ChevronUp, BookOpen, Eye, Smartphone, Building2,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
