@@ -75,6 +75,8 @@ function detectSectionType(title: string, airport: string): SectionTypeId | null
     [["late night", "night arrival", "after dark"], "late_night"],
     [["connect", "bkk to samui", "bangkok to", "domestic flight"], "bkk_connection"],
     [["first time", "thailand", "cultural", "culture"], "first_time_thailand"],
+    [["essential", "convenience", "7-eleven", "shop", "hydrat", "scooter"], "local_essentials"],
+    [["first 24", "first day", "settling in", "orientation", "day one"], "first_24_hours"],
   ];
   for (const [keywords, id] of checks) {
     if (keywords.some(k => lower.includes(k))) {
