@@ -338,7 +338,9 @@ const GuestPortal = () => {
               </TabsTrigger>
             )}
             <TabsTrigger value="calendar">{t("nav.calendar")}</TabsTrigger>
-            <TabsTrigger value="camp-info">{t("guestPortal.campInfo")}</TabsTrigger>
+            {hasTrainingAssociation && (
+              <TabsTrigger value="camp-info">{t("guestPortal.campInfo")}</TabsTrigger>
+            )}
             <TabsTrigger value="policies">{t("guestPortal.policies")}</TabsTrigger>
             <TabsTrigger value="profile">{t("guestPortal.profile")}</TabsTrigger>
           </TabsList>
