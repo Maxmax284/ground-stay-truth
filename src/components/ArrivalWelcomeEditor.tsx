@@ -358,6 +358,7 @@ export function ArrivalWelcomeEditor() {
                 tone={aiTone}
                 context={aiContext}
                 onTemplateUpdate={(partial) => handleChatTemplateUpdate(airport.id, partial)}
+                propertyId={activePropertyId}
               />
 
               {/* Welcome Message */}
