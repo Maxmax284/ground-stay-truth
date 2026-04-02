@@ -327,6 +327,64 @@ export default function Stay() {
 }
 
 /* Mini Calendar for availability preview */
+/* Unit Card extracted for use in property sections */
+function UnitCard({ unit, currencySymbol, expandedUnit, blockedByUnit, onToggleAvailability, onRequestBooking }: {
+  unit: UnitData;
+  currencySymbol: string;
+  expandedUnit: string | null;
+  blockedByUnit: Record<string, BlockedRange[]>;
+  onToggleAvailability: (id: string) => void;
+  onRequestBooking: (id: string) => void;
+}) {
+  return (
+    <Card className="overflow-hidden hover-lift">
+      {unit.photos && unit.photos.length > 0 && (
+        <div className="aspect-[16/9] overflow-hidden">
+          <img src={unit.photos[0]} alt={`${unit.name} accommodation`} className="w-full h-full object-cover" loading="lazy" />
+        </div>
+      )}
+      <CardHeader className="pb-2">
+        <CardTitle className="text-xl flex items-center gap-2">
+          <Home className="h-5 w-5 text-primary" />
+          {unit.name}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {unit.description && <p className="text-sm text-muted-foreground line-clamp-2">{unit.description}</p>}
+        <div className="flex flex-wrap gap-2">
+          <Badge variant="outline" className="text-xs"><Users className="h-3 w-3 mr-1" /> Up to {unit.capacity}</Badge>
+          <Badge variant="outline" className="text-xs"><Moon className="h-3 w-3 mr-1" /> Min {unit.min_nights} night{unit.min_nights > 1 ? "s" : ""}</Badge>
+        </div>
+        <AmenityList amenities={unit.amenities} max={6} />
+        <Separator />
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-lg font-bold text-foreground">{formatPriceSimple(unit.base_price, currencySymbol)}</span>
+            <span className="text-sm text-muted-foreground">/night</span>
+          </div>
+          {Number(unit.weekend_price ?? 0) > 0 && (
+            <span className="text-xs text-muted-foreground">Weekend: {formatPriceSimple(unit.weekend_price, currencySymbol)}</span>
+          )}
+        </div>
+        {Number(unit.cleaning_fee ?? 0) > 0 && (
+          <p className="text-xs text-muted-foreground">+ {formatPriceSimple(unit.cleaning_fee, currencySymbol)} cleaning fee</p>
+        )}
+        <div className="flex gap-2 pt-1">
+          <Button size="sm" variant="outline" className="flex-1" onClick={() => onToggleAvailability(unit.id)}>
+            <CalendarDays className="h-4 w-4 mr-1" />
+            {expandedUnit === unit.id ? "Hide" : "Availability"}
+          </Button>
+          <Button size="sm" className="flex-1" onClick={() => onRequestBooking(unit.id)}>
+            Request Booking <ArrowRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+        {expandedUnit === unit.id && <MiniCalendar blockedRanges={blockedByUnit[unit.id] ?? []} />}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* Mini Calendar for availability preview */
 function MiniCalendar({ blockedRanges }: { blockedRanges: BlockedRange[] }) {
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const start = startOfMonth(month);
