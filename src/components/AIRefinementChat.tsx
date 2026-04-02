@@ -36,6 +36,17 @@ export function AIRefinementChat({ airport, airportLabel, template, tone, contex
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [interimText, setInterimText] = useState("");
+
+  const handleVoiceResult = useCallback((transcript: string) => {
+    setInput(prev => (prev ? prev + " " + transcript : transcript));
+    setInterimText("");
+  }, []);
+
+  const { isListening, isSupported: micSupported, toggle: toggleMic } = useSpeechRecognition({
+    onResult: handleVoiceResult,
+    onInterim: setInterimText,
+  });
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || loading) return;
