@@ -43,6 +43,8 @@ export function useAIAssistant() {
           body: JSON.stringify({
             mode,
             role,
+            property_id: activePropertyId,
+            operational_mode: operationalMode,
             messages: [...messages, userMsg].map((m) => ({ role: m.role, content: m.content })),
             context,
             language,
