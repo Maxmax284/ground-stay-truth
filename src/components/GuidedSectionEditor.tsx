@@ -99,6 +99,18 @@ export function GuidedSectionEditor({
   const [fieldValues, setFieldValues] = useState<FieldValues>({});
   const [generating, setGenerating] = useState(false);
   const [expanded, setExpanded] = useState(true);
+  const [quickDraft, setQuickDraft] = useState("");
+  const [quickDraftInterim, setQuickDraftInterim] = useState("");
+
+  const handleVoiceResult = useCallback((transcript: string) => {
+    setQuickDraft(prev => (prev ? prev + " " + transcript : transcript));
+    setQuickDraftInterim("");
+  }, []);
+
+  const { isListening, isSupported: micSupported, toggle: toggleMic } = useSpeechRecognition({
+    onResult: handleVoiceResult,
+    onInterim: setQuickDraftInterim,
+  });
 
   useEffect(() => {
     if (forceExpanded !== undefined) setExpanded(forceExpanded);
