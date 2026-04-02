@@ -102,7 +102,7 @@ interface SectionSuggestion {
 }
 
 export function ArrivalWelcomeEditor() {
-  const { activePropertyId } = useProperty();
+  const { activeProperty, activePropertyId } = useProperty();
   const { data: settings } = usePolicySettings(activePropertyId);
   const updateSetting = useUpdatePolicySetting();
   const { toast } = useToast();
