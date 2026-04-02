@@ -172,6 +172,7 @@ export function GuidedSectionEditor({
             mode: "generate_section",
             tone,
             context,
+            property_id: propertyId,
             section_type: selectedType || "custom",
             section_title: sectionTitle || template?.defaultTitle || "Custom Section",
             guided_fields: fieldValues,
