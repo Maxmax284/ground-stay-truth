@@ -228,7 +228,9 @@ export function ArrivalWelcomeDialog({ open, onOpenChange, airport, propertyId, 
             </div>
             <div>
               <DialogTitle className="text-lg">
-                {hasContent ? "Welcome! 🎉" : "Landing Confirmed! ✅"}
+                {hasContent
+                  ? (isReturningGuest ? "Welcome back! 👋" : "Welcome! 🎉")
+                  : "Landing Confirmed! ✅"}
               </DialogTitle>
               <DialogDescription className="text-xs">
                 {hasContent
