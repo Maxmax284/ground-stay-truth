@@ -623,6 +623,19 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
   const [showMessages, setShowMessages] = useState(false);
   const [reply, setReply] = useState("");
   const [reviewOpen, setReviewOpen] = useState(false);
+
+  // Training association check
+  const { data: bookingTrainingLinks } = useQuery({
+    queryKey: ["booking_training_links", booking.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("booking_training_links")
+        .select("*, training_packages(name, duration_days, price)")
+        .eq("booking_id", booking.id);
+      if (error) throw error;
+      return data;
+    },
+  });
   const queryClient = useQueryClient();
   const state = booking.state as BookingState;
   const showDocUpload = ["confirmed", "pending_deposit", "pending_approval"].includes(state);
