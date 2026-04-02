@@ -174,16 +174,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    // All active units (legacy)
+    // All active units with property info
     const { data: units, error } = await supabase
       .from("units")
-      .select("id, name, description, capacity, base_price, weekend_price, cleaning_fee, min_nights, amenities, photos")
+      .select("id, name, description, capacity, base_price, weekend_price, cleaning_fee, min_nights, amenities, photos, property_id")
       .eq("is_active", true)
-      .order("name");
+      .order("base_price", { ascending: true });
 
     if (error) throw error;
 
-    return new Response(JSON.stringify({ units, currencySymbol }), {
+    // Fetch active properties for labeling
+    const { data: properties } = await supabase
+      .from("properties")
+      .select("id, name, slug, operational_mode")
+      .eq("is_active", true)
+      .order("name");
+
+    return new Response(JSON.stringify({ units, properties: properties ?? [], currencySymbol }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
