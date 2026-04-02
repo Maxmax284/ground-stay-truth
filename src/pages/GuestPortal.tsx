@@ -738,7 +738,25 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
           <GuestPickupCard bookingId={booking.id} guestName={guestName} />
         )}
 
-        {/* Document Upload for applicable states */}
+        {/* Training Program info (only shown if booking has training links) */}
+        {(bookingTrainingLinks ?? []).length > 0 && !["cancelled", "no_show"].includes(state) && (
+          <div className="border rounded-md p-3 space-y-2 bg-accent/30">
+            <div className="flex items-center gap-2">
+              <Badge className="gap-1 bg-fight-gold text-fight-dark hover:bg-fight-gold/90 text-[10px]">
+                🥊 {t("training.programLinked", { defaultValue: "Training Program" })}
+              </Badge>
+            </div>
+            {(bookingTrainingLinks ?? []).map((link: any) => (
+              <div key={link.id} className="text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">{link.training_packages?.name}</span>
+                {" · "}{link.training_packages?.duration_days} {t("common.days", { defaultValue: "days" })}
+                {link.trainer_name && ` · Trainer: ${link.trainer_name}`}
+                {link.start_date && ` · Starts ${link.start_date}`}
+              </div>
+            ))}
+          </div>
+        )}
+
         {showDocUpload && (
           <div className="border rounded-md p-3">
             <GuestDocumentUpload bookingId={booking.id} showRequirement />
