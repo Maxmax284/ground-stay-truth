@@ -692,7 +692,11 @@
       "fighter": "Fighter",
       "training_guest": "Training Guest",
       "spectator": "Spectator",
-      "long_term": "Long-term Stay"
+      "long_term": "Long-term Stay",
+      "traveler": "Traveler",
+      "digital_nomad": "Digital Nomad",
+      "couple": "Couple",
+      "business": "Business"
     },
     "arrivalDetails": "Arrival Details",
     "flightInfo": "Flight / Ferry",
