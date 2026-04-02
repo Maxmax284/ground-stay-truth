@@ -26,6 +26,7 @@ interface Props {
   tone: string;
   context: string;
   onTemplateUpdate: (template: Partial<WelcomeTemplate>) => void;
+  propertyId?: string | null;
 }
 
 export function AIRefinementChat({ airport, airportLabel, template, tone, context, onTemplateUpdate }: Props) {
