@@ -207,8 +207,8 @@ ACCURACY:
 - Never make up unit names, counts, booking details, or any operational data.`;
 
 // ─── PROMPT ASSEMBLY ─────────────────────────────────────────────────────────
-function buildSystemPrompt(role: string, language: string, contextData: string): string {
-  const layers: string[] = [IDENTITY];
+function buildSystemPrompt(role: string, language: string, contextData: string, operationalMode: string | null = null): string {
+  const layers: string[] = [getIdentity(operationalMode)];
 
   if (role === "admin" || role === "manager") {
     layers.push(OPERATOR_FRAME);
