@@ -60,6 +60,7 @@ export function AIRefinementChat({ airport, airportLabel, template, tone, contex
             mode: "refine_chat",
             tone,
             context,
+            property_id: propertyId,
             current_template: {
               welcome_message: template.welcome_message,
               sections: template.sections,
