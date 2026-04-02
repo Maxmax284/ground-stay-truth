@@ -309,7 +309,15 @@ export function ArrivalWelcomeCard({ airport, compact = false, propertyId }: Arr
     return parseTemplate(setting?.value);
   }, [airport, settings]);
 
+  const { translated, isTranslating } = useWelcomeTranslation(
+    template?.welcome_message ?? "",
+    template?.sections ?? [],
+  );
+
   if (!template || !template.enabled) return null;
+
+  const displayMessage = translated?.welcome_message || template.welcome_message;
+  const displaySections = translated?.sections || template.sections;
 
   if (compact) {
     return (
@@ -322,22 +330,22 @@ export function ArrivalWelcomeCard({ airport, compact = false, propertyId }: Arr
               {airport?.toUpperCase()}
             </Badge>
           </div>
-          {template.welcome_message && (
+          {displayMessage && (
             <p className="text-xs text-muted-foreground leading-relaxed">
-              {template.welcome_message}
+              {displayMessage}
             </p>
           )}
-          {template.sections.length > 0 && (
+          {displaySections.length > 0 && (
             <div className="space-y-1">
-              {template.sections.slice(0, 2).map((s, i) => (
+              {displaySections.slice(0, 2).map((s, i) => (
                 <div key={i} className="flex items-center gap-1.5 text-xs text-foreground">
                   <ChevronRight className="h-3 w-3 text-primary shrink-0" />
                   <span className="font-medium">{s.title}</span>
                 </div>
               ))}
-              {template.sections.length > 2 && (
+              {displaySections.length > 2 && (
                 <p className="text-[10px] text-muted-foreground pl-[18px]">
-                  +{template.sections.length - 2} more sections
+                  +{displaySections.length - 2} more sections
                 </p>
               )}
             </div>
@@ -357,7 +365,12 @@ export function ArrivalWelcomeCard({ airport, compact = false, propertyId }: Arr
             {airport?.toUpperCase()}
           </Badge>
         </div>
-        <WelcomeContent template={template} />
+        <WelcomeContent
+          template={template}
+          translatedMessage={translated?.welcome_message}
+          translatedSections={translated?.sections}
+          isTranslating={isTranslating}
+        />
       </CardContent>
     </Card>
   );
