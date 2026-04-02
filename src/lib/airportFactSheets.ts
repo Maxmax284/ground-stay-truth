@@ -474,7 +474,7 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
       { key: "months", label: "Rainy season months", type: "text", factPath: "weather.rainySeasonMonths" },
       { key: "weatherTips", label: "Weather tips", type: "list", factPath: "weather.tips" },
       { key: "whatToPack", label: "What to pack/prepare", type: "list", placeholder: "E.g. rain jacket, waterproof bag..." },
-      { key: "trainingImpact", label: "Impact on training", type: "textarea", placeholder: "E.g. outdoor sessions may move indoors..." },
+      { key: "trainingImpact", label: "Impact on activities", type: "textarea", placeholder: "E.g. outdoor activities may move indoors..." },
     ],
   },
   {
