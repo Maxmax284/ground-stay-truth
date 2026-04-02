@@ -257,6 +257,17 @@ export function ArrivalWelcomeEditor() {
         </CardHeader>
       </Card>
 
+      {/* Property scope indicator */}
+      {activeProperty && (
+        <Alert className={`border-l-4 ${activeProperty.slug === "lamai" ? "border-l-destructive bg-destructive/5" : "border-l-[hsl(var(--accent))] bg-accent/5"}`}>
+          <Building2 className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            You are editing the arrival guide for <span className="font-semibold">{activeProperty.name}</span>. 
+            Changes here only apply to this property.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Tabs value={activeAirport} onValueChange={(v) => { setActiveAirport(v); setSuggestions([]); }}>
         <TabsList className="bg-muted/50">
           {AIRPORTS.map((a) => {
