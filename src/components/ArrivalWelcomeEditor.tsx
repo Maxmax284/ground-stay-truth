@@ -306,6 +306,7 @@ export function ArrivalWelcomeEditor() {
                 onSuggestionsReceived={setSuggestions}
                 drafting={drafting}
                 setDrafting={setDrafting}
+                propertyId={activePropertyId}
               />
 
               {/* Section suggestions */}
