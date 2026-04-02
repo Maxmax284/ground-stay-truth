@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { usePolicySettings, useUpdatePolicySetting } from "@/hooks/usePolicySettings";
 import { useAuth } from "@/hooks/useAuth";
+import { useProperty } from "@/hooks/useProperty";
 import { AIStudioPanel } from "./AIStudioPanel";
 import { AIRefinementChat } from "./AIRefinementChat";
 import { GuidedSectionEditor } from "./GuidedSectionEditor";
