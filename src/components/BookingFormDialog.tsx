@@ -33,6 +33,7 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
   const { t } = useTranslation();
   const { toast } = useToast();
   const { role } = useAuth();
+  const { operationalMode } = useProperty();
   const createBooking = useCreateBooking();
   const { data: units } = useUnits();
   const { data: allPricingRules } = usePricingRules();
