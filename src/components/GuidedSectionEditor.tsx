@@ -488,6 +488,54 @@ export function GuidedSectionEditor({
               </Card>
             )}
 
+            {/* Quick Draft — natural language input */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium flex items-center gap-1.5">
+                <MessageSquare className="h-3 w-3 text-primary" />
+                Quick Draft
+                <span className="text-[10px] text-muted-foreground font-normal ml-1">— describe what you want, AI writes it</span>
+              </Label>
+              {isListening && quickDraftInterim && (
+                <p className="text-xs text-muted-foreground italic animate-pulse truncate">
+                  🎙️ {quickDraftInterim}
+                </p>
+              )}
+              <div className="flex gap-2">
+                <Textarea
+                  value={quickDraft}
+                  onChange={(e) => setQuickDraft(e.target.value)}
+                  placeholder='e.g. "Tell them about immigration at BKK, mention the e-visa lanes, and warn about the taxi touts outside"'
+                  rows={2}
+                  className="text-xs flex-1"
+                />
+                <div className="flex flex-col gap-1 shrink-0">
+                  {micSupported && (
+                    <Button
+                      variant={isListening ? "destructive" : "ghost"}
+                      size="sm"
+                      onClick={toggleMic}
+                      className="h-8 w-8 p-0"
+                      title={isListening ? "Stop" : "Dictate"}
+                    >
+                      {isListening ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+                    </Button>
+                  )}
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleQuickDraft}
+                    disabled={!quickDraft.trim() || generating}
+                    className="h-8 w-8 p-0"
+                    title="Generate from description"
+                  >
+                    {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
             {/* Guided fields */}
             {template && template.id !== "custom" && (
               <div className="space-y-2.5">
