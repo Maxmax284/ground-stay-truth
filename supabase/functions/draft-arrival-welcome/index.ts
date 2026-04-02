@@ -314,12 +314,20 @@ If the request is unclear or just a question, respond conversationally without u
         }
       }
 
+      const densityNote = airport === "bkk"
+        ? "This is BKK — provide DETAILED step-by-step guidance. Guests need hand-holding through a complex airport."
+        : "This is USM — keep it SHORT and DIRECT. The airport is tiny. Don't over-explain.";
+
       const genPrompt = `${baseContext}
 
 You are writing a specific section of an arrival welcome guide for guests arriving at ${airport.toUpperCase()}.
 
+${densityNote}
+
 Section type: ${section_type}
 Section title: "${section_title}"
+
+${quick_draft ? `The admin described what they want in natural language:\n"${quick_draft}"\n\nInterpret this and write structured, polished content based on their intent.` : ""}
 
 Here are the structured facts and details to include in this section:
 ${fieldsSummary || "(No specific fields provided — use your best judgment based on the airport context)"}
@@ -334,6 +342,7 @@ Write a well-structured, practical section that:
 - Feels natural and helpful, not like a data dump
 - Uses emoji sparingly and appropriately
 - Is concise but thorough — every sentence should be useful
+- Matches the guidance density level for this airport
 - Refers to the accommodation as "${propertyCtx.name}" — never as "the camp" unless it IS a camp`;
 
       const aiData = await callAI(
