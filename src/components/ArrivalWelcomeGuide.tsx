@@ -182,6 +182,8 @@ interface ArrivalWelcomeDialogProps {
   onOpenChange: (open: boolean) => void;
   airport: "bkk" | "samui" | null;
   propertyId?: string | null;
+  /** If true, filter out introductory sections for returning guests */
+  isReturningGuest?: boolean;
 }
 
 export function ArrivalWelcomeDialog({ open, onOpenChange, airport, propertyId }: ArrivalWelcomeDialogProps) {
