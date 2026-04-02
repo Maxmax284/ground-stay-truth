@@ -26,9 +26,10 @@ interface Props {
   tone: string;
   context: string;
   onTemplateUpdate: (template: Partial<WelcomeTemplate>) => void;
+  propertyId?: string | null;
 }
 
-export function AIRefinementChat({ airport, airportLabel, template, tone, context, onTemplateUpdate }: Props) {
+export function AIRefinementChat({ airport, airportLabel, template, tone, context, onTemplateUpdate, propertyId }: Props) {
   const { session } = useAuth();
   const { toast } = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -59,6 +60,7 @@ export function AIRefinementChat({ airport, airportLabel, template, tone, contex
             mode: "refine_chat",
             tone,
             context,
+            property_id: propertyId,
             current_template: {
               welcome_message: template.welcome_message,
               sections: template.sections,

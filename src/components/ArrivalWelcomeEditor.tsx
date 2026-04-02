@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { usePolicySettings, useUpdatePolicySetting } from "@/hooks/usePolicySettings";
 import { useAuth } from "@/hooks/useAuth";
+import { useProperty } from "@/hooks/useProperty";
 import { AIStudioPanel } from "./AIStudioPanel";
 import { AIRefinementChat } from "./AIRefinementChat";
 import { GuidedSectionEditor } from "./GuidedSectionEditor";
@@ -101,7 +102,8 @@ interface SectionSuggestion {
 }
 
 export function ArrivalWelcomeEditor() {
-  const { data: settings } = usePolicySettings();
+  const { activePropertyId } = useProperty();
+  const { data: settings } = usePolicySettings(activePropertyId);
   const updateSetting = useUpdatePolicySetting();
   const { toast } = useToast();
   const { session } = useAuth();
@@ -304,6 +306,7 @@ export function ArrivalWelcomeEditor() {
                 onSuggestionsReceived={setSuggestions}
                 drafting={drafting}
                 setDrafting={setDrafting}
+                propertyId={activePropertyId}
               />
 
               {/* Section suggestions */}
@@ -355,6 +358,7 @@ export function ArrivalWelcomeEditor() {
                 tone={aiTone}
                 context={aiContext}
                 onTemplateUpdate={(partial) => handleChatTemplateUpdate(airport.id, partial)}
+                propertyId={activePropertyId}
               />
 
               {/* Welcome Message */}
@@ -524,6 +528,7 @@ export function ArrivalWelcomeEditor() {
                     } : undefined}
                     totalSections={template.sections.length}
                     forceExpanded={allSectionsExpanded[airport.id]}
+                    propertyId={activePropertyId}
                   />
                 ))}
 

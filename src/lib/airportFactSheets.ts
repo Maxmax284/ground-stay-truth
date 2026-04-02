@@ -418,11 +418,11 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
   },
   {
     id: "transport",
-    title: "Transport to Camp",
-    description: "All transport options from the airport to Ground Stay",
+    title: "Transport to Accommodation",
+    description: "All transport options from the airport to your accommodation",
     category: "journey",
     icon: "🚗",
-    defaultTitle: "Getting to Camp",
+    defaultTitle: "Getting There",
     airports: ["bkk", "samui"],
     guidedFields: [
       { key: "transportOptions", label: "Transport options", type: "transport_options", factPath: "transport.toCamp" },
@@ -433,10 +433,10 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
   {
     id: "route_to_camp",
     title: "Route & Landmarks",
-    description: "What to expect on the journey from airport to camp",
+    description: "What to expect on the journey from airport to your accommodation",
     category: "journey",
     icon: "📍",
-    defaultTitle: "On the Way to Camp",
+    defaultTitle: "On the Way",
     airports: ["bkk", "samui"],
     guidedFields: [
       { key: "estimatedTime", label: "Estimated travel time", type: "text", factPath: "routeToCamp.estimatedTime" },
@@ -448,16 +448,16 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
   {
     id: "arrival_first_hour",
     title: "Arrival & First Hour",
-    description: "What happens when the guest arrives at Ground Stay",
+    description: "What happens when the guest arrives at the accommodation",
     category: "journey",
     icon: "🏠",
-    defaultTitle: "Your First Hour at Camp",
+    defaultTitle: "Your First Hour",
     airports: ["bkk", "samui"],
     guidedFields: [
-      { key: "checkinProcess", label: "Check-in process", type: "textarea", placeholder: "Describe what happens when they arrive at the camp..." },
+      { key: "checkinProcess", label: "Check-in process", type: "textarea", placeholder: "Describe what happens when they arrive..." },
       { key: "essentials", label: "Essential first things to do", type: "list", placeholder: "E.g. settle in, tour the facilities, meet the team..." },
       { key: "facilities", label: "Key facilities to point out", type: "list", placeholder: "E.g. gym, dining area, pool, WiFi..." },
-      { key: "schedule", label: "First day schedule note", type: "textarea", placeholder: "E.g. evening training session, dinner time..." },
+      { key: "schedule", label: "First day schedule note", type: "textarea", placeholder: "E.g. evening session, dinner time..." },
     ],
   },
 
@@ -474,7 +474,7 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
       { key: "months", label: "Rainy season months", type: "text", factPath: "weather.rainySeasonMonths" },
       { key: "weatherTips", label: "Weather tips", type: "list", factPath: "weather.tips" },
       { key: "whatToPack", label: "What to pack/prepare", type: "list", placeholder: "E.g. rain jacket, waterproof bag..." },
-      { key: "trainingImpact", label: "Impact on training", type: "textarea", placeholder: "E.g. outdoor sessions may move indoors..." },
+      { key: "trainingImpact", label: "Impact on activities", type: "textarea", placeholder: "E.g. outdoor activities may move indoors..." },
     ],
   },
   {
@@ -489,7 +489,7 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
       { key: "lastFlight", label: "Last flights approximate time", type: "text", factPath: "lateNight.lastFlightApprox" },
       { key: "safetyTips", label: "Safety tips", type: "list", factPath: "lateNight.safetyTips" },
       { key: "transportAvailability", label: "Late-night transport", type: "text", factPath: "lateNight.transportAvailability" },
-      { key: "campArrival", label: "What to expect arriving late at camp", type: "textarea", placeholder: "E.g. night reception, where to find keys..." },
+      { key: "campArrival", label: "What to expect arriving late", type: "textarea", placeholder: "E.g. night reception, where to find keys..." },
     ],
   },
   {

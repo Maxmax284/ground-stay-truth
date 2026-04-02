@@ -181,10 +181,11 @@ interface ArrivalWelcomeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   airport: "bkk" | "samui" | null;
+  propertyId?: string | null;
 }
 
-export function ArrivalWelcomeDialog({ open, onOpenChange, airport }: ArrivalWelcomeDialogProps) {
-  const { data: settings } = usePolicySettings();
+export function ArrivalWelcomeDialog({ open, onOpenChange, airport, propertyId }: ArrivalWelcomeDialogProps) {
+  const { data: settings } = usePolicySettings(propertyId);
 
   const template = useMemo(() => {
     if (!airport || !settings) return null;
@@ -243,10 +244,11 @@ export function ArrivalWelcomeDialog({ open, onOpenChange, airport }: ArrivalWel
 interface ArrivalWelcomeCardProps {
   airport: "bkk" | "samui" | null;
   compact?: boolean;
+  propertyId?: string | null;
 }
 
-export function ArrivalWelcomeCard({ airport, compact = false }: ArrivalWelcomeCardProps) {
-  const { data: settings } = usePolicySettings();
+export function ArrivalWelcomeCard({ airport, compact = false, propertyId }: ArrivalWelcomeCardProps) {
+  const { data: settings } = usePolicySettings(propertyId);
 
   const template = useMemo(() => {
     if (!airport || !settings) return null;

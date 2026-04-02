@@ -67,12 +67,13 @@ interface Props {
   onSuggestionsReceived: (suggestions: any[]) => void;
   drafting: boolean;
   setDrafting: (v: boolean) => void;
+  propertyId?: string | null;
 }
 
 export function AIStudioPanel({
   airport, airportLabel, template, tone, onToneChange,
   context, onContextChange, onDraftGenerated, onSuggestionsReceived,
-  drafting, setDrafting,
+  drafting, setDrafting, propertyId,
 }: Props) {
   const { session } = useAuth();
   const { toast } = useToast();
@@ -95,6 +96,7 @@ export function AIStudioPanel({
             airport,
             context: overrideContext || context,
             tone,
+            property_id: propertyId,
           }),
         }
       );
@@ -136,6 +138,7 @@ export function AIStudioPanel({
             mode: "suggest_sections",
             tone,
             context,
+            property_id: propertyId,
             current_template: {
               sections: template.sections,
             },

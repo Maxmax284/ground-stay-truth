@@ -37,6 +37,7 @@ interface Props {
   onMoveDown?: () => void;
   totalSections: number;
   forceExpanded?: boolean;
+  propertyId?: string | null;
 }
 
 /** Resolve a fact value into string or string[] for form display */
@@ -83,7 +84,7 @@ function detectSectionType(title: string, airport: string): SectionTypeId | null
 }
 
 export function GuidedSectionEditor({
-  airport, sectionIndex, sectionTitle, sectionContent, tone, context, onUpdate, onRemove, onMoveUp, onMoveDown, totalSections, forceExpanded,
+  airport, sectionIndex, sectionTitle, sectionContent, tone, context, onUpdate, onRemove, onMoveUp, onMoveDown, totalSections, forceExpanded, propertyId,
 }: Props) {
   const { session } = useAuth();
   const { toast } = useToast();
@@ -171,6 +172,7 @@ export function GuidedSectionEditor({
             mode: "generate_section",
             tone,
             context,
+            property_id: propertyId,
             section_type: selectedType || "custom",
             section_title: sectionTitle || template?.defaultTitle || "Custom Section",
             guided_fields: fieldValues,
@@ -216,6 +218,7 @@ export function GuidedSectionEditor({
             mode: "rewrite_section",
             tone,
             context,
+            property_id: propertyId,
             section: { title: sectionTitle, content: sectionContent },
             guided_fields: fieldValues,
           }),
