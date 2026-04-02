@@ -218,6 +218,7 @@ export function GuidedSectionEditor({
             mode: "rewrite_section",
             tone,
             context,
+            property_id: propertyId,
             section: { title: sectionTitle, content: sectionContent },
             guided_fields: fieldValues,
           }),
