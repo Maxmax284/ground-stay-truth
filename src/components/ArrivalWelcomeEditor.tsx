@@ -528,6 +528,7 @@ export function ArrivalWelcomeEditor() {
                     } : undefined}
                     totalSections={template.sections.length}
                     forceExpanded={allSectionsExpanded[airport.id]}
+                    propertyId={activePropertyId}
                   />
                 ))}
 
