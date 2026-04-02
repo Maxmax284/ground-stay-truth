@@ -7,10 +7,17 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const AIRPORT_INFO: Record<string, string> = {
-  bkk: "Suvarnabhumi Airport (BKK), Bangkok. Large international airport. Drive to Koh Samui area takes ~2-3 hours or domestic flight. Guests arriving for a Muay Thai fight camp accommodation called Ground Stay / Lamai Muay Thai.",
-  samui: "Koh Samui Airport (USM). Small open-air boutique airport. Drive to camp takes ~20-30 minutes. Guests arriving for a Muay Thai fight camp accommodation called Ground Stay / Lamai Muay Thai.",
-};
+/** Build property-aware airport context dynamically */
+function buildAirportInfo(airport: string, propertyName: string, operationalMode: string): string {
+  const propertyDesc = operationalMode === "high_turnover"
+    ? `a Muay Thai fight camp accommodation called ${propertyName}`
+    : `a boutique guesthouse called ${propertyName}`;
+
+  if (airport === "bkk") {
+    return `Suvarnabhumi Airport (BKK), Bangkok. Large international airport. Drive to Koh Samui area takes ~2-3 hours or domestic flight. Guests arriving for ${propertyDesc}.`;
+  }
+  return `Koh Samui Airport (USM). Small open-air boutique airport. Drive to accommodation takes ~20-30 minutes. Guests arriving for ${propertyDesc}.`;
+}
 
 const TONE_INSTRUCTIONS: Record<string, string> = {
   friendly: "Warm, welcoming, uses first-person plural ('we'). Light emoji. Like a friend picking you up.",
@@ -38,7 +45,24 @@ async function verifyStaff(req: Request) {
     .eq("user_id", user.id)
     .in("role", ["admin", "manager"]);
   if (!roles?.length) throw new Error("Admin or manager role required");
-  return user;
+  return { user, serviceClient };
+}
+
+/** Fetch property metadata for context-building */
+async function fetchPropertyContext(serviceClient: any, propertyId?: string): Promise<{ name: string; operationalMode: string }> {
+  if (!propertyId) {
+    return { name: "Ground Stay", operationalMode: "high_turnover" };
+  }
+  const { data, error } = await serviceClient
+    .from("properties")
+    .select("name, operational_mode")
+    .eq("id", propertyId)
+    .single();
+  if (error || !data) {
+    console.warn("Could not fetch property, using defaults:", error?.message);
+    return { name: "Ground Stay", operationalMode: "high_turnover" };
+  }
+  return { name: data.name, operationalMode: data.operational_mode };
 }
 
 async function callAI(messages: any[], tools?: any[], toolChoice?: any) {
@@ -72,7 +96,6 @@ async function callAI(messages: any[], tools?: any[], toolChoice?: any) {
 }
 
 function cleanJsonString(str: string): string {
-  // Remove trailing commas before } or ]
   return str.replace(/,\s*([}\]])/g, "$1");
 }
 
@@ -92,7 +115,6 @@ function extractToolArgs(aiData: any): any {
     try {
       return JSON.parse(args);
     } catch {
-      // Try cleaning common JSON issues
       try {
         return JSON.parse(cleanJsonString(args));
       } catch (e2) {
@@ -102,39 +124,31 @@ function extractToolArgs(aiData: any): any {
     }
   }
 
-  // Fallback: extract from content
   const content = aiData.choices?.[0]?.message?.content || "";
   if (content) {
     console.log("Falling back to content extraction, content length:", content.length);
-    // Try to find JSON in markdown code blocks first
     const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (codeBlockMatch) {
       try { return JSON.parse(cleanJsonString(codeBlockMatch[1].trim())); } catch {}
     }
-    // Try raw JSON match
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       try { return JSON.parse(cleanJsonString(jsonMatch[0])); } catch {}
     }
-    // For refine_chat: if no JSON found, treat entire content as the reply
     return { reply: content, updated_template: null };
   }
 
   throw new Error("Could not parse AI response - no tool calls or content found");
 }
 
-function extractContent(aiData: any): string {
-  return aiData.choices?.[0]?.message?.content || "";
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    await verifyStaff(req);
+    const { user, serviceClient } = await verifyStaff(req);
 
     const body = await req.json();
-    const { airport, context, mode, section, tone, current_template, chat_history, user_message } = body;
+    const { airport, context, mode, section, tone, current_template, chat_history, user_message, property_id } = body;
 
     if (!airport || !["bkk", "samui"].includes(airport)) {
       return new Response(JSON.stringify({ error: "airport must be 'bkk' or 'samui'" }), {
@@ -142,10 +156,22 @@ serve(async (req) => {
       });
     }
 
+    // Fetch property context for dynamic identity
+    const propertyCtx = await fetchPropertyContext(serviceClient, property_id);
+    const airportInfo = buildAirportInfo(airport, propertyCtx.name, propertyCtx.operationalMode);
     const toneInstruction = TONE_INSTRUCTIONS[tone] || TONE_INSTRUCTIONS.friendly;
-    const baseContext = `You are a content writer for Ground Stay, a Muay Thai fight camp accommodation in Thailand.
-Airport context: ${AIRPORT_INFO[airport]}
-Tone: ${toneInstruction}`;
+
+    // Property-aware accommodation term
+    const accommodationTerm = propertyCtx.operationalMode === "high_turnover" ? "camp" : "accommodation";
+
+    const baseContext = `You are a content writer for ${propertyCtx.name}, ${
+      propertyCtx.operationalMode === "high_turnover"
+        ? "a Muay Thai fight camp accommodation"
+        : "a boutique guesthouse"
+    } on Koh Samui, Thailand.
+Airport context: ${airportInfo}
+Tone: ${toneInstruction}
+IMPORTANT: Refer to the accommodation as "${propertyCtx.name}" or "your ${accommodationTerm}". Do NOT use generic terms like "the camp" if this is a guesthouse.`;
 
     // ── Mode: suggest_sections ──
     if (mode === "suggest_sections") {
@@ -275,7 +301,6 @@ If the request is unclear or just a question, respond conversationally without u
     if (mode === "generate_section") {
       const { section_type, section_title, guided_fields, airport_facts } = body;
 
-      // Build a structured prompt from the guided fields
       let fieldsSummary = "";
       if (guided_fields && typeof guided_fields === "object") {
         for (const [key, value] of Object.entries(guided_fields)) {
@@ -295,14 +320,17 @@ Section title: "${section_title}"
 Here are the structured facts and details to include in this section:
 ${fieldsSummary || "(No specific fields provided — use your best judgment based on the airport context)"}
 
+IMPORTANT: The provided field values are verified facts. Do NOT invent prices, times, distances, or details not provided.
+
 ${context ? `Admin notes: ${context}` : ""}
 
 Write a well-structured, practical section that:
-- Uses the provided facts accurately (DO NOT make up prices, times, or details not provided)
+- Uses the provided facts accurately
 - Is formatted with clear numbered steps or bullet points where appropriate
 - Feels natural and helpful, not like a data dump
 - Uses emoji sparingly and appropriately
-- Is concise but thorough — every sentence should be useful`;
+- Is concise but thorough — every sentence should be useful
+- Refers to the accommodation as "${propertyCtx.name}" — never as "the camp" unless it IS a camp`;
 
       const aiData = await callAI(
         [{ role: "system", content: genPrompt }, { role: "user", content: `Write the "${section_title}" section.` }],
@@ -339,7 +367,6 @@ Write a well-structured, practical section that:
         });
       }
 
-      // Include guided fields context if available
       let fieldsContext = "";
       if (body.guided_fields && typeof body.guided_fields === "object") {
         for (const [key, value] of Object.entries(body.guided_fields)) {
@@ -359,6 +386,7 @@ Current section content: "${sectionToRewrite.content}"
 ${fieldsContext ? `Reference facts to ensure accuracy:\n${fieldsContext}` : ""}
 
 Return an improved version. Keep the same topic but make it clearer, more practical, and friendlier. Use concise numbered steps where appropriate. Don't be corporate. Use emoji sparingly.
+Refer to the accommodation as "${propertyCtx.name}" — never generically as "the camp" unless it IS a camp.
 ${context ? `\nAdmin notes: ${context}` : ""}`;
 
       const aiData = await callAI(
@@ -391,7 +419,7 @@ ${context ? `\nAdmin notes: ${context}` : ""}`;
     const systemPrompt = `${baseContext}
 
 You're drafting an arrival welcome guide for guests landing at ${airport.toUpperCase()}.
-Include 3-4 sections covering: immediate next steps after landing, getting to the camp, and practical tips.
+Include 3-4 sections covering: immediate next steps after landing, getting to ${propertyCtx.name}, and practical tips.
 Keep it practical and concise. Use emoji sparingly. Don't be corporate.
 ${context ? `\nAdditional context from the admin: ${context}` : ""}`;
 

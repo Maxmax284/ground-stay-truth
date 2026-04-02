@@ -5,15 +5,40 @@ import type { Json } from "@/integrations/supabase/types";
 
 export type PolicySetting = Tables<"policy_settings">;
 
-export function usePolicySettings() {
+/**
+ * Fetch policy settings, optionally scoped to a property.
+ * When propertyId is provided, returns settings that match that property
+ * OR have null property_id (global defaults), with property-specific taking precedence.
+ */
+export function usePolicySettings(propertyId?: string | null) {
   return useQuery({
-    queryKey: ["policy_settings"],
+    queryKey: ["policy_settings", propertyId ?? "global"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("policy_settings")
         .select("*")
         .order("key", { ascending: true });
+
+      if (propertyId) {
+        // Fetch both property-specific and global (null property_id) settings
+        query = query.or(`property_id.eq.${propertyId},property_id.is.null`);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
+
+      if (propertyId && data) {
+        // Deduplicate: property-specific overrides global for same key
+        const byKey = new Map<string, PolicySetting>();
+        for (const setting of data as PolicySetting[]) {
+          const existing = byKey.get(setting.key);
+          if (!existing || (setting.property_id && !existing.property_id)) {
+            byKey.set(setting.key, setting);
+          }
+        }
+        return Array.from(byKey.values());
+      }
+
       return data as PolicySetting[];
     },
   });
