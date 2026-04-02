@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
@@ -19,7 +20,7 @@ import { GuidedSectionEditor } from "./GuidedSectionEditor";
 import { SECTION_TEMPLATES, getJourneyTemplates, getSituationalTemplates } from "@/lib/airportFactSheets";
 import {
   Plane, Save, Plus, X, Sparkles, Loader2, GripVertical, Image as ImageIcon, MapPin, RefreshCw, Tag,
-  Check, Lightbulb, ChevronDown, ChevronUp, BookOpen, Eye, Smartphone,
+  Check, Lightbulb, ChevronDown, ChevronUp, BookOpen, Eye, Smartphone, Building2,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -102,7 +103,7 @@ interface SectionSuggestion {
 }
 
 export function ArrivalWelcomeEditor() {
-  const { activePropertyId } = useProperty();
+  const { activeProperty, activePropertyId } = useProperty();
   const { data: settings } = usePolicySettings(activePropertyId);
   const updateSetting = useUpdatePolicySetting();
   const { toast } = useToast();
@@ -255,6 +256,17 @@ export function ArrivalWelcomeEditor() {
           </div>
         </CardHeader>
       </Card>
+
+      {/* Property scope indicator */}
+      {activeProperty && (
+        <Alert className={`border-l-4 ${activeProperty.slug === "lamai" ? "border-l-destructive bg-destructive/5" : "border-l-[hsl(var(--accent))] bg-accent/5"}`}>
+          <Building2 className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            You are editing the arrival guide for <span className="font-semibold">{activeProperty.name}</span>. 
+            Changes here only apply to this property.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Tabs value={activeAirport} onValueChange={(v) => { setActiveAirport(v); setSuggestions([]); }}>
         <TabsList className="bg-muted/50">
