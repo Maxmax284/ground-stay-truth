@@ -149,17 +149,17 @@ export default function Stay() {
             Ground Stay
           </h1>
           <p className="font-stat text-sm tracking-[0.2em] uppercase text-primary-foreground/60">
-            Fighter's Quarters · Lamai Muay Thai
+            Accommodation · Koh Samui
           </p>
           <p className="text-lg text-primary-foreground/80 max-w-xl mx-auto">
-            Train hard, recover right. Purpose-built accommodation for fighters and training guests in the heart of Koh Samui.
+            Purpose-built accommodation for fighters, travelers, and long-term guests across our Koh Samui properties.
           </p>
           <div className="flex flex-wrap justify-center gap-4 pt-4">
             <div className="flex items-center gap-2 text-sm text-primary-foreground/70">
               <Shield className="h-4 w-4" /> Direct booking — no commissions
             </div>
             <div className="flex items-center gap-2 text-sm text-primary-foreground/70">
-              <MapPin className="h-4 w-4" /> Steps from the gym
+              <Building2 className="h-4 w-4" /> {properties.length || 2} properties
             </div>
             <div className="flex items-center gap-2 text-sm text-primary-foreground/70">
               <Clock className="h-4 w-4" /> Long-stay discounts available
