@@ -39,6 +39,8 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
   const { data: allPricingRules } = usePricingRules();
   const { data: policies } = usePolicySettings();
   const [guestSearch, setGuestSearch] = useState("");
+  const guestTypeOptions = getGuestTypesForMode(operationalMode);
+  const defaultGuestType = DEFAULT_GUEST_TYPE[operationalMode ?? "high_turnover"] ?? guestTypeOptions[0]?.value ?? "";
 
   const guestProfiles = useQuery({
     queryKey: ["guest-profiles"],
