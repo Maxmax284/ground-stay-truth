@@ -489,7 +489,7 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
       { key: "lastFlight", label: "Last flights approximate time", type: "text", factPath: "lateNight.lastFlightApprox" },
       { key: "safetyTips", label: "Safety tips", type: "list", factPath: "lateNight.safetyTips" },
       { key: "transportAvailability", label: "Late-night transport", type: "text", factPath: "lateNight.transportAvailability" },
-      { key: "campArrival", label: "What to expect arriving late at camp", type: "textarea", placeholder: "E.g. night reception, where to find keys..." },
+      { key: "campArrival", label: "What to expect arriving late", type: "textarea", placeholder: "E.g. night reception, where to find keys..." },
     ],
   },
   {
