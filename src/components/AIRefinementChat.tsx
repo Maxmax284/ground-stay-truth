@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import {
-  Sparkles, Loader2, Send, Bot, User, RotateCcw, ArrowRight,
+  Sparkles, Loader2, Send, Bot, User, RotateCcw, ArrowRight, Mic, MicOff,
 } from "lucide-react";
 import type { WelcomeTemplate } from "./ArrivalWelcomeEditor";
 import ReactMarkdown from "react-markdown";
@@ -35,6 +36,17 @@ export function AIRefinementChat({ airport, airportLabel, template, tone, contex
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [interimText, setInterimText] = useState("");
+
+  const handleVoiceResult = useCallback((transcript: string) => {
+    setInput(prev => (prev ? prev + " " + transcript : transcript));
+    setInterimText("");
+  }, []);
+
+  const { isListening, isSupported: micSupported, toggle: toggleMic } = useSpeechRecognition({
+    onResult: handleVoiceResult,
+    onInterim: setInterimText,
+  });
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || loading) return;
@@ -198,13 +210,33 @@ export function AIRefinementChat({ airport, airportLabel, template, tone, contex
 
         <Separator />
 
+        {/* Interim voice text */}
+        {isListening && interimText && (
+          <div className="px-3 pt-1">
+            <p className="text-xs text-muted-foreground italic animate-pulse truncate">
+              🎙️ {interimText}
+            </p>
+          </div>
+        )}
+
         {/* Input */}
         <div className="p-3 flex gap-2">
+          {micSupported && (
+            <Button
+              variant={isListening ? "destructive" : "ghost"}
+              size="sm"
+              onClick={toggleMic}
+              className="h-9 w-9 p-0 shrink-0"
+              title={isListening ? "Stop listening" : "Voice input"}
+            >
+              {isListening ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+            </Button>
+          )}
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Tell the AI what to change..."
+            placeholder={isListening ? "Listening…" : "Tell the AI what to change..."}
             className="h-9 text-sm"
             disabled={loading}
           />

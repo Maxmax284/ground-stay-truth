@@ -335,6 +335,8 @@ export type SectionTypeId =
   | "terminal_navigation"
   | "route_to_camp"
   | "arrival_first_hour"
+  | "local_essentials"
+  | "first_24_hours"
   | "rainy_season"
   | "late_night"
   | "bkk_connection"
@@ -458,6 +460,40 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
       { key: "essentials", label: "Essential first things to do", type: "list", placeholder: "E.g. settle in, tour the facilities, meet the team..." },
       { key: "facilities", label: "Key facilities to point out", type: "list", placeholder: "E.g. gym, dining area, pool, WiFi..." },
       { key: "schedule", label: "First day schedule note", type: "textarea", placeholder: "E.g. evening session, dinner time..." },
+    ],
+  },
+
+  // ── Post-arrival sections ──
+  {
+    id: "local_essentials",
+    title: "Local Essentials",
+    description: "Practical basics for the first hours on Samui — cash, hydration, convenience stores",
+    category: "journey",
+    icon: "🏪",
+    defaultTitle: "Local Essentials",
+    airports: ["samui"],
+    guidedFields: [
+      { key: "nearestShops", label: "Nearest convenience stores", type: "list", placeholder: "E.g. 7-Eleven 2min walk, Family Mart on main road..." },
+      { key: "cashTips", label: "Cash & payment tips", type: "list", placeholder: "E.g. nearest ATM, card acceptance, recommended cash..." },
+      { key: "hydration", label: "Hydration & health", type: "list", placeholder: "E.g. bottled water, electrolytes, sun protection..." },
+      { key: "scooterRental", label: "Scooter rental (brief mention)", type: "textarea", placeholder: "Where to rent, license requirements, helmet note..." },
+      { key: "additionalNotes", label: "Additional notes", type: "textarea", placeholder: "Anything else guests should know right away..." },
+    ],
+  },
+  {
+    id: "first_24_hours",
+    title: "First 24 Hours",
+    description: "Orientation guide for settling in — what to do, where to go, cultural tips",
+    category: "journey",
+    icon: "🌅",
+    defaultTitle: "Your First 24 Hours",
+    airports: ["samui"],
+    guidedFields: [
+      { key: "firstEvening", label: "First evening tips", type: "textarea", placeholder: "E.g. dinner options, where to eat, jet lag advice..." },
+      { key: "morningRoutine", label: "First morning", type: "textarea", placeholder: "E.g. breakfast time, morning activities, orientation..." },
+      { key: "localDosAndDonts", label: "Local do's and don'ts", type: "list", placeholder: "E.g. remove shoes indoors, dress modestly at temples..." },
+      { key: "gettingAround", label: "Getting around the area", type: "textarea", placeholder: "E.g. walking, songthaew, Grab app, motorbike..." },
+      { key: "mustKnow", label: "Must-know for day one", type: "list", placeholder: "E.g. meal times, WiFi password, emergency contact..." },
     ],
   },
 

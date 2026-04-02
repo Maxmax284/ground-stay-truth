@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,9 +9,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import {
   Sparkles, Loader2, ChevronDown, ChevronUp, Info, Plus, X,
   FileText, Lightbulb, RefreshCw, BookOpen, Eye, EyeOff, ArrowUp, ArrowDown,
+  Mic, MicOff, MessageSquare,
 } from "lucide-react";
 import {
   type SectionTemplate, type SectionTypeId, type GuidedField,
@@ -73,6 +75,8 @@ function detectSectionType(title: string, airport: string): SectionTypeId | null
     [["late night", "night arrival", "after dark"], "late_night"],
     [["connect", "bkk to samui", "bangkok to", "domestic flight"], "bkk_connection"],
     [["first time", "thailand", "cultural", "culture"], "first_time_thailand"],
+    [["essential", "convenience", "7-eleven", "shop", "hydrat", "scooter"], "local_essentials"],
+    [["first 24", "first day", "settling in", "orientation", "day one"], "first_24_hours"],
   ];
   for (const [keywords, id] of checks) {
     if (keywords.some(k => lower.includes(k))) {
@@ -97,6 +101,18 @@ export function GuidedSectionEditor({
   const [fieldValues, setFieldValues] = useState<FieldValues>({});
   const [generating, setGenerating] = useState(false);
   const [expanded, setExpanded] = useState(true);
+  const [quickDraft, setQuickDraft] = useState("");
+  const [quickDraftInterim, setQuickDraftInterim] = useState("");
+
+  const handleVoiceResult = useCallback((transcript: string) => {
+    setQuickDraft(prev => (prev ? prev + " " + transcript : transcript));
+    setQuickDraftInterim("");
+  }, []);
+
+  const { isListening, isSupported: micSupported, toggle: toggleMic } = useSpeechRecognition({
+    onResult: handleVoiceResult,
+    onInterim: setQuickDraftInterim,
+  });
 
   useEffect(() => {
     if (forceExpanded !== undefined) setExpanded(forceExpanded);
@@ -235,6 +251,51 @@ export function GuidedSectionEditor({
       }
     } catch (err: any) {
       toast({ title: "Rewrite failed", description: err.message, variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // Quick Draft: natural language → structured section
+  const handleQuickDraft = async () => {
+    if (!session || !quickDraft.trim()) return;
+    setGenerating(true);
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/draft-arrival-welcome`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            airport,
+            mode: "generate_section",
+            tone,
+            context,
+            property_id: propertyId,
+            section_type: selectedType || "custom",
+            section_title: sectionTitle || template?.defaultTitle || "Custom Section",
+            guided_fields: {},
+            quick_draft: quickDraft.trim(),
+            airport_facts: facts ? { code: facts.code, name: facts.name, type: facts.type } : null,
+          }),
+        }
+      );
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => ({}));
+        throw new Error(body.error || "Quick draft failed");
+      }
+      const data = await resp.json();
+      if (data.draft) {
+        onUpdate(data.draft.title || sectionTitle, data.draft.content || sectionContent);
+        setQuickDraft("");
+        toast({ title: "Section drafted", description: "Generated from your description. Review and edit below." });
+      }
+    } catch (err: any) {
+      toast({ title: "Quick draft failed", description: err.message, variant: "destructive" });
     } finally {
       setGenerating(false);
     }
@@ -428,6 +489,54 @@ export function GuidedSectionEditor({
                 </CardContent>
               </Card>
             )}
+
+            {/* Quick Draft — natural language input */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium flex items-center gap-1.5">
+                <MessageSquare className="h-3 w-3 text-primary" />
+                Quick Draft
+                <span className="text-[10px] text-muted-foreground font-normal ml-1">— describe what you want, AI writes it</span>
+              </Label>
+              {isListening && quickDraftInterim && (
+                <p className="text-xs text-muted-foreground italic animate-pulse truncate">
+                  🎙️ {quickDraftInterim}
+                </p>
+              )}
+              <div className="flex gap-2">
+                <Textarea
+                  value={quickDraft}
+                  onChange={(e) => setQuickDraft(e.target.value)}
+                  placeholder='e.g. "Tell them about immigration at BKK, mention the e-visa lanes, and warn about the taxi touts outside"'
+                  rows={2}
+                  className="text-xs flex-1"
+                />
+                <div className="flex flex-col gap-1 shrink-0">
+                  {micSupported && (
+                    <Button
+                      variant={isListening ? "destructive" : "ghost"}
+                      size="sm"
+                      onClick={toggleMic}
+                      className="h-8 w-8 p-0"
+                      title={isListening ? "Stop" : "Dictate"}
+                    >
+                      {isListening ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+                    </Button>
+                  )}
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleQuickDraft}
+                    disabled={!quickDraft.trim() || generating}
+                    className="h-8 w-8 p-0"
+                    title="Generate from description"
+                  >
+                    {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
 
             {/* Guided fields */}
             {template && template.id !== "custom" && (

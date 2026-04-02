@@ -182,16 +182,37 @@ interface ArrivalWelcomeDialogProps {
   onOpenChange: (open: boolean) => void;
   airport: "bkk" | "samui" | null;
   propertyId?: string | null;
+  /** If true, filter out introductory sections for returning guests */
+  isReturningGuest?: boolean;
 }
 
-export function ArrivalWelcomeDialog({ open, onOpenChange, airport, propertyId }: ArrivalWelcomeDialogProps) {
+/** Sections that returning guests don't need to see again */
+const INTRODUCTORY_SECTION_KEYWORDS = [
+  "immigration", "customs", "passport", "visa",
+  "sim card", "sim", "cash", "atm", "currency", "exchange",
+  "first time", "thailand", "cultural",
+  "terminal", "navigat",
+];
+
+function isIntroductorySection(title: string): boolean {
+  const lower = title.toLowerCase();
+  return INTRODUCTORY_SECTION_KEYWORDS.some(kw => lower.includes(kw));
+}
+
+export function ArrivalWelcomeDialog({ open, onOpenChange, airport, propertyId, isReturningGuest }: ArrivalWelcomeDialogProps) {
   const { data: settings } = usePolicySettings(propertyId);
 
   const template = useMemo(() => {
     if (!airport || !settings) return null;
     const setting = settings.find((s) => s.key === `arrival_welcome_${airport}`);
-    return parseTemplate(setting?.value);
-  }, [airport, settings]);
+    const parsed = parseTemplate(setting?.value);
+    if (!parsed || !isReturningGuest) return parsed;
+    // Filter out introductory sections for returning guests
+    return {
+      ...parsed,
+      sections: parsed.sections.filter(s => !isIntroductorySection(s.title)),
+    };
+  }, [airport, settings, isReturningGuest]);
 
   const airportLabel = airport === "bkk" ? "BKK (Suvarnabhumi)" : "Samui (USM)";
   const guideEnabled = template?.enabled ?? false;
@@ -207,7 +228,9 @@ export function ArrivalWelcomeDialog({ open, onOpenChange, airport, propertyId }
             </div>
             <div>
               <DialogTitle className="text-lg">
-                {hasContent ? "Welcome! 🎉" : "Landing Confirmed! ✅"}
+                {hasContent
+                  ? (isReturningGuest ? "Welcome back! 👋" : "Welcome! 🎉")
+                  : "Landing Confirmed! ✅"}
               </DialogTitle>
               <DialogDescription className="text-xs">
                 {hasContent
@@ -225,7 +248,7 @@ export function ArrivalWelcomeDialog({ open, onOpenChange, airport, propertyId }
         {!hasContent && (
           <div className="px-5 pb-2">
             <p className="text-sm text-muted-foreground">
-              Sit tight — your driver is on the way. If you need anything, tap "Ask Kru Glitch" in the portal.
+              Sit tight — your driver is on the way. If you need anything, use the messaging feature in your portal.
             </p>
           </div>
         )}
