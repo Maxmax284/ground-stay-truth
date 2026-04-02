@@ -805,21 +805,38 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
           </AlertDialog>
         )}
 
-        {/* Review section */}
-        {canReview && (
-          <>
-            <Button variant="outline" size="sm" onClick={() => setReviewOpen(true)}>
-              <Star className="h-3.5 w-3.5 mr-1.5" />
-              {t("reviews.leaveReview")}
-            </Button>
-            <ReviewFormDialog open={reviewOpen} onOpenChange={setReviewOpen} bookingId={booking.id} guestId={userId!} guestName={guestName ?? null} checkOut={booking.check_out} checkIn={booking.check_in} unitName={booking.units?.name} stayNights={stayNights} />
-          </>
+        {/* Departure card for completed bookings */}
+        {state === "completed" && (
+          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardContent className="p-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <Heart className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">
+                  {t("guestPortal.thankYou", "Thank you for staying with us!")}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {t("guestPortal.departureMessage", "We hope you had a wonderful stay. Safe travels, and we'd love to welcome you back anytime!")}
+              </p>
+              {canReview && (
+                <Button variant="outline" size="sm" onClick={() => setReviewOpen(true)} className="gap-1.5">
+                  <Star className="h-3.5 w-3.5" />
+                  {t("reviews.leaveReview")}
+                </Button>
+              )}
+              {existingReview && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <StarRating rating={existingReview.rating} size="sm" />
+                  <span>{existingReview.status === "pending" ? t("reviews.pendingApproval") : t(`reviews.${existingReview.status}`)}</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
-        {existingReview && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <StarRating rating={existingReview.rating} size="sm" />
-            <span>{existingReview.status === "pending" ? t("reviews.pendingApproval") : t(`reviews.${existingReview.status}`)}</span>
-          </div>
+
+        {/* Review dialog */}
+        {canReview && (
+          <ReviewFormDialog open={reviewOpen} onOpenChange={setReviewOpen} bookingId={booking.id} guestId={userId!} guestName={guestName ?? null} checkOut={booking.check_out} checkIn={booking.check_in} unitName={booking.units?.name} stayNights={stayNights} />
         )}
 
         {/* Inline messages */}
