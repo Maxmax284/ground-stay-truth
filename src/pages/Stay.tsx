@@ -305,9 +305,9 @@ export default function Stay() {
 
         {/* Footer CTA */}
         <section className="text-center py-8 space-y-4">
-          <h2 className="font-serif text-2xl font-bold text-foreground">Ready to Train?</h2>
+          <h2 className="font-serif text-2xl font-bold text-foreground">Ready to Book?</h2>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Create a free account to request a booking, upload documents, and manage your stay.
+            Create a free account to request a booking, upload documents, and manage your stay across any of our properties.
           </p>
           <Button size="lg" onClick={() => navigate("/auth/guest")}>
             <Sparkles className="h-4 w-4 mr-2" />
@@ -317,7 +317,7 @@ export default function Stay() {
       </main>
 
       <footer className="border-t py-6 text-center text-xs text-muted-foreground">
-        <p>© {new Date().getFullYear()} Ground Stay · Lamai Muay Thai</p>
+        <p>© {new Date().getFullYear()} Ground Stay · Koh Samui</p>
         <a href="/legal" className="text-primary hover:underline">Terms & Privacy</a>
       </footer>
 
