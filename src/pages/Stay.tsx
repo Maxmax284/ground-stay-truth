@@ -28,6 +28,14 @@ interface UnitData {
   min_nights: number;
   amenities: string[] | null;
   photos: string[] | null;
+  property_id: string | null;
+}
+
+interface PropertyData {
+  id: string;
+  name: string;
+  slug: string;
+  operational_mode: string;
 }
 
 interface BlockedRange { start: string; end: string; }
