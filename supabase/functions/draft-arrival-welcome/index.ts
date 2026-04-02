@@ -14,9 +14,13 @@ function buildAirportInfo(airport: string, propertyName: string, operationalMode
     : `a boutique guesthouse called ${propertyName}`;
 
   if (airport === "bkk") {
-    return `Suvarnabhumi Airport (BKK), Bangkok. Large international airport. Drive to Koh Samui area takes ~2-3 hours or domestic flight. Guests arriving for ${propertyDesc}.`;
+    return `Suvarnabhumi Airport (BKK), Bangkok. Large international airport — guests need substantial guidance.
+GUIDANCE DENSITY: HIGH. BKK is overwhelming for first-timers. Cover immigration queues, SIM/cash, terminal navigation, domestic transfers, and taxi scam awareness in detail. Use numbered steps. Assume the guest knows nothing.
+Guests arriving for ${propertyDesc}.`;
   }
-  return `Koh Samui Airport (USM). Small open-air boutique airport. Drive to accommodation takes ~20-30 minutes. Guests arriving for ${propertyDesc}.`;
+  return `Koh Samui Airport (USM). Small open-air boutique airport — minimal guidance needed.
+GUIDANCE DENSITY: LOW. USM is simple: exit the plane, walk across the tarmac, grab your bag, walk out. Do NOT over-explain. Keep it to 2-3 sentences per section max. The pickup driver is right outside.
+Guests arriving for ${propertyDesc}.`;
 }
 
 const TONE_INSTRUCTIONS: Record<string, string> = {
