@@ -433,10 +433,10 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
   {
     id: "route_to_camp",
     title: "Route & Landmarks",
-    description: "What to expect on the journey from airport to camp",
+    description: "What to expect on the journey from airport to your accommodation",
     category: "journey",
     icon: "📍",
-    defaultTitle: "On the Way to Camp",
+    defaultTitle: "On the Way",
     airports: ["bkk", "samui"],
     guidedFields: [
       { key: "estimatedTime", label: "Estimated travel time", type: "text", factPath: "routeToCamp.estimatedTime" },
