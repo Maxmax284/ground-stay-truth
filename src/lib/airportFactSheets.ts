@@ -335,6 +335,8 @@ export type SectionTypeId =
   | "terminal_navigation"
   | "route_to_camp"
   | "arrival_first_hour"
+  | "local_essentials"
+  | "first_24_hours"
   | "rainy_season"
   | "late_night"
   | "bkk_connection"
