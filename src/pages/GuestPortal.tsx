@@ -528,25 +528,27 @@ const GuestPortal = () => {
             </div>
           </TabsContent>
 
-          {/* ── Camp Info Tab ── */}
-          <TabsContent value="camp-info">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2"><Info className="h-4 w-4 text-primary" />{t("guestPortal.campInfo")}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 text-sm">
-                <CampInfoAccordion policies={policies ?? []} />
-                <Separator />
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-foreground">{t("guestPortal.checkInOut")}</h4>
-                  <ul className="space-y-1.5 text-muted-foreground list-disc pl-5">
-                    <li>{t("guestPortal.checkInFrom")} <span className="font-medium text-foreground">{String(policies?.find((p) => p.key === "earliest_checkin_time")?.value ?? "16:00").replace(/^"|"$/g, "")}</span></li>
-                    <li>{t("guestPortal.checkOutBy")} <span className="font-medium text-foreground">{String(policies?.find((p) => p.key === "checkout_time")?.value ?? "11:00").replace(/^"|"$/g, "")}</span></li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {/* ── Camp Info Tab (only for guests with training links) ── */}
+          {hasTrainingAssociation && (
+            <TabsContent value="camp-info">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2"><Info className="h-4 w-4 text-primary" />{t("guestPortal.campInfo")}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm">
+                  <CampInfoAccordion policies={policies ?? []} />
+                  <Separator />
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-foreground">{t("guestPortal.checkInOut")}</h4>
+                    <ul className="space-y-1.5 text-muted-foreground list-disc pl-5">
+                      <li>{t("guestPortal.checkInFrom")} <span className="font-medium text-foreground">{String(policies?.find((p) => p.key === "earliest_checkin_time")?.value ?? "16:00").replace(/^"|"$/g, "")}</span></li>
+                      <li>{t("guestPortal.checkOutBy")} <span className="font-medium text-foreground">{String(policies?.find((p) => p.key === "checkout_time")?.value ?? "11:00").replace(/^"|"$/g, "")}</span></li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
           {/* ── Policies Tab ── */}
           <TabsContent value="policies">
