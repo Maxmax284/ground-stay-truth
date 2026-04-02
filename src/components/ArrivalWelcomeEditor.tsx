@@ -102,7 +102,8 @@ interface SectionSuggestion {
 }
 
 export function ArrivalWelcomeEditor() {
-  const { data: settings } = usePolicySettings();
+  const { activePropertyId } = useProperty();
+  const { data: settings } = usePolicySettings(activePropertyId);
   const updateSetting = useUpdatePolicySetting();
   const { toast } = useToast();
   const { session } = useAuth();
