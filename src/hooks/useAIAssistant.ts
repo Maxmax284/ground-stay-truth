@@ -117,7 +117,7 @@ export function useAIAssistant() {
       setIsStreaming(false);
       abortRef.current = null;
     }
-  }, [session, role, messages]);
+  }, [session, role, messages, activePropertyId, operationalMode]);
 
   const cancel = useCallback(() => {
     abortRef.current?.abort();
