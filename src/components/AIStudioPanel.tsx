@@ -138,6 +138,7 @@ export function AIStudioPanel({
             mode: "suggest_sections",
             tone,
             context,
+            property_id: propertyId,
             current_template: {
               sections: template.sections,
             },
