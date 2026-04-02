@@ -60,8 +60,10 @@ export default function Stay() {
         });
         const data = await resp.json();
         const fetchedUnits = data.units ?? [];
+        const fetchedProperties = data.properties ?? [];
         const fetchedSymbol = data.currencySymbol ?? "฿";
         setUnits(fetchedUnits);
+        setProperties(fetchedProperties);
         setCurrencySymbol(fetchedSymbol);
         // Cache for offline use
         try {
