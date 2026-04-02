@@ -280,7 +280,7 @@ serve(async (req) => {
       });
     }
 
-    const { mode, role, messages, context, language } = await req.json();
+    const { mode, role, messages, context, language, property_id, operational_mode } = await req.json();
     const responseLang = language || "English";
 
     // ─── SIMULATION ACTOR MODE ─────────────────────────────────────────────
