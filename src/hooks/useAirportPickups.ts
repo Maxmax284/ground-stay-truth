@@ -92,6 +92,10 @@ export function useUpsertAirportPickup() {
           qc.invalidateQueries({ queryKey: ["pre_arrival_checklist", vars.booking_id] });
         } catch {
           // Non-critical — don't fail the pickup save
+        }
+      }
+    },
+  });
 }
 
 export function useUpdateAssistMode() {
@@ -100,7 +104,7 @@ export function useUpdateAssistMode() {
     mutationFn: async (params: {
       booking_id: string;
       pickup_id: string;
-      assist_mode: "healthy" | "degraded" | "manual_assist" | "recovery_pending";
+      assist_mode: AssistMode;
       assist_reason?: string | null;
       activated_by?: string | null;
       resolved_by?: string | null;
@@ -132,10 +136,6 @@ export function useUpdateAssistMode() {
     },
   });
 }
-      }
-    },
-  });
-}
 
 export function useTodaysPickups() {
   const today = format(new Date(), "yyyy-MM-dd");
@@ -143,7 +143,6 @@ export function useTodaysPickups() {
   return useQuery({
     queryKey: ["todays_pickups", today, activePropertyId],
     queryFn: async () => {
-      // Query by arrival_datetime date OR booking check_in date
       const startOfDay = `${today}T00:00:00`;
       const endOfDay = `${today}T23:59:59`;
       let query = (supabase
@@ -156,7 +155,6 @@ export function useTodaysPickups() {
       if (activePropertyId) query = query.eq("property_id", activePropertyId);
       const { data, error } = await query;
       if (error) throw error;
-      // Filter: if arrival_datetime is null, fall back to check_in matching today
       return (data ?? []).filter((p: any) => {
         if (p.arrival_datetime) {
           const d = p.arrival_datetime.substring(0, 10);
