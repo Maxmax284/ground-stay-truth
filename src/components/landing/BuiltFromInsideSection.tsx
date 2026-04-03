@@ -171,6 +171,39 @@ const BuiltFromInsideSection = () => (
         </div>
       </div>
 
+      {/* The Foundation */}
+      <div className="mb-20">
+        <div className="space-y-4 text-muted-foreground leading-relaxed">
+          <p>Behind all of this—</p>
+          <p className="text-foreground font-medium">it's not a corporation.</p>
+          <p>It's a family-run operation.</p>
+          <p>On one side:</p>
+          <p>
+            Ralph Beale—<br />
+            leading the training, the fighters, and the standard inside the gym.
+          </p>
+          <p>
+            A name well known across the Muay Thai community—<br />
+            not from branding, but from years of real work in the sport.
+          </p>
+          <p>On the other:</p>
+          <p>
+            Nikki Beale—<br />
+            running the back-end operations, communication, and coordination that keep everything moving.
+          </p>
+          <p>Together—</p>
+          <p className="text-foreground font-medium">that's what held the system together.</p>
+          <p>Not layers of software.</p>
+          <p>Not automation.</p>
+          <p className="text-foreground font-medium">People.</p>
+          <p>
+            People who knew the environment.<br />
+            Who understood the rhythm of it.<br />
+            Who carried it—day in, day out.
+          </p>
+        </div>
+      </div>
+
       {/* The Builder */}
       <div className="mb-20">
         <p className="text-xs tracking-[0.25em] uppercase text-muted-foreground mb-8">
