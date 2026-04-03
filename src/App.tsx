@@ -44,8 +44,11 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/guest" element={<GuestAuth />} />
 
-                {/* Root redirects based on role */}
-                <Route path="/" element={<ProtectedRoute><RoleRedirect /></ProtectedRoute>} />
+{/* Public landing page */}
+                <Route path="/" element={<LandingPage />} />
+
+                {/* Authenticated root redirects based on role */}
+                <Route path="/index" element={<ProtectedRoute><RoleRedirect /></ProtectedRoute>} />
 
                 {/* Staff routes — each enforced by canAccessRoute */}
                 <Route path="/dashboard" element={<ProtectedRoute requiredPath="/dashboard"><Index /></ProtectedRoute>} />
