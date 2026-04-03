@@ -151,6 +151,12 @@ export default function Stay() {
           <p className="font-stat text-sm tracking-[0.2em] uppercase text-primary-foreground/60">
             Accommodation · Koh Samui
           </p>
+          <p className="text-xs text-primary-foreground/40 tracking-wide">
+            Powered by{" "}
+            <a href="https://lamaimuaythai.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary-foreground/70 underline underline-offset-2 transition-colors">
+              Lamai Muay Thai
+            </a>
+          </p>
           <p className="text-lg text-primary-foreground/80 max-w-xl mx-auto">
             Purpose-built accommodation for fighters, travelers, and long-term guests across our Koh Samui properties.
           </p>
