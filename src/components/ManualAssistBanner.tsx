@@ -153,12 +153,28 @@ export function ManualAssistBanner({
         </Badge>
       </div>
 
-      {/* Reason — plain English */}
-      {assistReason && (
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          {assistReason}
-        </p>
-      )}
+      {/* Reason — structured bullet points */}
+      {assistReason && (() => {
+        // Split concatenated reasons into individual bullets
+        const reasons = assistReason
+          .split(/(?<=[.!])\s+/)
+          .map((r) => r.trim())
+          .filter(Boolean);
+        return reasons.length > 1 ? (
+          <ul className="text-xs text-muted-foreground leading-relaxed space-y-0.5 list-none">
+            {reasons.map((r, i) => (
+              <li key={i} className="flex items-start gap-1.5">
+                <span className="shrink-0 mt-0.5">•</span>
+                <span>{r}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {assistReason}
+          </p>
+        );
+      })()}
 
       {/* Actions */}
       <div className="flex flex-wrap gap-1.5">
