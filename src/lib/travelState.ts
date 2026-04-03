@@ -27,6 +27,8 @@ export type TravelState =
   | "arrived"              // Pickup completed
   | "cancelled";           // Pickup cancelled
 
+export type AssistMode = "healthy" | "degraded" | "manual_assist" | "recovery_pending";
+
 export interface TravelStateInfo {
   state: TravelState;
   /** Whether the system can dispatch a driver right now */
@@ -45,6 +47,111 @@ export interface TravelStateInfo {
   guestGuidance: string;
   /** Severity for UI treatment */
   severity: "info" | "warning" | "success" | "muted" | "destructive";
+}
+
+/**
+ * Determine the assist mode for a pickup based on system confidence signals.
+ * This answers "how much do we trust the system right now?" — separate from
+ * the travel state which answers "where is the guest?"
+ */
+export interface AssistSignals {
+  /** Current assist_mode stored on the pickup */
+  currentMode: AssistMode;
+  /** Flight tracking last_checked_at timestamp */
+  flightLastChecked: string | null;
+  /** Flight tracking status */
+  flightStatus: string | null;
+  /** Whether flight API returned an error on last check */
+  flightApiError: boolean;
+  /** Whether guest-reported airport mismatches flight data */
+  locationMismatch: boolean;
+  /** Whether translation failed recently */
+  translationFailed: boolean;
+  /** Staleness threshold in minutes */
+  stalenessThresholdMinutes?: number;
+}
+
+export interface AssistModeResult {
+  mode: AssistMode;
+  reason: string | null;
+  shouldEscalate: boolean;
+}
+
+/**
+ * Evaluate system confidence and return recommended assist mode.
+ * Does NOT write to DB — caller decides whether to apply.
+ */
+export function evaluateAssistMode(signals: AssistSignals): AssistModeResult {
+  const threshold = signals.stalenessThresholdMinutes ?? 30;
+
+  // If already in manual_assist or recovery_pending, don't auto-change
+  if (signals.currentMode === "manual_assist" || signals.currentMode === "recovery_pending") {
+    return { mode: signals.currentMode, reason: null, shouldEscalate: false };
+  }
+
+  // Hard triggers → manual_assist
+  if (signals.locationMismatch) {
+    return {
+      mode: "manual_assist",
+      reason: "Guest said they landed, but current flight data still shows a different airport.",
+      shouldEscalate: true,
+    };
+  }
+
+  // Soft triggers → degraded
+  const degradedReasons: string[] = [];
+
+  if (signals.flightApiError) {
+    degradedReasons.push("Flight updates are delayed right now.");
+  }
+
+  if (signals.flightLastChecked) {
+    const minutesSince = (Date.now() - new Date(signals.flightLastChecked).getTime()) / 60000;
+    if (minutesSince > threshold) {
+      degradedReasons.push(`Flight data is ${Math.round(minutesSince)} minutes old.`);
+    }
+  }
+
+  if (signals.flightStatus === "not_found") {
+    degradedReasons.push("Flight number not found in tracking system.");
+  }
+
+  if (signals.translationFailed) {
+    degradedReasons.push("Translation service is temporarily unavailable.");
+  }
+
+  if (degradedReasons.length > 0) {
+    // If multiple degraded signals, escalate to manual_assist
+    if (degradedReasons.length >= 2) {
+      return {
+        mode: "manual_assist",
+        reason: degradedReasons.join(" "),
+        shouldEscalate: true,
+      };
+    }
+    return {
+      mode: "degraded",
+      reason: degradedReasons[0],
+      shouldEscalate: false,
+    };
+  }
+
+  return { mode: "healthy", reason: null, shouldEscalate: false };
+}
+
+/**
+ * Check if system has recovered from a degraded/manual state.
+ * Returns true if all signals are healthy again.
+ */
+export function isSystemHealthy(signals: AssistSignals): boolean {
+  const threshold = signals.stalenessThresholdMinutes ?? 30;
+  if (signals.flightApiError || signals.locationMismatch || signals.translationFailed) return false;
+  if (signals.flightStatus === "not_found") return false;
+  if (signals.flightLastChecked) {
+    const minutesSince = (Date.now() - new Date(signals.flightLastChecked).getTime()) / 60000;
+    if (minutesSince > threshold) return false;
+  }
+  return true;
 }
 
 export interface PickupData {

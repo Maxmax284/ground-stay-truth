@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useProperty } from "@/hooks/useProperty";
 
+export type AssistMode = "healthy" | "degraded" | "manual_assist" | "recovery_pending";
+
 export interface AirportPickup {
   id: string;
   booking_id: string;
@@ -28,6 +30,13 @@ export interface AirportPickup {
   completed_by: string | null;
   created_at: string;
   updated_at: string;
+  // Assist mode fields
+  assist_mode: AssistMode;
+  assist_reason: string | null;
+  assist_activated_at: string | null;
+  assist_resolved_at: string | null;
+  assist_activated_by: string | null;
+  assist_resolved_by: string | null;
   // joined
   drivers?: { id: string; name: string; phone: string | null; whatsapp: string | null; vehicle_type: string | null; license_plate: string | null } | null;
 }
