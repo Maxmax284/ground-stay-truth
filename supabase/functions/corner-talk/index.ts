@@ -92,6 +92,10 @@ const MESSAGES: Record<string, string> = {
   manual_assist_active: "{count} pickup(s) in manual assist — automation paused",
   manual_assist_degraded: "{count} pickup(s) with reduced confidence — check flight data",
   manual_assist_recovery: "{count} pickup(s) ready to resume automation — admin approval needed",
+  // Pre-arrival checklist signals
+  checklist_no_connectivity: "{count} arriving guest(s) with no connectivity plan — pickup communication at risk",
+  checklist_no_samui_flight: "{count} arriving guest(s) missing Samui flight — pickup timing unavailable",
+  checklist_critical_gaps: "{count} arriving guest(s) with incomplete critical checklist items",
 };
 
 function renderMessage(key: string, params: Record<string, string | number>): string {
@@ -142,6 +146,8 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
     manualAssistRes,
     degradedAssistRes,
     recoveryPendingRes,
+    // Pre-arrival checklist queries
+    checklistArrivingSoonRes,
   ] = await Promise.all([
     // 💰 Unpaid deposits (exclude cancelled/completed/no_show)
     adminClient.from("bookings").select("id", { count: "exact", head: true })
@@ -258,6 +264,13 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
     adminClient.from("airport_pickups").select("id", { count: "exact", head: true })
       .eq("assist_mode", "recovery_pending")
       .not("status", "in", '("cancelled","completed")'),
+
+    // 📋 Pre-arrival: get checklist items for bookings arriving within 3 days
+    adminClient.from("pre_arrival_checklist")
+      .select("booking_id, item_key, completed, bookings!inner(check_in, state, guest_id)")
+      .in("bookings.state", ["confirmed", "pending_deposit"])
+      .gte("bookings.check_in", today)
+      .lte("bookings.check_in", new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
   ]);
 
   const signals: Signal[] = [];
@@ -512,6 +525,65 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
       params: { count: recoveryCount },
       roles: ["admin"],
     });
+  }
+
+  // ── 📋 PRE-ARRIVAL CHECKLIST GAPS ──
+  const checklistData = checklistArrivingSoonRes.data ?? [];
+  if (checklistData.length > 0) {
+    // Group by booking to find critical gaps
+    const byBooking = new Map<string, Set<string>>();
+    for (const row of checklistData) {
+      if (row.completed) {
+        if (!byBooking.has(row.booking_id)) byBooking.set(row.booking_id, new Set());
+        byBooking.get(row.booking_id)!.add(row.item_key);
+      }
+    }
+
+    // Get unique booking IDs from checklist data
+    const allBookingIds = [...new Set(checklistData.map((r: any) => r.booking_id))];
+    const criticalKeys = ["connectivity_readiness", "confirm_domestic_flight", "tdac_completed", "upload_id", "confirm_arrival_time"];
+
+    let noConnectivity = 0;
+    let noSamuiFlight = 0;
+    let criticalGaps = 0;
+
+    for (const bid of allBookingIds) {
+      const completed = byBooking.get(bid) ?? new Set();
+      if (!completed.has("connectivity_readiness")) noConnectivity++;
+      if (!completed.has("confirm_domestic_flight")) noSamuiFlight++;
+      const missingCritical = criticalKeys.filter((k) => !completed.has(k));
+      if (missingCritical.length > 0) criticalGaps++;
+    }
+
+    if (noConnectivity > 0) {
+      signals.push({
+        severity: "attention",
+        category: "ops",
+        messageKey: "checklist_no_connectivity",
+        params: { count: noConnectivity },
+        roles: ["admin", "manager", "front_desk_supervisor", "front_desk"],
+      });
+    }
+
+    if (noSamuiFlight > 0) {
+      signals.push({
+        severity: "attention",
+        category: "time",
+        messageKey: "checklist_no_samui_flight",
+        params: { count: noSamuiFlight },
+        roles: ["admin", "manager", "front_desk_supervisor", "front_desk"],
+      });
+    }
+
+    if (criticalGaps > 0 && criticalGaps > noConnectivity && criticalGaps > noSamuiFlight) {
+      signals.push({
+        severity: "attention",
+        category: "ops",
+        messageKey: "checklist_critical_gaps",
+        params: { count: criticalGaps },
+        roles: ["admin", "manager", "front_desk_supervisor"],
+      });
+    }
   }
 
   // ── 🏠 STAY ESSENTIALS CHECK ──
