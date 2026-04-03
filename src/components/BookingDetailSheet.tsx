@@ -584,16 +584,34 @@ function MessagesTab({ messages, bookingId }: { messages: any[]; bookingId: stri
         ))}</div></ScrollArea>
       ) : <p className="text-sm text-muted-foreground">{t("messages.noMessages")}</p>}
       <Separator />
+      {/* Attachment preview */}
+      {attachment && (
+        <div className="flex items-center gap-2 text-xs bg-muted/50 rounded-md px-2 py-1.5">
+          {attachment.type.startsWith("image/") ? <ImageIcon className="h-3 w-3" /> : <File className="h-3 w-3" />}
+          <span className="truncate flex-1">{attachment.type.startsWith("image/") ? "Image" : "Document"} attached</span>
+          <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => setAttachment(null)}>
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
       <Textarea placeholder={t("messages.writeNote")} value={content} onChange={(e) => setContent(e.target.value)} rows={2} />
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2"><Switch id="is_internal" checked={isInternal} onCheckedChange={setIsInternal} /><Label htmlFor="is_internal" className="text-xs text-muted-foreground">{isInternal ? t("messages.internalNote") : t("messages.guestVisible")}</Label></div>
         <div className="flex items-center gap-2">
+          <Switch id="is_internal" checked={isInternal} onCheckedChange={setIsInternal} />
+          <Label htmlFor="is_internal" className="text-xs text-muted-foreground">{isInternal ? t("messages.internalNote") : t("messages.guestVisible")}</Label>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Attach file */}
+          <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*,.pdf,.doc,.docx" />
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+            {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Paperclip className="h-3.5 w-3.5" />}
+          </Button>
           {isAIEnabled && (
             <Button variant="outline" size="sm" onClick={handleDraftWithAI} disabled={aiAssistant.isStreaming}>
               <Sparkles className="h-3.5 w-3.5 mr-1" />{aiAssistant.isStreaming ? t("ai.drafting") : t("ai.draftWithAI")}
             </Button>
           )}
-          <Button size="sm" onClick={handleSend} disabled={!content.trim() || createMessage.isPending}>{t("messages.send")}</Button>
+          <Button size="sm" onClick={handleSend} disabled={(!content.trim() && !attachment) || createMessage.isPending}>{t("messages.send")}</Button>
         </div>
       </div>
     </div>
