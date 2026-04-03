@@ -89,6 +89,44 @@ const BuiltFromInsideSection = () => (
           </p>
           <p>Operations worked.</p>
           <p>But they worked because someone experienced was always there to hold it together.</p>
+          <p>Alongside that—</p>
+          <p className="text-foreground font-medium">there was a longer-standing goal.</p>
+          <p>For years, booking wasn't really a system.</p>
+          <p>It was handled manually.</p>
+          <p>
+            Emails. Messages. Back-and-forth coordination.
+          </p>
+          <p>
+            Managing training and accommodation requests one conversation at a time.
+          </p>
+          <p>
+            Nearly two decades of handling customer service, inquiries, and booking requests—<br />
+            working directly with guests from all over the world.
+          </p>
+          <p>And behind that—</p>
+          <p className="text-foreground font-medium">a simple idea:</p>
+          <p className="text-foreground font-medium">
+            There should be a way for people to book directly.
+          </p>
+          <p>
+            No third-party platforms.<br />
+            No hidden fees.<br />
+            No disconnect between the guest and the gym.
+          </p>
+          <p>But without losing what made it work in the first place.</p>
+          <p>
+            The personal touch.<br />
+            The communication.<br />
+            The feeling that you're actually being taken care of—
+          </p>
+          <p className="text-foreground font-medium">not processed.</p>
+          <p>It wasn't about replacing how things worked.</p>
+          <p>
+            It was about building something that could support it—<br />
+            without turning it into just another generic booking system.
+          </p>
+          <p>That idea existed long before the system did.</p>
+          <p className="text-foreground font-medium">Until the right person showed up to build it.</p>
         </div>
       </div>
 
