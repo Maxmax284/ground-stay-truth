@@ -99,6 +99,16 @@ export function GuestPickupCard({ bookingId, guestName }: Props) {
           </div>
         )}
 
+        {/* Manual Assist — calm guest reassurance */}
+        {pickup.assist_mode && pickup.assist_mode !== "healthy" && (
+          <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-2.5 text-xs">
+            <Info className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
+            <p className="leading-relaxed text-muted-foreground">
+              Our team is personally coordinating your arrival. You may hear from us directly — no action needed from you right now.
+            </p>
+          </div>
+        )}
+
         {/* Flight details */}
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
           {pickup.flight_number && !intlFlight && (
