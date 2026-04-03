@@ -26,6 +26,7 @@ import Legal from "./pages/Legal";
 import Embeds from "./pages/Embeds";
 import Stay from "./pages/Stay";
 import Simulation from "./pages/Simulation";
+import LandingPage from "./pages/LandingPage";
 
 const queryClient = new QueryClient();
 
