@@ -81,7 +81,7 @@ export const AIRPORT_FACTS: Record<string, AirportFacts> = {
     immigration: {
       estimatedTime: "20–60 minutes depending on time of day",
       tips: [
-        "Have your passport, boarding pass, and arrival card ready",
+        "Have your passport, boarding pass, and TDAC confirmation ready",
         "Use the e-gates if your nationality is eligible (US, EU, etc.)",
         "Visa on Arrival queue is separate — follow 'VOA' signs if needed",
         "Peak hours: 00:00–03:00 when many long-haul flights land simultaneously",
