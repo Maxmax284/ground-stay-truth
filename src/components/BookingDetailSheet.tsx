@@ -164,6 +164,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
                 ✈ {travelInfo.staffLabel}
               </Badge>
             )}
+            <PreArrivalBadge bookingId={booking.id} />
             {isCheckedIn && <StaySupportBadge bookingId={booking.id} />}
             {trainingLinks && trainingLinks.length > 0 && <TrainingBadge />}
           </SheetTitle>
