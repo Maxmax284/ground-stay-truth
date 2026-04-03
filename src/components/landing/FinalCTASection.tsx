@@ -1,0 +1,41 @@
+import { Link } from "react-router-dom";
+
+const FinalCTASection = () => (
+  <section className="py-24 px-6 bg-[hsl(var(--fight-dark))]">
+    <div className="max-w-3xl mx-auto text-center">
+      <p className="text-[hsl(36,20%,55%)] text-sm leading-relaxed mb-2">
+        Most platforms help you book.
+      </p>
+      <p className="text-[hsl(36,33%,97%)] text-lg sm:text-xl font-medium mb-2">
+        GroundsDay makes sure you actually arrive — and things work when you do.
+      </p>
+      <p className="text-[hsl(36,20%,45%)] text-sm mb-12">
+        Now landing doesn't have to feel like a boss fight anymore 😏
+      </p>
+
+      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <Link
+          to="/stay"
+          className="group flex items-center justify-center gap-3 px-8 py-4 border border-[hsl(36,20%,25%)] hover:border-[hsl(36,20%,40%)] transition-all duration-300 rounded-sm"
+        >
+          <span className="text-sm font-medium tracking-wide text-[hsl(36,20%,80%)] group-hover:text-[hsl(36,33%,97%)] transition-colors">
+            Enter Your Stay
+          </span>
+          <span className="text-[hsl(36,20%,35%)] group-hover:text-[hsl(36,20%,60%)] transition-colors">→</span>
+        </Link>
+
+        <Link
+          to="/auth"
+          className="group flex items-center justify-center gap-3 px-8 py-4 border border-[hsl(36,20%,15%)] hover:border-[hsl(36,20%,28%)] transition-all duration-300 rounded-sm"
+        >
+          <span className="text-xs font-medium tracking-wide text-[hsl(36,20%,40%)] group-hover:text-[hsl(36,20%,65%)] transition-colors">
+            Operator Login
+          </span>
+          <span className="text-[hsl(36,20%,22%)] group-hover:text-[hsl(36,20%,40%)] transition-colors">→</span>
+        </Link>
+      </div>
+    </div>
+  </section>
+);
+
+export default FinalCTASection;

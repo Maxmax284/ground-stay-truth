@@ -26,6 +26,7 @@ import Legal from "./pages/Legal";
 import Embeds from "./pages/Embeds";
 import Stay from "./pages/Stay";
 import Simulation from "./pages/Simulation";
+import LandingPage from "./pages/LandingPage";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,7 @@ const App = () => (
                 <Route path="/embed/:type" element={<EmbedWidget />} />
                 <Route path="/stay" element={<Stay />} />
                 <Route path="/legal" element={<Legal />} />
+                <Route path="/landing" element={<LandingPage />} />
 
                 <Route path="*" element={<NotFound />} />
               </Routes>
