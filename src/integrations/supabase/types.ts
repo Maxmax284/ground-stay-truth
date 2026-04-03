@@ -19,6 +19,12 @@ export type Database = {
           arrival_datetime: string | null
           assigned_at: string | null
           assigned_by: string | null
+          assist_activated_at: string | null
+          assist_activated_by: string | null
+          assist_mode: string
+          assist_reason: string | null
+          assist_resolved_at: string | null
+          assist_resolved_by: string | null
           booking_id: string
           completed_at: string | null
           completed_by: string | null
@@ -46,6 +52,12 @@ export type Database = {
           arrival_datetime?: string | null
           assigned_at?: string | null
           assigned_by?: string | null
+          assist_activated_at?: string | null
+          assist_activated_by?: string | null
+          assist_mode?: string
+          assist_reason?: string | null
+          assist_resolved_at?: string | null
+          assist_resolved_by?: string | null
           booking_id: string
           completed_at?: string | null
           completed_by?: string | null
@@ -73,6 +85,12 @@ export type Database = {
           arrival_datetime?: string | null
           assigned_at?: string | null
           assigned_by?: string | null
+          assist_activated_at?: string | null
+          assist_activated_by?: string | null
+          assist_mode?: string
+          assist_reason?: string | null
+          assist_resolved_at?: string | null
+          assist_resolved_by?: string | null
           booking_id?: string
           completed_at?: string | null
           completed_by?: string | null

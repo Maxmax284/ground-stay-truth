@@ -199,6 +199,50 @@ serve(async (req) => {
       saved = data;
     }
 
+    // Phase 2: Update assist_mode based on flight data confidence
+    try {
+      const { data: pickup } = await serviceClient
+        .from("airport_pickups")
+        .select("assist_mode, confirmed_airport")
+        .eq("id", pickup_id)
+        .single();
+
+      if (pickup) {
+        const currentMode = pickup.assist_mode || "healthy";
+        // Don't auto-change manual_assist or recovery_pending
+        if (currentMode !== "manual_assist" && currentMode !== "recovery_pending") {
+          const isStale = record.flight_status === "not_found";
+          const locationMismatch = pickup.confirmed_airport &&
+            record.arrival_iata &&
+            pickup.confirmed_airport.toLowerCase() !== record.arrival_iata.toLowerCase();
+
+          let newMode = "healthy";
+          let reason: string | null = null;
+
+          if (locationMismatch) {
+            newMode = "manual_assist";
+            reason = `Guest confirmed ${pickup.confirmed_airport.toUpperCase()} but flight data shows ${record.arrival_iata.toUpperCase()}.`;
+          } else if (isStale) {
+            newMode = "degraded";
+            reason = "Flight number not found in tracking system.";
+          }
+
+          if (newMode !== currentMode) {
+            await serviceClient
+              .from("airport_pickups")
+              .update({
+                assist_mode: newMode,
+                assist_reason: reason,
+                ...(newMode === "manual_assist" ? { assist_activated_at: new Date().toISOString() } : {}),
+              })
+              .eq("id", pickup_id);
+          }
+        }
+      }
+    } catch (assistErr) {
+      console.error("assist_mode update error (non-critical):", assistErr);
+    }
+
     return new Response(JSON.stringify({ flight: saved, source: "api", found: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

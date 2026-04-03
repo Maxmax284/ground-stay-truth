@@ -14,8 +14,9 @@ import { useAirportPickup, useUpsertAirportPickup, logPickupAction, type Airport
 import { useDrivers } from "@/hooks/useDrivers";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
-import { Plane, Car, MessageSquare, User, Clock, AlertTriangle, ArrowRight, CheckCircle2, MapPin } from "lucide-react";
+import { Plane, Car, MessageSquare, User, Clock, AlertTriangle, ArrowRight, CheckCircle2, MapPin, UserCheck } from "lucide-react";
 import { getTravelState } from "@/lib/travelState";
+import { ManualAssistBanner } from "@/components/ManualAssistBanner";
 
 const STATUS_COLORS: Record<string, string> = {
   requested: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
@@ -198,13 +199,14 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
         updates.final_flight_confirmed = true;
       }
       await upsert.mutateAsync(updates);
+      const manualPrefix = pickup.assist_mode === "manual_assist" ? "[MANUAL] " : "";
       await logPickupAction({
         bookingId,
         pickupId: pickup.id,
-        action: "flights_updated",
-        note: `Flights updated: Int'l ${intlFlight.trim().toUpperCase() || "—"}, Final ${domesticFlight.trim().toUpperCase() || "—"}, Arrival ${arrivalDt || "—"}, Pax ${paxCount}`,
+        action: `${manualPrefix}flights_updated`,
+        note: `${manualPrefix}Flights updated: Int'l ${intlFlight.trim().toUpperCase() || "—"}, Final ${domesticFlight.trim().toUpperCase() || "—"}, Arrival ${arrivalDt || "—"}, Pax ${paxCount}`,
       });
-      toast({ title: "Flight details updated" });
+      toast({ title: isManualAssist ? "Flight details updated (manual)" : "Flight details updated" });
       setEditingFlights(false);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -222,6 +224,8 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
   if (pickup.status === "confirmed") nextStatuses.push("completed");
   if (pickup.status !== "cancelled" && pickup.status !== "completed") nextStatuses.push("cancelled");
 
+  const isManualAssist = pickup.assist_mode === "manual_assist";
+
   return (
     <Card className="border-primary/20 bg-primary/5">
       <CardContent className="p-4 space-y-3">
@@ -232,6 +236,19 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
           </div>
           <Badge className={STATUS_COLORS[pickup.status] ?? ""}>{pickup.status}</Badge>
         </div>
+
+        {/* Manual Assist Banner — Phase 3 */}
+        <ManualAssistBanner
+          bookingId={bookingId}
+          pickupId={pickup.id}
+          assistMode={pickup.assist_mode ?? "healthy"}
+          assistReason={pickup.assist_reason ?? null}
+          guestName={guestName}
+          onContactGuest={() => {
+            // Deep-link to messaging for this booking
+            window.location.hash = `#messages-${bookingId}`;
+          }}
+        />
 
         {/* Travel state — centralized awareness */}
         {travelInfo.state !== "pre_departure" && travelInfo.state !== "awaiting_departure" && travelInfo.state !== "cancelled" && (

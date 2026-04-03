@@ -88,6 +88,10 @@ const MESSAGES: Record<string, string> = {
   upcoming_arrivals: "{count} arrival(s) tomorrow",
   upcoming_departures: "{count} departure(s) tomorrow",
   upcoming_maintenance_block: "Maintenance block starts {date} — {unit}",
+  // Manual Assist signals
+  manual_assist_active: "{count} pickup(s) in manual assist — automation paused",
+  manual_assist_degraded: "{count} pickup(s) with reduced confidence — check flight data",
+  manual_assist_recovery: "{count} pickup(s) ready to resume automation — admin approval needed",
 };
 
 function renderMessage(key: string, params: Record<string, string | number>): string {
@@ -134,6 +138,10 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
     arrivingTomorrowRes,
     departingTomorrowRes,
     upcomingBlocksRes,
+    // Manual Assist queries
+    manualAssistRes,
+    degradedAssistRes,
+    recoveryPendingRes,
   ] = await Promise.all([
     // 💰 Unpaid deposits (exclude cancelled/completed/no_show)
     adminClient.from("bookings").select("id", { count: "exact", head: true })
@@ -235,6 +243,21 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
       .gte("start_date", today)
       .lte("start_date", new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0])
       .limit(3),
+
+    // 🛡️ Manual Assist: active manual assist pickups
+    adminClient.from("airport_pickups").select("id", { count: "exact", head: true })
+      .eq("assist_mode", "manual_assist")
+      .not("status", "in", '("cancelled","completed")'),
+
+    // 🛡️ Manual Assist: degraded pickups
+    adminClient.from("airport_pickups").select("id", { count: "exact", head: true })
+      .eq("assist_mode", "degraded")
+      .not("status", "in", '("cancelled","completed")'),
+
+    // 🛡️ Manual Assist: recovery pending
+    adminClient.from("airport_pickups").select("id", { count: "exact", head: true })
+      .eq("assist_mode", "recovery_pending")
+      .not("status", "in", '("cancelled","completed")'),
   ]);
 
   const signals: Signal[] = [];
@@ -453,6 +476,41 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
       messageKey: "early_checkin_pending",
       params: { count: earlyCheckinCount },
       roles: ["admin", "manager"],
+    });
+  }
+
+  // ── 🛡️ MANUAL ASSIST ──
+
+  const manualAssistCount = manualAssistRes.count ?? 0;
+  if (manualAssistCount > 0) {
+    signals.push({
+      severity: "urgent",
+      category: "ops",
+      messageKey: "manual_assist_active",
+      params: { count: manualAssistCount },
+      roles: ["admin", "manager", "front_desk_supervisor", "front_desk"],
+    });
+  }
+
+  const degradedCount = degradedAssistRes.count ?? 0;
+  if (degradedCount > 0) {
+    signals.push({
+      severity: "attention",
+      category: "ops",
+      messageKey: "manual_assist_degraded",
+      params: { count: degradedCount },
+      roles: ["admin", "manager", "front_desk_supervisor"],
+    });
+  }
+
+  const recoveryCount = recoveryPendingRes.count ?? 0;
+  if (recoveryCount > 0) {
+    signals.push({
+      severity: "attention",
+      category: "system",
+      messageKey: "manual_assist_recovery",
+      params: { count: recoveryCount },
+      roles: ["admin"],
     });
   }
 

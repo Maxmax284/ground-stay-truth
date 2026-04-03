@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useProperty } from "@/hooks/useProperty";
 
+export type AssistMode = "healthy" | "degraded" | "manual_assist" | "recovery_pending";
+
 export interface AirportPickup {
   id: string;
   booking_id: string;
@@ -28,6 +30,13 @@ export interface AirportPickup {
   completed_by: string | null;
   created_at: string;
   updated_at: string;
+  // Assist mode fields
+  assist_mode: AssistMode;
+  assist_reason: string | null;
+  assist_activated_at: string | null;
+  assist_resolved_at: string | null;
+  assist_activated_by: string | null;
+  assist_resolved_by: string | null;
   // joined
   drivers?: { id: string; name: string; phone: string | null; whatsapp: string | null; vehicle_type: string | null; license_plate: string | null } | null;
 }
@@ -89,13 +98,51 @@ export function useUpsertAirportPickup() {
   });
 }
 
+export function useUpdateAssistMode() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: {
+      booking_id: string;
+      pickup_id: string;
+      assist_mode: AssistMode;
+      assist_reason?: string | null;
+      activated_by?: string | null;
+      resolved_by?: string | null;
+    }) => {
+      const updates: any = {
+        booking_id: params.booking_id,
+        assist_mode: params.assist_mode,
+        assist_reason: params.assist_reason ?? null,
+      };
+      if (params.assist_mode === "manual_assist" && params.activated_by) {
+        updates.assist_activated_at = new Date().toISOString();
+        updates.assist_activated_by = params.activated_by;
+      }
+      if (params.assist_mode === "healthy" && params.resolved_by) {
+        updates.assist_resolved_at = new Date().toISOString();
+        updates.assist_resolved_by = params.resolved_by;
+      }
+      const { data, error } = await (supabase
+        .from("airport_pickups" as any)
+        .upsert(updates, { onConflict: "booking_id" })
+        .select()
+        .single() as any);
+      if (error) throw error;
+      return data as AirportPickup;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["airport_pickup", vars.booking_id] });
+      qc.invalidateQueries({ queryKey: ["todays_pickups"] });
+    },
+  });
+}
+
 export function useTodaysPickups() {
   const today = format(new Date(), "yyyy-MM-dd");
   const { activePropertyId } = useProperty();
   return useQuery({
     queryKey: ["todays_pickups", today, activePropertyId],
     queryFn: async () => {
-      // Query by arrival_datetime date OR booking check_in date
       const startOfDay = `${today}T00:00:00`;
       const endOfDay = `${today}T23:59:59`;
       let query = (supabase
@@ -108,7 +155,6 @@ export function useTodaysPickups() {
       if (activePropertyId) query = query.eq("property_id", activePropertyId);
       const { data, error } = await query;
       if (error) throw error;
-      // Filter: if arrival_datetime is null, fall back to check_in matching today
       return (data ?? []).filter((p: any) => {
         if (p.arrival_datetime) {
           const d = p.arrival_datetime.substring(0, 10);
