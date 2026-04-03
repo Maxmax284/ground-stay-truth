@@ -151,7 +151,8 @@ export default function Stay() {
           <p className="font-stat text-sm tracking-[0.2em] uppercase text-primary-foreground/60">
             Accommodation · Koh Samui
           </p>
-          <p className="text-xs text-primary-foreground/40 tracking-wide">
+          <p className="text-xs text-primary-foreground/40 tracking-wide flex items-center gap-1.5">
+            <img src={lamaiLogo} alt="Lamai Muay Thai" className="h-4 w-4 opacity-40" loading="lazy" width={512} height={512} />
             Powered by{" "}
             <a href="https://lamaimuaythai.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary-foreground/70 underline underline-offset-2 transition-colors">
               Lamai Muay Thai

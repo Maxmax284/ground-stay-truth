@@ -124,7 +124,8 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
           <span className="mx-2">·</span>
           <a href="/legal#terms" className="hover:text-foreground hover:underline">{t("legal.termsOfService")}</a>
         </div>
-        <div className="text-muted-foreground/60">
+        <div className="text-muted-foreground/60 flex items-center justify-center gap-1.5">
+          <img src={lamaiLogo} alt="Lamai Muay Thai" className="h-4 w-4 opacity-50" loading="lazy" width={512} height={512} />
           Powered by{" "}
           <a href="https://lamaimuaythai.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground hover:underline transition-colors">
             Lamai Muay Thai
