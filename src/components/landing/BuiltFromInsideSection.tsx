@@ -1,5 +1,5 @@
 const BuiltFromInsideSection = () => (
-  <section className="py-24 px-6 bg-background">
+  <section id="built-from-inside" className="py-24 px-6 bg-background">
     <div className="max-w-3xl mx-auto">
 
       {/* Title */}
