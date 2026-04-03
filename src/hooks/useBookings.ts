@@ -516,6 +516,8 @@ export function useCreateMessage() {
       booking_id: string;
       content: string;
       is_internal: boolean;
+      attachment_url?: string | null;
+      attachment_type?: string | null;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
 
@@ -535,9 +537,12 @@ export function useCreateMessage() {
       const { data, error } = await supabase
         .from("messages")
         .insert({
-          ...message,
+          booking_id: message.booking_id,
+          content: message.content,
+          is_internal: message.is_internal,
           sender_id: user?.id ?? null,
           draft: isDraft,
+          ...(message.attachment_url ? { attachment_url: message.attachment_url, attachment_type: message.attachment_type } : {}),
         } as any)
         .select()
         .single();

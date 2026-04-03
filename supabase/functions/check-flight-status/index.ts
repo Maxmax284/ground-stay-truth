@@ -199,43 +199,86 @@ serve(async (req) => {
       saved = data;
     }
 
-    // Phase 2: Update assist_mode based on flight data confidence
+    // Phase 2: Server-side confidence evaluation
+    // Queries checklist + flight signals to compute assist_mode
     try {
       const { data: pickup } = await serviceClient
         .from("airport_pickups")
-        .select("assist_mode, confirmed_airport")
+        .select("assist_mode, confirmed_airport, booking_id, flight_number, guest_landed_at")
         .eq("id", pickup_id)
         .single();
 
       if (pickup) {
         const currentMode = pickup.assist_mode || "healthy";
-        // Don't auto-change manual_assist or recovery_pending
+
+        // Don't auto-change manual_assist or recovery_pending (sticky states)
         if (currentMode !== "manual_assist" && currentMode !== "recovery_pending") {
-          const isStale = record.flight_status === "not_found";
+          // Query pre-arrival checklist for critical items
+          const CRITICAL_KEYS = ["connectivity_readiness", "confirm_domestic_flight", "tdac_completed", "upload_id", "confirm_arrival_time"];
+          const { data: checklistItems } = await serviceClient
+            .from("pre_arrival_checklist")
+            .select("item_key, completed")
+            .eq("booking_id", pickup.booking_id)
+            .in("item_key", CRITICAL_KEYS);
+
+          const completedKeys = new Set(
+            (checklistItems ?? []).filter((i: any) => i.completed).map((i: any) => i.item_key)
+          );
+
+          // Build degraded reasons
+          const degradedReasons: string[] = [];
+
+          // Location mismatch → hard trigger
           const locationMismatch = pickup.confirmed_airport &&
             record.arrival_iata &&
             pickup.confirmed_airport.toLowerCase() !== record.arrival_iata.toLowerCase();
 
-          let newMode = "healthy";
-          let reason: string | null = null;
-
           if (locationMismatch) {
-            newMode = "manual_assist";
-            reason = `Guest confirmed ${pickup.confirmed_airport.toUpperCase()} but flight data shows ${record.arrival_iata.toUpperCase()}.`;
-          } else if (isStale) {
-            newMode = "degraded";
-            reason = "Flight number not found in tracking system.";
-          }
-
-          if (newMode !== currentMode) {
             await serviceClient
               .from("airport_pickups")
               .update({
-                assist_mode: newMode,
-                assist_reason: reason,
-                ...(newMode === "manual_assist" ? { assist_activated_at: new Date().toISOString() } : {}),
+                assist_mode: "manual_assist",
+                assist_reason: `Guest confirmed ${pickup.confirmed_airport!.toUpperCase()} but flight data shows ${record.arrival_iata!.toUpperCase()}.`,
+                assist_activated_at: new Date().toISOString(),
               })
               .eq("id", pickup_id);
+          } else {
+            // Flight data signals
+            if (record.flight_status === "not_found") {
+              degradedReasons.push("Flight number not found in tracking system.");
+            }
+
+            // Checklist signals
+            if (!completedKeys.has("connectivity_readiness") && !completedKeys.has("confirm_domestic_flight") && !pickup.flight_number) {
+              // Only count domestic flight missing if pickup also lacks flight_number
+            }
+            if (!completedKeys.has("connectivity_readiness")) {
+              degradedReasons.push("Guest has not confirmed internet access for arrival — communication may fail.");
+            }
+            if (!completedKeys.has("confirm_domestic_flight") && !pickup.flight_number) {
+              degradedReasons.push("Guest has not confirmed their Samui flight — pickup timing unavailable.");
+            }
+            if (!completedKeys.has("tdac_completed")) {
+              degradedReasons.push("Thailand arrival card not completed — may delay immigration.");
+            }
+
+            if (degradedReasons.length > 0) {
+              const newMode = degradedReasons.length >= 3 ? "manual_assist" : "degraded";
+              await serviceClient
+                .from("airport_pickups")
+                .update({
+                  assist_mode: newMode,
+                  assist_reason: degradedReasons.join(" "),
+                  ...(newMode === "manual_assist" ? { assist_activated_at: new Date().toISOString() } : {}),
+                })
+                .eq("id", pickup_id);
+            } else if (currentMode === "degraded") {
+              // Signals cleared → restore healthy
+              await serviceClient
+                .from("airport_pickups")
+                .update({ assist_mode: "healthy", assist_reason: null })
+                .eq("id", pickup_id);
+            }
           }
         }
       }

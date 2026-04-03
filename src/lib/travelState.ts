@@ -333,3 +333,74 @@ export function canDispatchDriver(pickup: PickupData): boolean {
 export function getOperationalFlight(pickup: PickupData): string | null {
   return pickup.flight_number ?? null;
 }
+
+// ─── ARRIVAL READINESS ────────────────────────────────────────────────────────
+
+export interface ArrivalReadiness {
+  /** All critical checklist items are complete */
+  ready: boolean;
+  /** 0-100 across ALL items */
+  score: number;
+  /** Human-readable blockers */
+  blockers: string[];
+  /** item_key values of missing critical items */
+  missingCritical: string[];
+  /** Critical items completed vs total */
+  criticalCompleted: number;
+  criticalTotal: number;
+}
+
+const CRITICAL_KEYS = [
+  "connectivity_readiness",
+  "confirm_domestic_flight",
+  "tdac_completed",
+  "upload_id",
+  "confirm_arrival_time",
+] as const;
+
+const BLOCKER_LABELS: Record<string, string> = {
+  connectivity_readiness: "No connectivity plan — guest may be unreachable after landing",
+  confirm_domestic_flight: "Missing Samui flight — pickup timing unavailable",
+  tdac_completed: "TDAC not completed — may delay immigration",
+  upload_id: "ID / passport not uploaded — check-in blocked",
+  confirm_arrival_time: "Arrival time not confirmed",
+};
+
+/**
+ * Compute arrival readiness from checklist items + pickup data.
+ * Cross-references pickup so that if a domestic flight already exists
+ * on the pickup record, `confirm_domestic_flight` is not a blocker.
+ */
+export function getArrivalReadiness(
+  checklistItems: { item_key: string; completed: boolean }[],
+  allItemCount: number,
+  pickup: PickupData | null,
+): ArrivalReadiness {
+  const completedKeys = new Set(
+    checklistItems.filter((i) => i.completed).map((i) => i.item_key),
+  );
+
+  const missingCritical: string[] = [];
+  for (const key of CRITICAL_KEYS) {
+    if (completedKeys.has(key)) continue;
+    // Cross-reference: if pickup already has the domestic flight, skip this blocker
+    if (key === "confirm_domestic_flight" && pickup?.flight_number) continue;
+    missingCritical.push(key);
+  }
+
+  const blockers = missingCritical.map(
+    (key) => BLOCKER_LABELS[key] ?? key,
+  );
+
+  const completedCount = checklistItems.filter((i) => i.completed).length;
+  const score = allItemCount > 0 ? Math.round((completedCount / allItemCount) * 100) : 0;
+
+  return {
+    ready: missingCritical.length === 0,
+    score,
+    blockers,
+    missingCritical,
+    criticalCompleted: CRITICAL_KEYS.length - missingCritical.length,
+    criticalTotal: CRITICAL_KEYS.length,
+  };
+}

@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { toast as sonnerToast } from "sonner";
 import { getTravelState } from "@/lib/travelState";
+import { supabase } from "@/integrations/supabase/client";
 import { useAirportPickup } from "@/hooks/useAirportPickups";
 import { useGuestHistory } from "@/hooks/useGuestHistory";
 import { useTranslation } from "react-i18next";
@@ -26,17 +27,19 @@ import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { formatPrice } from "@/lib/currency";
 import { calculateOutstanding, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_VARIANTS, PAYMENT_TYPE_LABELS, type PaymentStatus, type PaymentType } from "@/lib/paymentTypes";
-import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText, Info, Wrench, Shirt, Globe, Sparkles, RotateCcw } from "lucide-react";
+import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText, Info, Wrench, Shirt, Globe, Sparkles, RotateCcw, Paperclip, Image as ImageIcon, File, X, Loader2 } from "lucide-react";
 import { RefundDialog } from "@/components/RefundDialog";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { SecurityDepositSection } from "@/components/SecurityDepositSection";
 import { BookingTrainingSection } from "@/components/BookingTrainingSection";
 import { useBookingTrainingLinks } from "@/hooks/useTrainingPackages";
 import { AirportPickupSection } from "@/components/AirportPickupSection";
+import { AdminOverrideMenu } from "@/components/AdminOverrideMenu";
 import { useGuestDocuments } from "@/hooks/useGuestDocuments";
 import { useMaintenanceRequests, useUpdateMaintenanceStatus } from "@/hooks/useMaintenanceRequests";
 import { useLaundryRequests, useAdvanceLaundryStatus, getNextLaundryStatus } from "@/hooks/useLaundryRequests";
 import { StaySupportBadge } from "@/components/StaySupportBadge";
+import { PreArrivalBadge } from "@/components/PreArrivalChecklist";
 import { TrainingBadge } from "@/components/TrainingBadge";
 import { useMessageTranslation } from "@/hooks/useMessageTranslation";
 import { useProfile } from "@/hooks/useProfile";
@@ -164,6 +167,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
                 ✈ {travelInfo.staffLabel}
               </Badge>
             )}
+            <PreArrivalBadge bookingId={booking.id} />
             {isCheckedIn && <StaySupportBadge bookingId={booking.id} />}
             {trainingLinks && trainingLinks.length > 0 && <TrainingBadge />}
           </SheetTitle>
@@ -201,6 +205,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
           )}
         </SheetHeader>
         <AirportPickupSection bookingId={booking.id} guestName={guestName} />
+        {isAdmin && <AdminOverrideMenu bookingId={booking.id} pickupId={pickup?.id ?? null} />}
         <SecurityDepositSection bookingId={booking.id} bookingState={booking.state} />
         <BookingTrainingSection bookingId={booking.id} />
         <Separator />
@@ -439,6 +444,7 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
 function MessageBubble({ msg, translate, clearTranslation, translations, isTranslating, preferredLang }: { msg: any; translate: any; clearTranslation: any; translations: Record<string, any>; isTranslating: boolean; preferredLang: string }) {
   const { t } = useTranslation();
   const translation = translations[msg.id];
+  const isImage = msg.attachment_type?.startsWith("image/");
   return (
     <div className="text-sm space-y-1">
       <div className="flex items-center gap-2">
@@ -457,6 +463,25 @@ function MessageBubble({ msg, translate, clearTranslation, translations, isTrans
       </div>
       <p className="text-foreground">{translation ? translation.translated_text : msg.content}</p>
       {translation && <p className="text-xs text-muted-foreground italic">{msg.content}</p>}
+      {msg.attachment_url && (
+        <div className="mt-1">
+          {isImage ? (
+            <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer">
+              <img src={msg.attachment_url} alt="Attachment" className="max-w-[200px] max-h-[150px] rounded-md border object-cover" />
+            </a>
+          ) : (
+            <a
+              href={msg.attachment_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline border rounded-md px-2 py-1"
+            >
+              <File className="h-3 w-3" />
+              {msg.attachment_type?.includes("pdf") ? "PDF Document" : "Attachment"}
+            </a>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -468,6 +493,9 @@ function MessagesTab({ messages, bookingId }: { messages: any[]; bookingId: stri
   const createMessage = useCreateMessage();
   const [content, setContent] = useState("");
   const [isInternal, setIsInternal] = useState(true);
+  const [attachment, setAttachment] = useState<{ url: string; type: string } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { translations, translate, clearTranslation, isTranslating } = useMessageTranslation();
   const { profile: { data: profileData } } = useProfile();
   const preferredLang = profileData?.preferred_language ?? "en";
@@ -490,6 +518,38 @@ function MessagesTab({ messages, bookingId }: { messages: any[]; bookingId: stri
   }
   prevStreamingRef.current = aiAssistant.isStreaming;
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const filePath = `${bookingId}/${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("guest-documents")
+        .upload(filePath, file);
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage
+        .from("guest-documents")
+        .getPublicUrl(filePath);
+      // guest-documents is private, use signed URL
+      const { data: signedData } = await supabase.storage
+        .from("guest-documents")
+        .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 7 days
+      setAttachment({
+        url: signedData?.signedUrl ?? urlData.publicUrl,
+        type: file.type,
+      });
+      if (!content.trim()) {
+        setContent(`📎 ${file.name}`);
+      }
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   if (!permissions.canSendMessages(role)) {
     return (
       <div className="py-3">
@@ -503,8 +563,18 @@ function MessagesTab({ messages, bookingId }: { messages: any[]; bookingId: stri
   }
 
   const handleSend = async () => {
-    if (!content.trim()) return;
-    try { await createMessage.mutateAsync({ booking_id: bookingId, content: content.trim(), is_internal: isInternal }); setContent(""); }
+    if (!content.trim() && !attachment) return;
+    try {
+      await createMessage.mutateAsync({
+        booking_id: bookingId,
+        content: content.trim() || "📎 Attachment",
+        is_internal: isInternal,
+        attachment_url: attachment?.url ?? null,
+        attachment_type: attachment?.type ?? null,
+      });
+      setContent("");
+      setAttachment(null);
+    }
     catch (err: any) { toast({ title: t("common.error"), description: err.message, variant: "destructive" }); }
   };
 
@@ -516,16 +586,34 @@ function MessagesTab({ messages, bookingId }: { messages: any[]; bookingId: stri
         ))}</div></ScrollArea>
       ) : <p className="text-sm text-muted-foreground">{t("messages.noMessages")}</p>}
       <Separator />
+      {/* Attachment preview */}
+      {attachment && (
+        <div className="flex items-center gap-2 text-xs bg-muted/50 rounded-md px-2 py-1.5">
+          {attachment.type.startsWith("image/") ? <ImageIcon className="h-3 w-3" /> : <File className="h-3 w-3" />}
+          <span className="truncate flex-1">{attachment.type.startsWith("image/") ? "Image" : "Document"} attached</span>
+          <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => setAttachment(null)}>
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
       <Textarea placeholder={t("messages.writeNote")} value={content} onChange={(e) => setContent(e.target.value)} rows={2} />
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2"><Switch id="is_internal" checked={isInternal} onCheckedChange={setIsInternal} /><Label htmlFor="is_internal" className="text-xs text-muted-foreground">{isInternal ? t("messages.internalNote") : t("messages.guestVisible")}</Label></div>
         <div className="flex items-center gap-2">
+          <Switch id="is_internal" checked={isInternal} onCheckedChange={setIsInternal} />
+          <Label htmlFor="is_internal" className="text-xs text-muted-foreground">{isInternal ? t("messages.internalNote") : t("messages.guestVisible")}</Label>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Attach file */}
+          <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*,.pdf,.doc,.docx" />
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+            {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Paperclip className="h-3.5 w-3.5" />}
+          </Button>
           {isAIEnabled && (
             <Button variant="outline" size="sm" onClick={handleDraftWithAI} disabled={aiAssistant.isStreaming}>
               <Sparkles className="h-3.5 w-3.5 mr-1" />{aiAssistant.isStreaming ? t("ai.drafting") : t("ai.draftWithAI")}
             </Button>
           )}
-          <Button size="sm" onClick={handleSend} disabled={!content.trim() || createMessage.isPending}>{t("messages.send")}</Button>
+          <Button size="sm" onClick={handleSend} disabled={(!content.trim() && !attachment) || createMessage.isPending}>{t("messages.send")}</Button>
         </div>
       </div>
     </div>
