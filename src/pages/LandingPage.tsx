@@ -4,7 +4,7 @@ import SystemFlowSection from "@/components/landing/SystemFlowSection";
 import FailureSection from "@/components/landing/FailureSection";
 import MessagingSection from "@/components/landing/MessagingSection";
 import LivingSection from "@/components/landing/LivingSection";
-import OriginSection from "@/components/landing/OriginSection";
+import BuiltFromInsideSection from "@/components/landing/BuiltFromInsideSection";
 import ProofSection from "@/components/landing/ProofSection";
 import SovereigntySection from "@/components/landing/SovereigntySection";
 import ComplianceSection from "@/components/landing/ComplianceSection";
