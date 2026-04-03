@@ -20,6 +20,8 @@ export interface ChecklistItemDef {
   critical?: boolean;
   /** Item type determines UI treatment */
   type?: "toggle" | "input" | "info";
+  /** Optional external link for the guest to complete this step */
+  link?: { url: string; label: string };
 }
 
 const TRAVEL_INFO: readonly ChecklistItemDef[] = [
