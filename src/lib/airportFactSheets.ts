@@ -86,7 +86,7 @@ export const AIRPORT_FACTS: Record<string, AirportFacts> = {
         "Visa on Arrival queue is separate — follow 'VOA' signs if needed",
         "Peak hours: 00:00–03:00 when many long-haul flights land simultaneously",
       ],
-      formRequired: "TM.6 arrival/departure card (sometimes provided on the plane)",
+      formRequired: "Thailand Digital Arrival Card (TDAC) — complete online before travel at tdac.immigration.go.th",
       eVisaAvailable: true,
     },
     customs: {
