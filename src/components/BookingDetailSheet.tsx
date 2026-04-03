@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { toast as sonnerToast } from "sonner";
 import { getTravelState } from "@/lib/travelState";
+import { supabase } from "@/integrations/supabase/client";
 import { useAirportPickup } from "@/hooks/useAirportPickups";
 import { useGuestHistory } from "@/hooks/useGuestHistory";
 import { useTranslation } from "react-i18next";
