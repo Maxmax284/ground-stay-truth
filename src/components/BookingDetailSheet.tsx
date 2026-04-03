@@ -205,6 +205,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
           )}
         </SheetHeader>
         <AirportPickupSection bookingId={booking.id} guestName={guestName} />
+        {isAdmin && <AdminOverrideMenu bookingId={booking.id} pickupId={pickup?.id ?? null} />}
         <SecurityDepositSection bookingId={booking.id} bookingState={booking.state} />
         <BookingTrainingSection bookingId={booking.id} />
         <Separator />
