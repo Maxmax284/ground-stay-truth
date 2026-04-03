@@ -931,6 +931,8 @@ export type Database = {
       messages: {
         Row: {
           approved_by: string | null
+          attachment_type: string | null
+          attachment_url: string | null
           booking_id: string
           content: string
           created_at: string
@@ -943,6 +945,8 @@ export type Database = {
         }
         Insert: {
           approved_by?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           booking_id: string
           content: string
           created_at?: string
@@ -955,6 +959,8 @@ export type Database = {
         }
         Update: {
           approved_by?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           booking_id?: string
           content?: string
           created_at?: string
