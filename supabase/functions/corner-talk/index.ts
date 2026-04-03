@@ -88,6 +88,10 @@ const MESSAGES: Record<string, string> = {
   upcoming_arrivals: "{count} arrival(s) tomorrow",
   upcoming_departures: "{count} departure(s) tomorrow",
   upcoming_maintenance_block: "Maintenance block starts {date} — {unit}",
+  // Manual Assist signals
+  manual_assist_active: "{count} pickup(s) in manual assist — automation paused",
+  manual_assist_degraded: "{count} pickup(s) with reduced confidence — check flight data",
+  manual_assist_recovery: "{count} pickup(s) ready to resume automation — admin approval needed",
 };
 
 function renderMessage(key: string, params: Record<string, string | number>): string {
