@@ -18,7 +18,7 @@ const LandingPage = () => (
     <FailureSection />
     <MessagingSection />
     <LivingSection />
-    <OriginSection />
+    <BuiltFromInsideSection />
     <ProofSection />
     <SovereigntySection />
     <ComplianceSection />
