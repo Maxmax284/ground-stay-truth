@@ -124,9 +124,26 @@ export function evaluateAssistMode(signals: AssistSignals): AssistModeResult {
     degradedReasons.push("Translation service is temporarily unavailable.");
   }
 
+  // Checklist-driven confidence signals
+  const criticalMissing = signals.checklistCriticalMissing ?? [];
+  if (criticalMissing.length > 0) {
+    // Missing connectivity is especially impactful
+    if (criticalMissing.includes("connectivity_readiness")) {
+      degradedReasons.push("Guest has not confirmed internet access for arrival — communication may fail.");
+    }
+    // Missing domestic flight via checklist (redundant with flight data but earlier signal)
+    if (criticalMissing.includes("confirm_domestic_flight")) {
+      degradedReasons.push("Guest has not confirmed their Samui flight — pickup timing unavailable.");
+    }
+    // Missing TDAC
+    if (criticalMissing.includes("tdac_completed")) {
+      degradedReasons.push("Thailand arrival card not completed — may delay immigration.");
+    }
+  }
+
   if (degradedReasons.length > 0) {
     // If multiple degraded signals, escalate to manual_assist
-    if (degradedReasons.length >= 2) {
+    if (degradedReasons.length >= 3) {
       return {
         mode: "manual_assist",
         reason: degradedReasons.join(" "),
@@ -135,7 +152,7 @@ export function evaluateAssistMode(signals: AssistSignals): AssistModeResult {
     }
     return {
       mode: "degraded",
-      reason: degradedReasons[0],
+      reason: degradedReasons.join(" "),
       shouldEscalate: false,
     };
   }
