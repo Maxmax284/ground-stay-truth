@@ -139,6 +139,18 @@ export function PreArrivalChecklist({ bookingId, readOnly = false }: PreArrivalC
                             <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
                               {ci.why}
                             </p>
+                            {ci.link && (
+                              <a
+                                href={ci.link.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline mt-1"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                {ci.link.label}
+                              </a>
+                            )}
                           </div>
                         </label>
                       );

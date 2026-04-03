@@ -207,7 +207,7 @@ export const AIRPORT_FACTS: Record<string, AirportFacts> = {
         "Same documents as BKK: passport + TDAC confirmation",
         "If arriving from BKK domestic, no immigration (already cleared at BKK)",
       ],
-      formRequired: "TM.6 card (if international arrival)",
+      formRequired: "Thailand Digital Arrival Card (TDAC) — complete online before travel at tdac.immigration.go.th",
       eVisaAvailable: true,
     },
     customs: {

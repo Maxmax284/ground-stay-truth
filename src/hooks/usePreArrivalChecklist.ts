@@ -48,8 +48,12 @@ const ARRIVAL_REQUIREMENTS: readonly ChecklistItemDef[] = [
   {
     key: "tdac_completed",
     label: "Complete Thailand Digital Arrival Card (TDAC)",
-    why: "Required within 72 hours before landing — you won't clear immigration without it.",
+    why: "The TM.6 paper card is no longer used. You now complete this online before you travel — it takes about 5 minutes.",
     critical: true,
+    link: {
+      url: "https://tdac.immigration.go.th",
+      label: "Complete TDAC online →",
+    },
   },
   {
     key: "upload_id",
