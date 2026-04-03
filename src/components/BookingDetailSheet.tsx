@@ -490,6 +490,9 @@ function MessagesTab({ messages, bookingId }: { messages: any[]; bookingId: stri
   const createMessage = useCreateMessage();
   const [content, setContent] = useState("");
   const [isInternal, setIsInternal] = useState(true);
+  const [attachment, setAttachment] = useState<{ url: string; type: string } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { translations, translate, clearTranslation, isTranslating } = useMessageTranslation();
   const { profile: { data: profileData } } = useProfile();
   const preferredLang = profileData?.preferred_language ?? "en";
@@ -512,6 +515,38 @@ function MessagesTab({ messages, bookingId }: { messages: any[]; bookingId: stri
   }
   prevStreamingRef.current = aiAssistant.isStreaming;
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const filePath = `${bookingId}/${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("guest-documents")
+        .upload(filePath, file);
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage
+        .from("guest-documents")
+        .getPublicUrl(filePath);
+      // guest-documents is private, use signed URL
+      const { data: signedData } = await supabase.storage
+        .from("guest-documents")
+        .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 7 days
+      setAttachment({
+        url: signedData?.signedUrl ?? urlData.publicUrl,
+        type: file.type,
+      });
+      if (!content.trim()) {
+        setContent(`📎 ${file.name}`);
+      }
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   if (!permissions.canSendMessages(role)) {
     return (
       <div className="py-3">
@@ -525,8 +560,18 @@ function MessagesTab({ messages, bookingId }: { messages: any[]; bookingId: stri
   }
 
   const handleSend = async () => {
-    if (!content.trim()) return;
-    try { await createMessage.mutateAsync({ booking_id: bookingId, content: content.trim(), is_internal: isInternal }); setContent(""); }
+    if (!content.trim() && !attachment) return;
+    try {
+      await createMessage.mutateAsync({
+        booking_id: bookingId,
+        content: content.trim() || "📎 Attachment",
+        is_internal: isInternal,
+        attachment_url: attachment?.url ?? null,
+        attachment_type: attachment?.type ?? null,
+      });
+      setContent("");
+      setAttachment(null);
+    }
     catch (err: any) { toast({ title: t("common.error"), description: err.message, variant: "destructive" }); }
   };
 
