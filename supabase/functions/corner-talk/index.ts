@@ -243,6 +243,21 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
       .gte("start_date", today)
       .lte("start_date", new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0])
       .limit(3),
+
+    // 🛡️ Manual Assist: active manual assist pickups
+    adminClient.from("airport_pickups").select("id", { count: "exact", head: true })
+      .eq("assist_mode", "manual_assist")
+      .not("status", "in", '("cancelled","completed")'),
+
+    // 🛡️ Manual Assist: degraded pickups
+    adminClient.from("airport_pickups").select("id", { count: "exact", head: true })
+      .eq("assist_mode", "degraded")
+      .not("status", "in", '("cancelled","completed")'),
+
+    // 🛡️ Manual Assist: recovery pending
+    adminClient.from("airport_pickups").select("id", { count: "exact", head: true })
+      .eq("assist_mode", "recovery_pending")
+      .not("status", "in", '("cancelled","completed")'),
   ]);
 
   const signals: Signal[] = [];
