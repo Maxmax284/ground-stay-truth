@@ -69,6 +69,10 @@ export interface AssistSignals {
   translationFailed: boolean;
   /** Staleness threshold in minutes */
   stalenessThresholdMinutes?: number;
+  /** Pre-arrival checklist critical items missing (keys) */
+  checklistCriticalMissing?: string[];
+  /** Whether guest confirmed connectivity readiness */
+  connectivityConfirmed?: boolean;
 }
 
 export interface AssistModeResult {
