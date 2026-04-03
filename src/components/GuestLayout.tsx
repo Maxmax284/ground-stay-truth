@@ -118,10 +118,18 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
           {children}
         </div>
       </main>
-      <footer className="border-t border-border bg-card px-6 py-3 text-center text-xs text-muted-foreground">
-        <a href="/legal#privacy" className="hover:text-foreground hover:underline">{t("legal.privacyPolicy")}</a>
-        <span className="mx-2">·</span>
-        <a href="/legal#terms" className="hover:text-foreground hover:underline">{t("legal.termsOfService")}</a>
+      <footer className="border-t border-border bg-card px-6 py-3 text-center text-xs text-muted-foreground space-y-1">
+        <div>
+          <a href="/legal#privacy" className="hover:text-foreground hover:underline">{t("legal.privacyPolicy")}</a>
+          <span className="mx-2">·</span>
+          <a href="/legal#terms" className="hover:text-foreground hover:underline">{t("legal.termsOfService")}</a>
+        </div>
+        <div className="text-muted-foreground/60">
+          Powered by{" "}
+          <a href="https://lamaimuaythai.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground hover:underline transition-colors">
+            Lamai Muay Thai
+          </a>
+        </div>
       </footer>
       <AIAssistantPanel />
       <TutorialOverlay variant="guest" />
