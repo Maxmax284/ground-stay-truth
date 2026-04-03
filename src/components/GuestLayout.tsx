@@ -10,6 +10,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AIAssistantPanel } from "@/components/AIAssistantPanel";
 import { TutorialOverlay } from "@/components/TutorialOverlay";
+import lamaiLogo from "@/assets/lamai-logo.png";
 import {
   Dialog,
   DialogContent,
