@@ -441,6 +441,7 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
 function MessageBubble({ msg, translate, clearTranslation, translations, isTranslating, preferredLang }: { msg: any; translate: any; clearTranslation: any; translations: Record<string, any>; isTranslating: boolean; preferredLang: string }) {
   const { t } = useTranslation();
   const translation = translations[msg.id];
+  const isImage = msg.attachment_type?.startsWith("image/");
   return (
     <div className="text-sm space-y-1">
       <div className="flex items-center gap-2">
@@ -459,6 +460,25 @@ function MessageBubble({ msg, translate, clearTranslation, translations, isTrans
       </div>
       <p className="text-foreground">{translation ? translation.translated_text : msg.content}</p>
       {translation && <p className="text-xs text-muted-foreground italic">{msg.content}</p>}
+      {msg.attachment_url && (
+        <div className="mt-1">
+          {isImage ? (
+            <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer">
+              <img src={msg.attachment_url} alt="Attachment" className="max-w-[200px] max-h-[150px] rounded-md border object-cover" />
+            </a>
+          ) : (
+            <a
+              href={msg.attachment_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline border rounded-md px-2 py-1"
+            >
+              <File className="h-3 w-3" />
+              {msg.attachment_type?.includes("pdf") ? "PDF Document" : "Attachment"}
+            </a>
+          )}
+        </div>
+      )}
     </div>
   );
 }
