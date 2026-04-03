@@ -9,7 +9,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { ClipboardCheck, CheckCircle2, AlertTriangle, Wifi, Info } from "lucide-react";
+import { ClipboardCheck, CheckCircle2, AlertTriangle, Wifi, Info, ExternalLink } from "lucide-react";
 import {
   usePreArrivalChecklist,
   useToggleChecklistItem,
