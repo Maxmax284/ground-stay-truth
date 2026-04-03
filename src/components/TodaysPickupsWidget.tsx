@@ -7,8 +7,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useTodaysPickups } from "@/hooks/useAirportPickups";
 import { useFlightTrackingBatch, useCheckFlightStatus, FLIGHT_STATUS_CONFIG } from "@/hooks/useFlightTracking";
 import { getTravelState } from "@/lib/travelState";
-import { Plane, MessageSquare, Car, Clock, User, RefreshCw, Loader2 } from "lucide-react";
+import { Plane, MessageSquare, Car, Clock, User, RefreshCw, Loader2, AlertTriangle, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ManualAssistBanner } from "@/components/ManualAssistBanner";
 
 const STATUS_COLORS: Record<string, string> = {
   requested: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
