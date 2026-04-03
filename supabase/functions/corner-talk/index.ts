@@ -138,6 +138,10 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
     arrivingTomorrowRes,
     departingTomorrowRes,
     upcomingBlocksRes,
+    // Manual Assist queries
+    manualAssistRes,
+    degradedAssistRes,
+    recoveryPendingRes,
   ] = await Promise.all([
     // 💰 Unpaid deposits (exclude cancelled/completed/no_show)
     adminClient.from("bookings").select("id", { count: "exact", head: true })
