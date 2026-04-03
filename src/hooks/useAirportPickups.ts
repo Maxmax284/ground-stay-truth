@@ -92,7 +92,46 @@ export function useUpsertAirportPickup() {
           qc.invalidateQueries({ queryKey: ["pre_arrival_checklist", vars.booking_id] });
         } catch {
           // Non-critical — don't fail the pickup save
-        }
+}
+
+export function useUpdateAssistMode() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: {
+      booking_id: string;
+      pickup_id: string;
+      assist_mode: "healthy" | "degraded" | "manual_assist" | "recovery_pending";
+      assist_reason?: string | null;
+      activated_by?: string | null;
+      resolved_by?: string | null;
+    }) => {
+      const updates: any = {
+        booking_id: params.booking_id,
+        assist_mode: params.assist_mode,
+        assist_reason: params.assist_reason ?? null,
+      };
+      if (params.assist_mode === "manual_assist" && params.activated_by) {
+        updates.assist_activated_at = new Date().toISOString();
+        updates.assist_activated_by = params.activated_by;
+      }
+      if (params.assist_mode === "healthy" && params.resolved_by) {
+        updates.assist_resolved_at = new Date().toISOString();
+        updates.assist_resolved_by = params.resolved_by;
+      }
+      const { data, error } = await (supabase
+        .from("airport_pickups" as any)
+        .upsert(updates, { onConflict: "booking_id" })
+        .select()
+        .single() as any);
+      if (error) throw error;
+      return data as AirportPickup;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["airport_pickup", vars.booking_id] });
+      qc.invalidateQueries({ queryKey: ["todays_pickups"] });
+    },
+  });
+}
       }
     },
   });
