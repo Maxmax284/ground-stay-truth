@@ -63,7 +63,7 @@ const EntrySection = () => (
             className="group flex items-center gap-4 px-8 py-4 border border-[hsl(36,20%,18%)] hover:border-[hsl(36,20%,30%)] transition-all duration-300 rounded-sm"
           >
             <span className="text-xs font-medium tracking-wide text-[hsl(36,20%,40%)] group-hover:text-[hsl(36,20%,65%)] transition-colors">
-              Operator Login
+              Manage Property
             </span>
             <span className="text-[hsl(36,20%,25%)] group-hover:text-[hsl(36,20%,45%)] transition-colors">→</span>
           </Link>

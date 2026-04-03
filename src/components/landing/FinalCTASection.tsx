@@ -30,7 +30,7 @@ const FinalCTASection = () => (
           className="group flex items-center justify-center gap-3 px-8 py-4 border border-[hsl(36,20%,15%)] hover:border-[hsl(36,20%,28%)] transition-all duration-300 rounded-sm"
         >
           <span className="text-xs font-medium tracking-wide text-[hsl(36,20%,40%)] group-hover:text-[hsl(36,20%,65%)] transition-colors">
-            Operator Login
+            Manage Property
           </span>
           <span className="text-[hsl(36,20%,22%)] group-hover:text-[hsl(36,20%,40%)] transition-colors">→</span>
         </Link>
