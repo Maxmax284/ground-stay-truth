@@ -204,7 +204,7 @@ export const AIRPORT_FACTS: Record<string, AirportFacts> = {
       estimatedTime: "5–15 minutes (small airport, quick processing)",
       tips: [
         "Immigration is fast here — usually just a few flights at a time",
-        "Same documents as BKK: passport + arrival card",
+        "Same documents as BKK: passport + TDAC confirmation",
         "If arriving from BKK domestic, no immigration (already cleared at BKK)",
       ],
       formRequired: "TM.6 card (if international arrival)",
