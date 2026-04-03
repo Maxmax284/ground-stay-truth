@@ -186,6 +186,17 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
                   }
                   return null;
                 })()}
+                {/* Assist mode indicator */}
+                {(p as any).assist_mode && (p as any).assist_mode !== "healthy" && (
+                  <ManualAssistBanner
+                    bookingId={p.booking_id}
+                    pickupId={p.id}
+                    assistMode={(p as any).assist_mode}
+                    assistReason={(p as any).assist_reason}
+                    guestName={guestName}
+                    compact
+                  />
+                )}
                 {/* Flight delay info */}
                 {ft && ft.delay_minutes > 0 && (
                   <div className="text-[11px] text-orange-600 dark:text-orange-400 flex items-center gap-1">

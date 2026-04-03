@@ -199,13 +199,14 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
         updates.final_flight_confirmed = true;
       }
       await upsert.mutateAsync(updates);
+      const manualPrefix = pickup.assist_mode === "manual_assist" ? "[MANUAL] " : "";
       await logPickupAction({
         bookingId,
         pickupId: pickup.id,
-        action: "flights_updated",
-        note: `Flights updated: Int'l ${intlFlight.trim().toUpperCase() || "—"}, Final ${domesticFlight.trim().toUpperCase() || "—"}, Arrival ${arrivalDt || "—"}, Pax ${paxCount}`,
+        action: `${manualPrefix}flights_updated`,
+        note: `${manualPrefix}Flights updated: Int'l ${intlFlight.trim().toUpperCase() || "—"}, Final ${domesticFlight.trim().toUpperCase() || "—"}, Arrival ${arrivalDt || "—"}, Pax ${paxCount}`,
       });
-      toast({ title: "Flight details updated" });
+      toast({ title: isManualAssist ? "Flight details updated (manual)" : "Flight details updated" });
       setEditingFlights(false);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
