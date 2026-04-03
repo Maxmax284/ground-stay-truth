@@ -479,6 +479,41 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
     });
   }
 
+  // ── 🛡️ MANUAL ASSIST ──
+
+  const manualAssistCount = manualAssistRes.count ?? 0;
+  if (manualAssistCount > 0) {
+    signals.push({
+      severity: "urgent",
+      category: "ops",
+      messageKey: "manual_assist_active",
+      params: { count: manualAssistCount },
+      roles: ["admin", "manager", "front_desk_supervisor", "front_desk"],
+    });
+  }
+
+  const degradedCount = degradedAssistRes.count ?? 0;
+  if (degradedCount > 0) {
+    signals.push({
+      severity: "attention",
+      category: "ops",
+      messageKey: "manual_assist_degraded",
+      params: { count: degradedCount },
+      roles: ["admin", "manager", "front_desk_supervisor"],
+    });
+  }
+
+  const recoveryCount = recoveryPendingRes.count ?? 0;
+  if (recoveryCount > 0) {
+    signals.push({
+      severity: "attention",
+      category: "system",
+      messageKey: "manual_assist_recovery",
+      params: { count: recoveryCount },
+      roles: ["admin"],
+    });
+  }
+
   // ── 🏠 STAY ESSENTIALS CHECK ──
   // Check if today's check-ins have WiFi/emergency configured (unit-level or global)
   if (arrivingToday.length > 0) {
