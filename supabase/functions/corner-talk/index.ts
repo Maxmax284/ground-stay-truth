@@ -527,6 +527,65 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
     });
   }
 
+  // ── 📋 PRE-ARRIVAL CHECKLIST GAPS ──
+  const checklistData = checklistArrivingSoonRes.data ?? [];
+  if (checklistData.length > 0) {
+    // Group by booking to find critical gaps
+    const byBooking = new Map<string, Set<string>>();
+    for (const row of checklistData) {
+      if (row.completed) {
+        if (!byBooking.has(row.booking_id)) byBooking.set(row.booking_id, new Set());
+        byBooking.get(row.booking_id)!.add(row.item_key);
+      }
+    }
+
+    // Get unique booking IDs from checklist data
+    const allBookingIds = [...new Set(checklistData.map((r: any) => r.booking_id))];
+    const criticalKeys = ["connectivity_readiness", "confirm_domestic_flight", "tdac_completed", "upload_id", "confirm_arrival_time"];
+
+    let noConnectivity = 0;
+    let noSamuiFlight = 0;
+    let criticalGaps = 0;
+
+    for (const bid of allBookingIds) {
+      const completed = byBooking.get(bid) ?? new Set();
+      if (!completed.has("connectivity_readiness")) noConnectivity++;
+      if (!completed.has("confirm_domestic_flight")) noSamuiFlight++;
+      const missingCritical = criticalKeys.filter((k) => !completed.has(k));
+      if (missingCritical.length > 0) criticalGaps++;
+    }
+
+    if (noConnectivity > 0) {
+      signals.push({
+        severity: "attention",
+        category: "ops",
+        messageKey: "checklist_no_connectivity",
+        params: { count: noConnectivity },
+        roles: ["admin", "manager", "front_desk_supervisor", "front_desk"],
+      });
+    }
+
+    if (noSamuiFlight > 0) {
+      signals.push({
+        severity: "attention",
+        category: "time",
+        messageKey: "checklist_no_samui_flight",
+        params: { count: noSamuiFlight },
+        roles: ["admin", "manager", "front_desk_supervisor", "front_desk"],
+      });
+    }
+
+    if (criticalGaps > 0 && criticalGaps > noConnectivity && criticalGaps > noSamuiFlight) {
+      signals.push({
+        severity: "attention",
+        category: "ops",
+        messageKey: "checklist_critical_gaps",
+        params: { count: criticalGaps },
+        roles: ["admin", "manager", "front_desk_supervisor"],
+      });
+    }
+  }
+
   // ── 🏠 STAY ESSENTIALS CHECK ──
   // Check if today's check-ins have WiFi/emergency configured (unit-level or global)
   if (arrivingToday.length > 0) {
