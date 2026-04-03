@@ -81,12 +81,12 @@ export const AIRPORT_FACTS: Record<string, AirportFacts> = {
     immigration: {
       estimatedTime: "20–60 minutes depending on time of day",
       tips: [
-        "Have your passport, boarding pass, and arrival card ready",
+        "Have your passport, boarding pass, and TDAC confirmation ready",
         "Use the e-gates if your nationality is eligible (US, EU, etc.)",
         "Visa on Arrival queue is separate — follow 'VOA' signs if needed",
         "Peak hours: 00:00–03:00 when many long-haul flights land simultaneously",
       ],
-      formRequired: "TM.6 arrival/departure card (sometimes provided on the plane)",
+      formRequired: "Thailand Digital Arrival Card (TDAC) — complete online before travel at tdac.immigration.go.th",
       eVisaAvailable: true,
     },
     customs: {
@@ -204,10 +204,10 @@ export const AIRPORT_FACTS: Record<string, AirportFacts> = {
       estimatedTime: "5–15 minutes (small airport, quick processing)",
       tips: [
         "Immigration is fast here — usually just a few flights at a time",
-        "Same documents as BKK: passport + arrival card",
+        "Same documents as BKK: passport + TDAC confirmation",
         "If arriving from BKK domestic, no immigration (already cleared at BKK)",
       ],
-      formRequired: "TM.6 card (if international arrival)",
+      formRequired: "Thailand Digital Arrival Card (TDAC) — complete online before travel at tdac.immigration.go.th",
       eVisaAvailable: true,
     },
     customs: {
