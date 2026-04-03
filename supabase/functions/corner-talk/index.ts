@@ -92,6 +92,10 @@ const MESSAGES: Record<string, string> = {
   manual_assist_active: "{count} pickup(s) in manual assist — automation paused",
   manual_assist_degraded: "{count} pickup(s) with reduced confidence — check flight data",
   manual_assist_recovery: "{count} pickup(s) ready to resume automation — admin approval needed",
+  // Pre-arrival checklist signals
+  checklist_no_connectivity: "{count} arriving guest(s) with no connectivity plan — pickup communication at risk",
+  checklist_no_samui_flight: "{count} arriving guest(s) missing Samui flight — pickup timing unavailable",
+  checklist_critical_gaps: "{count} arriving guest(s) with incomplete critical checklist items",
 };
 
 function renderMessage(key: string, params: Record<string, string | number>): string {
