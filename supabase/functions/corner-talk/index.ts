@@ -264,6 +264,13 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
     adminClient.from("airport_pickups").select("id", { count: "exact", head: true })
       .eq("assist_mode", "recovery_pending")
       .not("status", "in", '("cancelled","completed")'),
+
+    // 📋 Pre-arrival: get checklist items for bookings arriving within 3 days
+    adminClient.from("pre_arrival_checklist")
+      .select("booking_id, item_key, completed, bookings!inner(check_in, state, guest_id)")
+      .in("bookings.state", ["confirmed", "pending_deposit"])
+      .gte("bookings.check_in", today)
+      .lte("bookings.check_in", new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
   ]);
 
   const signals: Signal[] = [];
