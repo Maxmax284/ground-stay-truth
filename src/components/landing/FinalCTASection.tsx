@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import lamaiLogo from "@/assets/lamai-logo.png";
 
 const FinalCTASection = () => (
   <section className="py-24 px-6 bg-[hsl(var(--fight-dark))]">
@@ -13,7 +14,7 @@ const FinalCTASection = () => (
         Now landing doesn't have to feel like a boss fight anymore 😏
       </p>
 
-      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+      <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
         <Link
           to="/stay"
           className="group flex items-center justify-center gap-3 px-8 py-4 border border-[hsl(36,20%,25%)] hover:border-[hsl(36,20%,40%)] transition-all duration-300 rounded-sm"
@@ -33,6 +34,22 @@ const FinalCTASection = () => (
           </span>
           <span className="text-[hsl(36,20%,22%)] group-hover:text-[hsl(36,20%,40%)] transition-colors">→</span>
         </Link>
+      </div>
+
+      {/* Footer */}
+      <div className="border-t border-[hsl(36,20%,15%)] pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <img src={lamaiLogo} alt="Lamai Muay Thai" className="h-4 w-4 opacity-35" loading="lazy" />
+          <span className="text-[10px] tracking-[0.15em] uppercase text-[hsl(36,20%,28%)]">
+            Powered by Lamai Muay Thai
+          </span>
+        </div>
+        <a
+          href="#built-from-inside"
+          className="text-[10px] tracking-[0.15em] uppercase text-[hsl(36,20%,28%)] hover:text-[hsl(36,20%,55%)] transition-colors"
+        >
+          Built From Inside ↑
+        </a>
       </div>
     </div>
   </section>
