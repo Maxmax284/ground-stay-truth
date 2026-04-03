@@ -223,6 +223,8 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
   if (pickup.status === "confirmed") nextStatuses.push("completed");
   if (pickup.status !== "cancelled" && pickup.status !== "completed") nextStatuses.push("cancelled");
 
+  const isManualAssist = pickup.assist_mode === "manual_assist";
+
   return (
     <Card className="border-primary/20 bg-primary/5">
       <CardContent className="p-4 space-y-3">
@@ -233,6 +235,19 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
           </div>
           <Badge className={STATUS_COLORS[pickup.status] ?? ""}>{pickup.status}</Badge>
         </div>
+
+        {/* Manual Assist Banner — Phase 3 */}
+        <ManualAssistBanner
+          bookingId={bookingId}
+          pickupId={pickup.id}
+          assistMode={pickup.assist_mode ?? "healthy"}
+          assistReason={pickup.assist_reason ?? null}
+          guestName={guestName}
+          onContactGuest={() => {
+            // Deep-link to messaging for this booking
+            window.location.hash = `#messages-${bookingId}`;
+          }}
+        />
 
         {/* Travel state — centralized awareness */}
         {travelInfo.state !== "pre_departure" && travelInfo.state !== "awaiting_departure" && travelInfo.state !== "cancelled" && (
