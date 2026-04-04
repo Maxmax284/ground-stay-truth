@@ -52,6 +52,17 @@ interface BookingDetailSheetProps { bookingId: string | null; open: boolean; onO
 export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: BookingDetailSheetProps) {
   const { t } = useTranslation();
   const { role } = useAuth();
+
+  // Context isolation: clear Kru Glitch chat when switching between bookings
+  const prevBookingRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (bookingId && open && prevBookingRef.current && prevBookingRef.current !== bookingId) {
+      window.dispatchEvent(new CustomEvent("kru-glitch-clear"));
+    }
+    if (bookingId && open) {
+      prevBookingRef.current = bookingId;
+    }
+  }, [bookingId, open]);
   const { data: booking } = useBooking(bookingId);
   const { data: pickup } = useAirportPickup(bookingId);
   const guestId = (booking as any)?.guest_id;

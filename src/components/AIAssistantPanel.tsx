@@ -197,6 +197,15 @@ function AIAssistantPanelInner() {
     return () => window.removeEventListener("ask-kru-glitch", handler as EventListener);
   }, [sendMessage, language]);
 
+  // Context isolation: clear chat when staff switches between bookings
+  useEffect(() => {
+    const handler = () => {
+      clearChat();
+    };
+    window.addEventListener("kru-glitch-clear", handler);
+    return () => window.removeEventListener("kru-glitch-clear", handler);
+  }, [clearChat]);
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
