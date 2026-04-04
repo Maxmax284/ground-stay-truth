@@ -1376,6 +1376,42 @@ export type Database = {
         }
         Relationships: []
       }
+      recovery_audit_log: {
+        Row: {
+          action: string
+          category: string
+          created_at: string
+          details: Json | null
+          failure_reason: string | null
+          id: string
+          outcome: string
+          user_id: string | null
+          user_role: string | null
+        }
+        Insert: {
+          action: string
+          category?: string
+          created_at?: string
+          details?: Json | null
+          failure_reason?: string | null
+          id?: string
+          outcome?: string
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Update: {
+          action?: string
+          category?: string
+          created_at?: string
+          details?: Json | null
+          failure_reason?: string | null
+          id?: string
+          outcome?: string
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Relationships: []
+      }
       review_audit_log: {
         Row: {
           action: string
