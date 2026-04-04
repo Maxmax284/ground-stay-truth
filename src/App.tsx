@@ -27,6 +27,7 @@ import Embeds from "./pages/Embeds";
 import Stay from "./pages/Stay";
 import Simulation from "./pages/Simulation";
 import LandingPage from "./pages/LandingPage";
+import DisasterRecovery from "./pages/DisasterRecovery";
 
 const queryClient = new QueryClient();
 
