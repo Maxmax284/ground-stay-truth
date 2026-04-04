@@ -38,7 +38,7 @@ export function useRecoveryAuditLog() {
       action: string;
       category: string;
       outcome: string;
-      details?: Record<string, unknown>;
+      details?: Record<string, string | number | boolean | null>;
       failure_reason?: string;
     }) => {
       const { error } = await supabase.from("recovery_audit_log").insert([{
