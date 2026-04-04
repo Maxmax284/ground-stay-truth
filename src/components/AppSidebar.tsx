@@ -12,6 +12,7 @@ import {
   Code2,
   Eye,
   Swords,
+  ShieldAlert,
   ScanEye,
   Target,
   Download,
