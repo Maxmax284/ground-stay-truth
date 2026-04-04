@@ -41,7 +41,7 @@ export function useRecoveryAuditLog() {
       details?: Record<string, unknown>;
       failure_reason?: string;
     }) => {
-      const { error } = await supabase.from("recovery_audit_log").insert({
+      const { error } = await supabase.from("recovery_audit_log").insert([{
         user_id: user?.id,
         user_role: role,
         action: entry.action,
@@ -49,7 +49,7 @@ export function useRecoveryAuditLog() {
         outcome: entry.outcome,
         details: entry.details ?? {},
         failure_reason: entry.failure_reason ?? null,
-      });
+      }]);
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["recovery-audit-log"] }),
