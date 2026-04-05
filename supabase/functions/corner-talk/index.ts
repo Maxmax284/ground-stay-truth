@@ -604,23 +604,11 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
   }
 
   // ── 🏠 STAY ESSENTIALS CHECK ──
-  // Check if today's check-ins have WiFi/emergency configured (unit-level or global)
+  // Uses pre-fetched data from the main parallel batch
   if (arrivingToday.length > 0) {
-    const arrivingUnitIds = [...new Set(arrivingToday.map((b: any) => b.id))];
-    // Get units for today's arrivals
-    const { data: todayBookingsWithUnits } = await adminClient
-      .from("bookings")
-      .select("id, unit_id, units(wifi_network, wifi_password, emergency_contact_name, emergency_contact_phone)")
-      .eq("check_in", today)
-      .in("state", ["confirmed", "pending_deposit"]);
+    const todayBookingsWithUnits = arrivingTodayUnitsRes.data ?? [];
 
-    // Get global fallbacks
-    const { data: essentialsPolicies } = await adminClient
-      .from("policy_settings")
-      .select("key, value")
-      .in("key", ["wifi_network_name", "wifi_password", "emergency_contact_name", "emergency_contact_phone"]);
-
-    const epMap = new Map((essentialsPolicies ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]));
+    const epMap = new Map((essentialsPoliciesRes.data ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]));
     const globalWifi = epMap.get("wifi_network_name") || "";
     const globalEmergency = epMap.get("emergency_contact_phone") || "";
 
