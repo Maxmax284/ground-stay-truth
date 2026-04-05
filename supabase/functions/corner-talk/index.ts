@@ -311,14 +311,11 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
   // Outstanding on arriving-today bookings
   const arrivingToday = arrivingTodayRes.data ?? [];
   if (arrivingToday.length > 0) {
-    // Check which have recorded payments
-    const arrivingIds = arrivingToday.map((b: any) => b.id);
-    const { data: paidBookings } = await adminClient
-      .from("payments")
-      .select("booking_id")
-      .in("booking_id", arrivingIds)
-      .eq("status", "recorded");
-    const paidSet = new Set((paidBookings ?? []).map((p: any) => p.booking_id));
+    // Use pre-fetched payment data instead of sequential query
+    const arrivingIds = new Set(arrivingToday.map((b: any) => b.id));
+    const paidSet = new Set((arrivingTodayPaymentsRes.data ?? [])
+      .filter((p: any) => arrivingIds.has(p.booking_id))
+      .map((p: any) => p.booking_id));
     const unpaidCount = arrivingToday.filter((b: any) => !paidSet.has(b.id)).length;
     if (unpaidCount > 0) {
       signals.push({
