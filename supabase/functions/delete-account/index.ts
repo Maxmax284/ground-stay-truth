@@ -65,6 +65,27 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Prevent deleting the last admin account
+    const { data: targetRoles } = await adminClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", deleteUserId)
+      .eq("role", "admin");
+
+    if (targetRoles?.length) {
+      const { count: adminCount } = await adminClient
+        .from("user_roles")
+        .select("id", { count: "exact", head: true })
+        .eq("role", "admin");
+
+      if ((adminCount ?? 0) <= 1) {
+        return new Response(
+          JSON.stringify({ error: "Cannot delete the last admin account" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const { error: deleteError } = await adminClient.auth.admin.deleteUser(deleteUserId);
 
     if (deleteError) {

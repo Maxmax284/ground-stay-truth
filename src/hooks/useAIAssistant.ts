@@ -18,8 +18,25 @@ export function useAIAssistant() {
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  // Client-side rate limiting: max 30 calls per 60 minutes
+  const callTimestamps = useRef<number[]>([]);
+  const RATE_LIMIT = 30;
+  const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+  // Cap conversation history sent to API to prevent unbounded token growth
+  const MAX_HISTORY_MESSAGES = 12;
+
   const sendMessage = useCallback(async (input: string, mode: AIMode = "explain", context?: Record<string, any>, language?: string) => {
     if (!session) return;
+
+    // Enforce client-side rate limit
+    const now = Date.now();
+    callTimestamps.current = callTimestamps.current.filter((t) => now - t < RATE_WINDOW_MS);
+    if (callTimestamps.current.length >= RATE_LIMIT) {
+      setError("You've reached the message limit. Please wait before sending more.");
+      return;
+    }
+    callTimestamps.current.push(now);
 
     const userMsg: AIMessage = { role: "user", content: input };
     setMessages((prev) => [...prev, userMsg]);
@@ -29,6 +46,12 @@ export function useAIAssistant() {
     let assistantSoFar = "";
     const controller = new AbortController();
     abortRef.current = controller;
+
+    // Trim history to last N messages to control token costs
+    const fullHistory = [...messages, userMsg];
+    const trimmedHistory = fullHistory.length > MAX_HISTORY_MESSAGES
+      ? fullHistory.slice(-MAX_HISTORY_MESSAGES)
+      : fullHistory;
 
     try {
       const resp = await fetch(
@@ -45,7 +68,7 @@ export function useAIAssistant() {
             role,
             property_id: activePropertyId,
             operational_mode: operationalMode,
-            messages: [...messages, userMsg].map((m) => ({ role: m.role, content: m.content })),
+            messages: trimmedHistory.map((m) => ({ role: m.role, content: m.content })),
             context,
             language,
           }),
