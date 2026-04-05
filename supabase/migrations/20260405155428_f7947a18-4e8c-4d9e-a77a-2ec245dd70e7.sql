@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_security_events_rate_limit ON public.security_events (actor_id, event_type, created_at DESC);
