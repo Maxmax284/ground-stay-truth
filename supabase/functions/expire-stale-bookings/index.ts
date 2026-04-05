@@ -14,6 +14,16 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // ─── AUTH: Only allow internal/cron calls with service role key ───────
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader || authHeader !== `Bearer ${serviceRoleKey}`) {
+      return new Response(JSON.stringify({ error: "Unauthorized — internal use only" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     // Get policy settings
@@ -52,10 +62,12 @@ Deno.serve(async (req) => {
       .lt("updated_at", softHoldCutoff);
 
     for (const booking of staleSoftHolds ?? []) {
-      const { error } = await supabase
+      // State-gate: only cancel if still in soft_hold (prevents race with concurrent state changes)
+      const { error, count } = await supabase
         .from("bookings")
         .update({ state: "cancelled" })
-        .eq("id", booking.id);
+        .eq("id", booking.id)
+        .eq("state", "soft_hold");
 
       if (!error) {
         await supabase.from("booking_state_log").insert({
@@ -139,10 +151,12 @@ Deno.serve(async (req) => {
 
       if (payments && payments.length > 0) continue;
 
+      // State-gate: only cancel if still in pending_deposit (prevents race with payment webhook)
       const { error } = await supabase
         .from("bookings")
         .update({ state: "cancelled" })
-        .eq("id", booking.id);
+        .eq("id", booking.id)
+        .eq("state", "pending_deposit");
 
       if (!error) {
         await supabase.from("booking_state_log").insert({
@@ -192,10 +206,12 @@ Deno.serve(async (req) => {
               .single();
 
             if (booking?.state === "pending_deposit") {
+              // State-gate: atomic check to prevent race with payment webhook
               await supabase
                 .from("bookings")
                 .update({ state: "cancelled" })
-                .eq("id", payment.booking_id);
+                .eq("id", payment.booking_id)
+                .eq("state", "pending_deposit");
 
               await supabase.from("booking_state_log").insert({
                 booking_id: payment.booking_id,
