@@ -206,10 +206,12 @@ Deno.serve(async (req) => {
               .single();
 
             if (booking?.state === "pending_deposit") {
+              // State-gate: atomic check to prevent race with payment webhook
               await supabase
                 .from("bookings")
                 .update({ state: "cancelled" })
-                .eq("id", payment.booking_id);
+                .eq("id", payment.booking_id)
+                .eq("state", "pending_deposit");
 
               await supabase.from("booking_state_log").insert({
                 booking_id: payment.booking_id,
