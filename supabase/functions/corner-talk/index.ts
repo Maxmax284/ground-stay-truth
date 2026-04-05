@@ -119,7 +119,7 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
   const fourHoursAgo = new Date(now.getTime() - 4 * 60 * 60 * 1000).toISOString();
   const tenHoursAgo = new Date(now.getTime() - 10 * 60 * 60 * 1000).toISOString();
 
-  // Run all queries in parallel
+  // Run all queries in parallel (consolidated — no sequential follow-ups)
   const [
     pendingDepositRes,
     arrivingTodayRes,
@@ -142,18 +142,22 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
     arrivingTomorrowRes,
     departingTomorrowRes,
     upcomingBlocksRes,
-    // Manual Assist queries
     manualAssistRes,
     degradedAssistRes,
     recoveryPendingRes,
-    // Pre-arrival checklist queries
     checklistArrivingSoonRes,
+    // Consolidated: payments for arriving-today bookings
+    arrivingTodayPaymentsRes,
+    // Consolidated: bookings with unit essentials for today
+    arrivingTodayUnitsRes,
+    // Consolidated: global essentials policies
+    essentialsPoliciesRes,
   ] = await Promise.all([
-    // 💰 Unpaid deposits (exclude cancelled/completed/no_show)
+    // 💰 Unpaid deposits
     adminClient.from("bookings").select("id", { count: "exact", head: true })
       .eq("state", "pending_deposit"),
 
-    // 💰 Arriving today (to check outstanding)
+    // 💰 Arriving today
     adminClient.from("bookings")
       .select("id, total_price, guest_id")
       .eq("check_in", today)
@@ -177,7 +181,7 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
       .eq("check_in", today)
       .in("state", ["confirmed", "pending_deposit"]),
 
-    // ⏳ Pickups today — exclude cancelled/completed pickups
+    // ⏳ Pickups today
     adminClient.from("airport_pickups")
       .select("id, status, driver_id, booking_id, bookings!inner(check_in, state)")
       .eq("bookings.check_in", today)
@@ -205,7 +209,7 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
     adminClient.from("maintenance_requests").select("id", { count: "exact", head: true })
       .eq("status", "open").eq("priority", "urgent").lt("created_at", fourHoursAgo),
 
-    // 🏠 Stale laundry (>24h) — only for active bookings
+    // 🏠 Stale laundry (>24h)
     adminClient.from("laundry_requests")
       .select("id, bookings!inner(state)", { count: "exact", head: true })
       .eq("status", "in_progress")
@@ -216,7 +220,7 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
     adminClient.from("housekeeping_tasks").select("id", { count: "exact", head: true })
       .eq("status", "pending").lt("due_by", now.toISOString()),
 
-    // 🏠 Pickups tomorrow no driver — exclude cancelled/completed pickups
+    // 🏠 Pickups tomorrow no driver
     adminClient.from("airport_pickups")
       .select("id, booking_id, bookings!inner(check_in, state)")
       .eq("bookings.check_in", tomorrow)
@@ -250,12 +254,12 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
       .lte("start_date", new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0])
       .limit(3),
 
-    // 🛡️ Manual Assist: active manual assist pickups
+    // 🛡️ Manual Assist: active
     adminClient.from("airport_pickups").select("id", { count: "exact", head: true })
       .eq("assist_mode", "manual_assist")
       .not("status", "in", '("cancelled","completed")'),
 
-    // 🛡️ Manual Assist: degraded pickups
+    // 🛡️ Manual Assist: degraded
     adminClient.from("airport_pickups").select("id", { count: "exact", head: true })
       .eq("assist_mode", "degraded")
       .not("status", "in", '("cancelled","completed")'),
@@ -265,12 +269,28 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
       .eq("assist_mode", "recovery_pending")
       .not("status", "in", '("cancelled","completed")'),
 
-    // 📋 Pre-arrival: get checklist items for bookings arriving within 3 days
+    // 📋 Pre-arrival checklist
     adminClient.from("pre_arrival_checklist")
       .select("booking_id, item_key, completed, bookings!inner(check_in, state, guest_id)")
       .in("bookings.state", ["confirmed", "pending_deposit"])
       .gte("bookings.check_in", today)
       .lte("bookings.check_in", new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
+
+    // 💰 Payments for arriving-today bookings (was sequential)
+    adminClient.from("payments")
+      .select("booking_id")
+      .eq("status", "recorded"),
+
+    // 🏠 Bookings with unit essentials for today (was sequential)
+    adminClient.from("bookings")
+      .select("id, unit_id, units(wifi_network, wifi_password, emergency_contact_name, emergency_contact_phone)")
+      .eq("check_in", today)
+      .in("state", ["confirmed", "pending_deposit"]),
+
+    // 🏠 Global essentials policies (was sequential)
+    adminClient.from("policy_settings")
+      .select("key, value")
+      .in("key", ["wifi_network_name", "wifi_password", "emergency_contact_name", "emergency_contact_phone"]),
   ]);
 
   const signals: Signal[] = [];
