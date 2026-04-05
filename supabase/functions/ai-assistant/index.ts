@@ -280,6 +280,33 @@ serve(async (req) => {
       });
     }
 
+    // ─── SERVER-SIDE RATE LIMITING ─────────────────────────────────────────
+    // Check recent AI security events for this user in the last hour
+    const adminClientRL = createClient(supabaseUrl, serviceRoleKey);
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count: recentCalls } = await adminClientRL
+      .from("security_events")
+      .select("id", { count: "exact", head: true })
+      .eq("event_type", "ai_assistant_call")
+      .eq("actor_id", userData.user.id)
+      .gte("created_at", oneHourAgo);
+
+    const SERVER_RATE_LIMIT = 40; // slightly above client-side 30 to allow burst
+    if ((recentCalls ?? 0) >= SERVER_RATE_LIMIT) {
+      return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Log this call for rate tracking (fire-and-forget)
+    adminClientRL.from("security_events").insert({
+      event_type: "ai_assistant_call",
+      severity: "info",
+      actor_id: userData.user.id,
+      details: { source: "ai-assistant" },
+    }).then(() => {});
+
     const { mode, role, messages, context, language, property_id, operational_mode } = await req.json();
     const responseLang = language || "English";
 
