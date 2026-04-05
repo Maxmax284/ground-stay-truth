@@ -307,8 +307,30 @@ serve(async (req) => {
       details: { source: "ai-assistant" },
     }).then(() => {});
 
-    const { mode, role, messages, context, language, property_id, operational_mode } = await req.json();
+    const { mode, role: clientRole, messages, context, language, property_id, operational_mode } = await req.json();
     const responseLang = language || "English";
+
+    // ─── SERVER-SIDE ROLE DERIVATION (prevents role spoofing) ──────────────
+    // Never trust the client-provided role. Derive from user_roles table.
+    let role = "guest"; // fail-safe default
+    if (mode !== "simulation_actor") {
+      const { data: userRoles } = await adminClientRL
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userData.user.id);
+
+      if (userRoles && userRoles.length > 0) {
+        // Use the highest-privilege role the user has
+        const ROLE_PRIORITY: Record<string, number> = {
+          admin: 100, manager: 90, front_desk_supervisor: 80,
+          front_desk: 70, maintenance: 60, viewer: 50, guest: 10,
+        };
+        const sorted = userRoles.sort(
+          (a: any, b: any) => (ROLE_PRIORITY[b.role] ?? 0) - (ROLE_PRIORITY[a.role] ?? 0)
+        );
+        role = sorted[0].role;
+      }
+    }
 
     // ─── SIMULATION ACTOR MODE ─────────────────────────────────────────────
     // ISOLATION CONTRACT: This branch NEVER creates database clients, NEVER
