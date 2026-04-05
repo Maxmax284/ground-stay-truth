@@ -190,23 +190,36 @@ serve(async (req) => {
 
     // ── Handle normalized events ──
 
-    if (normalized.eventType === "payment.success") {
-      await handlePaymentSuccess(adminClient, normalized, supabaseUrl, serviceRoleKey);
-    } else if (normalized.eventType === "payment.failed") {
-      await handlePaymentFailed(adminClient, normalized);
-    } else if (normalized.eventType === "session.expired") {
-      await handleSessionExpired(adminClient, normalized);
+    let handlerSuccess = false;
+    try {
+      if (normalized.eventType === "payment.success") {
+        await handlePaymentSuccess(adminClient, normalized, supabaseUrl, serviceRoleKey);
+      } else if (normalized.eventType === "payment.failed") {
+        await handlePaymentFailed(adminClient, normalized);
+      } else if (normalized.eventType === "session.expired") {
+        await handleSessionExpired(adminClient, normalized);
+      }
+      handlerSuccess = true;
+    } catch (handlerErr) {
+      console.error(`[payment-webhook] Handler failed for ${normalized.eventType}:`, handlerErr);
+      // Do NOT mark as processed — allow retry on next webhook delivery
     }
 
-    // Mark event as processed
-    await adminClient
-      .from("payment_events")
-      .update({ processed: true })
-      .eq("provider_event_id", normalized.providerEventId);
+    if (handlerSuccess) {
+      await adminClient
+        .from("payment_events")
+        .update({ processed: true })
+        .eq("provider_event_id", normalized.providerEventId);
+    }
 
-    return new Response(JSON.stringify({ received: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ received: true, processed: handlerSuccess }),
+      {
+        // Return 200 even on handler failure to prevent Stripe from retrying endlessly
+        // but the event stays unprocessed for manual review
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   } catch (e) {
     console.error("payment-webhook error:", e);
     return new Response(

@@ -68,11 +68,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 2. Refund exceeds original charge
+    // 2. Refund exceeds original charge (scan last 7 days to keep query bounded)
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const { data: overRefunds } = await supabase
       .from("payments")
       .select("id, booking_id, amount, refund_amount, recorded_by")
-      .gt("refund_amount", 0);
+      .gt("refund_amount", 0)
+      .gte("created_at", sevenDaysAgo);
 
     for (const p of overRefunds ?? []) {
       if (Number(p.refund_amount) > Number(p.amount)) {

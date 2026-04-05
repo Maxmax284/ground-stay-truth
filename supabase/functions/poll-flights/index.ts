@@ -81,70 +81,79 @@ serve(async (req) => {
 
     const results: Array<{ pickup_id: string; flight_number: string; status: string; success: boolean; notified?: boolean }> = [];
 
-    for (const pickup of activePickups) {
-      const cleanFlight = pickup.flight_number!.replace(/\s+/g, "").toUpperCase();
+    // Process in batches of 5 to avoid API rate limits while gaining parallelism
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < activePickups.length; i += BATCH_SIZE) {
+      const batch = activePickups.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.allSettled(
+        batch.map(async (pickup) => {
+          const cleanFlight = pickup.flight_number!.replace(/\s+/g, "").toUpperCase();
 
-      try {
-        const apiUrl = `${AVIATIONSTACK_BASE}/flights?access_key=${AVIATIONSTACK_KEY}&flight_iata=${cleanFlight}&limit=1`;
-        const apiResp = await fetch(apiUrl);
+          try {
+            const apiUrl = `${AVIATIONSTACK_BASE}/flights?access_key=${AVIATIONSTACK_KEY}&flight_iata=${cleanFlight}&limit=1`;
+            const apiResp = await fetch(apiUrl);
 
-        if (!apiResp.ok) {
-          console.error(`API error for ${cleanFlight}:`, apiResp.status);
-          results.push({ pickup_id: pickup.id, flight_number: cleanFlight, status: "api_error", success: false });
-          continue;
-        }
+            if (!apiResp.ok) {
+              console.error(`API error for ${cleanFlight}:`, apiResp.status);
+              return { pickup_id: pickup.id, flight_number: cleanFlight, status: "api_error", success: false };
+            }
 
-        const apiData = await apiResp.json();
+            const apiData = await apiResp.json();
 
-        if (apiData.error || !apiData.data?.[0]) {
-          results.push({ pickup_id: pickup.id, flight_number: cleanFlight, status: "not_found", success: false });
-          continue;
-        }
+            if (apiData.error || !apiData.data?.[0]) {
+              return { pickup_id: pickup.id, flight_number: cleanFlight, status: "not_found", success: false };
+            }
 
-        const fd = apiData.data[0];
-        const delayMinutes = fd.arrival?.delay ?? fd.departure?.delay ?? 0;
-        const newStatus = statusMap[fd.flight_status] ?? fd.flight_status ?? "unknown";
-        const previousStatus = existingStatusMap[pickup.id];
+            const fd = apiData.data[0];
+            const delayMinutes = fd.arrival?.delay ?? fd.departure?.delay ?? 0;
+            const newStatus = statusMap[fd.flight_status] ?? fd.flight_status ?? "unknown";
+            const previousStatus = existingStatusMap[pickup.id];
 
-        const record = {
-          pickup_id: pickup.id,
-          flight_number: cleanFlight,
-          airline_name: fd.airline?.name ?? null,
-          departure_airport: fd.departure?.airport ?? null,
-          departure_iata: fd.departure?.iata ?? null,
-          arrival_airport: fd.arrival?.airport ?? null,
-          arrival_iata: fd.arrival?.iata ?? null,
-          scheduled_departure: fd.departure?.scheduled ?? null,
-          estimated_departure: fd.departure?.estimated ?? null,
-          actual_departure: fd.departure?.actual ?? null,
-          scheduled_arrival: fd.arrival?.scheduled ?? null,
-          estimated_arrival: fd.arrival?.estimated ?? null,
-          actual_arrival: fd.arrival?.actual ?? null,
-          flight_status: newStatus,
-          delay_minutes: delayMinutes,
-          terminal: fd.arrival?.terminal ?? null,
-          gate: fd.arrival?.gate ?? null,
-          raw_response: fd,
-          last_checked_at: new Date().toISOString(),
-        };
+            const record = {
+              pickup_id: pickup.id,
+              flight_number: cleanFlight,
+              airline_name: fd.airline?.name ?? null,
+              departure_airport: fd.departure?.airport ?? null,
+              departure_iata: fd.departure?.iata ?? null,
+              arrival_airport: fd.arrival?.airport ?? null,
+              arrival_iata: fd.arrival?.iata ?? null,
+              scheduled_departure: fd.departure?.scheduled ?? null,
+              estimated_departure: fd.departure?.estimated ?? null,
+              actual_departure: fd.departure?.actual ?? null,
+              scheduled_arrival: fd.arrival?.scheduled ?? null,
+              estimated_arrival: fd.arrival?.estimated ?? null,
+              actual_arrival: fd.arrival?.actual ?? null,
+              flight_status: newStatus,
+              delay_minutes: delayMinutes,
+              terminal: fd.arrival?.terminal ?? null,
+              gate: fd.arrival?.gate ?? null,
+              raw_response: fd,
+              last_checked_at: new Date().toISOString(),
+            };
 
-        const existing = existingTracking?.find(ft => ft.pickup_id === pickup.id);
-        if (existing) {
-          await serviceClient.from("flight_tracking").update(record).eq("pickup_id", pickup.id);
-        } else {
-          await serviceClient.from("flight_tracking").insert(record);
-        }
+            const existing = existingTracking?.find(ft => ft.pickup_id === pickup.id);
+            if (existing) {
+              await serviceClient.from("flight_tracking").update(record).eq("pickup_id", pickup.id);
+            } else {
+              await serviceClient.from("flight_tracking").insert(record);
+            }
 
-        // Detect landed transition → notify guest
-        let notified = false;
-        if (newStatus === "landed" && previousStatus !== "landed") {
-          notified = await notifyGuestLanded(serviceClient, supabaseUrl, pickup.booking_id, cleanFlight);
-        }
+            // Detect landed transition → notify guest
+            let notified = false;
+            if (newStatus === "landed" && previousStatus !== "landed") {
+              notified = await notifyGuestLanded(serviceClient, supabaseUrl, pickup.booking_id, cleanFlight);
+            }
 
-        results.push({ pickup_id: pickup.id, flight_number: cleanFlight, status: newStatus, success: true, notified });
-      } catch (err) {
-        console.error(`Error polling ${cleanFlight}:`, err);
-        results.push({ pickup_id: pickup.id, flight_number: cleanFlight, status: "error", success: false });
+            return { pickup_id: pickup.id, flight_number: cleanFlight, status: newStatus, success: true, notified };
+          } catch (err) {
+            console.error(`Error polling ${cleanFlight}:`, err);
+            return { pickup_id: pickup.id, flight_number: cleanFlight, status: "error", success: false };
+          }
+        })
+      );
+
+      for (const r of batchResults) {
+        results.push(r.status === "fulfilled" ? r.value : { pickup_id: "unknown", flight_number: "unknown", status: "error", success: false });
       }
     }
 

@@ -138,8 +138,10 @@ Deno.serve(async (req) => {
       .insert({ user_id: newUser.user.id, role });
 
     if (roleError) {
+      // Clean up: delete the orphaned auth user to prevent a ghost account
+      await adminClient.auth.admin.deleteUser(newUser.user.id);
       return new Response(
-        JSON.stringify({ error: `User created but role assignment failed: ${roleError.message}` }),
+        JSON.stringify({ error: `Account creation failed during role assignment. Please try again.` }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
