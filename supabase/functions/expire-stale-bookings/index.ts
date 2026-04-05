@@ -62,10 +62,12 @@ Deno.serve(async (req) => {
       .lt("updated_at", softHoldCutoff);
 
     for (const booking of staleSoftHolds ?? []) {
-      const { error } = await supabase
+      // State-gate: only cancel if still in soft_hold (prevents race with concurrent state changes)
+      const { error, count } = await supabase
         .from("bookings")
         .update({ state: "cancelled" })
-        .eq("id", booking.id);
+        .eq("id", booking.id)
+        .eq("state", "soft_hold");
 
       if (!error) {
         await supabase.from("booking_state_log").insert({
