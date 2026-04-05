@@ -151,10 +151,12 @@ Deno.serve(async (req) => {
 
       if (payments && payments.length > 0) continue;
 
+      // State-gate: only cancel if still in pending_deposit (prevents race with payment webhook)
       const { error } = await supabase
         .from("bookings")
         .update({ state: "cancelled" })
-        .eq("id", booking.id);
+        .eq("id", booking.id)
+        .eq("state", "pending_deposit");
 
       if (!error) {
         await supabase.from("booking_state_log").insert({
