@@ -405,6 +405,260 @@ export const AIRPORT_FACTS: Record<string, AirportFacts> = {
   },
 };
 
+// ── Pier Facts ──────────────────────────────────────────────────────────────
+
+export const PIER_FACTS: Record<string, PierFacts> = {
+  nathon: {
+    code: "nathon",
+    name: "Nathon",
+    fullName: "Nathon Pier (Main Ferry Terminal)",
+    type: "Main ferry terminal — busiest pier on Koh Samui",
+    arrival: {
+      estimatedDisembarkTime: "5–15 minutes from docking to exiting the pier area",
+      tips: [
+        "Follow the crowd off the ferry — the exit is straightforward",
+        "If you have large luggage, porters may offer help for ฿50–100",
+        "The pier area can be congested during peak ferry arrivals",
+        "Have your booking confirmation ready — our driver will look for your name",
+      ],
+    },
+    facilities: {
+      layout: "Simple open pier with a covered waiting area. Ticket counters at the entrance.",
+      waitingArea: "Covered seating area near ticket offices — no air conditioning",
+      food: "A few small food stalls and a 7-Eleven within walking distance (2 min)",
+      shops: "Minimal — a couple of convenience shops near the pier entrance",
+      toilets: "Basic public toilets available at the pier",
+      tips: [
+        "Nathon town is right behind the pier — shops, ATMs, and restaurants within 5 min walk",
+        "There's a small market area near the pier with local food",
+        "The 7-Eleven on the main road is the most reliable for essentials",
+      ],
+    },
+    transport: {
+      toCamp: [
+        {
+          name: "Ground Stay pickup (arranged)",
+          cost: "Included or arranged via booking",
+          duration: "30–40 minutes",
+          notes: "Our driver meets you at the pier exit. Most reliable option.",
+        },
+        {
+          name: "Songthaew (shared taxi)",
+          cost: "฿100–200 per person",
+          duration: "40–60 minutes (shared route)",
+          notes: "Red/yellow pickup trucks. Cheap but slow — they loop around the island dropping passengers.",
+        },
+        {
+          name: "Private taxi",
+          cost: "฿500–800",
+          duration: "30–40 minutes",
+          notes: "Negotiate price before getting in. No meters on Samui.",
+        },
+        {
+          name: "Grab/Bolt",
+          cost: "฿350–600",
+          duration: "30–40 minutes",
+          notes: "Available but fewer drivers than Bangkok. May wait 10–15 min.",
+        },
+      ],
+      tips: [
+        "If pickup is arranged, look for driver with your name at the pier exit",
+        "Ignore aggressive taxi touts at the pier — walk past them to find better options",
+        "Songthaews follow set routes — confirm they pass through Lamai before boarding",
+      ],
+    },
+    routeToCamp: {
+      estimatedTime: "30–40 minutes by car",
+      landmarks: [
+        "Exit Nathon pier → take the coast road south (Route 4169/4170)",
+        "Pass through Nathon town",
+        "Continue along the south coast",
+        "Pass Hua Thanon fishing village",
+        "Enter Lamai area — camp is on the left near Lamai Beach",
+      ],
+      description: "From Nathon pier, drive south along the coast road. The route passes through the quiet west coast before turning south and east toward Lamai. Scenic drive with mountain and sea views.",
+    },
+    connectivity: {
+      wifi: "No reliable free WiFi at the pier. Use mobile data.",
+      tips: [
+        "Get a SIM card before taking the ferry if possible",
+        "If arriving without a SIM, the 7-Eleven near the pier sells them",
+      ],
+    },
+    weather: {
+      rainySeasonMonths: "October – December",
+      seaConditionNote: "Ferries may be cancelled during severe weather (Nov–Dec). Check with ferry operator before travel.",
+      tips: [
+        "Sea conditions can be rough Oct–Dec — take motion sickness medication if prone",
+        "Morning ferries tend to have calmer seas than afternoon ones",
+        "During monsoon season, delays of 30–60 min are common",
+      ],
+    },
+    timing: {
+      firstFerry: "~06:00 (varies by operator)",
+      lastFerry: "~19:00 (Lomprayah/Seatran)",
+      peakTimes: "Morning arrivals (08:00–10:00) and afternoon (14:00–16:00)",
+      delayNotes: "Delays are common, especially in rough seas. Budget extra time.",
+    },
+  },
+
+  lipa_noi: {
+    code: "lipa_noi",
+    name: "Lipa Noi",
+    fullName: "Lipa Noi Pier (Raja Ferry Terminal)",
+    type: "Secondary ferry terminal — mainly Raja Ferry vehicle ferries",
+    arrival: {
+      estimatedDisembarkTime: "10–20 minutes (vehicle ferry, slower disembark)",
+      tips: [
+        "Vehicle ferries take longer to unload — be patient",
+        "Walk-on passengers disembark before vehicles",
+        "The pier area is quieter than Nathon",
+      ],
+    },
+    facilities: {
+      layout: "Simple open pier designed for vehicle loading/unloading",
+      waitingArea: "Small covered area near the ticket office",
+      food: "A couple of food stalls near the pier. Very limited options.",
+      shops: "Almost none — bring what you need or stop in Nathon/Lamai later",
+      toilets: "Basic facilities available",
+      tips: [
+        "Lipa Noi is more remote than Nathon — fewer services immediately available",
+        "The nearest town with proper shops is Nathon (15 min drive)",
+      ],
+    },
+    transport: {
+      toCamp: [
+        {
+          name: "Ground Stay pickup (arranged)",
+          cost: "Included or arranged via booking",
+          duration: "25–35 minutes",
+          notes: "Our driver meets you at the pier exit.",
+        },
+        {
+          name: "Private taxi",
+          cost: "฿400–700",
+          duration: "25–35 minutes",
+          notes: "Fewer taxis available here than Nathon. Pre-arrange if possible.",
+        },
+        {
+          name: "Grab/Bolt",
+          cost: "฿300–500",
+          duration: "25–35 minutes",
+          notes: "Limited drivers in this area. Expect longer wait times.",
+        },
+      ],
+      tips: [
+        "Pre-arranged pickup is strongly recommended — taxis are scarce here",
+        "If no pickup arranged, you may need to wait 15–20 min for a Grab",
+      ],
+    },
+    routeToCamp: {
+      estimatedTime: "25–35 minutes by car",
+      landmarks: [
+        "Exit Lipa Noi pier → head south on the coast road",
+        "Pass through quiet residential area",
+        "Join the main ring road heading east toward Lamai",
+        "Enter Lamai area — camp is near Lamai Beach",
+      ],
+      description: "Shorter drive than from Nathon. The road cuts across the southern part of the island through quieter, more rural areas before reaching Lamai on the east coast.",
+    },
+    connectivity: {
+      wifi: "No WiFi at the pier.",
+      tips: ["Have mobile data ready before arriving — no SIM vendors at this pier"],
+    },
+    weather: {
+      rainySeasonMonths: "October – December",
+      seaConditionNote: "Raja Ferry vehicle ferries are more stable but still affected by severe weather.",
+      tips: [
+        "Vehicle ferries handle rough seas slightly better than catamarans",
+        "Check Raja Ferry schedule — fewer daily departures than other operators",
+      ],
+    },
+    timing: {
+      firstFerry: "~05:00 (Raja Ferry from Don Sak)",
+      lastFerry: "~19:00",
+      peakTimes: "Mid-morning (09:00–11:00)",
+      delayNotes: "Delays less frequent than catamaran services but still possible in bad weather.",
+    },
+  },
+};
+
+// ── Bus Facts ───────────────────────────────────────────────────────────────
+
+export const BUS_FACTS: BusFacts = {
+  code: "bus",
+  name: "Bus Arrival",
+  fullName: "Bus/Van Arrival to Koh Samui",
+  type: "Overland travel — typically combined bus+ferry",
+  arrival: {
+    estimatedArrivalVariance: "30–90 minutes from scheduled time (delays common)",
+    tips: [
+      "Bus+ferry combos often run late — don't worry, we'll adjust",
+      "Your arrival time will depend on the ferry connection at the mainland",
+      "Many operators include the ferry ticket — confirm with your provider",
+      "Keep your belongings close during transfers between bus and ferry",
+    ],
+  },
+  dropoff: {
+    location: "Varies — usually Nathon Pier or operator's drop-off point",
+    description: "Most bus+ferry services drop you at Nathon Pier. Some operators have their own drop-off points near Nathon town.",
+    tips: [
+      "Confirm your exact drop-off point with the bus/ferry operator",
+      "Let us know your operator (Lomprayah, Seatran, etc.) so we know where to meet you",
+      "If dropped at Nathon Pier, follow the same exit as ferry passengers",
+    ],
+  },
+  transport: {
+    toCamp: [
+      {
+        name: "Ground Stay pickup (arranged)",
+        cost: "Included or arranged via booking",
+        duration: "30–40 minutes from Nathon",
+        notes: "We'll coordinate timing based on your estimated arrival. Flexible with delays.",
+      },
+      {
+        name: "Songthaew",
+        cost: "฿100–200 per person",
+        duration: "40–60 minutes",
+        notes: "Available near Nathon. Shared route — slow but cheap.",
+      },
+      {
+        name: "Grab/Bolt",
+        cost: "฿350–600",
+        duration: "30–40 minutes",
+        notes: "Order once you're off the ferry and have phone signal.",
+      },
+    ],
+    tips: [
+      "If pickup is arranged, message us your real-time ETA when you board the ferry",
+      "We don't need exact times — approximate is fine, we'll be flexible",
+    ],
+  },
+  routeToCamp: {
+    estimatedTime: "30–40 minutes from Nathon to camp",
+    landmarks: [
+      "Same route as from Nathon Pier — south coast road to Lamai",
+    ],
+    description: "After the ferry docks at Nathon, the drive to camp is the same as for ferry arrivals — south along the coast to Lamai Beach.",
+  },
+  connectivity: {
+    tips: [
+      "Many long-distance buses have WiFi but it's unreliable",
+      "Make sure you have mobile data for the ferry portion",
+      "Signal may drop during the crossing — don't worry, it comes back on Samui",
+    ],
+  },
+  timing: {
+    notes: "Bus+ferry combos from Bangkok take 10–14 hours. From Surat Thani, 2–3 hours including ferry.",
+    delayCommon: true,
+    tips: [
+      "Delays of 30–90 min are normal — plan for flexibility",
+      "Night buses arrive early morning — you may need to wait for the first ferry",
+      "Message us your ferry departure time from the mainland — that's the most useful timing info",
+    ],
+  },
+};
+
 /** Section template types with their guided fields */
 export type SectionTypeId =
   | "immigration"
@@ -419,13 +673,19 @@ export type SectionTypeId =
   | "late_night"
   | "bkk_connection"
   | "first_time_thailand"
+  | "pier_arrival"
+  | "pier_facilities"
+  | "ferry_timing"
+  | "sea_conditions"
+  | "bus_arrival"
+  | "bus_timing"
   | "custom";
 
 export interface GuidedField {
   key: string;
   label: string;
   type: "text" | "textarea" | "list" | "transport_options";
-  /** Dot-path into AirportFacts to auto-fill, e.g. "immigration.estimatedTime" */
+  /** Dot-path into AirportFacts/PierFacts to auto-fill, e.g. "immigration.estimatedTime" */
   factPath?: string;
   placeholder?: string;
   helpText?: string;
@@ -439,8 +699,8 @@ export interface SectionTemplate {
   icon: string;
   defaultTitle: string;
   guidedFields: GuidedField[];
-  /** Which airports this section is relevant for */
-  airports: ("bkk" | "samui")[];
+  /** Which arrival locations this section is relevant for */
+  airports: string[];
 }
 
 export const SECTION_TEMPLATES: SectionTemplate[] = [
