@@ -201,10 +201,24 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
                       </div>
                     );
                   }
-                  if (travelInfo.state === "pre_departure" && !p.flight_number && !(p as any).international_flight_number) {
+                  if (travelInfo.state === "self_arriving") {
+                    return (
+                      <div className="text-[11px] text-muted-foreground">
+                        🚗 Self Arrival — no pickup needed
+                      </div>
+                    );
+                  }
+                  if (travelInfo.state === "pickup_disabled") {
+                    return (
+                      <div className="text-[11px] text-muted-foreground">
+                        🚫 Pickup Disabled by Admin
+                      </div>
+                    );
+                  }
+                  if (travelInfo.state === "pre_departure") {
                     return (
                       <div className="text-[11px] text-muted-foreground italic">
-                        No flight details provided
+                        No travel details provided
                       </div>
                     );
                   }
