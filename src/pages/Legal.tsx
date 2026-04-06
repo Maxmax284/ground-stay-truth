@@ -82,7 +82,8 @@ const Legal = () => {
                   <li><strong>Access</strong> your personal data through your profile page</li>
                   <li><strong>Correct</strong> inaccurate data by editing your profile</li>
                   <li><strong>Delete</strong> your account and all associated data using the account deletion feature in Settings → Profile → Danger Zone</li>
-                  <li><strong>Data portability:</strong> Contact us to request a copy of your data in a structured format</li>
+                  <li><strong>Data portability:</strong> Download a complete copy of your personal data in JSON format using the "Download My Data" button in Settings → Profile</li>
+                  <li><strong>Withdraw consent:</strong> You may withdraw consent at any time by deleting your account or contacting us</li>
                 </ul>
                 <p>Account deletion permanently removes your profile, booking history, messages, uploaded documents, and all associated records. This action cannot be reversed.</p>
 
