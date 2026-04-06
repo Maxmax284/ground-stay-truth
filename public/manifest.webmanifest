@@ -1,0 +1,21 @@
+{
+  "name": "Ground Stay",
+  "short_name": "Ground Stay",
+  "description": "Accommodation booking platform for Koh Samui",
+  "start_url": "/stay",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "icons": [
+    {
+      "src": "/placeholder.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/placeholder.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

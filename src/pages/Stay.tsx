@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Home, Users, Moon, Sparkles, ChevronLeft, ChevronRight, CalendarDays, ArrowRight, MapPin, Clock, Shield, ListChecks, LogIn, Building2 } from "lucide-react";
+import { Home, Users, Moon, Sparkles, ChevronLeft, ChevronRight, CalendarDays, ArrowRight, MapPin, Clock, Shield, ListChecks, LogIn, Building2, AlertTriangle, RefreshCw } from "lucide-react";
 import { formatPriceSimple } from "@/lib/currency";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { TestimonialSection } from "@/components/TestimonialSection";
@@ -46,6 +46,7 @@ export default function Stay() {
   const [units, setUnits] = useState<UnitData[]>([]);
   const [properties, setProperties] = useState<PropertyData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [currencySymbol, setCurrencySymbol] = useState("฿");
   const [blockedByUnit, setBlockedByUnit] = useState<Record<string, BlockedRange[]>>({});
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
@@ -59,6 +60,7 @@ export default function Stay() {
         const resp = await fetch(`${SUPABASE_URL}/functions/v1/get-availability`, {
           headers: { apikey: SUPABASE_KEY },
         });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
         const fetchedUnits = data.units ?? [];
         const fetchedProperties = data.properties ?? [];
@@ -66,19 +68,29 @@ export default function Stay() {
         setUnits(fetchedUnits);
         setProperties(fetchedProperties);
         setCurrencySymbol(fetchedSymbol);
+        setFetchError(false);
         // Cache for offline use
         try {
           localStorage.setItem("gs_cache_units", JSON.stringify(fetchedUnits));
+          localStorage.setItem("gs_cache_props", JSON.stringify(fetchedProperties));
           localStorage.setItem("gs_cache_currency", fetchedSymbol);
         } catch { /* quota */ }
       } catch {
         // Offline or error — load from cache
         try {
           const cached = localStorage.getItem("gs_cache_units");
+          const cachedProps = localStorage.getItem("gs_cache_props");
           const cachedCurrency = localStorage.getItem("gs_cache_currency");
-          if (cached) setUnits(JSON.parse(cached));
-          if (cachedCurrency) setCurrencySymbol(cachedCurrency);
-        } catch { /* silent */ }
+          if (cached) {
+            setUnits(JSON.parse(cached));
+            if (cachedProps) setProperties(JSON.parse(cachedProps));
+            if (cachedCurrency) setCurrencySymbol(cachedCurrency);
+          } else {
+            setFetchError(true);
+          }
+        } catch {
+          setFetchError(true);
+        }
       }
       setLoading(false);
     })();
@@ -186,8 +198,17 @@ export default function Stay() {
               {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-80 w-full rounded-xl" />)}
             </div>
           </section>
+        ) : fetchError ? (
+          <div className="text-center py-16 space-y-4">
+            <AlertTriangle className="h-10 w-10 text-destructive mx-auto" />
+            <p className="text-foreground font-medium">Unable to load rooms</p>
+            <p className="text-sm text-muted-foreground">Something went wrong while fetching availability. Please try again.</p>
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              <RefreshCw className="h-4 w-4 mr-2" /> Retry
+            </Button>
+          </div>
         ) : units.length === 0 ? (
-          <p className="text-muted-foreground text-center py-16">No rooms available at this time.</p>
+          <p className="text-muted-foreground text-center py-16">No rooms available at this time. Please check back later.</p>
         ) : (
           <>
             {/* Group units by property */}
