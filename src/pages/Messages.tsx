@@ -135,6 +135,8 @@ const Messages = () => {
 
         {isLoading ? (
           <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}</div>
+        ) : isError ? (
+          <FetchErrorState message="Unable to load messages" onRetry={() => refetch()} />
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
             <MessageSquare className="h-10 w-10 mx-auto mb-3 opacity-40" />

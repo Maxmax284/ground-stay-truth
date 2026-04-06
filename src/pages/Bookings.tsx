@@ -167,6 +167,8 @@ const Bookings = () => {
           <div className="space-y-3">
             {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
           </div>
+        ) : isError ? (
+          <FetchErrorState message="Unable to load bookings" onRetry={() => refetch()} />
         ) : !bookings?.length ? (
           <div className="text-center py-16 text-muted-foreground">
             <p>{t("bookings.noBookings")}</p>
