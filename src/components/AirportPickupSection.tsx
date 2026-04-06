@@ -527,7 +527,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
         </div>
 
         {/* Admin controls: arrival type + pickup override */}
-        {permissions.isAdmin(role) && (
+        {permissions.canAdminOverride(role) && (
           <>
             <Separator />
             <div className="space-y-2">
