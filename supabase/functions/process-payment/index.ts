@@ -255,7 +255,7 @@ serve(async (req) => {
       );
     }
 
-    const idempotencyKey = `deposit_${booking_id}_${depositAmount}`;
+    const idempotencyKey = `deposit_${booking_id}_${depositAmount}_${Date.now()}`;
     const unitName = (booking as any).units?.name || "Accommodation";
     const guestEmail = (booking as any).profiles?.email;
     const stayDescription = `${booking.check_in} to ${booking.check_out} (${booking.num_guests} guest${booking.num_guests > 1 ? "s" : ""})`;
