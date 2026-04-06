@@ -24,23 +24,24 @@ serve(async (req) => {
     const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     // Get today's pickups with flight numbers that aren't in a terminal state
+    // Fetch pickups with a wider window — today + tomorrow for timezone safety
     const todayStart = new Date();
     todayStart.setUTCHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setUTCHours(23, 59, 59, 999);
+    const tomorrowEnd = new Date(todayStart.getTime() + 2 * 24 * 60 * 60 * 1000);
 
     const { data: pickups, error: pickupsError } = await serviceClient
       .from("airport_pickups")
       .select("id, flight_number, arrival_datetime, booking_id")
       .not("flight_number", "is", null)
       .gte("arrival_datetime", todayStart.toISOString())
-      .lte("arrival_datetime", todayEnd.toISOString())
-      .in("status", ["requested", "assigned", "confirmed"]);
+      .lte("arrival_datetime", tomorrowEnd.toISOString())
+      .in("status", ["requested", "assigned", "confirmed"])
+      .limit(200); // Hard cap to prevent runaway processing
 
     if (pickupsError) throw pickupsError;
 
     if (!pickups?.length) {
-      return new Response(JSON.stringify({ message: "No active flights to poll today", checked: 0 }), {
+      return new Response(JSON.stringify({ message: "No active flights to poll", checked: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -81,10 +82,18 @@ serve(async (req) => {
 
     const results: Array<{ pickup_id: string; flight_number: string; status: string; success: boolean; notified?: boolean }> = [];
 
-    // Process in batches of 5 to avoid API rate limits while gaining parallelism
-    const BATCH_SIZE = 5;
-    for (let i = 0; i < activePickups.length; i += BATCH_SIZE) {
-      const batch = activePickups.slice(i, i + BATCH_SIZE);
+    // Process in priority batches: nearest arrivals first, batch of 10 for throughput
+    activePickups.sort((a, b) => {
+      const aTime = a.arrival_datetime ? new Date(a.arrival_datetime).getTime() : Infinity;
+      const bTime = b.arrival_datetime ? new Date(b.arrival_datetime).getTime() : Infinity;
+      return aTime - bTime;
+    });
+
+    const BATCH_SIZE = 10;
+    const MAX_PROCESS = 100; // Hard limit per invocation to stay within timeout
+    const toProcess = activePickups.slice(0, MAX_PROCESS);
+    for (let i = 0; i < toProcess.length; i += BATCH_SIZE) {
+      const batch = toProcess.slice(i, i + BATCH_SIZE);
       const batchResults = await Promise.allSettled(
         batch.map(async (pickup) => {
           const cleanFlight = pickup.flight_number!.replace(/\s+/g, "").toUpperCase();
@@ -158,11 +167,13 @@ serve(async (req) => {
     }
 
     const successCount = results.filter(r => r.success).length;
-    console.log(`Poll complete: ${successCount}/${activePickups.length} flights updated`);
+    const skipped = activePickups.length - toProcess.length;
+    console.log(`Poll complete: ${successCount}/${toProcess.length} flights updated${skipped > 0 ? `, ${skipped} deferred` : ""}`);
 
     return new Response(JSON.stringify({
-      message: `Polled ${activePickups.length} flights, ${successCount} updated successfully`,
-      checked: activePickups.length,
+      message: `Polled ${toProcess.length} flights, ${successCount} updated${skipped > 0 ? `, ${skipped} deferred to next run` : ""}`,
+      checked: toProcess.length,
+      deferred: skipped,
       results,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

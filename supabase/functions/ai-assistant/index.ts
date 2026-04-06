@@ -1039,7 +1039,13 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
-    console.error("ai-assistant error:", e);
+    console.error(JSON.stringify({
+      level: "ERROR",
+      function: "ai-assistant",
+      error: e instanceof Error ? e.message : "Unknown error",
+      stack: e instanceof Error ? e.stack : undefined,
+      timestamp: new Date().toISOString(),
+    }));
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
