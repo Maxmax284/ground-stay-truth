@@ -526,8 +526,68 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
           )}
         </div>
 
+        {/* Admin controls: arrival type + pickup override */}
+        {permissions.isAdmin(role) && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Admin Controls</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Arrival Type</Label>
+                  <Select
+                    value={pickup.arrival_type ?? "flight"}
+                    onValueChange={async (val) => {
+                      await upsert.mutateAsync({
+                        booking_id: bookingId,
+                        arrival_type: val,
+                        arrival_location_type: ARRIVAL_TYPE_CONFIG[val as ArrivalType]?.defaultLocationType ?? "other",
+                      });
+                      toast({ title: `Arrival type set to ${val}` });
+                    }}
+                  >
+                    <SelectTrigger className="h-7 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ARRIVAL_TYPES.map((t) => (
+                        <SelectItem key={t} value={t}>{ARRIVAL_TYPE_CONFIG[t].label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Pickup Override</Label>
+                  <Button
+                    variant={pickup.pickup_enabled ? "default" : "destructive"}
+                    size="sm"
+                    className="h-7 text-xs w-full"
+                    onClick={async () => {
+                      const newVal = !pickup.pickup_enabled;
+                      await upsert.mutateAsync({
+                        booking_id: bookingId,
+                        pickup_enabled: newVal,
+                      });
+                      await logPickupAction({
+                        bookingId,
+                        pickupId: pickup.id,
+                        action: newVal ? "pickup_enabled" : "pickup_disabled",
+                        note: newVal ? "Admin enabled pickup" : "Admin disabled pickup — guest will self-arrive",
+                      });
+                      toast({ title: newVal ? "Pickup enabled" : "Pickup disabled" });
+                    }}
+                    disabled={upsert.isPending}
+                  >
+                    {pickup.pickup_enabled ? "Pickup Enabled ✓" : "Pickup Disabled ✗"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
         {/* Status actions */}
-        {canManage && nextStatuses.length > 0 && (
+        {canManage && nextStatuses.length > 0 && arrival.pickupResolution === "pickup_scheduled" && (
           <>
             <Separator />
             <div className="flex flex-wrap gap-1.5">
