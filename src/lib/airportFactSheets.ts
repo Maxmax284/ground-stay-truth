@@ -888,12 +888,104 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
     category: "situational",
     icon: "🇹🇭",
     defaultTitle: "First Time in Thailand?",
-    airports: ["bkk", "samui"],
+    airports: ["bkk", "samui", "nathon", "lipa_noi", "bus"],
     guidedFields: [
       { key: "culturalTips", label: "Cultural tips", type: "list", placeholder: "E.g. wai greeting, shoes off indoors, respect for royalty..." },
       { key: "practicalBasics", label: "Practical basics", type: "list", placeholder: "E.g. currency, tipping, electrical outlets..." },
       { key: "foodTips", label: "Food & drink tips", type: "list", placeholder: "E.g. street food safety, spice levels, drinking water..." },
       { key: "usefulPhrases", label: "Useful Thai phrases", type: "list", placeholder: "E.g. Sawasdee (hello), Khop khun (thank you)..." },
+    ],
+  },
+
+  // ── Pier-specific sections ──
+  {
+    id: "pier_arrival",
+    title: "Pier Arrival",
+    description: "What to expect when the ferry docks and you step off",
+    category: "journey",
+    icon: "⚓",
+    defaultTitle: "Arriving at the Pier",
+    airports: ["nathon", "lipa_noi"],
+    guidedFields: [
+      { key: "disembarkTime", label: "Estimated disembark time", type: "text", placeholder: "E.g. 5–15 minutes from docking..." },
+      { key: "arrivalTips", label: "Arrival tips", type: "list", placeholder: "E.g. follow the crowd, have booking ready..." },
+      { key: "meetingPoint", label: "Where to meet your driver", type: "textarea", placeholder: "E.g. exit the pier and look for name sign..." },
+      { key: "additionalNotes", label: "Additional notes", type: "textarea" },
+    ],
+  },
+  {
+    id: "pier_facilities",
+    title: "Pier Facilities",
+    description: "What's available at the pier — food, shops, toilets, ATMs",
+    category: "journey",
+    icon: "🏪",
+    defaultTitle: "At the Pier",
+    airports: ["nathon", "lipa_noi"],
+    guidedFields: [
+      { key: "layout", label: "Pier layout", type: "textarea", placeholder: "Describe the pier layout..." },
+      { key: "food", label: "Food & drink options", type: "text", placeholder: "E.g. food stalls, 7-Eleven nearby..." },
+      { key: "shops", label: "Shops & services", type: "text", placeholder: "E.g. convenience stores, ATMs..." },
+      { key: "tips", label: "Useful tips", type: "list", placeholder: "E.g. Nathon town is 5 min walk..." },
+    ],
+  },
+  {
+    id: "ferry_timing",
+    title: "Ferry Schedule & Timing",
+    description: "Ferry schedules, peak times, and what to expect with delays",
+    category: "situational",
+    icon: "⏱️",
+    defaultTitle: "Ferry Timing",
+    airports: ["nathon", "lipa_noi"],
+    guidedFields: [
+      { key: "firstFerry", label: "First ferry", type: "text", placeholder: "E.g. ~06:00..." },
+      { key: "lastFerry", label: "Last ferry", type: "text", placeholder: "E.g. ~19:00..." },
+      { key: "peakTimes", label: "Peak arrival times", type: "text", placeholder: "E.g. 08:00–10:00, 14:00–16:00..." },
+      { key: "delayNotes", label: "Delay expectations", type: "textarea", placeholder: "E.g. delays common in rough weather..." },
+    ],
+  },
+  {
+    id: "sea_conditions",
+    title: "Sea Conditions & Weather",
+    description: "Seasonal sea conditions and how they affect ferry travel",
+    category: "situational",
+    icon: "🌊",
+    defaultTitle: "Sea & Weather Conditions",
+    airports: ["nathon", "lipa_noi"],
+    guidedFields: [
+      { key: "rainyMonths", label: "Rough sea months", type: "text", placeholder: "E.g. October – December..." },
+      { key: "seaNote", label: "Sea condition note", type: "textarea", placeholder: "E.g. ferries may be cancelled in severe weather..." },
+      { key: "tips", label: "Tips for rough seas", type: "list", placeholder: "E.g. take morning ferry, bring motion sickness meds..." },
+    ],
+  },
+
+  // ── Bus-specific sections ──
+  {
+    id: "bus_arrival",
+    title: "Bus/Van Arrival",
+    description: "What to expect when arriving by bus or van combo",
+    category: "journey",
+    icon: "🚌",
+    defaultTitle: "Arriving by Bus",
+    airports: ["bus"],
+    guidedFields: [
+      { key: "arrivalVariance", label: "Expected timing variance", type: "text", placeholder: "E.g. 30–90 minutes from scheduled time..." },
+      { key: "dropoffLocation", label: "Drop-off location", type: "textarea", placeholder: "E.g. usually Nathon Pier or operator drop-off..." },
+      { key: "arrivalTips", label: "Arrival tips", type: "list", placeholder: "E.g. confirm drop-off point with operator..." },
+      { key: "meetingPoint", label: "Where to meet your driver", type: "textarea", placeholder: "E.g. we'll coordinate based on your ETA..." },
+    ],
+  },
+  {
+    id: "bus_timing",
+    title: "Bus Journey & Timing",
+    description: "Journey duration, delays, and timing tips for bus+ferry combos",
+    category: "situational",
+    icon: "🕐",
+    defaultTitle: "Bus Timing & Delays",
+    airports: ["bus"],
+    guidedFields: [
+      { key: "journeyDuration", label: "Typical journey duration", type: "text", placeholder: "E.g. 10–14 hours from Bangkok..." },
+      { key: "delayNotes", label: "Delay expectations", type: "textarea", placeholder: "E.g. 30–90 min delays normal..." },
+      { key: "tips", label: "Timing tips", type: "list", placeholder: "E.g. message us your ferry departure time..." },
     ],
   },
 
@@ -905,7 +997,7 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
     category: "custom",
     icon: "✏️",
     defaultTitle: "Custom Section",
-    airports: ["bkk", "samui"],
+    airports: ["bkk", "samui", "nathon", "lipa_noi", "bus"],
     guidedFields: [
       { key: "sectionTitle", label: "Section title", type: "text", placeholder: "Your section title..." },
       { key: "content", label: "Section content", type: "textarea", placeholder: "Write your content or describe what you want AI to generate..." },
@@ -914,7 +1006,7 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
 ];
 
 /** Get the fact value from a dot-path like "immigration.estimatedTime" */
-export function getFactValue(facts: AirportFacts, path: string): any {
+export function getFactValue(facts: AirportFacts | PierFacts | BusFacts, path: string): any {
   const keys = path.split(".");
   let current: any = facts;
   for (const key of keys) {
@@ -924,17 +1016,34 @@ export function getFactValue(facts: AirportFacts, path: string): any {
   return current;
 }
 
-/** Get templates available for a specific airport */
-export function getTemplatesForAirport(airport: "bkk" | "samui"): SectionTemplate[] {
+/** All arrival locations the editor supports */
+export const ALL_ARRIVAL_LOCATIONS = [
+  { id: "bkk", label: "BKK (Suvarnabhumi)", icon: "✈️", category: "airport" as const },
+  { id: "samui", label: "Samui (USM)", icon: "🌴", category: "airport" as const },
+  { id: "nathon", label: "Nathon Pier", icon: "⛴️", category: "pier" as const },
+  { id: "lipa_noi", label: "Lipa Noi Pier", icon: "🚢", category: "pier" as const },
+  { id: "bus", label: "Bus / Van", icon: "🚌", category: "bus" as const },
+] as const;
+
+/** Get fact sheet for any arrival location */
+export function getFactsForLocation(locationId: string): AirportFacts | PierFacts | BusFacts | null {
+  if (locationId === "bkk" || locationId === "samui") return AIRPORT_FACTS[locationId];
+  if (locationId === "nathon" || locationId === "lipa_noi") return PIER_FACTS[locationId];
+  if (locationId === "bus") return BUS_FACTS;
+  return null;
+}
+
+/** Get templates available for a specific location */
+export function getTemplatesForAirport(airport: string): SectionTemplate[] {
   return SECTION_TEMPLATES.filter(t => t.airports.includes(airport));
 }
 
 /** Get journey templates (core flow) */
-export function getJourneyTemplates(airport: "bkk" | "samui"): SectionTemplate[] {
+export function getJourneyTemplates(airport: string): SectionTemplate[] {
   return getTemplatesForAirport(airport).filter(t => t.category === "journey");
 }
 
 /** Get situational templates */
-export function getSituationalTemplates(airport: "bkk" | "samui"): SectionTemplate[] {
+export function getSituationalTemplates(airport: string): SectionTemplate[] {
   return getTemplatesForAirport(airport).filter(t => t.category === "situational");
 }
