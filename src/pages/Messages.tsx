@@ -97,7 +97,7 @@ const Messages = () => {
   const { t } = useTranslation();
   const { isAdmin } = useAuth();
   const { play } = useSoundEffects();
-  const { data: threads, isLoading } = useInboxThreads();
+  const { data: threads, isLoading, isError, refetch } = useInboxThreads();
   const handleNewMessage = useRef(() => play("message")).current;
   useMessagesRealtime(handleNewMessage);
   const [search, setSearch] = useState("");
