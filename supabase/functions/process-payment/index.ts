@@ -72,13 +72,19 @@ function createStripeAdapter(secretKey: string): ProviderAdapter {
 }
 
 // ── Provider Resolution ──
-function resolveProvider(
+async function resolveProvider(
   providerName: string,
-  policyMap: Map<string, string>
-): ProviderAdapter {
+  adminClient: any
+): Promise<ProviderAdapter> {
   switch (providerName) {
     case "stripe": {
-      const secretKey = policyMap.get("stripe_secret_key");
+      // Read secret from integration_secrets (not policy_settings)
+      const { data: secretRow } = await adminClient
+        .from("integration_secrets")
+        .select("encrypted_value")
+        .eq("secret_key", "stripe_secret_key")
+        .maybeSingle();
+      const secretKey = secretRow?.encrypted_value;
       if (!secretKey || secretKey.length < 10) {
         throw new Error("Stripe not configured");
       }
