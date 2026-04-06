@@ -243,14 +243,39 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Plane className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold">Airport Pickup</span>
+            {arrival.arrivalType === "ferry" ? <Ship className="h-4 w-4 text-primary" /> :
+             arrival.arrivalType === "bus" ? <Bus className="h-4 w-4 text-primary" /> :
+             arrival.arrivalType === "hybrid" ? <Route className="h-4 w-4 text-primary" /> :
+             <Plane className="h-4 w-4 text-primary" />}
+            <span className="text-sm font-semibold">
+              {arrival.arrivalType === "flight" ? "Airport Pickup" : `${arrivalTypeConfig.label} Pickup`}
+            </span>
+            <Badge variant="outline" className="text-[9px]">{arrivalTypeConfig.label}</Badge>
           </div>
-          <Badge className={STATUS_COLORS[pickup.status] ?? ""}>{pickup.status}</Badge>
+          <div className="flex items-center gap-1.5">
+            <Badge className={pickupLabel.color}>{pickupLabel.label}</Badge>
+            <Badge className={STATUS_COLORS[pickup.status] ?? ""}>{pickup.status}</Badge>
+          </div>
         </div>
 
-        {/* Manual Assist Banner — Phase 3 */}
-        <ManualAssistBanner
+        {/* Arrival location & confidence */}
+        {arrival.locationName && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <MapPin className="h-3 w-3" />
+            <span>{arrival.locationName}</span>
+            {arrival.confidence === "flexible" && (
+              <Badge variant="outline" className="text-[9px]">Flexible timing</Badge>
+            )}
+          </div>
+        )}
+
+        {/* Admin pickup override indicator */}
+        {!pickup.pickup_enabled && (
+          <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-2 text-xs">
+            <ShieldOff className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-muted-foreground">Pickup disabled by admin — guest will self-arrive</span>
+          </div>
+        )}
           bookingId={bookingId}
           pickupId={pickup.id}
           assistMode={pickup.assist_mode ?? "healthy"}
