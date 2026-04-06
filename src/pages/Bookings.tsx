@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, AlertTriangle, ChevronRight, Check, X } from "lucide-react";
+import { FetchErrorState } from "@/components/FetchErrorState";
 import { toast } from "sonner";
 import { format, differenceInHours } from "date-fns";
 import { useBookings, useTransitionBookingState } from "@/hooks/useBookings";
