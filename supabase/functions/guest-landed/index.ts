@@ -53,6 +53,14 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Rate limit per user
+    if (!checkRateLimit(user.id)) {
+      return new Response(JSON.stringify({ error: "Too many requests" }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { booking_id, confirmed_airport } = await req.json();
     if (!booking_id) {
       return new Response(JSON.stringify({ error: "booking_id required" }), {

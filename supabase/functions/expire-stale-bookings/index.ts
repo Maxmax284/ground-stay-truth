@@ -178,16 +178,16 @@ Deno.serve(async (req) => {
       .not("expires_at", "is", null)
       .lt("expires_at", now.toISOString());
 
-    for (const payment of stalePayments ?? []) {
+    await batchProcess(stalePayments ?? [], 10, async (payment) => {
       const { error } = await supabase
         .from("payments")
         .update({ status: "cancelled", provider_status: "expired" })
-        .eq("id", payment.id);
+        .eq("id", payment.id)
+        .eq("status", "pending"); // state-gate
 
       if (!error) {
         expiredPayments++;
 
-        // If this was a deposit payment, check if booking should be cancelled
         if (payment.payment_type === "deposit") {
           const { data: otherPayments } = await supabase
             .from("payments")
@@ -198,34 +198,24 @@ Deno.serve(async (req) => {
             .limit(1);
 
           if (!otherPayments || otherPayments.length === 0) {
-            // No other active payments — cancel the booking if still pending_deposit
-            const { data: booking } = await supabase
+            await supabase
               .from("bookings")
-              .select("state")
+              .update({ state: "cancelled" })
               .eq("id", payment.booking_id)
-              .single();
+              .eq("state", "pending_deposit");
 
-            if (booking?.state === "pending_deposit") {
-              // State-gate: atomic check to prevent race with payment webhook
-              await supabase
-                .from("bookings")
-                .update({ state: "cancelled" })
-                .eq("id", payment.booking_id)
-                .eq("state", "pending_deposit");
-
-              await supabase.from("booking_state_log").insert({
-                booking_id: payment.booking_id,
-                from_state: "pending_deposit",
-                to_state: "cancelled",
-                changed_by: null,
-                reason: "[SYSTEM] Payment session expired — no successful payments on file",
-              });
-              expired++;
-            }
+            await supabase.from("booking_state_log").insert({
+              booking_id: payment.booking_id,
+              from_state: "pending_deposit",
+              to_state: "cancelled",
+              changed_by: null,
+              reason: "[SYSTEM] Payment session expired — no successful payments on file",
+            });
+            expired++;
           }
         }
       }
-    }
+    });
 
     return new Response(
       JSON.stringify({ success: true, expired, reminders, expiredPayments, timestamp: now.toISOString() }),

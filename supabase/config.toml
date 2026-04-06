@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.guest-landed]
 verify_jwt = false
+
+[functions.cleanup-retention]
+verify_jwt = false
