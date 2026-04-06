@@ -233,6 +233,8 @@ interface ArrivalWelcomeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   airport: "bkk" | "samui" | null;
+  /** Explicit arrival location ID (nathon, lipa_noi, bus, etc.) — overrides airport */
+  arrivalLocationId?: string | null;
   propertyId?: string | null;
   /** If true, filter out introductory sections for returning guests */
   isReturningGuest?: boolean;
@@ -251,19 +253,22 @@ function isIntroductorySection(title: string): boolean {
   return INTRODUCTORY_SECTION_KEYWORDS.some(kw => lower.includes(kw));
 }
 
-export function ArrivalWelcomeDialog({ open, onOpenChange, airport, propertyId, isReturningGuest }: ArrivalWelcomeDialogProps) {
+export function ArrivalWelcomeDialog({ open, onOpenChange, airport, arrivalLocationId, propertyId, isReturningGuest }: ArrivalWelcomeDialogProps) {
   const { data: settings } = usePolicySettings(propertyId);
+  const guideKey = resolveArrivalGuideKey(airport, arrivalLocationId);
+  const locationLabel = arrivalLocationId ? arrivalLocationLabel(arrivalLocationId) : arrivalLocationLabel(airport);
+  const IconComponent = getArrivalIcon(arrivalLocationId ?? airport);
 
   const template = useMemo(() => {
-    if (!airport || !settings) return null;
-    const setting = settings.find((s) => s.key === `arrival_welcome_${airport}`);
+    if (!guideKey || !settings) return null;
+    const setting = settings.find((s) => s.key === guideKey);
     const parsed = parseTemplate(setting?.value);
     if (!parsed || !isReturningGuest) return parsed;
     return {
       ...parsed,
       sections: parsed.sections.filter(s => !isIntroductorySection(s.title)),
     };
-  }, [airport, settings, isReturningGuest]);
+  }, [guideKey, settings, isReturningGuest]);
 
   const { translated, isTranslating } = useWelcomeTranslation(
     template?.welcome_message ?? "",
