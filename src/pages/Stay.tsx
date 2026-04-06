@@ -46,6 +46,7 @@ export default function Stay() {
   const [units, setUnits] = useState<UnitData[]>([]);
   const [properties, setProperties] = useState<PropertyData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [currencySymbol, setCurrencySymbol] = useState("฿");
   const [blockedByUnit, setBlockedByUnit] = useState<Record<string, BlockedRange[]>>({});
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
