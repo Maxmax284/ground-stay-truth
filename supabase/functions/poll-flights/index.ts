@@ -82,9 +82,16 @@ serve(async (req) => {
 
     const results: Array<{ pickup_id: string; flight_number: string; status: string; success: boolean; notified?: boolean }> = [];
 
-    // Process in batches of 5 to avoid API rate limits while gaining parallelism
-    const BATCH_SIZE = 5;
-    for (let i = 0; i < activePickups.length; i += BATCH_SIZE) {
+    // Process in priority batches: nearest arrivals first, batch of 10 for throughput
+    activePickups.sort((a, b) => {
+      const aTime = a.arrival_datetime ? new Date(a.arrival_datetime).getTime() : Infinity;
+      const bTime = b.arrival_datetime ? new Date(b.arrival_datetime).getTime() : Infinity;
+      return aTime - bTime;
+    });
+
+    const BATCH_SIZE = 10;
+    const MAX_PROCESS = 100; // Hard limit per invocation to stay within timeout
+    const toProcess = activePickups.slice(0, MAX_PROCESS);
       const batch = activePickups.slice(i, i + BATCH_SIZE);
       const batchResults = await Promise.allSettled(
         batch.map(async (pickup) => {
