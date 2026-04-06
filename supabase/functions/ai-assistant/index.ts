@@ -255,7 +255,8 @@ function buildSystemPrompt(role: string, language: string, contextData: string, 
   layers.push(`LANGUAGE: Respond in ${language}.`);
 
   if (contextData) {
-    layers.push(contextData);
+    // F-53: Minimize PII before including in AI prompt
+    layers.push(minimizePII(contextData));
   }
 
   return layers.join("\n\n");
