@@ -1,0 +1,196 @@
+/**
+ * Unified Arrival Model
+ *
+ * The system only cares about THREE things:
+ * 1. Final arrival location on Koh Samui
+ * 2. Final arrival time
+ * 3. Whether staff action is required
+ *
+ * Everything else (flight numbers, ferry routes, bus schedules) is secondary context.
+ */
+
+// ── Arrival Types ────────────────────────────────────────────────────────────
+
+export const ARRIVAL_TYPES = ["flight", "ferry", "bus", "hybrid", "unknown"] as const;
+export type ArrivalType = (typeof ARRIVAL_TYPES)[number];
+
+export const ARRIVAL_LOCATION_TYPES = ["airport", "pier", "other"] as const;
+export type ArrivalLocationType = (typeof ARRIVAL_LOCATION_TYPES)[number];
+
+export const ARRIVAL_CONFIDENCE_LEVELS = ["high", "flexible", "unknown"] as const;
+export type ArrivalConfidence = (typeof ARRIVAL_CONFIDENCE_LEVELS)[number];
+
+export const TRANSPORT_INTENTS = ["pickup", "self_arrival"] as const;
+export type TransportIntent = (typeof TRANSPORT_INTENTS)[number];
+
+// ── Location Registry ────────────────────────────────────────────────────────
+
+export interface ArrivalLocation {
+  type: ArrivalLocationType;
+  name: string;
+  shortName: string;
+  /** Default for this arrival type */
+  defaultFor?: ArrivalType;
+}
+
+export const SAMUI_LOCATIONS: ArrivalLocation[] = [
+  { type: "airport", name: "Samui Airport (USM)", shortName: "USM", defaultFor: "flight" },
+  { type: "pier", name: "Nathon Pier", shortName: "Nathon", defaultFor: "ferry" },
+  { type: "pier", name: "Lipa Noi Pier", shortName: "Lipa Noi" },
+  { type: "other", name: "Other / Not sure yet", shortName: "Other" },
+];
+
+export function getDefaultLocation(arrivalType: ArrivalType): ArrivalLocation {
+  return (
+    SAMUI_LOCATIONS.find((l) => l.defaultFor === arrivalType) ??
+    SAMUI_LOCATIONS[SAMUI_LOCATIONS.length - 1]
+  );
+}
+
+export function getLocationByName(name: string | null | undefined): ArrivalLocation | null {
+  if (!name) return null;
+  return SAMUI_LOCATIONS.find(
+    (l) => l.name === name || l.shortName.toLowerCase() === name.toLowerCase()
+  ) ?? null;
+}
+
+// ── Arrival Type Metadata ────────────────────────────────────────────────────
+
+export interface ArrivalTypeConfig {
+  label: string;
+  icon: string; // lucide icon name
+  defaultConfidence: ArrivalConfidence;
+  defaultLocationType: ArrivalLocationType;
+  /** Whether exact timing is expected */
+  precisionExpected: boolean;
+  /** Guidance tone for guest */
+  toneSuffix: string;
+}
+
+export const ARRIVAL_TYPE_CONFIG: Record<ArrivalType, ArrivalTypeConfig> = {
+  flight: {
+    label: "Flight",
+    icon: "Plane",
+    defaultConfidence: "high",
+    defaultLocationType: "airport",
+    precisionExpected: true,
+    toneSuffix: "We'll track your flight and have your driver ready.",
+  },
+  ferry: {
+    label: "Ferry",
+    icon: "Ship",
+    defaultConfidence: "flexible",
+    defaultLocationType: "pier",
+    precisionExpected: false,
+    toneSuffix: "Ferry times can shift — no worries, we'll be flexible with your pickup.",
+  },
+  bus: {
+    label: "Bus",
+    icon: "Bus",
+    defaultConfidence: "flexible",
+    defaultLocationType: "other",
+    precisionExpected: false,
+    toneSuffix: "Just let us know your approximate arrival and we'll coordinate from there.",
+  },
+  hybrid: {
+    label: "Multi-leg",
+    icon: "Route",
+    defaultConfidence: "flexible",
+    defaultLocationType: "airport",
+    precisionExpected: false,
+    toneSuffix: "We'll focus on your final arrival to Koh Samui — the rest is just context.",
+  },
+  unknown: {
+    label: "Not specified",
+    icon: "HelpCircle",
+    defaultConfidence: "unknown",
+    defaultLocationType: "other",
+    precisionExpected: false,
+    toneSuffix: "Let us know how you're getting here when you're ready.",
+  },
+};
+
+// ── Pickup Resolution ────────────────────────────────────────────────────────
+
+export type PickupResolution = "pickup_scheduled" | "self_arrival" | "pickup_disabled";
+
+/**
+ * Resolve the final pickup status.
+ * Admin override (pickup_enabled) ALWAYS wins.
+ */
+export function resolvePickupStatus(
+  transportIntent: TransportIntent,
+  pickupEnabled: boolean,
+): PickupResolution {
+  if (!pickupEnabled) return "pickup_disabled";
+  if (transportIntent === "self_arrival") return "self_arrival";
+  return "pickup_scheduled";
+}
+
+export const PICKUP_RESOLUTION_LABELS: Record<PickupResolution, { label: string; color: string }> = {
+  pickup_scheduled: { label: "Pickup Scheduled", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300" },
+  self_arrival: { label: "Self Arrival", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" },
+  pickup_disabled: { label: "Pickup Disabled by Admin", color: "bg-muted text-muted-foreground" },
+};
+
+// ── Normalized Arrival Data ──────────────────────────────────────────────────
+
+export interface NormalizedArrival {
+  arrivalType: ArrivalType;
+  locationType: ArrivalLocationType;
+  locationName: string | null;
+  arrivalTime: string | null;
+  confidence: ArrivalConfidence;
+  transportIntent: TransportIntent;
+  pickupEnabled: boolean;
+  /** Resolved pickup status */
+  pickupResolution: PickupResolution;
+  /** Whether staff needs to act on this arrival */
+  requiresStaffAction: boolean;
+}
+
+/**
+ * Normalize raw pickup data into the unified arrival model.
+ * This is the single adapter between DB shape and arrival logic.
+ */
+export function normalizeArrival(pickup: {
+  arrival_type?: string;
+  arrival_location_type?: string;
+  arrival_location_name?: string | null;
+  arrival_datetime?: string | null;
+  arrival_confidence?: string;
+  transport_intent?: string;
+  pickup_enabled?: boolean;
+  status?: string;
+}): NormalizedArrival {
+  const arrivalType = (ARRIVAL_TYPES.includes(pickup.arrival_type as ArrivalType)
+    ? pickup.arrival_type
+    : "flight") as ArrivalType;
+
+  const locationType = (ARRIVAL_LOCATION_TYPES.includes(pickup.arrival_location_type as ArrivalLocationType)
+    ? pickup.arrival_location_type
+    : ARRIVAL_TYPE_CONFIG[arrivalType].defaultLocationType) as ArrivalLocationType;
+
+  const confidence = (ARRIVAL_CONFIDENCE_LEVELS.includes(pickup.arrival_confidence as ArrivalConfidence)
+    ? pickup.arrival_confidence
+    : ARRIVAL_TYPE_CONFIG[arrivalType].defaultConfidence) as ArrivalConfidence;
+
+  const transportIntent = (TRANSPORT_INTENTS.includes(pickup.transport_intent as TransportIntent)
+    ? pickup.transport_intent
+    : "pickup") as TransportIntent;
+
+  const pickupEnabled = pickup.pickup_enabled !== false;
+  const resolution = resolvePickupStatus(transportIntent, pickupEnabled);
+
+  return {
+    arrivalType,
+    locationType,
+    locationName: pickup.arrival_location_name ?? null,
+    arrivalTime: pickup.arrival_datetime ?? null,
+    confidence,
+    transportIntent,
+    pickupEnabled,
+    pickupResolution: resolution,
+    requiresStaffAction: resolution === "pickup_scheduled" && pickup.status !== "completed" && pickup.status !== "cancelled",
+  };
+}
