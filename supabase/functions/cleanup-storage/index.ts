@@ -1,10 +1,20 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+const ALLOWED_ORIGINS = [
+  Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
+  "https://ground-stay-truth.lovable.app",
+  "http://localhost:5173",
+  "http://localhost:8080",
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  };
+}
 
 /**
  * Storage Cleanup
@@ -17,7 +27,7 @@ const corsHeaders = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: getCorsHeaders(req) });
   }
 
   try {
@@ -31,45 +41,80 @@ Deno.serve(async (req) => {
     if (token !== serviceRoleKey && token !== anonKey) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
     const results: Record<string, number> = {};
 
-    // 1. Guest documents — find files not referenced in guest_documents table
+    // 1. Guest documents — enforce 90-day retention after checkout
     const { data: guestFiles } = await supabase.storage
       .from("guest-documents")
       .list("", { limit: 500 });
 
     let guestOrphans = 0;
+    let guestRetention = 0;
     if (guestFiles && guestFiles.length > 0) {
-      // Get all referenced file paths
+      // Get all referenced file paths with booking checkout dates
       const { data: dbDocs } = await supabase
         .from("guest_documents")
-        .select("file_path");
+        .select("file_path, booking_id, bookings(check_out, state)");
 
       const referencedPaths = new Set((dbDocs ?? []).map((d: any) => d.file_path));
+      
+      // F-07: Build a map of file paths to checkout dates for retention enforcement
+      const pathToCheckout = new Map<string, string>();
+      for (const doc of (dbDocs ?? [])) {
+        const checkout = (doc as any).bookings?.check_out;
+        const state = (doc as any).bookings?.state;
+        if (checkout && (state === "completed" || state === "cancelled")) {
+          pathToCheckout.set(doc.file_path, checkout);
+        }
+      }
+
+      const RETENTION_DAYS = 90;
 
       for (const file of guestFiles) {
-        // Skip folders
         if (!file.name || file.metadata?.mimetype === "application/x-directory") continue;
 
         const filePath = file.name;
-        if (!referencedPaths.has(filePath) && !referencedPaths.has(`guest-documents/${filePath}`)) {
-          // Check file age — only delete if older than 7 days
-          const createdAt = file.created_at ? new Date(file.created_at) : null;
+        const isReferenced = referencedPaths.has(filePath) || referencedPaths.has(`guest-documents/${filePath}`);
+        const createdAt = file.created_at ? new Date(file.created_at) : null;
+
+        if (!isReferenced) {
+          // Orphaned file — delete if older than 7 days
           if (createdAt && Date.now() - createdAt.getTime() > 7 * 24 * 60 * 60 * 1000) {
             const { error } = await supabase.storage
               .from("guest-documents")
               .remove([filePath]);
             if (!error) guestOrphans++;
           }
+        } else {
+          // F-07: Check 90-day retention policy for completed/cancelled bookings
+          const checkoutDate = pathToCheckout.get(filePath) || pathToCheckout.get(`guest-documents/${filePath}`);
+          if (checkoutDate) {
+            const daysSinceCheckout = (Date.now() - new Date(checkoutDate).getTime()) / (1000 * 60 * 60 * 24);
+            if (daysSinceCheckout > RETENTION_DAYS) {
+              // Delete the storage file
+              const { error: storageErr } = await supabase.storage
+                .from("guest-documents")
+                .remove([filePath]);
+              if (!storageErr) {
+                // Delete the DB record too
+                await supabase
+                  .from("guest_documents")
+                  .delete()
+                  .eq("file_path", filePath);
+                guestRetention++;
+              }
+            }
+          }
         }
       }
     }
-    results["guest-documents"] = guestOrphans;
+    results["guest-documents-orphans"] = guestOrphans;
+    results["guest-documents-retention"] = guestRetention;
 
     // 2. Maintenance photos — find files not referenced in maintenance_requests
     const { data: maintFiles } = await supabase.storage
@@ -112,12 +157,12 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({ success: true, removed: results, timestamp: new Date().toISOString() }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   } catch (err) {
     return new Response(
       JSON.stringify({ error: (err as Error).message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   }
 });

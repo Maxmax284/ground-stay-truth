@@ -82,7 +82,8 @@ const Legal = () => {
                   <li><strong>Access</strong> your personal data through your profile page</li>
                   <li><strong>Correct</strong> inaccurate data by editing your profile</li>
                   <li><strong>Delete</strong> your account and all associated data using the account deletion feature in Settings → Profile → Danger Zone</li>
-                  <li><strong>Data portability:</strong> Contact us to request a copy of your data in a structured format</li>
+                  <li><strong>Data portability:</strong> Download a complete copy of your personal data in JSON format using the "Download My Data" button in Settings → Profile</li>
+                  <li><strong>Withdraw consent:</strong> You may withdraw consent at any time by deleting your account or contacting us</li>
                 </ul>
                 <p>Account deletion permanently removes your profile, booking history, messages, uploaded documents, and all associated records. This action cannot be reversed.</p>
 
@@ -115,7 +116,26 @@ const Legal = () => {
                 <h2 className="text-lg font-semibold">8. Cookies &amp; Local Storage</h2>
                 <p>We use browser local storage to save your language preference and authentication session. We do not use tracking cookies or third-party analytics trackers.</p>
 
-                <h2 className="text-lg font-semibold">9. Contact &amp; Data Protection</h2>
+                <h2 className="text-lg font-semibold">9. Data Breach Notification</h2>
+                <p>In the event of a personal data breach that poses a risk to your rights and freedoms, we will:</p>
+                <ul>
+                  <li>Notify the relevant supervisory authority within 72 hours of becoming aware of the breach (GDPR Article 33).</li>
+                  <li>Notify affected individuals without undue delay if the breach is likely to result in a high risk to their rights and freedoms (GDPR Article 34).</li>
+                  <li>Provide details of the breach, its likely consequences, and the measures taken to address it.</li>
+                  <li>Maintain a complete record of all breaches in our internal security audit log, regardless of severity.</li>
+                </ul>
+
+                <h2 className="text-lg font-semibold">10. Thailand Personal Data Protection Act (PDPA)</h2>
+                <p>For guests and staff located in Thailand, or whose data is processed in connection with properties operating in Thailand, we comply with the Personal Data Protection Act B.E. 2562 (2019). This includes:</p>
+                <ul>
+                  <li><strong>Consent:</strong> We obtain explicit consent before collecting personal data, as indicated during account registration.</li>
+                  <li><strong>Purpose limitation:</strong> Data is collected only for the purposes disclosed in this policy.</li>
+                  <li><strong>Rights of data subjects:</strong> You have the right to access, correct, delete, restrict processing, and obtain a copy of your personal data. These rights can be exercised through the profile settings or by contacting us.</li>
+                  <li><strong>Data controller:</strong> The property operator is the data controller. Contact details are provided in your booking confirmation.</li>
+                  <li><strong>Cross-border transfers:</strong> Where personal data is transferred outside Thailand, we ensure the receiving country has adequate data protection standards, or apply appropriate safeguards.</li>
+                </ul>
+
+                <h2 className="text-lg font-semibold">11. Contact &amp; Data Protection</h2>
                 <p>For data requests, questions about this policy, to exercise your rights under GDPR, CCPA, or Thailand's PDPA, contact the property management team directly through the messaging system in your guest portal, or email us at the address provided during your booking confirmation.</p>
                 <p>If you are in the European Union and are not satisfied with our response, you have the right to lodge a complaint with your local Data Protection Authority.</p>
               </CardContent>

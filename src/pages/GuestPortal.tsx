@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMarkMessagesRead } from "@/hooks/useBookings";
 import { format, startOfMonth, addMonths, subMonths, formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizeMessageContent } from "@/lib/sanitize";
 import { useAuth } from "@/hooks/useAuth";
 import { useGuestHistory } from "@/hooks/useGuestHistory";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
@@ -688,7 +689,9 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
 
   const sendMessage = useMutation({
     mutationFn: async (content: string) => {
-      const { error } = await supabase.from("messages").insert({ booking_id: booking.id, content, sender_id: userId!, is_internal: false });
+      const sanitized = sanitizeMessageContent(content);
+      if (!sanitized) throw new Error("Message is empty");
+      const { error } = await supabase.from("messages").insert({ booking_id: booking.id, content: sanitized, sender_id: userId!, is_internal: false });
       if (error) throw error;
     },
     onSuccess: () => { setReply(""); queryClient.invalidateQueries({ queryKey: ["guest-messages"] }); toast.success(t("messages.messageSent")); },
@@ -887,7 +890,9 @@ function GuestThreadView({ bookingId, booking, messages, userId, onBack }: {
 
   const sendMessage = useMutation({
     mutationFn: async (content: string) => {
-      const { error } = await supabase.from("messages").insert({ booking_id: bookingId, content, sender_id: userId!, is_internal: false });
+      const sanitized = sanitizeMessageContent(content);
+      if (!sanitized) throw new Error("Message is empty");
+      const { error } = await supabase.from("messages").insert({ booking_id: bookingId, content: sanitized, sender_id: userId!, is_internal: false });
       if (error) throw error;
     },
     onSuccess: () => { setReply(""); queryClient.invalidateQueries({ queryKey: ["guest-messages"] }); toast.success(t("messages.messageSent")); },

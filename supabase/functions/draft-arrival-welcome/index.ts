@@ -1,11 +1,21 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const ALLOWED_ORIGINS = [
+  Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
+  "https://ground-stay-truth.lovable.app",
+  "http://localhost:5173",
+  "http://localhost:8080",
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  };
+}
 
 /** Build property-aware airport context dynamically */
 function buildAirportInfo(airport: string, propertyName: string, operationalMode: string): string {
@@ -146,7 +156,7 @@ function extractToolArgs(aiData: any): any {
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { headers: getCorsHeaders(req) });
 
   try {
     const { user, serviceClient } = await verifyStaff(req);
@@ -156,7 +166,7 @@ serve(async (req) => {
 
     if (!airport || !["bkk", "samui"].includes(airport)) {
       return new Response(JSON.stringify({ error: "airport must be 'bkk' or 'samui'" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -220,7 +230,7 @@ Suggest 4-5 sections that would be useful in this guide. For existing sections, 
 
       const result = extractToolArgs(aiData);
       return new Response(JSON.stringify({ suggestions: result.suggestions || [] }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -297,7 +307,7 @@ If the request is unclear or just a question, respond conversationally without u
         reply: result.reply,
         updated_template: result.updated_template || null,
       }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -367,7 +377,7 @@ Write a well-structured, practical section that:
 
       const draft = extractToolArgs(aiData);
       return new Response(JSON.stringify({ draft }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -376,7 +386,7 @@ Write a well-structured, practical section that:
       const sectionToRewrite = section || body.section;
       if (!sectionToRewrite) {
         return new Response(JSON.stringify({ error: "section is required for rewrite_section mode" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
       }
 
@@ -424,7 +434,7 @@ ${context ? `\nAdmin notes: ${context}` : ""}`;
 
       const draft = extractToolArgs(aiData);
       return new Response(JSON.stringify({ draft }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -471,14 +481,14 @@ ${context ? `\nAdditional context from the admin: ${context}` : ""}`;
 
     const draft = extractToolArgs(aiData);
     return new Response(JSON.stringify({ draft }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   } catch (err: any) {
     console.error("draft-arrival-welcome error:", err);
     const status = err.status || 500;
     const message = err.message || String(err);
     return new Response(JSON.stringify({ error: message }), {
-      status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }
 });

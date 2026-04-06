@@ -1,11 +1,30 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+// F-53: PII minimization — strip sensitive data before sending to AI
+function minimizePII(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, "[EMAIL]")
+    .replace(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}/g, "[PHONE]")
+    .replace(/\b[A-Z]{1,2}\d{6,9}\b/g, "[ID_DOC]");
+}
+
+const ALLOWED_ORIGINS = [
+  Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
+  "https://ground-stay-truth.lovable.app",
+  "http://localhost:5173",
+  "http://localhost:8080",
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  };
+}
 
 // ─── AIRPORT COORDINATES FOR WEATHER ─────────────────────────────────────────
 const AIRPORT_COORDS: Record<string, { lat: number; lon: number; name: string }> = {
@@ -236,7 +255,8 @@ function buildSystemPrompt(role: string, language: string, contextData: string, 
   layers.push(`LANGUAGE: Respond in ${language}.`);
 
   if (contextData) {
-    layers.push(contextData);
+    // F-53: Minimize PII before including in AI prompt
+    layers.push(minimizePII(contextData));
   }
 
   return layers.join("\n\n");
@@ -244,7 +264,7 @@ function buildSystemPrompt(role: string, language: string, contextData: string, 
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: getCorsHeaders(req) });
   }
 
   try {
@@ -252,7 +272,7 @@ serve(async (req) => {
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -264,7 +284,7 @@ serve(async (req) => {
     if (!lovableApiKey) {
       return new Response(JSON.stringify({ error: "AI not configured" }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -276,7 +296,7 @@ serve(async (req) => {
     if (userError || !userData?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -295,7 +315,7 @@ serve(async (req) => {
     if ((recentCalls ?? 0) >= SERVER_RATE_LIMIT) {
       return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
         status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -348,7 +368,7 @@ serve(async (req) => {
       if (hasRealIds) {
         return new Response(JSON.stringify({ error: "Simulation context contains non-simulated IDs" }), {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
       }
 
@@ -402,14 +422,14 @@ serve(async (req) => {
         const status = aiResponse.status;
         return new Response(JSON.stringify({ error: status === 429 ? "Rate limit" : "AI error" }), {
           status,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
       }
 
       const result = await aiResponse.json();
       const content = result.choices?.[0]?.message?.content || "";
       return new Response(JSON.stringify({ content, actor }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -425,7 +445,7 @@ serve(async (req) => {
     if (policyMap.get("ai_assistant_enabled") === "false") {
       return new Response(JSON.stringify({ error: "AI assistant is disabled" }), {
         status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -440,7 +460,7 @@ serve(async (req) => {
     if (role && roleKeyMap[role] && policyMap.get(roleKeyMap[role]) === "false") {
       return new Response(JSON.stringify({ error: "AI is disabled for your role" }), {
         status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -984,14 +1004,14 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
         console.error("AI gateway error:", policyResponse.status, t);
         return new Response(JSON.stringify({ error: "AI gateway error" }), {
           status: policyResponse.status,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
       }
 
       const policyResult = await policyResponse.json();
       const content = policyResult.choices?.[0]?.message?.content || "";
       return new Response(JSON.stringify({ content }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -1018,25 +1038,25 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
           status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: "AI credits exhausted" }), {
           status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
       }
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
       return new Response(JSON.stringify({ error: "AI gateway error" }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
     return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: { ...getCorsHeaders(req), "Content-Type": "text/event-stream" },
     });
   } catch (e) {
     console.error(JSON.stringify({
@@ -1048,7 +1068,7 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
     }));
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   }
 });

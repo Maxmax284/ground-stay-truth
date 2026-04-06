@@ -70,6 +70,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRoleResolved(true);
   }, []);
 
+  // F-15: Staff session timeout — auto sign out after inactivity
+  useEffect(() => {
+    if (!session || role === "guest" || role === null) return;
+
+    const TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes for staff
+    let timer: ReturnType<typeof setTimeout>;
+
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        await supabase.auth.signOut();
+      }, TIMEOUT_MS);
+    };
+
+    const events = ["mousedown", "keydown", "touchstart", "scroll"];
+    events.forEach((e) => window.addEventListener(e, resetTimer));
+    resetTimer();
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach((e) => window.removeEventListener(e, resetTimer));
+    };
+  }, [session, role]);
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -124,11 +148,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
+  // F-30: Client-side auth rate limiting
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [loginLocked, setLoginLocked] = useState(false);
+
   const signIn = async (email: string, password: string) => {
+    if (loginLocked) {
+      return { error: new Error("Too many login attempts. Please wait 60 seconds.") };
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       emitStaffLoginFailed(email);
+      const newAttempts = loginAttempts + 1;
+      setLoginAttempts(newAttempts);
+      if (newAttempts >= 5) {
+        setLoginLocked(true);
+        setTimeout(() => { setLoginLocked(false); setLoginAttempts(0); }, 60_000);
+      }
     } else if (data.user) {
+      setLoginAttempts(0);
       // Emit login event after role is resolved (deferred)
       const userId = data.user.id;
       const userEmail = data.user.email;
