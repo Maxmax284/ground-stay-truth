@@ -51,6 +51,7 @@ export default function ProfileEditor() {
   const [lineId, setLineId] = useState<string | null>(null);
   const [preferredLang, setPreferredLang] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const currentName = fullName ?? profile.data?.full_name ?? "";
   const currentPhone = phone ?? profile.data?.phone ?? "";
