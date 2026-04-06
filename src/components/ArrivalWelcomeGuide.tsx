@@ -367,7 +367,7 @@ export function ArrivalWelcomeCard({ airport, arrivalLocationId, compact = false
             <MapPin className="h-4 w-4 text-primary shrink-0" />
             <span className="text-sm font-semibold text-foreground">Arrival Guide</span>
             <Badge variant="secondary" className="text-[10px] ml-auto">
-              {airport?.toUpperCase()}
+              {locationLabel}
             </Badge>
           </div>
           {displayMessage && (
