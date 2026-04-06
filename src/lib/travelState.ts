@@ -2,21 +2,27 @@
  * Travel State Awareness Layer
  * 
  * Centralizes the logic for interpreting a guest's current position
- * in their multi-leg journey. The system recognizes that most guests
- * arrive via international flight to Bangkok (BKK) then domestic
- * flight to Koh Samui (USM).
+ * in their journey. Supports all arrival types: flight, ferry, bus, hybrid.
+ * 
+ * For flights: recognizes multi-leg journeys (BKK → USM).
+ * For ferry/bus/hybrid: uses flexible timing with arrival_confidence.
  * 
  * Field semantics (existing schema, unchanged):
  *   - international_flight_number: first leg (context only, not operational)
  *   - flight_number: final/domestic leg (drives pickup timing & dispatch)
  *   - final_flight_confirmed: whether the operational flight is locked in
  *   - confirmed_airport: where the guest said they landed
- *   - guest_landed_at: timestamp of "I've Landed" confirmation
+ *   - guest_landed_at: timestamp of "I've Landed" / "I've Arrived" confirmation
+ *   - arrival_type: flight | ferry | bus | hybrid | unknown
+ *   - arrival_location_type: airport | pier | other
+ *   - transport_intent: pickup | self_arrival
+ *   - pickup_enabled: admin override (false = no pickup regardless)
  * 
  * The ONLY flight that drives operational decisions (driver dispatch,
  * arrival readiness, pickup timing) is flight_number — the final leg.
  * international_flight_number exists purely for staff context.
  */
+import { type ArrivalType, type TransportIntent, resolvePickupStatus } from "@/lib/arrivalModel";
 
 export type TravelState =
   | "pre_departure"        // No landing, no transit — guest hasn't left yet
