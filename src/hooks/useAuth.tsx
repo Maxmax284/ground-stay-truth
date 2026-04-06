@@ -148,11 +148,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
+  // F-30: Client-side auth rate limiting
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [loginLocked, setLoginLocked] = useState(false);
+
   const signIn = async (email: string, password: string) => {
+    if (loginLocked) {
+      return { error: new Error("Too many login attempts. Please wait 60 seconds.") };
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       emitStaffLoginFailed(email);
+      const newAttempts = loginAttempts + 1;
+      setLoginAttempts(newAttempts);
+      if (newAttempts >= 5) {
+        setLoginLocked(true);
+        setTimeout(() => { setLoginLocked(false); setLoginAttempts(0); }, 60_000);
+      }
     } else if (data.user) {
+      setLoginAttempts(0);
       // Emit login event after role is resolved (deferred)
       const userId = data.user.id;
       const userEmail = data.user.email;
