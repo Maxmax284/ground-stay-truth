@@ -53,7 +53,13 @@ Deno.serve(async (req) => {
     let forwardErrors = 0;
 
     if (enabled && endpoint) {
-      const fenrirApiKey = Deno.env.get("FENRIR_API_KEY") || "";
+      // Read API key from integration_secrets (secure) with env fallback
+      const { data: fenrirSecretRow } = await supabase
+        .from("integration_secrets")
+        .select("encrypted_value")
+        .eq("secret_key", "fenrir_api_key")
+        .maybeSingle();
+      const fenrirApiKey = fenrirSecretRow?.encrypted_value || Deno.env.get("FENRIR_API_KEY") || "";
 
       for (const event of events) {
         try {

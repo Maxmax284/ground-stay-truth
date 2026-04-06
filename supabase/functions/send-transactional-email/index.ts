@@ -284,15 +284,21 @@ serve(async (req) => {
       }
     }
 
-    // Get Resend API key from policy_settings
-    const { data: policies } = await adminClient
+    // Get Resend API key from integration_secrets (secure)
+    const { data: resendSecretRow } = await adminClient
+      .from("integration_secrets")
+      .select("encrypted_value")
+      .eq("secret_key", "resend_api_key")
+      .maybeSingle();
+    const resendApiKey = resendSecretRow?.encrypted_value;
+
+    // Get from email from policy_settings (non-secret)
+    const { data: fromPolicies } = await adminClient
       .from("policy_settings")
       .select("key, value")
-      .in("key", ["resend_api_key", "resend_from_email"]);
-
-    const policyMap = new Map((policies ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]));
-    const resendApiKey = policyMap.get("resend_api_key");
-    const fromEmail = policyMap.get("resend_from_email") || "noreply@groundstay.app";
+      .in("key", ["resend_from_email"]);
+    const fromPolicyMap = new Map((fromPolicies ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]));
+    const fromEmail = fromPolicyMap.get("resend_from_email") || "noreply@groundstay.app";
 
     if (!resendApiKey || resendApiKey.length < 5) {
       console.log("Resend API key not configured, logging email as pending");

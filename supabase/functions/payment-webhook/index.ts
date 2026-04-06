@@ -111,26 +111,17 @@ serve(async (req) => {
   const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
   try {
-    // Get provider settings
-    const { data: policies } = await adminClient
-      .from("policy_settings")
-      .select("key, value")
-      .in("key", [
-        "stripe_webhook_secret",
-        "stripe_secret_key",
-        "payment_provider",
-        "deposit_percentage",
-        "currency_symbol",
-      ]);
+    // Get secrets from integration_secrets (not policy_settings)
+    const { data: secretRows } = await adminClient
+      .from("integration_secrets")
+      .select("secret_key, encrypted_value")
+      .in("secret_key", ["stripe_webhook_secret", "stripe_secret_key"]);
 
-    const policyMap = new Map(
-      (policies ?? []).map((p: any) => [
-        p.key,
-        String(p.value).replace(/^"|"$/g, ""),
-      ])
+    const secretMap = new Map(
+      (secretRows ?? []).map((s: any) => [s.secret_key, s.encrypted_value])
     );
-    const webhookSecret = policyMap.get("stripe_webhook_secret");
-    const stripeSecretKey = policyMap.get("stripe_secret_key");
+    const webhookSecret = secretMap.get("stripe_webhook_secret");
+    const stripeSecretKey = secretMap.get("stripe_secret_key");
 
     if (
       !webhookSecret ||

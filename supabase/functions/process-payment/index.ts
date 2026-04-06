@@ -72,13 +72,19 @@ function createStripeAdapter(secretKey: string): ProviderAdapter {
 }
 
 // ── Provider Resolution ──
-function resolveProvider(
+async function resolveProvider(
   providerName: string,
-  policyMap: Map<string, string>
-): ProviderAdapter {
+  adminClient: any
+): Promise<ProviderAdapter> {
   switch (providerName) {
     case "stripe": {
-      const secretKey = policyMap.get("stripe_secret_key");
+      // Read secret from integration_secrets (not policy_settings)
+      const { data: secretRow } = await adminClient
+        .from("integration_secrets")
+        .select("encrypted_value")
+        .eq("secret_key", "stripe_secret_key")
+        .maybeSingle();
+      const secretKey = secretRow?.encrypted_value;
       if (!secretKey || secretKey.length < 10) {
         throw new Error("Stripe not configured");
       }
@@ -204,14 +210,12 @@ serve(async (req) => {
       }
     }
 
-    // Get provider settings
+    // Get non-secret policy settings
     const { data: policies } = await adminClient
       .from("policy_settings")
       .select("key, value")
       .in("key", [
         "payment_provider",
-        "stripe_secret_key",
-        "stripe_publishable_key",
         "deposit_percentage",
         "currency_code",
       ]);
@@ -227,7 +231,7 @@ serve(async (req) => {
     // Resolve the provider adapter
     let adapter: ProviderAdapter;
     try {
-      adapter = resolveProvider(providerName, policyMap);
+      adapter = await resolveProvider(providerName, adminClient);
     } catch (e: any) {
       return new Response(JSON.stringify({ error: e.message }), {
         status: 400,
