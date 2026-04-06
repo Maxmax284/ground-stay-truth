@@ -24,23 +24,24 @@ serve(async (req) => {
     const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     // Get today's pickups with flight numbers that aren't in a terminal state
+    // Fetch pickups with a wider window — today + tomorrow for timezone safety
     const todayStart = new Date();
     todayStart.setUTCHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setUTCHours(23, 59, 59, 999);
+    const tomorrowEnd = new Date(todayStart.getTime() + 2 * 24 * 60 * 60 * 1000);
 
     const { data: pickups, error: pickupsError } = await serviceClient
       .from("airport_pickups")
       .select("id, flight_number, arrival_datetime, booking_id")
       .not("flight_number", "is", null)
       .gte("arrival_datetime", todayStart.toISOString())
-      .lte("arrival_datetime", todayEnd.toISOString())
-      .in("status", ["requested", "assigned", "confirmed"]);
+      .lte("arrival_datetime", tomorrowEnd.toISOString())
+      .in("status", ["requested", "assigned", "confirmed"])
+      .limit(200); // Hard cap to prevent runaway processing
 
     if (pickupsError) throw pickupsError;
 
     if (!pickups?.length) {
-      return new Response(JSON.stringify({ message: "No active flights to poll today", checked: 0 }), {
+      return new Response(JSON.stringify({ message: "No active flights to poll", checked: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
