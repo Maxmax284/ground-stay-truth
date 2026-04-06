@@ -135,7 +135,17 @@ const Legal = () => {
                   <li><strong>Cross-border transfers:</strong> Where personal data is transferred outside Thailand, we ensure the receiving country has adequate data protection standards, or apply appropriate safeguards.</li>
                 </ul>
 
-                <h2 className="text-lg font-semibold">11. Contact &amp; Data Protection</h2>
+                <h2 className="text-lg font-semibold">11. California Consumer Privacy Act (CCPA)</h2>
+                <p>If you are a California resident, you have the following additional rights under the CCPA:</p>
+                <ul>
+                  <li><strong>Right to Know:</strong> You may request details about the categories and specific pieces of personal information we have collected about you in the preceding 12 months.</li>
+                  <li><strong>Right to Delete:</strong> You may request deletion of your personal information, subject to certain exceptions (e.g., legal obligations, fraud prevention).</li>
+                  <li><strong>Right to Opt-Out of Sale:</strong> We do not sell personal information to third parties. Your data is used solely for providing our accommodation services.</li>
+                  <li><strong>Non-Discrimination:</strong> We will not discriminate against you for exercising any of your CCPA rights.</li>
+                </ul>
+                <p>To exercise these rights, use the "Download My Data" feature in your profile settings or delete your account through Settings → Profile → Danger Zone.</p>
+
+                <h2 className="text-lg font-semibold">12. Contact &amp; Data Protection</h2>
                 <p>For data requests, questions about this policy, to exercise your rights under GDPR, CCPA, or Thailand's PDPA, contact the property management team directly through the messaging system in your guest portal, or email us at the address provided during your booking confirmation.</p>
                 <p>If you are in the European Union and are not satisfied with our response, you have the right to lodge a complaint with your local Data Protection Authority.</p>
               </CardContent>
