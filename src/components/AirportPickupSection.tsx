@@ -98,11 +98,16 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
   }
 
   const driver = pickup.drivers;
-  const internationalFlight = (pickup as any).international_flight_number as string | null;
-  const finalFlightConfirmed = !!(pickup as any).final_flight_confirmed;
-  const confirmedAirport = (pickup as any).confirmed_airport as string | null;
-  const guestLandedAt = (pickup as any).guest_landed_at as string | null;
+  const internationalFlight = pickup.international_flight_number;
+  const finalFlightConfirmed = !!pickup.final_flight_confirmed;
+  const confirmedAirport = pickup.confirmed_airport;
+  const guestLandedAt = pickup.guest_landed_at;
   const hasConnection = !!internationalFlight;
+
+  // Unified arrival model
+  const arrival = normalizeArrival(pickup);
+  const arrivalTypeConfig = ARRIVAL_TYPE_CONFIG[arrival.arrivalType];
+  const pickupLabel = PICKUP_RESOLUTION_LABELS[arrival.pickupResolution];
 
   // Centralized travel state
   const travelInfo = getTravelState({
@@ -113,6 +118,12 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
     confirmed_airport: confirmedAirport,
     guest_landed_at: guestLandedAt,
     arrival_datetime: pickup.arrival_datetime,
+    arrival_type: pickup.arrival_type,
+    arrival_location_type: pickup.arrival_location_type,
+    arrival_location_name: pickup.arrival_location_name,
+    arrival_confidence: pickup.arrival_confidence,
+    transport_intent: pickup.transport_intent,
+    pickup_enabled: pickup.pickup_enabled,
   });
 
   const handleAssignDriver = async (driverId: string) => {
