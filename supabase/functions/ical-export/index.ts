@@ -137,7 +137,7 @@ serve(async (req) => {
 
     return new Response(ical, {
       headers: {
-        ...corsHeaders,
+        ...getCorsHeaders(req),
         "Content-Type": "text/calendar; charset=utf-8",
         "Content-Disposition": `attachment; filename="${unit.name.replace(/[^a-zA-Z0-9]/g, "_")}.ics"`,
       },
