@@ -77,7 +77,13 @@ export default function Stay() {
           localStorage.setItem("gs_cache_props", JSON.stringify(fetchedProperties));
           localStorage.setItem("gs_cache_currency", fetchedSymbol);
         } catch { /* quota */ }
-      } catch {
+      } catch (err: any) {
+        // Log the failure for observability
+        logClientError({
+          action: "fetch:get-availability",
+          category: "edge_function_error",
+          failureReason: err?.message || "Unknown fetch error",
+        });
         // Offline or error — load from cache
         try {
           const cached = localStorage.getItem("gs_cache_units");
