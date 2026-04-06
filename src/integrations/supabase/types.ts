@@ -1292,6 +1292,36 @@ export type Database = {
           },
         ]
       }
+      profile_audit_log: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          field_name: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          profile_user_id: string
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          field_name: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          profile_user_id: string
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          field_name?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          profile_user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
