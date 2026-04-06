@@ -70,6 +70,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRoleResolved(true);
   }, []);
 
+  // F-15: Staff session timeout — auto sign out after inactivity
+  useEffect(() => {
+    if (!session || role === "guest" || role === null) return;
+
+    const TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes for staff
+    let timer: ReturnType<typeof setTimeout>;
+
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        await supabase.auth.signOut();
+      }, TIMEOUT_MS);
+    };
+
+    const events = ["mousedown", "keydown", "touchstart", "scroll"];
+    events.forEach((e) => window.addEventListener(e, resetTimer));
+    resetTimer();
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach((e) => window.removeEventListener(e, resetTimer));
+    };
+  }, [session, role]);
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
