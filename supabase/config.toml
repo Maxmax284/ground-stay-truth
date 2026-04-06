@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.cleanup-retention]
 verify_jwt = false
+
+[functions.cleanup-storage]
+verify_jwt = false

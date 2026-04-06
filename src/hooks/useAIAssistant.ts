@@ -25,6 +25,41 @@ export function useAIAssistant() {
 
   // Cap conversation history sent to API to prevent unbounded token growth
   const MAX_HISTORY_MESSAGES = 12;
+  // When history exceeds this, summarize older messages into a single context message
+  const SUMMARIZE_THRESHOLD = 16;
+
+  /** Compress older messages into a summary to reduce token costs */
+  function compressHistory(allMessages: AIMessage[]): AIMessage[] {
+    if (allMessages.length <= SUMMARIZE_THRESHOLD) {
+      // Just trim to max
+      return allMessages.length > MAX_HISTORY_MESSAGES
+        ? allMessages.slice(-MAX_HISTORY_MESSAGES)
+        : allMessages;
+    }
+
+    // Keep last MAX_HISTORY_MESSAGES messages, summarize the rest
+    const oldMessages = allMessages.slice(0, -MAX_HISTORY_MESSAGES);
+    const recentMessages = allMessages.slice(-MAX_HISTORY_MESSAGES);
+
+    // Build a condensed summary of older exchanges
+    const summaryParts: string[] = [];
+    for (let i = 0; i < oldMessages.length; i += 2) {
+      const userMsg = oldMessages[i];
+      const assistantMsg = oldMessages[i + 1];
+      if (userMsg?.role === "user") {
+        const userSnippet = userMsg.content.slice(0, 80);
+        const assistantSnippet = assistantMsg?.content?.slice(0, 120) || "(no reply)";
+        summaryParts.push(`Q: ${userSnippet}${userMsg.content.length > 80 ? "…" : ""} → A: ${assistantSnippet}${(assistantMsg?.content?.length || 0) > 120 ? "…" : ""}`);
+      }
+    }
+
+    const summaryMessage: AIMessage = {
+      role: "user",
+      content: `[Earlier conversation summary — ${oldMessages.length} messages condensed]\n${summaryParts.join("\n")}`,
+    };
+
+    return [summaryMessage, ...recentMessages];
+  }
 
   const sendMessage = useCallback(async (input: string, mode: AIMode = "explain", context?: Record<string, any>, language?: string) => {
     if (!session) return;
@@ -47,11 +82,9 @@ export function useAIAssistant() {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    // Trim history to last N messages to control token costs
+    // Compress history to control token costs
     const fullHistory = [...messages, userMsg];
-    const trimmedHistory = fullHistory.length > MAX_HISTORY_MESSAGES
-      ? fullHistory.slice(-MAX_HISTORY_MESSAGES)
-      : fullHistory;
+    const trimmedHistory = compressHistory(fullHistory);
 
     try {
       const resp = await fetch(

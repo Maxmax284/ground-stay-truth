@@ -167,11 +167,13 @@ serve(async (req) => {
     }
 
     const successCount = results.filter(r => r.success).length;
-    console.log(`Poll complete: ${successCount}/${activePickups.length} flights updated`);
+    const skipped = activePickups.length - toProcess.length;
+    console.log(`Poll complete: ${successCount}/${toProcess.length} flights updated${skipped > 0 ? `, ${skipped} deferred` : ""}`);
 
     return new Response(JSON.stringify({
-      message: `Polled ${activePickups.length} flights, ${successCount} updated successfully`,
-      checked: activePickups.length,
+      message: `Polled ${toProcess.length} flights, ${successCount} updated${skipped > 0 ? `, ${skipped} deferred to next run` : ""}`,
+      checked: toProcess.length,
+      deferred: skipped,
       results,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
