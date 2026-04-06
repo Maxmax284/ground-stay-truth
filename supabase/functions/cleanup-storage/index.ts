@@ -48,38 +48,73 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
     const results: Record<string, number> = {};
 
-    // 1. Guest documents — find files not referenced in guest_documents table
+    // 1. Guest documents — enforce 90-day retention after checkout
     const { data: guestFiles } = await supabase.storage
       .from("guest-documents")
       .list("", { limit: 500 });
 
     let guestOrphans = 0;
+    let guestRetention = 0;
     if (guestFiles && guestFiles.length > 0) {
-      // Get all referenced file paths
+      // Get all referenced file paths with booking checkout dates
       const { data: dbDocs } = await supabase
         .from("guest_documents")
-        .select("file_path");
+        .select("file_path, booking_id, bookings(check_out, state)");
 
       const referencedPaths = new Set((dbDocs ?? []).map((d: any) => d.file_path));
+      
+      // F-07: Build a map of file paths to checkout dates for retention enforcement
+      const pathToCheckout = new Map<string, string>();
+      for (const doc of (dbDocs ?? [])) {
+        const checkout = (doc as any).bookings?.check_out;
+        const state = (doc as any).bookings?.state;
+        if (checkout && (state === "completed" || state === "cancelled")) {
+          pathToCheckout.set(doc.file_path, checkout);
+        }
+      }
+
+      const RETENTION_DAYS = 90;
 
       for (const file of guestFiles) {
-        // Skip folders
         if (!file.name || file.metadata?.mimetype === "application/x-directory") continue;
 
         const filePath = file.name;
-        if (!referencedPaths.has(filePath) && !referencedPaths.has(`guest-documents/${filePath}`)) {
-          // Check file age — only delete if older than 7 days
-          const createdAt = file.created_at ? new Date(file.created_at) : null;
+        const isReferenced = referencedPaths.has(filePath) || referencedPaths.has(`guest-documents/${filePath}`);
+        const createdAt = file.created_at ? new Date(file.created_at) : null;
+
+        if (!isReferenced) {
+          // Orphaned file — delete if older than 7 days
           if (createdAt && Date.now() - createdAt.getTime() > 7 * 24 * 60 * 60 * 1000) {
             const { error } = await supabase.storage
               .from("guest-documents")
               .remove([filePath]);
             if (!error) guestOrphans++;
           }
+        } else {
+          // F-07: Check 90-day retention policy for completed/cancelled bookings
+          const checkoutDate = pathToCheckout.get(filePath) || pathToCheckout.get(`guest-documents/${filePath}`);
+          if (checkoutDate) {
+            const daysSinceCheckout = (Date.now() - new Date(checkoutDate).getTime()) / (1000 * 60 * 60 * 24);
+            if (daysSinceCheckout > RETENTION_DAYS) {
+              // Delete the storage file
+              const { error: storageErr } = await supabase.storage
+                .from("guest-documents")
+                .remove([filePath]);
+              if (!storageErr) {
+                // Delete the DB record too
+                await supabase
+                  .from("guest_documents")
+                  .delete()
+                  .eq("file_path", filePath);
+                guestRetention++;
+              }
+            }
+          }
         }
       }
     }
-    results["guest-documents"] = guestOrphans;
+    results["guest-documents-orphans"] = guestOrphans;
+    results["guest-documents-retention"] = guestRetention;
 
     // 2. Maintenance photos — find files not referenced in maintenance_requests
     const { data: maintFiles } = await supabase.storage
