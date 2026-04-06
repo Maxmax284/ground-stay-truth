@@ -66,9 +66,9 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
     <Card className="border-primary/20">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Plane className="h-5 w-5 text-primary" />
-            Today's Pickups
+            <CardTitle className="text-lg flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-primary" />
+              Today's Arrivals
             <Badge variant="secondary" className="text-xs ml-1">{pickups.length}</Badge>
           </CardTitle>
           <div className="flex items-center gap-1.5">
