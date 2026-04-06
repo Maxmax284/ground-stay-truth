@@ -14,8 +14,9 @@ import { useAirportPickup, useUpsertAirportPickup, logPickupAction, type Airport
 import { useDrivers } from "@/hooks/useDrivers";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
-import { Plane, Car, MessageSquare, User, Clock, AlertTriangle, ArrowRight, CheckCircle2, MapPin, UserCheck } from "lucide-react";
+import { Plane, Car, MessageSquare, User, Clock, AlertTriangle, ArrowRight, CheckCircle2, MapPin, UserCheck, Ship, Bus, Route, ShieldOff } from "lucide-react";
 import { getTravelState } from "@/lib/travelState";
+import { normalizeArrival, ARRIVAL_TYPE_CONFIG, PICKUP_RESOLUTION_LABELS, ARRIVAL_TYPES, type ArrivalType } from "@/lib/arrivalModel";
 import { ManualAssistBanner } from "@/components/ManualAssistBanner";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -97,11 +98,16 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
   }
 
   const driver = pickup.drivers;
-  const internationalFlight = (pickup as any).international_flight_number as string | null;
-  const finalFlightConfirmed = !!(pickup as any).final_flight_confirmed;
-  const confirmedAirport = (pickup as any).confirmed_airport as string | null;
-  const guestLandedAt = (pickup as any).guest_landed_at as string | null;
+  const internationalFlight = pickup.international_flight_number;
+  const finalFlightConfirmed = !!pickup.final_flight_confirmed;
+  const confirmedAirport = pickup.confirmed_airport;
+  const guestLandedAt = pickup.guest_landed_at;
   const hasConnection = !!internationalFlight;
+
+  // Unified arrival model
+  const arrival = normalizeArrival(pickup);
+  const arrivalTypeConfig = ARRIVAL_TYPE_CONFIG[arrival.arrivalType];
+  const pickupLabel = PICKUP_RESOLUTION_LABELS[arrival.pickupResolution];
 
   // Centralized travel state
   const travelInfo = getTravelState({
@@ -112,6 +118,12 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
     confirmed_airport: confirmedAirport,
     guest_landed_at: guestLandedAt,
     arrival_datetime: pickup.arrival_datetime,
+    arrival_type: pickup.arrival_type,
+    arrival_location_type: pickup.arrival_location_type,
+    arrival_location_name: pickup.arrival_location_name,
+    arrival_confidence: pickup.arrival_confidence,
+    transport_intent: pickup.transport_intent,
+    pickup_enabled: pickup.pickup_enabled,
   });
 
   const handleAssignDriver = async (driverId: string) => {
@@ -231,13 +243,41 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Plane className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold">Airport Pickup</span>
+            {arrival.arrivalType === "ferry" ? <Ship className="h-4 w-4 text-primary" /> :
+             arrival.arrivalType === "bus" ? <Bus className="h-4 w-4 text-primary" /> :
+             arrival.arrivalType === "hybrid" ? <Route className="h-4 w-4 text-primary" /> :
+             <Plane className="h-4 w-4 text-primary" />}
+            <span className="text-sm font-semibold">
+              {arrival.arrivalType === "flight" ? "Airport Pickup" : `${arrivalTypeConfig.label} Pickup`}
+            </span>
+            <Badge variant="outline" className="text-[9px]">{arrivalTypeConfig.label}</Badge>
           </div>
-          <Badge className={STATUS_COLORS[pickup.status] ?? ""}>{pickup.status}</Badge>
+          <div className="flex items-center gap-1.5">
+            <Badge className={pickupLabel.color}>{pickupLabel.label}</Badge>
+            <Badge className={STATUS_COLORS[pickup.status] ?? ""}>{pickup.status}</Badge>
+          </div>
         </div>
 
-        {/* Manual Assist Banner — Phase 3 */}
+        {/* Arrival location & confidence */}
+        {arrival.locationName && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <MapPin className="h-3 w-3" />
+            <span>{arrival.locationName}</span>
+            {arrival.confidence === "flexible" && (
+              <Badge variant="outline" className="text-[9px]">Flexible timing</Badge>
+            )}
+          </div>
+        )}
+
+        {/* Admin pickup override indicator */}
+        {!pickup.pickup_enabled && (
+          <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-2 text-xs">
+            <ShieldOff className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-muted-foreground">Pickup disabled by admin — guest will self-arrive</span>
+          </div>
+        )}
+
+        {/* Manual Assist Banner */}
         <ManualAssistBanner
           bookingId={bookingId}
           pickupId={pickup.id}
@@ -245,7 +285,6 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
           assistReason={pickup.assist_reason ?? null}
           guestName={guestName}
           onContactGuest={() => {
-            // Deep-link to messaging for this booking
             window.location.hash = `#messages-${bookingId}`;
           }}
         />
@@ -487,8 +526,68 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
           )}
         </div>
 
+        {/* Admin controls: arrival type + pickup override */}
+        {permissions.canAdminOverride(role) && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Admin Controls</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Arrival Type</Label>
+                  <Select
+                    value={pickup.arrival_type ?? "flight"}
+                    onValueChange={async (val) => {
+                      await upsert.mutateAsync({
+                        booking_id: bookingId,
+                        arrival_type: val,
+                        arrival_location_type: ARRIVAL_TYPE_CONFIG[val as ArrivalType]?.defaultLocationType ?? "other",
+                      });
+                      toast({ title: `Arrival type set to ${val}` });
+                    }}
+                  >
+                    <SelectTrigger className="h-7 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ARRIVAL_TYPES.map((t) => (
+                        <SelectItem key={t} value={t}>{ARRIVAL_TYPE_CONFIG[t].label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Pickup Override</Label>
+                  <Button
+                    variant={pickup.pickup_enabled ? "default" : "destructive"}
+                    size="sm"
+                    className="h-7 text-xs w-full"
+                    onClick={async () => {
+                      const newVal = !pickup.pickup_enabled;
+                      await upsert.mutateAsync({
+                        booking_id: bookingId,
+                        pickup_enabled: newVal,
+                      });
+                      await logPickupAction({
+                        bookingId,
+                        pickupId: pickup.id,
+                        action: newVal ? "pickup_enabled" : "pickup_disabled",
+                        note: newVal ? "Admin enabled pickup" : "Admin disabled pickup — guest will self-arrive",
+                      });
+                      toast({ title: newVal ? "Pickup enabled" : "Pickup disabled" });
+                    }}
+                    disabled={upsert.isPending}
+                  >
+                    {pickup.pickup_enabled ? "Pickup Enabled ✓" : "Pickup Disabled ✗"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
         {/* Status actions */}
-        {canManage && nextStatuses.length > 0 && (
+        {canManage && nextStatuses.length > 0 && arrival.pickupResolution === "pickup_scheduled" && (
           <>
             <Separator />
             <div className="flex flex-wrap gap-1.5">

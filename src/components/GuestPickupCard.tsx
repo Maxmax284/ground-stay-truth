@@ -2,11 +2,12 @@ import { useAirportPickup } from "@/hooks/useAirportPickups";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
 import { getTravelState, type TravelStateInfo } from "@/lib/travelState";
+import { normalizeArrival, ARRIVAL_TYPE_CONFIG, PICKUP_RESOLUTION_LABELS, type PickupResolution } from "@/lib/arrivalModel";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Plane, Car, Clock, User, MessageSquare, CheckCircle2, Loader2, AlertTriangle, ArrowRight, MapPin, Info } from "lucide-react";
+import { Plane, Car, Clock, User, MessageSquare, CheckCircle2, Loader2, AlertTriangle, ArrowRight, MapPin, Info, Ship, Bus } from "lucide-react";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Plane }> = {
   requested: { label: "Pickup Requested", color: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300", icon: Loader2 },
@@ -32,6 +33,14 @@ const SEVERITY_ICONS: Record<TravelStateInfo["severity"], typeof Plane> = {
   destructive: AlertTriangle,
 };
 
+const ARRIVAL_ICONS: Record<string, typeof Plane> = {
+  flight: Plane,
+  ferry: Ship,
+  bus: Bus,
+  hybrid: MapPin,
+  unknown: MapPin,
+};
+
 interface Props {
   bookingId: string;
   guestName?: string | null;
@@ -44,6 +53,7 @@ export function GuestPickupCard({ bookingId, guestName }: Props) {
   if (isLoading || !pickup) return null;
   if (pickup.status === "cancelled") return null;
 
+  const arrival = normalizeArrival(pickup);
   const config = STATUS_CONFIG[pickup.status] ?? STATUS_CONFIG.requested;
   const driver = pickup.drivers;
 
@@ -51,14 +61,56 @@ export function GuestPickupCard({ bookingId, guestName }: Props) {
   const travelInfo = getTravelState({
     status: pickup.status,
     flight_number: pickup.flight_number,
-    international_flight_number: (pickup as any).international_flight_number,
-    final_flight_confirmed: (pickup as any).final_flight_confirmed ?? false,
-    confirmed_airport: (pickup as any).confirmed_airport,
-    guest_landed_at: (pickup as any).guest_landed_at,
+    international_flight_number: pickup.international_flight_number,
+    final_flight_confirmed: pickup.final_flight_confirmed ?? false,
+    confirmed_airport: pickup.confirmed_airport,
+    guest_landed_at: pickup.guest_landed_at,
     arrival_datetime: pickup.arrival_datetime,
+    arrival_type: pickup.arrival_type,
+    arrival_location_type: pickup.arrival_location_type,
+    arrival_location_name: pickup.arrival_location_name,
+    arrival_confidence: pickup.arrival_confidence,
+    transport_intent: pickup.transport_intent,
+    pickup_enabled: pickup.pickup_enabled,
   });
 
-  const intlFlight = (pickup as any).international_flight_number as string | null;
+  const intlFlight = pickup.international_flight_number;
+  const ArrivalIcon = ARRIVAL_ICONS[arrival.arrivalType] ?? MapPin;
+  const arrivalLabel = ARRIVAL_TYPE_CONFIG[arrival.arrivalType]?.label ?? "Arrival";
+  const pickupLabel = PICKUP_RESOLUTION_LABELS[arrival.pickupResolution];
+
+  // Self-arrival or pickup disabled — show simplified card
+  if (arrival.pickupResolution !== "pickup_scheduled") {
+    return (
+      <Card className="border-border bg-muted/30">
+        <CardContent className="p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ArrivalIcon className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-semibold text-foreground">{arrivalLabel} Arrival</span>
+            </div>
+            <Badge className={pickupLabel.color}>{pickupLabel.label}</Badge>
+          </div>
+          {arrival.arrivalTime && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              {new Date(arrival.arrivalTime).toLocaleDateString([], { month: "short", day: "numeric" })}
+              {" "}
+              {new Date(arrival.arrivalTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              {arrival.confidence === "flexible" && <Badge variant="outline" className="text-[9px] ml-1">Flexible</Badge>}
+            </div>
+          )}
+          {arrival.locationName && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3" />
+              {arrival.locationName}
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">{travelInfo.guestGuidance}</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const whatsappLink = driver?.whatsapp
     ? `https://wa.me/${driver.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(
@@ -74,14 +126,16 @@ export function GuestPickupCard({ bookingId, guestName }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Plane className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            <span className="text-sm font-semibold text-foreground">Airport Pickup</span>
+            <ArrivalIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <span className="text-sm font-semibold text-foreground">
+              {arrival.arrivalType === "flight" ? "Airport Pickup" : `${arrivalLabel} Pickup`}
+            </span>
           </div>
           <Badge className={config.color}>{config.label}</Badge>
         </div>
 
-        {/* Route display: international → domestic */}
-        {intlFlight && pickup.flight_number && (
+        {/* Route display: international → domestic (flights only) */}
+        {arrival.arrivalType === "flight" && intlFlight && pickup.flight_number && (
           <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg p-2 text-xs text-muted-foreground">
             <Plane className="h-3 w-3 shrink-0" />
             <span>{intlFlight}</span>
@@ -91,7 +145,18 @@ export function GuestPickupCard({ bookingId, guestName }: Props) {
           </div>
         )}
 
-        {/* Travel state guidance — the calm guide */}
+        {/* Location for non-flight arrivals */}
+        {arrival.arrivalType !== "flight" && arrival.locationName && (
+          <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg p-2 text-xs text-muted-foreground">
+            <MapPin className="h-3 w-3 shrink-0" />
+            <span>{arrival.locationName}</span>
+            {arrival.confidence === "flexible" && (
+              <Badge variant="outline" className="text-[9px] ml-auto">Flexible timing</Badge>
+            )}
+          </div>
+        )}
+
+        {/* Travel state guidance */}
         {travelInfo.guestGuidance && travelInfo.state !== "arrived" && travelInfo.state !== "cancelled" && (
           <div className={`flex items-start gap-2 rounded-lg border p-2.5 text-xs ${SEVERITY_STYLES[travelInfo.severity]}`}>
             <GuidanceIcon className="h-3.5 w-3.5 shrink-0 mt-0.5" />
@@ -109,9 +174,9 @@ export function GuestPickupCard({ bookingId, guestName }: Props) {
           </div>
         )}
 
-        {/* Flight details */}
+        {/* Details */}
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          {pickup.flight_number && !intlFlight && (
+          {pickup.flight_number && !intlFlight && arrival.arrivalType === "flight" && (
             <span className="flex items-center gap-1">
               <Plane className="h-3 w-3" /> {pickup.flight_number}
             </span>

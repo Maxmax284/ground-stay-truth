@@ -2,30 +2,38 @@
  * Travel State Awareness Layer
  * 
  * Centralizes the logic for interpreting a guest's current position
- * in their multi-leg journey. The system recognizes that most guests
- * arrive via international flight to Bangkok (BKK) then domestic
- * flight to Koh Samui (USM).
+ * in their journey. Supports all arrival types: flight, ferry, bus, hybrid.
+ * 
+ * For flights: recognizes multi-leg journeys (BKK → USM).
+ * For ferry/bus/hybrid: uses flexible timing with arrival_confidence.
  * 
  * Field semantics (existing schema, unchanged):
  *   - international_flight_number: first leg (context only, not operational)
  *   - flight_number: final/domestic leg (drives pickup timing & dispatch)
  *   - final_flight_confirmed: whether the operational flight is locked in
  *   - confirmed_airport: where the guest said they landed
- *   - guest_landed_at: timestamp of "I've Landed" confirmation
+ *   - guest_landed_at: timestamp of "I've Landed" / "I've Arrived" confirmation
+ *   - arrival_type: flight | ferry | bus | hybrid | unknown
+ *   - arrival_location_type: airport | pier | other
+ *   - transport_intent: pickup | self_arrival
+ *   - pickup_enabled: admin override (false = no pickup regardless)
  * 
  * The ONLY flight that drives operational decisions (driver dispatch,
  * arrival readiness, pickup timing) is flight_number — the final leg.
  * international_flight_number exists purely for staff context.
  */
+import { type ArrivalType, type TransportIntent, resolvePickupStatus } from "@/lib/arrivalModel";
 
 export type TravelState =
   | "pre_departure"        // No landing, no transit — guest hasn't left yet
   | "missing_final_flight" // Has international flight but no domestic — can't schedule pickup
   | "awaiting_departure"   // Final flight known, guest hasn't landed yet
   | "in_transit_bkk"       // Guest landed in BKK, connecting flight expected
-  | "arriving"             // Guest confirmed landing at final destination (USM)
+  | "arriving"             // Guest confirmed landing at final destination
   | "arrived"              // Pickup completed
-  | "cancelled";           // Pickup cancelled
+  | "cancelled"            // Pickup cancelled
+  | "self_arriving"        // Guest is self-arriving (no pickup needed)
+  | "pickup_disabled";     // Admin disabled pickup
 
 export type AssistMode = "healthy" | "degraded" | "manual_assist" | "recovery_pending";
 
@@ -183,11 +191,19 @@ export interface PickupData {
   confirmed_airport: string | null;
   guest_landed_at: string | null;
   arrival_datetime: string | null;
+  // Unified arrival model fields
+  arrival_type?: string;
+  arrival_location_type?: string;
+  arrival_location_name?: string | null;
+  arrival_confidence?: string;
+  transport_intent?: string;
+  pickup_enabled?: boolean;
 }
 
 /**
  * Compute the guest's travel state from pickup data.
  * This is the single source of truth for "where is this guest in their journey?"
+ * Supports all arrival types: flight, ferry, bus, hybrid, unknown.
  */
 export function getTravelState(pickup: PickupData): TravelStateInfo {
   const {
@@ -198,13 +214,52 @@ export function getTravelState(pickup: PickupData): TravelStateInfo {
     guest_landed_at,
   } = pickup;
 
+  const arrivalType = (pickup.arrival_type ?? "flight") as ArrivalType;
+  const transportIntent = (pickup.transport_intent ?? "pickup") as TransportIntent;
+  const pickupEnabled = pickup.pickup_enabled !== false;
+  const locationName = pickup.arrival_location_name ?? null;
+  const confidence = pickup.arrival_confidence ?? "high";
+
   const hasContextFlight = !!intlFlight;
   const hasFinalFlight = !!finalFlight;
   const confirmedAirportLower = confirmed_airport?.toLowerCase() ?? null;
   const hasLanded = !!guest_landed_at;
-  const isInTransit = hasLanded && confirmedAirportLower === "bkk" && hasContextFlight;
+  const isInTransit = hasLanded && confirmedAirportLower === "bkk" && hasContextFlight && arrivalType === "flight";
 
-  // Terminal states
+  const pickupRes = resolvePickupStatus(transportIntent, pickupEnabled);
+  const isNoPickup = pickupRes !== "pickup_scheduled";
+
+  // ── Admin disabled pickup ──
+  if (!pickupEnabled) {
+    return {
+      state: "pickup_disabled",
+      operationallyReady: false,
+      hasContextFlight,
+      hasFinalFlight,
+      isInTransit: false,
+      staffLabel: "Pickup Disabled",
+      staffDetail: "Admin has disabled pickup for this booking. Guest will self-arrive.",
+      guestGuidance: "You'll be making your own way to us. Let us know if you need directions!",
+      severity: "muted",
+    };
+  }
+
+  // ── Self-arrival ──
+  if (transportIntent === "self_arrival") {
+    return {
+      state: "self_arriving",
+      operationallyReady: false,
+      hasContextFlight,
+      hasFinalFlight,
+      isInTransit: false,
+      staffLabel: "Self Arrival",
+      staffDetail: `Guest is arriving on their own${locationName ? ` via ${locationName}` : ""}. No pickup required.`,
+      guestGuidance: "You're making your own way to us — great! We'll be ready for you when you arrive.",
+      severity: "info",
+    };
+  }
+
+  // ── Terminal states ──
   if (status === "cancelled") {
     return {
       state: "cancelled",
@@ -232,6 +287,57 @@ export function getTravelState(pickup: PickupData): TravelStateInfo {
       severity: "success",
     };
   }
+
+  // ── Non-flight arrival types (ferry, bus, hybrid, unknown) ──
+  if (arrivalType !== "flight") {
+    const typeLabel = arrivalType === "ferry" ? "Ferry" : arrivalType === "bus" ? "Bus" : arrivalType === "hybrid" ? "Multi-leg" : "Travel";
+    const locLabel = locationName ?? (arrivalType === "ferry" ? "pier" : "arrival point");
+
+    // Guest confirmed arrival
+    if (hasLanded) {
+      return {
+        state: "arriving",
+        operationallyReady: true,
+        hasContextFlight: false,
+        hasFinalFlight: false,
+        isInTransit: false,
+        staffLabel: `Arrived (${locLabel})`,
+        staffDetail: `Guest has arrived at ${locLabel}. Driver can be dispatched.`,
+        guestGuidance: "You've arrived! Your driver is on the way.",
+        severity: "success",
+      };
+    }
+
+    // Has arrival time
+    if (pickup.arrival_datetime) {
+      return {
+        state: "awaiting_departure",
+        operationallyReady: true,
+        hasContextFlight: false,
+        hasFinalFlight: false,
+        isInTransit: false,
+        staffLabel: `${typeLabel} — Awaiting Arrival`,
+        staffDetail: `${typeLabel} arriving at ${locLabel}.${confidence === "flexible" ? " Timing is approximate." : ""}`,
+        guestGuidance: `Your ${typeLabel.toLowerCase()} to Koh Samui is noted. ${confidence === "flexible" ? "Times can shift — we'll be flexible." : "We'll be ready for you!"}`,
+        severity: "info",
+      };
+    }
+
+    // No timing yet
+    return {
+      state: "pre_departure",
+      operationallyReady: false,
+      hasContextFlight: false,
+      hasFinalFlight: false,
+      isInTransit: false,
+      staffLabel: `${typeLabel} — No Timing`,
+      staffDetail: `Guest arriving by ${typeLabel.toLowerCase()} but no arrival time provided yet.`,
+      guestGuidance: `Please let us know your approximate ${typeLabel.toLowerCase()} arrival time so we can arrange your pickup.`,
+      severity: "muted",
+    };
+  }
+
+  // ── Flight-based arrival logic (existing, preserved) ──
 
   // Guest is in transit at BKK — NOT ready for dispatch
   if (isInTransit) {
@@ -308,9 +414,9 @@ export function getTravelState(pickup: PickupData): TravelStateInfo {
     hasContextFlight: false,
     hasFinalFlight: false,
     isInTransit: false,
-    staffLabel: "No Flight Info",
-    staffDetail: "No flight details have been provided. Pickup timing cannot be determined.",
-    guestGuidance: "Please provide your flight details so we can arrange your airport pickup. If you're flying via Bangkok, we'll need your connecting flight to Koh Samui.",
+    staffLabel: "No Travel Info",
+    staffDetail: "No travel details have been provided. Pickup timing cannot be determined.",
+    guestGuidance: "Please let us know how you're getting to Koh Samui so we can arrange your pickup.",
     severity: "muted",
   };
 }

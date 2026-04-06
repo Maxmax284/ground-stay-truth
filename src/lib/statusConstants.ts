@@ -96,3 +96,37 @@ export const ASSIST_MODES = [
   "recovery_pending",
 ] as const;
 export type AssistMode = (typeof ASSIST_MODES)[number];
+
+// ── Arrival Types (unified arrival model) ──
+// CHECK: flight | ferry | bus | hybrid | unknown
+export const ARRIVAL_TYPES = [
+  "flight",
+  "ferry",
+  "bus",
+  "hybrid",
+  "unknown",
+] as const;
+export type ArrivalType = (typeof ARRIVAL_TYPES)[number];
+
+// CHECK: airport | pier | other
+export const ARRIVAL_LOCATION_TYPES = [
+  "airport",
+  "pier",
+  "other",
+] as const;
+export type ArrivalLocationType = (typeof ARRIVAL_LOCATION_TYPES)[number];
+
+// CHECK: high | flexible | unknown
+export const ARRIVAL_CONFIDENCE_LEVELS = [
+  "high",
+  "flexible",
+  "unknown",
+] as const;
+export type ArrivalConfidence = (typeof ARRIVAL_CONFIDENCE_LEVELS)[number];
+
+// CHECK: pickup | self_arrival
+export const TRANSPORT_INTENTS = [
+  "pickup",
+  "self_arrival",
+] as const;
+export type TransportIntent = (typeof TRANSPORT_INTENTS)[number];

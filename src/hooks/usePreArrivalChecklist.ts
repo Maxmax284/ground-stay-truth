@@ -33,14 +33,19 @@ const TRAVEL_INFO: readonly ChecklistItemDef[] = [
   },
   {
     key: "confirm_domestic_flight",
-    label: "Add your Samui flight (if connecting from Bangkok)",
-    why: "Without your domestic flight, we can't time your pickup at Samui airport.",
+    label: "Add your Samui flight (if arriving by air)",
+    why: "If you're flying, we need your final flight to Koh Samui to time your pickup. Skip this if arriving by ferry or bus.",
     critical: true,
   },
   {
     key: "international_flight_noted",
     label: "Confirm international flight details",
     why: "Helps us track your journey and anticipate arrival timing.",
+  },
+  {
+    key: "confirm_arrival_method",
+    label: "Tell us how you're arriving (flight, ferry, bus, or other)",
+    why: "Different arrival methods have different pickup logistics. This helps us prepare correctly.",
   },
 ] as const;
 
@@ -87,8 +92,8 @@ const LOCAL_SETUP: readonly ChecklistItemDef[] = [
   },
   {
     key: "transport_awareness",
-    label: "Understand how pickup works after landing",
-    why: "Your driver will meet you at the airport. Confirmation requires connectivity — make sure you're reachable.",
+    label: "Understand how your arrival pickup works",
+    why: "Whether arriving by air, ferry, or other transport — your driver will meet you at the right location. Confirmation requires connectivity.",
     type: "info",
   },
 ] as const;

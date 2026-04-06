@@ -7,7 +7,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useTodaysPickups } from "@/hooks/useAirportPickups";
 import { useFlightTrackingBatch, useCheckFlightStatus, FLIGHT_STATUS_CONFIG } from "@/hooks/useFlightTracking";
 import { getTravelState } from "@/lib/travelState";
-import { Plane, MessageSquare, Car, Clock, User, RefreshCw, Loader2, AlertTriangle, Shield } from "lucide-react";
+import { normalizeArrival, ARRIVAL_TYPE_CONFIG } from "@/lib/arrivalModel";
+import { Plane, MessageSquare, Car, Clock, User, RefreshCw, Loader2, AlertTriangle, Shield, Ship, Bus, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ManualAssistBanner } from "@/components/ManualAssistBanner";
 
@@ -65,9 +66,9 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
     <Card className="border-primary/20">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Plane className="h-5 w-5 text-primary" />
-            Today's Pickups
+            <CardTitle className="text-lg flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-primary" />
+              Today's Arrivals
             <Badge variant="secondary" className="text-xs ml-1">{pickups.length}</Badge>
           </CardTitle>
           <div className="flex items-center gap-1.5">
@@ -92,6 +93,10 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
           const time = p.arrival_datetime
             ? new Date(p.arrival_datetime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
             : null;
+
+          const arrival = normalizeArrival(p);
+          const arrivalConfig = ARRIVAL_TYPE_CONFIG[arrival.arrivalType];
+          const ArrivalIcon = arrival.arrivalType === "ferry" ? Ship : arrival.arrivalType === "bus" ? Bus : Plane;
 
           const whatsappLink = p.drivers?.whatsapp
             ? `https://wa.me/${p.drivers.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(`Pickup update for ${guestName}`)}`
@@ -118,17 +123,30 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
                   {time && (
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" /> {time}
+                      {arrival.confidence === "flexible" && <span className="text-[9px] text-muted-foreground">(~)</span>}
+                    </span>
+                  )}
+                  {/* Arrival type badge */}
+                  {arrival.arrivalType !== "flight" && (
+                    <span className="flex items-center gap-1">
+                      <ArrivalIcon className="h-3 w-3" />
+                      <span className="capitalize">{arrivalConfig.label}</span>
+                    </span>
+                  )}
+                  {arrival.locationName && arrival.arrivalType !== "flight" && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3" /> {arrival.locationName}
                     </span>
                   )}
                   {/* Show connecting flight route or single flight */}
-                  {(p as any).international_flight_number ? (
+                  {arrival.arrivalType === "flight" && (p as any).international_flight_number ? (
                     <span className="flex items-center gap-1">
                       <Plane className="h-3 w-3" />
                       <span className="text-muted-foreground">{(p as any).international_flight_number}</span>
                       <span className="text-primary">→</span>
                       <span className="font-medium text-foreground">{p.flight_number || "TBD"}</span>
                     </span>
-                  ) : p.flight_number ? (
+                  ) : arrival.arrivalType === "flight" && p.flight_number ? (
                     <span className="flex items-center gap-1">
                       <Plane className="h-3 w-3" /> {p.flight_number}
                     </span>
@@ -155,6 +173,12 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
                     confirmed_airport: (p as any).confirmed_airport,
                     guest_landed_at: (p as any).guest_landed_at,
                     arrival_datetime: p.arrival_datetime,
+                    arrival_type: p.arrival_type,
+                    arrival_location_type: p.arrival_location_type,
+                    arrival_location_name: p.arrival_location_name,
+                    arrival_confidence: p.arrival_confidence,
+                    transport_intent: p.transport_intent,
+                    pickup_enabled: p.pickup_enabled,
                   });
                   if (travelInfo.state === "in_transit_bkk") {
                     return (
@@ -177,10 +201,24 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
                       </div>
                     );
                   }
-                  if (travelInfo.state === "pre_departure" && !p.flight_number && !(p as any).international_flight_number) {
+                  if (travelInfo.state === "self_arriving") {
+                    return (
+                      <div className="text-[11px] text-muted-foreground">
+                        🚗 Self Arrival — no pickup needed
+                      </div>
+                    );
+                  }
+                  if (travelInfo.state === "pickup_disabled") {
+                    return (
+                      <div className="text-[11px] text-muted-foreground">
+                        🚫 Pickup Disabled by Admin
+                      </div>
+                    );
+                  }
+                  if (travelInfo.state === "pre_departure") {
                     return (
                       <div className="text-[11px] text-muted-foreground italic">
-                        No flight details provided
+                        No travel details provided
                       </div>
                     );
                   }
