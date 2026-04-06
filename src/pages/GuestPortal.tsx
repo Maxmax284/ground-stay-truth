@@ -689,7 +689,9 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
 
   const sendMessage = useMutation({
     mutationFn: async (content: string) => {
-      const { error } = await supabase.from("messages").insert({ booking_id: booking.id, content, sender_id: userId!, is_internal: false });
+      const sanitized = sanitizeMessageContent(content);
+      if (!sanitized) throw new Error("Message is empty");
+      const { error } = await supabase.from("messages").insert({ booking_id: booking.id, content: sanitized, sender_id: userId!, is_internal: false });
       if (error) throw error;
     },
     onSuccess: () => { setReply(""); queryClient.invalidateQueries({ queryKey: ["guest-messages"] }); toast.success(t("messages.messageSent")); },
