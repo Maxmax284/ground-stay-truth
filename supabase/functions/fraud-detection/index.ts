@@ -23,7 +23,7 @@ function getCorsHeaders(req: Request) {
  */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: getCorsHeaders(req) });
   }
 
   try {
@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     if (!authHeader || authHeader !== `Bearer ${serviceRoleKey}`) {
       return new Response(JSON.stringify({ error: "Unauthorized — internal use only" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -165,13 +165,13 @@ Deno.serve(async (req) => {
         events_detected: events.length,
         timestamp: now.toISOString(),
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   } catch (err) {
     console.error("[fraud-detection] Error:", err);
     return new Response(
       JSON.stringify({ error: (err as Error).message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   }
 });

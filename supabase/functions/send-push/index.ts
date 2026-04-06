@@ -51,7 +51,7 @@ async function sendWebPush(
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: getCorsHeaders(req) });
   }
 
   try {
@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     if (!user_ids || !Array.isArray(user_ids) || !title || !body) {
       return new Response(
         JSON.stringify({ error: "user_ids (array), title, and body are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
     if (!subs || subs.length === 0) {
       return new Response(
         JSON.stringify({ sent: 0, message: "No push subscriptions found for these users" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -120,13 +120,13 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({ sent, failed: failed.length, total: subs.length }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   } catch (err: any) {
     console.error("[send-push] Error:", err);
     return new Response(
       JSON.stringify({ error: err.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   }
 });

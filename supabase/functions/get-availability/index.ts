@@ -35,7 +35,7 @@ function checkRateLimit(key: string): boolean {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: getCorsHeaders(req) });
   }
 
   // Rate limit by IP (or fallback to generic key)
@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
   if (!checkRateLimit(clientIp)) {
     return new Response(JSON.stringify({ error: "Too many requests" }), {
       status: 429,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }
 
@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
       });
 
       return new Response(JSON.stringify({ roomTypes, currencySymbol }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
       if (!unit) {
         return new Response(JSON.stringify({ error: "Unit not found" }), {
           status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
       }
 
@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
       ];
 
       return new Response(JSON.stringify({ unit, blockedRanges, currencySymbol }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
       if (!rep) {
         return new Response(JSON.stringify({ error: "Room type not found" }), {
           status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
       }
 
@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
       const allRanges = Array.from(unitBlockedMap.values()).flat();
 
       return new Response(JSON.stringify({ unit, blockedRanges: allRanges, currencySymbol, unitCount: unitIds.length }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -228,12 +228,12 @@ Deno.serve(async (req) => {
       .order("name");
 
     return new Response(JSON.stringify({ units, properties: properties ?? [], currencySymbol }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }
 });

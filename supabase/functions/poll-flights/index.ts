@@ -20,13 +20,13 @@ function getCorsHeaders(req: Request) {
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { headers: getCorsHeaders(req) });
 
   try {
     const AVIATIONSTACK_KEY = Deno.env.get("AVIATIONSTACK_API_KEY");
     if (!AVIATIONSTACK_KEY) {
       return new Response(JSON.stringify({ error: "AviationStack API key not configured" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -52,7 +52,7 @@ serve(async (req) => {
 
     if (!pickups?.length) {
       return new Response(JSON.stringify({ message: "No active flights to poll", checked: 0 }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -77,7 +77,7 @@ serve(async (req) => {
 
     if (!activePickups.length) {
       return new Response(JSON.stringify({ message: "All today's flights already in terminal state", checked: 0 }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -186,12 +186,12 @@ serve(async (req) => {
       deferred: skipped,
       results,
     }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   } catch (err) {
     console.error("poll-flights error:", err);
     return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }
 });

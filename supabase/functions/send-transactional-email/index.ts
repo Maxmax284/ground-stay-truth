@@ -251,7 +251,7 @@ const templates: Record<string, Record<string, { subject: string; html: (data: a
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: getCorsHeaders(req) });
   }
 
   try {
@@ -263,7 +263,7 @@ serve(async (req) => {
     if (!authHeader || authHeader !== `Bearer ${serviceRoleKey}`) {
       return new Response(JSON.stringify({ error: "Unauthorized — internal use only" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -274,7 +274,7 @@ serve(async (req) => {
     if (!template_key || !recipient_email) {
       return new Response(JSON.stringify({ error: "template_key and recipient_email required" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -289,7 +289,7 @@ serve(async (req) => {
 
       if (existing) {
         return new Response(JSON.stringify({ skipped: true, reason: "Already sent" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
       }
     }
@@ -322,7 +322,7 @@ serve(async (req) => {
         });
       }
       return new Response(JSON.stringify({ sent: false, reason: "Email provider not configured" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -332,7 +332,7 @@ serve(async (req) => {
     if (!templateSet) {
       return new Response(JSON.stringify({ error: `Unknown template: ${template_key}` }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
     const template = templateSet[lang] || templateSet.en;
@@ -366,7 +366,7 @@ serve(async (req) => {
       }
       return new Response(JSON.stringify({ sent: false, error: resendData }), {
         status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -382,13 +382,13 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ sent: true, message_id: resendData.id }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("send-transactional-email error:", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   }
 });

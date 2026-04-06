@@ -18,7 +18,7 @@ function getCorsHeaders(req: Request) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: getCorsHeaders(req) });
   }
 
   try {
@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     if (!group_id || !check_in || !check_out) {
       return new Response(JSON.stringify({ error: "group_id, check_in, and check_out are required" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     if (!units || units.length === 0) {
       return new Response(JSON.stringify({ error: "No units available in this room type" }), {
         status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
     if (!availableUnit) {
       return new Response(JSON.stringify({ error: "No rooms available for the selected dates", available: false }), {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -99,12 +99,12 @@ Deno.serve(async (req) => {
       available_count: availableCount,
       total_count: units.length,
     }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }
 });

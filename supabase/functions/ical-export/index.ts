@@ -32,7 +32,7 @@ function uid(id: string, type: string): string {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: getCorsHeaders(req) });
   }
 
   try {
@@ -42,7 +42,7 @@ serve(async (req) => {
     if (!unitId) {
       return new Response(JSON.stringify({ error: "unit_id is required" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -61,7 +61,7 @@ serve(async (req) => {
     if (unitErr || !unit) {
       return new Response(JSON.stringify({ error: "Unit not found" }), {
         status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -146,7 +146,7 @@ serve(async (req) => {
     console.error("ical-export error:", e);
     return new Response(JSON.stringify({ error: "Internal error" }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }
 });

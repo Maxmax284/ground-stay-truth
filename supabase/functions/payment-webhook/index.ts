@@ -113,7 +113,7 @@ async function verifyAndNormalizeStripe(
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: getCorsHeaders(req) });
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -141,7 +141,7 @@ serve(async (req) => {
       console.error("Stripe webhook secret or secret key not configured");
       return new Response(JSON.stringify({ error: "Not configured" }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -161,7 +161,7 @@ serve(async (req) => {
       console.error("Webhook verification failed:", err);
       return new Response(JSON.stringify({ error: "Invalid signature" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -182,7 +182,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ received: true, duplicate: true }),
           {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
           }
         );
       }
@@ -218,7 +218,7 @@ serve(async (req) => {
       {
         // Return 200 even on handler failure to prevent Stripe from retrying endlessly
         // but the event stays unprocessed for manual review
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       }
     );
   } catch (e) {
@@ -229,7 +229,7 @@ serve(async (req) => {
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       }
     );
   }
