@@ -275,9 +275,9 @@ export function ArrivalWelcomeDialog({ open, onOpenChange, airport, arrivalLocat
     template?.sections ?? [],
   );
 
-  const airportLabel = airport === "bkk" ? "BKK (Suvarnabhumi)" : "Samui (USM)";
   const guideEnabled = template?.enabled ?? false;
   const hasContent = guideEnabled && (template?.welcome_message || (template?.sections?.length ?? 0) > 0);
+  const isNonFlight = arrivalLocationId === "nathon" || arrivalLocationId === "lipa_noi" || arrivalLocationId === "bus";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -285,18 +285,18 @@ export function ArrivalWelcomeDialog({ open, onOpenChange, airport, arrivalLocat
         <DialogHeader className="px-5 pt-5 pb-0">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-full bg-primary/10">
-              <Plane className="h-5 w-5 text-primary" />
+              <IconComponent className="h-5 w-5 text-primary" />
             </div>
             <div>
               <DialogTitle className="text-lg">
                 {hasContent
                   ? (isReturningGuest ? "Welcome back! 👋" : "Welcome! 🎉")
-                  : "Landing Confirmed! ✅"}
+                  : (isNonFlight ? "Arrival Confirmed! ✅" : "Landing Confirmed! ✅")}
               </DialogTitle>
               <DialogDescription className="text-xs">
                 {hasContent
-                  ? `Your arrival guide for ${airportLabel}`
-                  : `You've confirmed your arrival at ${airportLabel}. Your driver has been notified!`}
+                  ? `Your arrival guide for ${locationLabel}`
+                  : `You've confirmed your arrival at ${locationLabel}. ${isNonFlight ? "We'll coordinate from here!" : "Your driver has been notified!"}`}
               </DialogDescription>
             </div>
           </div>
