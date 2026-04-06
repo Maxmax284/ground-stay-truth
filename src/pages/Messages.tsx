@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FetchErrorState } from "@/components/FetchErrorState";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { format, formatDistanceToNow } from "date-fns";
 import { MessageSquare, Search, User, CalendarDays, Circle } from "lucide-react";
