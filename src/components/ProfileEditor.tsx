@@ -179,12 +179,12 @@ export default function ProfileEditor() {
             {t("profile.consentDesc", "You consented to our Privacy Policy and Terms of Service when you created your account. You may withdraw consent at any time — note that this will delete your account and all associated data.")}
           </p>
           <div className="flex items-center gap-2 text-sm">
-            <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
+            <span className="inline-flex items-center gap-1 text-primary">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
               {t("legal.privacyPolicy")}
             </span>
             <span className="text-muted-foreground">•</span>
-            <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
+            <span className="inline-flex items-center gap-1 text-primary">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
               {t("legal.termsOfService")}
             </span>
