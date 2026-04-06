@@ -231,7 +231,7 @@ serve(async (req) => {
     // Resolve the provider adapter
     let adapter: ProviderAdapter;
     try {
-      adapter = resolveProvider(providerName, policyMap);
+      adapter = await resolveProvider(providerName, adminClient);
     } catch (e: any) {
       return new Response(JSON.stringify({ error: e.message }), {
         status: 400,
