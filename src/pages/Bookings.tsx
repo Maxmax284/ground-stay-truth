@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, AlertTriangle, ChevronRight, Check, X } from "lucide-react";
+import { FetchErrorState } from "@/components/FetchErrorState";
 import { toast } from "sonner";
 import { format, differenceInHours } from "date-fns";
 import { useBookings, useTransitionBookingState } from "@/hooks/useBookings";
@@ -108,7 +109,7 @@ const Bookings = () => {
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
-  const { data: bookings, isLoading } = useBookings({
+  const { data: bookings, isLoading, isError, refetch } = useBookings({
     state: stateFilter,
     unitId: unitFilter,
     dateFrom,
@@ -166,6 +167,8 @@ const Bookings = () => {
           <div className="space-y-3">
             {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
           </div>
+        ) : isError ? (
+          <FetchErrorState message="Unable to load bookings" onRetry={() => refetch()} />
         ) : !bookings?.length ? (
           <div className="text-center py-16 text-muted-foreground">
             <p>{t("bookings.noBookings")}</p>

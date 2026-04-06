@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday, isBefore, startOfDay } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,13 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Home, Users, Moon, Sparkles, ChevronLeft, ChevronRight, CalendarDays, ArrowRight, MapPin, Clock, Shield, ListChecks, LogIn, Building2, AlertTriangle, RefreshCw } from "lucide-react";
+import { Home, Users, Moon, Sparkles, ChevronLeft, ChevronRight, CalendarDays, ArrowRight, MapPin, Clock, Shield, ListChecks, LogIn, Building2 } from "lucide-react";
 import { formatPriceSimple } from "@/lib/currency";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { TestimonialSection } from "@/components/TestimonialSection";
 import { AmenityList } from "@/components/AmenityBadge";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { FetchErrorState } from "@/components/FetchErrorState";
+import { logClientError } from "@/lib/errorLogging";
 import lamaiLogo from "@/assets/lamai-logo.png";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -75,7 +77,13 @@ export default function Stay() {
           localStorage.setItem("gs_cache_props", JSON.stringify(fetchedProperties));
           localStorage.setItem("gs_cache_currency", fetchedSymbol);
         } catch { /* quota */ }
-      } catch {
+      } catch (err: any) {
+        // Log the failure for observability
+        logClientError({
+          action: "fetch:get-availability",
+          category: "edge_function_error",
+          failureReason: err?.message || "Unknown fetch error",
+        });
         // Offline or error — load from cache
         try {
           const cached = localStorage.getItem("gs_cache_units");
@@ -199,14 +207,7 @@ export default function Stay() {
             </div>
           </section>
         ) : fetchError ? (
-          <div className="text-center py-16 space-y-4">
-            <AlertTriangle className="h-10 w-10 text-destructive mx-auto" />
-            <p className="text-foreground font-medium">Unable to load rooms</p>
-            <p className="text-sm text-muted-foreground">Something went wrong while fetching availability. Please try again.</p>
-            <Button variant="outline" onClick={() => window.location.reload()}>
-              <RefreshCw className="h-4 w-4 mr-2" /> Retry
-            </Button>
-          </div>
+          <FetchErrorState message="Unable to load rooms" />
         ) : units.length === 0 ? (
           <p className="text-muted-foreground text-center py-16">No rooms available at this time. Please check back later.</p>
         ) : (

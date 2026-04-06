@@ -240,7 +240,14 @@ Deno.serve(async (req) => {
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    console.error(JSON.stringify({
+      level: "ERROR",
+      function: "get-availability",
+      error: err?.message || "Unknown error",
+      stack: err?.stack,
+      timestamp: new Date().toISOString(),
+    }));
+    return new Response(JSON.stringify({ error: "Failed to load availability" }), {
       status: 500,
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
