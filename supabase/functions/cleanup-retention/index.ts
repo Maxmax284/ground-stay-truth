@@ -60,6 +60,10 @@ Deno.serve(async (req) => {
       { table: "email_log", column: "sent_at", days: 90 },
       { table: "recovery_audit_log", column: "created_at", days: 180 },
       { table: "notifications", column: "created_at", days: 60, extraFilter: { column: "read", value: true } },
+      // F-38: Message retention — delete messages older than 365 days for completed bookings
+      { table: "messages", column: "created_at", days: 365 },
+      // F-46: Profile audit log retention
+      { table: "profile_audit_log", column: "created_at", days: 365 },
     ];
 
     for (const rule of retentionRules) {
