@@ -276,10 +276,11 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
       .gte("bookings.check_in", today)
       .lte("bookings.check_in", new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
 
-    // 💰 Payments for arriving-today bookings (was sequential)
+    // 💰 Payments for arriving-today bookings — scoped to today's arrivals only
     adminClient.from("payments")
-      .select("booking_id")
-      .eq("status", "recorded"),
+      .select("booking_id, bookings!inner(check_in)")
+      .eq("status", "recorded")
+      .eq("bookings.check_in", today),
 
     // 🏠 Bookings with unit essentials for today (was sequential)
     adminClient.from("bookings")
