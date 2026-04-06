@@ -92,7 +92,8 @@ serve(async (req) => {
     const BATCH_SIZE = 10;
     const MAX_PROCESS = 100; // Hard limit per invocation to stay within timeout
     const toProcess = activePickups.slice(0, MAX_PROCESS);
-      const batch = activePickups.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < toProcess.length; i += BATCH_SIZE) {
+      const batch = toProcess.slice(i, i + BATCH_SIZE);
       const batchResults = await Promise.allSettled(
         batch.map(async (pickup) => {
           const cleanFlight = pickup.flight_number!.replace(/\s+/g, "").toUpperCase();
