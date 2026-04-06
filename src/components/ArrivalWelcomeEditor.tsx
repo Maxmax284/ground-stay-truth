@@ -44,10 +44,7 @@ export interface WelcomeTemplate {
   enabled: boolean;
 }
 
-const AIRPORTS = [
-  { id: "bkk", label: "BKK (Suvarnabhumi)", icon: "✈️" },
-  { id: "samui", label: "Samui (USM)", icon: "🌴" },
-] as const;
+const LOCATIONS = ALL_ARRIVAL_LOCATIONS;
 
 const PHOTO_TAGS: { value: WelcomePhoto["tag"]; label: string }[] = [
   { value: "landmark", label: "Landmark" },
