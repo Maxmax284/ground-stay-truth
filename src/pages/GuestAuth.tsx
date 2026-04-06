@@ -20,6 +20,7 @@ const GuestAuth = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
   const { toast } = useToast();
 
   if (loading) {
