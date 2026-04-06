@@ -890,7 +890,9 @@ function GuestThreadView({ bookingId, booking, messages, userId, onBack }: {
 
   const sendMessage = useMutation({
     mutationFn: async (content: string) => {
-      const { error } = await supabase.from("messages").insert({ booking_id: bookingId, content, sender_id: userId!, is_internal: false });
+      const sanitized = sanitizeMessageContent(content);
+      if (!sanitized) throw new Error("Message is empty");
+      const { error } = await supabase.from("messages").insert({ booking_id: bookingId, content: sanitized, sender_id: userId!, is_internal: false });
       if (error) throw error;
     },
     onSuccess: () => { setReply(""); queryClient.invalidateQueries({ queryKey: ["guest-messages"] }); toast.success(t("messages.messageSent")); },
