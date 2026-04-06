@@ -94,6 +94,10 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
             ? new Date(p.arrival_datetime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
             : null;
 
+          const arrival = normalizeArrival(p);
+          const arrivalConfig = ARRIVAL_TYPE_CONFIG[arrival.arrivalType];
+          const ArrivalIcon = arrival.arrivalType === "ferry" ? Ship : arrival.arrivalType === "bus" ? Bus : Plane;
+
           const whatsappLink = p.drivers?.whatsapp
             ? `https://wa.me/${p.drivers.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(`Pickup update for ${guestName}`)}`
             : null;
