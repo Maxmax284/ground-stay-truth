@@ -173,6 +173,12 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
                     confirmed_airport: (p as any).confirmed_airport,
                     guest_landed_at: (p as any).guest_landed_at,
                     arrival_datetime: p.arrival_datetime,
+                    arrival_type: p.arrival_type,
+                    arrival_location_type: p.arrival_location_type,
+                    arrival_location_name: p.arrival_location_name,
+                    arrival_confidence: p.arrival_confidence,
+                    transport_intent: p.transport_intent,
+                    pickup_enabled: p.pickup_enabled,
                   });
                   if (travelInfo.state === "in_transit_bkk") {
                     return (
