@@ -191,6 +191,13 @@ export interface PickupData {
   confirmed_airport: string | null;
   guest_landed_at: string | null;
   arrival_datetime: string | null;
+  // Unified arrival model fields
+  arrival_type?: string;
+  arrival_location_type?: string;
+  arrival_location_name?: string | null;
+  arrival_confidence?: string;
+  transport_intent?: string;
+  pickup_enabled?: boolean;
 }
 
 /**
