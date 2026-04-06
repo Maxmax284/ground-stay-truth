@@ -201,14 +201,7 @@ export default function Stay() {
             </div>
           </section>
         ) : fetchError ? (
-          <div className="text-center py-16 space-y-4">
-            <AlertTriangle className="h-10 w-10 text-destructive mx-auto" />
-            <p className="text-foreground font-medium">Unable to load rooms</p>
-            <p className="text-sm text-muted-foreground">Something went wrong while fetching availability. Please try again.</p>
-            <Button variant="outline" onClick={() => window.location.reload()}>
-              <RefreshCw className="h-4 w-4 mr-2" /> Retry
-            </Button>
-          </div>
+          <FetchErrorState message="Unable to load rooms" />
         ) : units.length === 0 ? (
           <p className="text-muted-foreground text-center py-16">No rooms available at this time. Please check back later.</p>
         ) : (
