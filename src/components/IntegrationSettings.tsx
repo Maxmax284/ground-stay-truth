@@ -10,19 +10,24 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { usePolicySettings, useUpdatePolicySetting } from "@/hooks/usePolicySettings";
+import { useSecretStatuses, useSetSecret, useDeleteSecret } from "@/hooks/useIntegrationSecrets";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CreditCard, Mail, Eye, EyeOff, Save, CheckCircle2, XCircle, ExternalLink, ShieldCheck, Plane } from "lucide-react";
+import { CreditCard, Mail, Eye, EyeOff, Save, CheckCircle2, XCircle, ShieldCheck, Plane, Trash2 } from "lucide-react";
 
 const SECRET_KEYS = ["stripe_secret_key", "stripe_publishable_key", "stripe_webhook_secret", "resend_api_key", "fenrir_api_key", "fenrir_receive_token"];
 
 export function IntegrationSettings() {
   const { t } = useTranslation();
-  const { data: settings, isLoading } = usePolicySettings();
+  const { data: settings, isLoading: policiesLoading } = usePolicySettings();
+  const { data: secretStatuses, isLoading: secretsLoading } = useSecretStatuses();
   const updateSetting = useUpdatePolicySetting();
+  const setSecret = useSetSecret();
+  const deleteSecret = useDeleteSecret();
   const { toast } = useToast();
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
 
+  const isLoading = policiesLoading || secretsLoading;
   if (isLoading) return <div className="space-y-4">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}</div>;
 
   const getSetting = (key: string) => settings?.find((s) => s.key === key);
@@ -32,18 +37,49 @@ export function IntegrationSettings() {
     const v = String(s.value).replace(/^"|"$/g, "");
     return v;
   };
-  const isConfigured = (key: string) => {
+
+  // For secret keys, use the secure status endpoint
+  const isSecretConfigured = (key: string) => {
+    if (SECRET_KEYS.includes(key)) {
+      return secretStatuses?.[key]?.configured ?? false;
+    }
     const v = getValue(key);
     return v.length > 3;
   };
-  const getEditValue = (key: string) => editValues[key] ?? getValue(key);
-  const isDirty = (key: string) => editValues[key] !== undefined && editValues[key] !== getValue(key);
 
-  const handleSave = async (key: string) => {
-    const setting = getSetting(key);
-    if (!setting || !isDirty(key)) return;
+  const isConfigured = (key: string) => isSecretConfigured(key);
+
+  const getEditValue = (key: string) => editValues[key] ?? "";
+  const isDirty = (key: string) => (editValues[key] ?? "").length > 0;
+
+  const handleSaveSecret = async (key: string) => {
+    const value = editValues[key];
+    if (!value || value.length < 3) return;
     try {
-      await updateSetting.mutateAsync({ id: setting.id, value: editValues[key] });
+      await setSecret.mutateAsync({ key, value });
+      toast({ title: "Saved securely", description: `${key} updated and secured.` });
+      setEditValues((prev) => { const next = { ...prev }; delete next[key]; return next; });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteSecret = async (key: string) => {
+    try {
+      await deleteSecret.mutateAsync(key);
+      toast({ title: "Removed", description: `${key} has been removed.` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleSavePolicy = async (key: string) => {
+    const setting = getSetting(key);
+    if (!setting) return;
+    const value = editValues[key];
+    if (value === undefined) return;
+    try {
+      await updateSetting.mutateAsync({ id: setting.id, value });
       toast({ title: "Saved", description: `${key} updated.` });
       setEditValues((prev) => { const next = { ...prev }; delete next[key]; return next; });
     } catch (err: any) {
@@ -62,15 +98,10 @@ export function IntegrationSettings() {
     }
   };
 
-  const maskValue = (val: string) => {
-    if (val.length <= 8) return "••••••••";
-    return val.slice(0, 4) + "••••••••" + val.slice(-4);
-  };
-
   const renderSecretField = (key: string, label: string, placeholder: string) => {
-    const current = getEditValue(key);
-    const configured = isConfigured(key);
+    const configured = isSecretConfigured(key);
     const visible = showSecrets[key];
+    const currentEdit = editValues[key] ?? "";
 
     return (
       <div className="space-y-2">
@@ -78,7 +109,7 @@ export function IntegrationSettings() {
           <Label className="text-sm font-medium">{label}</Label>
           {configured ? (
             <Badge variant="outline" className="text-[10px] gap-1 text-emerald-600 border-emerald-200 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950">
-              <CheckCircle2 className="h-3 w-3" /> Configured
+              <CheckCircle2 className="h-3 w-3" /> Secured
             </Badge>
           ) : (
             <Badge variant="outline" className="text-[10px] gap-1 text-muted-foreground">
@@ -90,12 +121,9 @@ export function IntegrationSettings() {
           <div className="relative flex-1">
             <Input
               type={visible ? "text" : "password"}
-              value={isDirty(key) ? current : (configured && !visible ? maskValue(current) : current)}
+              value={currentEdit}
               onChange={(e) => setEditValues((prev) => ({ ...prev, [key]: e.target.value }))}
-              onFocus={() => {
-                if (!isDirty(key)) setEditValues((prev) => ({ ...prev, [key]: getValue(key) }));
-              }}
-              placeholder={placeholder}
+              placeholder={configured ? "••••••••••••" : placeholder}
               className="pr-10 font-mono text-xs"
             />
             <Button
@@ -109,11 +137,21 @@ export function IntegrationSettings() {
             </Button>
           </div>
           {isDirty(key) && (
-            <Button size="icon" variant="outline" onClick={() => handleSave(key)} disabled={updateSetting.isPending}>
+            <Button size="icon" variant="outline" onClick={() => handleSaveSecret(key)} disabled={setSecret.isPending}>
               <Save className="h-4 w-4" />
             </Button>
           )}
+          {configured && !isDirty(key) && (
+            <Button size="icon" variant="outline" className="text-destructive" onClick={() => handleDeleteSecret(key)} disabled={deleteSecret.isPending}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
+        {configured && (
+          <p className="text-[10px] text-muted-foreground">
+            Value is stored securely and never sent back to the browser. Enter a new value to replace it.
+          </p>
+        )}
       </div>
     );
   };
@@ -196,13 +234,13 @@ export function IntegrationSettings() {
             <Label className="text-sm font-medium">From Email</Label>
             <div className="flex items-center gap-2">
               <Input
-                value={getEditValue("resend_from_email")}
+                value={editValues["resend_from_email"] ?? getValue("resend_from_email")}
                 onChange={(e) => setEditValues((prev) => ({ ...prev, resend_from_email: e.target.value }))}
                 placeholder="noreply@yourdomain.com"
                 className="flex-1 text-sm"
               />
-              {isDirty("resend_from_email") && (
-                <Button size="icon" variant="outline" onClick={() => handleSave("resend_from_email")} disabled={updateSetting.isPending}>
+              {(editValues["resend_from_email"] !== undefined && editValues["resend_from_email"] !== getValue("resend_from_email")) && (
+                <Button size="icon" variant="outline" onClick={() => handleSavePolicy("resend_from_email")} disabled={updateSetting.isPending}>
                   <Save className="h-4 w-4" />
                 </Button>
               )}
@@ -244,13 +282,13 @@ export function IntegrationSettings() {
               <Label className="text-sm font-medium">Ingestion Endpoint</Label>
               <div className="flex items-center gap-2">
                 <Input
-                  value={getEditValue("fenrir_endpoint")}
+                  value={editValues["fenrir_endpoint"] ?? getValue("fenrir_endpoint")}
                   onChange={(e) => setEditValues((prev) => ({ ...prev, fenrir_endpoint: e.target.value }))}
                   placeholder="https://your-endpoint.supabase.co/functions/v1/ingest-webhook"
                   className="flex-1 font-mono text-xs"
                 />
-                {isDirty("fenrir_endpoint") && (
-                  <Button size="icon" variant="outline" onClick={() => handleSave("fenrir_endpoint")} disabled={updateSetting.isPending}>
+                {(editValues["fenrir_endpoint"] !== undefined && editValues["fenrir_endpoint"] !== getValue("fenrir_endpoint")) && (
+                  <Button size="icon" variant="outline" onClick={() => handleSavePolicy("fenrir_endpoint")} disabled={updateSetting.isPending}>
                     <Save className="h-4 w-4" />
                   </Button>
                 )}
