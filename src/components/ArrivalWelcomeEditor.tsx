@@ -242,12 +242,12 @@ export function ArrivalWelcomeEditor() {
         <CardHeader className="pb-3 pt-4 px-5">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-md bg-primary/10 text-primary">
-              <Plane className="h-4 w-4" />
+              <MapPin className="h-4 w-4" />
             </div>
             <div>
-              <CardTitle className="text-base">Arrival Welcome Guide</CardTitle>
+              <CardTitle className="text-base">Arrival Welcome Guides</CardTitle>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Customize what guests see after confirming they've landed. Separate templates for each airport.
+                Customize what guests see after confirming their arrival. Separate templates for flights, ferries, and buses.
               </p>
             </div>
           </div>
