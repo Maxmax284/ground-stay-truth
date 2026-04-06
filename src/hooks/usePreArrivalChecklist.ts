@@ -92,8 +92,8 @@ const LOCAL_SETUP: readonly ChecklistItemDef[] = [
   },
   {
     key: "transport_awareness",
-    label: "Understand how pickup works after landing",
-    why: "Your driver will meet you at the airport. Confirmation requires connectivity — make sure you're reachable.",
+    label: "Understand how your arrival pickup works",
+    why: "Whether arriving by air, ferry, or other transport — your driver will meet you at the right location. Confirmation requires connectivity.",
     type: "info",
   },
 ] as const;
