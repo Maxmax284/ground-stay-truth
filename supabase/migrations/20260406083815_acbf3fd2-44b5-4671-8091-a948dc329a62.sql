@@ -1,0 +1,1 @@
+UPDATE profiles SET full_name = 'Katya Volkov' WHERE user_id = 'd75c9ad0-642c-42d2-a0dd-c8b5065ea993';
