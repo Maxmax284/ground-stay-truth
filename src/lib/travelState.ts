@@ -29,9 +29,11 @@ export type TravelState =
   | "missing_final_flight" // Has international flight but no domestic — can't schedule pickup
   | "awaiting_departure"   // Final flight known, guest hasn't landed yet
   | "in_transit_bkk"       // Guest landed in BKK, connecting flight expected
-  | "arriving"             // Guest confirmed landing at final destination (USM)
+  | "arriving"             // Guest confirmed landing at final destination
   | "arrived"              // Pickup completed
-  | "cancelled";           // Pickup cancelled
+  | "cancelled"            // Pickup cancelled
+  | "self_arriving"        // Guest is self-arriving (no pickup needed)
+  | "pickup_disabled";     // Admin disabled pickup
 
 export type AssistMode = "healthy" | "degraded" | "manual_assist" | "recovery_pending";
 
