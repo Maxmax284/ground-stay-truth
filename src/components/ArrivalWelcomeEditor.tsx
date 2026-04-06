@@ -17,10 +17,10 @@ import { useProperty } from "@/hooks/useProperty";
 import { AIStudioPanel } from "./AIStudioPanel";
 import { AIRefinementChat } from "./AIRefinementChat";
 import { GuidedSectionEditor } from "./GuidedSectionEditor";
-import { SECTION_TEMPLATES, getJourneyTemplates, getSituationalTemplates } from "@/lib/airportFactSheets";
+import { SECTION_TEMPLATES, getJourneyTemplates, getSituationalTemplates, ALL_ARRIVAL_LOCATIONS } from "@/lib/airportFactSheets";
 import {
   Plane, Save, Plus, X, Sparkles, Loader2, GripVertical, Image as ImageIcon, MapPin, RefreshCw, Tag,
-  Check, Lightbulb, ChevronDown, ChevronUp, BookOpen, Eye, Smartphone, Building2,
+  Check, Lightbulb, ChevronDown, ChevronUp, BookOpen, Eye, Smartphone, Building2, Ship, Bus,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
