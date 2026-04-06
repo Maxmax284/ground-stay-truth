@@ -50,6 +50,13 @@ Deno.serve(async (req) => {
     let reminders = 0;
     let expiredPayments = 0;
 
+    // ── Helper: process items in batches of N concurrently ──
+    async function batchProcess<T>(items: T[], batchSize: number, fn: (item: T) => Promise<void>) {
+      for (let i = 0; i < items.length; i += batchSize) {
+        await Promise.allSettled(items.slice(i, i + batchSize).map(fn));
+      }
+    }
+
     // 1. Expire soft holds
     const softHoldCutoff = new Date(
       now.getTime() - softHoldHours * 60 * 60 * 1000
@@ -61,9 +68,8 @@ Deno.serve(async (req) => {
       .eq("state", "soft_hold")
       .lt("updated_at", softHoldCutoff);
 
-    for (const booking of staleSoftHolds ?? []) {
-      // State-gate: only cancel if still in soft_hold (prevents race with concurrent state changes)
-      const { error, count } = await supabase
+    await batchProcess(staleSoftHolds ?? [], 10, async (booking) => {
+      const { error } = await supabase
         .from("bookings")
         .update({ state: "cancelled" })
         .eq("id", booking.id)
@@ -79,7 +85,7 @@ Deno.serve(async (req) => {
         });
         expired++;
       }
-    }
+    });
 
     // 2. Send deposit reminders (before expiring)
     const reminderCutoff = new Date(
@@ -96,13 +102,13 @@ Deno.serve(async (req) => {
       .lt("updated_at", reminderCutoff)
       .gt("updated_at", depositCutoff);
 
-    for (const booking of pendingDeposits ?? []) {
+    await batchProcess(pendingDeposits ?? [], 5, async (booking) => {
       const guestEmail = (booking as any).profiles?.email;
       const guestName = (booking as any).profiles?.full_name || "Guest";
       const guestLang = (booking as any).profiles?.preferred_language || "en";
       const unitName = (booking as any).units?.name || "Your Unit";
 
-      if (!guestEmail) continue;
+      if (!guestEmail) return;
 
       const depositAmount = Math.round((Number(booking.total_price || 0) * depositPercentage) / 100);
       const depositFormatted = `${currencySymbol}${depositAmount.toLocaleString()}`;
@@ -132,26 +138,31 @@ Deno.serve(async (req) => {
       } catch (e) {
         console.error("Failed to send deposit reminder:", e);
       }
-    }
+    });
 
-    // 3. Expire pending deposits past deadline
+    // 3. Expire pending deposits past deadline — batch fetch payments first
     const { data: staleDeposits } = await supabase
       .from("bookings")
       .select("id")
       .eq("state", "pending_deposit")
       .lt("updated_at", depositCutoff);
 
-    for (const booking of staleDeposits ?? []) {
-      // Check if payment exists
-      const { data: payments } = await supabase
+    const staleDepositIds = (staleDeposits ?? []).map((b: any) => b.id);
+
+    // Pre-fetch all payments for stale deposits in one query (avoids N+1)
+    let paidBookingIds = new Set<string>();
+    if (staleDepositIds.length > 0) {
+      const { data: existingPayments } = await supabase
         .from("payments")
-        .select("id")
-        .eq("booking_id", booking.id)
-        .limit(1);
+        .select("booking_id")
+        .in("booking_id", staleDepositIds)
+        .in("status", ["recorded", "pending"]);
+      paidBookingIds = new Set((existingPayments ?? []).map((p: any) => p.booking_id));
+    }
 
-      if (payments && payments.length > 0) continue;
+    const unpaidStaleDeposits = (staleDeposits ?? []).filter((b: any) => !paidBookingIds.has(b.id));
 
-      // State-gate: only cancel if still in pending_deposit (prevents race with payment webhook)
+    await batchProcess(unpaidStaleDeposits, 10, async (booking) => {
       const { error } = await supabase
         .from("bookings")
         .update({ state: "cancelled" })
@@ -168,7 +179,7 @@ Deno.serve(async (req) => {
         });
         expired++;
       }
-    }
+    });
 
     // 4. Expire stale pending payments past expires_at
     const { data: stalePayments } = await supabase
@@ -183,7 +194,7 @@ Deno.serve(async (req) => {
         .from("payments")
         .update({ status: "cancelled", provider_status: "expired" })
         .eq("id", payment.id)
-        .eq("status", "pending"); // state-gate
+        .eq("status", "pending");
 
       if (!error) {
         expiredPayments++;
