@@ -232,6 +232,7 @@ export type Database = {
           from_state: Database["public"]["Enums"]["booking_state"] | null
           id: string
           reason: string | null
+          seq: number
           to_state: Database["public"]["Enums"]["booking_state"]
         }
         Insert: {
@@ -241,6 +242,7 @@ export type Database = {
           from_state?: Database["public"]["Enums"]["booking_state"] | null
           id?: string
           reason?: string | null
+          seq?: never
           to_state: Database["public"]["Enums"]["booking_state"]
         }
         Update: {
@@ -250,6 +252,7 @@ export type Database = {
           from_state?: Database["public"]["Enums"]["booking_state"] | null
           id?: string
           reason?: string | null
+          seq?: never
           to_state?: Database["public"]["Enums"]["booking_state"]
         }
         Relationships: [
