@@ -332,18 +332,22 @@ export function ArrivalWelcomeDialog({ open, onOpenChange, airport, arrivalLocat
 
 interface ArrivalWelcomeCardProps {
   airport: "bkk" | "samui" | null;
+  /** Explicit arrival location ID — overrides airport */
+  arrivalLocationId?: string | null;
   compact?: boolean;
   propertyId?: string | null;
 }
 
-export function ArrivalWelcomeCard({ airport, compact = false, propertyId }: ArrivalWelcomeCardProps) {
+export function ArrivalWelcomeCard({ airport, arrivalLocationId, compact = false, propertyId }: ArrivalWelcomeCardProps) {
   const { data: settings } = usePolicySettings(propertyId);
+  const guideKey = resolveArrivalGuideKey(airport, arrivalLocationId);
+  const locationLabel = arrivalLocationId ? arrivalLocationLabel(arrivalLocationId) : arrivalLocationLabel(airport);
 
   const template = useMemo(() => {
-    if (!airport || !settings) return null;
-    const setting = settings.find((s) => s.key === `arrival_welcome_${airport}`);
+    if (!guideKey || !settings) return null;
+    const setting = settings.find((s) => s.key === guideKey);
     return parseTemplate(setting?.value);
-  }, [airport, settings]);
+  }, [guideKey, settings]);
 
   const { translated, isTranslating } = useWelcomeTranslation(
     template?.welcome_message ?? "",
