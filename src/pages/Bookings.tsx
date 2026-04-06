@@ -109,7 +109,7 @@ const Bookings = () => {
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
-  const { data: bookings, isLoading } = useBookings({
+  const { data: bookings, isLoading, isError, refetch } = useBookings({
     state: stateFilter,
     unitId: unitFilter,
     dateFrom,
