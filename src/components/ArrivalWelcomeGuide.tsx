@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plane, MapPin, CheckCircle2, ChevronRight, Loader2 } from "lucide-react";
+import { Plane, MapPin, CheckCircle2, ChevronRight, Loader2, Ship, Bus } from "lucide-react";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { useWelcomeTranslation } from "@/hooks/useWelcomeTranslation";
 
