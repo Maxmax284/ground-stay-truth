@@ -1,0 +1,1 @@
+UPDATE bookings SET state = 'confirmed', updated_at = now() WHERE id = 'a0a0a0a0-0a01-4000-a000-000000000001';
