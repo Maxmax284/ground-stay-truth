@@ -276,13 +276,15 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
             <span className="text-muted-foreground">Pickup disabled by admin — guest will self-arrive</span>
           </div>
         )}
+
+        {/* Manual Assist Banner */}
+        <ManualAssistBanner
           bookingId={bookingId}
           pickupId={pickup.id}
           assistMode={pickup.assist_mode ?? "healthy"}
           assistReason={pickup.assist_reason ?? null}
           guestName={guestName}
           onContactGuest={() => {
-            // Deep-link to messaging for this booking
             window.location.hash = `#messages-${bookingId}`;
           }}
         />
