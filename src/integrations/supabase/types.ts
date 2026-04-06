@@ -16,7 +16,11 @@ export type Database = {
     Tables: {
       airport_pickups: {
         Row: {
+          arrival_confidence: string
           arrival_datetime: string | null
+          arrival_location_name: string | null
+          arrival_location_type: string
+          arrival_type: string
           assigned_at: string | null
           assigned_by: string | null
           assist_activated_at: string | null
@@ -43,13 +47,19 @@ export type Database = {
           international_flight_number: string | null
           luggage_notes: string | null
           passenger_count: number | null
+          pickup_enabled: boolean
           property_id: string | null
           special_instructions: string | null
           status: string
+          transport_intent: string
           updated_at: string
         }
         Insert: {
+          arrival_confidence?: string
           arrival_datetime?: string | null
+          arrival_location_name?: string | null
+          arrival_location_type?: string
+          arrival_type?: string
           assigned_at?: string | null
           assigned_by?: string | null
           assist_activated_at?: string | null
@@ -76,13 +86,19 @@ export type Database = {
           international_flight_number?: string | null
           luggage_notes?: string | null
           passenger_count?: number | null
+          pickup_enabled?: boolean
           property_id?: string | null
           special_instructions?: string | null
           status?: string
+          transport_intent?: string
           updated_at?: string
         }
         Update: {
+          arrival_confidence?: string
           arrival_datetime?: string | null
+          arrival_location_name?: string | null
+          arrival_location_type?: string
+          arrival_type?: string
           assigned_at?: string | null
           assigned_by?: string | null
           assist_activated_at?: string | null
@@ -109,9 +125,11 @@ export type Database = {
           international_flight_number?: string | null
           luggage_notes?: string | null
           passenger_count?: number | null
+          pickup_enabled?: boolean
           property_id?: string | null
           special_instructions?: string | null
           status?: string
+          transport_intent?: string
           updated_at?: string
         }
         Relationships: [
