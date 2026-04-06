@@ -1,5 +1,5 @@
 /**
- * Hardcoded airport fact sheets for BKK and USM.
+ * Hardcoded arrival location fact sheets for BKK, USM, piers, and bus.
  * These provide real, verified data that feeds into AI content generation
  * and appears as reference cards in the section editor.
  */
@@ -69,6 +69,84 @@ export interface AirportFacts {
     lastFlightApprox: string;
     safetyTips: string[];
     transportAvailability: string;
+  };
+}
+
+// ── Pier & Bus Fact Sheets ──────────────────────────────────────────────────
+
+export interface PierFacts {
+  code: string;
+  name: string;
+  fullName: string;
+  type: string;
+  arrival: {
+    estimatedDisembarkTime: string;
+    tips: string[];
+  };
+  facilities: {
+    layout: string;
+    waitingArea: string;
+    food: string;
+    shops: string;
+    toilets: string;
+    tips: string[];
+  };
+  transport: {
+    toCamp: TransportOption[];
+    tips: string[];
+  };
+  routeToCamp: {
+    estimatedTime: string;
+    landmarks: string[];
+    description: string;
+  };
+  connectivity: {
+    wifi: string;
+    tips: string[];
+  };
+  weather: {
+    rainySeasonMonths: string;
+    seaConditionNote: string;
+    tips: string[];
+  };
+  timing: {
+    firstFerry: string;
+    lastFerry: string;
+    peakTimes: string;
+    delayNotes: string;
+  };
+}
+
+export interface BusFacts {
+  code: string;
+  name: string;
+  fullName: string;
+  type: string;
+  arrival: {
+    estimatedArrivalVariance: string;
+    tips: string[];
+  };
+  dropoff: {
+    location: string;
+    description: string;
+    tips: string[];
+  };
+  transport: {
+    toCamp: TransportOption[];
+    tips: string[];
+  };
+  routeToCamp: {
+    estimatedTime: string;
+    landmarks: string[];
+    description: string;
+  };
+  connectivity: {
+    tips: string[];
+  };
+  timing: {
+    notes: string;
+    delayCommon: boolean;
+    tips: string[];
   };
 }
 
