@@ -169,6 +169,57 @@ export default function ProfileEditor() {
 
       <PushNotificationToggle />
 
+      {/* F-04: Data Export / Portability */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Your Data</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Download a complete copy of all personal data we hold about you, in machine-readable JSON format (GDPR Article 20).
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={exporting}
+            onClick={async () => {
+              setExporting(true);
+              try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) throw new Error("Not authenticated");
+                const resp = await fetch(
+                  `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/export-user-data`,
+                  {
+                    method: "POST",
+                    headers: {
+                      Authorization: `Bearer ${session.access_token}`,
+                      "Content-Type": "application/json",
+                      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                    },
+                  }
+                );
+                if (!resp.ok) throw new Error("Export failed");
+                const blob = await resp.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `groundstay-data-export-${new Date().toISOString().slice(0, 10)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                toast.success("Data export downloaded");
+              } catch (err: any) {
+                toast.error(err.message || "Export failed");
+              } finally {
+                setExporting(false);
+              }
+            }}
+          >
+            {exporting ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Download className="h-4 w-4 mr-1.5" />}
+            {exporting ? "Exporting..." : "Download My Data"}
+          </Button>
+        </CardContent>
+      </Card>
+
       <Card className="border-destructive/30">
         <CardHeader>
           <CardTitle className="text-lg text-destructive">{t("profile.dangerZone")}</CardTitle>
