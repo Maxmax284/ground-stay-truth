@@ -60,6 +60,7 @@ export default function Stay() {
         const resp = await fetch(`${SUPABASE_URL}/functions/v1/get-availability`, {
           headers: { apikey: SUPABASE_KEY },
         });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
         const fetchedUnits = data.units ?? [];
         const fetchedProperties = data.properties ?? [];
@@ -67,19 +68,29 @@ export default function Stay() {
         setUnits(fetchedUnits);
         setProperties(fetchedProperties);
         setCurrencySymbol(fetchedSymbol);
+        setFetchError(false);
         // Cache for offline use
         try {
           localStorage.setItem("gs_cache_units", JSON.stringify(fetchedUnits));
+          localStorage.setItem("gs_cache_props", JSON.stringify(fetchedProperties));
           localStorage.setItem("gs_cache_currency", fetchedSymbol);
         } catch { /* quota */ }
       } catch {
         // Offline or error — load from cache
         try {
           const cached = localStorage.getItem("gs_cache_units");
+          const cachedProps = localStorage.getItem("gs_cache_props");
           const cachedCurrency = localStorage.getItem("gs_cache_currency");
-          if (cached) setUnits(JSON.parse(cached));
-          if (cachedCurrency) setCurrencySymbol(cachedCurrency);
-        } catch { /* silent */ }
+          if (cached) {
+            setUnits(JSON.parse(cached));
+            if (cachedProps) setProperties(JSON.parse(cachedProps));
+            if (cachedCurrency) setCurrencySymbol(cachedCurrency);
+          } else {
+            setFetchError(true);
+          }
+        } catch {
+          setFetchError(true);
+        }
       }
       setLoading(false);
     })();
