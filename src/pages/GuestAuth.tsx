@@ -124,18 +124,29 @@ const GuestAuth = () => {
                   minLength={6}
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={submitting}>
+              {!isLogin && (
+                <div className="flex items-start gap-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="consent"
+                    checked={consentChecked}
+                    onChange={(e) => setConsentChecked(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-input accent-primary"
+                    required
+                  />
+                  <label htmlFor="consent" className="text-xs text-muted-foreground leading-tight">
+                    {t("legal.consentCheckbox", "I agree to the")}{" "}
+                    <a href="/legal#terms" target="_blank" className="font-medium text-primary hover:underline">{t("legal.termsOfService")}</a>
+                    {" "}{t("legal.and")}{" "}
+                    <a href="/legal#privacy" target="_blank" className="font-medium text-primary hover:underline">{t("legal.privacyPolicy")}</a>
+                    {". "}{t("legal.consentDataProcessing", "I consent to the processing of my personal data as described in the Privacy Policy.")}
+                  </label>
+                </div>
+              )}
+              <Button type="submit" className="w-full" disabled={submitting || (!isLogin && !consentChecked)}>
                 {submitting ? t("common.pleaseWait") : isLogin ? t("auth.signIn") : t("guestAuth.createAccount")}
               </Button>
             </form>
-            {!isLogin && (
-              <p className="mt-3 text-center text-xs text-muted-foreground">
-                {t("legal.bySigningUp")}{" "}
-                <a href="/legal#terms" className="font-medium text-primary hover:underline">{t("legal.termsOfService")}</a>
-                {" "}{t("legal.and")}{" "}
-                <a href="/legal#privacy" className="font-medium text-primary hover:underline">{t("legal.privacyPolicy")}</a>.
-              </p>
-            )}
             <div className="mt-4 text-center text-sm text-muted-foreground">
               {isLogin ? t("auth.noAccount") : t("auth.haveAccount")}{" "}
               <button

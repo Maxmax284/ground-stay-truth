@@ -94,11 +94,30 @@ const Legal = () => {
                   <li><strong>AI assistant (Kru):</strong> General queries about bookings and operations are processed by AI services to provide advisory responses.</li>
                 </ul>
 
-                <h2 className="text-lg font-semibold">6. Cookies &amp; Local Storage</h2>
+                <h2 className="text-lg font-semibold">6. Legal Basis for Processing (GDPR)</h2>
+                <p>We process your personal data under the following legal bases:</p>
+                <ul>
+                  <li><strong>Contract performance:</strong> Processing necessary to fulfill your booking (reservation management, payments, communication).</li>
+                  <li><strong>Consent:</strong> You explicitly consent to data processing when creating an account. You may withdraw consent at any time by deleting your account.</li>
+                  <li><strong>Legitimate interest:</strong> Fraud detection, security monitoring, and platform maintenance.</li>
+                  <li><strong>Legal obligation:</strong> Retention of financial records as required by applicable tax and hospitality regulations.</li>
+                </ul>
+
+                <h2 className="text-lg font-semibold">7. International Data Transfers</h2>
+                <p>Your data may be processed in countries outside your country of residence, including the United States, where our infrastructure and AI service providers operate. When your data is transferred internationally, we rely on:</p>
+                <ul>
+                  <li><strong>Standard Contractual Clauses (SCCs)</strong> approved by the European Commission for transfers from the EU/EEA.</li>
+                  <li><strong>Adequacy decisions</strong> where available for the destination country.</li>
+                  <li><strong>Contractual safeguards</strong> with all third-party processors requiring equivalent data protection standards.</li>
+                </ul>
+                <p>Specifically, data may be processed by AI service providers for translation, document verification, and assistant functionality. These providers process data in transit and do not retain personal data beyond the processing period.</p>
+
+                <h2 className="text-lg font-semibold">8. Cookies &amp; Local Storage</h2>
                 <p>We use browser local storage to save your language preference and authentication session. We do not use tracking cookies or third-party analytics trackers.</p>
 
-                <h2 className="text-lg font-semibold">7. Contact</h2>
-                <p>For data requests, questions about this policy, or to exercise your rights, contact the property management team directly through the messaging system in your guest portal, or email us at the address provided during your booking confirmation.</p>
+                <h2 className="text-lg font-semibold">9. Contact &amp; Data Protection</h2>
+                <p>For data requests, questions about this policy, to exercise your rights under GDPR, CCPA, or Thailand's PDPA, contact the property management team directly through the messaging system in your guest portal, or email us at the address provided during your booking confirmation.</p>
+                <p>If you are in the European Union and are not satisfied with our response, you have the right to lodge a complaint with your local Data Protection Authority.</p>
               </CardContent>
             </Card>
           </TabsContent>
