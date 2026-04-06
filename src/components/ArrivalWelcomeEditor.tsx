@@ -266,21 +266,23 @@ export function ArrivalWelcomeEditor() {
       )}
 
       <Tabs value={activeAirport} onValueChange={(v) => { setActiveAirport(v); setSuggestions([]); }}>
-        <TabsList className="bg-muted/50">
-          {AIRPORTS.map((a) => {
-            const tmpl = getTemplate(a.id);
-            return (
-              <TabsTrigger key={a.id} value={a.id} className="gap-1.5">
-                <span>{a.icon}</span>
-                {a.label}
-                {!tmpl.enabled && <Badge variant="outline" className="text-[9px] px-1 py-0 ml-1 border-muted-foreground/30">Off</Badge>}
-                {isDirty(a.id) && <Badge variant="secondary" className="text-[9px] px-1 py-0 ml-1">unsaved</Badge>}
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="bg-muted/50 w-auto inline-flex">
+            {LOCATIONS.map((a) => {
+              const tmpl = getTemplate(a.id);
+              return (
+                <TabsTrigger key={a.id} value={a.id} className="gap-1.5 text-xs whitespace-nowrap">
+                  <span>{a.icon}</span>
+                  {a.label}
+                  {!tmpl.enabled && <Badge variant="outline" className="text-[9px] px-1 py-0 ml-1 border-muted-foreground/30">Off</Badge>}
+                  {isDirty(a.id) && <Badge variant="secondary" className="text-[9px] px-1 py-0 ml-1">unsaved</Badge>}
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+        </div>
 
-        {AIRPORTS.map((airport) => {
+        {LOCATIONS.map((airport) => {
           const template = getTemplate(airport.id);
           return (
             <TabsContent key={airport.id} value={airport.id} className="space-y-4 mt-3">
