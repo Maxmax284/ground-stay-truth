@@ -1835,6 +1835,36 @@ export type Database = {
           },
         ]
       }
+      user_consents: {
+        Row: {
+          consent_type: string
+          granted_at: string
+          id: string
+          metadata: Json | null
+          policy_version: string
+          user_id: string
+          withdrawn_at: string | null
+        }
+        Insert: {
+          consent_type: string
+          granted_at?: string
+          id?: string
+          metadata?: Json | null
+          policy_version: string
+          user_id: string
+          withdrawn_at?: string | null
+        }
+        Update: {
+          consent_type?: string
+          granted_at?: string
+          id?: string
+          metadata?: Json | null
+          policy_version?: string
+          user_id?: string
+          withdrawn_at?: string | null
+        }
+        Relationships: []
+      }
       user_property_assignments: {
         Row: {
           created_at: string
