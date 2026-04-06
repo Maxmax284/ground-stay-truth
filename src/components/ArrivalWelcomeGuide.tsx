@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plane, MapPin, CheckCircle2, ChevronRight, Loader2 } from "lucide-react";
+import { Plane, MapPin, CheckCircle2, ChevronRight, Loader2, Ship, Bus } from "lucide-react";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { useWelcomeTranslation } from "@/hooks/useWelcomeTranslation";
 
@@ -99,11 +99,42 @@ export function detectAirport(
   return null;
 }
 
-/** Get human-readable airport label */
+/** Get human-readable label for any arrival location */
+export function arrivalLocationLabel(code: string | null): string {
+  if (!code) return "Unknown";
+  const map: Record<string, string> = {
+    bkk: "BKK (Suvarnabhumi)",
+    samui: "USM (Koh Samui)",
+    nathon: "Nathon Pier",
+    lipa_noi: "Lipa Noi Pier",
+    bus: "Bus / Van Arrival",
+  };
+  return map[code.toLowerCase()] ?? code;
+}
+
+/** Legacy alias for existing code */
 export function airportLabel(code: "bkk" | "samui" | null): string {
-  if (code === "bkk") return "BKK (Suvarnabhumi)";
-  if (code === "samui") return "USM (Koh Samui)";
-  return "Unknown";
+  return arrivalLocationLabel(code);
+}
+
+/** Resolve which policy key to use for arrival guide based on arrival context */
+export function resolveArrivalGuideKey(
+  airport: "bkk" | "samui" | null,
+  arrivalLocationId?: string | null,
+): string | null {
+  // Explicit arrival location ID takes priority
+  if (arrivalLocationId) return `arrival_welcome_${arrivalLocationId}`;
+  // Fall back to airport detection
+  if (airport) return `arrival_welcome_${airport}`;
+  return null;
+}
+
+/** Get icon component for arrival type */
+export function getArrivalIcon(locationId: string | null) {
+  if (!locationId) return Plane;
+  if (locationId === "nathon" || locationId === "lipa_noi") return Ship;
+  if (locationId === "bus") return Bus;
+  return Plane;
 }
 
 function SectionPhotos({ photos }: { photos: WelcomePhoto[] }) {
@@ -202,6 +233,8 @@ interface ArrivalWelcomeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   airport: "bkk" | "samui" | null;
+  /** Explicit arrival location ID (nathon, lipa_noi, bus, etc.) — overrides airport */
+  arrivalLocationId?: string | null;
   propertyId?: string | null;
   /** If true, filter out introductory sections for returning guests */
   isReturningGuest?: boolean;
@@ -220,28 +253,31 @@ function isIntroductorySection(title: string): boolean {
   return INTRODUCTORY_SECTION_KEYWORDS.some(kw => lower.includes(kw));
 }
 
-export function ArrivalWelcomeDialog({ open, onOpenChange, airport, propertyId, isReturningGuest }: ArrivalWelcomeDialogProps) {
+export function ArrivalWelcomeDialog({ open, onOpenChange, airport, arrivalLocationId, propertyId, isReturningGuest }: ArrivalWelcomeDialogProps) {
   const { data: settings } = usePolicySettings(propertyId);
+  const guideKey = resolveArrivalGuideKey(airport, arrivalLocationId);
+  const locationLabel = arrivalLocationId ? arrivalLocationLabel(arrivalLocationId) : arrivalLocationLabel(airport);
+  const IconComponent = getArrivalIcon(arrivalLocationId ?? airport);
 
   const template = useMemo(() => {
-    if (!airport || !settings) return null;
-    const setting = settings.find((s) => s.key === `arrival_welcome_${airport}`);
+    if (!guideKey || !settings) return null;
+    const setting = settings.find((s) => s.key === guideKey);
     const parsed = parseTemplate(setting?.value);
     if (!parsed || !isReturningGuest) return parsed;
     return {
       ...parsed,
       sections: parsed.sections.filter(s => !isIntroductorySection(s.title)),
     };
-  }, [airport, settings, isReturningGuest]);
+  }, [guideKey, settings, isReturningGuest]);
 
   const { translated, isTranslating } = useWelcomeTranslation(
     template?.welcome_message ?? "",
     template?.sections ?? [],
   );
 
-  const airportLabel = airport === "bkk" ? "BKK (Suvarnabhumi)" : "Samui (USM)";
   const guideEnabled = template?.enabled ?? false;
   const hasContent = guideEnabled && (template?.welcome_message || (template?.sections?.length ?? 0) > 0);
+  const isNonFlight = arrivalLocationId === "nathon" || arrivalLocationId === "lipa_noi" || arrivalLocationId === "bus";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -249,18 +285,18 @@ export function ArrivalWelcomeDialog({ open, onOpenChange, airport, propertyId, 
         <DialogHeader className="px-5 pt-5 pb-0">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-full bg-primary/10">
-              <Plane className="h-5 w-5 text-primary" />
+              <IconComponent className="h-5 w-5 text-primary" />
             </div>
             <div>
               <DialogTitle className="text-lg">
                 {hasContent
                   ? (isReturningGuest ? "Welcome back! 👋" : "Welcome! 🎉")
-                  : "Landing Confirmed! ✅"}
+                  : (isNonFlight ? "Arrival Confirmed! ✅" : "Landing Confirmed! ✅")}
               </DialogTitle>
               <DialogDescription className="text-xs">
                 {hasContent
-                  ? `Your arrival guide for ${airportLabel}`
-                  : `You've confirmed your arrival at ${airportLabel}. Your driver has been notified!`}
+                  ? `Your arrival guide for ${locationLabel}`
+                  : `You've confirmed your arrival at ${locationLabel}. ${isNonFlight ? "We'll coordinate from here!" : "Your driver has been notified!"}`}
               </DialogDescription>
             </div>
           </div>
@@ -296,18 +332,22 @@ export function ArrivalWelcomeDialog({ open, onOpenChange, airport, propertyId, 
 
 interface ArrivalWelcomeCardProps {
   airport: "bkk" | "samui" | null;
+  /** Explicit arrival location ID — overrides airport */
+  arrivalLocationId?: string | null;
   compact?: boolean;
   propertyId?: string | null;
 }
 
-export function ArrivalWelcomeCard({ airport, compact = false, propertyId }: ArrivalWelcomeCardProps) {
+export function ArrivalWelcomeCard({ airport, arrivalLocationId, compact = false, propertyId }: ArrivalWelcomeCardProps) {
   const { data: settings } = usePolicySettings(propertyId);
+  const guideKey = resolveArrivalGuideKey(airport, arrivalLocationId);
+  const locationLabel = arrivalLocationId ? arrivalLocationLabel(arrivalLocationId) : arrivalLocationLabel(airport);
 
   const template = useMemo(() => {
-    if (!airport || !settings) return null;
-    const setting = settings.find((s) => s.key === `arrival_welcome_${airport}`);
+    if (!guideKey || !settings) return null;
+    const setting = settings.find((s) => s.key === guideKey);
     return parseTemplate(setting?.value);
-  }, [airport, settings]);
+  }, [guideKey, settings]);
 
   const { translated, isTranslating } = useWelcomeTranslation(
     template?.welcome_message ?? "",
@@ -327,7 +367,7 @@ export function ArrivalWelcomeCard({ airport, compact = false, propertyId }: Arr
             <MapPin className="h-4 w-4 text-primary shrink-0" />
             <span className="text-sm font-semibold text-foreground">Arrival Guide</span>
             <Badge variant="secondary" className="text-[10px] ml-auto">
-              {airport?.toUpperCase()}
+              {locationLabel}
             </Badge>
           </div>
           {displayMessage && (
@@ -362,7 +402,7 @@ export function ArrivalWelcomeCard({ airport, compact = false, propertyId }: Arr
           <MapPin className="h-4 w-4 text-primary shrink-0" />
           <span className="text-sm font-semibold text-foreground">Your Arrival Guide</span>
           <Badge variant="secondary" className="text-[10px] ml-auto">
-            {airport?.toUpperCase()}
+            {locationLabel}
           </Badge>
         </div>
         <WelcomeContent

@@ -1,5 +1,5 @@
 /**
- * Hardcoded airport fact sheets for BKK and USM.
+ * Hardcoded arrival location fact sheets for BKK, USM, piers, and bus.
  * These provide real, verified data that feeds into AI content generation
  * and appears as reference cards in the section editor.
  */
@@ -69,6 +69,84 @@ export interface AirportFacts {
     lastFlightApprox: string;
     safetyTips: string[];
     transportAvailability: string;
+  };
+}
+
+// ── Pier & Bus Fact Sheets ──────────────────────────────────────────────────
+
+export interface PierFacts {
+  code: string;
+  name: string;
+  fullName: string;
+  type: string;
+  arrival: {
+    estimatedDisembarkTime: string;
+    tips: string[];
+  };
+  facilities: {
+    layout: string;
+    waitingArea: string;
+    food: string;
+    shops: string;
+    toilets: string;
+    tips: string[];
+  };
+  transport: {
+    toCamp: TransportOption[];
+    tips: string[];
+  };
+  routeToCamp: {
+    estimatedTime: string;
+    landmarks: string[];
+    description: string;
+  };
+  connectivity: {
+    wifi: string;
+    tips: string[];
+  };
+  weather: {
+    rainySeasonMonths: string;
+    seaConditionNote: string;
+    tips: string[];
+  };
+  timing: {
+    firstFerry: string;
+    lastFerry: string;
+    peakTimes: string;
+    delayNotes: string;
+  };
+}
+
+export interface BusFacts {
+  code: string;
+  name: string;
+  fullName: string;
+  type: string;
+  arrival: {
+    estimatedArrivalVariance: string;
+    tips: string[];
+  };
+  dropoff: {
+    location: string;
+    description: string;
+    tips: string[];
+  };
+  transport: {
+    toCamp: TransportOption[];
+    tips: string[];
+  };
+  routeToCamp: {
+    estimatedTime: string;
+    landmarks: string[];
+    description: string;
+  };
+  connectivity: {
+    tips: string[];
+  };
+  timing: {
+    notes: string;
+    delayCommon: boolean;
+    tips: string[];
   };
 }
 
@@ -327,6 +405,260 @@ export const AIRPORT_FACTS: Record<string, AirportFacts> = {
   },
 };
 
+// ── Pier Facts ──────────────────────────────────────────────────────────────
+
+export const PIER_FACTS: Record<string, PierFacts> = {
+  nathon: {
+    code: "nathon",
+    name: "Nathon",
+    fullName: "Nathon Pier (Main Ferry Terminal)",
+    type: "Main ferry terminal — busiest pier on Koh Samui",
+    arrival: {
+      estimatedDisembarkTime: "5–15 minutes from docking to exiting the pier area",
+      tips: [
+        "Follow the crowd off the ferry — the exit is straightforward",
+        "If you have large luggage, porters may offer help for ฿50–100",
+        "The pier area can be congested during peak ferry arrivals",
+        "Have your booking confirmation ready — our driver will look for your name",
+      ],
+    },
+    facilities: {
+      layout: "Simple open pier with a covered waiting area. Ticket counters at the entrance.",
+      waitingArea: "Covered seating area near ticket offices — no air conditioning",
+      food: "A few small food stalls and a 7-Eleven within walking distance (2 min)",
+      shops: "Minimal — a couple of convenience shops near the pier entrance",
+      toilets: "Basic public toilets available at the pier",
+      tips: [
+        "Nathon town is right behind the pier — shops, ATMs, and restaurants within 5 min walk",
+        "There's a small market area near the pier with local food",
+        "The 7-Eleven on the main road is the most reliable for essentials",
+      ],
+    },
+    transport: {
+      toCamp: [
+        {
+          name: "Ground Stay pickup (arranged)",
+          cost: "Included or arranged via booking",
+          duration: "30–40 minutes",
+          notes: "Our driver meets you at the pier exit. Most reliable option.",
+        },
+        {
+          name: "Songthaew (shared taxi)",
+          cost: "฿100–200 per person",
+          duration: "40–60 minutes (shared route)",
+          notes: "Red/yellow pickup trucks. Cheap but slow — they loop around the island dropping passengers.",
+        },
+        {
+          name: "Private taxi",
+          cost: "฿500–800",
+          duration: "30–40 minutes",
+          notes: "Negotiate price before getting in. No meters on Samui.",
+        },
+        {
+          name: "Grab/Bolt",
+          cost: "฿350–600",
+          duration: "30–40 minutes",
+          notes: "Available but fewer drivers than Bangkok. May wait 10–15 min.",
+        },
+      ],
+      tips: [
+        "If pickup is arranged, look for driver with your name at the pier exit",
+        "Ignore aggressive taxi touts at the pier — walk past them to find better options",
+        "Songthaews follow set routes — confirm they pass through Lamai before boarding",
+      ],
+    },
+    routeToCamp: {
+      estimatedTime: "30–40 minutes by car",
+      landmarks: [
+        "Exit Nathon pier → take the coast road south (Route 4169/4170)",
+        "Pass through Nathon town",
+        "Continue along the south coast",
+        "Pass Hua Thanon fishing village",
+        "Enter Lamai area — camp is on the left near Lamai Beach",
+      ],
+      description: "From Nathon pier, drive south along the coast road. The route passes through the quiet west coast before turning south and east toward Lamai. Scenic drive with mountain and sea views.",
+    },
+    connectivity: {
+      wifi: "No reliable free WiFi at the pier. Use mobile data.",
+      tips: [
+        "Get a SIM card before taking the ferry if possible",
+        "If arriving without a SIM, the 7-Eleven near the pier sells them",
+      ],
+    },
+    weather: {
+      rainySeasonMonths: "October – December",
+      seaConditionNote: "Ferries may be cancelled during severe weather (Nov–Dec). Check with ferry operator before travel.",
+      tips: [
+        "Sea conditions can be rough Oct–Dec — take motion sickness medication if prone",
+        "Morning ferries tend to have calmer seas than afternoon ones",
+        "During monsoon season, delays of 30–60 min are common",
+      ],
+    },
+    timing: {
+      firstFerry: "~06:00 (varies by operator)",
+      lastFerry: "~19:00 (Lomprayah/Seatran)",
+      peakTimes: "Morning arrivals (08:00–10:00) and afternoon (14:00–16:00)",
+      delayNotes: "Delays are common, especially in rough seas. Budget extra time.",
+    },
+  },
+
+  lipa_noi: {
+    code: "lipa_noi",
+    name: "Lipa Noi",
+    fullName: "Lipa Noi Pier (Raja Ferry Terminal)",
+    type: "Secondary ferry terminal — mainly Raja Ferry vehicle ferries",
+    arrival: {
+      estimatedDisembarkTime: "10–20 minutes (vehicle ferry, slower disembark)",
+      tips: [
+        "Vehicle ferries take longer to unload — be patient",
+        "Walk-on passengers disembark before vehicles",
+        "The pier area is quieter than Nathon",
+      ],
+    },
+    facilities: {
+      layout: "Simple open pier designed for vehicle loading/unloading",
+      waitingArea: "Small covered area near the ticket office",
+      food: "A couple of food stalls near the pier. Very limited options.",
+      shops: "Almost none — bring what you need or stop in Nathon/Lamai later",
+      toilets: "Basic facilities available",
+      tips: [
+        "Lipa Noi is more remote than Nathon — fewer services immediately available",
+        "The nearest town with proper shops is Nathon (15 min drive)",
+      ],
+    },
+    transport: {
+      toCamp: [
+        {
+          name: "Ground Stay pickup (arranged)",
+          cost: "Included or arranged via booking",
+          duration: "25–35 minutes",
+          notes: "Our driver meets you at the pier exit.",
+        },
+        {
+          name: "Private taxi",
+          cost: "฿400–700",
+          duration: "25–35 minutes",
+          notes: "Fewer taxis available here than Nathon. Pre-arrange if possible.",
+        },
+        {
+          name: "Grab/Bolt",
+          cost: "฿300–500",
+          duration: "25–35 minutes",
+          notes: "Limited drivers in this area. Expect longer wait times.",
+        },
+      ],
+      tips: [
+        "Pre-arranged pickup is strongly recommended — taxis are scarce here",
+        "If no pickup arranged, you may need to wait 15–20 min for a Grab",
+      ],
+    },
+    routeToCamp: {
+      estimatedTime: "25–35 minutes by car",
+      landmarks: [
+        "Exit Lipa Noi pier → head south on the coast road",
+        "Pass through quiet residential area",
+        "Join the main ring road heading east toward Lamai",
+        "Enter Lamai area — camp is near Lamai Beach",
+      ],
+      description: "Shorter drive than from Nathon. The road cuts across the southern part of the island through quieter, more rural areas before reaching Lamai on the east coast.",
+    },
+    connectivity: {
+      wifi: "No WiFi at the pier.",
+      tips: ["Have mobile data ready before arriving — no SIM vendors at this pier"],
+    },
+    weather: {
+      rainySeasonMonths: "October – December",
+      seaConditionNote: "Raja Ferry vehicle ferries are more stable but still affected by severe weather.",
+      tips: [
+        "Vehicle ferries handle rough seas slightly better than catamarans",
+        "Check Raja Ferry schedule — fewer daily departures than other operators",
+      ],
+    },
+    timing: {
+      firstFerry: "~05:00 (Raja Ferry from Don Sak)",
+      lastFerry: "~19:00",
+      peakTimes: "Mid-morning (09:00–11:00)",
+      delayNotes: "Delays less frequent than catamaran services but still possible in bad weather.",
+    },
+  },
+};
+
+// ── Bus Facts ───────────────────────────────────────────────────────────────
+
+export const BUS_FACTS: BusFacts = {
+  code: "bus",
+  name: "Bus Arrival",
+  fullName: "Bus/Van Arrival to Koh Samui",
+  type: "Overland travel — typically combined bus+ferry",
+  arrival: {
+    estimatedArrivalVariance: "30–90 minutes from scheduled time (delays common)",
+    tips: [
+      "Bus+ferry combos often run late — don't worry, we'll adjust",
+      "Your arrival time will depend on the ferry connection at the mainland",
+      "Many operators include the ferry ticket — confirm with your provider",
+      "Keep your belongings close during transfers between bus and ferry",
+    ],
+  },
+  dropoff: {
+    location: "Varies — usually Nathon Pier or operator's drop-off point",
+    description: "Most bus+ferry services drop you at Nathon Pier. Some operators have their own drop-off points near Nathon town.",
+    tips: [
+      "Confirm your exact drop-off point with the bus/ferry operator",
+      "Let us know your operator (Lomprayah, Seatran, etc.) so we know where to meet you",
+      "If dropped at Nathon Pier, follow the same exit as ferry passengers",
+    ],
+  },
+  transport: {
+    toCamp: [
+      {
+        name: "Ground Stay pickup (arranged)",
+        cost: "Included or arranged via booking",
+        duration: "30–40 minutes from Nathon",
+        notes: "We'll coordinate timing based on your estimated arrival. Flexible with delays.",
+      },
+      {
+        name: "Songthaew",
+        cost: "฿100–200 per person",
+        duration: "40–60 minutes",
+        notes: "Available near Nathon. Shared route — slow but cheap.",
+      },
+      {
+        name: "Grab/Bolt",
+        cost: "฿350–600",
+        duration: "30–40 minutes",
+        notes: "Order once you're off the ferry and have phone signal.",
+      },
+    ],
+    tips: [
+      "If pickup is arranged, message us your real-time ETA when you board the ferry",
+      "We don't need exact times — approximate is fine, we'll be flexible",
+    ],
+  },
+  routeToCamp: {
+    estimatedTime: "30–40 minutes from Nathon to camp",
+    landmarks: [
+      "Same route as from Nathon Pier — south coast road to Lamai",
+    ],
+    description: "After the ferry docks at Nathon, the drive to camp is the same as for ferry arrivals — south along the coast to Lamai Beach.",
+  },
+  connectivity: {
+    tips: [
+      "Many long-distance buses have WiFi but it's unreliable",
+      "Make sure you have mobile data for the ferry portion",
+      "Signal may drop during the crossing — don't worry, it comes back on Samui",
+    ],
+  },
+  timing: {
+    notes: "Bus+ferry combos from Bangkok take 10–14 hours. From Surat Thani, 2–3 hours including ferry.",
+    delayCommon: true,
+    tips: [
+      "Delays of 30–90 min are normal — plan for flexibility",
+      "Night buses arrive early morning — you may need to wait for the first ferry",
+      "Message us your ferry departure time from the mainland — that's the most useful timing info",
+    ],
+  },
+};
+
 /** Section template types with their guided fields */
 export type SectionTypeId =
   | "immigration"
@@ -341,13 +673,19 @@ export type SectionTypeId =
   | "late_night"
   | "bkk_connection"
   | "first_time_thailand"
+  | "pier_arrival"
+  | "pier_facilities"
+  | "ferry_timing"
+  | "sea_conditions"
+  | "bus_arrival"
+  | "bus_timing"
   | "custom";
 
 export interface GuidedField {
   key: string;
   label: string;
   type: "text" | "textarea" | "list" | "transport_options";
-  /** Dot-path into AirportFacts to auto-fill, e.g. "immigration.estimatedTime" */
+  /** Dot-path into AirportFacts/PierFacts to auto-fill, e.g. "immigration.estimatedTime" */
   factPath?: string;
   placeholder?: string;
   helpText?: string;
@@ -361,8 +699,8 @@ export interface SectionTemplate {
   icon: string;
   defaultTitle: string;
   guidedFields: GuidedField[];
-  /** Which airports this section is relevant for */
-  airports: ("bkk" | "samui")[];
+  /** Which arrival locations this section is relevant for */
+  airports: string[];
 }
 
 export const SECTION_TEMPLATES: SectionTemplate[] = [
@@ -550,12 +888,104 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
     category: "situational",
     icon: "🇹🇭",
     defaultTitle: "First Time in Thailand?",
-    airports: ["bkk", "samui"],
+    airports: ["bkk", "samui", "nathon", "lipa_noi", "bus"],
     guidedFields: [
       { key: "culturalTips", label: "Cultural tips", type: "list", placeholder: "E.g. wai greeting, shoes off indoors, respect for royalty..." },
       { key: "practicalBasics", label: "Practical basics", type: "list", placeholder: "E.g. currency, tipping, electrical outlets..." },
       { key: "foodTips", label: "Food & drink tips", type: "list", placeholder: "E.g. street food safety, spice levels, drinking water..." },
       { key: "usefulPhrases", label: "Useful Thai phrases", type: "list", placeholder: "E.g. Sawasdee (hello), Khop khun (thank you)..." },
+    ],
+  },
+
+  // ── Pier-specific sections ──
+  {
+    id: "pier_arrival",
+    title: "Pier Arrival",
+    description: "What to expect when the ferry docks and you step off",
+    category: "journey",
+    icon: "⚓",
+    defaultTitle: "Arriving at the Pier",
+    airports: ["nathon", "lipa_noi"],
+    guidedFields: [
+      { key: "disembarkTime", label: "Estimated disembark time", type: "text", placeholder: "E.g. 5–15 minutes from docking..." },
+      { key: "arrivalTips", label: "Arrival tips", type: "list", placeholder: "E.g. follow the crowd, have booking ready..." },
+      { key: "meetingPoint", label: "Where to meet your driver", type: "textarea", placeholder: "E.g. exit the pier and look for name sign..." },
+      { key: "additionalNotes", label: "Additional notes", type: "textarea" },
+    ],
+  },
+  {
+    id: "pier_facilities",
+    title: "Pier Facilities",
+    description: "What's available at the pier — food, shops, toilets, ATMs",
+    category: "journey",
+    icon: "🏪",
+    defaultTitle: "At the Pier",
+    airports: ["nathon", "lipa_noi"],
+    guidedFields: [
+      { key: "layout", label: "Pier layout", type: "textarea", placeholder: "Describe the pier layout..." },
+      { key: "food", label: "Food & drink options", type: "text", placeholder: "E.g. food stalls, 7-Eleven nearby..." },
+      { key: "shops", label: "Shops & services", type: "text", placeholder: "E.g. convenience stores, ATMs..." },
+      { key: "tips", label: "Useful tips", type: "list", placeholder: "E.g. Nathon town is 5 min walk..." },
+    ],
+  },
+  {
+    id: "ferry_timing",
+    title: "Ferry Schedule & Timing",
+    description: "Ferry schedules, peak times, and what to expect with delays",
+    category: "situational",
+    icon: "⏱️",
+    defaultTitle: "Ferry Timing",
+    airports: ["nathon", "lipa_noi"],
+    guidedFields: [
+      { key: "firstFerry", label: "First ferry", type: "text", placeholder: "E.g. ~06:00..." },
+      { key: "lastFerry", label: "Last ferry", type: "text", placeholder: "E.g. ~19:00..." },
+      { key: "peakTimes", label: "Peak arrival times", type: "text", placeholder: "E.g. 08:00–10:00, 14:00–16:00..." },
+      { key: "delayNotes", label: "Delay expectations", type: "textarea", placeholder: "E.g. delays common in rough weather..." },
+    ],
+  },
+  {
+    id: "sea_conditions",
+    title: "Sea Conditions & Weather",
+    description: "Seasonal sea conditions and how they affect ferry travel",
+    category: "situational",
+    icon: "🌊",
+    defaultTitle: "Sea & Weather Conditions",
+    airports: ["nathon", "lipa_noi"],
+    guidedFields: [
+      { key: "rainyMonths", label: "Rough sea months", type: "text", placeholder: "E.g. October – December..." },
+      { key: "seaNote", label: "Sea condition note", type: "textarea", placeholder: "E.g. ferries may be cancelled in severe weather..." },
+      { key: "tips", label: "Tips for rough seas", type: "list", placeholder: "E.g. take morning ferry, bring motion sickness meds..." },
+    ],
+  },
+
+  // ── Bus-specific sections ──
+  {
+    id: "bus_arrival",
+    title: "Bus/Van Arrival",
+    description: "What to expect when arriving by bus or van combo",
+    category: "journey",
+    icon: "🚌",
+    defaultTitle: "Arriving by Bus",
+    airports: ["bus"],
+    guidedFields: [
+      { key: "arrivalVariance", label: "Expected timing variance", type: "text", placeholder: "E.g. 30–90 minutes from scheduled time..." },
+      { key: "dropoffLocation", label: "Drop-off location", type: "textarea", placeholder: "E.g. usually Nathon Pier or operator drop-off..." },
+      { key: "arrivalTips", label: "Arrival tips", type: "list", placeholder: "E.g. confirm drop-off point with operator..." },
+      { key: "meetingPoint", label: "Where to meet your driver", type: "textarea", placeholder: "E.g. we'll coordinate based on your ETA..." },
+    ],
+  },
+  {
+    id: "bus_timing",
+    title: "Bus Journey & Timing",
+    description: "Journey duration, delays, and timing tips for bus+ferry combos",
+    category: "situational",
+    icon: "🕐",
+    defaultTitle: "Bus Timing & Delays",
+    airports: ["bus"],
+    guidedFields: [
+      { key: "journeyDuration", label: "Typical journey duration", type: "text", placeholder: "E.g. 10–14 hours from Bangkok..." },
+      { key: "delayNotes", label: "Delay expectations", type: "textarea", placeholder: "E.g. 30–90 min delays normal..." },
+      { key: "tips", label: "Timing tips", type: "list", placeholder: "E.g. message us your ferry departure time..." },
     ],
   },
 
@@ -567,7 +997,7 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
     category: "custom",
     icon: "✏️",
     defaultTitle: "Custom Section",
-    airports: ["bkk", "samui"],
+    airports: ["bkk", "samui", "nathon", "lipa_noi", "bus"],
     guidedFields: [
       { key: "sectionTitle", label: "Section title", type: "text", placeholder: "Your section title..." },
       { key: "content", label: "Section content", type: "textarea", placeholder: "Write your content or describe what you want AI to generate..." },
@@ -576,7 +1006,7 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
 ];
 
 /** Get the fact value from a dot-path like "immigration.estimatedTime" */
-export function getFactValue(facts: AirportFacts, path: string): any {
+export function getFactValue(facts: AirportFacts | PierFacts | BusFacts, path: string): any {
   const keys = path.split(".");
   let current: any = facts;
   for (const key of keys) {
@@ -586,17 +1016,34 @@ export function getFactValue(facts: AirportFacts, path: string): any {
   return current;
 }
 
-/** Get templates available for a specific airport */
-export function getTemplatesForAirport(airport: "bkk" | "samui"): SectionTemplate[] {
+/** All arrival locations the editor supports */
+export const ALL_ARRIVAL_LOCATIONS = [
+  { id: "bkk", label: "BKK (Suvarnabhumi)", icon: "✈️", category: "airport" as const },
+  { id: "samui", label: "Samui (USM)", icon: "🌴", category: "airport" as const },
+  { id: "nathon", label: "Nathon Pier", icon: "⛴️", category: "pier" as const },
+  { id: "lipa_noi", label: "Lipa Noi Pier", icon: "🚢", category: "pier" as const },
+  { id: "bus", label: "Bus / Van", icon: "🚌", category: "bus" as const },
+] as const;
+
+/** Get fact sheet for any arrival location */
+export function getFactsForLocation(locationId: string): AirportFacts | PierFacts | BusFacts | null {
+  if (locationId === "bkk" || locationId === "samui") return AIRPORT_FACTS[locationId];
+  if (locationId === "nathon" || locationId === "lipa_noi") return PIER_FACTS[locationId];
+  if (locationId === "bus") return BUS_FACTS;
+  return null;
+}
+
+/** Get templates available for a specific location */
+export function getTemplatesForAirport(airport: string): SectionTemplate[] {
   return SECTION_TEMPLATES.filter(t => t.airports.includes(airport));
 }
 
 /** Get journey templates (core flow) */
-export function getJourneyTemplates(airport: "bkk" | "samui"): SectionTemplate[] {
+export function getJourneyTemplates(airport: string): SectionTemplate[] {
   return getTemplatesForAirport(airport).filter(t => t.category === "journey");
 }
 
 /** Get situational templates */
-export function getSituationalTemplates(airport: "bkk" | "samui"): SectionTemplate[] {
+export function getSituationalTemplates(airport: string): SectionTemplate[] {
   return getTemplatesForAirport(airport).filter(t => t.category === "situational");
 }

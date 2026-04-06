@@ -17,10 +17,10 @@ import { useProperty } from "@/hooks/useProperty";
 import { AIStudioPanel } from "./AIStudioPanel";
 import { AIRefinementChat } from "./AIRefinementChat";
 import { GuidedSectionEditor } from "./GuidedSectionEditor";
-import { SECTION_TEMPLATES, getJourneyTemplates, getSituationalTemplates } from "@/lib/airportFactSheets";
+import { SECTION_TEMPLATES, getJourneyTemplates, getSituationalTemplates, ALL_ARRIVAL_LOCATIONS } from "@/lib/airportFactSheets";
 import {
   Plane, Save, Plus, X, Sparkles, Loader2, GripVertical, Image as ImageIcon, MapPin, RefreshCw, Tag,
-  Check, Lightbulb, ChevronDown, ChevronUp, BookOpen, Eye, Smartphone, Building2,
+  Check, Lightbulb, ChevronDown, ChevronUp, BookOpen, Eye, Smartphone, Building2, Ship, Bus,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -44,10 +44,7 @@ export interface WelcomeTemplate {
   enabled: boolean;
 }
 
-const AIRPORTS = [
-  { id: "bkk", label: "BKK (Suvarnabhumi)", icon: "✈️" },
-  { id: "samui", label: "Samui (USM)", icon: "🌴" },
-] as const;
+const LOCATIONS = ALL_ARRIVAL_LOCATIONS;
 
 const PHOTO_TAGS: { value: WelcomePhoto["tag"]; label: string }[] = [
   { value: "landmark", label: "Landmark" },
@@ -245,12 +242,12 @@ export function ArrivalWelcomeEditor() {
         <CardHeader className="pb-3 pt-4 px-5">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-md bg-primary/10 text-primary">
-              <Plane className="h-4 w-4" />
+              <MapPin className="h-4 w-4" />
             </div>
             <div>
-              <CardTitle className="text-base">Arrival Welcome Guide</CardTitle>
+              <CardTitle className="text-base">Arrival Welcome Guides</CardTitle>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Customize what guests see after confirming they've landed. Separate templates for each airport.
+                Customize what guests see after confirming their arrival. Separate templates for flights, ferries, and buses.
               </p>
             </div>
           </div>
@@ -269,21 +266,23 @@ export function ArrivalWelcomeEditor() {
       )}
 
       <Tabs value={activeAirport} onValueChange={(v) => { setActiveAirport(v); setSuggestions([]); }}>
-        <TabsList className="bg-muted/50">
-          {AIRPORTS.map((a) => {
-            const tmpl = getTemplate(a.id);
-            return (
-              <TabsTrigger key={a.id} value={a.id} className="gap-1.5">
-                <span>{a.icon}</span>
-                {a.label}
-                {!tmpl.enabled && <Badge variant="outline" className="text-[9px] px-1 py-0 ml-1 border-muted-foreground/30">Off</Badge>}
-                {isDirty(a.id) && <Badge variant="secondary" className="text-[9px] px-1 py-0 ml-1">unsaved</Badge>}
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="bg-muted/50 w-auto inline-flex">
+            {LOCATIONS.map((a) => {
+              const tmpl = getTemplate(a.id);
+              return (
+                <TabsTrigger key={a.id} value={a.id} className="gap-1.5 text-xs whitespace-nowrap">
+                  <span>{a.icon}</span>
+                  {a.label}
+                  {!tmpl.enabled && <Badge variant="outline" className="text-[9px] px-1 py-0 ml-1 border-muted-foreground/30">Off</Badge>}
+                  {isDirty(a.id) && <Badge variant="secondary" className="text-[9px] px-1 py-0 ml-1">unsaved</Badge>}
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+        </div>
 
-        {AIRPORTS.map((airport) => {
+        {LOCATIONS.map((airport) => {
           const template = getTemplate(airport.id);
           return (
             <TabsContent key={airport.id} value={airport.id} className="space-y-4 mt-3">
