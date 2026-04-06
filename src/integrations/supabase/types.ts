@@ -753,6 +753,33 @@ export type Database = {
           },
         ]
       }
+      integration_secrets: {
+        Row: {
+          description: string | null
+          encrypted_value: string
+          id: string
+          secret_key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          encrypted_value: string
+          id?: string
+          secret_key: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          encrypted_value?: string
+          id?: string
+          secret_key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       laundry_requests: {
         Row: {
           bag_count: number | null
@@ -1923,6 +1950,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_integration_secret: { Args: { _key: string }; Returns: string }
       has_property_access: {
         Args: { _property_id: string; _user_id: string }
         Returns: boolean
@@ -1934,6 +1962,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_secret_configured: { Args: { _key: string }; Returns: boolean }
     }
     Enums: {
       app_role:
