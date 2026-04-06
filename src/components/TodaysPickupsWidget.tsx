@@ -123,17 +123,30 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
                   {time && (
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" /> {time}
+                      {arrival.confidence === "flexible" && <span className="text-[9px] text-muted-foreground">(~)</span>}
+                    </span>
+                  )}
+                  {/* Arrival type badge */}
+                  {arrival.arrivalType !== "flight" && (
+                    <span className="flex items-center gap-1">
+                      <ArrivalIcon className="h-3 w-3" />
+                      <span className="capitalize">{arrivalConfig.label}</span>
+                    </span>
+                  )}
+                  {arrival.locationName && arrival.arrivalType !== "flight" && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3" /> {arrival.locationName}
                     </span>
                   )}
                   {/* Show connecting flight route or single flight */}
-                  {(p as any).international_flight_number ? (
+                  {arrival.arrivalType === "flight" && (p as any).international_flight_number ? (
                     <span className="flex items-center gap-1">
                       <Plane className="h-3 w-3" />
                       <span className="text-muted-foreground">{(p as any).international_flight_number}</span>
                       <span className="text-primary">→</span>
                       <span className="font-medium text-foreground">{p.flight_number || "TBD"}</span>
                     </span>
-                  ) : p.flight_number ? (
+                  ) : arrival.arrivalType === "flight" && p.flight_number ? (
                     <span className="flex items-center gap-1">
                       <Plane className="h-3 w-3" /> {p.flight_number}
                     </span>
