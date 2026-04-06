@@ -210,14 +210,12 @@ serve(async (req) => {
       }
     }
 
-    // Get provider settings
+    // Get non-secret policy settings
     const { data: policies } = await adminClient
       .from("policy_settings")
       .select("key, value")
       .in("key", [
         "payment_provider",
-        "stripe_secret_key",
-        "stripe_publishable_key",
         "deposit_percentage",
         "currency_code",
       ]);
