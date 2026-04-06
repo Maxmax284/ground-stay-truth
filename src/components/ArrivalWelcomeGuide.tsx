@@ -99,11 +99,42 @@ export function detectAirport(
   return null;
 }
 
-/** Get human-readable airport label */
+/** Get human-readable label for any arrival location */
+export function arrivalLocationLabel(code: string | null): string {
+  if (!code) return "Unknown";
+  const map: Record<string, string> = {
+    bkk: "BKK (Suvarnabhumi)",
+    samui: "USM (Koh Samui)",
+    nathon: "Nathon Pier",
+    lipa_noi: "Lipa Noi Pier",
+    bus: "Bus / Van Arrival",
+  };
+  return map[code.toLowerCase()] ?? code;
+}
+
+/** Legacy alias for existing code */
 export function airportLabel(code: "bkk" | "samui" | null): string {
-  if (code === "bkk") return "BKK (Suvarnabhumi)";
-  if (code === "samui") return "USM (Koh Samui)";
-  return "Unknown";
+  return arrivalLocationLabel(code);
+}
+
+/** Resolve which policy key to use for arrival guide based on arrival context */
+export function resolveArrivalGuideKey(
+  airport: "bkk" | "samui" | null,
+  arrivalLocationId?: string | null,
+): string | null {
+  // Explicit arrival location ID takes priority
+  if (arrivalLocationId) return `arrival_welcome_${arrivalLocationId}`;
+  // Fall back to airport detection
+  if (airport) return `arrival_welcome_${airport}`;
+  return null;
+}
+
+/** Get icon component for arrival type */
+export function getArrivalIcon(locationId: string | null) {
+  if (!locationId) return Plane;
+  if (locationId === "nathon" || locationId === "lipa_noi") return Ship;
+  if (locationId === "bus") return Bus;
+  return Plane;
 }
 
 function SectionPhotos({ photos }: { photos: WelcomePhoto[] }) {
