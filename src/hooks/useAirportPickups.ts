@@ -37,6 +37,13 @@ export interface AirportPickup {
   assist_resolved_at: string | null;
   assist_activated_by: string | null;
   assist_resolved_by: string | null;
+  // Unified arrival model
+  arrival_type: string;
+  arrival_location_type: string;
+  arrival_location_name: string | null;
+  arrival_confidence: string;
+  transport_intent: string;
+  pickup_enabled: boolean;
   // joined
   drivers?: { id: string; name: string; phone: string | null; whatsapp: string | null; vehicle_type: string | null; license_plate: string | null } | null;
 }
