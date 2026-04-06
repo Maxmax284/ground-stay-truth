@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMarkMessagesRead } from "@/hooks/useBookings";
 import { format, startOfMonth, addMonths, subMonths, formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizeMessageContent } from "@/lib/sanitize";
 import { useAuth } from "@/hooks/useAuth";
 import { useGuestHistory } from "@/hooks/useGuestHistory";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
