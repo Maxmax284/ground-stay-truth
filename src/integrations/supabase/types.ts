@@ -1204,6 +1204,39 @@ export type Database = {
           },
         ]
       }
+      policy_settings_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          key: string
+          new_value: Json | null
+          old_value: Json | null
+          property_id: string | null
+          setting_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          key: string
+          new_value?: Json | null
+          old_value?: Json | null
+          property_id?: string | null
+          setting_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          key?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          property_id?: string | null
+          setting_id?: string
+        }
+        Relationships: []
+      }
       pre_arrival_checklist: {
         Row: {
           booking_id: string
@@ -1900,8 +1933,10 @@ export type Database = {
           consent_type: string
           granted_at: string
           id: string
+          ip_address: string | null
           metadata: Json | null
           policy_version: string
+          user_agent: string | null
           user_id: string
           withdrawn_at: string | null
         }
@@ -1909,8 +1944,10 @@ export type Database = {
           consent_type: string
           granted_at?: string
           id?: string
+          ip_address?: string | null
           metadata?: Json | null
           policy_version: string
+          user_agent?: string | null
           user_id: string
           withdrawn_at?: string | null
         }
@@ -1918,8 +1955,10 @@ export type Database = {
           consent_type?: string
           granted_at?: string
           id?: string
+          ip_address?: string | null
           metadata?: Json | null
           policy_version?: string
+          user_agent?: string | null
           user_id?: string
           withdrawn_at?: string | null
         }
