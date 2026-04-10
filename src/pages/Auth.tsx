@@ -25,7 +25,7 @@ const Auth = () => {
     );
   }
 
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to="/index" replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
