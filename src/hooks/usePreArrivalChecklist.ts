@@ -52,12 +52,12 @@ const TRAVEL_INFO: readonly ChecklistItemDef[] = [
 const ARRIVAL_REQUIREMENTS: readonly ChecklistItemDef[] = [
   {
     key: "tdac_completed",
-    label: "Complete Thailand Digital Arrival Card (TDAC)",
-    why: "The TM.6 paper card is no longer used. You now complete this online before you travel — it takes about 5 minutes.",
+    label: "Complete Thailand Digital Arrival Card — TDAC (Required)",
+    why: "Thai immigration requires all arrivals to complete the TDAC online before travel. The old TM.6 paper card is no longer accepted. It takes about 5 minutes — do it before you fly.",
     critical: true,
     link: {
       url: "https://tdac.immigration.go.th",
-      label: "Complete TDAC online →",
+      label: "Complete TDAC now →",
     },
   },
   {
@@ -127,7 +127,7 @@ const LIVING_AT_LAMAI: readonly ChecklistItemDef[] = [
 
 export const CHECKLIST_SECTIONS: readonly ChecklistSection[] = [
   { id: "travel", label: "Travel Info", items: TRAVEL_INFO, hasCritical: true },
-  { id: "arrival", label: "Arrival Requirements", items: ARRIVAL_REQUIREMENTS, hasCritical: true },
+  { id: "arrival", label: "Immigration & Arrival Requirements", items: ARRIVAL_REQUIREMENTS, hasCritical: true },
   { id: "connectivity", label: "Connectivity (Critical)", items: CONNECTIVITY, hasCritical: true },
   { id: "local", label: "Local Setup", items: LOCAL_SETUP },
   { id: "safety", label: "Safety & Prep", items: SAFETY_PREP },
