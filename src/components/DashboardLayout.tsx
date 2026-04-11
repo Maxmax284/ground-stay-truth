@@ -71,7 +71,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <NotificationBell />
             </div>
           </header>
-          <main className="flex-1 p-6 overflow-auto ring-rope-pattern">
+          <main className="flex-1 p-4 sm:p-6 overflow-auto ring-rope-pattern">
             <div key={location.pathname} className="animate-page-entry">
               {children}
             </div>
