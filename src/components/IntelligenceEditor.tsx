@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useIntelligence, useIntelligenceMutations, type IntelligenceEntry, type IntelligenceCategory, type IntelligenceType, type IntelligenceStatus, type IntelligenceSeverity } from "@/hooks/useIntelligence";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, ArrowUpCircle, Zap, BookOpen, Archive } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowUpCircle, Zap, BookOpen, Archive, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 const CATEGORIES: { value: IntelligenceCategory; label: string }[] = [
