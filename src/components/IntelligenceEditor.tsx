@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useIntelligence, useIntelligenceMutations, type IntelligenceEntry, type IntelligenceCategory, type IntelligenceType, type IntelligenceStatus, type IntelligenceSeverity } from "@/hooks/useIntelligence";
+import { type IntelAnimationMode, getStoredAnimMode, setStoredAnimMode } from "@/components/StaffIntelStrip";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
