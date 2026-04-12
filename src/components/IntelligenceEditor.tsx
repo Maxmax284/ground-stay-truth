@@ -110,6 +110,58 @@ export function IntelligenceEditor() {
     }
   };
 
+  const handleGenerateDraft = async () => {
+    if (!session) return;
+    setGenerating(true);
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            message: "Based on common guest issues and operational patterns, suggest ONE new intelligence entry. Return ONLY valid JSON with keys: type (heads_up or playbook), title, body, category (money|transport|safety|connectivity|customs|health|local_life), location (array from bkk/samui/nathon/lipa_noi/bus/island/global), severity (normal|attention|urgent). Keep body under 200 characters, practical and direct. No markdown, no explanation — just the JSON object.",
+            mode: "draft",
+          }),
+        }
+      );
+
+      if (!resp.ok) throw new Error("AI request failed");
+      const data = await resp.json();
+      const aiText = data.reply || data.content || "";
+
+      // Try to parse JSON from the response
+      const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error("No valid JSON in AI response");
+
+      const suggested = JSON.parse(jsonMatch[0]);
+
+      // Open as draft for admin review
+      setEditEntry({
+        type: suggested.type === "playbook" ? "playbook" : "heads_up",
+        status: "draft", // ALWAYS draft — admin must approve
+        title: suggested.title || "",
+        body: suggested.body || "",
+        category: suggested.category || "local_life",
+        location: Array.isArray(suggested.location) ? suggested.location : ["global"],
+        audience: ["guest", "staff"],
+        severity: suggested.severity || "normal",
+        image_url: null,
+        image_caption: null,
+      });
+      setDialogOpen(true);
+      toast.info("AI suggestion loaded as draft — review and edit before publishing");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to generate suggestion");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
