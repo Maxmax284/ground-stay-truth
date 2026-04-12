@@ -51,7 +51,7 @@ export function StaffIntelStrip() {
                 onClick={() => {
                   window.dispatchEvent(
                     new CustomEvent("ask-kru-glitch", {
-                      detail: { question: `Tell me about: ${entry.title} — ${entry.body}` },
+                      detail: { question: `Tell me about: ${entry.title} — Here's the briefing: "${entry.body.slice(0, 300)}"` },
                     })
                   );
                 }}

@@ -933,13 +933,13 @@ Deposit policy: ${depositMode}. Currency: ${currencySymbol}.`;
         if (headsUp.length > 0) {
           contextData += `\nACTIVE HEADS UP:`;
           for (const h of headsUp) {
-            contextData += `\n- [${(h as any).category}/${((h as any).location || []).join(",")}] ${(h as any).title}: ${(h as any).body.slice(0, 200)}`;
+            contextData += `\n- [${(h as any).category}/${((h as any).location || []).join(",")}] ${(h as any).title}: ${(h as any).body.slice(0, 350)}`;
           }
         }
         if (playbook.length > 0) {
           contextData += `\nPLAYBOOK (permanent local knowledge):`;
           for (const p of playbook) {
-            contextData += `\n- [${(p as any).category}] ${(p as any).title}: ${(p as any).body.slice(0, 200)}`;
+            contextData += `\n- [${(p as any).category}] ${(p as any).title}: ${(p as any).body.slice(0, 350)}`;
           }
         }
       }

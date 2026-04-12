@@ -279,6 +279,22 @@ const GuestPortal = () => {
   const activeBookings = bookings?.filter((b) => b.state === "checked_in") ?? [];
   const pastBookings = bookings?.filter((b) => ["completed", "cancelled", "no_show"].includes(b.state)) ?? [];
 
+  // Derive location tags from bookings for intelligence filtering
+  const guestLocations = useMemo(() => {
+    const relevantBookings = [...activeBookings, ...confirmedBookings, ...upcomingBookings];
+    const locs = new Set<string>();
+    for (const b of relevantBookings) {
+      const details = b.arrival_details as Record<string, any> | null;
+      if (details?.confirmed_airport === "BKK" || details?.arrival_type === "flight") locs.add("bkk");
+      if (details?.confirmed_airport === "USM" || details?.arrival_location_type === "airport") locs.add("samui");
+      if (details?.arrival_type === "ferry") { locs.add("nathon"); locs.add("lipa_noi"); }
+      if (details?.arrival_type === "bus") locs.add("bus");
+      if (activeBookings.length > 0) locs.add("island");
+      if (details?.confirmed_airport === "BKK" && (details?.arrival_location_type !== "airport" || details?.arrival_type === "flight")) locs.add("transit");
+    }
+    return locs.size > 0 ? [...locs] : undefined;
+  }, [activeBookings, confirmedBookings, upcomingBookings]);
+
   const openBookingForm = (unitId?: string) => {
     setBookingFormUnitId(unitId);
     setBookingFormOpen(true);
@@ -320,22 +336,12 @@ const GuestPortal = () => {
         <GuestStaySummary focusSection={focusSection} onSectionFocused={() => setFocusSection(null)} />
 
         {/* Heads Up — contextual, location-filtered intelligence */}
-        <GuestHeadsUpStrip locations={(() => {
-          // Derive location tags from active/upcoming bookings' arrival data
-          const relevantBookings = [...activeBookings, ...confirmedBookings, ...upcomingBookings];
-          const locs = new Set<string>();
-          for (const b of relevantBookings) {
-            const details = b.arrival_details as Record<string, any> | null;
-            if (details?.confirmed_airport === "BKK" || details?.arrival_type === "flight") locs.add("bkk");
-            if (details?.confirmed_airport === "USM" || details?.arrival_location_type === "airport") locs.add("samui");
-            if (details?.arrival_type === "ferry") { locs.add("nathon"); locs.add("lipa_noi"); }
-            if (details?.arrival_type === "bus") locs.add("bus");
-            // Always include island and transit for active guests
-            if (activeBookings.length > 0) locs.add("island");
-            if (details?.confirmed_airport === "BKK" && (details?.arrival_location_type !== "airport" || details?.arrival_type === "flight")) locs.add("transit");
-          }
-          return locs.size > 0 ? [...locs] : undefined;
-        })()} />
+        <GuestHeadsUpStrip
+          locations={guestLocations}
+          onLearnMore={(entry) => {
+            setActiveTab("island-guide");
+          }}
+        />
 
         {/* Guest notification enrollment — benefit-framed, not technical */}
         <GuestStayUpdatesPrompt />
@@ -581,7 +587,7 @@ const GuestPortal = () => {
 
           {/* ── Island Guide Tab ── */}
           <TabsContent value="island-guide">
-            <GuestPlaybook />
+            <GuestPlaybook locations={guestLocations} />
           </TabsContent>
 
           {/* ── Policies Tab ── */}
