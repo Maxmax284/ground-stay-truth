@@ -170,7 +170,7 @@ export function StaffIntelStrip() {
     );
   };
 
-  const safeIndex = activeIndex < staffEntries.length ? activeIndex : 0;
+  // safeIndex already declared above
 
   // ── Animation classes by mode ──
   const getAnimClasses = (position = 0): string => {
