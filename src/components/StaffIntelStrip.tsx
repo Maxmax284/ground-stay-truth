@@ -33,6 +33,7 @@ const SEVERITY_STYLES: Record<string, string> = {
 
 const ROTATION_INTERVAL = 12000;
 const RESUME_DELAY = 5000;
+const VISIBLE_COUNT = 3; // entries shown simultaneously
 
 export function getStoredAnimMode(): IntelAnimationMode {
   try {
