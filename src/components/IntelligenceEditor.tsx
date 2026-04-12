@@ -129,7 +129,7 @@ export function IntelligenceEditor() {
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({
-            message: "Based on common guest issues and operational patterns, suggest ONE new intelligence entry. Return ONLY valid JSON with keys: type (heads_up or playbook), title, body, category (money|transport|safety|connectivity|customs|health|local_life), location (array from bkk/samui/nathon/lipa_noi/bus/island/global), severity (normal|attention|urgent). Keep body under 200 characters, practical and direct. No markdown, no explanation — just the JSON object.",
+            message: "Based on common guest issues and operational patterns, suggest ONE new intelligence entry. Return ONLY valid JSON with keys: type (heads_up or playbook), title, body, category (money|transport|safety|connectivity|customs|health|local_life), location (array from bkk/samui/nathon/lipa_noi/phuket/pattaya/transit/bus/island/global), severity (normal|attention|urgent). Keep body under 200 characters, practical and direct. No markdown, no explanation — just the JSON object.",
             mode: "draft",
           }),
         }
