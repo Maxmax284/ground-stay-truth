@@ -8,24 +8,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function PushNotificationToggle() {
   const { isSupported, isSubscribed, loading, permission, subscribe, unsubscribe } = usePushNotifications();
 
-  if (!isSupported) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <BellOff className="h-5 w-5 text-muted-foreground" />
-            Push Notifications
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Push notifications are not supported in this browser. Install Ground Stay as an app from your browser menu for full notification support.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   if (loading) {
     return (
       <Card>
@@ -36,6 +18,31 @@ export function PushNotificationToggle() {
           </CardTitle>
         </CardHeader>
         <CardContent><Skeleton className="h-10 w-full" /></CardContent>
+      </Card>
+    );
+  }
+
+  if (!isSupported) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <BellOff className="h-5 w-5 text-muted-foreground" />
+            Push Notifications
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Push notifications require the installed PWA version of Ground Stay. Install the app to your home screen first, then enable notifications from within the app.
+          </p>
+          <div className="flex items-center gap-2 rounded-lg bg-muted/50 p-3">
+            <Smartphone className="h-4 w-4 text-primary flex-shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              <strong>iOS:</strong> Safari → Share → Add to Home Screen<br />
+              <strong>Android:</strong> Chrome menu → Install app
+            </p>
+          </div>
+        </CardContent>
       </Card>
     );
   }
@@ -79,12 +86,14 @@ export function PushNotificationToggle() {
           </Button>
         )}
 
-        <div className="flex items-center gap-2 rounded-lg bg-muted/50 p-3">
-          <Smartphone className="h-4 w-4 text-primary flex-shrink-0" />
-          <p className="text-xs text-muted-foreground">
-            For the best experience, install Ground Stay to your home screen first, then enable notifications.
-          </p>
-        </div>
+        {!isSubscribed && (
+          <div className="flex items-center gap-2 rounded-lg bg-muted/50 p-3">
+            <Smartphone className="h-4 w-4 text-primary flex-shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              For the best experience, install Ground Stay to your home screen first, then enable notifications.
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -33,7 +33,6 @@ export function usePushNotifications() {
   const [loading, setLoading] = useState(true);
   const [permission, setPermission] = useState<NotificationPermission>("default");
 
-  // Check support & existing subscription
   useEffect(() => {
     const supported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
     setIsSupported(supported);
@@ -45,22 +44,45 @@ export function usePushNotifications() {
 
     setPermission(Notification.permission);
 
-    navigator.serviceWorker.ready.then(async (reg) => {
-      const sub = await reg.pushManager.getSubscription();
-      if (sub) {
-        // Verify it still exists in DB
-        const { data } = await supabase
-          .from("push_subscriptions")
-          .select("id")
-          .eq("user_id", user.id)
-          .eq("endpoint", sub.endpoint)
-          .maybeSingle();
-        setIsSubscribed(!!data);
-      } else {
-        setIsSubscribed(false);
-      }
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    // Use a timeout so we don't hang forever when SW isn't registered (e.g. preview/iframe)
+    let cancelled = false;
+    const timeout = setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 3000);
+
+    navigator.serviceWorker.ready
+      .then(async (reg) => {
+        if (cancelled) return;
+        clearTimeout(timeout);
+        try {
+          const sub = await reg.pushManager.getSubscription();
+          if (sub) {
+            const { data } = await supabase
+              .from("push_subscriptions")
+              .select("id")
+              .eq("user_id", user.id)
+              .eq("endpoint", sub.endpoint)
+              .maybeSingle();
+            setIsSubscribed(!!data);
+          } else {
+            setIsSubscribed(false);
+          }
+        } catch {
+          // pushManager may not be available
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          clearTimeout(timeout);
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
   }, [user]);
 
   const subscribe = useCallback(async () => {
