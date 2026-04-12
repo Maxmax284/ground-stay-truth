@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, ArrowUpCircle, Zap, BookOpen, Archive, Sparkles, Loader2, Radar, ImageIcon, ImageOff, Upload, X, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowUpCircle, Zap, BookOpen, Archive, Sparkles, Loader2, Radar, ImageIcon, ImageOff, Upload, X, CheckCircle2, AlertTriangle, MonitorPlay, Layers, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 const CATEGORIES: { value: IntelligenceCategory; label: string }[] = [
