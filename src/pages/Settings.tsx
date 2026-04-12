@@ -34,19 +34,19 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-4">
-          <TabsList className="flex-wrap h-auto gap-1 relative z-10">
-            <TabsTrigger value="profile">{t("settings.profileTab")}</TabsTrigger>
-            {canManageRoles && <TabsTrigger value="users">{t("settings.usersTab")}</TabsTrigger>}
-            {canManagePolicies && <TabsTrigger value="cancellation">Cancellation</TabsTrigger>}
-            {canManagePolicies && <TabsTrigger value="policies">{t("settings.policiesTab")}</TabsTrigger>}
-            {isAdmin && <TabsTrigger value="drivers">Drivers</TabsTrigger>}
-            {isAdmin && <TabsTrigger value="properties">Properties</TabsTrigger>}
-            {isAdmin && <TabsTrigger value="training">Training</TabsTrigger>}
-            {isAdmin && <TabsTrigger value="arrival">Arrival Welcome</TabsTrigger>}
-            {isAdmin && <TabsTrigger value="integrations">Integrations</TabsTrigger>}
-            {canManageReviews && <TabsTrigger value="reviews">{t("settings.reviewsTab")}</TabsTrigger>}
-            {isAdmin && <TabsTrigger value="security">Security</TabsTrigger>}
-            {isAdmin && <TabsTrigger value="intelligence">Intelligence</TabsTrigger>}
+          <TabsList className="flex-wrap h-auto gap-1 p-1.5 bg-muted/80 relative z-10">
+            <TabsTrigger value="profile" className="text-xs sm:text-sm">{t("settings.profileTab")}</TabsTrigger>
+            {canManageRoles && <TabsTrigger value="users" className="text-xs sm:text-sm">{t("settings.usersTab")}</TabsTrigger>}
+            {canManagePolicies && <TabsTrigger value="cancellation" className="text-xs sm:text-sm">Cancellation</TabsTrigger>}
+            {canManagePolicies && <TabsTrigger value="policies" className="text-xs sm:text-sm">{t("settings.policiesTab")}</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="drivers" className="text-xs sm:text-sm">Drivers</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="properties" className="text-xs sm:text-sm">Properties</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="training" className="text-xs sm:text-sm">Training</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="arrival" className="text-xs sm:text-sm">Arrival</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="integrations" className="text-xs sm:text-sm">Integrations</TabsTrigger>}
+            {canManageReviews && <TabsTrigger value="reviews" className="text-xs sm:text-sm">{t("settings.reviewsTab")}</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="security" className="text-xs sm:text-sm">Security</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="intelligence" className="text-xs sm:text-sm">Intel</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="profile"><ProfileEditor /></TabsContent>
