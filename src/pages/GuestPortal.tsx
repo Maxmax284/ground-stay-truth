@@ -132,22 +132,6 @@ const GuestPortal = () => {
 
   const [focusSection, setFocusSection] = useState<string | null>(null);
 
-  // Derive location tags from bookings for intelligence filtering
-  const guestLocations = useMemo(() => {
-    const relevantBookings = [...(activeBookings ?? []), ...(confirmedBookings ?? []), ...(upcomingBookings ?? [])];
-    const locs = new Set<string>();
-    for (const b of relevantBookings) {
-      const details = b.arrival_details as Record<string, any> | null;
-      if (details?.confirmed_airport === "BKK" || details?.arrival_type === "flight") locs.add("bkk");
-      if (details?.confirmed_airport === "USM" || details?.arrival_location_type === "airport") locs.add("samui");
-      if (details?.arrival_type === "ferry") { locs.add("nathon"); locs.add("lipa_noi"); }
-      if (details?.arrival_type === "bus") locs.add("bus");
-      if (activeBookings.length > 0) locs.add("island");
-      if (details?.confirmed_airport === "BKK" && (details?.arrival_location_type !== "airport" || details?.arrival_type === "flight")) locs.add("transit");
-    }
-    return locs.size > 0 ? [...locs] : undefined;
-  }, [activeBookings, confirmedBookings, upcomingBookings]);
-
   // Listen for tab-switch events from action buttons
   useEffect(() => {
     const handler = (e: CustomEvent<{ tab: string; section?: string }>) => {
