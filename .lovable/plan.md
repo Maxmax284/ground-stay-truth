@@ -1,693 +1,288 @@
-# Multi-Property Architecture for Ground Stay
+# Operational Intelligence Layer — Architecture Plan
 
-## Overview
+## What Already Exists (Reusable)
 
-Transform the single-property Ground Stay platform into a unified multi-property system supporting Lamai Muay Thai (high-turnover) and Koh Shanti Guesthouse (long-stay), with strict data isolation enforced at the database level via RLS, a property context layer in the UI, and adaptive dashboards.
+### Surfaces
 
-## Critical: Fix Existing Runtime Error First
+- **Corner Talk** (`CornerTalkPanel.tsx` + edge function): Staff-only real-time awareness strip at top of dashboard. Role-filtered, severity-ranked, dismiss logic, deep-links to AI. This IS the existing "Heads Up" for internal ops.
+- **Arrival Welcome Guide** (`ArrivalWelcomeGuide.tsx` + `ArrivalWelcomeEditor.tsx` + `GuidedSectionEditor.tsx`): Location-aware structured content (sections + photos) stored in `policy_settings` as JSON. Admin-editable with AI drafting assistance. Already supports BKK, USM, Nathon, Lipa Noi, Bus.
+- **Fact Sheets** (`airportFactSheets.ts`): 1,049 lines of hardcoded, verified location data — ATMs, transport, SIM cards, customs, piers, bus. Structured by location. Already feeds the AI drafting engine.
+- **Stay Essentials** (`useStayEssentials.ts` + `StayEssentialsEditor.tsx`): WiFi, house rules, emergency contacts with unit-level overrides. Already injected into AI context for guests.
+- **Pre-Arrival Checklist** (`PreArrivalChecklist.tsx`): Progress-tracked guest tasks (TDAC, documents, connectivity).
+- **Policy Settings** (`policy_settings` table): Key-value store with property scoping, history tracking, admin-controlled. The universal structured content backend.
+- **AI Assistant** (`ai-assistant/index.ts`): 1,083-line edge function with 12 behavioral layers, role-based context injection, PII masking, weather/AQI, server-side role derivation. Already consumes fact sheets + stay essentials + booking data as context.
+- **Notification System**: Unified push + foreground banner pipeline. Events already wired for bookings, messages, payments, reviews.
+- **Role System**: 7-tier hierarchy with `has_role` security definer, `permissions.ts` for route/action gating.
 
-The `BookingDetailSheet` has a "Rendered more hooks than during the previous render" error caused by the early return (`if (!booking) return null`) at line 141 being placed after conditional hooks. This must be fixed before any architectural work.
+### Key Insight
+
+The platform already has the "Heads Up" concept (Corner Talk) and the "Playbook" concept (Arrival Guides + Fact Sheets + Stay Essentials). What's missing is:
+
+1. A **guest-facing Heads Up** surface
+2. A **generalized Playbook** that extends beyond arrival-specific content
+3. A **promotion flow** from temporary alert → permanent knowledge
+4. AI integration that pulls from approved Playbook entries
 
 ---
 
-## Phase 1 — Database Foundation
+## Proposed Architecture
 
-### 1.1 Create `properties` table
+### Data Model — One New Table
 
 ```sql
-CREATE TABLE public.properties (
+CREATE TABLE public.intelligence_entries (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  slug text UNIQUE NOT NULL,        -- 'lamai' | 'koh-shanti'
-  name text NOT NULL,
-  operational_mode text NOT NULL DEFAULT 'high_turnover',  -- 'high_turnover' | 'long_stay'
-  timezone text NOT NULL DEFAULT 'Asia/Bangkok',
-  settings jsonb NOT NULL DEFAULT '{}',
-  is_active boolean NOT NULL DEFAULT true,
-  created_at timestamptz NOT NULL DEFAULT now()
+  type text NOT NULL CHECK (type IN ('heads_up', 'playbook')),
+  status text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'archived')),
+  title text NOT NULL,
+  body text NOT NULL,
+  location text[], -- ['bkk', 'samui', 'nathon', 'lipa_noi', 'island', 'global']
+  category text NOT NULL, -- 'money', 'transport', 'safety', 'connectivity', 'customs', 'health', 'local_life'
+  audience text[] NOT NULL DEFAULT '{guest,staff}', -- who sees it
+  severity text DEFAULT 'normal', -- for heads_up: 'urgent', 'attention', 'normal'
+  image_url text,
+  image_caption text,
+  sort_order int DEFAULT 0,
+  expires_at timestamptz, -- null = permanent (playbook default)
+  promoted_from uuid REFERENCES intelligence_entries(id), -- heads_up → playbook lineage
+  created_by uuid REFERENCES auth.users(id),
+  approved_by uuid, -- admin who published
+  property_id uuid REFERENCES properties(id), -- null = global
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
 );
+
+ALTER TABLE intelligence_entries ENABLE ROW LEVEL SECURITY;
 ```
 
-Seed with two rows: Lamai Muay Thai (`high_turnover`) and Koh Shanti Guesthouse (`long_stay`).
+RLS: Staff (front_desk+) can read active entries. Guests can read entries where `'guest' = ANY(audience)` and status = 'active'. Admin can CRUD all.
 
-### 1.2 Create `user_property_assignments` table
+### No Parallel Systems
 
-Maps users to properties. Most users get one property; umbrella operators (Nikki, Ralph) get multiple.
-
-```sql
-CREATE TABLE public.user_property_assignments (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  property_id uuid NOT NULL REFERENCES public.properties(id) ON DELETE CASCADE,
-  is_default boolean NOT NULL DEFAULT true,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE(user_id, property_id)
-);
-```
-
-### 1.3 Add `property_id` column to core tables
-
-Add a `property_id uuid REFERENCES public.properties(id)` column (nullable initially for migration, then backfill) to:
-
-- `units` — primary property assignment
-- `bookings` — inherited from unit at creation
-- `airport_pickups` — inherited from booking
-- `housekeeping_tasks` — inherited from unit
-- `maintenance_requests` — inherited from unit
-- `laundry_requests` — inherited from unit
-- `drivers` — can serve multiple properties (junction table or array)
-- `messages` — inherited from booking
-- `notifications` — no change needed (user-scoped already)
-
-### 1.4 Create `has_property_access` security definer function
-
-```sql
-CREATE FUNCTION public.has_property_access(_user_id uuid, _property_id uuid)
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER
-SET search_path = public AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.user_property_assignments
-    WHERE user_id = _user_id AND property_id = _property_id
-  )
-$$;
-```
-
-### 1.5 Update RLS policies
-
-Every existing staff SELECT/INSERT/UPDATE policy on property-scoped tables gains an additional `AND has_property_access(auth.uid(), property_id)` condition. Admin policies also get this check — admins see only properties they are assigned to (umbrella admins are assigned to all).
-
-### 1.6 Housekeeping mode support
-
-Add `cleaning_mode text NOT NULL DEFAULT 'event_based'` to `units` table. Values: `event_based` (triggered on checkout, Lamai default) or `scheduled` (weekly recurring, Koh Shanti default). The existing `auto_create_housekeeping_task` trigger continues for event-based; a new cron-driven edge function generates recurring tasks for scheduled units.
+- **Heads Up for staff** stays in Corner Talk. The new `intelligence_entries` with `type='heads_up'` supplements Corner Talk with location/context awareness items (ATM warnings, ferry delays) — NOT operational booking alerts.
+- **Arrival Guides** stay as-is in `policy_settings`. Playbook entries are a separate, browsable knowledge layer — not a replacement.
+- **Fact Sheets** remain hardcoded as the verified foundation. Playbook entries are the admin-curated "street knowledge" layer on top.
 
 ---
 
-## Phase 2 — Frontend Property Context Layer
+## UX Design
 
-### 2.1 `PropertyProvider` context
+### 1. Guest Experience
 
-New React context (`src/hooks/useProperty.tsx`) that:
+**Heads Up Strip** — Slim, dismissible card(s) shown in the Guest Portal between the Stay Summary and booking details. Max 2 visible at once. Context-filtered by:
 
-- On auth, fetches user's property assignments from `user_property_assignments`
-- Auto-selects the default property (or sole property)
-- Exposes: `activeProperty`, `properties` (all assigned), `switchProperty()`, `isUmbrella` (has 2+ properties), `operationalMode`
-- Wraps inside `AuthProvider` in `App.tsx`
+- Guest's arrival location (BKK vs USM vs pier)
+- Guest's travel stage (pre-arrival, checked-in, departing)
+- Location tags on the entry
 
-### 2.2 Property indicator in header
+Example: Guest arriving via BKK sees "ATM tip: Press NO on Dynamic Currency Conversion" with a small ATM image.
 
-Add a subtle property badge/selector to `DashboardLayout` header:
+**Playbook Access** — New tab in Guest Portal: "Island Guide" (or "Local Guide"). Clean card grid, categorized. Each card shows title, 1-2 line summary, optional photo. Tap to expand full content. "Ask Kru Glitch" button on each card to deep-link into AI with that topic pre-loaded.
 
-- Single-property users: static badge showing property name
-- Umbrella operators: dropdown to switch active property
-- Color-coded by property (e.g., red for Lamai, teal for Koh Shanti)
+**Flow**: Heads Up → tap "Learn more" → opens relevant Playbook entry → "Still have questions?" → opens AI with context.
 
-### 2.3 Scope all data hooks
+### 2. Staff Experience
 
-Every data-fetching hook (`useDashboard`, `useBookings`, `useUnits`, etc.) adds `.eq("property_id", activePropertyId)` to its queries. The `activePropertyId` comes from `useProperty()`.
+**Corner Talk stays unchanged** for operational alerts. A new "Intel" badge/section below Corner Talk shows active `heads_up` entries tagged for staff — so staff know what guests are seeing and can reference it.
 
----
+**Playbook** accessible from Settings or a dedicated nav item. Staff see the same content guests see plus staff-only entries (e.g., "How to handle taxi complaints at Nathon").
 
-## Phase 3 — Adaptive Dashboards
+### 3. Admin Experience
 
-### 3.1 Dashboard mode adaptation
+**Intelligence Editor** — New section in Settings (or Policy Settings tab). Simple list + editor:
 
-The existing `Index.tsx` dashboard reads `operationalMode` from `useProperty()` and conditionally adjusts:
-
-**High-turnover mode (Lamai):**
-
-- Top stats: Today's Arrivals, Today's Departures, Active Bookings, Pending Pickups
-- Prominent: TodaysPickupsWidget, FlightForecastWidget, ApprovalQueue
-- Activity feed emphasizes check-ins/outs happening now
-
-**Long-stay mode (Koh Shanti):**
-
-- Top stats: Active Long-Term Guests, Upcoming Arrivals (7-day), Scheduled Housekeeping, Open Maintenance
-- Prominent: Weekly housekeeping schedule, MaintenanceQueue, upcoming arrivals list
-- Activity feed emphasizes weekly flow and ongoing stays
-
-### 3.2 Shared components, different priorities
-
-No new dashboard pages. The same components render but are ordered and configured differently via the `operationalMode` flag. Components like `TodaysPickupsWidget` simply show nothing if there are no pickups for that property.
+- Create entry: type (Heads Up / Playbook), title, body, category, location tags, audience checkboxes, optional image, optional expiry
+- "Promote to Playbook" button on any Heads Up entry (creates a new Playbook entry linked via `promoted_from`, archives the Heads Up)
+- Status flow: Draft → Active (requires admin) → Archived
+- No AI auto-publishing. AI can suggest draft entries (future), admin approves.
 
 ---
 
-## Phase 4 — System-Wide Property Scoping
+## AI Integration
 
-### 4.1 Airport pickups
-
-- `airport_pickups` gets `property_id` (inherited from booking's property)
-- Pickup queues filter by active property
-- Driver assignment respects property assignment
-- Travel state logic unchanged — just scoped
-
-### 4.2 Guest portal
-
-- Guest experience unchanged visually
-- Booking data automatically scoped to the property the booking belongs to
-- No property selector for guests
-
-### 4.3 AI assistant
-
-- Pass `activeProperty` context to AI edge function calls
-- AI responses scoped to property data only
-
-### 4.4 Settings & policies
-
-- `policy_settings` gains optional `property_id` column for per-property overrides
-- Null `property_id` = global default; property-specific row overrides it
-
----
-
-## Migration Strategy
-
-1. Create tables and columns
-2. Backfill: set all existing data to the Lamai property ID
-3. Make `property_id` NOT NULL after backfill
-4. Update RLS policies
-5. Deploy frontend changes
-
-## File Changes Summary
-
-
-| Area        | Files                                                            |
-| ----------- | ---------------------------------------------------------------- |
-| Database    | 1 large migration (tables, columns, RLS, functions, seed data)   |
-| Context     | New `src/hooks/useProperty.tsx`                                  |
-| Layout      | `DashboardLayout.tsx` (property indicator), `App.tsx` (provider) |
-| Hooks       | All data hooks (~20 files) add property filter                   |
-| Dashboard   | `Index.tsx`, `useDashboard.ts` (mode-adaptive)                   |
-| Auth        | `useAuth.tsx` unchanged; property resolved separately            |
-| Permissions | `permissions.ts` unchanged; property is orthogonal to role       |
-| Bug fix     | `BookingDetailSheet.tsx` (hooks ordering)                        |
-
-
-## Estimated Scope
-
-This is a ~15-step implementation spanning database schema, RLS, context providers, hook refactoring, and dashboard adaptation. It will be executed incrementally, with the database foundation first, then the context layer, then progressive scoping of each subsystem.
-
----
-
-## Additional Implementation Safeguards and Refinements
-
-Enforce property inheritance at the database level rather than relying on frontend logic. Any record that derives from another entity must automatically inherit and validate its property_id. Bookings must inherit property_id from units, airport_pickups from bookings, and messages or related records from their parent entities. This should be enforced through database constraints, triggers, or validation logic to prevent mismatches or accidental cross-property data contamination.
-
-Avoid using array-based property assignments for shared roles such as drivers. Implement a proper junction table (e.g., driver_property_assignments) to map drivers to one or multiple properties. This ensures clean querying, easier permission enforcement, and long-term maintainability.
-
-Keep housekeeping logic strictly limited to two operational modes: event-based (for high-turnover properties like Lamai) and scheduled (for long-stay properties like Koh Shanti). Do not introduce additional variations or conditional complexity beyond these two modes. The system should remain predictable and easy to reason about.
-
-Ensure dashboard adaptation is controlled at the composition level rather than deeply embedded within individual components. Shared components should remain consistent and reusable, with layout, ordering, and visibility determined by the operational_mode. Avoid embedding excessive conditional logic inside components that could lead to inconsistent behavior or debugging complexity.
-
-Make the active property context visually clear and persistent across the entire interface. While maintaining a clean UI, ensure there is no ambiguity about which property the user is currently operating within. This is critical for preventing operational mistakes, especially for umbrella-level users switching between properties.
-
-Enforce strict data-level scoping for the AI layer. The AI must only receive and operate on data relevant to the active property context. Do not rely solely on prompt instructions to enforce separation. Backend queries and data payloads must already be filtered to the correct property before being passed to the AI.
-
-Define clear precedence rules for policy settings. If a property-specific policy exists, it must override the global default. If no property-specific policy exists, the system falls back to the global setting. Avoid merging or blending configurations dynamically, as this introduces ambiguity and increases the risk of inconsistent behavior.
-
-Audit all existing queries and hooks for implicit single-property assumptions. Any logic that previously assumed a single global dataset must be updated to explicitly filter by property_id. This includes edge cases in dashboards, background processes, notifications, and any derived calculations.
-
-Ensure that all system-generated processes (such as housekeeping task creation, pickup coordination, and notifications) are property-aware and scoped correctly. Background jobs and edge functions must respect property boundaries in the same way as user-facing queries.
-
-Maintain strict separation between properties while preserving a unified system architecture. The goal is to support multiple operational environments without introducing duplication, fragmentation, or cross-property leakage. The system should feel cohesive while remaining logically isolated where required.
-
----
----
-
-# GroundsDay Arrival Ecosystem — System Audit & Implementation Plan
-
-> **Date**: 2026-04-03  
-> **Scope**: Audit + extension plan. No new systems. No parallel workflows. Strict alignment with existing architecture.
-
----
-
-## 0. Architectural Invariants (Non-Negotiable)
-
-| Rule | Enforcement |
-|------|-------------|
-| **Single source of truth** for pickup data = `airport_pickups` table | All components read from this; no shadow state |
-| **Single source of truth** for checklist data = `pre_arrival_checklist` table | Keyed by `(booking_id, item_key)` |
-| **Travel state** computed by `getTravelState()` in `src/lib/travelState.ts` | Never stored; always derived |
-| **Confidence** computed by `evaluateAssistMode()` in same file | Output written to `airport_pickups.assist_mode` |
-| **assist_mode lifecycle**: `healthy → degraded → manual_assist → recovery_pending → healthy` | Never skips steps; admin-gated recovery |
-| **Human overrides persist** through recovery | System resumes from *current state*, not stale state |
-| **All actions logged** in `stay_support_log` | `[MANUAL]` or `[ADMIN]` prefix for human-driven changes |
-| **AI never mutates state** | Read-only suggestions, draft-only outputs |
-| **Guest messages from non-admin staff are drafts** until admin approval | `messages.draft = true` |
-
----
-
-## 1. Pre-Arrival Checklist System
-
-### 1.1 Current State ✅
-
-- **13 items** across 6 sections defined in `usePreArrivalChecklist.ts`
-- **5 critical keys**: `connectivity_readiness`, `confirm_domestic_flight`, `tdac_completed`, `upload_id`, `confirm_arrival_time`
-- Stored in `pre_arrival_checklist` table with `(booking_id, item_key)` uniqueness
-- TDAC links to `https://tdac.immigration.go.th`
-- `connectivity_readiness` stored in checklist `data` JSON field
-- Guest UI: accordion-based with section progress badges
-
-### 1.2 Checklist Item Coverage
-
-| Required Item | item_key | Status |
-|---------------|----------|--------|
-| TDAC | `tdac_completed` | ✅ Critical, with link |
-| International flight | `international_flight_noted` | ✅ Info item |
-| Domestic flight | `confirm_domestic_flight` | ✅ Critical, syncs with pickup |
-| Connectivity readiness | `connectivity_readiness` | ✅ Critical |
-| Insurance awareness | `insurance_awareness` | ✅ Safety section |
-| Money awareness | `money_awareness` | ✅ Local Setup |
-| Driving awareness | `driving_awareness` | ✅ Safety section |
-| Pickup understanding | `transport_awareness` | ✅ Local Setup (label: "Understand how pickup works after landing") |
-| Lamai living orientation | `camp_rules_ack` | ✅ Living section |
-
-**All requested items exist.** No new item_keys needed.
-
-### 1.3 Checklist → System Integration Points
-
-| Consumer | How It Reads Checklist | Current Status |
-|----------|----------------------|----------------|
-| `evaluateAssistMode()` | Receives `checklistCriticalMissing: string[]` | ✅ Implemented |
-| `useUpsertAirportPickup` | Syncs `confirm_domestic_flight` on flight save | ✅ Implemented |
-| Corner Talk | Queries `pre_arrival_checklist` for bookings ≤3 days | ✅ Implemented |
-| Staff pickup views | Shows ⚠ badge for critical gaps | ✅ Implemented |
-| `getArrivalReadiness()` | **Not yet implemented** | ⚠️ Defined below |
-
-### 1.4 New Function: `getArrivalReadiness()`
-
-**Location**: `src/lib/travelState.ts`
-
-```typescript
-export interface ArrivalReadiness {
-  ready: boolean;           // All critical items complete
-  score: number;            // 0-100, all items
-  blockers: string[];       // Human-readable list of issues
-  missingCritical: string[]; // item_key values
-}
-
-export function getArrivalReadiness(
-  checklistItems: { item_key: string; completed: boolean }[],
-  pickup: PickupData | null
-): ArrivalReadiness
-```
-
-**Logic**:
-- Checks 5 critical keys against completed items
-- Generates human-readable blockers for each missing critical item
-- Cross-references pickup data (e.g., skip "No Samui flight" blocker if `pickup.flight_number` exists even without checklist completion)
-- Returns `ready: true` only when all 5 critical items are complete
-
-**How readiness affects decision-making**:
-
-| Readiness State | Impact |
-|----------------|--------|
-| `ready: true` | System operates at full confidence; no additional signals |
-| `ready: false`, 1-2 missing | Degraded confidence signals fed to `evaluateAssistMode` |
-| `ready: false`, ≥3 missing + API issues | Compound trigger → `manual_assist` |
-| `connectivity_readiness` missing | Special degraded reason: "Guest may be unreachable after landing" |
-
----
-
-## 2. Arrival System
-
-### 2.1 Component Audit ✅
-
-| Component | File | Status |
-|-----------|------|--------|
-| Flight tracking | `check-flight-status` edge function + `flight_tracking` table | ✅ |
-| International + domestic legs | `airport_pickups.international_flight_number` + `flight_number` | ✅ |
-| Landed confirmation | `LandedConfirmationDialog.tsx` — transit-aware, mismatch detection | ✅ |
-| Travel state engine | `getTravelState()` — 7 states: pre_departure, missing_final_flight, awaiting_departure, in_transit_bkk, arriving, arrived, cancelled | ✅ |
-| Pickup dispatch guard | `canDispatchDriver()` checks `operationallyReady` | ✅ |
-| Welcome Guide | `ArrivalWelcomeGuide.tsx` with airport-specific TDAC content | ✅ |
-| Guest pickup card | `GuestPickupCard.tsx` — guidance per travel state + manual assist reassurance | ✅ |
-
-### 2.2 Arrival Behavior by Checklist State
-
-| Scenario | Connectivity | Samui Flight | System Response |
-|----------|-------------|-------------|-----------------|
-| Checklist complete | ✅ | ✅ | Full automation |
-| Partial (non-critical only missing) | ✅ | ✅ | Full automation, staff warnings only |
-| Connectivity missing | ❌ | ✅ | **Degraded** — flight tracked but guest unreachable |
-| Samui flight missing | ✅ | ❌ | **Degraded** — `missing_final_flight` state, no dispatch |
-| Both missing | ❌ | ❌ | **Degraded** (2 signals) |
-| Both + API failure | ❌ | ❌ | **Manual assist** (≥3 compound signals) |
-
-### 2.3 No Structural Changes Needed
-
-The arrival system already:
-- Consumes `flight_number` from `airport_pickups` (single source)
-- Uses `getTravelState()` for all UI decisions
-- Handles missing data gracefully (every state has `staffDetail` + `guestGuidance`)
-- Depends on connectivity implicitly (guest can't tap "I've Landed" without internet)
-
----
-
-## 3. Health / Confidence Layer
-
-### 3.1 `evaluateAssistMode()` Signal Matrix ✅
-
-| Signal | Source | Effect |
-|--------|--------|--------|
-| `locationMismatch` | Guest confirmed ≠ flight tracking | → `manual_assist` (hard trigger) |
-| `flightApiError` | AviationStack failure | → degraded |
-| Flight data stale (> threshold) | `flight_tracking.last_checked_at` | → degraded |
-| `flightStatus === "not_found"` | AviationStack response | → degraded |
-| `translationFailed` | `translate-message` edge function | → degraded |
-| Missing `connectivity_readiness` | `checklistCriticalMissing[]` | → degraded |
-| Missing `confirm_domestic_flight` | `checklistCriticalMissing[]` | → degraded |
-| Missing `tdac_completed` | `checklistCriticalMissing[]` | → degraded |
-| **≥3 degraded reasons** | Compound | → `manual_assist` (auto-escalation) |
-| Already `manual_assist` / `recovery_pending` | Stored mode | → no auto-change (sticky) |
-
-### 3.2 Gap: Server-Side Confidence Evaluation
-
-Currently `evaluateAssistMode` runs **client-side only**. The `check-flight-status` edge function updates `flight_tracking` but does **not** evaluate system confidence or update `airport_pickups.assist_mode`.
-
-**Recommended extension**: When `check-flight-status` runs:
-1. Query `pre_arrival_checklist` for the booking
-2. Compute critical missing items
-3. Call `evaluateAssistMode` logic server-side
-4. Write result to `airport_pickups.assist_mode` + `assist_reason`
-
-This ensures confidence is evaluated even when no staff client is open.
-
-### 3.3 `isSystemHealthy()` for Recovery ✅
-
-Already implemented — validates all signals before allowing `recovery_pending → healthy` transition. Checks: no API errors, no mismatches, no translation failures, flight data fresh.
-
----
-
-## 4. Manual Assist System
-
-### 4.1 Current State ✅
-
-| Feature | Implementation | Status |
-|---------|---------------|--------|
-| Auto-trigger: ≥3 degraded signals | `evaluateAssistMode()` | ✅ |
-| Auto-trigger: location mismatch | `evaluateAssistMode()` | ✅ |
-| Manual trigger: staff escalation | `ManualAssistBanner.handleEscalateToManual()` | ✅ |
-| Banner: degraded | Yellow, "Reduced Confidence" | ✅ |
-| Banner: manual_assist | Red, "Automation Paused" | ✅ |
-| Banner: recovery_pending | Blue, "Awaiting Approval" | ✅ |
-| Staff: Contact Guest | Deep-link `#messages-{bookingId}` | ✅ |
-| Staff: Edit flights with [MANUAL] prefix | `AirportPickupSection.handleSaveFlights()` | ✅ |
-| Recovery: Mark ready (Manager+) | `handleMarkRecoveryReady()` | ✅ |
-| Recovery: Resume (Admin only) | `handleResumeAutomation()` | ✅ |
-| Audit logging | `logPickupAction()` → `stay_support_log` | ✅ |
-| Corner Talk | 3 signals: active, degraded, recovery | ✅ |
-
-### 4.2 Confirmed: Checklist Alone Does NOT Trigger Manual Assist ✅
-
-- Checklist gaps produce degraded reasons only
-- 1-2 checklist gaps = `degraded`
-- ≥3 total degraded reasons (checklist + other signals) = `manual_assist`
-- Checklist provides **context** for manual assist, not the sole trigger
-
-### 4.3 Extension: Structured Reason Display
-
-Currently `assist_reason` is a concatenated string. For manual assist context, parse into bullet points in `ManualAssistBanner` so staff sees:
-- "• Guest has not confirmed internet access"
-- "• Flight data is 45 minutes old"
-- "• Guest has not confirmed Samui flight"
-
-### 4.4 Messaging ↔ Manual Assist Integration
-
-- "Contact Guest" → opens messaging for the booking
-- Messages sent during manual assist carry `[MANUAL ASSIST]` context for AI drafts
-- Admin can apply received info via override actions (§6)
-- Manual assist pauses automation but does NOT prevent messaging
-
----
-
-## 5. Messaging System (Operational Intake Layer)
-
-### 5.1 Current State ✅
-
-- Real-time inbox with `messages` table
-- Guest-facing messages from non-admin staff → `draft = true`
-- AI draft suggestions via Kru Glitch
-- Translation via `translate-message` edge function
-- Read status tracking via `read_at`
-
-### 5.2 Future Extension: Attachments
-
-| Element | Design |
-|---------|--------|
-| Storage | Existing `guest-documents` storage bucket |
-| Schema | Add `attachment_url` (text, nullable) and `attachment_type` (text, nullable) to `messages` table |
-| Guest upload | File picker in message composer → upload to storage → save URL |
-| Staff upload | Same mechanism |
-| Display | Inline thumbnail for images; download link for PDFs |
-| RLS | Same as existing message policies (guest sees own, staff sees all) |
-
-### 5.3 Future Extension: Message-Based Data Intake
-
-Messages become a **source** of operational data through admin interpretation:
+The `ai-assistant` edge function gets a new context block:
 
 ```
-Guest sends message ("Here's my flight: PG123 arriving 2pm")
-  → AI suggests: "This looks like domestic flight PG123"
-  → Admin sees Action Card in message thread
-  → Admin clicks "Use as Samui Flight"
-  → System writes to airport_pickups.flight_number = "PG123"
-  → Checklist item confirm_domestic_flight auto-completes
-  → Action logged: [ADMIN] flight_number_override, source: message {id}
+INTELLIGENCE LAYER (approved operational knowledge — cite when relevant):
+ACTIVE HEADS UP:
+- [money/bkk] ATM: Always press NO on currency conversion...
+- [transport/samui] Grab wait times currently 15-20min...
+
+PLAYBOOK HIGHLIGHTS (top entries by category):
+- [money] ATM Realities: Yellow ATMs (Krungsri) attached to banks...
+- [transport] Songthaew Guide: Red/yellow trucks, loop routes...
 ```
 
-### 5.4 AI Interpretation Contexts
+Fetched from `intelligence_entries` where status = 'active', scoped by property. Max ~20 entries injected to stay within token budget.
 
-| Context | When | AI Does |
-|---------|------|---------|
-| `message_interpretation` | Guest sends message with potential data | Extracts flight numbers, dates, document types; presents as suggestions |
-| `arrival_guidance` | Guest asks about arrival | Drafts guidance using travel state + airport facts |
-| `manual_assist` | System in manual assist | Explains situation, suggests staff actions, drafts calming guest messages |
+When a user clicks "Ask Kru Glitch" from a Heads Up or Playbook card, the AI receives the entry as pre-seeded context so it can explain without starting cold.
 
 ---
 
-## 6. Admin Override Layer
+## Location Scoping
 
-### 6.1 Design
+Each entry has a `location text[]` array. Values: `bkk`, `samui`, `nathon`, `lipa_noi`, `bus`, `island` (general Koh Samui), `global` (everywhere).
 
-Admins extract information from any source and apply it to system fields through explicit, logged actions. This is the system's correction mechanism.
+Guest-facing filtering uses the guest's detected arrival location (already resolved by `detectAirport()` + arrival model). Staff see all entries but with location badges for context.
 
-### 6.2 Override Action Catalog
+Future locations added by simply using new tag values — no schema changes.
 
-| Action Label | Target | Fields Written |
-|-------------|--------|---------------|
-| "Use as International Flight" | `airport_pickups` | `international_flight_number` |
-| "Use as Samui Flight" | `airport_pickups` | `flight_number`, `final_flight_confirmed = true` |
-| "Set Arrival Time" | `airport_pickups` | `arrival_datetime` |
-| "Mark TDAC Complete" | `pre_arrival_checklist` | `item_key: tdac_completed`, `completed: true` |
-| "Save as Document" | `guest_documents` | `file_name`, `file_path`, `booking_id` |
-| "Assume Connectivity" | `pre_arrival_checklist` | `item_key: connectivity_readiness`, `completed: true`, `data: {assumed_by_admin: true}` |
-| "Override Arrival Airport" | `airport_pickups` | `confirmed_airport` |
+---
 
-### 6.3 Logging
+## Intelligence Lifecycle
 
-Every override writes to `stay_support_log`:
-
-```
-{
-  booking_id,
-  request_type: "admin_override",
-  request_id: pickup_id or checklist_item_id,
-  action: "[ADMIN] flight_number_override",
-  note: "Applied from message {message_id}: PG123 as domestic flight",
-  from_status: previous_value,
-  to_status: new_value,
-  change_type: "override"
-}
+```text
+Admin creates Heads Up (draft)
+  → Admin publishes (active)
+    → Shown to relevant audience based on location/role
+      → Optional: Admin promotes to Playbook
+        → New Playbook entry created, Heads Up archived
+          → AI references Playbook entry in context
 ```
 
-### 6.4 Implementation Location
-
-- Admin-only action menu in booking detail view (not a new page)
-- "Apply from message…" → recent messages → pick action type → confirm
-- All changes flow through existing upsert hooks
-
-### 6.5 Constraints
-
-- Only `admin` role can execute overrides
-- Guests never mutate system fields directly
-- Overrides persist through recovery (manual → recovery → healthy)
-- Recovery resumes from current state (including overrides), never reverts to stale data
+Expiry: Heads Up entries can have `expires_at`. A scheduled function or client-side filter hides expired entries. Playbook entries are permanent by default.
 
 ---
 
-## 7. AI Role (Kru Glitch) — Boundaries
+## What Should NOT Be Built
 
-### 7.1 Permissions
-
-| ✅ Allowed | ❌ Never |
-|-----------|---------|
-| Read booking/checklist/travel/message data | Execute actions |
-| Explain situations | Override data |
-| Draft guest messages (output = draft) | Dispatch drivers |
-| Interpret attachments → suggest data | Change system state |
-| Surface confidence context | Approve messages |
-
-### 7.2 Context Injection
-
-When AI processes a booking, it receives:
-- Booking metadata (state, dates, guest type)
-- `getTravelState()` output
-- `getArrivalReadiness()` output
-- Current `assist_mode` + `assist_reason`
-- Recent messages (last 5)
-- **Never**: raw API responses, internal IDs, other bookings
+- No feed/timeline UI. No infinite scroll. No "news" aesthetic.
+- No separate content management system. Use the existing `policy_settings` pattern extended to the new table.
+- No AI auto-publishing or AI-generated entries going live without admin approval.
+- No duplication of Corner Talk logic. Corner Talk remains the operational pulse; intelligence entries are the contextual knowledge layer.
+- No restructuring of Arrival Guides — they serve a different purpose (step-by-step arrival instructions vs. general knowledge).
+- No complex tagging taxonomy. Flat category + location arrays are sufficient.
+- No separate admin dashboard. The editor lives inside existing Settings.
 
 ---
 
-## 8. Staff Visibility Audit
+## Implementation Summary
 
-### 8.1 Current Surfaces ✅
 
-| View | Shows | Status |
-|------|-------|--------|
-| Booking Detail (`AirportPickupSection`) | Travel state, flight route, assist mode, flight editing | ✅ |
-| Today's Pickups Widget | Travel state per pickup, assist mode (compact), flight delays | ✅ |
-| Guest Pickup Card | Guest guidance, driver info, manual assist reassurance | ✅ |
-| Corner Talk | Checklist gaps, manual assist, recovery, missing drivers | ✅ |
+| Component                          | Type               | Purpose                                           |
+| ---------------------------------- | ------------------ | ------------------------------------------------- |
+| `intelligence_entries` table + RLS | Migration          | Single data store                                 |
+| `IntelligenceEditor.tsx`           | New component      | Admin CRUD + promote flow                         |
+| `GuestHeadsUpStrip.tsx`            | New component      | Guest-facing contextual alerts (max 2)            |
+| `GuestPlaybook.tsx`                | New component      | Browsable knowledge cards in Guest Portal         |
+| `StaffIntelStrip.tsx`              | New component      | Staff awareness of active intel below Corner Talk |
+| `ai-assistant/index.ts` update     | Edge function edit | Inject active intelligence into AI context        |
+| `useIntelligence.ts`               | New hook           | Fetch + filter entries by role/location/type      |
+| Guest Portal tab addition          | Edit               | Add "Island Guide" tab                            |
+| Settings tab addition              | Edit               | Add "Intelligence" management section             |
 
-### 8.2 Extensions Needed
 
-| Gap | Location | Fix |
-|-----|----------|-----|
-| Checklist completion % on booking detail | `BookingDetailSheet` | Add badge: "3/5 critical ✅, 72% overall" |
-| Connectivity status on pickup widgets | `TodaysPickupsWidget` | Query checklist, show ⚠ if missing |
-| TDAC missing indicator | `AirportPickupSection` | Check checklist, show warning |
-| Structured assist reason | `ManualAssistBanner` | Parse string → bullet points |
+**Total new files**: ~5 components + 1 hook + 1 migration  
+**Existing files edited**: ai-assistant edge function, GuestPortal.tsx, Settings.tsx, Index.tsx (staff strip)
 
-### 8.3 Staff Labels
+&nbsp;
 
-| Gap | Staff Sees |
-|-----|-----------|
-| No Samui flight | "⚠ Missing Final Flight — pickup timing unavailable" |
-| No connectivity | "⚠ No Connectivity Plan — guest unreachable after landing" |
-| TDAC missing | "⚠ TDAC Missing — may delay immigration" |
-| No ID | "⚠ ID Not Uploaded — check-in blocked" |
+Keep the intelligence_entries table as a dedicated data layer. Do not merge this into policy_settings or any existing JSON-based storage. This system needs a clean, structured home to avoid long-term chaos.
 
----
+&nbsp;
 
-## 9. Notifications & Corner Talk
+Maintain a strict separation between Corner Talk and the intelligence layer. Corner Talk remains operational (bookings, alerts, internal events). Intelligence entries handle environmental awareness (ATMs, taxis, ferries, real-world behavior). Do not mix these.
 
-### 9.1 Guest Notifications (Max 3 Automated)
+&nbsp;
 
-| # | Trigger | Content |
-|---|---------|---------|
-| 1 | Booking confirmed | "Booking confirmed — complete your pre-arrival checklist" |
-| 2 | 3 days before arrival | "Your arrival is in 3 days — complete your checklist" |
-| 3 | 1 day before arrival | "Your pickup is confirmed for tomorrow" |
+Limit category expansion. Keep categories tight and controlled: money, transport, safety, connectivity, customs, local_life. Do not allow category sprawl or over-specific labels.
 
-### 9.2 Staff Notifications (Corner Talk) ✅
+&nbsp;
 
-All implemented in `corner-talk/index.ts`:
-- `checklist_no_connectivity` (≤3 days, Attention)
-- `checklist_no_samui_flight` (≤3 days, Attention)
-- `checklist_critical_gaps` (≤3 days, Attention)
-- `manual_assist_active` (any active, Urgent)
-- `manual_assist_degraded` (any active, Attention)
-- `manual_assist_recovery` (admin only, Attention)
+Limit location tags to a controlled set: bkk, samui, nathon, lipa_noi, bus, island, global. Do not overcomplicate location taxonomy.
 
----
+&nbsp;
 
-## 10. Data Integrity Rules
+Keep Playbook entries short, direct, and actionable. No long-form content. No paragraphs of explanation. Each entry should feel like a 10-second real-world tip, not a guidebook article.
 
-| Rule | Enforcement |
-|------|-------------|
-| Single source: flights → `airport_pickups` | No flight data in bookings or checklist |
-| Single source: checklist → `pre_arrival_checklist` | `bookings.pre_arrival_status` is summary only |
-| Single source: flight cache → `flight_tracking` | Client never stores flight data |
-| Overrides always logged | `stay_support_log` with `[ADMIN]`/`[MANUAL]` prefix |
-| Manual changes survive recovery | System resumes from current state, never reverts |
-| No silent overwrites | Every field change via override produces audit entry |
-| Recovery requires admin approval | `recovery_pending → healthy` gated by admin role |
-| Stale data → degraded, never reverted | `evaluateAssistMode` degrades on staleness |
+&nbsp;
 
----
+Use visuals wherever possible in Playbook entries. If something can be shown (ATM color, card type, location reference), include an image. This reduces confusion significantly.
 
-## 11. End-to-End System Flow
+&nbsp;
 
-```
-1. BOOKING CONFIRMED
-   └─ Checklist seeded (13 items in pre_arrival_checklist)
-   └─ Guest notification #1: "Complete your checklist"
+Limit Heads Up display to a maximum of 2 entries at a time. More than that reduces effectiveness and leads to user fatigue.
 
-2. GUEST COMPLETES CHECKLIST (partial/full)
-   └─ Each toggle → upsert pre_arrival_checklist
-   └─ TDAC → links to tdac.immigration.go.th
-   └─ Domestic flight → syncs to airport_pickups.flight_number
-   └─ getArrivalReadiness() recalculated
+&nbsp;
 
-3. DATA FEEDS INTO CONFIDENCE
-   └─ getChecklistProgress() → criticalMissing[]
-   └─ evaluateAssistMode({ checklistCriticalMissing })
-   └─ Missing items → degraded signals
+Ensure Heads Up entries are contextual and filtered: by location (arrival model) by user stage (pre-arrival, on-arrival, during stay) by audience (guest vs staff)
 
-4. FLIGHT TRACKING ACTIVATES
-   └─ check-flight-status polls AviationStack
-   └─ Results → flight_tracking table
-   └─ API errors → degraded signal
+&nbsp;
 
-5. NOTIFICATIONS FIRE
-   └─ 3 days before: "Complete your checklist" (#2)
-   └─ 1 day before: "Pickup confirmed for tomorrow" (#3)
-   └─ Corner Talk surfaces gaps to staff
+Do not allow Heads Up to become a scrolling feed or timeline. No infinite scroll, no news-style UI.
 
-6. GUEST LANDS → "I'VE LANDED"
-   └─ LandedConfirmationDialog → airport selection
-   └─ BKK + connecting → in_transit_bkk (no dispatch)
-   └─ USM → arriving (dispatch enabled)
-   └─ Mismatch → staff flagged, possible manual_assist
+&nbsp;
 
-7. ISSUES DETECTED
-   └─ 1-2 signals: degraded (yellow banner)
-   └─ ≥3 signals: manual_assist (red banner, automation paused)
-   └─ Staff contacts guest via messaging
+Keep the Playbook clean and structured. It should feel like a practical reference, not a blog or content hub. Avoid unnecessary depth in navigation.
 
-8. ADMIN OVERRIDE (if needed)
-   └─ Admin extracts info from messages/attachments
-   └─ Applies via action menu → writes to airport_pickups/checklist
-   └─ Logged with [ADMIN] prefix
+&nbsp;
 
-9. RECOVERY
-   └─ Manager: "System Ready — Request Approval"
-   └─ Admin: "Resume Automation"
-   └─ assist_mode → healthy
-   └─ Automation continues from current state (overrides preserved)
-```
+Restrict staff-only intelligence entries. Only create staff-specific entries when they solve a repeated operational issue. Do not allow this to become an internal wiki or opinion-based content pool.
 
----
+&nbsp;
 
-## 12. Identified Gaps & Priority
+Enforce admin approval on all intelligence entries. No auto-publishing. No AI-generated content goes live without explicit admin approval.
 
-| # | Gap | Severity | Phase |
-|---|-----|----------|-------|
-| 1 | `getArrivalReadiness()` not implemented | Medium | 1 |
-| 2 | Server-side confidence evaluation missing | Medium | 2 |
-| 3 | Checklist badge not on booking detail | Medium | 1 |
-| 4 | Assist reason not structured (single string) | Low | 1 |
-| 5 | Connectivity status not on pickup widgets | Medium | 1 |
-| 6 | No attachment support in messages | High | 3 |
-| 7 | No admin override UI | High | 4 |
-| 8 | Guest notifications (3-day, 1-day) not verified | Medium | 2 |
+&nbsp;
 
-### Implementation Phases
+Keep the promotion flow strict: Heads Up → repeated pattern → promoted to Playbook → Heads Up archived. Do not duplicate entries between layers.
 
-**Phase 1 — Foundation** (low risk):
-- Add `getArrivalReadiness()` to `travelState.ts`
-- Add checklist badge to booking detail
-- Parse assist reason into bullet points
+&nbsp;
 
-**Phase 2 — Server Confidence** (medium risk):
-- Extend `check-flight-status` to evaluate assist mode server-side
-- Verify/implement scheduled guest notifications
+Ensure AI only consumes approved intelligence_entries data. Do not allow AI to generate or invent local advice outside of this layer.
 
-**Phase 3 — Messaging Intake** (high value):
-- Add attachment columns to `messages` table
-- Build attachment upload/display
-- Add AI message interpretation context
+&nbsp;
 
-**Phase 4 — Admin Override** (high value):
-- Build admin override action menu
-- Implement "Use as…" action cards
-- Full audit logging for overrides
+Limit AI context injection to concise entries. Do not pass long-form text into the AI context. Keep entries short to maintain response quality and speed.
+
+&nbsp;
+
+Ensure AI responses remain short by default. Expand only when the user asks follow-up questions. Avoid over-explaining.
+
+&nbsp;
+
+Use visuals and labels in the Playbook to reinforce recognition: ATM colors, bank names, physical references. Reduce reliance on text alone.
+
+&nbsp;
+
+Keep the UI minimal and non-intrusive: Heads Up = subtle banner Playbook = clean card grid AI = contextual expansion
+
+&nbsp;
+
+Do not introduce modals, popups, or aggressive interruptions for this system.
+
+&nbsp;
+
+Ensure staff visibility of guest-facing intelligence. Staff must see what guests see to maintain alignment and avoid contradictory information.
+
+&nbsp;
+
+Avoid building a separate admin dashboard. The intelligence editor must live inside existing Settings or Policy structures.
+
+&nbsp;
+
+Do not over-engineer tagging, filtering, or hierarchy. Keep structure flat and manageable.
+
+&nbsp;
+
+Ensure the system remains location-aware at all times. Content must adapt based on where the user is (BKK, Samui, pier, island, etc.), not display generic “Thailand tips.”
+
+&nbsp;
+
+Preserve system tone: direct, practical, slightly assertive not corporate not overly friendly not instructional in a lecture style
+
+&nbsp;
+
+Do not allow this system to feel like content consumption. It must feel like real-time assistance and practical guidance.
+
+&nbsp;
+
+Ensure the system evolves cleanly: temporary reality → Heads Up repeated reality → Playbook AI explains both without duplication
+
+&nbsp;
+
+Maintain performance awareness. Do not overload the client or AI context with excessive entries or large payloads.
+
+&nbsp;
+
+Keep everything aligned with the core principle: deliver the right information at the right moment without adding friction or clutter.
