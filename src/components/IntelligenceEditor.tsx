@@ -42,12 +42,13 @@ const STATUS_COLORS: Record<IntelligenceStatus, string> = {
 };
 
 export function IntelligenceEditor() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { data: entries, isLoading } = useIntelligence();
   const { upsert, remove, promote } = useIntelligenceMutations();
   const [editEntry, setEditEntry] = useState<Partial<IntelligenceEntry> | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "heads_up" | "playbook">("all");
+  const [generating, setGenerating] = useState(false);
 
   const filtered = (entries ?? []).filter((e) => filter === "all" || e.type === filter);
 
