@@ -11,6 +11,7 @@ import { TrainingPackagesManager } from "@/components/TrainingPackagesManager";
 import { DriverManager } from "@/components/DriverManager";
 import { ArrivalWelcomeEditor } from "@/components/ArrivalWelcomeEditor";
 import { SecurityEventLog } from "@/components/SecurityEventLog";
+import { IntelligenceEditor } from "@/components/IntelligenceEditor";
 import PropertyManagementPanel from "@/components/PropertyManagementPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
@@ -45,6 +46,7 @@ const Settings = () => {
             {isAdmin && <TabsTrigger value="integrations">Integrations</TabsTrigger>}
             {canManageReviews && <TabsTrigger value="reviews">{t("settings.reviewsTab")}</TabsTrigger>}
             {isAdmin && <TabsTrigger value="security">Security</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="intelligence">Intelligence</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="profile"><ProfileEditor /></TabsContent>
@@ -58,6 +60,7 @@ const Settings = () => {
           {isAdmin && <TabsContent value="integrations"><IntegrationSettings /></TabsContent>}
           {canManageReviews && <TabsContent value="reviews"><ReviewsManager /></TabsContent>}
           {isAdmin && <TabsContent value="security"><SecurityEventLog /></TabsContent>}
+          {isAdmin && <TabsContent value="intelligence"><IntelligenceEditor /></TabsContent>}
         </Tabs>
       </div>
     </DashboardLayout>

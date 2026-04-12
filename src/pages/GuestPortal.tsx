@@ -57,6 +57,8 @@ import { GuestDepositSection } from "@/components/GuestDepositSection";
 import { GuestPaymentSummary } from "@/components/GuestPaymentSummary";
 import { PreArrivalChecklist } from "@/components/PreArrivalChecklist";
 import { GuestStayUpdatesPrompt } from "@/components/GuestStayUpdatesPrompt";
+import { GuestHeadsUpStrip } from "@/components/GuestHeadsUpStrip";
+import { GuestPlaybook } from "@/components/GuestPlaybook";
 import { ReviewFormDialog } from "@/components/ReviewFormDialog";
 import { StarRating } from "@/components/StarRating";
 import { useGuestReviews } from "@/hooks/useReviews";
@@ -317,6 +319,9 @@ const GuestPortal = () => {
         {/* Passive Layer: Your Stay Summary */}
         <GuestStaySummary focusSection={focusSection} onSectionFocused={() => setFocusSection(null)} />
 
+        {/* Heads Up — contextual, location-filtered intelligence */}
+        <GuestHeadsUpStrip />
+
         {/* Guest notification enrollment — benefit-framed, not technical */}
         <GuestStayUpdatesPrompt />
 
@@ -346,6 +351,10 @@ const GuestPortal = () => {
             {hasTrainingAssociation && (
               <TabsTrigger value="camp-info">{t("guestPortal.campInfo")}</TabsTrigger>
             )}
+            <TabsTrigger value="island-guide" className="flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5" />
+              Island Guide
+            </TabsTrigger>
             <TabsTrigger value="policies">{t("guestPortal.policies")}</TabsTrigger>
             <TabsTrigger value="profile">{t("guestPortal.profile")}</TabsTrigger>
           </TabsList>
@@ -554,6 +563,11 @@ const GuestPortal = () => {
               </Card>
             </TabsContent>
           )}
+
+          {/* ── Island Guide Tab ── */}
+          <TabsContent value="island-guide">
+            <GuestPlaybook />
+          </TabsContent>
 
           {/* ── Policies Tab ── */}
           <TabsContent value="policies">

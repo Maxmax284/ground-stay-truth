@@ -905,6 +905,48 @@ Deposit policy: ${depositMode}. Currency: ${currencySymbol}.`;
       contextData += weatherContext;
     }
 
+    // ─── INTELLIGENCE LAYER (approved operational knowledge) ──────────────
+    try {
+      let intelQuery = adminClient
+        .from("intelligence_entries")
+        .select("type, title, body, category, location, audience, severity")
+        .eq("status", "active")
+        .order("sort_order", { ascending: true })
+        .limit(20);
+
+      if (property_id) {
+        intelQuery = intelQuery.or(`property_id.eq.${property_id},property_id.is.null`);
+      }
+
+      const { data: intelEntries } = await intelQuery;
+      const entries = (intelEntries ?? []).filter((e: any) => {
+        // Filter by audience
+        if (role === "guest") return (e.audience || []).includes("guest");
+        return true; // Staff/admin see all
+      });
+
+      if (entries.length > 0) {
+        const headsUp = entries.filter((e: any) => e.type === "heads_up");
+        const playbook = entries.filter((e: any) => e.type === "playbook");
+
+        contextData += `\n\nINTELLIGENCE LAYER (approved operational knowledge — cite when relevant, do not fabricate beyond this):`;
+        if (headsUp.length > 0) {
+          contextData += `\nACTIVE HEADS UP:`;
+          for (const h of headsUp) {
+            contextData += `\n- [${(h as any).category}/${((h as any).location || []).join(",")}] ${(h as any).title}: ${(h as any).body.slice(0, 200)}`;
+          }
+        }
+        if (playbook.length > 0) {
+          contextData += `\nPLAYBOOK (permanent local knowledge):`;
+          for (const p of playbook) {
+            contextData += `\n- [${(p as any).category}] ${(p as any).title}: ${(p as any).body.slice(0, 200)}`;
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Intelligence fetch failed:", e);
+    }
+
     // ─── MODE-SPECIFIC EXPANSIONS ───────────────────────────────────────────
     if (mode === "digest" || mode === "summarize") {
       const [detBookingsRes, detMaintenanceRes, detLaundryRes] = await Promise.all([
