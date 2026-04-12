@@ -56,6 +56,7 @@ import { GuestPickupCard } from "@/components/GuestPickupCard";
 import { GuestDepositSection } from "@/components/GuestDepositSection";
 import { GuestPaymentSummary } from "@/components/GuestPaymentSummary";
 import { PreArrivalChecklist } from "@/components/PreArrivalChecklist";
+import { GuestStayUpdatesPrompt } from "@/components/GuestStayUpdatesPrompt";
 import { ReviewFormDialog } from "@/components/ReviewFormDialog";
 import { StarRating } from "@/components/StarRating";
 import { useGuestReviews } from "@/hooks/useReviews";
@@ -315,6 +316,9 @@ const GuestPortal = () => {
 
         {/* Passive Layer: Your Stay Summary */}
         <GuestStaySummary focusSection={focusSection} onSectionFocused={() => setFocusSection(null)} />
+
+        {/* Guest notification enrollment — benefit-framed, not technical */}
+        <GuestStayUpdatesPrompt />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="flex-wrap">
