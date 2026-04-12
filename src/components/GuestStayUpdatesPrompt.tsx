@@ -88,7 +88,7 @@ export function GuestStayUpdatesPrompt({ className }: { className?: string }) {
 
   return (
     <div className={cn(
-      "rounded-xl border border-border/60 bg-card p-4 shadow-sm animate-fade-up",
+      "relative rounded-xl border border-border/60 bg-card p-4 shadow-sm animate-fade-up",
       className
     )}>
       {/* Dismiss button */}
