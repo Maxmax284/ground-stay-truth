@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, ArrowUpCircle, Zap, BookOpen, Archive, Sparkles, Loader2, Radar, ImageIcon, ImageOff, Upload, X, CheckCircle2, AlertTriangle, MonitorPlay, Layers, RefreshCw } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowUpCircle, Zap, BookOpen, Archive, Sparkles, Loader2, Radar, ImageIcon, ImageOff, Upload, X, CheckCircle2, AlertTriangle, MonitorPlay, Layers, RefreshCw, RotateCcw, Type, Radio, GalleryHorizontal, Swords, ListCollapse, Activity, Waves } from "lucide-react";
 import { toast } from "sonner";
 
 const CATEGORIES: { value: IntelligenceCategory; label: string }[] = [
@@ -352,11 +352,15 @@ export function IntelligenceEditor() {
             <Badge variant="outline" className="text-[10px] px-1.5 py-0">Admin Only</Badge>
           </div>
           <p className="text-xs text-muted-foreground">Controls how intel entries rotate on the staff dashboard strip.</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
             {([
-              { mode: "ticker" as IntelAnimationMode, label: "Ticker", desc: "Slides left like a news feed", icon: RefreshCw },
-              { mode: "crossfade" as IntelAnimationMode, label: "Crossfade", desc: "Smooth fade between entries", icon: Layers },
-              { mode: "stack" as IntelAnimationMode, label: "Stack", desc: "Shows 3 cards, shuffles order", icon: MonitorPlay },
+              { mode: "ticker" as IntelAnimationMode, label: "Ticker", desc: "Slides left", icon: RefreshCw },
+              { mode: "crossfade" as IntelAnimationMode, label: "Crossfade", desc: "Smooth fade", icon: Layers },
+              { mode: "stack" as IntelAnimationMode, label: "Stack", desc: "3 cards shuffle", icon: ListCollapse },
+              { mode: "flip" as IntelAnimationMode, label: "Flip", desc: "3D card flip", icon: RotateCcw },
+              { mode: "typewriter" as IntelAnimationMode, label: "Typewriter", desc: "Types in text", icon: Type },
+              { mode: "pulse" as IntelAnimationMode, label: "Pulse", desc: "Scale & glow", icon: Radio },
+              { mode: "carousel" as IntelAnimationMode, label: "Carousel", desc: "Swipe cards", icon: GalleryHorizontal },
             ]).map(({ mode, label, desc, icon: Icon }) => {
               const isActive = getStoredAnimMode() === mode;
               return (
@@ -367,15 +371,56 @@ export function IntelligenceEditor() {
                     window.dispatchEvent(new Event("intel-anim-mode-changed"));
                     toast.success(`Strip animation set to ${label}`);
                   }}
-                  className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border text-center transition-all ${
+                  className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border text-center transition-all ${
                     isActive
                       ? "border-primary bg-primary/5 ring-1 ring-primary"
                       : "border-border hover:border-primary/40 hover:bg-accent/30"
                   }`}
                 >
-                  <Icon className={`h-5 w-5 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
-                  <span className={`text-xs font-medium ${isActive ? "text-primary" : "text-foreground"}`}>{label}</span>
-                  <span className="text-[10px] text-muted-foreground leading-tight">{desc}</span>
+                  <Icon className={`h-4 w-4 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className={`text-[11px] font-medium ${isActive ? "text-primary" : "text-foreground"}`}>{label}</span>
+                  <span className="text-[9px] text-muted-foreground leading-tight">{desc}</span>
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Corner Talk Animation — Admin Only */}
+      <Card className="border-dashed">
+        <CardContent className="py-4 px-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Swords className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">Corner Talk Animation</span>
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0">Admin Only</Badge>
+          </div>
+          <p className="text-xs text-muted-foreground">Controls how Corner Talk alerts appear and update.</p>
+          <div className="grid grid-cols-3 gap-2">
+            {([
+              { mode: "stagger", label: "Staggered", desc: "Lines slide in one by one", icon: ListCollapse },
+              { mode: "pulse", label: "Priority Pulse", desc: "Urgent items glow", icon: Activity },
+              { mode: "refresh", label: "Live Fade", desc: "Updates crossfade in", icon: Waves },
+            ]).map(({ mode, label, desc, icon: Icon }) => {
+              const stored = (() => { try { return localStorage.getItem("corner-talk-anim-mode") || "stagger"; } catch { return "stagger"; } })();
+              const isActive = stored === mode;
+              return (
+                <button
+                  key={mode}
+                  onClick={() => {
+                    try { localStorage.setItem("corner-talk-anim-mode", mode); } catch {}
+                    window.dispatchEvent(new Event("corner-talk-anim-changed"));
+                    toast.success(`Corner Talk animation set to ${label}`);
+                  }}
+                  className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border text-center transition-all ${
+                    isActive
+                      ? "border-primary bg-primary/5 ring-1 ring-primary"
+                      : "border-border hover:border-primary/40 hover:bg-accent/30"
+                  }`}
+                >
+                  <Icon className={`h-4 w-4 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className={`text-[11px] font-medium ${isActive ? "text-primary" : "text-foreground"}`}>{label}</span>
+                  <span className="text-[9px] text-muted-foreground leading-tight">{desc}</span>
                 </button>
               );
             })}
