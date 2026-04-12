@@ -359,44 +359,79 @@ export function IntelligenceEditor() {
           </div>
           {showImageAudit && (
             <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-              {(entries ?? []).map((entry) => (
-                <div key={entry.id} className="flex items-start gap-3 p-2.5 rounded-md border bg-card">
-                  {entry.image_url ? (
-                    <img
-                      src={entry.image_url}
-                      alt={entry.image_caption || entry.title}
-                      className="w-16 h-16 rounded object-cover shrink-0 border"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded border border-dashed flex items-center justify-center shrink-0 bg-muted/30">
-                      <ImageOff className="h-5 w-5 text-muted-foreground/40" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-xs font-medium">{entry.title}</span>
-                    </div>
-                    <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                      <Badge variant="outline" className="text-[10px] px-1 py-0">
-                        {entry.type === "heads_up" ? "⚡ Heads Up" : "📖 Playbook"}
-                      </Badge>
-                      <Badge variant="outline" className="text-[10px] px-1 py-0">{entry.category}</Badge>
-                      {entry.location?.slice(0, 3).map((loc) => (
-                        <span key={loc} className="text-[10px] text-muted-foreground">{loc}</span>
-                      ))}
-                    </div>
-                    {entry.image_caption && (
-                      <p className="text-[11px] text-muted-foreground mt-0.5 italic">"{entry.image_caption}"</p>
+              {/* Sort: entries with images first, then without */}
+              {[...(entries ?? [])].sort((a, b) => {
+                if (a.image_url && !b.image_url) return -1;
+                if (!a.image_url && b.image_url) return 1;
+                return 0;
+              }).map((entry) => {
+                const HIGH_VISUAL_CATEGORIES = ["money", "transport", "connectivity", "safety"];
+                const needsImage = HIGH_VISUAL_CATEGORIES.includes(entry.category);
+                const hasImage = !!entry.image_url;
+                const hasCaption = !!entry.image_caption;
+
+                let statusLabel: string;
+                let StatusIcon: typeof CheckCircle2;
+                let statusColor: string;
+
+                if (hasImage && hasCaption) {
+                  statusLabel = "Image OK";
+                  StatusIcon = CheckCircle2;
+                  statusColor = "text-primary";
+                } else if (hasImage && !hasCaption) {
+                  statusLabel = "Needs Caption";
+                  StatusIcon = AlertTriangle;
+                  statusColor = "text-amber-500";
+                } else if (!hasImage && needsImage) {
+                  statusLabel = "Missing Image";
+                  StatusIcon = ImageOff;
+                  statusColor = "text-destructive";
+                } else {
+                  statusLabel = "No Image (OK)";
+                  StatusIcon = ImageOff;
+                  statusColor = "text-muted-foreground/50";
+                }
+
+                return (
+                  <div key={entry.id} className="flex items-start gap-3 p-2.5 rounded-md border bg-card">
+                    {hasImage ? (
+                      <img
+                        src={entry.image_url!}
+                        alt={entry.image_caption || entry.title}
+                        className="w-16 h-16 rounded object-cover shrink-0 border"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded border border-dashed flex items-center justify-center shrink-0 bg-muted/30">
+                        <ImageOff className="h-5 w-5 text-muted-foreground/40" />
+                      </div>
                     )}
-                    {!entry.image_url && (
-                      <p className="text-[11px] text-amber-600 mt-0.5">No image assigned</p>
-                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs font-medium">{entry.title}</span>
+                        <span className={`inline-flex items-center gap-0.5 text-[10px] ${statusColor}`}>
+                          <StatusIcon className="h-3 w-3" />
+                          {statusLabel}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                        <Badge variant="outline" className="text-[10px] px-1 py-0">
+                          {entry.type === "heads_up" ? "⚡ Heads Up" : "📖 Playbook"}
+                        </Badge>
+                        <Badge variant="outline" className="text-[10px] px-1 py-0">{entry.category}</Badge>
+                        {entry.location?.slice(0, 3).map((loc) => (
+                          <span key={loc} className="text-[10px] text-muted-foreground">{loc}</span>
+                        ))}
+                      </div>
+                      {entry.image_caption && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5 italic">"{entry.image_caption}"</p>
+                      )}
+                    </div>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 shrink-0" onClick={() => openEdit(entry)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 shrink-0" onClick={() => openEdit(entry)}>
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
