@@ -66,6 +66,42 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
   const briefingPlayedRef = useRef(false);
   const userId = user?.id ?? "";
 
+  type CornerTalkAnimMode = "stagger" | "pulse" | "refresh";
+  const [ctAnimMode, setCtAnimMode] = useState<CornerTalkAnimMode>(() => {
+    try {
+      const s = localStorage.getItem("corner-talk-anim-mode");
+      if (s === "stagger" || s === "pulse" || s === "refresh") return s;
+    } catch {}
+    return "stagger";
+  });
+
+  useEffect(() => {
+    const handler = () => {
+      try {
+        const s = localStorage.getItem("corner-talk-anim-mode");
+        if (s === "stagger" || s === "pulse" || s === "refresh") setCtAnimMode(s);
+      } catch {}
+    };
+    window.addEventListener("corner-talk-anim-changed", handler);
+    return () => window.removeEventListener("corner-talk-anim-changed", handler);
+  }, []);
+
+  /** Get animation class for an item at a given index */
+  const getItemAnimClass = useCallback((index: number, severity: string) => {
+    if (ctAnimMode === "stagger") {
+      return `animate-fade-in [animation-delay:${index * 100}ms] [animation-fill-mode:both]`;
+    }
+    if (ctAnimMode === "pulse" && (severity === "urgent" || severity === "attention")) {
+      return severity === "urgent"
+        ? "animate-[pulse_3s_ease-in-out_infinite] shadow-[0_0_8px_hsl(var(--destructive)/0.3)]"
+        : "animate-[pulse_4s_ease-in-out_infinite] shadow-[0_0_6px_hsl(var(--primary)/0.2)]";
+    }
+    if (ctAnimMode === "refresh") {
+      return "transition-all duration-500 ease-out";
+    }
+    return "";
+  }, [ctAnimMode]);
+
   const softKey = `${SOFT_DISMISSED_PREFIX}${userId}`;
   const hardKey = `${HARD_DISMISSED_PREFIX}${userId}`;
 
