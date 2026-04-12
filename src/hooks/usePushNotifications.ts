@@ -21,7 +21,9 @@ async function getVapidKey(): Promise<string | null> {
     .eq("key", "vapid_public_key")
     .maybeSingle();
   if (data?.value) {
-    return typeof data.value === "string" ? data.value : (data.value as any).key ?? null;
+    const raw = typeof data.value === "string" ? data.value : (data.value as any).key ?? null;
+    // Strip wrapping quotes if stored as JSON string
+    return raw ? raw.replace(/^"|"$/g, "") : null;
   }
   return null;
 }
@@ -44,7 +46,6 @@ export function usePushNotifications() {
 
     setPermission(Notification.permission);
 
-    // Use a timeout so we don't hang forever when SW isn't registered (e.g. preview/iframe)
     let cancelled = false;
     const timeout = setTimeout(() => {
       if (!cancelled) setLoading(false);
