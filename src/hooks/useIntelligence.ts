@@ -6,7 +6,7 @@ export type IntelligenceType = "heads_up" | "playbook";
 export type IntelligenceStatus = "draft" | "active" | "archived";
 export type IntelligenceCategory = "money" | "transport" | "safety" | "connectivity" | "customs" | "health" | "local_life";
 export type IntelligenceSeverity = "urgent" | "attention" | "normal";
-export type IntelligenceLocation = "bkk" | "samui" | "nathon" | "lipa_noi" | "bus" | "island" | "global";
+export type IntelligenceLocation = "bkk" | "samui" | "nathon" | "lipa_noi" | "bus" | "island" | "global" | "phuket" | "pattaya" | "transit";
 
 export interface IntelligenceEntry {
   id: string;

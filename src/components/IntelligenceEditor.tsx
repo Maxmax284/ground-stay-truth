@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, ArrowUpCircle, Zap, BookOpen, Archive, Sparkles, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowUpCircle, Zap, BookOpen, Archive, Sparkles, Loader2, Radar } from "lucide-react";
 import { toast } from "sonner";
 
 const CATEGORIES: { value: IntelligenceCategory; label: string }[] = [
@@ -31,6 +31,9 @@ const LOCATIONS = [
   { value: "samui", label: "Koh Samui" },
   { value: "nathon", label: "Nathon Pier" },
   { value: "lipa_noi", label: "Lipa Noi Pier" },
+  { value: "phuket", label: "Phuket" },
+  { value: "pattaya", label: "Pattaya" },
+  { value: "transit", label: "In Transit" },
   { value: "bus", label: "Bus Route" },
   { value: "island", label: "Island General" },
 ];
@@ -49,6 +52,8 @@ export function IntelligenceEditor() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "heads_up" | "playbook">("all");
   const [generating, setGenerating] = useState(false);
+  const [lookoutScanning, setLookoutScanning] = useState(false);
+  const [lookoutDrafts, setLookoutDrafts] = useState<Partial<IntelligenceEntry>[]>([]);
 
   const filtered = (entries ?? []).filter((e) => filter === "all" || e.type === filter);
 
@@ -124,7 +129,7 @@ export function IntelligenceEditor() {
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({
-            message: "Based on common guest issues and operational patterns, suggest ONE new intelligence entry. Return ONLY valid JSON with keys: type (heads_up or playbook), title, body, category (money|transport|safety|connectivity|customs|health|local_life), location (array from bkk/samui/nathon/lipa_noi/bus/island/global), severity (normal|attention|urgent). Keep body under 200 characters, practical and direct. No markdown, no explanation — just the JSON object.",
+            message: "Based on common guest issues and operational patterns, suggest ONE new intelligence entry. Return ONLY valid JSON with keys: type (heads_up or playbook), title, body, category (money|transport|safety|connectivity|customs|health|local_life), location (array from bkk/samui/nathon/lipa_noi/phuket/pattaya/transit/bus/island/global), severity (normal|attention|urgent). Keep body under 200 characters, practical and direct. No markdown, no explanation — just the JSON object.",
             mode: "draft",
           }),
         }
@@ -160,6 +165,61 @@ export function IntelligenceEditor() {
     } finally {
       setGenerating(false);
     }
+  };
+
+  const handleLookoutScan = async () => {
+    if (!session) return;
+    setLookoutScanning(true);
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            message: `Analyze common guest pain points for Thailand travel (ATMs, transport, connectivity, safety, customs, health). Suggest 3 NEW intelligence entries that would help guests. Return ONLY a JSON array of objects with keys: type (heads_up or playbook), title, body (under 200 chars), category (money|transport|safety|connectivity|customs|health|local_life), location (array from bkk/samui/nathon/lipa_noi/phuket/pattaya/transit/bus/island/global), severity (normal|attention|urgent). No markdown, no explanation — just the JSON array.`,
+            mode: "draft",
+          }),
+        }
+      );
+
+      if (!resp.ok) throw new Error("AI request failed");
+      const data = await resp.json();
+      const aiText = data.reply || data.content || "";
+
+      const jsonMatch = aiText.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) throw new Error("No valid JSON array in AI response");
+
+      const suggestions = JSON.parse(jsonMatch[0]);
+      const drafts = suggestions.map((s: any) => ({
+        type: s.type === "playbook" ? "playbook" : "heads_up",
+        status: "draft" as const,
+        title: s.title || "",
+        body: s.body || "",
+        category: s.category || "local_life",
+        location: Array.isArray(s.location) ? s.location : ["global"],
+        audience: ["guest", "staff"],
+        severity: s.severity || "normal",
+        image_url: null,
+        image_caption: null,
+      }));
+
+      setLookoutDrafts(drafts);
+      toast.info(`Lookout found ${drafts.length} suggestions — review below`);
+    } catch (err: any) {
+      toast.error(err.message || "Lookout scan failed");
+    } finally {
+      setLookoutScanning(false);
+    }
+  };
+
+  const loadLookoutDraft = (draft: Partial<IntelligenceEntry>) => {
+    setEditEntry({ ...draft });
+    setDialogOpen(true);
   };
 
   return (
@@ -253,6 +313,50 @@ export function IntelligenceEditor() {
           ))}
         </div>
       )}
+
+      {/* Lookout Layer — Admin-only draft suggestion system */}
+      <Card className="border-dashed">
+        <CardContent className="py-4 px-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Radar className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-semibold text-foreground">Lookout</span>
+              <span className="text-xs text-muted-foreground">Pattern detection</span>
+            </div>
+            <Button size="sm" variant="outline" onClick={handleLookoutScan} disabled={lookoutScanning}>
+              {lookoutScanning ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Radar className="h-4 w-4 mr-1" />}
+              {lookoutScanning ? "Scanning…" : "Scan for Patterns"}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Analyzes common guest pain points and suggests draft entries. Nothing is published — all suggestions require your review and approval.
+          </p>
+          {lookoutDrafts.length > 0 && (
+            <div className="space-y-2">
+              {lookoutDrafts.map((draft, i) => (
+                <div key={i} className="flex items-start gap-2 p-2 rounded-md border border-dashed bg-muted/20">
+                  <span className="mt-0.5 shrink-0">
+                    {draft.type === "heads_up" ? <Zap className="h-3.5 w-3.5 text-amber-500" /> : <BookOpen className="h-3.5 w-3.5 text-primary" />}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium">{draft.title}</p>
+                    <p className="text-[11px] text-muted-foreground line-clamp-1">{draft.body}</p>
+                    <div className="flex gap-1 mt-1">
+                      <Badge variant="outline" className="text-[10px] px-1 py-0">{draft.category}</Badge>
+                      {draft.location?.slice(0, 2).map((loc) => (
+                        <Badge key={loc} variant="outline" className="text-[10px] px-1 py-0">{loc}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs shrink-0" onClick={() => loadLookoutDraft(draft)}>
+                    Review
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Edit/Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
