@@ -3,7 +3,6 @@ import { useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { showForegroundNotification } from "@/components/ForegroundNotificationBanner";
-import { useAuth } from "@/hooks/useAuth";
 
 export interface Notification {
   id: string;
