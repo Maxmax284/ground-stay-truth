@@ -97,7 +97,7 @@ export function StaffIntelStrip() {
     setTypewriterDone(false);
     const entry = visibleSlice[typewriterLine % visibleSlice.length];
     if (!entry) return;
-    const fullText = `${entry.title} — ${entry.body.slice(0, 100)}`;
+    const fullText = `${entry.title} — ${entry.body.slice(0, 80)}`;
     let charIndex = 0;
     setTypedText("");
 
