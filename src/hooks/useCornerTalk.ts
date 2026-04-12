@@ -31,7 +31,9 @@ export function useCornerTalk() {
   return useQuery<CornerTalkData>({
     queryKey: ["corner-talk", role, language],
     queryFn: async () => {
-      if (!session) throw new Error("Not authenticated");
+      // Always get a fresh session to avoid expired JWT errors
+      const { data: { session: freshSession } } = await supabase.auth.getSession();
+      if (!freshSession) throw new Error("Not authenticated");
 
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/corner-talk`,
@@ -39,7 +41,7 @@ export function useCornerTalk() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${freshSession.access_token}`,
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({ language }),
