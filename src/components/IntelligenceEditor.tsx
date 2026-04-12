@@ -363,12 +363,13 @@ export function IntelligenceEditor() {
               { mode: "pulse" as IntelAnimationMode, label: "Pulse", desc: "Scale & glow", icon: Radio },
               { mode: "carousel" as IntelAnimationMode, label: "Carousel", desc: "Swipe cards", icon: GalleryHorizontal },
             ]).map(({ mode, label, desc, icon: Icon }) => {
-              const isActive = getStoredAnimMode() === mode;
+              const isActive = activeAnimMode === mode;
               return (
                 <button
                   key={mode}
                   onClick={() => {
                     setStoredAnimMode(mode);
+                    setActiveAnimMode(mode);
                     window.dispatchEvent(new Event("intel-anim-mode-changed"));
                     toast.success(`Strip animation set to ${label}`);
                   }}
