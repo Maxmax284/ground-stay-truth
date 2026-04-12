@@ -320,7 +320,22 @@ const GuestPortal = () => {
         <GuestStaySummary focusSection={focusSection} onSectionFocused={() => setFocusSection(null)} />
 
         {/* Heads Up — contextual, location-filtered intelligence */}
-        <GuestHeadsUpStrip />
+        <GuestHeadsUpStrip locations={(() => {
+          // Derive location tags from active/upcoming bookings' arrival data
+          const relevantBookings = [...activeBookings, ...confirmedBookings, ...upcomingBookings];
+          const locs = new Set<string>();
+          for (const b of relevantBookings) {
+            const details = b.arrival_details as Record<string, any> | null;
+            if (details?.confirmed_airport === "BKK" || details?.arrival_type === "flight") locs.add("bkk");
+            if (details?.confirmed_airport === "USM" || details?.arrival_location_type === "airport") locs.add("samui");
+            if (details?.arrival_type === "ferry") { locs.add("nathon"); locs.add("lipa_noi"); }
+            if (details?.arrival_type === "bus") locs.add("bus");
+            // Always include island and transit for active guests
+            if (activeBookings.length > 0) locs.add("island");
+            if (details?.confirmed_airport === "BKK" && (details?.arrival_location_type !== "airport" || details?.arrival_type === "flight")) locs.add("transit");
+          }
+          return locs.size > 0 ? [...locs] : undefined;
+        })()} />
 
         {/* Guest notification enrollment — benefit-framed, not technical */}
         <GuestStayUpdatesPrompt />
