@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useIntelligence, useIntelligenceMutations, type IntelligenceEntry, type IntelligenceCategory, type IntelligenceType, type IntelligenceStatus, type IntelligenceSeverity } from "@/hooks/useIntelligence";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, ArrowUpCircle, Zap, BookOpen, Archive, Sparkles, Loader2, Radar, ImageIcon, ImageOff } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowUpCircle, Zap, BookOpen, Archive, Sparkles, Loader2, Radar, ImageIcon, ImageOff, Upload, X, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 const CATEGORIES: { value: IntelligenceCategory; label: string }[] = [
@@ -55,6 +55,33 @@ export function IntelligenceEditor() {
   const [lookoutScanning, setLookoutScanning] = useState(false);
   const [lookoutDrafts, setLookoutDrafts] = useState<Partial<IntelligenceEntry>[]>([]);
   const [showImageAudit, setShowImageAudit] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be under 2MB");
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from("intelligence-images").upload(path, file);
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from("intelligence-images").getPublicUrl(path);
+      setEditEntry((prev) => prev ? { ...prev, image_url: urlData.publicUrl } : prev);
+      toast.success("Image uploaded");
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const filtered = (entries ?? []).filter((e) => filter === "all" || e.type === filter);
 
@@ -332,44 +359,79 @@ export function IntelligenceEditor() {
           </div>
           {showImageAudit && (
             <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-              {(entries ?? []).map((entry) => (
-                <div key={entry.id} className="flex items-start gap-3 p-2.5 rounded-md border bg-card">
-                  {entry.image_url ? (
-                    <img
-                      src={entry.image_url}
-                      alt={entry.image_caption || entry.title}
-                      className="w-16 h-16 rounded object-cover shrink-0 border"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded border border-dashed flex items-center justify-center shrink-0 bg-muted/30">
-                      <ImageOff className="h-5 w-5 text-muted-foreground/40" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-xs font-medium">{entry.title}</span>
-                    </div>
-                    <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                      <Badge variant="outline" className="text-[10px] px-1 py-0">
-                        {entry.type === "heads_up" ? "⚡ Heads Up" : "📖 Playbook"}
-                      </Badge>
-                      <Badge variant="outline" className="text-[10px] px-1 py-0">{entry.category}</Badge>
-                      {entry.location?.slice(0, 3).map((loc) => (
-                        <span key={loc} className="text-[10px] text-muted-foreground">{loc}</span>
-                      ))}
-                    </div>
-                    {entry.image_caption && (
-                      <p className="text-[11px] text-muted-foreground mt-0.5 italic">"{entry.image_caption}"</p>
+              {/* Sort: entries with images first, then without */}
+              {[...(entries ?? [])].sort((a, b) => {
+                if (a.image_url && !b.image_url) return -1;
+                if (!a.image_url && b.image_url) return 1;
+                return 0;
+              }).map((entry) => {
+                const HIGH_VISUAL_CATEGORIES = ["money", "transport", "connectivity", "safety"];
+                const needsImage = HIGH_VISUAL_CATEGORIES.includes(entry.category);
+                const hasImage = !!entry.image_url;
+                const hasCaption = !!entry.image_caption;
+
+                let statusLabel: string;
+                let StatusIcon: typeof CheckCircle2;
+                let statusColor: string;
+
+                if (hasImage && hasCaption) {
+                  statusLabel = "Image OK";
+                  StatusIcon = CheckCircle2;
+                  statusColor = "text-primary";
+                } else if (hasImage && !hasCaption) {
+                  statusLabel = "Needs Caption";
+                  StatusIcon = AlertTriangle;
+                  statusColor = "text-amber-500";
+                } else if (!hasImage && needsImage) {
+                  statusLabel = "Missing Image";
+                  StatusIcon = ImageOff;
+                  statusColor = "text-destructive";
+                } else {
+                  statusLabel = "No Image (OK)";
+                  StatusIcon = ImageOff;
+                  statusColor = "text-muted-foreground/50";
+                }
+
+                return (
+                  <div key={entry.id} className="flex items-start gap-3 p-2.5 rounded-md border bg-card">
+                    {hasImage ? (
+                      <img
+                        src={entry.image_url!}
+                        alt={entry.image_caption || entry.title}
+                        className="w-16 h-16 rounded object-cover shrink-0 border"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded border border-dashed flex items-center justify-center shrink-0 bg-muted/30">
+                        <ImageOff className="h-5 w-5 text-muted-foreground/40" />
+                      </div>
                     )}
-                    {!entry.image_url && (
-                      <p className="text-[11px] text-amber-600 mt-0.5">No image assigned</p>
-                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs font-medium">{entry.title}</span>
+                        <span className={`inline-flex items-center gap-0.5 text-[10px] ${statusColor}`}>
+                          <StatusIcon className="h-3 w-3" />
+                          {statusLabel}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                        <Badge variant="outline" className="text-[10px] px-1 py-0">
+                          {entry.type === "heads_up" ? "⚡ Heads Up" : "📖 Playbook"}
+                        </Badge>
+                        <Badge variant="outline" className="text-[10px] px-1 py-0">{entry.category}</Badge>
+                        {entry.location?.slice(0, 3).map((loc) => (
+                          <span key={loc} className="text-[10px] text-muted-foreground">{loc}</span>
+                        ))}
+                      </div>
+                      {entry.image_caption && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5 italic">"{entry.image_caption}"</p>
+                      )}
+                    </div>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 shrink-0" onClick={() => openEdit(entry)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 shrink-0" onClick={() => openEdit(entry)}>
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -526,17 +588,65 @@ export function IntelligenceEditor() {
                 </div>
               </div>
 
-              <div>
-                <Label className="text-xs">Image URL (optional)</Label>
-                <Input value={editEntry.image_url || ""} onChange={(e) => setEditEntry({ ...editEntry, image_url: e.target.value || null })} placeholder="https://..." className="h-8 text-sm" />
+              <div className="space-y-2">
+                <Label className="text-xs">Image</Label>
+                {editEntry.image_url ? (
+                  <div className="space-y-2">
+                    <div className="relative rounded-lg overflow-hidden border bg-muted/20">
+                      <img
+                        src={editEntry.image_url}
+                        alt={editEntry.image_caption || "Preview"}
+                        className="w-full h-32 object-cover"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-1.5 right-1.5 h-6 w-6 p-0 rounded-full"
+                        onClick={() => setEditEntry({ ...editEntry, image_url: null, image_caption: null })}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <Input
+                      value={editEntry.image_caption || ""}
+                      onChange={(e) => setEditEntry({ ...editEntry, image_caption: e.target.value || null })}
+                      placeholder="Caption — e.g. KBank ATM — green machine"
+                      className="h-8 text-sm"
+                    />
+                    <p className="text-[10px] text-muted-foreground">This is how guests will see the image</p>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleImageUpload(f);
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 h-8 text-xs"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1" />}
+                      {uploading ? "Uploading…" : "Upload Image"}
+                    </Button>
+                    <Input
+                      value={editEntry.image_url || ""}
+                      onChange={(e) => setEditEntry({ ...editEntry, image_url: e.target.value || null })}
+                      placeholder="or paste URL"
+                      className="h-8 text-xs flex-1"
+                    />
+                  </div>
+                )}
               </div>
-
-              {editEntry.image_url && (
-                <div>
-                  <Label className="text-xs">Image Caption</Label>
-                  <Input value={editEntry.image_caption || ""} onChange={(e) => setEditEntry({ ...editEntry, image_caption: e.target.value || null })} placeholder="Yellow Krungsri ATM attached to branch" className="h-8 text-sm" />
-                </div>
-              )}
 
               {editEntry.type === "heads_up" && (
                 <div>
