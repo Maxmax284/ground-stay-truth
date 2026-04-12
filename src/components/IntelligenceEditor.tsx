@@ -52,6 +52,8 @@ export function IntelligenceEditor() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "heads_up" | "playbook">("all");
   const [generating, setGenerating] = useState(false);
+  const [lookoutScanning, setLookoutScanning] = useState(false);
+  const [lookoutDrafts, setLookoutDrafts] = useState<Partial<IntelligenceEntry>[]>([]);
 
   const filtered = (entries ?? []).filter((e) => filter === "all" || e.type === filter);
 
