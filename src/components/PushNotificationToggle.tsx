@@ -15,14 +15,16 @@ export function PushNotificationToggle() {
     setTesting(true);
     try {
       const reg = await navigator.serviceWorker.ready;
-      await reg.showNotification("Ground Stay — Test 🔔", {
+      const options: NotificationOptions & { vibrate?: number[] } = {
         body: "This is a test notification. If you're seeing this, push notifications are working on your device!",
         icon: "/pwa-192x192.png",
         badge: "/pwa-192x192.png",
         tag: "gs-test",
         data: { url: "/" },
-        vibrate: [200, 100, 200],
-      });
+      };
+      // vibrate is supported on Android but not in the TS types
+      (options as any).vibrate = [200, 100, 200];
+      await reg.showNotification("Ground Stay — Test 🔔", options);
       toast.success("Test notification sent — check your device!");
     } catch (err: any) {
       console.error("Test notification error:", err);
