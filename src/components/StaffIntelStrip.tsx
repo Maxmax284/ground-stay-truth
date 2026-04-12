@@ -77,18 +77,17 @@ export function StaffIntelStrip() {
   );
   const weightedIndices = useMemo(() => buildWeightedIndices(staffEntries), [staffEntries]);
 
+  const safeIndex = activeIndex < staffEntries.length ? activeIndex : 0;
+
   // ── Get a slice of visible entries ──
-  const getVisibleSlice = useCallback((count: number) => {
+  const visibleSlice = useMemo(() => {
     if (staffEntries.length === 0) return [];
-    const safe = safeIndex < staffEntries.length ? safeIndex : 0;
     const result: IntelligenceEntry[] = [];
-    for (let i = 0; i < Math.min(count, staffEntries.length); i++) {
-      result.push(staffEntries[(safe + i) % staffEntries.length]);
+    for (let i = 0; i < Math.min(VISIBLE_COUNT, staffEntries.length); i++) {
+      result.push(staffEntries[(safeIndex + i) % staffEntries.length]);
     }
     return result;
   }, [staffEntries, safeIndex]);
-
-  const visibleSlice = useMemo(() => getVisibleSlice(VISIBLE_COUNT), [getVisibleSlice]);
 
   // ── Typewriter effect — types through each visible entry sequentially ──
   const [typewriterLine, setTypewriterLine] = useState(0);
