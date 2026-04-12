@@ -58,6 +58,7 @@ export function IntelligenceEditor() {
   const [showImageAudit, setShowImageAudit] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [activeAnimMode, setActiveAnimMode] = useState<IntelAnimationMode>(getStoredAnimMode);
+  const [activeCtAnimMode, setActiveCtAnimMode] = useState(() => { try { return localStorage.getItem("corner-talk-anim-mode") || "stagger"; } catch { return "stagger"; } });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (file: File) => {
