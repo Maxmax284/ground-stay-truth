@@ -87,13 +87,17 @@ export function useAIAssistant() {
     const trimmedHistory = compressHistory(fullHistory);
 
     try {
+      // Fetch fresh session to avoid expired token 401s
+      const { data: freshSession } = await supabase.auth.getSession();
+      const accessToken = freshSession?.session?.access_token ?? session.access_token;
+
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${accessToken}`,
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({
