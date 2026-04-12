@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ForegroundNotificationBanner } from "@/components/ForegroundNotificationBanner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
@@ -41,6 +42,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <ForegroundNotificationBanner />
               <Routes>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/guest" element={<GuestAuth />} />

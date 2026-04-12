@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => ({
       devOptions: {
         enabled: false,
       },
-      includeAssets: ["favicon.ico", "pwa-192x192.png", "pwa-512x512.png"],
+      includeAssets: ["favicon.ico", "pwa-192x192.png", "pwa-512x512.png", "pwa-notification-icon.png"],
       manifest: {
         name: "Ground Stay — Lamai Muay Thai",
         short_name: "Ground Stay",
@@ -49,6 +49,7 @@ export default defineConfig(({ mode }) => ({
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MiB
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         navigateFallbackDenylist: [/^\/~oauth/],
+        importScripts: ["/sw-push.js"],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
