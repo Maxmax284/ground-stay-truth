@@ -24,7 +24,7 @@ const SEVERITY_STYLES: Record<string, string> = {
 const ROTATION_INTERVAL = 12000;
 const RESUME_DELAY = 5000;
 
-function getStoredMode(): IntelAnimationMode {
+export function getStoredAnimMode(): IntelAnimationMode {
   try {
     const stored = localStorage.getItem("intel-animation-mode");
     if (stored === "ticker" || stored === "crossfade" || stored === "stack") return stored;
@@ -32,7 +32,10 @@ function getStoredMode(): IntelAnimationMode {
   return "crossfade";
 }
 
-/** Build a weighted list so urgent entries appear 3x, attention 2x */
+export function setStoredAnimMode(mode: IntelAnimationMode) {
+  try { localStorage.setItem("intel-animation-mode", mode); } catch {}
+}
+
 function buildWeightedIndices(entries: IntelligenceEntry[]): number[] {
   const indices: number[] = [];
   entries.forEach((e, i) => {
@@ -50,19 +53,17 @@ export function StaffIntelStrip() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [animState, setAnimState] = useState<"visible" | "exiting" | "entering">("visible");
   const [paused, setPaused] = useState(false);
+  const [animMode, setAnimMode] = useState<IntelAnimationMode>(getStoredAnimMode);
   const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const animMode = getStoredMode();
 
   const staffEntries = (entries ?? []).filter((e) => e.audience?.includes("staff"));
   const weightedIndices = buildWeightedIndices(staffEntries);
 
   const advance = useCallback(() => {
     if (staffEntries.length <= 1) return;
-
     setAnimState("exiting");
     setTimeout(() => {
       setActiveIndex((prev) => {
-        // Pick next from weighted list, avoid same entry
         if (weightedIndices.length === 0) return 0;
         let next: number;
         let attempts = 0;
@@ -77,29 +78,31 @@ export function StaffIntelStrip() {
     }, 350);
   }, [staffEntries.length, weightedIndices]);
 
-  // Auto-rotation timer
   useEffect(() => {
     if (collapsed || paused || staffEntries.length <= 1) return;
     const interval = setInterval(advance, ROTATION_INTERVAL);
     return () => clearInterval(interval);
   }, [collapsed, paused, advance, staffEntries.length]);
 
-  // Reset index when entries change
   useEffect(() => {
     setActiveIndex(0);
     setAnimState("visible");
   }, [entries?.length]);
 
-  const handlePause = () => {
+  // Listen for mode changes from IntelligenceEditor
+  useEffect(() => {
+    const handler = () => setAnimMode(getStoredAnimMode());
+    window.addEventListener("intel-anim-mode-changed", handler);
+    return () => window.removeEventListener("intel-anim-mode-changed", handler);
+  }, []);
+
+  const handlePause = useCallback(() => {
     setPaused(true);
     if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
     pauseTimerRef.current = setTimeout(() => setPaused(false), RESUME_DELAY);
-  };
+  }, []);
 
-  const handleInteraction = () => {
-    handlePause();
-  };
-
+  // ── Early returns AFTER all hooks ──
   if (!role || role === "guest") return null;
   if (staffEntries.length === 0) return null;
 
@@ -113,7 +116,6 @@ export function StaffIntelStrip() {
 
   const safeIndex = activeIndex < staffEntries.length ? activeIndex : 0;
 
-  // ─── Animation class helpers ───
   const getTickerClasses = () => {
     if (animState === "exiting") return "translate-x-[-100%] opacity-0 transition-all duration-300 ease-in";
     if (animState === "entering") return "translate-x-0 opacity-100 transition-all duration-300 ease-out";
@@ -141,17 +143,16 @@ export function StaffIntelStrip() {
     return getCrossfadeClasses();
   };
 
-  // For stack mode: show 3 entries at once
   const stackEntries = animMode === "stack"
     ? [0, 1, 2].map((offset) => staffEntries[(safeIndex + offset) % staffEntries.length]).filter(Boolean)
     : [];
 
-  const renderEntry = (entry: IntelligenceEntry, className = "", position = 0) => (
+  const renderEntry = (entry: IntelligenceEntry, className = "") => (
     <button
-      key={entry.id}
+      key={`${entry.id}-${className}`}
       onClick={() => { setDetailEntry(entry); handlePause(); }}
-      onMouseEnter={handleInteraction}
-      onTouchStart={handleInteraction}
+      onMouseEnter={handlePause}
+      onTouchStart={handlePause}
       className={`flex items-start gap-2 py-1.5 pl-2 rounded-sm w-full text-left hover:bg-accent/30 transition-colors ${SEVERITY_STYLES[entry.severity] || ""} ${className}`}
     >
       <div className="flex-1 text-sm text-muted-foreground min-w-0">
@@ -168,9 +169,7 @@ export function StaffIntelStrip() {
     </button>
   );
 
-  // Progress dots
   const totalDots = Math.min(staffEntries.length, 8);
-  const dotEntries = staffEntries.slice(0, totalDots);
 
   return (
     <>
@@ -185,12 +184,12 @@ export function StaffIntelStrip() {
             <span className="text-xs text-muted-foreground">{staffEntries.length} active</span>
             {!collapsed && staffEntries.length > 1 && (
               <div className="flex items-center gap-0.5 ml-1">
-                {dotEntries.map((_, i) => (
+                {Array.from({ length: totalDots }).map((_, i) => (
                   <span
                     key={i}
                     className={`h-1 rounded-full transition-all duration-300 ${
                       i === safeIndex % totalDots
-                        ? "w-3 bg-amber-500"
+                        ? "w-3 bg-primary"
                         : "w-1 bg-muted-foreground/30"
                     }`}
                   />
@@ -204,14 +203,11 @@ export function StaffIntelStrip() {
           <CardContent className="px-4 pb-3 pt-0 space-y-1">
             {animMode === "stack" ? (
               <div className="space-y-0.5">
-                {stackEntries.map((entry, i) => renderEntry(entry, getAnimClasses(i), i))}
+                {stackEntries.map((entry, i) => renderEntry(entry, getAnimClasses(i)))}
               </div>
             ) : (
               <div className="overflow-hidden">
-                {staffEntries[safeIndex] && renderEntry(
-                  staffEntries[safeIndex],
-                  getAnimClasses()
-                )}
+                {staffEntries[safeIndex] && renderEntry(staffEntries[safeIndex], getAnimClasses())}
               </div>
             )}
           </CardContent>
