@@ -22,6 +22,7 @@ import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { TodaysPickupsWidget } from "@/components/TodaysPickupsWidget";
 import { FlightForecastWidget } from "@/components/FlightForecastWidget";
 import { CornerTalkPanel } from "@/components/CornerTalkPanel";
+import { StaffIntelStrip } from "@/components/StaffIntelStrip";
 import { StaffQuickActionsWidget } from "@/components/StaffQuickActionsWidget";
 import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
 import { usePendingHousekeepingCount } from "@/hooks/useHousekeepingTasks";
@@ -76,6 +77,9 @@ const Index = () => {
             );
           }}
         />
+
+        {/* Staff Intel Strip — active intelligence entries */}
+        <StaffIntelStrip />
 
         {/* Maintenance role: simplified view */}
         {isMaintenance ? (

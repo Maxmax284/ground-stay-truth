@@ -564,6 +564,11 @@ const GuestPortal = () => {
             </TabsContent>
           )}
 
+          {/* ── Island Guide Tab ── */}
+          <TabsContent value="island-guide">
+            <GuestPlaybook />
+          </TabsContent>
+
           {/* ── Policies Tab ── */}
           <TabsContent value="policies">
             <Card>
