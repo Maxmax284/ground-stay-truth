@@ -117,6 +117,9 @@ Deno.serve(async (req) => {
       laundry: "👕 Laundry",
       override: "⚠️ Override",
       stay_essentials: "🏠 Stay Info",
+      message: "💬 Message",
+      review: "⭐ Review",
+      flight: "✈️ Flight",
     };
 
     // Group messages by user for a cleaner push
