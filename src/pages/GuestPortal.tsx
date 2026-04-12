@@ -295,6 +295,33 @@ const GuestPortal = () => {
     return locs.size > 0 ? [...locs] : undefined;
   }, [activeBookings, confirmedBookings, upcomingBookings]);
 
+  // Derive journey phase for contextual intel
+  const journeyPhase = useMemo((): "pre_arrival" | "transit" | "arrival" | "stay" | "departure" | undefined => {
+    if (activeBookings.length > 0) {
+      // Check if any active booking is near check-out
+      const nearCheckout = activeBookings.some((b) => {
+        const co = new Date(b.check_out);
+        const now = new Date();
+        const hoursLeft = (co.getTime() - now.getTime()) / (1000 * 60 * 60);
+        return hoursLeft <= 24 && hoursLeft > 0;
+      });
+      return nearCheckout ? "departure" : "stay";
+    }
+    if (confirmedBookings.length > 0) {
+      const soonest = confirmedBookings.reduce((a, b) =>
+        new Date(a.check_in) < new Date(b.check_in) ? a : b
+      );
+      const details = soonest.arrival_details as Record<string, any> | null;
+      const hoursToCheckin = (new Date(soonest.check_in).getTime() - Date.now()) / (1000 * 60 * 60);
+      if (hoursToCheckin <= 12) {
+        if (details?.guest_landed_at && details?.confirmed_airport === "BKK") return "transit";
+        return "arrival";
+      }
+      return "pre_arrival";
+    }
+    return undefined;
+  }, [activeBookings, confirmedBookings]);
+
   const openBookingForm = (unitId?: string) => {
     setBookingFormUnitId(unitId);
     setBookingFormOpen(true);
@@ -335,9 +362,10 @@ const GuestPortal = () => {
         {/* Passive Layer: Your Stay Summary */}
         <GuestStaySummary focusSection={focusSection} onSectionFocused={() => setFocusSection(null)} />
 
-        {/* Heads Up — contextual, location-filtered intelligence */}
+        {/* Heads Up — contextual, journey-aware intelligence carousel */}
         <GuestHeadsUpStrip
           locations={guestLocations}
+          journeyPhase={journeyPhase}
           onLearnMore={(entry) => {
             setActiveTab("island-guide");
           }}
