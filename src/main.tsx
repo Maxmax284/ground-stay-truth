@@ -22,4 +22,11 @@ if (isPreviewHost || isInIframe) {
   });
 }
 
+// Listen for NOTIFICATION_CLICK from service worker to handle deep-link routing
+navigator.serviceWorker?.addEventListener("message", (event) => {
+  if (event.data?.type === "NOTIFICATION_CLICK" && event.data.route) {
+    window.location.href = event.data.route;
+  }
+});
+
 createRoot(document.getElementById("root")!).render(<App />);
