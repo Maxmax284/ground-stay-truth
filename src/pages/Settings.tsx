@@ -34,7 +34,7 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-4">
-          <TabsList className="flex-wrap">
+          <TabsList className="flex-wrap h-auto gap-1 relative z-10">
             <TabsTrigger value="profile">{t("settings.profileTab")}</TabsTrigger>
             {canManageRoles && <TabsTrigger value="users">{t("settings.usersTab")}</TabsTrigger>}
             {canManagePolicies && <TabsTrigger value="cancellation">Cancellation</TabsTrigger>}
