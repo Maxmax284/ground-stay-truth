@@ -5,9 +5,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Zap, ChevronDown, ChevronUp, ArrowLeft, Sparkles, MapPin } from "lucide-react";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
-export type IntelAnimationMode = "ticker" | "crossfade" | "stack";
+export type IntelAnimationMode = "ticker" | "crossfade" | "stack" | "flip" | "typewriter" | "pulse" | "carousel";
+
+export const INTEL_ANIM_OPTIONS: { mode: IntelAnimationMode; label: string; desc: string }[] = [
+  { mode: "ticker", label: "Ticker", desc: "Slides left like a news feed" },
+  { mode: "crossfade", label: "Crossfade", desc: "Smooth fade between entries" },
+  { mode: "stack", label: "Stack", desc: "Shows 3 cards, shuffles order" },
+  { mode: "flip", label: "Flip", desc: "3D card flip like a departure board" },
+  { mode: "typewriter", label: "Typewriter", desc: "Text types in, then erases" },
+  { mode: "pulse", label: "Pulse", desc: "Scales up with glow, pulses out" },
+  { mode: "carousel", label: "Carousel", desc: "Horizontal swipe cards" },
+];
 
 const LOCATION_LABELS: Record<string, string> = {
   bkk: "BKK", samui: "Samui", nathon: "Nathon", lipa_noi: "Lipa Noi",
@@ -27,7 +37,7 @@ const RESUME_DELAY = 5000;
 export function getStoredAnimMode(): IntelAnimationMode {
   try {
     const stored = localStorage.getItem("intel-animation-mode");
-    if (stored === "ticker" || stored === "crossfade" || stored === "stack") return stored;
+    if (INTEL_ANIM_OPTIONS.some((o) => o.mode === stored)) return stored as IntelAnimationMode;
   } catch {}
   return "crossfade";
 }
@@ -55,9 +65,36 @@ export function StaffIntelStrip() {
   const [paused, setPaused] = useState(false);
   const [animMode, setAnimMode] = useState<IntelAnimationMode>(getStoredAnimMode);
   const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [typedText, setTypedText] = useState("");
+  const typeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [carouselOffset, setCarouselOffset] = useState(0);
+  const touchStartRef = useRef<number | null>(null);
 
-  const staffEntries = (entries ?? []).filter((e) => e.audience?.includes("staff"));
-  const weightedIndices = buildWeightedIndices(staffEntries);
+  const staffEntries = useMemo(
+    () => (entries ?? []).filter((e) => e.audience?.includes("staff")),
+    [entries]
+  );
+  const weightedIndices = useMemo(() => buildWeightedIndices(staffEntries), [staffEntries]);
+
+  // ── Typewriter effect ──
+  useEffect(() => {
+    if (animMode !== "typewriter" || staffEntries.length === 0 || collapsed) return;
+    const entry = staffEntries[activeIndex < staffEntries.length ? activeIndex : 0];
+    if (!entry) return;
+    const fullText = `${entry.title} — ${entry.body.slice(0, 100)}`;
+    let charIndex = 0;
+    setTypedText("");
+
+    const typeNext = () => {
+      if (charIndex <= fullText.length) {
+        setTypedText(fullText.slice(0, charIndex));
+        charIndex++;
+        typeTimerRef.current = setTimeout(typeNext, 30);
+      }
+    };
+    typeTimerRef.current = setTimeout(typeNext, 200);
+    return () => { if (typeTimerRef.current) clearTimeout(typeTimerRef.current); };
+  }, [animMode, activeIndex, staffEntries, collapsed]);
 
   const advance = useCallback(() => {
     if (staffEntries.length <= 1) return;
@@ -65,8 +102,7 @@ export function StaffIntelStrip() {
     setTimeout(() => {
       setActiveIndex((prev) => {
         if (weightedIndices.length === 0) return 0;
-        let next: number;
-        let attempts = 0;
+        let next: number, attempts = 0;
         do {
           next = weightedIndices[Math.floor(Math.random() * weightedIndices.length)];
           attempts++;
@@ -74,8 +110,8 @@ export function StaffIntelStrip() {
         return next;
       });
       setAnimState("entering");
-      setTimeout(() => setAnimState("visible"), 350);
-    }, 350);
+      setTimeout(() => setAnimState("visible"), 400);
+    }, 400);
   }, [staffEntries.length, weightedIndices]);
 
   useEffect(() => {
@@ -89,7 +125,6 @@ export function StaffIntelStrip() {
     setAnimState("visible");
   }, [entries?.length]);
 
-  // Listen for mode changes from IntelligenceEditor
   useEffect(() => {
     const handler = () => setAnimMode(getStoredAnimMode());
     window.addEventListener("intel-anim-mode-changed", handler);
@@ -102,7 +137,6 @@ export function StaffIntelStrip() {
     pauseTimerRef.current = setTimeout(() => setPaused(false), RESUME_DELAY);
   }, []);
 
-  // ── Early returns AFTER all hooks ──
   if (!role || role === "guest") return null;
   if (staffEntries.length === 0) return null;
 
@@ -116,34 +150,47 @@ export function StaffIntelStrip() {
 
   const safeIndex = activeIndex < staffEntries.length ? activeIndex : 0;
 
-  const getTickerClasses = () => {
-    if (animState === "exiting") return "translate-x-[-100%] opacity-0 transition-all duration-300 ease-in";
-    if (animState === "entering") return "translate-x-0 opacity-100 transition-all duration-300 ease-out";
-    return "translate-x-0 opacity-100";
-  };
-
-  const getCrossfadeClasses = () => {
-    if (animState === "exiting") return "opacity-0 transition-opacity duration-300 ease-in";
-    if (animState === "entering") return "opacity-100 transition-opacity duration-300 ease-out";
-    return "opacity-100";
-  };
-
-  const getStackClasses = (position: number) => {
-    if (position === 0) {
-      if (animState === "exiting") return "scale-95 opacity-0 transition-all duration-300 ease-in";
-      if (animState === "entering") return "scale-100 opacity-100 transition-all duration-300 ease-out";
-      return "scale-100 opacity-100";
+  // ── Animation classes by mode ──
+  const getAnimClasses = (position = 0): string => {
+    const dur = "duration-[400ms]";
+    switch (animMode) {
+      case "ticker":
+        if (animState === "exiting") return `translate-x-[-100%] opacity-0 transition-all ${dur} ease-in`;
+        if (animState === "entering") return `translate-x-0 opacity-100 transition-all ${dur} ease-out`;
+        return "translate-x-0 opacity-100";
+      case "crossfade":
+        if (animState === "exiting") return `opacity-0 transition-opacity ${dur} ease-in`;
+        if (animState === "entering") return `opacity-100 transition-opacity ${dur} ease-out`;
+        return "opacity-100";
+      case "stack":
+        if (position === 0) {
+          if (animState === "exiting") return `scale-95 opacity-0 transition-all ${dur}`;
+          if (animState === "entering") return `scale-100 opacity-100 transition-all ${dur}`;
+          return "scale-100 opacity-100";
+        }
+        return "scale-[0.97] opacity-70";
+      case "flip":
+        if (animState === "exiting") return `[transform:rotateY(90deg)] opacity-0 transition-all ${dur} [transform-style:preserve-3d]`;
+        if (animState === "entering") return `[transform:rotateY(0deg)] opacity-100 transition-all ${dur} [transform-style:preserve-3d]`;
+        return "[transform:rotateY(0deg)] opacity-100";
+      case "pulse":
+        if (animState === "exiting") return `scale-110 opacity-0 transition-all ${dur} ease-in`;
+        if (animState === "entering") return `scale-100 opacity-100 transition-all ${dur} ease-[cubic-bezier(0.34,1.56,0.64,1)]`;
+        return "scale-100 opacity-100";
+      case "carousel":
+        return ""; // handled separately
+      case "typewriter":
+        return ""; // handled separately
+      default:
+        return "opacity-100";
     }
-    return "scale-[0.97] opacity-70";
-  };
-
-  const getAnimClasses = (position = 0) => {
-    if (animMode === "ticker") return getTickerClasses();
-    if (animMode === "stack") return getStackClasses(position);
-    return getCrossfadeClasses();
   };
 
   const stackEntries = animMode === "stack"
+    ? [0, 1, 2].map((offset) => staffEntries[(safeIndex + offset) % staffEntries.length]).filter(Boolean)
+    : [];
+
+  const carouselEntries = animMode === "carousel"
     ? [0, 1, 2].map((offset) => staffEntries[(safeIndex + offset) % staffEntries.length]).filter(Boolean)
     : [];
 
@@ -171,6 +218,74 @@ export function StaffIntelStrip() {
 
   const totalDots = Math.min(staffEntries.length, 8);
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartRef.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartRef.current === null) return;
+    const diff = e.changedTouches[0].clientX - touchStartRef.current;
+    if (Math.abs(diff) > 50) {
+      handlePause();
+      if (diff < 0) advance();
+      else setActiveIndex((p) => (p - 1 + staffEntries.length) % staffEntries.length);
+    }
+    touchStartRef.current = null;
+  };
+
+  // ── Render body based on mode ──
+  const renderBody = () => {
+    if (animMode === "typewriter") {
+      const entry = staffEntries[safeIndex];
+      if (!entry) return null;
+      return (
+        <button
+          onClick={() => { setDetailEntry(entry); handlePause(); }}
+          onMouseEnter={handlePause}
+          className={`py-1.5 pl-2 rounded-sm w-full text-left hover:bg-accent/30 transition-colors ${SEVERITY_STYLES[entry.severity] || ""}`}
+        >
+          <span className="text-sm text-foreground font-mono">
+            {typedText}
+            <span className="inline-block w-[2px] h-4 bg-primary ml-0.5 animate-[pulse_1s_ease-in-out_infinite]" />
+          </span>
+        </button>
+      );
+    }
+
+    if (animMode === "carousel") {
+      return (
+        <div
+          className="flex gap-2 transition-transform duration-300 ease-out overflow-hidden"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          style={{ transform: `translateX(-${carouselOffset}px)` }}
+        >
+          {carouselEntries.map((entry, i) => (
+            <div key={`${entry.id}-c${i}`} className="min-w-[85%] shrink-0">
+              {renderEntry(entry)}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (animMode === "stack") {
+      return (
+        <div className="space-y-0.5">
+          {stackEntries.map((entry, i) => renderEntry(entry, getAnimClasses(i)))}
+        </div>
+      );
+    }
+
+    // All other modes: single entry with animation classes
+    const entry = staffEntries[safeIndex];
+    if (!entry) return null;
+    return (
+      <div className="overflow-hidden [perspective:600px]">
+        {renderEntry(entry, getAnimClasses())}
+      </div>
+    );
+  };
+
   return (
     <>
       <Card className="animate-fade-in overflow-hidden">
@@ -188,9 +303,7 @@ export function StaffIntelStrip() {
                   <span
                     key={i}
                     className={`h-1 rounded-full transition-all duration-300 ${
-                      i === safeIndex % totalDots
-                        ? "w-3 bg-primary"
-                        : "w-1 bg-muted-foreground/30"
+                      i === safeIndex % totalDots ? "w-3 bg-primary" : "w-1 bg-muted-foreground/30"
                     }`}
                   />
                 ))}
@@ -201,15 +314,7 @@ export function StaffIntelStrip() {
         </button>
         {!collapsed && (
           <CardContent className="px-4 pb-3 pt-0 space-y-1">
-            {animMode === "stack" ? (
-              <div className="space-y-0.5">
-                {stackEntries.map((entry, i) => renderEntry(entry, getAnimClasses(i)))}
-              </div>
-            ) : (
-              <div className="overflow-hidden">
-                {staffEntries[safeIndex] && renderEntry(staffEntries[safeIndex], getAnimClasses())}
-              </div>
-            )}
+            {renderBody()}
           </CardContent>
         )}
       </Card>
@@ -221,66 +326,35 @@ export function StaffIntelStrip() {
             <div className="flex flex-col h-full">
               <SheetHeader className="px-5 pb-3 border-b">
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setDetailEntry(null)}
-                    className="p-1 -ml-1 rounded-md hover:bg-accent/60 text-muted-foreground"
-                  >
+                  <button onClick={() => setDetailEntry(null)} className="p-1 -ml-1 rounded-md hover:bg-accent/60 text-muted-foreground">
                     <ArrowLeft className="h-4 w-4" />
                   </button>
-                  <Badge
-                    variant={detailEntry.severity === "urgent" ? "destructive" : "outline"}
-                    className="text-[10px]"
-                  >
+                  <Badge variant={detailEntry.severity === "urgent" ? "destructive" : "outline"} className="text-[10px]">
                     {detailEntry.severity === "urgent" ? "🔴 Urgent" : detailEntry.severity === "attention" ? "⚠️ Attention" : "Intel"}
                   </Badge>
                 </div>
-                <SheetTitle className="text-left text-lg leading-snug pr-6">
-                  {detailEntry.title}
-                </SheetTitle>
+                <SheetTitle className="text-left text-lg leading-snug pr-6">{detailEntry.title}</SheetTitle>
               </SheetHeader>
-
               <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
                 {detailEntry.image_url && (
                   <div className="space-y-1">
-                    <img
-                      src={detailEntry.image_url}
-                      alt={detailEntry.image_caption || detailEntry.title}
-                      className="w-full max-h-56 object-cover rounded-lg"
-                    />
-                    {detailEntry.image_caption && (
-                      <p className="text-xs text-muted-foreground italic">{detailEntry.image_caption}</p>
-                    )}
+                    <img src={detailEntry.image_url} alt={detailEntry.image_caption || detailEntry.title} className="w-full max-h-56 object-cover rounded-lg" />
+                    {detailEntry.image_caption && <p className="text-xs text-muted-foreground italic">{detailEntry.image_caption}</p>}
                   </div>
                 )}
-
-                <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-                  {detailEntry.body}
-                </p>
-
+                <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{detailEntry.body}</p>
                 {detailEntry.location && detailEntry.location.filter((l) => l !== "global").length > 0 && (
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     {detailEntry.location.filter((l) => l !== "global").map((loc) => (
-                      <Badge key={loc} variant="outline" className="text-[10px] px-1.5 py-0">
-                        {LOCATION_LABELS[loc] ?? loc}
-                      </Badge>
+                      <Badge key={loc} variant="outline" className="text-[10px] px-1.5 py-0">{LOCATION_LABELS[loc] ?? loc}</Badge>
                     ))}
                   </div>
                 )}
               </div>
-
               <div className="border-t px-5 py-3 bg-background">
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="w-full gap-2"
-                  onClick={() => {
-                    askKruGlitch(detailEntry);
-                    setDetailEntry(null);
-                  }}
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Ask Kru Glitch about this
+                <Button variant="default" size="sm" className="w-full gap-2" onClick={() => { askKruGlitch(detailEntry); setDetailEntry(null); }}>
+                  <Sparkles className="h-4 w-4" /> Ask Kru Glitch about this
                 </Button>
               </div>
             </div>

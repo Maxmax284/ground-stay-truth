@@ -1,6 +1,10 @@
-import { useState, useEffect } from "react";
-import { X, AlertTriangle, Info, Lightbulb, ChevronRight } from "lucide-react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { X, AlertTriangle, Info, Lightbulb, ChevronRight, ChevronLeft } from "lucide-react";
 import { useIntelligence, type IntelligenceEntry } from "@/hooks/useIntelligence";
+import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Sparkles, ArrowLeft, MapPin } from "lucide-react";
 
 const DISMISSED_KEY = "gs_headsup_dismissed";
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
@@ -13,12 +17,40 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   local_life: <Lightbulb className="h-4 w-4 text-primary" />,
 };
 
+const LOCATION_LABELS: Record<string, string> = {
+  bkk: "BKK", samui: "Samui", nathon: "Nathon", lipa_noi: "Lipa Noi",
+  phuket: "Phuket", pattaya: "Pattaya", transit: "Transit",
+  bus: "Bus", island: "Island", global: "All",
+};
+
+const ROTATION_INTERVAL = 10000;
+
 interface Props {
   locations?: string[];
   onLearnMore?: (entry: IntelligenceEntry) => void;
+  /** Current journey phase for contextual filtering */
+  journeyPhase?: "pre_arrival" | "transit" | "arrival" | "stay" | "departure";
 }
 
-export function GuestHeadsUpStrip({ locations, onLearnMore }: Props) {
+/** Map journey phases to relevant location tags */
+const PHASE_LOCATIONS: Record<string, string[]> = {
+  pre_arrival: ["global", "bkk"],
+  transit: ["bkk", "transit", "bus", "nathon", "lipa_noi"],
+  arrival: ["samui", "nathon", "lipa_noi", "island"],
+  stay: ["samui", "island", "global"],
+  departure: ["samui", "island", "bkk", "global"],
+};
+
+/** Map journey phases to relevant categories */
+const PHASE_CATEGORIES: Record<string, string[]> = {
+  pre_arrival: ["customs", "connectivity", "money", "health"],
+  transit: ["transport", "safety", "money"],
+  arrival: ["transport", "safety", "local_life"],
+  stay: ["money", "connectivity", "local_life", "health", "safety"],
+  departure: ["transport", "customs", "money"],
+};
+
+export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Props) {
   const { data: entries } = useIntelligence({
     type: "heads_up",
     status: "active",
@@ -32,6 +64,13 @@ export function GuestHeadsUpStrip({ locations, onLearnMore }: Props) {
     } catch { return new Set(); }
   });
 
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [animState, setAnimState] = useState<"visible" | "exiting-left" | "entering-right" | "exiting-right" | "entering-left">("visible");
+  const [paused, setPaused] = useState(false);
+  const [detailEntry, setDetailEntry] = useState<IntelligenceEntry | null>(null);
+  const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartRef = useRef<number | null>(null);
+
   const dismiss = (id: string) => {
     setDismissed((prev) => {
       const next = new Set(prev);
@@ -41,54 +80,254 @@ export function GuestHeadsUpStrip({ locations, onLearnMore }: Props) {
     });
   };
 
-  // Filter: guest audience, not dismissed, max 2
-  const visible = (entries ?? [])
-    .filter((e) => e.audience?.includes("guest") && !dismissed.has(e.id))
-    .slice(0, 2);
+  // Filter by audience, not dismissed, and optionally by journey phase
+  const visible = useMemo(() => {
+    let filtered = (entries ?? []).filter(
+      (e) => e.audience?.includes("guest") && !dismissed.has(e.id)
+    );
+
+    // If journey phase provided, prioritize relevant entries
+    if (journeyPhase && PHASE_CATEGORIES[journeyPhase]) {
+      const phaseCats = PHASE_CATEGORIES[journeyPhase];
+      const phaseLocs = PHASE_LOCATIONS[journeyPhase] || [];
+
+      // Score entries by relevance
+      filtered = filtered
+        .map((e) => ({
+          entry: e,
+          score:
+            (phaseCats.includes(e.category) ? 2 : 0) +
+            (e.location?.some((l) => phaseLocs.includes(l)) ? 1 : 0) +
+            (e.severity === "urgent" ? 3 : e.severity === "attention" ? 1 : 0),
+        }))
+        .sort((a, b) => b.score - a.score)
+        .map((s) => s.entry);
+    }
+
+    return filtered;
+  }, [entries, dismissed, journeyPhase]);
+
+  const handlePause = useCallback(() => {
+    setPaused(true);
+    if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+    pauseTimerRef.current = setTimeout(() => setPaused(false), 5000);
+  }, []);
+
+  const goNext = useCallback(() => {
+    if (visible.length <= 1) return;
+    setAnimState("exiting-left");
+    setTimeout(() => {
+      setCurrentIndex((p) => (p + 1) % visible.length);
+      setAnimState("entering-right");
+      setTimeout(() => setAnimState("visible"), 350);
+    }, 350);
+  }, [visible.length]);
+
+  const goPrev = useCallback(() => {
+    if (visible.length <= 1) return;
+    setAnimState("exiting-right");
+    setTimeout(() => {
+      setCurrentIndex((p) => (p - 1 + visible.length) % visible.length);
+      setAnimState("entering-left");
+      setTimeout(() => setAnimState("visible"), 350);
+    }, 350);
+  }, [visible.length]);
+
+  // Auto-rotate
+  useEffect(() => {
+    if (paused || visible.length <= 1) return;
+    const interval = setInterval(goNext, ROTATION_INTERVAL);
+    return () => clearInterval(interval);
+  }, [paused, goNext, visible.length]);
+
+  // Reset index when entries change
+  useEffect(() => {
+    setCurrentIndex(0);
+    setAnimState("visible");
+  }, [entries?.length]);
+
+  // Touch swipe
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartRef.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartRef.current === null) return;
+    const diff = e.changedTouches[0].clientX - touchStartRef.current;
+    if (Math.abs(diff) > 50) {
+      handlePause();
+      if (diff < 0) goNext();
+      else goPrev();
+    }
+    touchStartRef.current = null;
+  };
 
   if (visible.length === 0) return null;
 
+  const safeIndex = currentIndex < visible.length ? currentIndex : 0;
+  const entry = visible[safeIndex];
+
+  // Animation classes — lively & engaging
+  const getCardClasses = (): string => {
+    switch (animState) {
+      case "exiting-left": return "translate-x-[-110%] scale-95 opacity-0 transition-all duration-300 ease-in";
+      case "entering-right": return "translate-x-0 scale-100 opacity-100 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]";
+      case "exiting-right": return "translate-x-[110%] scale-95 opacity-0 transition-all duration-300 ease-in";
+      case "entering-left": return "translate-x-0 scale-100 opacity-100 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]";
+      default: return "translate-x-0 scale-100 opacity-100";
+    }
+  };
+
+  const severityBorder = entry.severity === "urgent"
+    ? "border-destructive/40 bg-destructive/5"
+    : entry.severity === "attention"
+    ? "border-amber-500/40 bg-amber-500/5"
+    : "border-border bg-muted/20";
+
+  const askKruGlitch = (e: IntelligenceEntry) => {
+    window.dispatchEvent(
+      new CustomEvent("ask-kru-glitch", {
+        detail: { question: `Tell me about: ${e.title} — "${e.body.slice(0, 300)}"` },
+      })
+    );
+  };
+
   return (
-    <div className="space-y-2">
-      {visible.map((entry) => (
-        <div
-          key={entry.id}
-          className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 text-sm animate-fade-in ${
-            entry.severity === "urgent"
-              ? "border-destructive/30 bg-destructive/5"
-              : entry.severity === "attention"
-              ? "border-amber-500/30 bg-amber-500/5"
-              : "border-border bg-muted/30"
-          }`}
-        >
-          <span className="mt-0.5 shrink-0">{CATEGORY_ICONS[entry.category] ?? <Info className="h-4 w-4 text-muted-foreground" />}</span>
-          <div className="flex-1 min-w-0">
-            <p className="font-medium text-foreground leading-snug">{entry.title}</p>
-            <p className="text-muted-foreground text-xs mt-0.5 line-clamp-2">{entry.body}</p>
-            {onLearnMore && (
-              <button
-                onClick={() => onLearnMore(entry)}
-                className="text-xs text-primary hover:underline mt-1 inline-flex items-center gap-0.5"
-              >
-                Learn more <ChevronRight className="h-3 w-3" />
-              </button>
+    <>
+      <div className="space-y-2">
+        {/* Phase label */}
+        {journeyPhase && (
+          <div className="flex items-center gap-1.5 px-1">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              {journeyPhase === "pre_arrival" ? "Before You Arrive" :
+               journeyPhase === "transit" ? "While In Transit" :
+               journeyPhase === "arrival" ? "Arriving on Island" :
+               journeyPhase === "stay" ? "During Your Stay" :
+               "Before You Leave"}
+            </span>
+            {visible.length > 1 && (
+              <div className="flex items-center gap-0.5 ml-auto">
+                {visible.slice(0, Math.min(visible.length, 6)).map((_, i) => (
+                  <span
+                    key={i}
+                    className={`h-1 rounded-full transition-all duration-300 ${
+                      i === safeIndex ? "w-3 bg-primary" : "w-1 bg-muted-foreground/25"
+                    }`}
+                  />
+                ))}
+              </div>
             )}
           </div>
-          {entry.image_url && (
-            <img
-              src={entry.image_url}
-              alt={entry.image_caption || entry.title}
-              className="h-12 w-12 rounded object-cover shrink-0"
-            />
-          )}
-          <button
-            onClick={() => dismiss(entry.id)}
-            className="p-1 rounded hover:bg-accent/60 shrink-0 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+        )}
+
+        {/* Carousel card */}
+        <div
+          className="overflow-hidden relative"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onMouseEnter={handlePause}
+        >
+          <div
+            className={`rounded-xl border px-3 py-3 ${severityBorder} ${getCardClasses()}`}
           >
-            <X className="h-3.5 w-3.5" />
-          </button>
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 shrink-0">
+                {CATEGORY_ICONS[entry.category] ?? <Info className="h-4 w-4 text-muted-foreground" />}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm text-foreground leading-snug">{entry.title}</p>
+                <p className="text-muted-foreground text-xs mt-0.5 line-clamp-2">{entry.body}</p>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <button
+                    onClick={() => setDetailEntry(entry)}
+                    className="text-xs text-primary hover:underline inline-flex items-center gap-0.5"
+                  >
+                    Learn more <ChevronRight className="h-3 w-3" />
+                  </button>
+                  {entry.location?.filter((l) => l !== "global").slice(0, 2).map((loc) => (
+                    <Badge key={loc} variant="outline" className="text-[9px] px-1 py-0">
+                      {LOCATION_LABELS[loc] ?? loc}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              {entry.image_url && (
+                <img
+                  src={entry.image_url}
+                  alt={entry.image_caption || entry.title}
+                  className="h-14 w-14 rounded-lg object-cover shrink-0 shadow-sm"
+                />
+              )}
+              <button
+                onClick={() => { dismiss(entry.id); handlePause(); }}
+                className="p-1 rounded hover:bg-accent/60 shrink-0 text-muted-foreground/40 hover:text-muted-foreground transition-colors absolute top-2 right-2"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+
+          {/* Swipe hint arrows for desktop */}
+          {visible.length > 1 && (
+            <>
+              <button
+                onClick={() => { handlePause(); goPrev(); }}
+                className="absolute left-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-background/80 shadow-sm hover:bg-accent/60 transition-colors hidden sm:flex"
+              >
+                <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+              <button
+                onClick={() => { handlePause(); goNext(); }}
+                className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-background/80 shadow-sm hover:bg-accent/60 transition-colors hidden sm:flex"
+              >
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+            </>
+          )}
         </div>
-      ))}
-    </div>
+      </div>
+
+      {/* Detail Sheet */}
+      <Sheet open={!!detailEntry} onOpenChange={(open) => !open && setDetailEntry(null)}>
+        <SheetContent side="bottom" className="h-[80vh] rounded-t-2xl px-0 pb-0">
+          {detailEntry && (
+            <div className="flex flex-col h-full">
+              <SheetHeader className="px-5 pb-3 border-b">
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setDetailEntry(null)} className="p-1 -ml-1 rounded-md hover:bg-accent/60 text-muted-foreground">
+                    <ArrowLeft className="h-4 w-4" />
+                  </button>
+                  <Badge variant={detailEntry.severity === "urgent" ? "destructive" : "outline"} className="text-[10px]">
+                    {detailEntry.severity === "urgent" ? "🔴 Urgent" : detailEntry.severity === "attention" ? "⚠️ Attention" : "Good to Know"}
+                  </Badge>
+                </div>
+                <SheetTitle className="text-left text-lg leading-snug pr-6">{detailEntry.title}</SheetTitle>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+                {detailEntry.image_url && (
+                  <div className="space-y-1">
+                    <img src={detailEntry.image_url} alt={detailEntry.image_caption || detailEntry.title} className="w-full max-h-56 object-cover rounded-lg" />
+                    {detailEntry.image_caption && <p className="text-xs text-muted-foreground italic">{detailEntry.image_caption}</p>}
+                  </div>
+                )}
+                <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{detailEntry.body}</p>
+                {detailEntry.location && detailEntry.location.filter((l) => l !== "global").length > 0 && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    {detailEntry.location.filter((l) => l !== "global").map((loc) => (
+                      <Badge key={loc} variant="outline" className="text-[10px] px-1.5 py-0">{LOCATION_LABELS[loc] ?? loc}</Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="border-t px-5 py-3 bg-background">
+                <Button variant="default" size="sm" className="w-full gap-2" onClick={() => { askKruGlitch(detailEntry); setDetailEntry(null); }}>
+                  <Sparkles className="h-4 w-4" /> Ask about this
+                </Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }
