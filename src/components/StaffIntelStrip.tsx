@@ -33,6 +33,7 @@ const SEVERITY_STYLES: Record<string, string> = {
 
 const ROTATION_INTERVAL = 12000;
 const RESUME_DELAY = 5000;
+const VISIBLE_COUNT = 3; // entries shown simultaneously
 
 export function getStoredAnimMode(): IntelAnimationMode {
   try {
@@ -76,10 +77,23 @@ export function StaffIntelStrip() {
   );
   const weightedIndices = useMemo(() => buildWeightedIndices(staffEntries), [staffEntries]);
 
-  // ── Typewriter effect ──
+  const safeIndex = activeIndex < staffEntries.length ? activeIndex : 0;
+
+  // ── Get a slice of visible entries ──
+  const visibleSlice = useMemo(() => {
+    if (staffEntries.length === 0) return [];
+    const result: IntelligenceEntry[] = [];
+    for (let i = 0; i < Math.min(VISIBLE_COUNT, staffEntries.length); i++) {
+      result.push(staffEntries[(safeIndex + i) % staffEntries.length]);
+    }
+    return result;
+  }, [staffEntries, safeIndex]);
+
+  // ── Typewriter effect — types through each visible entry sequentially ──
+  const [typewriterLine, setTypewriterLine] = useState(0);
   useEffect(() => {
-    if (animMode !== "typewriter" || staffEntries.length === 0 || collapsed) return;
-    const entry = staffEntries[activeIndex < staffEntries.length ? activeIndex : 0];
+    if (animMode !== "typewriter" || visibleSlice.length === 0 || collapsed) return;
+    const entry = visibleSlice[typewriterLine % visibleSlice.length];
     if (!entry) return;
     const fullText = `${entry.title} — ${entry.body.slice(0, 100)}`;
     let charIndex = 0;
@@ -90,11 +104,19 @@ export function StaffIntelStrip() {
         setTypedText(fullText.slice(0, charIndex));
         charIndex++;
         typeTimerRef.current = setTimeout(typeNext, 30);
+      } else {
+        // After finishing, wait then advance to next line
+        typeTimerRef.current = setTimeout(() => {
+          setTypewriterLine((prev) => (prev + 1) % visibleSlice.length);
+        }, 2000);
       }
     };
     typeTimerRef.current = setTimeout(typeNext, 200);
     return () => { if (typeTimerRef.current) clearTimeout(typeTimerRef.current); };
-  }, [animMode, activeIndex, staffEntries, collapsed]);
+  }, [animMode, typewriterLine, visibleSlice, collapsed]);
+
+  // Reset typewriter line on index change
+  useEffect(() => { setTypewriterLine(0); }, [activeIndex]);
 
   const advance = useCallback(() => {
     if (staffEntries.length <= 1) return;
@@ -148,51 +170,45 @@ export function StaffIntelStrip() {
     );
   };
 
-  const safeIndex = activeIndex < staffEntries.length ? activeIndex : 0;
+  // safeIndex already declared above
 
-  // ── Animation classes by mode ──
-  const getAnimClasses = (position = 0): string => {
+  // ── Staggered animation classes by mode ──
+  const getAnimClasses = (position: number): string => {
     const dur = "duration-[400ms]";
+    const delay = position === 0 ? "" : position === 1 ? "delay-[80ms]" : "delay-[160ms]";
+    const base = `transition-all ${dur} ${delay}`;
+
+    // Only animate position 0 on entry/exit; others stagger in
+    const isAnimating = position === 0 || animState === "entering";
+
     switch (animMode) {
       case "ticker":
-        if (animState === "exiting") return `translate-x-[-100%] opacity-0 transition-all ${dur} ease-in`;
-        if (animState === "entering") return `translate-x-0 opacity-100 transition-all ${dur} ease-out`;
+        if (animState === "exiting" && position === 0) return `translate-x-[-100%] opacity-0 ${base} ease-in`;
+        if (animState === "entering") return `translate-x-0 opacity-100 ${base} ease-out`;
         return "translate-x-0 opacity-100";
       case "crossfade":
-        if (animState === "exiting") return `opacity-0 transition-opacity ${dur} ease-in`;
-        if (animState === "entering") return `opacity-100 transition-opacity ${dur} ease-out`;
+        if (animState === "exiting" && position === 0) return `opacity-0 ${base} ease-in`;
+        if (animState === "entering") return `opacity-100 ${base} ease-out`;
         return "opacity-100";
       case "stack":
         if (position === 0) {
-          if (animState === "exiting") return `scale-95 opacity-0 transition-all ${dur}`;
-          if (animState === "entering") return `scale-100 opacity-100 transition-all ${dur}`;
+          if (animState === "exiting") return `scale-95 opacity-0 ${base}`;
+          if (animState === "entering") return `scale-100 opacity-100 ${base}`;
           return "scale-100 opacity-100";
         }
-        return "scale-[0.97] opacity-70";
+        return `scale-[0.97] opacity-70 ${base}`;
       case "flip":
-        if (animState === "exiting") return `[transform:rotateY(90deg)] opacity-0 transition-all ${dur} [transform-style:preserve-3d]`;
-        if (animState === "entering") return `[transform:rotateY(0deg)] opacity-100 transition-all ${dur} [transform-style:preserve-3d]`;
+        if (animState === "exiting" && position === 0) return `[transform:rotateY(90deg)] opacity-0 ${base} [transform-style:preserve-3d]`;
+        if (animState === "entering") return `[transform:rotateY(0deg)] opacity-100 ${base} [transform-style:preserve-3d]`;
         return "[transform:rotateY(0deg)] opacity-100";
       case "pulse":
-        if (animState === "exiting") return `scale-110 opacity-0 transition-all ${dur} ease-in`;
-        if (animState === "entering") return `scale-100 opacity-100 transition-all ${dur} ease-[cubic-bezier(0.34,1.56,0.64,1)]`;
+        if (animState === "exiting" && position === 0) return `scale-110 opacity-0 ${base} ease-in`;
+        if (animState === "entering") return `scale-100 opacity-100 ${base} ease-[cubic-bezier(0.34,1.56,0.64,1)]`;
         return "scale-100 opacity-100";
-      case "carousel":
-        return ""; // handled separately
-      case "typewriter":
-        return ""; // handled separately
       default:
         return "opacity-100";
     }
   };
-
-  const stackEntries = animMode === "stack"
-    ? [0, 1, 2].map((offset) => staffEntries[(safeIndex + offset) % staffEntries.length]).filter(Boolean)
-    : [];
-
-  const carouselEntries = animMode === "carousel"
-    ? [0, 1, 2].map((offset) => staffEntries[(safeIndex + offset) % staffEntries.length]).filter(Boolean)
-    : [];
 
   const renderEntry = (entry: IntelligenceEntry, className = "") => (
     <button
@@ -232,22 +248,41 @@ export function StaffIntelStrip() {
     touchStartRef.current = null;
   };
 
-  // ── Render body based on mode ──
+  // ── Render body — all modes show multiple entries ──
   const renderBody = () => {
+    if (visibleSlice.length === 0) return null;
+
     if (animMode === "typewriter") {
-      const entry = staffEntries[safeIndex];
-      if (!entry) return null;
       return (
-        <button
-          onClick={() => { setDetailEntry(entry); handlePause(); }}
-          onMouseEnter={handlePause}
-          className={`py-1.5 pl-2 rounded-sm w-full text-left hover:bg-accent/30 transition-colors ${SEVERITY_STYLES[entry.severity] || ""}`}
-        >
-          <span className="text-sm text-foreground font-mono">
-            {typedText}
-            <span className="inline-block w-[2px] h-4 bg-primary ml-0.5 animate-[pulse_1s_ease-in-out_infinite]" />
-          </span>
-        </button>
+        <div className="space-y-0.5">
+          {visibleSlice.map((entry, i) => {
+            const isCurrent = i === typewriterLine % visibleSlice.length;
+            const isPast = i < typewriterLine % visibleSlice.length;
+            return (
+              <button
+                key={`${entry.id}-tw${i}`}
+                onClick={() => { setDetailEntry(entry); handlePause(); }}
+                onMouseEnter={handlePause}
+                className={`py-1.5 pl-2 rounded-sm w-full text-left hover:bg-accent/30 transition-all duration-300 ${SEVERITY_STYLES[entry.severity] || ""} ${
+                  isCurrent ? "opacity-100" : isPast ? "opacity-60" : "opacity-30"
+                }`}
+              >
+                <span className="text-sm text-foreground font-mono">
+                  {isCurrent ? (
+                    <>
+                      {typedText}
+                      <span className="inline-block w-[2px] h-4 bg-primary ml-0.5 animate-[pulse_1s_ease-in-out_infinite]" />
+                    </>
+                  ) : isPast ? (
+                    `${entry.title} — ${entry.body.slice(0, 100)}`
+                  ) : (
+                    <span className="text-muted-foreground/40">▌</span>
+                  )}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       );
     }
 
@@ -259,7 +294,7 @@ export function StaffIntelStrip() {
           onTouchEnd={handleTouchEnd}
           style={{ transform: `translateX(-${carouselOffset}px)` }}
         >
-          {carouselEntries.map((entry, i) => (
+          {visibleSlice.map((entry, i) => (
             <div key={`${entry.id}-c${i}`} className="min-w-[85%] shrink-0">
               {renderEntry(entry)}
             </div>
@@ -268,20 +303,10 @@ export function StaffIntelStrip() {
       );
     }
 
-    if (animMode === "stack") {
-      return (
-        <div className="space-y-0.5">
-          {stackEntries.map((entry, i) => renderEntry(entry, getAnimClasses(i)))}
-        </div>
-      );
-    }
-
-    // All other modes: single entry with animation classes
-    const entry = staffEntries[safeIndex];
-    if (!entry) return null;
+    // All other modes: render visible slice with staggered animations
     return (
-      <div className="overflow-hidden [perspective:600px]">
-        {renderEntry(entry, getAnimClasses())}
+      <div className="space-y-0.5 overflow-hidden [perspective:600px]">
+        {visibleSlice.map((entry, i) => renderEntry(entry, getAnimClasses(i)))}
       </div>
     );
   };

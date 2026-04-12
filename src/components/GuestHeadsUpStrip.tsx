@@ -161,27 +161,49 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
     touchStartRef.current = null;
   };
 
+  const safeIndex = currentIndex < visible.length ? currentIndex : 0;
+
+  // Show up to 3 entries at once
+  const visibleCards = useMemo(() => {
+    if (visible.length === 0) return [];
+    const count = Math.min(3, visible.length);
+    const cards: IntelligenceEntry[] = [];
+    for (let i = 0; i < count; i++) {
+      cards.push(visible[(safeIndex + i) % visible.length]);
+    }
+    return cards;
+  }, [visible, safeIndex]);
+
   if (visible.length === 0) return null;
 
-  const safeIndex = currentIndex < visible.length ? currentIndex : 0;
-  const entry = visible[safeIndex];
-
-  // Animation classes — lively & engaging
-  const getCardClasses = (): string => {
-    switch (animState) {
-      case "exiting-left": return "translate-x-[-110%] scale-95 opacity-0 transition-all duration-300 ease-in";
-      case "entering-right": return "translate-x-0 scale-100 opacity-100 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]";
-      case "exiting-right": return "translate-x-[110%] scale-95 opacity-0 transition-all duration-300 ease-in";
-      case "entering-left": return "translate-x-0 scale-100 opacity-100 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]";
-      default: return "translate-x-0 scale-100 opacity-100";
+  // Animation classes — lively & engaging with stagger
+  const getCardClasses = (position: number): string => {
+    if (position === 0) {
+      switch (animState) {
+        case "exiting-left": return "translate-x-[-110%] scale-95 opacity-0 transition-all duration-300 ease-in";
+        case "entering-right": return "translate-x-0 scale-100 opacity-100 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]";
+        case "exiting-right": return "translate-x-[110%] scale-95 opacity-0 transition-all duration-300 ease-in";
+        case "entering-left": return "translate-x-0 scale-100 opacity-100 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]";
+        default: return "translate-x-0 scale-100 opacity-100";
+      }
     }
+    // Staggered bounce-in for positions 1 and 2
+    const delay = position === 1 ? "delay-[100ms]" : "delay-[200ms]";
+    if (animState === "entering-right" || animState === "entering-left") {
+      return `translate-x-0 scale-100 opacity-100 transition-all duration-300 ${delay} ease-[cubic-bezier(0.34,1.56,0.64,1)]`;
+    }
+    if (animState === "exiting-left" || animState === "exiting-right") {
+      return `scale-95 opacity-0 transition-all duration-200 ${delay}`;
+    }
+    return "translate-x-0 scale-100 opacity-100";
   };
 
-  const severityBorder = entry.severity === "urgent"
-    ? "border-destructive/40 bg-destructive/5"
-    : entry.severity === "attention"
-    ? "border-amber-500/40 bg-amber-500/5"
-    : "border-border bg-muted/20";
+  const getSeverityBorder = (entry: IntelligenceEntry) =>
+    entry.severity === "urgent"
+      ? "border-destructive/40 bg-destructive/5"
+      : entry.severity === "attention"
+      ? "border-amber-500/40 bg-amber-500/5"
+      : "border-border bg-muted/20";
 
   const askKruGlitch = (e: IntelligenceEntry) => {
     window.dispatchEvent(
@@ -219,65 +241,70 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
           </div>
         )}
 
-        {/* Carousel card */}
+        {/* Stacked carousel cards */}
         <div
-          className="overflow-hidden relative"
+          className="overflow-hidden relative space-y-2"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           onMouseEnter={handlePause}
         >
-          <div
-            className={`rounded-xl border px-3 py-3 ${severityBorder} ${getCardClasses()}`}
-          >
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 shrink-0">
-                {CATEGORY_ICONS[entry.category] ?? <Info className="h-4 w-4 text-muted-foreground" />}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm text-foreground leading-snug">{entry.title}</p>
-                <p className="text-muted-foreground text-xs mt-0.5 line-clamp-2">{entry.body}</p>
-                <div className="flex items-center gap-2 mt-1.5">
-                  <button
-                    onClick={() => setDetailEntry(entry)}
-                    className="text-xs text-primary hover:underline inline-flex items-center gap-0.5"
-                  >
-                    Learn more <ChevronRight className="h-3 w-3" />
-                  </button>
-                  {entry.location?.filter((l) => l !== "global").slice(0, 2).map((loc) => (
-                    <Badge key={loc} variant="outline" className="text-[9px] px-1 py-0">
-                      {LOCATION_LABELS[loc] ?? loc}
-                    </Badge>
-                  ))}
+          {visibleCards.map((entry, i) => (
+            <div
+              key={`${entry.id}-${i}`}
+              className={`rounded-xl border px-3 py-3 ${getSeverityBorder(entry)} ${getCardClasses(i)}`}
+            >
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 shrink-0">
+                  {CATEGORY_ICONS[entry.category] ?? <Info className="h-4 w-4 text-muted-foreground" />}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm text-foreground leading-snug">{entry.title}</p>
+                  <p className="text-muted-foreground text-xs mt-0.5 line-clamp-2">{entry.body}</p>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <button
+                      onClick={() => setDetailEntry(entry)}
+                      className="text-xs text-primary hover:underline inline-flex items-center gap-0.5"
+                    >
+                      Learn more <ChevronRight className="h-3 w-3" />
+                    </button>
+                    {entry.location?.filter((l) => l !== "global").slice(0, 2).map((loc) => (
+                      <Badge key={loc} variant="outline" className="text-[9px] px-1 py-0">
+                        {LOCATION_LABELS[loc] ?? loc}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
+                {entry.image_url && (
+                  <img
+                    src={entry.image_url}
+                    alt={entry.image_caption || entry.title}
+                    className="h-14 w-14 rounded-lg object-cover shrink-0 shadow-sm"
+                  />
+                )}
+                {i === 0 && (
+                  <button
+                    onClick={() => { dismiss(entry.id); handlePause(); }}
+                    className="p-1 rounded hover:bg-accent/60 shrink-0 text-muted-foreground/40 hover:text-muted-foreground transition-colors absolute top-2 right-2"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
               </div>
-              {entry.image_url && (
-                <img
-                  src={entry.image_url}
-                  alt={entry.image_caption || entry.title}
-                  className="h-14 w-14 rounded-lg object-cover shrink-0 shadow-sm"
-                />
-              )}
-              <button
-                onClick={() => { dismiss(entry.id); handlePause(); }}
-                className="p-1 rounded hover:bg-accent/60 shrink-0 text-muted-foreground/40 hover:text-muted-foreground transition-colors absolute top-2 right-2"
-              >
-                <X className="h-3 w-3" />
-              </button>
             </div>
-          </div>
+          ))}
 
           {/* Swipe hint arrows for desktop */}
           {visible.length > 1 && (
             <>
               <button
                 onClick={() => { handlePause(); goPrev(); }}
-                className="absolute left-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-background/80 shadow-sm hover:bg-accent/60 transition-colors hidden sm:flex"
+                className="absolute left-1 top-8 -translate-y-1/2 p-1 rounded-full bg-background/80 shadow-sm hover:bg-accent/60 transition-colors hidden sm:flex"
               >
                 <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
               <button
                 onClick={() => { handlePause(); goNext(); }}
-                className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-background/80 shadow-sm hover:bg-accent/60 transition-colors hidden sm:flex"
+                className="absolute right-1 top-8 -translate-y-1/2 p-1 rounded-full bg-background/80 shadow-sm hover:bg-accent/60 transition-colors hidden sm:flex"
               >
                 <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
