@@ -54,6 +54,7 @@ export function IntelligenceEditor() {
   const [generating, setGenerating] = useState(false);
   const [lookoutScanning, setLookoutScanning] = useState(false);
   const [lookoutDrafts, setLookoutDrafts] = useState<Partial<IntelligenceEntry>[]>([]);
+  const [showImageAudit, setShowImageAudit] = useState(false);
 
   const filtered = (entries ?? []).filter((e) => filter === "all" || e.type === filter);
 
