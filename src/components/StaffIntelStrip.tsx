@@ -225,11 +225,11 @@ export function StaffIntelStrip() {
       onClick={() => { setDetailEntry(entry); handlePause(); }}
       onMouseEnter={handlePause}
       onTouchStart={handlePause}
-      className={`flex items-start gap-2 py-1.5 pl-2 rounded-sm w-full text-left hover:bg-accent/30 transition-colors ${SEVERITY_STYLES[entry.severity] || ""} ${className}`}
+      className={`flex items-start gap-2 py-1 pl-2 rounded-sm w-full text-left hover:bg-accent/30 transition-colors ${SEVERITY_STYLES[entry.severity] || ""} ${className}`}
     >
-      <div className="flex-1 text-sm text-muted-foreground min-w-0">
+      <div className="flex-1 text-xs text-muted-foreground min-w-0">
         <span className="font-medium text-foreground">{entry.title}</span>
-        <span className="ml-1.5 text-xs">{entry.body.slice(0, 80)}{entry.body.length > 80 ? "…" : ""}</span>
+        <span className="ml-1.5">{entry.body.slice(0, 70)}{entry.body.length > 70 ? "…" : ""}</span>
       </div>
       <div className="flex gap-1 shrink-0">
         {entry.location?.filter((l) => l !== "global").slice(0, 2).map((loc) => (
