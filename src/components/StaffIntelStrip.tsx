@@ -7,6 +7,7 @@ import { useState } from "react";
 
 const LOCATION_LABELS: Record<string, string> = {
   bkk: "BKK", samui: "Samui", nathon: "Nathon", lipa_noi: "Lipa Noi",
+  phuket: "Phuket", pattaya: "Pattaya", transit: "Transit",
   bus: "Bus", island: "Island", global: "All",
 };
 

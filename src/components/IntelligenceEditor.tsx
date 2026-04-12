@@ -31,6 +31,9 @@ const LOCATIONS = [
   { value: "samui", label: "Koh Samui" },
   { value: "nathon", label: "Nathon Pier" },
   { value: "lipa_noi", label: "Lipa Noi Pier" },
+  { value: "phuket", label: "Phuket" },
+  { value: "pattaya", label: "Pattaya" },
+  { value: "transit", label: "In Transit" },
   { value: "bus", label: "Bus Route" },
   { value: "island", label: "Island General" },
 ];
