@@ -57,6 +57,8 @@ export function IntelligenceEditor() {
   const [lookoutDrafts, setLookoutDrafts] = useState<Partial<IntelligenceEntry>[]>([]);
   const [showImageAudit, setShowImageAudit] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [activeAnimMode, setActiveAnimMode] = useState<IntelAnimationMode>(getStoredAnimMode);
+  const [activeCtAnimMode, setActiveCtAnimMode] = useState(() => { try { return localStorage.getItem("corner-talk-anim-mode") || "stagger"; } catch { return "stagger"; } });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (file: File) => {
@@ -362,12 +364,13 @@ export function IntelligenceEditor() {
               { mode: "pulse" as IntelAnimationMode, label: "Pulse", desc: "Scale & glow", icon: Radio },
               { mode: "carousel" as IntelAnimationMode, label: "Carousel", desc: "Swipe cards", icon: GalleryHorizontal },
             ]).map(({ mode, label, desc, icon: Icon }) => {
-              const isActive = getStoredAnimMode() === mode;
+              const isActive = activeAnimMode === mode;
               return (
                 <button
                   key={mode}
                   onClick={() => {
                     setStoredAnimMode(mode);
+                    setActiveAnimMode(mode);
                     window.dispatchEvent(new Event("intel-anim-mode-changed"));
                     toast.success(`Strip animation set to ${label}`);
                   }}
@@ -402,13 +405,13 @@ export function IntelligenceEditor() {
               { mode: "pulse", label: "Priority Pulse", desc: "Urgent items glow", icon: Activity },
               { mode: "refresh", label: "Live Fade", desc: "Updates crossfade in", icon: Waves },
             ]).map(({ mode, label, desc, icon: Icon }) => {
-              const stored = (() => { try { return localStorage.getItem("corner-talk-anim-mode") || "stagger"; } catch { return "stagger"; } })();
-              const isActive = stored === mode;
+              const isActive = activeCtAnimMode === mode;
               return (
                 <button
                   key={mode}
                   onClick={() => {
                     try { localStorage.setItem("corner-talk-anim-mode", mode); } catch {}
+                    setActiveCtAnimMode(mode);
                     window.dispatchEvent(new Event("corner-talk-anim-changed"));
                     toast.success(`Corner Talk animation set to ${label}`);
                   }}
