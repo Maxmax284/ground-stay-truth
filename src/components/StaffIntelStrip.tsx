@@ -272,20 +272,20 @@ export function StaffIntelStrip() {
                 key={`${entry.id}-tw${i}`}
                 onClick={() => { setDetailEntry(entry); handlePause(); }}
                 onMouseEnter={handlePause}
-                className={`py-1.5 pl-2 rounded-sm w-full text-left hover:bg-accent/30 transition-all duration-300 ${SEVERITY_STYLES[entry.severity] || ""} ${
+                className={`py-1 pl-2 rounded-sm w-full text-left hover:bg-accent/30 transition-all duration-300 ${SEVERITY_STYLES[entry.severity] || ""} ${
                   isCurrent ? "opacity-100" : isPast ? "opacity-60" : "opacity-30"
                 }`}
               >
-                <span className="text-sm text-foreground font-mono">
+                <span className="text-xs text-foreground tracking-wide">
                   {isCurrent ? (
                     <>
-                      {typedText}
-                      <span className="inline-block w-[2px] h-4 bg-primary ml-0.5 animate-[pulse_1s_ease-in-out_infinite]" />
+                      <span className="font-medium">{typedText}</span>
+                      <span className="inline-block w-[1.5px] h-3 bg-primary ml-0.5 animate-[pulse_1s_ease-in-out_infinite]" />
                     </>
                   ) : isPast ? (
-                    `${entry.title} — ${entry.body.slice(0, 100)}`
+                    <span><span className="font-medium">{entry.title}</span> <span className="text-muted-foreground">— {entry.body.slice(0, 80)}…</span></span>
                   ) : (
-                    <span className="text-muted-foreground/40">▌</span>
+                    <span className="text-muted-foreground/30 text-[10px]">▌</span>
                   )}
                 </span>
               </button>
