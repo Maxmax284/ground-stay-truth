@@ -314,6 +314,50 @@ export function IntelligenceEditor() {
         </div>
       )}
 
+      {/* Lookout Layer — Admin-only draft suggestion system */}
+      <Card className="border-dashed">
+        <CardContent className="py-4 px-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Radar className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-semibold text-foreground">Lookout</span>
+              <span className="text-xs text-muted-foreground">Pattern detection</span>
+            </div>
+            <Button size="sm" variant="outline" onClick={handleLookoutScan} disabled={lookoutScanning}>
+              {lookoutScanning ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Radar className="h-4 w-4 mr-1" />}
+              {lookoutScanning ? "Scanning…" : "Scan for Patterns"}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Analyzes common guest pain points and suggests draft entries. Nothing is published — all suggestions require your review and approval.
+          </p>
+          {lookoutDrafts.length > 0 && (
+            <div className="space-y-2">
+              {lookoutDrafts.map((draft, i) => (
+                <div key={i} className="flex items-start gap-2 p-2 rounded-md border border-dashed bg-muted/20">
+                  <span className="mt-0.5 shrink-0">
+                    {draft.type === "heads_up" ? <Zap className="h-3.5 w-3.5 text-amber-500" /> : <BookOpen className="h-3.5 w-3.5 text-primary" />}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium">{draft.title}</p>
+                    <p className="text-[11px] text-muted-foreground line-clamp-1">{draft.body}</p>
+                    <div className="flex gap-1 mt-1">
+                      <Badge variant="outline" className="text-[10px] px-1 py-0">{draft.category}</Badge>
+                      {draft.location?.slice(0, 2).map((loc) => (
+                        <Badge key={loc} variant="outline" className="text-[10px] px-1 py-0">{loc}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs shrink-0" onClick={() => loadLookoutDraft(draft)}>
+                    Review
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Edit/Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
