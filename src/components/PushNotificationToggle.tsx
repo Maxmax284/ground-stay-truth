@@ -17,8 +17,8 @@ export function PushNotificationToggle() {
       const reg = await navigator.serviceWorker.ready;
       const options: NotificationOptions & { vibrate?: number[] } = {
         body: "This is a test notification. If you're seeing this, push notifications are working on your device!",
-        icon: "/pwa-192x192.png",
-        badge: "/pwa-192x192.png",
+        icon: "/pwa-notification-icon.png",
+        badge: "/pwa-notification-icon.png",
         tag: "gs-test",
         data: { url: "/" },
       };
@@ -126,8 +126,8 @@ export function PushNotificationToggle() {
                   const reg = await navigator.serviceWorker.ready;
                   const opts: NotificationOptions & { vibrate?: number[] } = {
                     body: "You're all set! You'll now receive real-time alerts for bookings, messages, maintenance updates, and more — even when the app is closed.",
-                    icon: "/pwa-192x192.png",
-                    badge: "/pwa-192x192.png",
+                    icon: "/pwa-notification-icon.png",
+                    badge: "/pwa-notification-icon.png",
                     tag: "gs-welcome",
                     data: { url: "/" },
                   };
