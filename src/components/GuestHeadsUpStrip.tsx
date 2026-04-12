@@ -161,12 +161,11 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
     touchStartRef.current = null;
   };
 
-  if (visible.length === 0) return null;
-
   const safeIndex = currentIndex < visible.length ? currentIndex : 0;
 
   // Show up to 3 entries at once
   const visibleCards = useMemo(() => {
+    if (visible.length === 0) return [];
     const count = Math.min(3, visible.length);
     const cards: IntelligenceEntry[] = [];
     for (let i = 0; i < count; i++) {
@@ -174,6 +173,8 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
     }
     return cards;
   }, [visible, safeIndex]);
+
+  if (visible.length === 0) return null;
 
   // Animation classes — lively & engaging with stagger
   const getCardClasses = (position: number): string => {
