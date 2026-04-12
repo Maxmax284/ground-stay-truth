@@ -91,8 +91,10 @@ export function StaffIntelStrip() {
 
   // ── Typewriter effect — types through each visible entry sequentially ──
   const [typewriterLine, setTypewriterLine] = useState(0);
+  const [typewriterDone, setTypewriterDone] = useState(false);
   useEffect(() => {
     if (animMode !== "typewriter" || visibleSlice.length === 0 || collapsed) return;
+    setTypewriterDone(false);
     const entry = visibleSlice[typewriterLine % visibleSlice.length];
     if (!entry) return;
     const fullText = `${entry.title} — ${entry.body.slice(0, 100)}`;
@@ -105,10 +107,15 @@ export function StaffIntelStrip() {
         charIndex++;
         typeTimerRef.current = setTimeout(typeNext, 30);
       } else {
-        // After finishing, wait then advance to next line
+        const isLastLine = typewriterLine % visibleSlice.length === visibleSlice.length - 1;
+        // Wait 3s after each line, 5s after last line before cycling
         typeTimerRef.current = setTimeout(() => {
-          setTypewriterLine((prev) => (prev + 1) % visibleSlice.length);
-        }, 2000);
+          if (isLastLine) {
+            setTypewriterDone(true);
+          } else {
+            setTypewriterLine((prev) => prev + 1);
+          }
+        }, isLastLine ? 5000 : 3000);
       }
     };
     typeTimerRef.current = setTimeout(typeNext, 200);
@@ -116,7 +123,7 @@ export function StaffIntelStrip() {
   }, [animMode, typewriterLine, visibleSlice, collapsed]);
 
   // Reset typewriter line on index change
-  useEffect(() => { setTypewriterLine(0); }, [activeIndex]);
+  useEffect(() => { setTypewriterLine(0); setTypewriterDone(false); }, [activeIndex]);
 
   const advance = useCallback(() => {
     if (staffEntries.length <= 1) return;
