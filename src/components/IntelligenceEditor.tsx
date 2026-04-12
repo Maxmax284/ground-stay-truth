@@ -405,13 +405,13 @@ export function IntelligenceEditor() {
               { mode: "pulse", label: "Priority Pulse", desc: "Urgent items glow", icon: Activity },
               { mode: "refresh", label: "Live Fade", desc: "Updates crossfade in", icon: Waves },
             ]).map(({ mode, label, desc, icon: Icon }) => {
-              const stored = (() => { try { return localStorage.getItem("corner-talk-anim-mode") || "stagger"; } catch { return "stagger"; } })();
-              const isActive = stored === mode;
+              const isActive = activeCtAnimMode === mode;
               return (
                 <button
                   key={mode}
                   onClick={() => {
                     try { localStorage.setItem("corner-talk-anim-mode", mode); } catch {}
+                    setActiveCtAnimMode(mode);
                     window.dispatchEvent(new Event("corner-talk-anim-changed"));
                     toast.success(`Corner Talk animation set to ${label}`);
                   }}
