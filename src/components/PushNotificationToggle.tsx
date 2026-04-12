@@ -117,7 +117,30 @@ export function PushNotificationToggle() {
             </Button>
           </div>
         ) : (
-          <Button onClick={subscribe} disabled={permission === "denied"} className="w-full">
+          <Button
+            onClick={async () => {
+              const success = await subscribe();
+              if (success) {
+                // Fire a welcome push notification
+                try {
+                  const reg = await navigator.serviceWorker.ready;
+                  const opts: NotificationOptions & { vibrate?: number[] } = {
+                    body: "You're all set! You'll now receive real-time alerts for bookings, messages, maintenance updates, and more — even when the app is closed.",
+                    icon: "/pwa-192x192.png",
+                    badge: "/pwa-192x192.png",
+                    tag: "gs-welcome",
+                    data: { url: "/" },
+                  };
+                  (opts as any).vibrate = [200, 100, 200];
+                  await reg.showNotification("Welcome to Ground Stay Alerts 🔔", opts);
+                } catch {
+                  // Non-critical — toast already shown
+                }
+              }
+            }}
+            disabled={permission === "denied"}
+            className="w-full"
+          >
             <Bell className="h-4 w-4 mr-2" />
             Enable Push Notifications
           </Button>

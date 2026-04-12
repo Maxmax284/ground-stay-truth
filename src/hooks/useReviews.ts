@@ -168,6 +168,31 @@ export function useSubmitReview() {
     }) => {
       const { error } = await supabase.from("reviews" as any).insert(review as any);
       if (error) throw error;
+
+      // Notify admins about new review submission
+      try {
+        const displayName = review.guest_display_name || "A guest";
+        const unitInfo = review.stay_unit_name ? ` for ${review.stay_unit_name}` : "";
+        const { data: admins } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .eq("role", "admin");
+
+        if (admins && admins.length > 0) {
+          await supabase.functions.invoke("create-notification", {
+            body: {
+              notifications: admins.map((a) => ({
+                user_id: a.user_id,
+                type: "review",
+                reference_id: review.booking_id,
+                message: `${displayName} submitted a ${review.rating}-star review${unitInfo} — pending moderation`,
+              })),
+            },
+          });
+        }
+      } catch {
+        // Non-critical
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["reviews"] });
