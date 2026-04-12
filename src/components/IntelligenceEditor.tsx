@@ -315,6 +315,66 @@ export function IntelligenceEditor() {
         </div>
       )}
 
+      {/* Image Audit Review */}
+      <Card className="border-dashed">
+        <CardContent className="py-4 px-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-semibold text-foreground">Image Audit</span>
+              <span className="text-xs text-muted-foreground">
+                {(entries ?? []).filter(e => e.image_url).length}/{(entries ?? []).length} with images
+              </span>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => setShowImageAudit(!showImageAudit)}>
+              {showImageAudit ? "Hide" : "Review Images"}
+            </Button>
+          </div>
+          {showImageAudit && (
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+              {(entries ?? []).map((entry) => (
+                <div key={entry.id} className="flex items-start gap-3 p-2.5 rounded-md border bg-card">
+                  {entry.image_url ? (
+                    <img
+                      src={entry.image_url}
+                      alt={entry.image_caption || entry.title}
+                      className="w-16 h-16 rounded object-cover shrink-0 border"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded border border-dashed flex items-center justify-center shrink-0 bg-muted/30">
+                      <ImageOff className="h-5 w-5 text-muted-foreground/40" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-xs font-medium">{entry.title}</span>
+                    </div>
+                    <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                      <Badge variant="outline" className="text-[10px] px-1 py-0">
+                        {entry.type === "heads_up" ? "⚡ Heads Up" : "📖 Playbook"}
+                      </Badge>
+                      <Badge variant="outline" className="text-[10px] px-1 py-0">{entry.category}</Badge>
+                      {entry.location?.slice(0, 3).map((loc) => (
+                        <span key={loc} className="text-[10px] text-muted-foreground">{loc}</span>
+                      ))}
+                    </div>
+                    {entry.image_caption && (
+                      <p className="text-[11px] text-muted-foreground mt-0.5 italic">"{entry.image_caption}"</p>
+                    )}
+                    {!entry.image_url && (
+                      <p className="text-[11px] text-amber-600 mt-0.5">No image assigned</p>
+                    )}
+                  </div>
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 shrink-0" onClick={() => openEdit(entry)}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Lookout Layer — Admin-only draft suggestion system */}
       <Card className="border-dashed">
         <CardContent className="py-4 px-4 space-y-3">
