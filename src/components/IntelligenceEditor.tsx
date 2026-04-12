@@ -553,17 +553,65 @@ export function IntelligenceEditor() {
                 </div>
               </div>
 
-              <div>
-                <Label className="text-xs">Image URL (optional)</Label>
-                <Input value={editEntry.image_url || ""} onChange={(e) => setEditEntry({ ...editEntry, image_url: e.target.value || null })} placeholder="https://..." className="h-8 text-sm" />
+              <div className="space-y-2">
+                <Label className="text-xs">Image</Label>
+                {editEntry.image_url ? (
+                  <div className="space-y-2">
+                    <div className="relative rounded-lg overflow-hidden border bg-muted/20">
+                      <img
+                        src={editEntry.image_url}
+                        alt={editEntry.image_caption || "Preview"}
+                        className="w-full h-32 object-cover"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-1.5 right-1.5 h-6 w-6 p-0 rounded-full"
+                        onClick={() => setEditEntry({ ...editEntry, image_url: null, image_caption: null })}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <Input
+                      value={editEntry.image_caption || ""}
+                      onChange={(e) => setEditEntry({ ...editEntry, image_caption: e.target.value || null })}
+                      placeholder="Caption — e.g. KBank ATM — green machine"
+                      className="h-8 text-sm"
+                    />
+                    <p className="text-[10px] text-muted-foreground">This is how guests will see the image</p>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleImageUpload(f);
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 h-8 text-xs"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1" />}
+                      {uploading ? "Uploading…" : "Upload Image"}
+                    </Button>
+                    <Input
+                      value={editEntry.image_url || ""}
+                      onChange={(e) => setEditEntry({ ...editEntry, image_url: e.target.value || null })}
+                      placeholder="or paste URL"
+                      className="h-8 text-xs flex-1"
+                    />
+                  </div>
+                )}
               </div>
-
-              {editEntry.image_url && (
-                <div>
-                  <Label className="text-xs">Image Caption</Label>
-                  <Input value={editEntry.image_caption || ""} onChange={(e) => setEditEntry({ ...editEntry, image_caption: e.target.value || null })} placeholder="Yellow Krungsri ATM attached to branch" className="h-8 text-sm" />
-                </div>
-              )}
 
               {editEntry.type === "heads_up" && (
                 <div>
