@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useIntelligence, useIntelligenceMutations, type IntelligenceEntry, type IntelligenceCategory, type IntelligenceType, type IntelligenceStatus, type IntelligenceSeverity } from "@/hooks/useIntelligence";
+import { type IntelAnimationMode, getStoredAnimMode, setStoredAnimMode } from "@/components/StaffIntelStrip";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, ArrowUpCircle, Zap, BookOpen, Archive, Sparkles, Loader2, Radar, ImageIcon, ImageOff, Upload, X, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowUpCircle, Zap, BookOpen, Archive, Sparkles, Loader2, Radar, ImageIcon, ImageOff, Upload, X, CheckCircle2, AlertTriangle, MonitorPlay, Layers, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 const CATEGORIES: { value: IntelligenceCategory; label: string }[] = [
@@ -341,6 +342,46 @@ export function IntelligenceEditor() {
           ))}
         </div>
       )}
+
+      {/* Intel Strip Animation Mode — Admin Only */}
+      <Card className="border-dashed">
+        <CardContent className="py-4 px-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <MonitorPlay className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">Strip Animation</span>
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0">Admin Only</Badge>
+          </div>
+          <p className="text-xs text-muted-foreground">Controls how intel entries rotate on the staff dashboard strip.</p>
+          <div className="grid grid-cols-3 gap-2">
+            {([
+              { mode: "ticker" as IntelAnimationMode, label: "Ticker", desc: "Slides left like a news feed", icon: RefreshCw },
+              { mode: "crossfade" as IntelAnimationMode, label: "Crossfade", desc: "Smooth fade between entries", icon: Layers },
+              { mode: "stack" as IntelAnimationMode, label: "Stack", desc: "Shows 3 cards, shuffles order", icon: MonitorPlay },
+            ]).map(({ mode, label, desc, icon: Icon }) => {
+              const isActive = getStoredAnimMode() === mode;
+              return (
+                <button
+                  key={mode}
+                  onClick={() => {
+                    setStoredAnimMode(mode);
+                    window.dispatchEvent(new Event("intel-anim-mode-changed"));
+                    toast.success(`Strip animation set to ${label}`);
+                  }}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border text-center transition-all ${
+                    isActive
+                      ? "border-primary bg-primary/5 ring-1 ring-primary"
+                      : "border-border hover:border-primary/40 hover:bg-accent/30"
+                  }`}
+                >
+                  <Icon className={`h-5 w-5 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className={`text-xs font-medium ${isActive ? "text-primary" : "text-foreground"}`}>{label}</span>
+                  <span className="text-[10px] text-muted-foreground leading-tight">{desc}</span>
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Image Audit Review */}
       <Card className="border-dashed">
