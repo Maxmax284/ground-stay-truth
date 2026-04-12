@@ -143,11 +143,13 @@ export function StaffIntelStrip() {
     }, 400);
   }, [staffEntries.length, weightedIndices]);
 
+  // Auto-rotation — for typewriter, only advance after all lines are typed
+  const canAutoAdvance = animMode !== "typewriter" || typewriterDone;
   useEffect(() => {
-    if (collapsed || paused || staffEntries.length <= 1) return;
-    const interval = setInterval(advance, ROTATION_INTERVAL);
+    if (collapsed || paused || staffEntries.length <= 1 || !canAutoAdvance) return;
+    const interval = setInterval(advance, animMode === "typewriter" ? 1000 : ROTATION_INTERVAL);
     return () => clearInterval(interval);
-  }, [collapsed, paused, advance, staffEntries.length]);
+  }, [collapsed, paused, advance, staffEntries.length, canAutoAdvance, animMode]);
 
   useEffect(() => {
     setActiveIndex(0);
