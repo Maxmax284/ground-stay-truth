@@ -57,6 +57,7 @@ export function IntelligenceEditor() {
   const [lookoutDrafts, setLookoutDrafts] = useState<Partial<IntelligenceEntry>[]>([]);
   const [showImageAudit, setShowImageAudit] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [activeAnimMode, setActiveAnimMode] = useState<IntelAnimationMode>(getStoredAnimMode);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (file: File) => {
