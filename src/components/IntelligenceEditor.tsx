@@ -252,10 +252,10 @@ export function IntelligenceEditor() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
-            <SelectTrigger className="w-[140px] h-8 text-xs">
+            <SelectTrigger className="w-[130px] h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -267,12 +267,12 @@ export function IntelligenceEditor() {
           <span className="text-xs text-muted-foreground">{filtered.length} entries</span>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={handleGenerateDraft} disabled={generating}>
-            {generating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
-            {generating ? "Generating…" : "Suggest Draft"}
+          <Button size="sm" variant="outline" onClick={handleGenerateDraft} disabled={generating} className="text-xs">
+            {generating ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
+            {generating ? "Generating…" : "Suggest"}
           </Button>
-          <Button size="sm" onClick={openNew}>
-            <Plus className="h-4 w-4 mr-1" /> New Entry
+          <Button size="sm" onClick={openNew} className="text-xs">
+            <Plus className="h-3.5 w-3.5 mr-1" /> New
           </Button>
         </div>
       </div>
