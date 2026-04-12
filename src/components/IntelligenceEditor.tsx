@@ -178,9 +178,15 @@ export function IntelligenceEditor() {
           </Select>
           <span className="text-xs text-muted-foreground">{filtered.length} entries</span>
         </div>
-        <Button size="sm" onClick={openNew}>
-          <Plus className="h-4 w-4 mr-1" /> New Entry
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={handleGenerateDraft} disabled={generating}>
+            {generating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+            {generating ? "Generating…" : "Suggest Draft"}
+          </Button>
+          <Button size="sm" onClick={openNew}>
+            <Plus className="h-4 w-4 mr-1" /> New Entry
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
