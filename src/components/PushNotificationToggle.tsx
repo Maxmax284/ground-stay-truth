@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { showForegroundNotification } from "@/components/ForegroundNotificationBanner";
 
 export function PushNotificationToggle() {
   const { isSupported, isSubscribed, loading, permission, subscribe, unsubscribe } = usePushNotifications();
@@ -14,17 +15,13 @@ export function PushNotificationToggle() {
   const handleTestNotification = async () => {
     setTesting(true);
     try {
-      const reg = await navigator.serviceWorker.ready;
-      const options: NotificationOptions & { vibrate?: number[] } = {
+      // Show via the unified foreground notification system
+      showForegroundNotification({
+        title: "Ground Stay — Test 🔔",
         body: "This is a test notification. If you're seeing this, push notifications are working on your device!",
-        icon: "/pwa-notification-icon.png",
-        badge: "/pwa-notification-icon.png",
-        tag: "gs-test",
-        data: { url: "/" },
-      };
-      // vibrate is supported on Android but not in the TS types
-      (options as any).vibrate = [200, 100, 200];
-      await reg.showNotification("Ground Stay — Test 🔔", options);
+        type: "test",
+        route: "/settings",
+      });
       toast.success("Test notification sent — check your device!");
     } catch (err: any) {
       console.error("Test notification error:", err);
@@ -121,21 +118,13 @@ export function PushNotificationToggle() {
             onClick={async () => {
               const success = await subscribe();
               if (success) {
-                // Fire a welcome push notification
-                try {
-                  const reg = await navigator.serviceWorker.ready;
-                  const opts: NotificationOptions & { vibrate?: number[] } = {
-                    body: "You're all set! You'll now receive real-time alerts for bookings, messages, maintenance updates, and more — even when the app is closed.",
-                    icon: "/pwa-notification-icon.png",
-                    badge: "/pwa-notification-icon.png",
-                    tag: "gs-welcome",
-                    data: { url: "/" },
-                  };
-                  (opts as any).vibrate = [200, 100, 200];
-                  await reg.showNotification("Welcome to Ground Stay Alerts 🔔", opts);
-                } catch {
-                  // Non-critical — toast already shown
-                }
+                // Fire welcome notification through unified foreground system
+                showForegroundNotification({
+                  title: "Welcome to Ground Stay Alerts 🔔",
+                  body: "You're all set! You'll now receive real-time alerts for bookings, messages, maintenance updates, and more — even when the app is closed.",
+                  type: "welcome",
+                  route: "/",
+                });
               }
             }}
             disabled={permission === "denied"}
