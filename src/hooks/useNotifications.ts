@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { showForegroundNotification } from "@/components/ForegroundNotificationBanner";
 
 export interface Notification {
   id: string;
@@ -41,8 +42,29 @@ export function useNotifications() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
-        () => {
+        (payload) => {
           qc.invalidateQueries({ queryKey: ["notifications", user.id] });
+
+          // Show foreground banner for real-time DB notifications
+          const n = payload.new as any;
+          if (n && document.visibilityState === "visible") {
+            const typeLabels: Record<string, string> = {
+              booking: "📋 Booking",
+              payment: "💳 Payment",
+              maintenance: "🔧 Maintenance",
+              laundry: "👕 Laundry",
+              message: "💬 Message",
+              review: "⭐ Review",
+              flight: "✈️ Flight",
+              stay_essentials: "🏠 Stay Info",
+            };
+            showForegroundNotification({
+              title: `Ground Stay — ${typeLabels[n.type] || "Notification"}`,
+              body: n.message,
+              type: n.type,
+              referenceId: n.reference_id,
+            });
+          }
         }
       )
       .subscribe();
