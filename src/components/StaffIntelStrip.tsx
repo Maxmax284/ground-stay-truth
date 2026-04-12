@@ -77,10 +77,24 @@ export function StaffIntelStrip() {
   );
   const weightedIndices = useMemo(() => buildWeightedIndices(staffEntries), [staffEntries]);
 
-  // ── Typewriter effect ──
+  // ── Get a slice of visible entries ──
+  const getVisibleSlice = useCallback((count: number) => {
+    if (staffEntries.length === 0) return [];
+    const safe = safeIndex < staffEntries.length ? safeIndex : 0;
+    const result: IntelligenceEntry[] = [];
+    for (let i = 0; i < Math.min(count, staffEntries.length); i++) {
+      result.push(staffEntries[(safe + i) % staffEntries.length]);
+    }
+    return result;
+  }, [staffEntries, safeIndex]);
+
+  const visibleSlice = useMemo(() => getVisibleSlice(VISIBLE_COUNT), [getVisibleSlice]);
+
+  // ── Typewriter effect — types through each visible entry sequentially ──
+  const [typewriterLine, setTypewriterLine] = useState(0);
   useEffect(() => {
-    if (animMode !== "typewriter" || staffEntries.length === 0 || collapsed) return;
-    const entry = staffEntries[activeIndex < staffEntries.length ? activeIndex : 0];
+    if (animMode !== "typewriter" || visibleSlice.length === 0 || collapsed) return;
+    const entry = visibleSlice[typewriterLine % visibleSlice.length];
     if (!entry) return;
     const fullText = `${entry.title} — ${entry.body.slice(0, 100)}`;
     let charIndex = 0;
@@ -91,11 +105,19 @@ export function StaffIntelStrip() {
         setTypedText(fullText.slice(0, charIndex));
         charIndex++;
         typeTimerRef.current = setTimeout(typeNext, 30);
+      } else {
+        // After finishing, wait then advance to next line
+        typeTimerRef.current = setTimeout(() => {
+          setTypewriterLine((prev) => (prev + 1) % visibleSlice.length);
+        }, 2000);
       }
     };
     typeTimerRef.current = setTimeout(typeNext, 200);
     return () => { if (typeTimerRef.current) clearTimeout(typeTimerRef.current); };
-  }, [animMode, activeIndex, staffEntries, collapsed]);
+  }, [animMode, typewriterLine, visibleSlice, collapsed]);
+
+  // Reset typewriter line on index change
+  useEffect(() => { setTypewriterLine(0); }, [activeIndex]);
 
   const advance = useCallback(() => {
     if (staffEntries.length <= 1) return;
