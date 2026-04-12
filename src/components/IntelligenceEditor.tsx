@@ -55,6 +55,33 @@ export function IntelligenceEditor() {
   const [lookoutScanning, setLookoutScanning] = useState(false);
   const [lookoutDrafts, setLookoutDrafts] = useState<Partial<IntelligenceEntry>[]>([]);
   const [showImageAudit, setShowImageAudit] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be under 2MB");
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from("intelligence-images").upload(path, file);
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from("intelligence-images").getPublicUrl(path);
+      setEditEntry((prev) => prev ? { ...prev, image_url: urlData.publicUrl } : prev);
+      toast.success("Image uploaded");
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const filtered = (entries ?? []).filter((e) => filter === "all" || e.type === filter);
 
