@@ -1,12 +1,36 @@
-import { Bell, BellOff, BellRing, Smartphone } from "lucide-react";
+import { useState } from "react";
+import { Bell, BellOff, BellRing, Smartphone, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 export function PushNotificationToggle() {
   const { isSupported, isSubscribed, loading, permission, subscribe, unsubscribe } = usePushNotifications();
+  const [testing, setTesting] = useState(false);
+
+  const handleTestNotification = async () => {
+    setTesting(true);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification("Ground Stay — Test 🔔", {
+        body: "This is a test notification. If you're seeing this, push notifications are working on your device!",
+        icon: "/pwa-192x192.png",
+        badge: "/pwa-192x192.png",
+        tag: "gs-test",
+        data: { url: "/" },
+        vibrate: [200, 100, 200],
+      });
+      toast.success("Test notification sent — check your device!");
+    } catch (err: any) {
+      console.error("Test notification error:", err);
+      toast.error("Failed to show test notification: " + (err.message || "Unknown error"));
+    } finally {
+      setTesting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -75,10 +99,21 @@ export function PushNotificationToggle() {
         )}
 
         {isSubscribed ? (
-          <Button variant="outline" onClick={unsubscribe} className="w-full">
-            <BellOff className="h-4 w-4 mr-2" />
-            Disable Notifications
-          </Button>
+          <div className="flex flex-col gap-2">
+            <Button variant="outline" onClick={unsubscribe} className="w-full">
+              <BellOff className="h-4 w-4 mr-2" />
+              Disable Notifications
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={handleTestNotification}
+              disabled={testing}
+              className="w-full"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              {testing ? "Sending..." : "Send Test Notification"}
+            </Button>
+          </div>
         ) : (
           <Button onClick={subscribe} disabled={permission === "denied"} className="w-full">
             <Bell className="h-4 w-4 mr-2" />
