@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useIntelligence, useIntelligenceMutations, type IntelligenceEntry, type IntelligenceCategory, type IntelligenceType, type IntelligenceStatus, type IntelligenceSeverity } from "@/hooks/useIntelligence";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, ArrowUpCircle, Zap, BookOpen, Archive } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowUpCircle, Zap, BookOpen, Archive, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 const CATEGORIES: { value: IntelligenceCategory; label: string }[] = [
@@ -41,12 +42,13 @@ const STATUS_COLORS: Record<IntelligenceStatus, string> = {
 };
 
 export function IntelligenceEditor() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { data: entries, isLoading } = useIntelligence();
   const { upsert, remove, promote } = useIntelligenceMutations();
   const [editEntry, setEditEntry] = useState<Partial<IntelligenceEntry> | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "heads_up" | "playbook">("all");
+  const [generating, setGenerating] = useState(false);
 
   const filtered = (entries ?? []).filter((e) => filter === "all" || e.type === filter);
 
@@ -108,6 +110,58 @@ export function IntelligenceEditor() {
     }
   };
 
+  const handleGenerateDraft = async () => {
+    if (!session) return;
+    setGenerating(true);
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            message: "Based on common guest issues and operational patterns, suggest ONE new intelligence entry. Return ONLY valid JSON with keys: type (heads_up or playbook), title, body, category (money|transport|safety|connectivity|customs|health|local_life), location (array from bkk/samui/nathon/lipa_noi/bus/island/global), severity (normal|attention|urgent). Keep body under 200 characters, practical and direct. No markdown, no explanation — just the JSON object.",
+            mode: "draft",
+          }),
+        }
+      );
+
+      if (!resp.ok) throw new Error("AI request failed");
+      const data = await resp.json();
+      const aiText = data.reply || data.content || "";
+
+      // Try to parse JSON from the response
+      const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error("No valid JSON in AI response");
+
+      const suggested = JSON.parse(jsonMatch[0]);
+
+      // Open as draft for admin review
+      setEditEntry({
+        type: suggested.type === "playbook" ? "playbook" : "heads_up",
+        status: "draft", // ALWAYS draft — admin must approve
+        title: suggested.title || "",
+        body: suggested.body || "",
+        category: suggested.category || "local_life",
+        location: Array.isArray(suggested.location) ? suggested.location : ["global"],
+        audience: ["guest", "staff"],
+        severity: suggested.severity || "normal",
+        image_url: null,
+        image_caption: null,
+      });
+      setDialogOpen(true);
+      toast.info("AI suggestion loaded as draft — review and edit before publishing");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to generate suggestion");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -124,9 +178,15 @@ export function IntelligenceEditor() {
           </Select>
           <span className="text-xs text-muted-foreground">{filtered.length} entries</span>
         </div>
-        <Button size="sm" onClick={openNew}>
-          <Plus className="h-4 w-4 mr-1" /> New Entry
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={handleGenerateDraft} disabled={generating}>
+            {generating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+            {generating ? "Generating…" : "Suggest Draft"}
+          </Button>
+          <Button size="sm" onClick={openNew}>
+            <Plus className="h-4 w-4 mr-1" /> New Entry
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
