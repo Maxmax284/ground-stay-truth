@@ -693,6 +693,31 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
       if (!sanitized) throw new Error("Message is empty");
       const { error } = await supabase.from("messages").insert({ booking_id: booking.id, content: sanitized, sender_id: userId!, is_internal: false });
       if (error) throw error;
+
+      // Notify staff about new guest message
+      try {
+        const { data: staffRoles } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .in("role", ["admin", "manager", "front_desk", "front_desk_supervisor"]);
+        if (staffRoles && staffRoles.length > 0) {
+          const unitName = booking.units?.name || "";
+          await supabase.functions.invoke("create-notification", {
+            body: {
+              notifications: staffRoles
+                .filter((s) => s.user_id !== userId)
+                .map((s) => ({
+                  user_id: s.user_id,
+                  type: "message",
+                  reference_id: booking.id,
+                  message: `New message from guest${unitName ? ` (${unitName})` : ""}: "${sanitized.slice(0, 60)}${sanitized.length > 60 ? "…" : ""}"`,
+                })),
+            },
+          });
+        }
+      } catch {
+        // Non-critical
+      }
     },
     onSuccess: () => { setReply(""); queryClient.invalidateQueries({ queryKey: ["guest-messages"] }); toast.success(t("messages.messageSent")); },
     onError: () => toast.error(t("messages.messageFailed")),
@@ -894,6 +919,30 @@ function GuestThreadView({ bookingId, booking, messages, userId, onBack }: {
       if (!sanitized) throw new Error("Message is empty");
       const { error } = await supabase.from("messages").insert({ booking_id: bookingId, content: sanitized, sender_id: userId!, is_internal: false });
       if (error) throw error;
+
+      // Notify staff about new guest message
+      try {
+        const { data: staffRoles } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .in("role", ["admin", "manager", "front_desk", "front_desk_supervisor"]);
+        if (staffRoles && staffRoles.length > 0) {
+          await supabase.functions.invoke("create-notification", {
+            body: {
+              notifications: staffRoles
+                .filter((s) => s.user_id !== userId)
+                .map((s) => ({
+                  user_id: s.user_id,
+                  type: "message",
+                  reference_id: bookingId,
+                  message: `New guest message: "${sanitized.slice(0, 60)}${sanitized.length > 60 ? "…" : ""}"`,
+                })),
+            },
+          });
+        }
+      } catch {
+        // Non-critical
+      }
     },
     onSuccess: () => { setReply(""); queryClient.invalidateQueries({ queryKey: ["guest-messages"] }); toast.success(t("messages.messageSent")); },
     onError: () => toast.error(t("messages.messageFailed")),
