@@ -801,6 +801,87 @@ export type Database = {
         }
         Relationships: []
       }
+      intelligence_entries: {
+        Row: {
+          approved_by: string | null
+          audience: string[]
+          body: string
+          category: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          image_caption: string | null
+          image_url: string | null
+          location: string[] | null
+          promoted_from: string | null
+          property_id: string | null
+          severity: string | null
+          sort_order: number | null
+          status: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          audience?: string[]
+          body: string
+          category: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          image_caption?: string | null
+          image_url?: string | null
+          location?: string[] | null
+          promoted_from?: string | null
+          property_id?: string | null
+          severity?: string | null
+          sort_order?: number | null
+          status?: string
+          title: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          audience?: string[]
+          body?: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          image_caption?: string | null
+          image_url?: string | null
+          location?: string[] | null
+          promoted_from?: string | null
+          property_id?: string | null
+          severity?: string | null
+          sort_order?: number | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intelligence_entries_promoted_from_fkey"
+            columns: ["promoted_from"]
+            isOneToOne: false
+            referencedRelation: "intelligence_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intelligence_entries_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       laundry_requests: {
         Row: {
           bag_count: number | null
