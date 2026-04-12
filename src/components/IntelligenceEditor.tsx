@@ -167,6 +167,61 @@ export function IntelligenceEditor() {
     }
   };
 
+  const handleLookoutScan = async () => {
+    if (!session) return;
+    setLookoutScanning(true);
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            message: `Analyze common guest pain points for Thailand travel (ATMs, transport, connectivity, safety, customs, health). Suggest 3 NEW intelligence entries that would help guests. Return ONLY a JSON array of objects with keys: type (heads_up or playbook), title, body (under 200 chars), category (money|transport|safety|connectivity|customs|health|local_life), location (array from bkk/samui/nathon/lipa_noi/phuket/pattaya/transit/bus/island/global), severity (normal|attention|urgent). No markdown, no explanation — just the JSON array.`,
+            mode: "draft",
+          }),
+        }
+      );
+
+      if (!resp.ok) throw new Error("AI request failed");
+      const data = await resp.json();
+      const aiText = data.reply || data.content || "";
+
+      const jsonMatch = aiText.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) throw new Error("No valid JSON array in AI response");
+
+      const suggestions = JSON.parse(jsonMatch[0]);
+      const drafts = suggestions.map((s: any) => ({
+        type: s.type === "playbook" ? "playbook" : "heads_up",
+        status: "draft" as const,
+        title: s.title || "",
+        body: s.body || "",
+        category: s.category || "local_life",
+        location: Array.isArray(s.location) ? s.location : ["global"],
+        audience: ["guest", "staff"],
+        severity: s.severity || "normal",
+        image_url: null,
+        image_caption: null,
+      }));
+
+      setLookoutDrafts(drafts);
+      toast.info(`Lookout found ${drafts.length} suggestions — review below`);
+    } catch (err: any) {
+      toast.error(err.message || "Lookout scan failed");
+    } finally {
+      setLookoutScanning(false);
+    }
+  };
+
+  const loadLookoutDraft = (draft: Partial<IntelligenceEntry>) => {
+    setEditEntry({ ...draft });
+    setDialogOpen(true);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
