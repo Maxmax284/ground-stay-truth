@@ -336,7 +336,10 @@ serve(async (req) => {
       details: { source: "ai-assistant" },
     }).then(() => {});
 
-    const { mode, role: clientRole, messages, context, language, property_id, operational_mode } = await req.json();
+    const body = await req.json();
+    const { mode, role: clientRole, messages, context, language, property_id, operational_mode } = body;
+    // Support both "message" (singular, used by Lookout scan) and "messages" (array, used by chat)
+    const singleMessage = body.message as string | undefined;
     const responseLang = language || "English";
 
     // ─── SERVER-SIDE ROLE DERIVATION (prevents role spoofing) ──────────────
@@ -1068,8 +1071,18 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
 
     const fullSystemPrompt = buildSystemPrompt(role || "", responseLang, contextData, operational_mode || null);
 
-    // Draft mode (Lookout scan) — non-streaming JSON response
+    // Draft mode (Lookout scan) — non-streaming JSON response with dedicated system prompt
     if (mode === "draft") {
+      const draftSystemPrompt = `You are an operational intelligence analyst for a hospitality property in Thailand. Your ONLY job is to return a valid JSON array. Do NOT include any explanation, markdown, or conversational text — just the raw JSON array. No code fences. No preamble.`;
+
+      // Build messages: use singleMessage (from Lookout) or messages array (from chat)
+      const draftMessages: Array<{role: string; content: string}> = [];
+      if (singleMessage) {
+        draftMessages.push({ role: "user", content: singleMessage });
+      } else if (messages && messages.length > 0) {
+        draftMessages.push(...messages);
+      }
+
       const draftResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -1079,11 +1092,11 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
           messages: [
-            { role: "system", content: fullSystemPrompt },
-            ...(messages ?? []),
+            { role: "system", content: draftSystemPrompt },
+            ...draftMessages,
           ],
           stream: false,
-          max_tokens: 600,
+          max_tokens: 1200,
         }),
       });
 
