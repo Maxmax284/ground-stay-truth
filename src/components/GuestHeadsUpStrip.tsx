@@ -183,12 +183,6 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
     setDetailEntry(entry);
   };
 
-  // Start display timer for visible cards
-  useEffect(() => {
-    visibleCards.forEach((entry) => startDisplayTimer(entry.id));
-    return () => visibleCards.forEach((entry) => cancelDisplayTimer(entry.id));
-  }, [visibleCards, startDisplayTimer, cancelDisplayTimer]);
-
   const safeIndex = currentIndex < visible.length ? currentIndex : 0;
 
   const visibleCards = useMemo(() => {
@@ -200,6 +194,12 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
     }
     return cards;
   }, [visible, safeIndex]);
+
+  // Start display timer for visible cards
+  useEffect(() => {
+    visibleCards.forEach((entry) => startDisplayTimer(entry.id));
+    return () => visibleCards.forEach((entry) => cancelDisplayTimer(entry.id));
+  }, [visibleCards, startDisplayTimer, cancelDisplayTimer]);
 
   if (visible.length === 0) return null;
 
