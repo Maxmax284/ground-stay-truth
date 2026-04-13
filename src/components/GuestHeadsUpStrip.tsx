@@ -17,6 +17,17 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   local_life: <Lightbulb className="h-4 w-4 text-primary" />,
 };
 
+/** Category accent colors for card edge */
+const CATEGORY_ACCENT: Record<string, string> = {
+  money: "border-l-[3px] border-l-amber-500/60",
+  transport: "border-l-[3px] border-l-blue-500/60",
+  safety: "border-l-[3px] border-l-destructive/50",
+  connectivity: "border-l-[3px] border-l-emerald-500/60",
+  customs: "border-l-[3px] border-l-purple-500/60",
+  health: "border-l-[3px] border-l-rose-500/60",
+  local_life: "border-l-[3px] border-l-primary/50",
+};
+
 const LOCATION_LABELS: Record<string, string> = {
   bkk: "BKK", samui: "Samui", nathon: "Nathon", lipa_noi: "Lipa Noi",
   phuket: "Phuket", pattaya: "Pattaya", transit: "Transit",
@@ -28,11 +39,9 @@ const ROTATION_INTERVAL = 10000;
 interface Props {
   locations?: string[];
   onLearnMore?: (entry: IntelligenceEntry) => void;
-  /** Current journey phase for contextual filtering */
   journeyPhase?: "pre_arrival" | "transit" | "arrival" | "stay" | "departure";
 }
 
-/** Map journey phases to relevant location tags */
 const PHASE_LOCATIONS: Record<string, string[]> = {
   pre_arrival: ["global", "bkk"],
   transit: ["bkk", "transit", "bus", "nathon", "lipa_noi"],
@@ -41,7 +50,6 @@ const PHASE_LOCATIONS: Record<string, string[]> = {
   departure: ["samui", "island", "bkk", "global"],
 };
 
-/** Map journey phases to relevant categories */
 const PHASE_CATEGORIES: Record<string, string[]> = {
   pre_arrival: ["customs", "connectivity", "money", "health"],
   transit: ["transport", "safety", "money"],
@@ -68,6 +76,7 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
   const [animState, setAnimState] = useState<"visible" | "exiting-left" | "entering-right" | "exiting-right" | "entering-left">("visible");
   const [paused, setPaused] = useState(false);
   const [detailEntry, setDetailEntry] = useState<IntelligenceEntry | null>(null);
+  const [tappedId, setTappedId] = useState<string | null>(null);
   const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartRef = useRef<number | null>(null);
 
@@ -80,18 +89,15 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
     });
   };
 
-  // Filter by audience, not dismissed, and optionally by journey phase
   const visible = useMemo(() => {
     let filtered = (entries ?? []).filter(
       (e) => e.audience?.includes("guest") && !dismissed.has(e.id)
     );
 
-    // If journey phase provided, prioritize relevant entries
     if (journeyPhase && PHASE_CATEGORIES[journeyPhase]) {
       const phaseCats = PHASE_CATEGORIES[journeyPhase];
       const phaseLocs = PHASE_LOCATIONS[journeyPhase] || [];
 
-      // Score entries by relevance
       filtered = filtered
         .map((e) => ({
           entry: e,
@@ -133,20 +139,17 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
     }, 350);
   }, [visible.length]);
 
-  // Auto-rotate
   useEffect(() => {
     if (paused || visible.length <= 1) return;
     const interval = setInterval(goNext, ROTATION_INTERVAL);
     return () => clearInterval(interval);
   }, [paused, goNext, visible.length]);
 
-  // Reset index when entries change
   useEffect(() => {
     setCurrentIndex(0);
     setAnimState("visible");
   }, [entries?.length]);
 
-  // Touch swipe
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartRef.current = e.touches[0].clientX;
   };
@@ -161,9 +164,15 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
     touchStartRef.current = null;
   };
 
+  // Tap micro-interaction
+  const handleCardTap = (entry: IntelligenceEntry) => {
+    setTappedId(entry.id);
+    setTimeout(() => setTappedId(null), 200);
+    setDetailEntry(entry);
+  };
+
   const safeIndex = currentIndex < visible.length ? currentIndex : 0;
 
-  // Show up to 3 entries at once
   const visibleCards = useMemo(() => {
     if (visible.length === 0) return [];
     const count = Math.min(3, visible.length);
@@ -176,7 +185,6 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
 
   if (visible.length === 0) return null;
 
-  // Animation classes — lively & engaging with stagger
   const getCardClasses = (position: number): string => {
     if (position === 0) {
       switch (animState) {
@@ -187,7 +195,6 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
         default: return "translate-x-0 scale-100 opacity-100";
       }
     }
-    // Staggered bounce-in for positions 1 and 2
     const delay = position === 1 ? "delay-[100ms]" : "delay-[200ms]";
     if (animState === "entering-right" || animState === "entering-left") {
       return `translate-x-0 scale-100 opacity-100 transition-all duration-300 ${delay} ease-[cubic-bezier(0.34,1.56,0.64,1)]`;
@@ -251,7 +258,16 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
           {visibleCards.map((entry, i) => (
             <div
               key={`${entry.id}-${i}`}
-              className={`rounded-xl border px-3 py-3 ${getSeverityBorder(entry)} ${getCardClasses(i)}`}
+              onClick={() => handleCardTap(entry)}
+              className={`
+                rounded-xl border px-3 py-3 cursor-pointer
+                backdrop-blur-sm bg-card/80
+                ${getSeverityBorder(entry)}
+                ${CATEGORY_ACCENT[entry.category] || ""}
+                ${getCardClasses(i)}
+                ${tappedId === entry.id ? "scale-[0.97] transition-transform duration-100" : ""}
+                hover:-translate-y-0.5 hover:shadow-md transition-all duration-200
+              `}
             >
               <div className="flex items-start gap-3">
                 <span className="mt-0.5 shrink-0">
@@ -262,7 +278,7 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
                   <p className="text-muted-foreground text-xs mt-0.5 line-clamp-2">{entry.body}</p>
                   <div className="flex items-center gap-2 mt-1.5">
                     <button
-                      onClick={() => setDetailEntry(entry)}
+                      onClick={(e) => { e.stopPropagation(); setDetailEntry(entry); }}
                       className="text-xs text-primary hover:underline inline-flex items-center gap-0.5"
                     >
                       Learn more <ChevronRight className="h-3 w-3" />
@@ -283,7 +299,7 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
                 )}
                 {i === 0 && (
                   <button
-                    onClick={() => { dismiss(entry.id); handlePause(); }}
+                    onClick={(e) => { e.stopPropagation(); dismiss(entry.id); handlePause(); }}
                     className="p-1 rounded hover:bg-accent/60 shrink-0 text-muted-foreground/40 hover:text-muted-foreground transition-colors absolute top-2 right-2"
                   >
                     <X className="h-3 w-3" />
