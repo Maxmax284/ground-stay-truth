@@ -10,13 +10,13 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 export type IntelAnimationMode = "ticker" | "crossfade" | "stack" | "flip" | "typewriter" | "pulse" | "carousel";
 
 export const INTEL_ANIM_OPTIONS: { mode: IntelAnimationMode; label: string; desc: string }[] = [
-  { mode: "ticker", label: "Ticker", desc: "Slides left like a news feed" },
-  { mode: "crossfade", label: "Crossfade", desc: "Smooth fade between entries" },
-  { mode: "stack", label: "Stack", desc: "Shows 3 cards, shuffles order" },
-  { mode: "flip", label: "Flip", desc: "3D card flip like a departure board" },
-  { mode: "typewriter", label: "Typewriter", desc: "Text types in, then erases" },
-  { mode: "pulse", label: "Pulse", desc: "Scales up with glow, pulses out" },
-  { mode: "carousel", label: "Carousel", desc: "Horizontal swipe cards" },
+  { mode: "ticker", label: "Ticker", desc: "Slides left with trailing scan-line glow" },
+  { mode: "crossfade", label: "Crossfade", desc: "Frosted blur transition between entries" },
+  { mode: "stack", label: "Stack", desc: "Depth-scaled cards with perspective" },
+  { mode: "flip", label: "Flip", desc: "3D flip with shadow flare at midpoint" },
+  { mode: "typewriter", label: "Typewriter", desc: "Terminal-style typing with green accent" },
+  { mode: "pulse", label: "Pulse", desc: "Scale breathing with ripple ring" },
+  { mode: "carousel", label: "Carousel", desc: "Parallax swipe — title leads body" },
 ];
 
 const LOCATION_LABELS: Record<string, string> = {
@@ -33,7 +33,7 @@ const SEVERITY_STYLES: Record<string, string> = {
 
 const ROTATION_INTERVAL = 12000;
 const RESUME_DELAY = 5000;
-const VISIBLE_COUNT = 3; // entries shown simultaneously
+const VISIBLE_COUNT = 3;
 
 export function getStoredAnimMode(): IntelAnimationMode {
   try {
@@ -79,7 +79,6 @@ export function StaffIntelStrip() {
 
   const safeIndex = activeIndex < staffEntries.length ? activeIndex : 0;
 
-  // ── Get a slice of visible entries ──
   const visibleSlice = useMemo(() => {
     if (staffEntries.length === 0) return [];
     const result: IntelligenceEntry[] = [];
@@ -89,7 +88,7 @@ export function StaffIntelStrip() {
     return result;
   }, [staffEntries, safeIndex]);
 
-  // ── Typewriter effect — types through each visible entry sequentially ──
+  // ── Typewriter effect ──
   const [typewriterLine, setTypewriterLine] = useState(0);
   const [typewriterDone, setTypewriterDone] = useState(false);
   useEffect(() => {
@@ -108,7 +107,6 @@ export function StaffIntelStrip() {
         typeTimerRef.current = setTimeout(typeNext, 30);
       } else {
         const isLastLine = typewriterLine % visibleSlice.length === visibleSlice.length - 1;
-        // Wait 3s after each line, 5s after last line before cycling
         typeTimerRef.current = setTimeout(() => {
           if (isLastLine) {
             setTypewriterDone(true);
@@ -122,7 +120,6 @@ export function StaffIntelStrip() {
     return () => { if (typeTimerRef.current) clearTimeout(typeTimerRef.current); };
   }, [animMode, typewriterLine, visibleSlice, collapsed]);
 
-  // Reset typewriter line on index change
   useEffect(() => { setTypewriterLine(0); setTypewriterDone(false); }, [activeIndex]);
 
   const advance = useCallback(() => {
@@ -143,7 +140,6 @@ export function StaffIntelStrip() {
     }, 400);
   }, [staffEntries.length, weightedIndices]);
 
-  // Auto-rotation — for typewriter, only advance after all lines are typed
   const canAutoAdvance = animMode !== "typewriter" || typewriterDone;
   useEffect(() => {
     if (collapsed || paused || staffEntries.length <= 1 || !canAutoAdvance) return;
@@ -179,47 +175,53 @@ export function StaffIntelStrip() {
     );
   };
 
-  // safeIndex already declared above
-
-  // ── Staggered animation classes by mode ──
+  // ── Enhanced animation classes per mode ──
   const getAnimClasses = (position: number): string => {
     const dur = "duration-[400ms]";
     const delay = position === 0 ? "" : position === 1 ? "delay-[80ms]" : "delay-[160ms]";
     const base = `transition-all ${dur} ${delay}`;
 
-    // Only animate position 0 on entry/exit; others stagger in
-    const isAnimating = position === 0 || animState === "entering";
-
     switch (animMode) {
       case "ticker":
+        // Scan-line glow: trailing gradient effect via box-shadow
         if (animState === "exiting" && position === 0) return `translate-x-[-100%] opacity-0 ${base} ease-in`;
-        if (animState === "entering") return `translate-x-0 opacity-100 ${base} ease-out`;
-        return "translate-x-0 opacity-100";
+        if (animState === "entering") return `translate-x-0 opacity-100 ${base} ease-out shadow-[inset_60px_0_30px_-20px_hsl(var(--primary)/0.08)]`;
+        return "translate-x-0 opacity-100 shadow-[inset_60px_0_30px_-20px_hsl(var(--primary)/0)]";
       case "crossfade":
-        if (animState === "exiting" && position === 0) return `opacity-0 ${base} ease-in`;
-        if (animState === "entering") return `opacity-100 ${base} ease-out`;
-        return "opacity-100";
+        // Frosted blur during transition
+        if (animState === "exiting" && position === 0) return `opacity-0 blur-[2px] scale-[0.98] ${base} ease-in`;
+        if (animState === "entering") return `opacity-100 blur-0 scale-100 ${base} ease-out`;
+        return "opacity-100 blur-0 scale-100";
       case "stack":
+        // Depth scaling: back cards smaller + dimmed with perspective push
         if (position === 0) {
-          if (animState === "exiting") return `scale-95 opacity-0 ${base}`;
-          if (animState === "entering") return `scale-100 opacity-100 ${base}`;
-          return "scale-100 opacity-100";
+          if (animState === "exiting") return `scale-95 opacity-0 -translate-y-1 ${base}`;
+          if (animState === "entering") return `scale-100 opacity-100 translate-y-0 ${base}`;
+          return "scale-100 opacity-100 translate-y-0";
         }
-        return `scale-[0.97] opacity-70 ${base}`;
+        // Back cards get progressively smaller and more transparent
+        const depthScale = position === 1 ? "scale-[0.96]" : "scale-[0.92]";
+        const depthOpacity = position === 1 ? "opacity-60" : "opacity-40";
+        return `${depthScale} ${depthOpacity} ${base} origin-top`;
       case "flip":
-        if (animState === "exiting" && position === 0) return `[transform:rotateY(90deg)] opacity-0 ${base} [transform-style:preserve-3d]`;
-        if (animState === "entering") return `[transform:rotateY(0deg)] opacity-100 ${base} [transform-style:preserve-3d]`;
-        return "[transform:rotateY(0deg)] opacity-100";
+        // Shadow flare at flip midpoint
+        if (animState === "exiting" && position === 0)
+          return `[transform:rotateY(90deg)] opacity-0 shadow-[0_0_16px_hsl(var(--primary)/0.3)] ${base} [transform-style:preserve-3d]`;
+        if (animState === "entering")
+          return `[transform:rotateY(0deg)] opacity-100 shadow-none ${base} [transform-style:preserve-3d]`;
+        return "[transform:rotateY(0deg)] opacity-100 shadow-none";
       case "pulse":
+        // Ripple ring effect
         if (animState === "exiting" && position === 0) return `scale-110 opacity-0 ${base} ease-in`;
-        if (animState === "entering") return `scale-100 opacity-100 ${base} ease-[cubic-bezier(0.34,1.56,0.64,1)]`;
-        return "scale-100 opacity-100";
+        if (animState === "entering")
+          return `scale-100 opacity-100 ${base} ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_0_0_3px_hsl(var(--primary)/0.15),0_0_0_6px_hsl(var(--primary)/0.05)]`;
+        return "scale-100 opacity-100 shadow-none";
       default:
         return "opacity-100";
     }
   };
 
-  const renderEntry = (entry: IntelligenceEntry, className = "") => (
+  const renderEntry = (entry: IntelligenceEntry, className = "", isCarousel = false) => (
     <button
       key={`${entry.id}-${className}`}
       onClick={() => { setDetailEntry(entry); handlePause(); }}
@@ -227,9 +229,19 @@ export function StaffIntelStrip() {
       onTouchStart={handlePause}
       className={`flex items-start gap-2 py-1 pl-2 rounded-sm w-full text-left hover:bg-accent/30 transition-colors ${SEVERITY_STYLES[entry.severity] || ""} ${className}`}
     >
-      <div className="flex-1 text-xs text-muted-foreground min-w-0">
-        <span className="font-medium text-foreground">{entry.title}</span>
-        <span className="ml-1.5">{entry.body.slice(0, 70)}{entry.body.length > 70 ? "…" : ""}</span>
+      <div className={`flex-1 text-xs text-muted-foreground min-w-0 ${isCarousel ? "" : ""}`}>
+        {isCarousel ? (
+          <>
+            {/* Parallax: title with faster transition, body with slower */}
+            <span className="font-medium text-foreground block transition-transform duration-200">{entry.title}</span>
+            <span className="block transition-transform duration-500 delay-[50ms]">{entry.body.slice(0, 70)}{entry.body.length > 70 ? "…" : ""}</span>
+          </>
+        ) : (
+          <>
+            <span className="font-medium text-foreground">{entry.title}</span>
+            <span className="ml-1.5">{entry.body.slice(0, 70)}{entry.body.length > 70 ? "…" : ""}</span>
+          </>
+        )}
       </div>
       <div className="flex gap-1 shrink-0">
         {entry.location?.filter((l) => l !== "global").slice(0, 2).map((loc) => (
@@ -257,13 +269,13 @@ export function StaffIntelStrip() {
     touchStartRef.current = null;
   };
 
-  // ── Render body — all modes show multiple entries ──
+  // ── Render body ──
   const renderBody = () => {
     if (visibleSlice.length === 0) return null;
 
     if (animMode === "typewriter") {
       return (
-        <div className="space-y-0.5">
+        <div className="space-y-0.5 font-mono">
           {visibleSlice.map((entry, i) => {
             const isCurrent = i === typewriterLine % visibleSlice.length;
             const isPast = i < typewriterLine % visibleSlice.length;
@@ -276,16 +288,22 @@ export function StaffIntelStrip() {
                   isCurrent ? "opacity-100" : isPast ? "opacity-60" : "opacity-30"
                 }`}
               >
-                <span className="text-xs text-foreground tracking-wide">
+                <span className="text-xs tracking-wide">
                   {isCurrent ? (
                     <>
-                      <span className="font-medium">{typedText}</span>
-                      <span className="inline-block w-[1.5px] h-3 bg-primary ml-0.5 animate-[pulse_1s_ease-in-out_infinite]" />
+                      {/* Terminal green accent for active line */}
+                      <span className="text-emerald-600 dark:text-emerald-400 mr-1 text-[10px]">▸</span>
+                      <span className="font-medium text-emerald-700 dark:text-emerald-300">{typedText}</span>
+                      <span className="inline-block w-[2px] h-3.5 bg-emerald-500 ml-0.5 animate-[pulse_0.8s_ease-in-out_infinite]" />
                     </>
                   ) : isPast ? (
-                    <span><span className="font-medium">{entry.title}</span> <span className="text-muted-foreground">— {entry.body.slice(0, 80)}…</span></span>
+                    <span>
+                      <span className="text-muted-foreground/40 mr-1 text-[10px]">▸</span>
+                      <span className="font-medium text-foreground/70">{entry.title}</span>{" "}
+                      <span className="text-muted-foreground/50">— {entry.body.slice(0, 80)}…</span>
+                    </span>
                   ) : (
-                    <span className="text-muted-foreground/30 text-[10px]">▌</span>
+                    <span className="text-muted-foreground/20 text-[10px]">▸ ▌</span>
                   )}
                 </span>
               </button>
@@ -305,14 +323,14 @@ export function StaffIntelStrip() {
         >
           {visibleSlice.map((entry, i) => (
             <div key={`${entry.id}-c${i}`} className="min-w-[85%] shrink-0">
-              {renderEntry(entry)}
+              {renderEntry(entry, "", true)}
             </div>
           ))}
         </div>
       );
     }
 
-    // All other modes: render visible slice with staggered animations
+    // All other modes: render visible slice with enhanced staggered animations
     return (
       <div className="space-y-0.5 overflow-hidden [perspective:600px]">
         {visibleSlice.map((entry, i) => renderEntry(entry, getAnimClasses(i)))}

@@ -58,6 +58,15 @@ function severityBorderClass(severity: Severity): string {
   return "";
 }
 
+/** Severity-based glow ring for Priority Pulse mode */
+function severityGlowClass(severity: Severity): string {
+  if (severity === "urgent")
+    return "shadow-[0_0_8px_hsl(var(--destructive)/0.35),0_0_16px_hsl(var(--destructive)/0.1)] ring-1 ring-destructive/20";
+  if (severity === "attention")
+    return "shadow-[0_0_6px_hsl(38_90%_50%/0.3),0_0_12px_hsl(38_90%_50%/0.08)] ring-1 ring-amber-500/20";
+  return "shadow-[0_0_4px_hsl(var(--primary)/0.15)] ring-1 ring-primary/10";
+}
+
 export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
   const { t } = useTranslation();
   const { role, user } = useAuth();
@@ -86,18 +95,22 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
     return () => window.removeEventListener("corner-talk-anim-changed", handler);
   }, []);
 
-  /** Get animation class for an item at a given index */
+  /** Enhanced animation class per item */
   const getItemAnimClass = useCallback((index: number, severity: string) => {
     if (ctAnimMode === "stagger") {
-      return `animate-fade-in [animation-delay:${index * 100}ms] [animation-fill-mode:both]`;
+      // Alternating left/right slide-in
+      const direction = index % 2 === 0 ? "translate-x-[-8px]" : "translate-x-[8px]";
+      return `animate-fade-in [animation-delay:${index * 120}ms] [animation-fill-mode:both]`;
     }
-    if (ctAnimMode === "pulse" && (severity === "urgent" || severity === "attention")) {
-      return severity === "urgent"
-        ? "animate-[pulse_3s_ease-in-out_infinite] shadow-[0_0_8px_hsl(var(--destructive)/0.3)]"
-        : "animate-[pulse_4s_ease-in-out_infinite] shadow-[0_0_6px_hsl(var(--primary)/0.2)]";
+    if (ctAnimMode === "pulse") {
+      // Color-coded glow ring matching severity
+      const glowClass = severityGlowClass(severity as Severity);
+      const pulseSpeed = severity === "urgent" ? "3s" : severity === "attention" ? "4s" : "5s";
+      return `animate-[pulse_${pulseSpeed}_ease-in-out_infinite] ${glowClass} rounded-md`;
     }
     if (ctAnimMode === "refresh") {
-      return "transition-all duration-500 ease-out";
+      // Breathing background shimmer
+      return "transition-all duration-500 ease-out animate-[shimmer_3s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-accent/10 to-transparent bg-[length:200%_100%]";
     }
     return "";
   }, [ctAnimMode]);
@@ -108,7 +121,6 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
   const [softDismissed, setSoftDismissed] = useState<Set<string>>(() => getStoredSet(softKey));
   const [hardDismissed, setHardDismissed] = useState<Set<string>>(() => getStoredSet(hardKey));
 
-  // Reload when user changes
   useEffect(() => {
     if (userId) {
       setSoftDismissed(getStoredSet(`${SOFT_DISMISSED_PREFIX}${userId}`));
@@ -116,7 +128,6 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
     }
   }, [userId]);
 
-  // Clean stale keys when data changes
   useEffect(() => {
     if (!data || !userId) return;
     const currentKeys = new Set([
@@ -155,7 +166,6 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
 
   const hardDismiss = useCallback((key: string) => {
     if (!userId) return;
-    // Remove from soft, add to hard
     setSoftDismissed((prev) => {
       const next = new Set(prev); next.delete(key);
       saveStoredSet(`${SOFT_DISMISSED_PREFIX}${userId}`, next);
@@ -168,7 +178,6 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
     });
   }, [userId]);
 
-  // Sound on first load
   useEffect(() => {
     if (data && !briefingPlayedRef.current) {
       briefingPlayedRef.current = true;
@@ -221,7 +230,6 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
 
   if (error || !data) return null;
 
-  // Categorize: active, soft-dismissed (greyed), hard-dismissed (hidden)
   const activeAttention = data.attention.filter((a) => !softDismissed.has(a.messageKey) && !hardDismissed.has(a.messageKey));
   const greyedAttention = data.attention.filter((a) => softDismissed.has(a.messageKey));
   const activeUpcoming = data.upcoming.filter((u) => !softDismissed.has(u.messageKey) && !hardDismissed.has(u.messageKey));
@@ -273,6 +281,11 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
                     <div
                       key={`att-${item.messageKey}`}
                       className={`flex items-center gap-1 w-full pl-2 py-1 rounded-sm ${severityBorderClass(item.severity)} ${getItemAnimClass(idx, item.severity)} ${newKeys.has(item.messageKey) ? "animate-fade-in" : ""}`}
+                      style={
+                        ctAnimMode === "stagger"
+                          ? { animationDelay: `${idx * 120}ms`, animationFillMode: "both" }
+                          : undefined
+                      }
                     >
                       <button
                         onClick={() => onAskGlitch?.(`Tell me more about: ${item.text}`)}
