@@ -328,7 +328,8 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
 
           {/* Swipe hint arrows for desktop */}
           {visible.length > 1 && (
