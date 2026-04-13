@@ -273,7 +273,9 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
           onTouchEnd={handleTouchEnd}
           onMouseEnter={handlePause}
         >
-          {visibleCards.map((entry, i) => (
+          {visibleCards.map((entry, i) => {
+            const isSeen = seen.has(entry.id);
+            return (
             <div
               key={`${entry.id}-${i}`}
               onClick={() => handleCardTap(entry)}
@@ -284,6 +286,7 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
                 ${CATEGORY_ACCENT[entry.category] || ""}
                 ${getCardClasses(i)}
                 ${tappedId === entry.id ? "scale-[0.97] transition-transform duration-100" : ""}
+                ${isSeen ? "opacity-60" : "opacity-100"}
                 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200
               `}
             >
