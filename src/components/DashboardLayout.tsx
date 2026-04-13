@@ -71,6 +71,15 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <div className="ml-auto flex items-center gap-1">
               <ThemeToggle />
               <NotificationBell />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={signOut}
+                className="h-9 w-9 text-muted-foreground hover:text-foreground md:hidden"
+                title={t("common.signOut")}
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           </header>
           <main className="flex-1 p-4 sm:p-6 overflow-auto ring-rope-pattern">
