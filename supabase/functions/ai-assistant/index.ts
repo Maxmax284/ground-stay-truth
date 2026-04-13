@@ -1068,6 +1068,41 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
 
     const fullSystemPrompt = buildSystemPrompt(role || "", responseLang, contextData, operational_mode || null);
 
+    // Draft mode (Lookout scan) — non-streaming JSON response
+    if (mode === "draft") {
+      const draftResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${lovableApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: fullSystemPrompt },
+            ...(messages ?? []),
+          ],
+          stream: false,
+          max_tokens: 600,
+        }),
+      });
+
+      if (!draftResponse.ok) {
+        const t = await draftResponse.text();
+        console.error("AI gateway error (draft):", draftResponse.status, t);
+        return new Response(JSON.stringify({ error: "AI gateway error" }), {
+          status: draftResponse.status,
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+        });
+      }
+
+      const draftResult = await draftResponse.json();
+      const reply = draftResult.choices?.[0]?.message?.content || "";
+      return new Response(JSON.stringify({ reply }), {
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
