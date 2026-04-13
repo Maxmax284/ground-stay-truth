@@ -62,6 +62,7 @@ function buildWeightedIndices(entries: IntelligenceEntry[], getSeenWeight: (id: 
 export function StaffIntelStrip() {
   const { role } = useAuth();
   const { data: entries } = useIntelligence({ type: "heads_up", status: "active" });
+  const { seen, markSeen, startDisplayTimer, cancelDisplayTimer, resetSeen, getWeight, allSeen } = useIntelSeen("staff");
   const [collapsed, setCollapsed] = useState(false);
   const [detailEntry, setDetailEntry] = useState<IntelligenceEntry | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -78,7 +79,14 @@ export function StaffIntelStrip() {
     () => (entries ?? []).filter((e) => e.audience?.includes("staff")),
     [entries]
   );
-  const weightedIndices = useMemo(() => buildWeightedIndices(staffEntries), [staffEntries]);
+  const weightedIndices = useMemo(() => buildWeightedIndices(staffEntries, getWeight), [staffEntries, getWeight]);
+
+  // Auto-reset seen state when all entries have been read
+  useEffect(() => {
+    if (staffEntries.length > 0 && allSeen(staffEntries.map((e) => e.id))) {
+      resetSeen();
+    }
+  }, [staffEntries, allSeen, resetSeen]);
 
   const safeIndex = activeIndex < staffEntries.length ? activeIndex : 0;
 
