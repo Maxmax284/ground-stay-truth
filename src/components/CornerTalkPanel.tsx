@@ -98,19 +98,21 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
   /** Enhanced animation class per item */
   const getItemAnimClass = useCallback((index: number, severity: string) => {
     if (ctAnimMode === "stagger") {
-      // Alternating left/right slide-in
-      const direction = index % 2 === 0 ? "translate-x-[-8px]" : "translate-x-[8px]";
-      return `animate-fade-in [animation-delay:${index * 120}ms] [animation-fill-mode:both]`;
+      const slideDir = index % 2 === 0 ? "[--tw-translate-x:-8px]" : "[--tw-translate-x:8px]";
+      return `animate-fade-in ${slideDir} [animation-delay:${index * 120}ms] [animation-fill-mode:both]`;
     }
     if (ctAnimMode === "pulse") {
-      // Color-coded glow ring matching severity
       const glowClass = severityGlowClass(severity as Severity);
-      const pulseSpeed = severity === "urgent" ? "3s" : severity === "attention" ? "4s" : "5s";
-      return `animate-[pulse_${pulseSpeed}_ease-in-out_infinite] ${glowClass} rounded-md`;
+      // Use static Tailwind classes for pulse speeds
+      const pulseClass = severity === "urgent"
+        ? "animate-pulse"
+        : severity === "attention"
+          ? "animate-pulse [animation-duration:4s]"
+          : "animate-pulse [animation-duration:5s]";
+      return `${pulseClass} ${glowClass} rounded-md`;
     }
     if (ctAnimMode === "refresh") {
-      // Breathing background shimmer
-      return "transition-all duration-500 ease-out animate-[shimmer_3s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-accent/10 to-transparent bg-[length:200%_100%]";
+      return "transition-all duration-500 ease-out warm-shimmer";
     }
     return "";
   }, [ctAnimMode]);

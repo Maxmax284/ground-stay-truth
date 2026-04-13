@@ -102,6 +102,10 @@ export function StaffIntelStrip() {
   // ── Typewriter effect ──
   const [typewriterLine, setTypewriterLine] = useState(0);
   const [typewriterDone, setTypewriterDone] = useState(false);
+
+  // Reset typewriter state when mode changes or activeIndex changes
+  useEffect(() => { setTypewriterLine(0); setTypewriterDone(false); setTypedText(""); }, [animMode, activeIndex]);
+
   useEffect(() => {
     if (animMode !== "typewriter" || visibleSlice.length === 0 || collapsed) return;
     setTypewriterDone(false);
@@ -131,8 +135,6 @@ export function StaffIntelStrip() {
     return () => { if (typeTimerRef.current) clearTimeout(typeTimerRef.current); };
   }, [animMode, typewriterLine, visibleSlice, collapsed]);
 
-  useEffect(() => { setTypewriterLine(0); setTypewriterDone(false); }, [activeIndex]);
-
   const advance = useCallback(() => {
     if (staffEntries.length <= 1) return;
     setAnimState("exiting");
@@ -154,7 +156,9 @@ export function StaffIntelStrip() {
   const canAutoAdvance = animMode !== "typewriter" || typewriterDone;
   useEffect(() => {
     if (collapsed || paused || staffEntries.length <= 1 || !canAutoAdvance) return;
-    const interval = setInterval(advance, animMode === "typewriter" ? 1000 : ROTATION_INTERVAL);
+    // Give typewriter a longer pause before cycling to next set
+    const delay = animMode === "typewriter" ? 2000 : ROTATION_INTERVAL;
+    const interval = setInterval(advance, delay);
     return () => clearInterval(interval);
   }, [collapsed, paused, advance, staffEntries.length, canAutoAdvance, animMode]);
 
