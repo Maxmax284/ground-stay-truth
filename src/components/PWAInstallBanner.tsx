@@ -91,11 +91,19 @@ export function PWAInstallBanner() {
               <span className="font-semibold text-foreground">Add to Home Screen</span>.
             </p>
           </div>
-        ) : (
+        ) : deferredPrompt ? (
           <Button onClick={handleInstall} size="sm" className="w-full">
             <Download className="h-4 w-4 mr-2" />
             Install App
           </Button>
+        ) : (
+          <div className="flex items-center gap-2 rounded-lg bg-muted/50 p-3">
+            <Download className="h-4 w-4 text-primary flex-shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              Tap the <span className="font-semibold text-foreground">menu</span> (⋮) in your browser, then{" "}
+              <span className="font-semibold text-foreground">Install app</span>.
+            </p>
+          </div>
         )}
       </div>
     </div>
