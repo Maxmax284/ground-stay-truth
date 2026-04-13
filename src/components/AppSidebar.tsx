@@ -273,6 +273,9 @@ export function AppSidebar() {
           <LogOut className="mr-2 h-4 w-4" />
           {t("common.signOut")}
         </Button>
+        <div className="text-[10px] text-sidebar-foreground/30 text-center mt-1">
+          v{__APP_BUILD_DATE__}
+        </div>
       </SidebarFooter>
     </Sidebar>
 

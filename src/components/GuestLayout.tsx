@@ -132,6 +132,9 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
             Lamai Muay Thai
           </a>
         </div>
+        <div className="text-muted-foreground/40 text-[10px]">
+          v{__APP_BUILD_DATE__}
+        </div>
       </footer>
       <AIAssistantPanel />
       <TutorialOverlay variant="guest" />
