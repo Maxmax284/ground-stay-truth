@@ -175,6 +175,13 @@ export function StaffIntelStrip() {
     pauseTimerRef.current = setTimeout(() => setPaused(false), RESUME_DELAY);
   }, []);
 
+  // Start display timer when visible slice changes
+  useEffect(() => {
+    if (collapsed) return;
+    visibleSlice.forEach((entry) => startDisplayTimer(entry.id));
+    return () => visibleSlice.forEach((entry) => cancelDisplayTimer(entry.id));
+  }, [visibleSlice, collapsed, startDisplayTimer, cancelDisplayTimer]);
+
   if (!role || role === "guest") return null;
   if (staffEntries.length === 0) return null;
 
@@ -194,35 +201,29 @@ export function StaffIntelStrip() {
 
     switch (animMode) {
       case "ticker":
-        // Scan-line glow: trailing gradient effect via box-shadow
         if (animState === "exiting" && position === 0) return `translate-x-[-100%] opacity-0 ${base} ease-in`;
         if (animState === "entering") return `translate-x-0 opacity-100 ${base} ease-out shadow-[inset_60px_0_30px_-20px_hsl(var(--primary)/0.08)]`;
         return "translate-x-0 opacity-100 shadow-[inset_60px_0_30px_-20px_hsl(var(--primary)/0)]";
       case "crossfade":
-        // Frosted blur during transition
         if (animState === "exiting" && position === 0) return `opacity-0 blur-[2px] scale-[0.98] ${base} ease-in`;
         if (animState === "entering") return `opacity-100 blur-0 scale-100 ${base} ease-out`;
         return "opacity-100 blur-0 scale-100";
       case "stack":
-        // Depth scaling: back cards smaller + dimmed with perspective push
         if (position === 0) {
           if (animState === "exiting") return `scale-95 opacity-0 -translate-y-1 ${base}`;
           if (animState === "entering") return `scale-100 opacity-100 translate-y-0 ${base}`;
           return "scale-100 opacity-100 translate-y-0";
         }
-        // Back cards get progressively smaller and more transparent
         const depthScale = position === 1 ? "scale-[0.96]" : "scale-[0.92]";
         const depthOpacity = position === 1 ? "opacity-60" : "opacity-40";
         return `${depthScale} ${depthOpacity} ${base} origin-top`;
       case "flip":
-        // Shadow flare at flip midpoint
         if (animState === "exiting" && position === 0)
           return `[transform:rotateY(90deg)] opacity-0 shadow-[0_0_16px_hsl(var(--primary)/0.3)] ${base} [transform-style:preserve-3d]`;
         if (animState === "entering")
           return `[transform:rotateY(0deg)] opacity-100 shadow-none ${base} [transform-style:preserve-3d]`;
         return "[transform:rotateY(0deg)] opacity-100 shadow-none";
       case "pulse":
-        // Ripple ring effect
         if (animState === "exiting" && position === 0) return `scale-110 opacity-0 ${base} ease-in`;
         if (animState === "entering")
           return `scale-100 opacity-100 ${base} ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_0_0_3px_hsl(var(--primary)/0.15),0_0_0_6px_hsl(var(--primary)/0.05)]`;
@@ -231,13 +232,6 @@ export function StaffIntelStrip() {
         return "opacity-100";
     }
   };
-
-  // Start display timer when visible slice changes
-  useEffect(() => {
-    if (collapsed) return;
-    visibleSlice.forEach((entry) => startDisplayTimer(entry.id));
-    return () => visibleSlice.forEach((entry) => cancelDisplayTimer(entry.id));
-  }, [visibleSlice, collapsed, startDisplayTimer, cancelDisplayTimer]);
 
   const renderEntry = (entry: IntelligenceEntry, className = "", isCarousel = false) => {
     const isSeen = seen.has(entry.id);
