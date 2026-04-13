@@ -20,6 +20,22 @@ if (isPreviewHost || isInIframe) {
   navigator.serviceWorker?.getRegistrations().then((registrations) => {
     registrations.forEach((r) => r.unregister());
   });
+} else {
+  // Force check for SW updates every 5 minutes so published changes propagate fast
+  setInterval(() => {
+    navigator.serviceWorker?.getRegistration().then((reg) => {
+      reg?.update();
+    });
+  }, 5 * 60 * 1000);
+
+  // Also check immediately on page visibility change (user returns to app)
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      navigator.serviceWorker?.getRegistration().then((reg) => {
+        reg?.update();
+      });
+    }
+  });
 }
 
 // Listen for NOTIFICATION_CLICK from service worker to handle deep-link routing
