@@ -1,7 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NotificationBell } from "@/components/NotificationBell";
 import { AIAssistantPanel } from "@/components/AIAssistantPanel";
@@ -9,6 +9,7 @@ import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TutorialOverlay } from "@/components/TutorialOverlay";
 import { useRolePreview } from "@/hooks/useRolePreview";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { SecurityFreezeBanner } from "@/components/SecurityFreezeBanner";
 import { PropertyIndicator } from "@/components/PropertyIndicator";
