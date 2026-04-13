@@ -346,22 +346,29 @@ export function AppSidebar() {
                 Install App Now
               </Button>
             )}
-            <p className="text-xs text-muted-foreground font-medium">
-              {deferredPrompt ? "Or install manually:" : "How to install:"}
-            </p>
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">1</div>
-              <div>
-                <p className="text-sm font-medium text-foreground">Tap the menu</p>
-                <p className="text-xs text-muted-foreground">The three dots (⋮) at the top right of Chrome</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">2</div>
-              <div>
-                <p className="text-sm font-medium text-foreground">Install app</p>
-                <p className="text-xs text-muted-foreground">Tap "Install app" or "Add to Home Screen"</p>
-              </div>
+
+            <Button
+              variant="outline"
+              className="w-full"
+              asChild
+            >
+              <a
+                href={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/app-downloads/ground-stay.apk`}
+                download
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download Android App (.apk)
+              </a>
+            </Button>
+
+            <div className="rounded-lg bg-muted/50 p-3">
+              <p className="text-xs text-muted-foreground font-medium mb-2">
+                {deferredPrompt ? "Or install from browser:" : "Or install from browser:"}
+              </p>
+              <ol className="text-xs text-muted-foreground space-y-1 list-decimal pl-4">
+                <li>Tap the <span className="font-semibold text-foreground">menu</span> (⋮) at the top right of Chrome</li>
+                <li>Tap <span className="font-semibold text-foreground">Install app</span> or <span className="font-semibold text-foreground">Add to Home Screen</span></li>
+              </ol>
             </div>
           </div>
         )}
