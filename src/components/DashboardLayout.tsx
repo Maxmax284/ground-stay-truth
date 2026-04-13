@@ -35,6 +35,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const titleKey = routeTitleKeys[location.pathname] || "nav.dashboard";
   const { isPreviewMode, previewRole, setPreviewRole } = useRolePreview();
+  const { signOut } = useAuth();
   
   // Initialize Fenrir Lock telemetry from policy_settings
   useFenrirConfig();
