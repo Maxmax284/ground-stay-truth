@@ -107,14 +107,22 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
           score:
             (phaseCats.includes(e.category) ? 2 : 0) +
             (e.location?.some((l) => phaseLocs.includes(l)) ? 1 : 0) +
-            (e.severity === "urgent" ? 3 : e.severity === "attention" ? 1 : 0),
+            (e.severity === "urgent" ? 3 : e.severity === "attention" ? 1 : 0) +
+            (seen.has(e.id) ? 0 : 4), // Unseen entries get priority boost
         }))
         .sort((a, b) => b.score - a.score)
         .map((s) => s.entry);
     }
 
     return filtered;
-  }, [entries, dismissed, journeyPhase]);
+  }, [entries, dismissed, journeyPhase, seen]);
+
+  // Auto-reset seen state when all visible entries have been read
+  useEffect(() => {
+    if (visible.length > 0 && allSeen(visible.map((e) => e.id))) {
+      resetSeen();
+    }
+  }, [visible, allSeen, resetSeen]);
 
   const handlePause = useCallback(() => {
     setPaused(true);
