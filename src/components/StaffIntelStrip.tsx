@@ -232,37 +232,47 @@ export function StaffIntelStrip() {
     }
   };
 
-  const renderEntry = (entry: IntelligenceEntry, className = "", isCarousel = false) => (
-    <button
-      key={`${entry.id}-${className}`}
-      onClick={() => { setDetailEntry(entry); handlePause(); }}
-      onMouseEnter={handlePause}
-      onTouchStart={handlePause}
-      className={`flex items-start gap-2 py-1 pl-2 rounded-sm w-full text-left hover:bg-accent/30 transition-colors ${SEVERITY_STYLES[entry.severity] || ""} ${className}`}
-    >
-      <div className={`flex-1 text-xs text-muted-foreground min-w-0 ${isCarousel ? "" : ""}`}>
-        {isCarousel ? (
-          <>
-            {/* Parallax: title with faster transition, body with slower */}
-            <span className="font-medium text-foreground block transition-transform duration-200">{entry.title}</span>
-            <span className="block transition-transform duration-500 delay-[50ms]">{entry.body.slice(0, 70)}{entry.body.length > 70 ? "…" : ""}</span>
-          </>
-        ) : (
-          <>
-            <span className="font-medium text-foreground">{entry.title}</span>
-            <span className="ml-1.5">{entry.body.slice(0, 70)}{entry.body.length > 70 ? "…" : ""}</span>
-          </>
-        )}
-      </div>
-      <div className="flex gap-1 shrink-0">
-        {entry.location?.filter((l) => l !== "global").slice(0, 2).map((loc) => (
-          <Badge key={loc} variant="outline" className="text-[10px] px-1 py-0">
-            {LOCATION_LABELS[loc] ?? loc}
-          </Badge>
-        ))}
-      </div>
-    </button>
-  );
+  // Start display timer when visible slice changes
+  useEffect(() => {
+    if (collapsed) return;
+    visibleSlice.forEach((entry) => startDisplayTimer(entry.id));
+    return () => visibleSlice.forEach((entry) => cancelDisplayTimer(entry.id));
+  }, [visibleSlice, collapsed, startDisplayTimer, cancelDisplayTimer]);
+
+  const renderEntry = (entry: IntelligenceEntry, className = "", isCarousel = false) => {
+    const isSeen = seen.has(entry.id);
+    return (
+      <button
+        key={`${entry.id}-${className}`}
+        onClick={() => { markSeen(entry.id); setDetailEntry(entry); handlePause(); }}
+        onMouseEnter={handlePause}
+        onTouchStart={handlePause}
+        className={`flex items-start gap-2 py-1 pl-2 rounded-sm w-full text-left hover:bg-accent/30 transition-all ${SEVERITY_STYLES[entry.severity] || ""} ${className} ${isSeen ? "opacity-50" : "opacity-100"}`}
+      >
+        <div className={`flex-1 text-xs text-muted-foreground min-w-0`}>
+          {isCarousel ? (
+            <>
+              <span className="font-medium text-foreground block transition-transform duration-200">{entry.title}</span>
+              <span className="block transition-transform duration-500 delay-[50ms]">{entry.body.slice(0, 70)}{entry.body.length > 70 ? "…" : ""}</span>
+            </>
+          ) : (
+            <>
+              <span className="font-medium text-foreground">{entry.title}</span>
+              <span className="ml-1.5">{entry.body.slice(0, 70)}{entry.body.length > 70 ? "…" : ""}</span>
+            </>
+          )}
+        </div>
+        <div className="flex gap-1 shrink-0 items-center">
+          {isSeen && <Eye className="h-3 w-3 text-muted-foreground/40" />}
+          {entry.location?.filter((l) => l !== "global").slice(0, 2).map((loc) => (
+            <Badge key={loc} variant="outline" className="text-[10px] px-1 py-0">
+              {LOCATION_LABELS[loc] ?? loc}
+            </Badge>
+          ))}
+        </div>
+      </button>
+    );
+  };
 
   const totalDots = Math.min(staffEntries.length, 8);
 
