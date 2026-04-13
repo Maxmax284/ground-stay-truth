@@ -1,10 +1,11 @@
 import { useIntelligence, type IntelligenceEntry } from "@/hooks/useIntelligence";
 import { useAuth } from "@/hooks/useAuth";
+import { useIntelSeen } from "@/hooks/useIntelSeen";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Zap, ChevronDown, ChevronUp, ArrowLeft, Sparkles, MapPin } from "lucide-react";
+import { Zap, ChevronDown, ChevronUp, ArrowLeft, Sparkles, MapPin, Eye } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 export type IntelAnimationMode = "ticker" | "crossfade" | "stack" | "flip" | "typewriter" | "pulse" | "carousel";
@@ -47,11 +48,13 @@ export function setStoredAnimMode(mode: IntelAnimationMode) {
   try { localStorage.setItem("intel-animation-mode", mode); } catch {}
 }
 
-function buildWeightedIndices(entries: IntelligenceEntry[]): number[] {
+function buildWeightedIndices(entries: IntelligenceEntry[], getSeenWeight: (id: string) => number): number[] {
   const indices: number[] = [];
   entries.forEach((e, i) => {
-    const weight = e.severity === "urgent" ? 3 : e.severity === "attention" ? 2 : 1;
-    for (let w = 0; w < weight; w++) indices.push(i);
+    const severityWeight = e.severity === "urgent" ? 3 : e.severity === "attention" ? 2 : 1;
+    const seenWeight = getSeenWeight(e.id);
+    const total = severityWeight * seenWeight;
+    for (let w = 0; w < total; w++) indices.push(i);
   });
   return indices;
 }
@@ -59,6 +62,7 @@ function buildWeightedIndices(entries: IntelligenceEntry[]): number[] {
 export function StaffIntelStrip() {
   const { role } = useAuth();
   const { data: entries } = useIntelligence({ type: "heads_up", status: "active" });
+  const { seen, markSeen, startDisplayTimer, cancelDisplayTimer, resetSeen, getWeight, allSeen } = useIntelSeen("staff");
   const [collapsed, setCollapsed] = useState(false);
   const [detailEntry, setDetailEntry] = useState<IntelligenceEntry | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -75,7 +79,14 @@ export function StaffIntelStrip() {
     () => (entries ?? []).filter((e) => e.audience?.includes("staff")),
     [entries]
   );
-  const weightedIndices = useMemo(() => buildWeightedIndices(staffEntries), [staffEntries]);
+  const weightedIndices = useMemo(() => buildWeightedIndices(staffEntries, getWeight), [staffEntries, getWeight]);
+
+  // Auto-reset seen state when all entries have been read
+  useEffect(() => {
+    if (staffEntries.length > 0 && allSeen(staffEntries.map((e) => e.id))) {
+      resetSeen();
+    }
+  }, [staffEntries, allSeen, resetSeen]);
 
   const safeIndex = activeIndex < staffEntries.length ? activeIndex : 0;
 
@@ -164,6 +175,13 @@ export function StaffIntelStrip() {
     pauseTimerRef.current = setTimeout(() => setPaused(false), RESUME_DELAY);
   }, []);
 
+  // Start display timer when visible slice changes
+  useEffect(() => {
+    if (collapsed) return;
+    visibleSlice.forEach((entry) => startDisplayTimer(entry.id));
+    return () => visibleSlice.forEach((entry) => cancelDisplayTimer(entry.id));
+  }, [visibleSlice, collapsed, startDisplayTimer, cancelDisplayTimer]);
+
   if (!role || role === "guest") return null;
   if (staffEntries.length === 0) return null;
 
@@ -183,35 +201,29 @@ export function StaffIntelStrip() {
 
     switch (animMode) {
       case "ticker":
-        // Scan-line glow: trailing gradient effect via box-shadow
         if (animState === "exiting" && position === 0) return `translate-x-[-100%] opacity-0 ${base} ease-in`;
         if (animState === "entering") return `translate-x-0 opacity-100 ${base} ease-out shadow-[inset_60px_0_30px_-20px_hsl(var(--primary)/0.08)]`;
         return "translate-x-0 opacity-100 shadow-[inset_60px_0_30px_-20px_hsl(var(--primary)/0)]";
       case "crossfade":
-        // Frosted blur during transition
         if (animState === "exiting" && position === 0) return `opacity-0 blur-[2px] scale-[0.98] ${base} ease-in`;
         if (animState === "entering") return `opacity-100 blur-0 scale-100 ${base} ease-out`;
         return "opacity-100 blur-0 scale-100";
       case "stack":
-        // Depth scaling: back cards smaller + dimmed with perspective push
         if (position === 0) {
           if (animState === "exiting") return `scale-95 opacity-0 -translate-y-1 ${base}`;
           if (animState === "entering") return `scale-100 opacity-100 translate-y-0 ${base}`;
           return "scale-100 opacity-100 translate-y-0";
         }
-        // Back cards get progressively smaller and more transparent
         const depthScale = position === 1 ? "scale-[0.96]" : "scale-[0.92]";
         const depthOpacity = position === 1 ? "opacity-60" : "opacity-40";
         return `${depthScale} ${depthOpacity} ${base} origin-top`;
       case "flip":
-        // Shadow flare at flip midpoint
         if (animState === "exiting" && position === 0)
           return `[transform:rotateY(90deg)] opacity-0 shadow-[0_0_16px_hsl(var(--primary)/0.3)] ${base} [transform-style:preserve-3d]`;
         if (animState === "entering")
           return `[transform:rotateY(0deg)] opacity-100 shadow-none ${base} [transform-style:preserve-3d]`;
         return "[transform:rotateY(0deg)] opacity-100 shadow-none";
       case "pulse":
-        // Ripple ring effect
         if (animState === "exiting" && position === 0) return `scale-110 opacity-0 ${base} ease-in`;
         if (animState === "entering")
           return `scale-100 opacity-100 ${base} ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_0_0_3px_hsl(var(--primary)/0.15),0_0_0_6px_hsl(var(--primary)/0.05)]`;
@@ -221,37 +233,40 @@ export function StaffIntelStrip() {
     }
   };
 
-  const renderEntry = (entry: IntelligenceEntry, className = "", isCarousel = false) => (
-    <button
-      key={`${entry.id}-${className}`}
-      onClick={() => { setDetailEntry(entry); handlePause(); }}
-      onMouseEnter={handlePause}
-      onTouchStart={handlePause}
-      className={`flex items-start gap-2 py-1 pl-2 rounded-sm w-full text-left hover:bg-accent/30 transition-colors ${SEVERITY_STYLES[entry.severity] || ""} ${className}`}
-    >
-      <div className={`flex-1 text-xs text-muted-foreground min-w-0 ${isCarousel ? "" : ""}`}>
-        {isCarousel ? (
-          <>
-            {/* Parallax: title with faster transition, body with slower */}
-            <span className="font-medium text-foreground block transition-transform duration-200">{entry.title}</span>
-            <span className="block transition-transform duration-500 delay-[50ms]">{entry.body.slice(0, 70)}{entry.body.length > 70 ? "…" : ""}</span>
-          </>
-        ) : (
-          <>
-            <span className="font-medium text-foreground">{entry.title}</span>
-            <span className="ml-1.5">{entry.body.slice(0, 70)}{entry.body.length > 70 ? "…" : ""}</span>
-          </>
-        )}
-      </div>
-      <div className="flex gap-1 shrink-0">
-        {entry.location?.filter((l) => l !== "global").slice(0, 2).map((loc) => (
-          <Badge key={loc} variant="outline" className="text-[10px] px-1 py-0">
-            {LOCATION_LABELS[loc] ?? loc}
-          </Badge>
-        ))}
-      </div>
-    </button>
-  );
+  const renderEntry = (entry: IntelligenceEntry, className = "", isCarousel = false) => {
+    const isSeen = seen.has(entry.id);
+    return (
+      <button
+        key={`${entry.id}-${className}`}
+        onClick={() => { markSeen(entry.id); setDetailEntry(entry); handlePause(); }}
+        onMouseEnter={handlePause}
+        onTouchStart={handlePause}
+        className={`flex items-start gap-2 py-1 pl-2 rounded-sm w-full text-left hover:bg-accent/30 transition-all ${SEVERITY_STYLES[entry.severity] || ""} ${className} ${isSeen ? "opacity-50" : "opacity-100"}`}
+      >
+        <div className={`flex-1 text-xs text-muted-foreground min-w-0`}>
+          {isCarousel ? (
+            <>
+              <span className="font-medium text-foreground block transition-transform duration-200">{entry.title}</span>
+              <span className="block transition-transform duration-500 delay-[50ms]">{entry.body.slice(0, 70)}{entry.body.length > 70 ? "…" : ""}</span>
+            </>
+          ) : (
+            <>
+              <span className="font-medium text-foreground">{entry.title}</span>
+              <span className="ml-1.5">{entry.body.slice(0, 70)}{entry.body.length > 70 ? "…" : ""}</span>
+            </>
+          )}
+        </div>
+        <div className="flex gap-1 shrink-0 items-center">
+          {isSeen && <Eye className="h-3 w-3 text-muted-foreground/40" />}
+          {entry.location?.filter((l) => l !== "global").slice(0, 2).map((loc) => (
+            <Badge key={loc} variant="outline" className="text-[10px] px-1 py-0">
+              {LOCATION_LABELS[loc] ?? loc}
+            </Badge>
+          ))}
+        </div>
+      </button>
+    );
+  };
 
   const totalDots = Math.min(staffEntries.length, 8);
 

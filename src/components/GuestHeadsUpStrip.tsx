@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { X, AlertTriangle, Info, Lightbulb, ChevronRight, ChevronLeft } from "lucide-react";
+import { X, AlertTriangle, Info, Lightbulb, ChevronRight, ChevronLeft, Eye } from "lucide-react";
 import { useIntelligence, type IntelligenceEntry } from "@/hooks/useIntelligence";
+import { useIntelSeen } from "@/hooks/useIntelSeen";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,8 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
     locations,
   });
 
+  const { seen, markSeen, startDisplayTimer, cancelDisplayTimer, resetSeen, getWeight, allSeen } = useIntelSeen("guest");
+
   const [dismissed, setDismissed] = useState<Set<string>>(() => {
     try {
       const raw = localStorage.getItem(DISMISSED_KEY);
@@ -104,14 +107,22 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
           score:
             (phaseCats.includes(e.category) ? 2 : 0) +
             (e.location?.some((l) => phaseLocs.includes(l)) ? 1 : 0) +
-            (e.severity === "urgent" ? 3 : e.severity === "attention" ? 1 : 0),
+            (e.severity === "urgent" ? 3 : e.severity === "attention" ? 1 : 0) +
+            (seen.has(e.id) ? 0 : 4), // Unseen entries get priority boost
         }))
         .sort((a, b) => b.score - a.score)
         .map((s) => s.entry);
     }
 
     return filtered;
-  }, [entries, dismissed, journeyPhase]);
+  }, [entries, dismissed, journeyPhase, seen]);
+
+  // Auto-reset seen state when all visible entries have been read
+  useEffect(() => {
+    if (visible.length > 0 && allSeen(visible.map((e) => e.id))) {
+      resetSeen();
+    }
+  }, [visible, allSeen, resetSeen]);
 
   const handlePause = useCallback(() => {
     setPaused(true);
@@ -166,6 +177,7 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
 
   // Tap micro-interaction
   const handleCardTap = (entry: IntelligenceEntry) => {
+    markSeen(entry.id);
     setTappedId(entry.id);
     setTimeout(() => setTappedId(null), 200);
     setDetailEntry(entry);
@@ -182,6 +194,12 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
     }
     return cards;
   }, [visible, safeIndex]);
+
+  // Start display timer for visible cards
+  useEffect(() => {
+    visibleCards.forEach((entry) => startDisplayTimer(entry.id));
+    return () => visibleCards.forEach((entry) => cancelDisplayTimer(entry.id));
+  }, [visibleCards, startDisplayTimer, cancelDisplayTimer]);
 
   if (visible.length === 0) return null;
 
@@ -255,7 +273,9 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
           onTouchEnd={handleTouchEnd}
           onMouseEnter={handlePause}
         >
-          {visibleCards.map((entry, i) => (
+          {visibleCards.map((entry, i) => {
+            const isSeen = seen.has(entry.id);
+            return (
             <div
               key={`${entry.id}-${i}`}
               onClick={() => handleCardTap(entry)}
@@ -266,6 +286,7 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
                 ${CATEGORY_ACCENT[entry.category] || ""}
                 ${getCardClasses(i)}
                 ${tappedId === entry.id ? "scale-[0.97] transition-transform duration-100" : ""}
+                ${isSeen ? "opacity-60" : "opacity-100"}
                 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200
               `}
             >
@@ -307,7 +328,8 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
 
           {/* Swipe hint arrows for desktop */}
           {visible.length > 1 && (
