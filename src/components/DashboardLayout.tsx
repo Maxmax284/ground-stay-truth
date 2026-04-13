@@ -1,7 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NotificationBell } from "@/components/NotificationBell";
 import { AIAssistantPanel } from "@/components/AIAssistantPanel";
@@ -9,6 +9,7 @@ import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TutorialOverlay } from "@/components/TutorialOverlay";
 import { useRolePreview } from "@/hooks/useRolePreview";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { SecurityFreezeBanner } from "@/components/SecurityFreezeBanner";
 import { PropertyIndicator } from "@/components/PropertyIndicator";
@@ -34,6 +35,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const titleKey = routeTitleKeys[location.pathname] || "nav.dashboard";
   const { isPreviewMode, previewRole, setPreviewRole } = useRolePreview();
+  const { signOut } = useAuth();
   
   // Initialize Fenrir Lock telemetry from policy_settings
   useFenrirConfig();
@@ -69,6 +71,15 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <div className="ml-auto flex items-center gap-1">
               <ThemeToggle />
               <NotificationBell />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={signOut}
+                className="h-9 w-9 text-muted-foreground hover:text-foreground md:hidden"
+                title={t("common.signOut")}
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           </header>
           <main className="flex-1 p-4 sm:p-6 overflow-auto ring-rope-pattern">

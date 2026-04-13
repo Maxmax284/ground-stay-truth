@@ -11,6 +11,7 @@ export function PWAInstallBanner() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
@@ -26,6 +27,8 @@ export function PWAInstallBanner() {
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     setIsIOS(ios);
 
+    const android = /android/i.test(navigator.userAgent);
+    setIsAndroid(android);
     // Check if previously dismissed this session
     if (sessionStorage.getItem("pwa-banner-dismissed")) {
       setDismissed(true);
@@ -57,7 +60,7 @@ export function PWAInstallBanner() {
 
   // Don't show if already installed, dismissed, or on desktop without prompt
   if (isStandalone || dismissed) return null;
-  if (!isIOS && !deferredPrompt) return null;
+  if (!isIOS && !isAndroid && !deferredPrompt) return null;
 
   return (
     <div className="fixed bottom-0 inset-x-0 z-50 p-4 pb-safe animate-in slide-in-from-bottom duration-500">
@@ -91,11 +94,19 @@ export function PWAInstallBanner() {
               <span className="font-semibold text-foreground">Add to Home Screen</span>.
             </p>
           </div>
-        ) : (
+        ) : deferredPrompt ? (
           <Button onClick={handleInstall} size="sm" className="w-full">
             <Download className="h-4 w-4 mr-2" />
             Install App
           </Button>
+        ) : (
+          <div className="flex items-center gap-2 rounded-lg bg-muted/50 p-3">
+            <Download className="h-4 w-4 text-primary flex-shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              Tap the <span className="font-semibold text-foreground">menu</span> (⋮) in your browser, then{" "}
+              <span className="font-semibold text-foreground">Install app</span>.
+            </p>
+          </div>
         )}
       </div>
     </div>
