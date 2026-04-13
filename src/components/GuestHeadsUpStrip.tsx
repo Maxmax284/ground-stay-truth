@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { X, AlertTriangle, Info, Lightbulb, ChevronRight, ChevronLeft } from "lucide-react";
+import { X, AlertTriangle, Info, Lightbulb, ChevronRight, ChevronLeft, Eye } from "lucide-react";
 import { useIntelligence, type IntelligenceEntry } from "@/hooks/useIntelligence";
+import { useIntelSeen } from "@/hooks/useIntelSeen";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,8 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
     status: "active",
     locations,
   });
+
+  const { seen, markSeen, startDisplayTimer, cancelDisplayTimer, resetSeen, getWeight, allSeen } = useIntelSeen("guest");
 
   const [dismissed, setDismissed] = useState<Set<string>>(() => {
     try {
