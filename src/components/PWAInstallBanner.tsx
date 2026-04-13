@@ -27,6 +27,8 @@ export function PWAInstallBanner() {
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     setIsIOS(ios);
 
+    const android = /android/i.test(navigator.userAgent);
+    setIsAndroid(android);
     // Check if previously dismissed this session
     if (sessionStorage.getItem("pwa-banner-dismissed")) {
       setDismissed(true);
@@ -58,7 +60,7 @@ export function PWAInstallBanner() {
 
   // Don't show if already installed, dismissed, or on desktop without prompt
   if (isStandalone || dismissed) return null;
-  if (!isIOS && !deferredPrompt) return null;
+  if (!isIOS && !isAndroid && !deferredPrompt) return null;
 
   return (
     <div className="fixed bottom-0 inset-x-0 z-50 p-4 pb-safe animate-in slide-in-from-bottom duration-500">
