@@ -1,10 +1,11 @@
 import { useIntelligence, type IntelligenceEntry } from "@/hooks/useIntelligence";
 import { useAuth } from "@/hooks/useAuth";
+import { useIntelSeen } from "@/hooks/useIntelSeen";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Zap, ChevronDown, ChevronUp, ArrowLeft, Sparkles, MapPin } from "lucide-react";
+import { Zap, ChevronDown, ChevronUp, ArrowLeft, Sparkles, MapPin, Eye } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 export type IntelAnimationMode = "ticker" | "crossfade" | "stack" | "flip" | "typewriter" | "pulse" | "carousel";
@@ -47,11 +48,13 @@ export function setStoredAnimMode(mode: IntelAnimationMode) {
   try { localStorage.setItem("intel-animation-mode", mode); } catch {}
 }
 
-function buildWeightedIndices(entries: IntelligenceEntry[]): number[] {
+function buildWeightedIndices(entries: IntelligenceEntry[], getSeenWeight: (id: string) => number): number[] {
   const indices: number[] = [];
   entries.forEach((e, i) => {
-    const weight = e.severity === "urgent" ? 3 : e.severity === "attention" ? 2 : 1;
-    for (let w = 0; w < weight; w++) indices.push(i);
+    const severityWeight = e.severity === "urgent" ? 3 : e.severity === "attention" ? 2 : 1;
+    const seenWeight = getSeenWeight(e.id);
+    const total = severityWeight * seenWeight;
+    for (let w = 0; w < total; w++) indices.push(i);
   });
   return indices;
 }
