@@ -138,12 +138,21 @@ export function AppSidebar() {
 
   // Auto-popup on first login for mobile users
   const [installDialogOpen, setInstallDialogOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
 
   useEffect(() => {
     if (showInstall && user) {
       const key = `pwa-install-shown-${user.id}`;
       if (!localStorage.getItem(key)) {
-        // Small delay so the dashboard loads first
         const timer = setTimeout(() => {
           setInstallDialogOpen(true);
           localStorage.setItem(key, "1");
@@ -152,6 +161,16 @@ export function AppSidebar() {
       }
     }
   }, [showInstall, user]);
+
+  const handleNativeInstall = async () => {
+    if (!deferredPrompt) return;
+    await deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") {
+      setDeferredPrompt(null);
+      setInstallDialogOpen(false);
+    }
+  };
 
   return (
     <>
