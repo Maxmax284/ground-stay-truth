@@ -340,6 +340,15 @@ export function AppSidebar() {
           </div>
         ) : (
           <div className="space-y-4 mt-2">
+            {deferredPrompt && (
+              <Button onClick={handleNativeInstall} className="w-full">
+                <Download className="h-4 w-4 mr-2" />
+                Install App Now
+              </Button>
+            )}
+            <p className="text-xs text-muted-foreground font-medium">
+              {deferredPrompt ? "Or install manually:" : "How to install:"}
+            </p>
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">1</div>
               <div>
