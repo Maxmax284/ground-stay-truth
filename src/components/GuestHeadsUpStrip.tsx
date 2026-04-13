@@ -177,10 +177,17 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
 
   // Tap micro-interaction
   const handleCardTap = (entry: IntelligenceEntry) => {
+    markSeen(entry.id);
     setTappedId(entry.id);
     setTimeout(() => setTappedId(null), 200);
     setDetailEntry(entry);
   };
+
+  // Start display timer for visible cards
+  useEffect(() => {
+    visibleCards.forEach((entry) => startDisplayTimer(entry.id));
+    return () => visibleCards.forEach((entry) => cancelDisplayTimer(entry.id));
+  }, [visibleCards, startDisplayTimer, cancelDisplayTimer]);
 
   const safeIndex = currentIndex < visible.length ? currentIndex : 0;
 
