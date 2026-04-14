@@ -137,26 +137,21 @@ export function StaffIntelStrip() {
 
   const advance = useCallback(() => {
     if (staffEntries.length <= 1) return;
-    setAnimState("exiting");
-    setTimeout(() => {
-      setActiveIndex((prev) => {
-        if (weightedIndices.length === 0) return 0;
-        let next: number, attempts = 0;
-        do {
-          next = weightedIndices[Math.floor(Math.random() * weightedIndices.length)];
-          attempts++;
-        } while (next === prev && attempts < 10 && staffEntries.length > 1);
-        return next;
-      });
-      setAnimState("entering");
-      setTimeout(() => setAnimState("visible"), 400);
-    }, 400);
+    setActiveIndex((prev) => {
+      if (weightedIndices.length === 0) return 0;
+      let next: number, attempts = 0;
+      do {
+        next = weightedIndices[Math.floor(Math.random() * weightedIndices.length)];
+        attempts++;
+      } while (next === prev && attempts < 10 && staffEntries.length > 1);
+      return next;
+    });
+    setAnimKey((k) => k + 1);
   }, [staffEntries.length, weightedIndices]);
 
   const canAutoAdvance = animMode !== "typewriter" || typewriterDone;
   useEffect(() => {
     if (collapsed || paused || staffEntries.length <= 1 || !canAutoAdvance) return;
-    // Give typewriter a longer pause before cycling to next set
     const delay = animMode === "typewriter" ? 2000 : ROTATION_INTERVAL;
     const interval = setInterval(advance, delay);
     return () => clearInterval(interval);
@@ -164,7 +159,7 @@ export function StaffIntelStrip() {
 
   useEffect(() => {
     setActiveIndex(0);
-    setAnimState("visible");
+    setAnimKey((k) => k + 1);
   }, [entries?.length]);
 
   useEffect(() => {
