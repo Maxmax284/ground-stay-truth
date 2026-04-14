@@ -60,22 +60,22 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </Button>
             </div>
           )}
-          <header className="h-14 flex items-center border-b border-border px-4 bg-card gap-3">
-            <SidebarTrigger className="h-10 w-auto px-3 flex items-center gap-2 text-sm font-medium">
+          <header className="h-14 flex items-center border-b border-border px-2 sm:px-4 bg-card gap-1 sm:gap-3 overflow-hidden">
+            <SidebarTrigger className="h-10 w-auto px-2 sm:px-3 flex items-center gap-1 sm:gap-2 text-sm font-medium shrink-0">
               <Menu className="h-5 w-5" />
-              <span className="md:hidden">{t("common.menu")}</span>
             </SidebarTrigger>
-            <PropertyIndicator />
-            <span className="md:hidden text-sm font-semibold text-primary">{t("auth.groundStay")}</span>
-            <span className="md:ml-0 text-sm font-medium text-muted-foreground">{t(titleKey)}</span>
-            <div className="ml-auto flex items-center gap-1">
+            <div className="hidden sm:block shrink-0">
+              <PropertyIndicator />
+            </div>
+            <span className="text-sm font-medium text-muted-foreground truncate min-w-0">{t(titleKey)}</span>
+            <div className="ml-auto flex items-center gap-1 shrink-0">
               <ThemeToggle />
               <NotificationBell />
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={signOut}
-                className="h-9 w-9 text-muted-foreground hover:text-foreground md:hidden"
+                className="h-9 w-9 text-muted-foreground hover:text-foreground"
                 title={t("common.signOut")}
               >
                 <LogOut className="h-4 w-4" />
