@@ -192,43 +192,17 @@ export function StaffIntelStrip() {
     );
   };
 
-  // ── Enhanced animation classes per mode ──
-  const getAnimClasses = (position: number): string => {
-    const dur = "duration-[400ms]";
-    const delay = position === 0 ? "" : position === 1 ? "delay-[80ms]" : "delay-[160ms]";
-    const base = `transition-all ${dur} ${delay}`;
-
+  // ── CSS animation class per mode ──
+  const getAnimClass = (position: number): string => {
+    const stagger = `intel-stagger-${position + 1}`;
     switch (animMode) {
-      case "ticker":
-        if (animState === "exiting" && position === 0) return `translate-x-[-100%] opacity-0 ${base} ease-in`;
-        if (animState === "entering") return `translate-x-0 opacity-100 ${base} ease-out shadow-[inset_60px_0_30px_-20px_hsl(var(--primary)/0.08)]`;
-        return "translate-x-0 opacity-100 shadow-[inset_60px_0_30px_-20px_hsl(var(--primary)/0)]";
-      case "crossfade":
-        if (animState === "exiting" && position === 0) return `opacity-0 blur-[2px] scale-[0.98] ${base} ease-in`;
-        if (animState === "entering") return `opacity-100 blur-0 scale-100 ${base} ease-out`;
-        return "opacity-100 blur-0 scale-100";
-      case "stack":
-        if (position === 0) {
-          if (animState === "exiting") return `scale-95 opacity-0 -translate-y-1 ${base}`;
-          if (animState === "entering") return `scale-100 opacity-100 translate-y-0 ${base}`;
-          return "scale-100 opacity-100 translate-y-0";
-        }
-        const depthScale = position === 1 ? "scale-[0.96]" : "scale-[0.92]";
-        const depthOpacity = position === 1 ? "opacity-60" : "opacity-40";
-        return `${depthScale} ${depthOpacity} ${base} origin-top`;
-      case "flip":
-        if (animState === "exiting" && position === 0)
-          return `[transform:rotateY(90deg)] opacity-0 shadow-[0_0_16px_hsl(var(--primary)/0.3)] ${base} [transform-style:preserve-3d]`;
-        if (animState === "entering")
-          return `[transform:rotateY(0deg)] opacity-100 shadow-none ${base} [transform-style:preserve-3d]`;
-        return "[transform:rotateY(0deg)] opacity-100 shadow-none";
-      case "pulse":
-        if (animState === "exiting" && position === 0) return `scale-110 opacity-0 ${base} ease-in`;
-        if (animState === "entering")
-          return `scale-100 opacity-100 ${base} ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_0_0_3px_hsl(var(--primary)/0.15),0_0_0_6px_hsl(var(--primary)/0.05)]`;
-        return "scale-100 opacity-100 shadow-none";
-      default:
-        return "opacity-100";
+      case "ticker": return `intel-anim-ticker ${stagger}`;
+      case "crossfade": return `intel-anim-crossfade ${stagger}`;
+      case "stack": return `intel-anim-stack ${stagger}`;
+      case "flip": return `intel-anim-flip ${stagger}`;
+      case "pulse": return `intel-anim-pulse ${stagger}`;
+      case "carousel": return `intel-anim-carousel ${stagger}`;
+      default: return `intel-anim-crossfade ${stagger}`;
     }
   };
 
