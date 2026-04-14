@@ -66,14 +66,14 @@ export function StaffIntelStrip() {
   const [collapsed, setCollapsed] = useState(false);
   const [detailEntry, setDetailEntry] = useState<IntelligenceEntry | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [animState, setAnimState] = useState<"visible" | "exiting" | "entering">("visible");
   const [paused, setPaused] = useState(false);
   const [animMode, setAnimMode] = useState<IntelAnimationMode>(getStoredAnimMode);
   const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [typedText, setTypedText] = useState("");
   const typeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [carouselOffset, setCarouselOffset] = useState(0);
   const touchStartRef = useRef<number | null>(null);
+  // Counter to force re-mount on each advance for CSS animations
+  const [animKey, setAnimKey] = useState(0);
 
   const staffEntries = useMemo(
     () => (entries ?? []).filter((e) => e.audience?.includes("staff")),
