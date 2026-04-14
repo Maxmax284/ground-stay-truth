@@ -347,3 +347,42 @@
   from { width: 100%; }
   to { width: 0%; }
 }
+
+/* ── Intel Strip Animation Keyframes ── */
+@keyframes intel-ticker-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes intel-crossfade-in {
+  from { opacity: 0; filter: blur(4px); transform: scale(0.97); }
+  to { opacity: 1; filter: blur(0); transform: scale(1); }
+}
+@keyframes intel-stack-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes intel-flip-in {
+  0% { transform: perspective(600px) rotateX(90deg); opacity: 0; }
+  60% { transform: perspective(600px) rotateX(-5deg); opacity: 1; }
+  100% { transform: perspective(600px) rotateX(0deg); opacity: 1; }
+}
+@keyframes intel-pulse-in {
+  0% { transform: scale(0.85); opacity: 0; }
+  60% { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes intel-carousel-in {
+  from { transform: translateX(40px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.intel-anim-ticker { animation: intel-ticker-in 0.45s ease-out both; }
+.intel-anim-crossfade { animation: intel-crossfade-in 0.5s ease-out both; }
+.intel-anim-stack { animation: intel-stack-in 0.4s ease-out both; }
+.intel-anim-flip { animation: intel-flip-in 0.5s ease-out both; }
+.intel-anim-pulse { animation: intel-pulse-in 0.5s ease-out both; }
+.intel-anim-carousel { animation: intel-carousel-in 0.4s ease-out both; }
+
+.intel-stagger-1 { animation-delay: 0ms; }
+.intel-stagger-2 { animation-delay: 80ms; }
+.intel-stagger-3 { animation-delay: 160ms; }
