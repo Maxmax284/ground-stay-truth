@@ -304,13 +304,13 @@ export function StaffIntelStrip() {
     if (animMode === "carousel") {
       return (
         <div
-          className="flex gap-2 transition-transform duration-300 ease-out overflow-hidden"
+          key={animKey}
+          className="flex gap-2 overflow-hidden"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
-          style={{ transform: `translateX(-${carouselOffset}px)` }}
         >
           {visibleSlice.map((entry, i) => (
-            <div key={`${entry.id}-c${i}`} className="min-w-[85%] shrink-0">
+            <div key={`${entry.id}-c${i}`} className={`min-w-[85%] shrink-0 intel-anim-carousel intel-stagger-${i + 1}`}>
               {renderEntry(entry, "", true)}
             </div>
           ))}
@@ -318,10 +318,10 @@ export function StaffIntelStrip() {
       );
     }
 
-    // All other modes: render visible slice with enhanced staggered animations
+    // All other modes: render visible slice with CSS keyframe animations
     return (
-      <div className="space-y-0.5 overflow-hidden [perspective:600px]">
-        {visibleSlice.map((entry, i) => renderEntry(entry, getAnimClasses(i)))}
+      <div key={animKey} className="space-y-0.5 overflow-hidden [perspective:600px]">
+        {visibleSlice.map((entry, i) => renderEntry(entry, getAnimClass(i)))}
       </div>
     );
   };
