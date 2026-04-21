@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useProperty } from "@/hooks/useProperty";
+import { notifyViaMessaging } from "@/lib/notifyMessaging";
 
 export function useHousekeepingTasks() {
   const { activePropertyId } = useProperty();
@@ -32,9 +33,37 @@ export function useUpdateHousekeepingTask() {
         .from("housekeeping_tasks")
         .update(updates)
         .eq("id", id)
-        .select()
+        .select("*, units(name), booking_in:bookings!housekeeping_tasks_booking_in_id_fkey(id, guest_id, check_in, profiles:profiles!bookings_guest_id_profiles_fkey(full_name))")
         .single();
       if (error) throw error;
+
+      // ── Outbound bridge: room ready (only on completion) ──
+      if (status === "completed") {
+        const unitName = (data as any).units?.name ?? "Unit";
+        const nextBooking = (data as any).booking_in;
+        const today = new Date().toISOString().slice(0, 10);
+
+        // Notify supervisors + front desk that room is ready
+        notifyViaMessaging({
+          event_type: "room_ready",
+          subject_id: id,
+          metadata: {
+            unit_name: unitName,
+            next_guest_name: nextBooking?.profiles?.full_name ?? "next arrival",
+          },
+        });
+
+        // Notify the incoming guest only if they're checking in today
+        if (nextBooking?.guest_id && nextBooking.check_in === today) {
+          notifyViaMessaging({
+            event_type: "room_ready_guest",
+            subject_id: id,
+            guest_user_id: nextBooking.guest_id,
+            metadata: { unit_name: unitName },
+          });
+        }
+      }
+
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["housekeeping_tasks"] }),
