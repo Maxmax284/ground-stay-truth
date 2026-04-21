@@ -231,6 +231,7 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
             </Select>
             <input type="hidden" {...register("guest_id")} />
           </div>
+          <div className="space-y-2"><Label htmlFor="flight_number">Flight number (optional)</Label><Input id="flight_number" {...register("flight_number")} placeholder="e.g. TG921" /></div>
           <div className="space-y-2"><Label htmlFor="notes">{t("bookingForm.notes")}</Label><Textarea id="notes" {...register("notes")} placeholder={t("bookingForm.notesPlaceholder")} rows={3} /></div>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
