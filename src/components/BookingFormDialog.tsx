@@ -54,7 +54,7 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
   });
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
-    defaultValues: { unit_id: defaultUnitId ?? "", check_in: defaultCheckIn ?? "", check_out: defaultCheckOut ?? "", num_guests: 1, extra_beds: 0, notes: "", guest_id: "", guest_type: defaultGuestType },
+    defaultValues: { unit_id: defaultUnitId ?? "", check_in: defaultCheckIn ?? "", check_out: defaultCheckOut ?? "", num_guests: 1, extra_beds: 0, notes: "", guest_id: "", guest_type: defaultGuestType, flight_number: "" },
   });
 
   const selectedUnitId = watch("unit_id");
