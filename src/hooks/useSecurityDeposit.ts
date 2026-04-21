@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { notifyViaMessaging } from "@/lib/notifyMessaging";
 
 export function useSecurityDeposit(bookingId: string | null) {
   return useQuery({
@@ -28,6 +29,14 @@ export function useCreateSecurityDeposit() {
         .select()
         .single();
       if (error) throw error;
+
+      // Outbound bridge: admin notified deposit held
+      notifyViaMessaging({
+        event_type: "security_deposit_held",
+        subject_id: booking_id,
+        metadata: { amount: amount_held },
+      });
+
       return data;
     },
     onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ["security_deposit", vars.booking_id] }),
@@ -48,6 +57,43 @@ export function useUpdateSecurityDeposit() {
         .select()
         .single();
       if (error) throw error;
+
+      // ── Outbound bridge: only on meaningful state changes (released / deducted) ──
+      if (updates.status === "deducted" || updates.status === "released") {
+        const { data: booking } = await supabase
+          .from("bookings")
+          .select("guest_id")
+          .eq("id", booking_id)
+          .maybeSingle();
+
+        const adminEvent = updates.status === "released"
+          ? "security_deposit_released"
+          : "security_deposit_deducted";
+
+        notifyViaMessaging({
+          event_type: adminEvent,
+          subject_id: booking_id,
+          metadata: {
+            amount: data.amount_held,
+            amount_deducted: data.amount_deducted,
+            reason: updates.deduction_reason,
+          },
+        });
+
+        if (booking?.guest_id) {
+          notifyViaMessaging({
+            event_type: "deposit_status_update",
+            subject_id: booking_id,
+            guest_user_id: booking.guest_id,
+            metadata: {
+              status: updates.status,
+              amount_deducted: data.amount_deducted,
+              reason: updates.deduction_reason,
+            },
+          });
+        }
+      }
+
       return data;
     },
     onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ["security_deposit", vars.booking_id] }),

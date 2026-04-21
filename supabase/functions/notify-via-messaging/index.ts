@@ -32,7 +32,8 @@ const EVENT_ROLE_MAP: Record<string, string[]> = {
   new_inquiry: ["admin", "manager"],
   booking_state_change: ["manager"],
   booking_approved: ["front_desk_supervisor"],
-  payment_received: ["admin"],
+  payment_received: ["admin", "manager"],
+  payment_failed: ["admin", "manager"],
   new_review: ["admin"],
   security_alert: ["admin"],
   checkin_due: ["front_desk_supervisor"],
@@ -41,11 +42,18 @@ const EVENT_ROLE_MAP: Record<string, string[]> = {
   guest_arrival_change: ["front_desk"],
   task_assigned: ["maintenance"],
   urgent_issue: ["maintenance"],
-  daily_briefing: ["manager", "viewer"],
+  daily_briefing: ["admin", "manager"],
+  // Operational state events
+  security_deposit_held: ["admin"],
+  security_deposit_deducted: ["admin"],
+  security_deposit_released: ["admin"],
+  room_ready: ["front_desk_supervisor", "front_desk"],
   // Guest-targeted
   booking_confirmed: ["guest"],
   payment_receipt: ["guest"],
   checkin_instructions_24h: ["guest"],
+  deposit_status_update: ["guest"],
+  room_ready_guest: ["guest"],
 };
 
 interface Payload {
@@ -150,6 +158,20 @@ function buildMessage(eventType: string, metadata: Record<string, unknown>): str
       return `Your booking is confirmed: ${m.unit_name ?? "Unit"}, ${m.check_in ?? "?"} → ${m.check_out ?? "?"}. See you soon.`;
     case "checkin_instructions_24h":
       return `Check-in tomorrow: ${m.unit_name ?? "Unit"} from ${m.checkin_time ?? "16:00"}. Open the app for full instructions.`;
+    case "payment_failed":
+      return `Payment failed: ${m.guest_name ?? "Guest"} (${m.amount ?? "?"}) — ${m.reason ?? "see app"}.`;
+    case "security_deposit_held":
+      return `Deposit held: ${m.amount ?? "?"} for ${m.guest_name ?? "Guest"} (${m.unit_name ?? "Unit"}).`;
+    case "security_deposit_deducted":
+      return `Deposit deducted: ${m.amount ?? "?"} from ${m.guest_name ?? "Guest"}. Reason: ${String(m.reason ?? "see app").slice(0, 120)}`;
+    case "security_deposit_released":
+      return `Deposit released: ${m.amount ?? "?"} back to ${m.guest_name ?? "Guest"}.`;
+    case "deposit_status_update":
+      return `Your security deposit is now ${m.status ?? "updated"}${m.amount_deducted ? ` (${m.amount_deducted} deducted: ${String(m.reason ?? "").slice(0, 80)})` : ""}.`;
+    case "room_ready":
+      return `Room ready: ${m.unit_name ?? "Unit"} cleaned and ready for ${m.next_guest_name ?? "next arrival"}.`;
+    case "room_ready_guest":
+      return `Good news — your room (${m.unit_name ?? "Unit"}) is ready. See you soon.`;
     default:
       return `${eventType}${m.detail ? `: ${m.detail}` : ""}`;
   }
