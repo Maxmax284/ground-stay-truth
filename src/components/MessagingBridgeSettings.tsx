@@ -17,6 +17,8 @@ const TELEGRAM_KEYS = ["telegram_bot_token"] as const;
 const TWILIO_KEYS = ["twilio_account_sid", "twilio_auth_token", "twilio_sms_from", "twilio_whatsapp_from"] as const;
 
 export function MessagingBridgeSettings() {
+  const { role } = useAuth();
+  const canManage = role === "admin" || role === "manager";
   const { data: settings } = usePolicySettings();
   const { data: secretStatuses } = useSecretStatuses();
   const setSecret = useSetSecret();
