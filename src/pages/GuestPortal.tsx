@@ -58,6 +58,7 @@ import { GuestDepositSection } from "@/components/GuestDepositSection";
 import { GuestPaymentSummary } from "@/components/GuestPaymentSummary";
 import { PreArrivalChecklist } from "@/components/PreArrivalChecklist";
 import { GuestStayUpdatesPrompt } from "@/components/GuestStayUpdatesPrompt";
+import { GuestMessagingOnboarding } from "@/components/GuestMessagingOnboarding";
 import { GuestHeadsUpStrip } from "@/components/GuestHeadsUpStrip";
 import { GuestPlaybook } from "@/components/GuestPlaybook";
 import { ReviewFormDialog } from "@/components/ReviewFormDialog";
@@ -343,6 +344,9 @@ const GuestPortal = () => {
             <p className="text-muted-foreground text-sm mt-0.5 sm:mt-1">{t("guestPortal.subtitle")}</p>
           </div>
         </div>
+
+        {/* First-visit messaging onboarding — auto-hides once connected or skipped */}
+        <GuestMessagingOnboarding />
 
         {guestHistory?.isReturning && (
           <Card className="border-primary/30 bg-primary/5">

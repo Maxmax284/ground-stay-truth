@@ -234,6 +234,12 @@ export function MessagingBridgeSettings() {
         {telegramEnabled && (
           <CardContent className="space-y-4">
             {renderSecretField("telegram_bot_token", "Bot Token", "1234567890:ABCdef…")}
+            <BotConfigField
+              label="Public bot username (for guest deep-link)"
+              placeholder="GroundStayBot"
+              field="telegram_bot_username"
+              helper="No @ — used to build https://t.me/<username>?start=link_<code> for the guest onboarding card."
+            />
             <Separator />
             <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-2">
               <p className="font-medium text-foreground">Setup (5 steps)</p>
@@ -279,6 +285,12 @@ export function MessagingBridgeSettings() {
             {renderSecretField("twilio_auth_token", "Auth Token", "your auth token")}
             {renderSecretField("twilio_sms_from", "SMS From Number", "+15551234567")}
             {renderSecretField("twilio_whatsapp_from", "WhatsApp From Number", "+14155238886 (sandbox)")}
+            <BotConfigField
+              label="Public WhatsApp number (for guest deep-link)"
+              placeholder="+14155238886"
+              field="whatsapp_number"
+              helper="E.164 format. Used to build https://wa.me/<number>?text=/link <code> for guest onboarding."
+            />
             <Separator />
             <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-2">
               <p className="font-medium text-foreground">Webhook URLs (paste into Twilio)</p>
@@ -320,6 +332,82 @@ export function MessagingBridgeSettings() {
         </CardContent>
       </Card>
       </>)}
+    </div>
+  );
+}
+
+/**
+ * Inline editor for one field of the messaging_bot_config policy_settings JSON.
+ * Used to capture the public bot username + WhatsApp number that the guest
+ * onboarding card deep-links into.
+ */
+function BotConfigField({
+  label,
+  placeholder,
+  field,
+  helper,
+}: {
+  label: string;
+  placeholder: string;
+  field: "telegram_bot_username" | "whatsapp_number";
+  helper?: string;
+}) {
+  const { data: settings } = usePolicySettings();
+  const updateSetting = useUpdatePolicySetting();
+  const { toast } = useToast();
+  const setting = settings?.find((s) => s.key === "messaging_bot_config");
+  const currentConfig = (setting?.value as Record<string, string> | null) ?? {};
+  const currentValue = currentConfig[field] ?? "";
+  const [draft, setDraft] = useState(currentValue);
+  const [saving, setSaving] = useState(false);
+
+  // Keep draft in sync if the underlying setting reloads
+  if (currentValue !== draft && !saving && draft === "") {
+    // initial hydration only
+    setDraft(currentValue);
+  }
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const nextValue = { ...currentConfig, [field]: draft.trim() };
+      if (setting) {
+        await updateSetting.mutateAsync({ id: setting.id, value: nextValue });
+      } else {
+        await supabase.from("policy_settings").insert({
+          key: "messaging_bot_config",
+          value: nextValue,
+          description: "Public messaging endpoints for guest onboarding deep-links",
+        });
+      }
+      toast({ title: "Saved", description: `${label} updated.` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-sm">{label}</Label>
+      <div className="flex gap-2">
+        <Input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder={placeholder}
+          className="flex-1"
+        />
+        <Button
+          size="sm"
+          onClick={handleSave}
+          disabled={saving || draft.trim() === currentValue}
+        >
+          <Save className="h-3.5 w-3.5 mr-1" />
+          Save
+        </Button>
+      </div>
+      {helper && <p className="text-xs text-muted-foreground">{helper}</p>}
     </div>
   );
 }
