@@ -649,6 +649,17 @@ serve(async (req) => {
       .limit(10);
     const history = (memoryRows ?? []).reverse() as { role: "user" | "assistant"; content: string }[];
 
+    // Self-report arrival detection (guests with active/upcoming bookings only)
+    if (!isStaffRole(role) && (guestPhase === "active" || guestPhase === "upcoming")) {
+      const stage = await detectAndFireSelfReport(admin, binding.user_id, trimmed, lovableApiKey);
+      if (stage) {
+        // The guest-arrival-journey function dispatches the prompt via notify-via-messaging.
+        // We still let the AI reply naturally below for warmth — no double-send because
+        // the prompt goes to the bridge channel, the AI reply goes back inline here.
+        console.log(`Self-report stage detected for user ${binding.user_id}: ${stage}`);
+      }
+    }
+
     // Q&A path
     const context = await buildContext(admin, binding.user_id, role, guestPhase);
     const systemPrompt = buildSystemPrompt(role, langName, channel, friendlyName, guestPhase) + "\n\n" + context;
