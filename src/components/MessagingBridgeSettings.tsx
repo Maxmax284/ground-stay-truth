@@ -234,6 +234,12 @@ export function MessagingBridgeSettings() {
         {telegramEnabled && (
           <CardContent className="space-y-4">
             {renderSecretField("telegram_bot_token", "Bot Token", "1234567890:ABCdef…")}
+            <BotConfigField
+              label="Public bot username (for guest deep-link)"
+              placeholder="GroundStayBot"
+              field="telegram_bot_username"
+              helper="No @ — used to build https://t.me/<username>?start=link_<code> for the guest onboarding card."
+            />
             <Separator />
             <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-2">
               <p className="font-medium text-foreground">Setup (5 steps)</p>
@@ -279,6 +285,12 @@ export function MessagingBridgeSettings() {
             {renderSecretField("twilio_auth_token", "Auth Token", "your auth token")}
             {renderSecretField("twilio_sms_from", "SMS From Number", "+15551234567")}
             {renderSecretField("twilio_whatsapp_from", "WhatsApp From Number", "+14155238886 (sandbox)")}
+            <BotConfigField
+              label="Public WhatsApp number (for guest deep-link)"
+              placeholder="+14155238886"
+              field="whatsapp_number"
+              helper="E.164 format. Used to build https://wa.me/<number>?text=/link <code> for guest onboarding."
+            />
             <Separator />
             <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-2">
               <p className="font-medium text-foreground">Webhook URLs (paste into Twilio)</p>
