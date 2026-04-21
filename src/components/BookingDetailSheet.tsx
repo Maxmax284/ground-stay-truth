@@ -204,6 +204,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
             {t("bookings.guestCount", { count: booking.num_guests })}
             {booking.guest_type && <Badge variant="outline" className="ml-2 text-xs">{t(`guestBooking.guestTypes.${booking.guest_type}`, { defaultValue: booking.guest_type })}</Badge>}
             {booking.notes && <span className="block mt-1 italic">"{booking.notes}"</span>}
+            {(booking as any).flight_number && <span className="block mt-1 text-xs">✈️ Flight: <strong>{(booking as any).flight_number}</strong></span>}
           </div>
           {booking.arrival_details && typeof booking.arrival_details === "object" && Object.keys(booking.arrival_details).length > 0 && (
             <div className="text-sm space-y-1 bg-muted/30 rounded-md p-2">

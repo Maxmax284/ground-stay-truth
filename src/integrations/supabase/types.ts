@@ -335,6 +335,7 @@ export type Database = {
           check_out: string
           created_at: string
           created_by: string | null
+          flight_number: string | null
           guest_id: string | null
           guest_type: string | null
           id: string
@@ -354,6 +355,7 @@ export type Database = {
           check_out: string
           created_at?: string
           created_by?: string | null
+          flight_number?: string | null
           guest_id?: string | null
           guest_type?: string | null
           id?: string
@@ -373,6 +375,7 @@ export type Database = {
           check_out?: string
           created_at?: string
           created_by?: string | null
+          flight_number?: string | null
           guest_id?: string | null
           guest_type?: string | null
           id?: string
@@ -652,6 +655,41 @@ export type Database = {
             columns: ["pickup_id"]
             isOneToOne: true
             referencedRelation: "airport_pickups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guest_arrival_stage_log: {
+        Row: {
+          booking_id: string
+          context: Json | null
+          fired_at: string
+          id: string
+          stage: string
+          triggered_by: string
+        }
+        Insert: {
+          booking_id: string
+          context?: Json | null
+          fired_at?: string
+          id?: string
+          stage: string
+          triggered_by?: string
+        }
+        Update: {
+          booking_id?: string
+          context?: Json | null
+          fired_at?: string
+          id?: string
+          stage?: string
+          triggered_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_arrival_stage_log_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
         ]

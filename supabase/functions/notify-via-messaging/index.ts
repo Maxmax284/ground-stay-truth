@@ -54,6 +54,18 @@ const EVENT_ROLE_MAP: Record<string, string[]> = {
   checkin_instructions_24h: ["guest"],
   deposit_status_update: ["guest"],
   room_ready_guest: ["guest"],
+  // Arrival journey — guest-targeted
+  arrival_stage_1_guest: ["guest"],
+  arrival_stage_2_guest: ["guest"],
+  arrival_stage_3_guest: ["guest"],
+  arrival_stage_4_guest: ["guest"],
+  // Arrival journey — staff-targeted (use target_roles override on dispatch)
+  arrival_stage_1_staff: ["admin", "manager", "front_desk_supervisor", "front_desk"],
+  arrival_stage_2_staff: ["admin", "front_desk_supervisor", "front_desk"],
+  arrival_stage_3_staff: ["front_desk_supervisor", "front_desk"],
+  arrival_stage_3_driver: [], // explicit target_user_ids only
+  arrival_stage_4_staff: ["front_desk_supervisor", "front_desk"],
+  arrival_stage_4_vip: ["admin"],
 };
 
 interface Payload {
@@ -172,6 +184,28 @@ function buildMessage(eventType: string, metadata: Record<string, unknown>): str
       return `Room ready: ${m.unit_name ?? "Unit"} cleaned and ready for ${m.next_guest_name ?? "next arrival"}.`;
     case "room_ready_guest":
       return `Good news — your room (${m.unit_name ?? "Unit"}) is ready. See you soon.`;
+    // Arrival journey — guest
+    case "arrival_stage_1_guest":
+      return `Tomorrow's the day 🎒 Check-in from ${m.check_in_time ?? "16:00"} at ${m.property_name ?? "the property"}${m.address ? ` (${String(m.address).slice(0, 80)})` : ""}. Bring ID + booking ref. I'm Kru Glitch — message me anytime if you need anything.`;
+    case "arrival_stage_2_guest":
+      return `Welcome to Thailand 🇹🇭 What's your plan to the island — flight, ferry, or transfer? Just reply and I'll line up the next steps.`;
+    case "arrival_stage_3_guest":
+      return `Almost there! Property: ${m.unit_name ?? "your unit"}${m.address ? ` — ${String(m.address).slice(0, 100)}` : ""}. Front desk knows you're inbound. See you soon.`;
+    case "arrival_stage_4_guest":
+      return `You're checked in 🥊 Unit: ${m.unit_name ?? "yours"}.${m.wifi ? ` WiFi: ${m.wifi}.` : ""} I'm Kru Glitch — message me anytime for food, transport, training, or anything you need.`;
+    // Arrival journey — staff
+    case "arrival_stage_1_staff":
+      return `Tomorrow's arrivals (${m.count ?? 0}):\n${m.summary ?? "—"}`;
+    case "arrival_stage_2_staff":
+      return `${m.guest_name ?? "Guest"} has landed at BKK${m.flight ? ` (${m.flight})` : ""}.`;
+    case "arrival_stage_3_staff":
+      return `${m.guest_name ?? "Guest"} → ${m.unit_name ?? "Unit"} — ${m.eta_minutes === 0 ? "arrived on island, imminent arrival" : `ETA ~${m.eta_minutes ?? 30} min`}.`;
+    case "arrival_stage_3_driver":
+      return `Pickup confirmation: ${m.guest_name ?? "Guest"} → ${m.unit_name ?? "Unit"}. Guest is on the way.`;
+    case "arrival_stage_4_staff":
+      return `Check-in confirmed: ${m.unit_name ?? "Unit"}.`;
+    case "arrival_stage_4_vip":
+      return `⭐ VIP check-in: ${m.unit_name ?? "Unit"}. Heads-up.`;
     default:
       return `${eventType}${m.detail ? `: ${m.detail}` : ""}`;
   }
