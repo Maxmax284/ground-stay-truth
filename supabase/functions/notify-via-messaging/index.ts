@@ -54,6 +54,18 @@ const EVENT_ROLE_MAP: Record<string, string[]> = {
   checkin_instructions_24h: ["guest"],
   deposit_status_update: ["guest"],
   room_ready_guest: ["guest"],
+  // Arrival journey — guest-targeted
+  arrival_stage_1_guest: ["guest"],
+  arrival_stage_2_guest: ["guest"],
+  arrival_stage_3_guest: ["guest"],
+  arrival_stage_4_guest: ["guest"],
+  // Arrival journey — staff-targeted (use target_roles override on dispatch)
+  arrival_stage_1_staff: ["admin", "manager", "front_desk_supervisor", "front_desk"],
+  arrival_stage_2_staff: ["admin", "front_desk_supervisor", "front_desk"],
+  arrival_stage_3_staff: ["front_desk_supervisor", "front_desk"],
+  arrival_stage_3_driver: [], // explicit target_user_ids only
+  arrival_stage_4_staff: ["front_desk_supervisor", "front_desk"],
+  arrival_stage_4_vip: ["admin"],
 };
 
 interface Payload {
