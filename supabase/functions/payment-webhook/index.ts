@@ -382,6 +382,21 @@ async function handlePaymentSuccess(
     await adminClient.from("notifications").insert(adminNotifs);
   }
 
+  // ── Outbound messaging bridge: payment_received (admin/manager) + payment_receipt (guest) ──
+  await dispatchNotify(supabaseUrl, serviceRoleKey, {
+    event_type: "payment_received",
+    subject_id: bookingId,
+    metadata: { amount: event.amountPaid, method: "card" },
+  });
+  if (booking.guest_id) {
+    await dispatchNotify(supabaseUrl, serviceRoleKey, {
+      event_type: "payment_receipt",
+      subject_id: bookingId,
+      guest_user_id: booking.guest_id,
+      metadata: { amount: event.amountPaid },
+    });
+  }
+
   // Trigger confirmation email
   try {
     await fetch(
@@ -397,6 +412,26 @@ async function handlePaymentSuccess(
     );
   } catch (emailErr) {
     console.error("Failed to trigger confirmation email:", emailErr);
+  }
+}
+
+// ── Helper: server-to-server invocation of notify-via-messaging ──
+async function dispatchNotify(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  payload: Record<string, unknown>
+) {
+  try {
+    await fetch(`${supabaseUrl}/functions/v1/notify-via-messaging`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${serviceRoleKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    console.warn("notify-via-messaging dispatch failed:", err);
   }
 }
 
