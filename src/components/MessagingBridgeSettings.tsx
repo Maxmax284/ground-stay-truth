@@ -205,6 +205,9 @@ export function MessagingBridgeSettings() {
       </Card>
 
       {canManage && (<>
+      {/* Delivery dashboard + global ping */}
+      <MessagingDeliveryDashboard />
+
       {/* Telegram */}
       <Card>
         <CardHeader>
