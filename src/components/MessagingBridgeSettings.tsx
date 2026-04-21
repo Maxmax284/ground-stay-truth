@@ -12,6 +12,7 @@ import { usePolicySettings, useUpdatePolicySetting } from "@/hooks/usePolicySett
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { CheckCircle2, XCircle, Eye, EyeOff, Save, Trash2, MessageCircle, Copy, RefreshCw, Send } from "lucide-react";
+import { NotificationPreferencesPanel } from "@/components/NotificationPreferencesPanel";
 
 const TELEGRAM_KEYS = ["telegram_bot_token"] as const;
 const TWILIO_KEYS = ["twilio_account_sid", "twilio_auth_token", "twilio_sms_from", "twilio_whatsapp_from"] as const;
@@ -197,6 +198,8 @@ export function MessagingBridgeSettings() {
               Send <code className="px-1.5 py-0.5 rounded bg-muted">/link {linkCode}</code> to your Telegram / WhatsApp / SMS bot. Code expires in 15 minutes.
             </p>
           )}
+          <Separator />
+          <NotificationPreferencesPanel />
         </CardContent>
       </Card>
 

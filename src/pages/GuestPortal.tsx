@@ -51,6 +51,7 @@ import {
   Clock, ListChecks, Shield, MapPin, Heart, Star,
 } from "lucide-react";
 import { GuestStaySupport } from "@/components/GuestStaySupport";
+import { MessagingConnectCard } from "@/components/MessagingConnectCard";
 import { GuestStaySummary } from "@/components/GuestStaySummary";
 import { GuestPickupCard } from "@/components/GuestPickupCard";
 import { GuestDepositSection } from "@/components/GuestDepositSection";
@@ -472,15 +473,18 @@ const GuestPortal = () => {
           {/* ── Stay Support Tab ── */}
           {activeBookings.length > 0 && (
             <TabsContent value="stay-support">
-              <GuestStaySupport
-                focusSection={focusSection}
-                onSectionFocused={() => setFocusSection(null)}
-                bookings={activeBookings.map((b) => ({
-                  id: b.id,
-                  unit_id: b.unit_id,
-                  units: b.units ? { name: b.units.name } : null,
-                }))}
-              />
+              <div className="space-y-6">
+                <GuestStaySupport
+                  focusSection={focusSection}
+                  onSectionFocused={() => setFocusSection(null)}
+                  bookings={activeBookings.map((b) => ({
+                    id: b.id,
+                    unit_id: b.unit_id,
+                    units: b.units ? { name: b.units.name } : null,
+                  }))}
+                />
+                <MessagingConnectCard />
+              </div>
             </TabsContent>
           )}
 
