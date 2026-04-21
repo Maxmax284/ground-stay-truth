@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.notify-via-messaging]
 verify_jwt = false
+
+[functions.daily-briefing]
+verify_jwt = false
