@@ -10,12 +10,15 @@ import { useToast } from "@/hooks/use-toast";
 import { useSecretStatuses, useSetSecret, useDeleteSecret } from "@/hooks/useIntegrationSecrets";
 import { usePolicySettings, useUpdatePolicySetting } from "@/hooks/usePolicySettings";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { CheckCircle2, XCircle, Eye, EyeOff, Save, Trash2, MessageCircle, Copy, RefreshCw, Send } from "lucide-react";
 
 const TELEGRAM_KEYS = ["telegram_bot_token"] as const;
 const TWILIO_KEYS = ["twilio_account_sid", "twilio_auth_token", "twilio_sms_from", "twilio_whatsapp_from"] as const;
 
 export function MessagingBridgeSettings() {
+  const { role } = useAuth();
+  const canManage = role === "admin" || role === "manager";
   const { data: settings } = usePolicySettings();
   const { data: secretStatuses } = useSecretStatuses();
   const setSecret = useSetSecret();
@@ -197,6 +200,7 @@ export function MessagingBridgeSettings() {
         </CardContent>
       </Card>
 
+      {canManage && (<>
       {/* Telegram */}
       <Card>
         <CardHeader>
@@ -308,6 +312,7 @@ export function MessagingBridgeSettings() {
           {renderSecretField("messaging_bridge_internal_token", "Internal Token", "any random 32+ char string")}
         </CardContent>
       </Card>
+      </>)}
     </div>
   );
 }
