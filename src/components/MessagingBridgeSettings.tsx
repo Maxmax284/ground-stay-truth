@@ -332,6 +332,9 @@ export function MessagingBridgeSettings() {
           {renderSecretField("messaging_bridge_internal_token", "Internal Token", "any random 32+ char string")}
         </CardContent>
       </Card>
+
+      {/* Linked chats — admin view of all guest/staff bindings */}
+      <LinkedChatsList />
       </>)}
     </div>
   );
