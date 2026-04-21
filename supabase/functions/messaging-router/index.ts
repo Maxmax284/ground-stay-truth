@@ -327,6 +327,90 @@ async function getGuestPhase(admin: any, userId: string): Promise<"active" | "up
   return "none";
 }
 
+// ── Self-report arrival intent detection (hybrid: keyword + AI fallback) ──
+const STAGE2_KEYWORDS = [
+  /\bjust\s+landed\b/i, /\blanded\b/i, /\btouched?\s*down\b/i,
+  /\bat\s+bkk\b/i, /\bat\s+suvarnabhumi\b/i, /\bat\s+don\s*mueang\b/i,
+  /\bmade\s+it\s+to\s+(bangkok|thailand|bkk)\b/i,
+  /\barrived\s+(in|at)\s+(bangkok|bkk|thailand)\b/i,
+  /\bin\s+bangkok\b/i,
+];
+const STAGE3_KEYWORDS = [
+  /\bon\s+the\s+(ferry|boat)\b/i, /\bat\s+the\s+pier\b/i,
+  /\bgot\s+to\s+samui\b/i, /\barrived\s+on\s+(island|samui)\b/i,
+  /\bon\s+samui\b/i, /\bjust\s+got\s+(here|to\s+samui)\b/i,
+  /\bat\s+(usm|samui)\s*airport\b/i, /\blanded\s+(in|on|at)\s+samui\b/i,
+];
+
+function keywordMatchStage(text: string): "stage_2_landed" | "stage_3_island" | null {
+  if (STAGE3_KEYWORDS.some((r) => r.test(text))) return "stage_3_island";
+  if (STAGE2_KEYWORDS.some((r) => r.test(text))) return "stage_2_landed";
+  return null;
+}
+
+async function aiClassifyArrival(text: string, apiKey: string): Promise<"stage_2_landed" | "stage_3_island" | null> {
+  if (!/\b(arriv|land|here|made it|got to|on the|at the)\b/i.test(text)) return null;
+  try {
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [
+          { role: "system", content: "Classify guest message as exactly one of: stage_2_landed (arrived at Bangkok BKK or DMK airport), stage_3_island (arrived on Koh Samui or its pier/airport), none (anything else). Reply with the label only." },
+          { role: "user", content: text.slice(0, 300) },
+        ],
+        max_tokens: 10,
+      }),
+    });
+    if (!resp.ok) return null;
+    const json = await resp.json();
+    const label = (json.choices?.[0]?.message?.content ?? "").trim().toLowerCase();
+    if (label.includes("stage_2")) return "stage_2_landed";
+    if (label.includes("stage_3")) return "stage_3_island";
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function detectAndFireSelfReport(
+  admin: any,
+  userId: string,
+  text: string,
+  apiKey: string,
+): Promise<"stage_2_landed" | "stage_3_island" | null> {
+  let stage = keywordMatchStage(text);
+  if (!stage) stage = await aiClassifyArrival(text, apiKey);
+  if (!stage) return null;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: bookings } = await admin
+    .from("bookings")
+    .select("id")
+    .eq("guest_id", userId)
+    .in("state", ["confirmed", "pending_deposit", "checked_in"])
+    .gte("check_out", today)
+    .order("check_in", { ascending: true })
+    .limit(1);
+  const booking = bookings?.[0];
+  if (!booking) return null;
+
+  try {
+    await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/guest-arrival-journey`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ mode: "self_report", booking_id: booking.id, stage, user_id: userId }),
+    });
+  } catch (e) {
+    console.warn("self-report dispatch failed:", e);
+  }
+  return stage;
+}
+
 // ── Default notification preferences seeded on first link ──
 const DEFAULT_PREFS_BY_ROLE: Record<string, string[]> = {
   admin: ["booking_approval_needed", "payment_received", "new_review", "security_alert", "new_inquiry"],
