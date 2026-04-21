@@ -312,6 +312,7 @@ export function MessagingBridgeSettings() {
           {renderSecretField("messaging_bridge_internal_token", "Internal Token", "any random 32+ char string")}
         </CardContent>
       </Card>
+      </>)}
     </div>
   );
 }
