@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSecretStatuses, useSetSecret, useDeleteSecret } from "@/hooks/useIntegrationSecrets";
 import { usePolicySettings, useUpdatePolicySetting } from "@/hooks/usePolicySettings";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { CheckCircle2, XCircle, Eye, EyeOff, Save, Trash2, MessageCircle, Copy, RefreshCw, Send } from "lucide-react";
 
 const TELEGRAM_KEYS = ["telegram_bot_token"] as const;
