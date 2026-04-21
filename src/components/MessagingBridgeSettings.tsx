@@ -335,3 +335,79 @@ export function MessagingBridgeSettings() {
     </div>
   );
 }
+
+/**
+ * Inline editor for one field of the messaging_bot_config policy_settings JSON.
+ * Used to capture the public bot username + WhatsApp number that the guest
+ * onboarding card deep-links into.
+ */
+function BotConfigField({
+  label,
+  placeholder,
+  field,
+  helper,
+}: {
+  label: string;
+  placeholder: string;
+  field: "telegram_bot_username" | "whatsapp_number";
+  helper?: string;
+}) {
+  const { data: settings } = usePolicySettings();
+  const updateSetting = useUpdatePolicySetting();
+  const { toast } = useToast();
+  const setting = settings?.find((s) => s.key === "messaging_bot_config");
+  const currentConfig = (setting?.value as Record<string, string> | null) ?? {};
+  const currentValue = currentConfig[field] ?? "";
+  const [draft, setDraft] = useState(currentValue);
+  const [saving, setSaving] = useState(false);
+
+  // Keep draft in sync if the underlying setting reloads
+  if (currentValue !== draft && !saving && draft === "") {
+    // initial hydration only
+    setDraft(currentValue);
+  }
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const nextValue = { ...currentConfig, [field]: draft.trim() };
+      if (setting) {
+        await updateSetting.mutateAsync({ id: setting.id, value: nextValue });
+      } else {
+        await supabase.from("policy_settings").insert({
+          key: "messaging_bot_config",
+          value: nextValue,
+          description: "Public messaging endpoints for guest onboarding deep-links",
+        });
+      }
+      toast({ title: "Saved", description: `${label} updated.` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-sm">{label}</Label>
+      <div className="flex gap-2">
+        <Input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder={placeholder}
+          className="flex-1"
+        />
+        <Button
+          size="sm"
+          onClick={handleSave}
+          disabled={saving || draft.trim() === currentValue}
+        >
+          <Save className="h-3.5 w-3.5 mr-1" />
+          Save
+        </Button>
+      </div>
+      {helper && <p className="text-xs text-muted-foreground">{helper}</p>}
+    </div>
+  );
+}
