@@ -190,6 +190,46 @@ export function useTransitionBookingState() {
       }
       await createNotifications(batch);
 
+      // ── Outbound messaging bridge (fire-and-forget) ──
+      try {
+        const { notifyViaMessaging } = await import("@/lib/notifyMessaging");
+        // Notify staff/managers of state change
+        notifyViaMessaging({
+          event_type: "booking_state_change",
+          subject_id: bookingId,
+          metadata: {
+            from_state: fromState, to_state: toState, unit_name: unitName, reason,
+          },
+        });
+        // Approval-needed alert for admins
+        if (toState === "pending_approval") {
+          notifyViaMessaging({
+            event_type: "booking_approval_needed",
+            subject_id: bookingId,
+            metadata: { unit_name: unitName, check_in: data.check_in },
+          });
+        }
+        // Booking approved (-> pending_deposit or confirmed from pending_approval)
+        if (fromState === "pending_approval" && (toState === "pending_deposit" || toState === "confirmed")) {
+          notifyViaMessaging({
+            event_type: "booking_approved",
+            subject_id: bookingId,
+            metadata: { unit_name: unitName, check_in: data.check_in },
+          });
+        }
+        // Guest-targeted: booking confirmed
+        if (toState === "confirmed" && data.guest_id) {
+          notifyViaMessaging({
+            event_type: "booking_confirmed",
+            subject_id: bookingId,
+            guest_user_id: data.guest_id,
+            metadata: { unit_name: unitName, check_in: data.check_in, check_out: data.check_out },
+          });
+        }
+      } catch (err) {
+        console.warn("messaging bridge dispatch failed:", err);
+      }
+
       // ── Email notification triggers on state changes ──
       if (data.guest_id) {
         const { data: guestProfile } = await supabase
