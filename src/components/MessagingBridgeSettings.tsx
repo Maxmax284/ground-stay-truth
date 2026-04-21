@@ -200,6 +200,7 @@ export function MessagingBridgeSettings() {
         </CardContent>
       </Card>
 
+      {canManage && (<>
       {/* Telegram */}
       <Card>
         <CardHeader>
