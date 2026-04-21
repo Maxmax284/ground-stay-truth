@@ -475,8 +475,15 @@ serve(async (req) => {
 
     const trimmed = text.trim();
 
-    // /link 123456
-    const linkMatch = trimmed.match(/^\/?link\s+(\d{6})\b/i);
+    // Accepted shapes:
+    //   /link 123456                       (manual)
+    //   link 123456                        (manual, no slash)
+    //   /start link_123456                 (Telegram deep-link from guest portal)
+    //   /start 123456                      (bare-code Telegram deep-link)
+    const linkMatch =
+      trimmed.match(/^\/?link\s+(\d{6})\b/i) ??
+      trimmed.match(/^\/?start\s+link[_-]?(\d{6})\b/i) ??
+      trimmed.match(/^\/?start\s+(\d{6})\b/i);
     if (linkMatch) {
       const code = linkMatch[1];
       const { data: codeRow } = await admin
@@ -516,7 +523,7 @@ serve(async (req) => {
       });
 
       return new Response(JSON.stringify({
-        reply: "You're linked. Default notifications are on — adjust them in the app anytime. Send anything to chat. /unlink to disconnect.",
+        reply: "You're connected! I'll keep you updated throughout your stay. Just message me anytime.",
       }), { headers: { "Content-Type": "application/json" } });
     }
 
