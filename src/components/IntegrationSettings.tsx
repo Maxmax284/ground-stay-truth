@@ -13,6 +13,7 @@ import { usePolicySettings, useUpdatePolicySetting } from "@/hooks/usePolicySett
 import { useSecretStatuses, useSetSecret, useDeleteSecret } from "@/hooks/useIntegrationSecrets";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreditCard, Mail, Eye, EyeOff, Save, CheckCircle2, XCircle, ShieldCheck, Plane, Trash2 } from "lucide-react";
+import { MessagingBridgeSettings } from "@/components/MessagingBridgeSettings";
 
 const SECRET_KEYS = ["stripe_secret_key", "stripe_publishable_key", "stripe_webhook_secret", "resend_api_key", "fenrir_api_key", "fenrir_receive_token"];
 
@@ -310,6 +311,8 @@ export function IntegrationSettings() {
       </Card>
 
       <VapidKeySettings />
+
+      <MessagingBridgeSettings />
 
       {/* Flight Forecast Toggle */}
       <Card>
