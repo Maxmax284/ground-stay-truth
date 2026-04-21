@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { CheckCircle2, XCircle, Eye, EyeOff, Save, Trash2, MessageCircle, Copy, RefreshCw, Send } from "lucide-react";
 import { NotificationPreferencesPanel } from "@/components/NotificationPreferencesPanel";
+import { MessagingDeliveryDashboard } from "@/components/MessagingDeliveryDashboard";
 
 const TELEGRAM_KEYS = ["telegram_bot_token"] as const;
 const TWILIO_KEYS = ["twilio_account_sid", "twilio_auth_token", "twilio_sms_from", "twilio_whatsapp_from"] as const;
@@ -204,6 +205,9 @@ export function MessagingBridgeSettings() {
       </Card>
 
       {canManage && (<>
+      {/* Delivery dashboard + global ping */}
+      <MessagingDeliveryDashboard />
+
       {/* Telegram */}
       <Card>
         <CardHeader>
