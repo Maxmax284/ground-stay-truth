@@ -465,6 +465,15 @@ async function handlePaymentFailed(
         reference_id: event.bookingId,
       });
     }
+
+    // Outbound to admin/manager
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    await dispatchNotify(supabaseUrl, serviceRoleKey, {
+      event_type: "payment_failed",
+      subject_id: event.bookingId,
+      metadata: { amount: event.amountPaid, reason: "card declined" },
+    });
   }
 }
 
