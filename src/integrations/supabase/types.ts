@@ -1213,6 +1213,99 @@ export type Database = {
         }
         Relationships: []
       }
+      messaging_notification_log: {
+        Row: {
+          channel: string
+          chat_id: string
+          created_at: string
+          error: string | null
+          id: string
+          notification_type: string
+          outcome: string
+          subject_id: string | null
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          chat_id: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          notification_type: string
+          outcome: string
+          subject_id?: string | null
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          chat_id?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          notification_type?: string
+          outcome?: string
+          subject_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      messaging_notification_prefs: {
+        Row: {
+          channel: string
+          created_at: string
+          enabled: boolean
+          id: string
+          notification_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          notification_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          notification_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      messaging_thread_memory: {
+        Row: {
+          channel: string
+          content: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
