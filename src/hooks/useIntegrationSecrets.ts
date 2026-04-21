@@ -8,6 +8,12 @@ const SECRET_KEYS = [
   "resend_api_key",
   "fenrir_api_key",
   "fenrir_receive_token",
+  "telegram_bot_token",
+  "twilio_account_sid",
+  "twilio_auth_token",
+  "twilio_sms_from",
+  "twilio_whatsapp_from",
+  "messaging_bridge_internal_token",
 ] as const;
 
 type SecretKey = (typeof SECRET_KEYS)[number];

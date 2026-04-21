@@ -1117,6 +1117,102 @@ export type Database = {
           },
         ]
       }
+      messaging_chat_bindings: {
+        Row: {
+          channel: string
+          chat_id: string
+          created_at: string
+          display_name: string | null
+          id: string
+          last_seen_at: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          chat_id: string
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          last_seen_at?: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          chat_id?: string
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          last_seen_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      messaging_inbound_log: {
+        Row: {
+          channel: string
+          chat_id: string
+          created_at: string
+          id: string
+          inbound_text: string | null
+          outbound_text: string | null
+          outcome: string
+          user_id: string | null
+        }
+        Insert: {
+          channel: string
+          chat_id: string
+          created_at?: string
+          id?: string
+          inbound_text?: string | null
+          outbound_text?: string | null
+          outcome: string
+          user_id?: string | null
+        }
+        Update: {
+          channel?: string
+          chat_id?: string
+          created_at?: string
+          id?: string
+          inbound_text?: string | null
+          outbound_text?: string | null
+          outcome?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      messaging_link_codes: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          used_at: string | null
+          used_channel: string | null
+          used_chat_id: string | null
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          used_at?: string | null
+          used_channel?: string | null
+          used_chat_id?: string | null
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          used_at?: string | null
+          used_channel?: string | null
+          used_chat_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -1856,6 +1952,24 @@ export type Database = {
           },
         ]
       }
+      telegram_bot_state: {
+        Row: {
+          id: number
+          update_offset: number
+          updated_at: string
+        }
+        Insert: {
+          id: number
+          update_offset?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          update_offset?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       training_packages: {
         Row: {
           created_at: string
@@ -2121,6 +2235,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_link_codes: { Args: never; Returns: undefined }
       get_integration_secret: { Args: { _key: string }; Returns: string }
       has_property_access: {
         Args: { _property_id: string; _user_id: string }
