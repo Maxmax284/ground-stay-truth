@@ -96,6 +96,12 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ channel, chat_id: chatId, text, display_name: profileName }),
     });
     const out = await routerResp.json().catch(() => ({}));
+    // Silent mode (staff has taken over): return empty TwiML so Twilio sends nothing.
+    if (out.silent || out.reply === "") {
+      return new Response(`<?xml version="1.0" encoding="UTF-8"?><Response/>`, {
+        headers: { "Content-Type": "text/xml" },
+      });
+    }
     return twiml(out.reply || "Got it.");
   } catch (e) {
     console.error("twilio-webhook error:", e);

@@ -141,8 +141,9 @@ function buildSystemPrompt(args: {
   const channelLabel = channel === "sms" ? "SMS" : channel === "whatsapp" ? "WhatsApp" : "Telegram";
 
   if (staffEngaged) {
-    return `You are Kru Glitch. Front desk has been notified about this guest's situation and is handling it directly.
-Reply with exactly: "Front desk is on it — I'll let them handle this one." Nothing more. LANGUAGE: ${language}.`;
+    // Hard step-back: prompt is unused because the serve() handler short-circuits
+    // before calling the AI when staffEngaged is true. Kept here for safety only.
+    return `STAFF_ENGAGED_SILENT_MODE`;
   }
 
   const base = `You are Kru Glitch, the resident advisor at Ground Stay (Muay Thai fight camp + accommodation, Koh Samui).
@@ -153,7 +154,16 @@ CAPTURE-ONLY MODE:
 - You CANNOT modify bookings, approve requests, record payments, or promise outcomes.
 - If staff action is needed, say: "I'll flag this for the team." That's it.
 
-UNIVERSAL RULE: You are a translator, not a decision-maker. Pull from the platform — bookings, arrivals, payments, tasks. Never invent operational answers. Low confidence = escalate or defer.
+UNIVERSAL RULES (non-negotiable):
+- You are a translator, not a decision-maker. Pull from the platform — bookings, arrivals, payments, tasks, Playbook, Heads Up.
+- INTELLIGENCE LAYER PRIORITY: If a PLAYBOOK or HEADS UP entry is provided below, that is the source of truth. Use it verbatim or summarise it faithfully. Never substitute a generic answer when verified platform content exists.
+- NO GUESSING, EVER: If no confirmed answer exists in the platform data provided to you, say so. Defer ("check your arrival guide for the exact steps") or escalate ("I'll flag this for the team"). Never use "probably," "I think," "maybe," or fill gaps with assumptions.
+- SURFACE CONSISTENCY: Your answers must match what appears in the Guest Portal, the arrival guide, and the staff dashboards. No contradictions depending on where the guest asks.
+- LOOKOUT LAYER: Any Lookout/insight content marked "draft" or "unconfirmed" is suggestion-only. You may reference it conversationally but you MUST state it is unconfirmed until an admin approves it. You cannot publish, notify, or update the Playbook from this chat.
+- ROUTING:
+  • Structured topic (arrival, bookings, payments, transport, check-in) → reference the platform data and reinforce the arrival system. No freestyle.
+  • Conversational topic → answer clearly, light personality allowed per role/urgency rules.
+  • Unclear or ambiguous → defer immediately. Do not attempt to answer.
 
 LANGUAGE: Respond in ${language}.`;
 
@@ -248,6 +258,52 @@ Active units: ${(unitsRes.data ?? []).map((u: any) => u.name).join(", ") || "non
 Booking pipeline: ${Object.entries(states).map(([s, n]) => `${s}=${n}`).join(", ") || "empty"}.
 Recent staff intel:
 ${intelLines || "(none active)"}`;
+}
+
+// ── Intelligence Layer lookup (Playbook + Heads Up) ──────────────────────
+// Pulls active entries the user is allowed to see and ranks by lexical overlap
+// with the inbound message. Returned content becomes the source of truth in
+// the system prompt — Kru Glitch must use it verbatim or summarise faithfully.
+async function fetchRelevantIntelligence(
+  admin: any,
+  text: string,
+  audience: "guest" | "staff",
+): Promise<string> {
+  const { data } = await admin
+    .from("intelligence_entries")
+    .select("type, title, body, severity, location, expires_at")
+    .eq("status", "active")
+    .contains("audience", [audience])
+    .limit(40);
+  const now = Date.now();
+  const live = (data ?? []).filter((e: any) =>
+    !e.expires_at || new Date(e.expires_at).getTime() > now
+  );
+  if (!live.length) return "";
+
+  const tokens = Array.from(new Set(
+    text.toLowerCase().match(/[a-z\u00C0-\u024F\u0E00-\u0E7F]{3,}/gi) ?? []
+  ));
+  if (!tokens.length) return "";
+
+  const scored = live.map((e: any) => {
+    const hay = `${e.title} ${e.body}`.toLowerCase();
+    let score = 0;
+    for (const t of tokens) if (hay.includes(t)) score += 1;
+    if (e.type === "heads_up" && (e.severity === "urgent" || e.severity === "attention")) score += 1;
+    return { e, score };
+  }).filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+
+  if (!scored.length) return "";
+  const lines = scored.map(({ e }) => {
+    const tag = e.type === "heads_up"
+      ? `HEADS UP${e.severity && e.severity !== "normal" ? ` [${e.severity}]` : ""}`
+      : "PLAYBOOK";
+    return `- ${tag}: ${e.title}\n  ${String(e.body).slice(0, 400)}`;
+  });
+  return `INTELLIGENCE LAYER (verified platform content — use as source of truth, verbatim or faithful summary):\n${lines.join("\n")}`;
 }
 
 async function callAI(
@@ -801,6 +857,31 @@ serve(async (req) => {
     const staffEngaged = flags.staffEngaged === "true";
     const langOverride = flags.langOverride;
 
+    // ── Hard step-back: if staff have taken over, Kru Glitch goes silent.
+    // No AI call, no reply text. Allow only an explicit /resume command from
+    // staff-capable roles to clear the flag.
+    if (staffEngaged) {
+      if (/^\/?resume\b/i.test(trimmed) && canCapture(role)) {
+        await writeFlag(admin, userId, channel, "staffEngaged", "false");
+        await admin.from("messaging_inbound_log").insert({
+          channel, chat_id, user_id: userId,
+          inbound_text: trimmed.slice(0, 500), outbound_text: "resumed",
+          outcome: "staff_resume",
+        });
+        return new Response(JSON.stringify({
+          reply: "Kru Glitch is back online for this chat.",
+        }), { headers: { "Content-Type": "application/json" } });
+      }
+      await admin.from("messaging_inbound_log").insert({
+        channel, chat_id, user_id: userId,
+        inbound_text: trimmed.slice(0, 1000), outcome: "staff_engaged_silent",
+      });
+      // Empty reply tells the inbound adapter (telegram-poll / twilio-webhook) to send nothing.
+      return new Response(JSON.stringify({ reply: "", silent: true }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     // Active language awareness — preferred vs detected vs explicit override
     const detectedLang = detectScript(trimmed);
     const switchTo = detectLanguageSwitchRequest(trimmed);
@@ -850,11 +931,20 @@ serve(async (req) => {
     }
 
     // ── Build prompt + call AI ──
-    const context = await buildContext(admin, userId, role, guestPhase);
-    const systemPrompt = buildSystemPrompt({
-      role, language: effectiveLangName, channel, displayName: friendlyName,
-      guestPhase, urgency, detectedLang, preferredLangCode, staffEngaged,
-    }) + "\n\n" + context;
+    const audience = isStaffRole(role) ? "staff" : "guest";
+    const [context, intel] = await Promise.all([
+      buildContext(admin, userId, role, guestPhase),
+      fetchRelevantIntelligence(admin, trimmed, audience),
+    ]);
+    const promptParts = [
+      buildSystemPrompt({
+        role, language: effectiveLangName, channel, displayName: friendlyName,
+        guestPhase, urgency, detectedLang, preferredLangCode, staffEngaged,
+      }),
+      context,
+    ];
+    if (intel) promptParts.push(intel);
+    const systemPrompt = promptParts.join("\n\n");
     const reply = await callAI(systemPrompt, history, trimmed, lovableApiKey);
 
     // Persist memory + log (skip persistence in simulate mode so simulator runs are clean)
