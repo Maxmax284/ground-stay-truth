@@ -931,11 +931,20 @@ serve(async (req) => {
     }
 
     // ── Build prompt + call AI ──
-    const context = await buildContext(admin, userId, role, guestPhase);
-    const systemPrompt = buildSystemPrompt({
-      role, language: effectiveLangName, channel, displayName: friendlyName,
-      guestPhase, urgency, detectedLang, preferredLangCode, staffEngaged,
-    }) + "\n\n" + context;
+    const audience = isStaffRole(role) ? "staff" : "guest";
+    const [context, intel] = await Promise.all([
+      buildContext(admin, userId, role, guestPhase),
+      fetchRelevantIntelligence(admin, trimmed, audience),
+    ]);
+    const promptParts = [
+      buildSystemPrompt({
+        role, language: effectiveLangName, channel, displayName: friendlyName,
+        guestPhase, urgency, detectedLang, preferredLangCode, staffEngaged,
+      }),
+      context,
+    ];
+    if (intel) promptParts.push(intel);
+    const systemPrompt = promptParts.join("\n\n");
     const reply = await callAI(systemPrompt, history, trimmed, lovableApiKey);
 
     // Persist memory + log (skip persistence in simulate mode so simulator runs are clean)
