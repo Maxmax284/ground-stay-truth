@@ -260,6 +260,52 @@ Recent staff intel:
 ${intelLines || "(none active)"}`;
 }
 
+// ── Intelligence Layer lookup (Playbook + Heads Up) ──────────────────────
+// Pulls active entries the user is allowed to see and ranks by lexical overlap
+// with the inbound message. Returned content becomes the source of truth in
+// the system prompt — Kru Glitch must use it verbatim or summarise faithfully.
+async function fetchRelevantIntelligence(
+  admin: any,
+  text: string,
+  audience: "guest" | "staff",
+): Promise<string> {
+  const { data } = await admin
+    .from("intelligence_entries")
+    .select("type, title, body, severity, location, expires_at")
+    .eq("status", "active")
+    .contains("audience", [audience])
+    .limit(40);
+  const now = Date.now();
+  const live = (data ?? []).filter((e: any) =>
+    !e.expires_at || new Date(e.expires_at).getTime() > now
+  );
+  if (!live.length) return "";
+
+  const tokens = Array.from(new Set(
+    text.toLowerCase().match(/[a-z\u00C0-\u024F\u0E00-\u0E7F]{3,}/gi) ?? []
+  ));
+  if (!tokens.length) return "";
+
+  const scored = live.map((e: any) => {
+    const hay = `${e.title} ${e.body}`.toLowerCase();
+    let score = 0;
+    for (const t of tokens) if (hay.includes(t)) score += 1;
+    if (e.type === "heads_up" && (e.severity === "urgent" || e.severity === "attention")) score += 1;
+    return { e, score };
+  }).filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+
+  if (!scored.length) return "";
+  const lines = scored.map(({ e }) => {
+    const tag = e.type === "heads_up"
+      ? `HEADS UP${e.severity && e.severity !== "normal" ? ` [${e.severity}]` : ""}`
+      : "PLAYBOOK";
+    return `- ${tag}: ${e.title}\n  ${String(e.body).slice(0, 400)}`;
+  });
+  return `INTELLIGENCE LAYER (verified platform content — use as source of truth, verbatim or faithful summary):\n${lines.join("\n")}`;
+}
+
 async function callAI(
   systemPrompt: string,
   history: { role: "user" | "assistant"; content: string }[],
