@@ -738,6 +738,42 @@ export type Database = {
           },
         ]
       }
+      guest_escalations: {
+        Row: {
+          channel: string
+          chat_id: string
+          created_at: string
+          guest_user_id: string
+          id: string
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          summary: string
+        }
+        Insert: {
+          channel: string
+          chat_id: string
+          created_at?: string
+          guest_user_id: string
+          id?: string
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          summary: string
+        }
+        Update: {
+          channel?: string
+          chat_id?: string
+          created_at?: string
+          guest_user_id?: string
+          id?: string
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          summary?: string
+        }
+        Relationships: []
+      }
       housekeeping_tasks: {
         Row: {
           assigned_to: string | null
