@@ -15,6 +15,7 @@ import { CheckCircle2, XCircle, Eye, EyeOff, Save, Trash2, MessageCircle, Copy, 
 import { NotificationPreferencesPanel } from "@/components/NotificationPreferencesPanel";
 import { MessagingDeliveryDashboard } from "@/components/MessagingDeliveryDashboard";
 import { LinkedChatsList } from "@/components/LinkedChatsList";
+import { MessagingAdminTools } from "@/components/MessagingAdminTools";
 
 const TELEGRAM_KEYS = ["telegram_bot_token"] as const;
 const TWILIO_KEYS = ["twilio_account_sid", "twilio_auth_token", "twilio_sms_from", "twilio_whatsapp_from"] as const;
@@ -206,6 +207,9 @@ export function MessagingBridgeSettings() {
       </Card>
 
       {canManage && (<>
+      {/* Admin simulator + system ping */}
+      <MessagingAdminTools />
+
       {/* Delivery dashboard + global ping */}
       <MessagingDeliveryDashboard />
 

@@ -1,14 +1,13 @@
 // Shared dispatch for inbound messages from Telegram, WhatsApp, and SMS.
 // Resolves chat_id -> linked Lovable user, derives role from user_roles,
-// runs Kru Glitch via the AI gateway, optionally translates to user's
-// preferred language, and returns the reply text + outbound channel info.
+// runs Kru Glitch via the AI gateway with role-differentiated, urgency-aware
+// prompts, optionally translates, and returns the reply text.
 //
 // Capture-only: never mutates bookings, payments, or guest-facing surfaces
-// outside of staff /note. Includes role-specific slash commands and
-// rolling thread memory (last 10 turns per user+channel).
+// outside of staff /note + guest_escalations handoffs.
 //
-// Invoked SERVER-TO-SERVER by telegram-poll and twilio-webhook using the
-// service-role key + internal bridge token.
+// Invoked SERVER-TO-SERVER by telegram-poll, twilio-webhook, and the admin
+// "Test as Guest" simulator using the service-role key + internal bridge token.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -28,47 +27,195 @@ function deriveRole(roles: { role: string }[]): string {
   return roles.sort((a, b) => (ROLE_PRIORITY[b.role] ?? 0) - (ROLE_PRIORITY[a.role] ?? 0))[0].role;
 }
 
-// Viewer is staff for read-only purposes (intel, briefings) but not for capture.
 function isStaffRole(role: string): boolean {
   return ["admin", "manager", "front_desk_supervisor", "front_desk", "maintenance", "viewer"].includes(role);
 }
 function canCapture(role: string): boolean {
-  // Viewer: read-only. Maintenance/front_desk and up: can capture notes.
   return ["admin", "manager", "front_desk_supervisor", "front_desk", "maintenance"].includes(role);
 }
 
-function buildSystemPrompt(role: string, language: string, channel: string, displayName: string, guestPhase?: string): string {
+// ── URGENCY DETECTION ──────────────────────────────────────────────────────
+type Urgency = "critical" | "confused" | "normal";
+
+const CRITICAL_KEYWORDS = [
+  /\b(emergency|urgent|now|asap|help)\b/i,
+  /\b(arriv|arrival|landing|landed|stuck|lost|stranded)\b/i,
+  /\b(transport|taxi|ferry|pickup|driver)\b/i,
+  /\b(check[- ]?in|checkin|check[- ]?out)\b/i,
+  /\b(payment|paid|charge|refund|deposit)\b/i,
+  /\b(safety|safe|danger|fire|flood|flooded|broken|leak|sick|injur|accident|hospital|police)\b/i,
+];
+
+const CONFUSION_KEYWORDS = [
+  /\bwhat\??\??$/i,
+  /\bhuh\??$/i,
+  /\bi\s+don'?t\s+understand\b/i,
+  /\bconfus(ed|ing)\b/i,
+  /\b(idk|wtf|wym)\b/i,
+];
+
+function detectUrgency(
+  text: string,
+  history: { role: "user" | "assistant"; content: string }[],
+): Urgency {
+  const t = text.trim();
+  if (CRITICAL_KEYWORDS.some((r) => r.test(t))) return "critical";
+  if (CONFUSION_KEYWORDS.some((r) => r.test(t))) return "confused";
+
+  // Heuristic: very short fragments OR repeated near-identical user turns
+  const userTurns = history.filter((h) => h.role === "user").map((h) => h.content);
+  if (t.length < 15 && userTurns.length >= 2) {
+    const last = userTurns[userTurns.length - 1] ?? "";
+    if (last.length < 30 && t.length < 30) return "confused";
+  }
+  // Repetition: same text twice in last 3 user turns
+  const recent = userTurns.slice(-3).map((s) => s.toLowerCase().trim());
+  if (recent.filter((s) => s === t.toLowerCase()).length >= 1 && recent.length >= 2) {
+    return "confused";
+  }
+  return "normal";
+}
+
+// ── ACTIVE LANGUAGE AWARENESS ─────────────────────────────────────────────
+function detectScript(text: string): string {
+  if (/[\u0E00-\u0E7F]/.test(text)) return "th";
+  if (/[\u4E00-\u9FFF]/.test(text)) return "zh";
+  if (/[\u3040-\u309F\u30A0-\u30FF]/.test(text)) return "ja";
+  if (/[\uAC00-\uD7AF]/.test(text)) return "ko";
+  if (/[\u0400-\u04FF]/.test(text)) return "ru";
+  // crude German/Spanish/French markers
+  if (/[äöüß]/i.test(text)) return "de";
+  if (/[ñ¿¡]/i.test(text) || /\b(hola|gracias|por\s+favor)\b/i.test(text)) return "es";
+  if (/\b(merci|bonjour|s'il\s+vous\s+pla[iî]t)\b/i.test(text)) return "fr";
+  return "en";
+}
+
+const SWITCH_LANG_PATTERNS: Record<string, RegExp[]> = {
+  en: [/\b(in|reply\s+in|switch\s+to)\s+english\b/i],
+  th: [/\b(in|reply\s+in|switch\s+to)\s+thai\b/i, /ภาษาไทย/],
+  de: [/\b(in|reply\s+in|switch\s+to)\s+german\b/i, /\bauf\s+deutsch\b/i],
+  fr: [/\b(in|reply\s+in|switch\s+to)\s+french\b/i, /\ben\s+fran[cç]ais\b/i],
+  ru: [/\b(in|reply\s+in|switch\s+to)\s+russian\b/i, /по-русски/i],
+  zh: [/\b(in|reply\s+in|switch\s+to)\s+chinese\b/i, /中文/],
+  ja: [/\b(in|reply\s+in|switch\s+to)\s+japanese\b/i, /日本語/],
+  ko: [/\b(in|reply\s+in|switch\s+to)\s+korean\b/i, /한국어/],
+  es: [/\b(in|reply\s+in|switch\s+to)\s+spanish\b/i, /\ben\s+espa[ñn]ol\b/i],
+};
+function detectLanguageSwitchRequest(text: string): string | null {
+  for (const [code, patterns] of Object.entries(SWITCH_LANG_PATTERNS)) {
+    if (patterns.some((r) => r.test(text))) return code;
+  }
+  return null;
+}
+
+// ── Yes / handoff detection across languages ──────────────────────────────
+const YES_PATTERNS = [
+  /^\s*(yes|yep|yeah|yup|sure|ok(ay)?|please|do\s+it|sounds?\s+good)\b/i,
+  /^\s*(ใช่|ครับ|ค่ะ|โอเค)/, // th
+  /^\s*(ja|bitte)\b/i,        // de
+  /^\s*(oui|s'il\s+vous\s+pla[iî]t)\b/i, // fr
+  /^\s*(да|пожалуйста)/i,     // ru
+  /^\s*(是|好的?|可以)/,        // zh
+  /^\s*(はい|お願い)/,           // ja
+  /^\s*(네|예)/,                // ko
+  /^\s*(s[ií]|por\s+favor)\b/i, // es
+];
+function isAffirmative(text: string): boolean {
+  const t = text.trim();
+  return YES_PATTERNS.some((r) => r.test(t));
+}
+
+// ── Persona prompts (role-differentiated, urgency-aware) ──────────────────
+function buildSystemPrompt(args: {
+  role: string;
+  language: string;
+  channel: string;
+  displayName: string;
+  guestPhase?: string;
+  urgency: Urgency;
+  detectedLang: string;
+  preferredLangCode: string;
+  staffEngaged: boolean;
+}): string {
+  const { role, language, channel, displayName, guestPhase, urgency, detectedLang, preferredLangCode, staffEngaged } = args;
   const channelLabel = channel === "sms" ? "SMS" : channel === "whatsapp" ? "WhatsApp" : "Telegram";
-  const base = `You are Kru Glitch, the resident advisor at Ground Stay (a Muay Thai fight camp + accommodation in Koh Samui).
-You are speaking to ${displayName} over ${channelLabel}. This is a chat bridge — keep replies short and warm, max 3 short sentences. No markdown, no headers, plain text only (chat clients show it raw).
+
+  if (staffEngaged) {
+    return `You are Kru Glitch. Front desk has been notified about this guest's situation and is handling it directly.
+Reply with exactly: "Front desk is on it — I'll let them handle this one." Nothing more. LANGUAGE: ${language}.`;
+  }
+
+  const base = `You are Kru Glitch, the resident advisor at Ground Stay (Muay Thai fight camp + accommodation, Koh Samui).
+Speaking to ${displayName} over ${channelLabel}. Plain text only — no markdown, no headers. Max 3 short sentences.
 
 CAPTURE-ONLY MODE:
-- You can answer questions, share local intel, and confirm what's happening.
+- You can answer, share intel, confirm what's happening.
 - You CANNOT modify bookings, approve requests, record payments, or promise outcomes.
-- If something needs staff action, say: "I'll flag this for staff." That's it — no elaboration.
+- If staff action is needed, say: "I'll flag this for the team." That's it.
+
+UNIVERSAL RULE: You are a translator, not a decision-maker. Pull from the platform — bookings, arrivals, payments, tasks. Never invent operational answers. Low confidence = escalate or defer.
 
 LANGUAGE: Respond in ${language}.`;
 
-  if (isStaffRole(role)) {
-    return base + `
-
-ROLE: Staff (${role}). You can discuss operational intel, today's pickups, units, and bookings at a high level. Do NOT expose payment amounts to front_desk; supervisors and above can confirm payment existence but not details unless asked.${role === "viewer" ? "\nVIEWER: read-only. You cannot capture notes or modify anything." : ""}`;
+  // Language drift hint
+  let langHint = "";
+  if (detectedLang !== preferredLangCode && detectedLang !== "en" && urgency !== "normal") {
+    const detName = LANG_NAMES[detectedLang] || detectedLang;
+    langHint = `\n\nLANGUAGE NOTE: The user may be struggling with English. Gently offer once: "Want me to reply in ${detName}?" Keep wording very simple either way. No idioms. Short sentences.`;
   }
 
-  // Guest concierge — phase-gated
-  if (guestPhase === "active") {
-    return base + `
-
-ROLE: Active guest (checked in). Full concierge for THIS guest's stay only — local intel, transport, food, training, what's open. Never expose internal ops, other guests, or staff workflows.`;
+  // ── STAFF ROLES ──
+  if (role === "admin" || role === "manager") {
+    let toneBlock = `\n\nROLE: ${role === "admin" ? "Admin" : "Manager"}. Sharp, no-nonsense. Operational facts only. Example: "Occupancy 82%. Two late arrivals. One payment pending."`;
+    if (urgency === "critical") toneBlock += `\nURGENCY HIGH: Drop everything. Just facts. No commentary.`;
+    else if (urgency === "normal") toneBlock += `\nDry tone allowed only when nothing urgent is happening. No jokes.`;
+    return base + toneBlock + langHint;
   }
+  if (role === "front_desk" || role === "front_desk_supervisor") {
+    let toneBlock = `\n\nROLE: Front desk. Short, clear, slightly warm, operational. Example: "Guest arriving in ~20 min. Ferry just docked." No jokes.`;
+    if (urgency === "critical") toneBlock += `\nURGENCY HIGH: Even shorter. Direct.`;
+    return base + toneBlock + langHint;
+  }
+  if (role === "maintenance") {
+    return base + `\n\nROLE: Maintenance. Direct, task-only, zero personality. Example: "New task: AC issue, Room B2." Never casual.` + langHint;
+  }
+  if (role === "viewer") {
+    return base + `\n\nROLE: Viewer (read-only). Neutral tone. No personality. Cannot capture or modify anything.` + langHint;
+  }
+
+  // ── GUEST ROLES ──
+  // Hard guest rules across all phases
+  const guestHardRules = `
+HARD RULES:
+- Arrival, transport, check-in, structured topics → reinforce the arrival system. Do NOT freestyle steps. If more detail is needed: "I can walk you through it here, but the full step-by-step is already in your arrival guide — check that for exact details."
+- Never guess. If unsure: "Check the dashboard" or "I'll flag this for the team."
+- Never expose other guests, other bookings, or internal ops.`;
+
+  if (guestPhase === "none") {
+    return base + `\n\nROLE: Guest with no active booking. Politely decline anything beyond saying front desk can help.` + langHint;
+  }
+
+  let guestTone = "";
+  if (urgency === "critical") {
+    guestTone = `\n\nROLE: Guest (${guestPhase}). URGENCY CRITICAL → zero personality, zero jokes. Clear, direct operator mode only. Confirm what's happening, give the next concrete step, offer to flag staff.`;
+  } else if (urgency === "confused") {
+    guestTone = `\n\nROLE: Guest (${guestPhase}). User seems confused. Drop humor completely. Switch to structured step-by-step mode. Simpler vocabulary, no idioms, shorter sentences.`;
+  } else {
+    guestTone = `\n\nROLE: Guest (${guestPhase}). Calm, confident, dry humor allowed but always useful first. Light situational jokes only — never forced. Think: a local who knows the island and won't let people do dumb things.`;
+  }
+
   if (guestPhase === "upcoming") {
-    return base + `
-
-ROLE: Pre-arrival guest. Help with airport logistics, transport options, what to pack, TDAC (Thailand Digital Arrival Card), ferry/bus info, weather expectations. Do NOT discuss internal operations or other guests.`;
+    guestTone += `\nPRE-ARRIVAL SCOPE: airport logistics, transport options, TDAC, ferry/bus info, weather expectations only.`;
+  } else if (guestPhase === "active") {
+    guestTone += `\nACTIVE STAY SCOPE: full local concierge for THIS guest's stay only — local intel, transport, food, training, what's open.`;
   }
-  return base + `
 
-ROLE: Guest with no active booking. Politely decline anything beyond saying front desk can help.`;
+  // Escalation offer for confused/critical
+  if (urgency === "critical" || urgency === "confused") {
+    guestTone += `\n\nESCALATION OFFER: At the end of your reply, add on a new line: "Want me to notify the front desk so they can help directly? Just say yes." Only add this once per turn.`;
+  }
+
+  return base + guestTone + guestHardRules + langHint;
 }
 
 async function buildContext(admin: any, userId: string, role: string, guestPhase?: string): Promise<string> {
@@ -142,7 +289,6 @@ async function cmdBriefing(admin: any): Promise<string> {
   ]);
   return `Today: ${arr.data?.length ?? 0} arrivals, ${dep.data?.length ?? 0} departures. Pending: ${pendApr.data?.length ?? 0} approval, ${pendDep.data?.length ?? 0} deposit.`;
 }
-
 async function cmdArrivals(admin: any): Promise<string> {
   const today = new Date().toISOString().slice(0, 10);
   const { data } = await admin
@@ -156,7 +302,6 @@ async function cmdArrivals(admin: any): Promise<string> {
     `- ${b.profiles?.full_name ?? "Guest"} → ${b.units?.name ?? "Unit"} (${b.num_guests}p)`
   ).join("\n");
 }
-
 async function cmdDepartures(admin: any): Promise<string> {
   const today = new Date().toISOString().slice(0, 10);
   const { data } = await admin
@@ -170,12 +315,10 @@ async function cmdDepartures(admin: any): Promise<string> {
     `- ${b.profiles?.full_name ?? "Guest"} ← ${b.units?.name ?? "Unit"}`
   ).join("\n");
 }
-
 async function cmdApprovals(admin: any): Promise<string> {
   const { count } = await admin.from("bookings").select("id", { count: "exact", head: true }).eq("state", "pending_approval");
   return `${count ?? 0} bookings awaiting approval.`;
 }
-
 async function cmdOccupancy(admin: any): Promise<string> {
   const today = new Date().toISOString().slice(0, 10);
   const [unitsRes, occRes] = await Promise.all([
@@ -187,7 +330,6 @@ async function cmdOccupancy(admin: any): Promise<string> {
   const pct = total > 0 ? Math.round((occ / total) * 100) : 0;
   return `Occupancy: ${occ}/${total} units (${pct}%).`;
 }
-
 async function cmdSecurity(admin: any): Promise<string> {
   const { data } = await admin
     .from("security_events")
@@ -200,11 +342,6 @@ async function cmdSecurity(admin: any): Promise<string> {
     `- [${e.severity}] ${e.event_type}`
   ).join("\n");
 }
-
-async function cmdStatus(admin: any): Promise<string> {
-  return await cmdBriefing(admin);
-}
-
 async function cmdTasks(admin: any, userId: string): Promise<string> {
   const { data } = await admin
     .from("housekeeping_tasks")
@@ -224,7 +361,6 @@ async function cmdTasks(admin: any, userId: string): Promise<string> {
   if (maint?.length) lines.push("Open issues: " + maint.length);
   return lines.length ? lines.join(" | ") : "No open tasks.";
 }
-
 async function cmdUrgent(admin: any): Promise<string> {
   const { data } = await admin
     .from("maintenance_requests")
@@ -236,7 +372,6 @@ async function cmdUrgent(admin: any): Promise<string> {
   if (!data?.length) return "No urgent issues.";
   return "Urgent:\n" + data.map((m: any) => `- ${m.units?.name ?? "?"}: ${String(m.description).slice(0, 80)}`).join("\n");
 }
-
 async function cmdIssues(admin: any): Promise<string> {
   const { data } = await admin
     .from("maintenance_requests")
@@ -246,11 +381,9 @@ async function cmdIssues(admin: any): Promise<string> {
   const urgent = (data ?? []).filter((d: any) => d.priority === "urgent").length;
   return `${open} open issues (${urgent} urgent).`;
 }
-
 async function cmdBookingLookup(admin: any, query: string): Promise<string> {
   const q = query.trim();
   if (!q) return "Usage: /booking <name or ID>";
-  // Try ID first
   let { data } = await admin
     .from("bookings")
     .select("id, state, check_in, check_out, num_guests, units(name), profiles!bookings_guest_id_profiles_fkey(full_name)")
@@ -271,20 +404,17 @@ async function cmdBookingLookup(admin: any, query: string): Promise<string> {
   return `${data.profiles?.full_name ?? "?"}: ${data.units?.name ?? "?"} ${data.check_in}→${data.check_out} [${data.state}], ${data.num_guests}p`;
 }
 
-// Map slash command to handler, gated by role
 async function tryCommand(text: string, role: string, admin: any, userId: string): Promise<string | null> {
   const m = text.trim().match(/^\/(\w+)(?:\s+(.+))?$/i);
   if (!m) return null;
   const cmd = m[1].toLowerCase();
   const arg = m[2] ?? "";
-
   const adminCmds = ["briefing", "status", "approvals", "security"];
   const managerCmds = ["briefing", "status", "arrivals", "departures", "occupancy"];
   const supCmds = ["arrivals", "departures", "approvals", "issues"];
   const fdCmds = ["arrivals", "departures", "booking"];
   const maintCmds = ["tasks", "urgent"];
   const viewerCmds = ["status", "briefing"];
-
   const allowed = (() => {
     switch (role) {
       case "admin": return [...adminCmds, ...managerCmds, ...supCmds, ...fdCmds, ...maintCmds];
@@ -296,9 +426,7 @@ async function tryCommand(text: string, role: string, admin: any, userId: string
       default: return [];
     }
   })();
-
   if (!allowed.includes(cmd)) return null;
-
   switch (cmd) {
     case "briefing": case "status": return await cmdBriefing(admin);
     case "arrivals": return await cmdArrivals(admin);
@@ -314,7 +442,6 @@ async function tryCommand(text: string, role: string, admin: any, userId: string
   return null;
 }
 
-// ── Guest booking phase (gates concierge access) ──
 async function getGuestPhase(admin: any, userId: string): Promise<"active" | "upcoming" | "none"> {
   const today = new Date().toISOString().slice(0, 10);
   const { data: active } = await admin
@@ -341,13 +468,11 @@ const STAGE3_KEYWORDS = [
   /\bon\s+samui\b/i, /\bjust\s+got\s+(here|to\s+samui)\b/i,
   /\bat\s+(usm|samui)\s*airport\b/i, /\blanded\s+(in|on|at)\s+samui\b/i,
 ];
-
 function keywordMatchStage(text: string): "stage_2_landed" | "stage_3_island" | null {
   if (STAGE3_KEYWORDS.some((r) => r.test(text))) return "stage_3_island";
   if (STAGE2_KEYWORDS.some((r) => r.test(text))) return "stage_2_landed";
   return null;
 }
-
 async function aiClassifyArrival(text: string, apiKey: string): Promise<"stage_2_landed" | "stage_3_island" | null> {
   if (!/\b(arriv|land|here|made it|got to|on the|at the)\b/i.test(text)) return null;
   try {
@@ -373,29 +498,19 @@ async function aiClassifyArrival(text: string, apiKey: string): Promise<"stage_2
     return null;
   }
 }
-
 async function detectAndFireSelfReport(
-  admin: any,
-  userId: string,
-  text: string,
-  apiKey: string,
+  admin: any, userId: string, text: string, apiKey: string,
 ): Promise<"stage_2_landed" | "stage_3_island" | null> {
   let stage = keywordMatchStage(text);
   if (!stage) stage = await aiClassifyArrival(text, apiKey);
   if (!stage) return null;
-
   const today = new Date().toISOString().slice(0, 10);
   const { data: bookings } = await admin
-    .from("bookings")
-    .select("id")
-    .eq("guest_id", userId)
+    .from("bookings").select("id").eq("guest_id", userId)
     .in("state", ["confirmed", "pending_deposit", "checked_in"])
-    .gte("check_out", today)
-    .order("check_in", { ascending: true })
-    .limit(1);
+    .gte("check_out", today).order("check_in", { ascending: true }).limit(1);
   const booking = bookings?.[0];
   if (!booking) return null;
-
   try {
     await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/guest-arrival-journey`, {
       method: "POST",
@@ -411,7 +526,7 @@ async function detectAndFireSelfReport(
   return stage;
 }
 
-// ── Default notification preferences seeded on first link ──
+// ── Default notification preferences ──
 const DEFAULT_PREFS_BY_ROLE: Record<string, string[]> = {
   admin: ["booking_approval_needed", "payment_received", "new_review", "security_alert", "new_inquiry"],
   manager: ["new_inquiry", "booking_state_change", "daily_briefing"],
@@ -421,14 +536,12 @@ const DEFAULT_PREFS_BY_ROLE: Record<string, string[]> = {
   viewer: ["daily_briefing"],
   guest: ["booking_confirmed", "payment_receipt", "checkin_instructions_24h"],
 };
-
 async function seedDefaultPrefs(admin: any, userId: string, channel: string) {
   const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", userId);
   const role = deriveRole(roles ?? []);
   const types = DEFAULT_PREFS_BY_ROLE[role] ?? DEFAULT_PREFS_BY_ROLE.guest;
   const rows = types.map((notification_type) => ({ user_id: userId, channel, notification_type, enabled: true }));
   if (rows.length) {
-    // Upsert with ignoreDuplicates so we don't overwrite user toggles
     await admin.from("messaging_notification_prefs").upsert(rows, {
       onConflict: "user_id,channel,notification_type",
       ignoreDuplicates: true,
@@ -436,16 +549,71 @@ async function seedDefaultPrefs(admin: any, userId: string, channel: string) {
   }
 }
 
-serve(async (req) => {
-  if (req.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405 });
+// ── Thread memory helpers (also stores soft state flags as system rows) ──
+const FLAG_PREFIX = "__flag__:";
+async function readFlags(admin: any, userId: string, channel: string): Promise<Record<string, string>> {
+  const { data } = await admin
+    .from("messaging_thread_memory")
+    .select("content")
+    .eq("user_id", userId).eq("channel", channel).eq("role", "system")
+    .order("created_at", { ascending: false }).limit(20);
+  const flags: Record<string, string> = {};
+  for (const row of (data ?? [])) {
+    const c = String(row.content ?? "");
+    if (!c.startsWith(FLAG_PREFIX)) continue;
+    const rest = c.slice(FLAG_PREFIX.length);
+    const eq = rest.indexOf("=");
+    if (eq <= 0) continue;
+    const k = rest.slice(0, eq);
+    if (!(k in flags)) flags[k] = rest.slice(eq + 1);
   }
+  return flags;
+}
+async function writeFlag(admin: any, userId: string, channel: string, key: string, value: string) {
+  await admin.from("messaging_thread_memory").insert({
+    user_id: userId, channel, role: "system", content: `${FLAG_PREFIX}${key}=${value}`,
+  });
+}
+
+async function summariseConversation(
+  history: { role: "user" | "assistant" | string; content: string }[],
+  latest: string,
+  apiKey: string,
+): Promise<string> {
+  const transcript = [...history, { role: "user", content: latest }]
+    .filter((h) => h.role === "user" || h.role === "assistant")
+    .slice(-10)
+    .map((h) => `${h.role === "user" ? "Guest" : "Bot"}: ${String(h.content).slice(0, 300)}`)
+    .join("\n");
+  try {
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [
+          { role: "system", content: "Summarise this guest's issue in ONE plain-English sentence (max 200 chars). Focus on what the guest needs. No fluff, no labels." },
+          { role: "user", content: transcript },
+        ],
+        max_tokens: 120,
+      }),
+    });
+    if (!resp.ok) return latest.slice(0, 200);
+    const json = await resp.json();
+    const out = (json.choices?.[0]?.message?.content || "").trim();
+    return (out || latest).slice(0, 240);
+  } catch {
+    return latest.slice(0, 200);
+  }
+}
+
+serve(async (req) => {
+  if (req.method !== "POST") return new Response("Method Not Allowed", { status: 405 });
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-
     if (!lovableApiKey) {
       return new Response(JSON.stringify({ error: "AI not configured" }), { status: 500 });
     }
@@ -453,164 +621,138 @@ serve(async (req) => {
     const admin = createClient(supabaseUrl, serviceRoleKey);
     const internalToken = req.headers.get("x-internal-bridge");
     const { data: tokenRow } = await admin
-      .from("integration_secrets")
-      .select("encrypted_value")
-      .eq("secret_key", "messaging_bridge_internal_token")
-      .maybeSingle();
+      .from("integration_secrets").select("encrypted_value")
+      .eq("secret_key", "messaging_bridge_internal_token").maybeSingle();
     if (!tokenRow || !internalToken || tokenRow.encrypted_value !== internalToken) {
       return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
     }
 
     const body = await req.json();
-    const { channel, chat_id, text, display_name } = body as {
+    const { channel, chat_id, text, display_name, simulate_user_id } = body as {
       channel: "telegram" | "whatsapp" | "sms";
       chat_id: string;
       text: string;
       display_name?: string;
+      simulate_user_id?: string; // admin "Test as Guest" only
     };
 
     if (!channel || !chat_id || typeof text !== "string") {
       return new Response(JSON.stringify({ error: "channel, chat_id, text required" }), { status: 400 });
     }
-
     const trimmed = text.trim();
 
-    // Accepted shapes:
-    //   /link 123456                       (manual)
-    //   link 123456                        (manual, no slash)
-    //   /start link_123456                 (Telegram deep-link from guest portal)
-    //   /start 123456                      (bare-code Telegram deep-link)
-    const linkMatch =
-      trimmed.match(/^\/?link\s+(\d{6})\b/i) ??
-      trimmed.match(/^\/?start\s+link[_-]?(\d{6})\b/i) ??
-      trimmed.match(/^\/?start\s+(\d{6})\b/i);
-    if (linkMatch) {
-      const code = linkMatch[1];
-      const { data: codeRow } = await admin
-        .from("messaging_link_codes")
-        .select("id, user_id, expires_at, used_at")
-        .eq("code", code)
-        .is("used_at", null)
-        .maybeSingle();
-
-      if (!codeRow || new Date(codeRow.expires_at) < new Date()) {
+    // ── Linking flow (skip in simulate mode) ──
+    if (!simulate_user_id) {
+      const linkMatch =
+        trimmed.match(/^\/?link\s+(\d{6})\b/i) ??
+        trimmed.match(/^\/?start\s+link[_-]?(\d{6})\b/i) ??
+        trimmed.match(/^\/?start\s+(\d{6})\b/i);
+      if (linkMatch) {
+        const code = linkMatch[1];
+        const { data: codeRow } = await admin
+          .from("messaging_link_codes")
+          .select("id, user_id, expires_at, used_at")
+          .eq("code", code).is("used_at", null).maybeSingle();
+        if (!codeRow || new Date(codeRow.expires_at) < new Date()) {
+          await admin.from("messaging_inbound_log").insert({
+            channel, chat_id, inbound_text: trimmed, outcome: "link_invalid",
+          });
+          return new Response(JSON.stringify({
+            reply: "That code is invalid or expired. Generate a fresh one in the app.",
+          }), { headers: { "Content-Type": "application/json" } });
+        }
+        await admin.from("messaging_chat_bindings").upsert({
+          user_id: codeRow.user_id, channel, chat_id,
+          display_name: display_name || null,
+        }, { onConflict: "channel,chat_id" });
+        await admin.from("messaging_link_codes").update({
+          used_at: new Date().toISOString(), used_channel: channel, used_chat_id: chat_id,
+        }).eq("id", codeRow.id);
+        await seedDefaultPrefs(admin, codeRow.user_id, channel);
         await admin.from("messaging_inbound_log").insert({
-          channel, chat_id, inbound_text: trimmed, outcome: "link_invalid",
+          channel, chat_id, user_id: codeRow.user_id,
+          inbound_text: trimmed, outcome: "linked",
         });
         return new Response(JSON.stringify({
-          reply: "That code is invalid or expired. Generate a fresh one in the app.",
+          reply: "You're connected! I'll keep you updated throughout your stay. Just message me anytime.",
+        }), { headers: { "Content-Type": "application/json" } });
+      }
+    }
+
+    // ── Resolve user (real binding or simulated) ──
+    let userId: string;
+    if (simulate_user_id) {
+      // Verify caller is admin/manager via the simulator path: we trust the
+      // internal token gate above + simulator only invokable from admin UI.
+      userId = simulate_user_id;
+    } else {
+      const { data: binding } = await admin
+        .from("messaging_chat_bindings")
+        .select("user_id").eq("channel", channel).eq("chat_id", chat_id).maybeSingle();
+      if (!binding) {
+        await admin.from("messaging_inbound_log").insert({
+          channel, chat_id, inbound_text: trimmed, outcome: "unlinked",
+        });
+        return new Response(JSON.stringify({
+          reply: "Hey — we're not connected yet. Open the app, generate a 6-digit code, then send: /link 123456",
+        }), { headers: { "Content-Type": "application/json" } });
+      }
+      userId = binding.user_id;
+
+      // /unlink
+      if (/^\/?unlink\b/i.test(trimmed)) {
+        await admin.from("messaging_chat_bindings").delete()
+          .eq("channel", channel).eq("chat_id", chat_id);
+        await admin.from("messaging_inbound_log").insert({
+          channel, chat_id, user_id: userId,
+          inbound_text: trimmed, outcome: "unlinked_by_user",
+        });
+        return new Response(JSON.stringify({
+          reply: "Done — disconnected. Re-link anytime from the app.",
         }), { headers: { "Content-Type": "application/json" } });
       }
 
-      await admin.from("messaging_chat_bindings").upsert({
-        user_id: codeRow.user_id,
-        channel, chat_id,
-        display_name: display_name || null,
-      }, { onConflict: "channel,chat_id" });
-
-      await admin.from("messaging_link_codes").update({
-        used_at: new Date().toISOString(),
-        used_channel: channel,
-        used_chat_id: chat_id,
-      }).eq("id", codeRow.id);
-
-      // Auto-seed role-based notification defaults
-      await seedDefaultPrefs(admin, codeRow.user_id, channel);
-
-      await admin.from("messaging_inbound_log").insert({
-        channel, chat_id, user_id: codeRow.user_id,
-        inbound_text: trimmed, outcome: "linked",
-      });
-
-      return new Response(JSON.stringify({
-        reply: "You're connected! I'll keep you updated throughout your stay. Just message me anytime.",
-      }), { headers: { "Content-Type": "application/json" } });
+      admin.from("messaging_chat_bindings")
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq("channel", channel).eq("chat_id", chat_id).then(() => {});
     }
 
-    // Find binding
-    const { data: binding } = await admin
-      .from("messaging_chat_bindings")
-      .select("user_id")
-      .eq("channel", channel)
-      .eq("chat_id", chat_id)
-      .maybeSingle();
-
-    if (!binding) {
-      await admin.from("messaging_inbound_log").insert({
-        channel, chat_id, inbound_text: trimmed, outcome: "unlinked",
-      });
-      return new Response(JSON.stringify({
-        reply: "Hey — we're not connected yet. Open the app, generate a 6-digit code, then send: /link 123456",
-      }), { headers: { "Content-Type": "application/json" } });
-    }
-
-    // /unlink
-    if (/^\/?unlink\b/i.test(trimmed)) {
-      await admin.from("messaging_chat_bindings")
-        .delete()
-        .eq("channel", channel)
-        .eq("chat_id", chat_id);
-      await admin.from("messaging_inbound_log").insert({
-        channel, chat_id, user_id: binding.user_id,
-        inbound_text: trimmed, outcome: "unlinked_by_user",
-      });
-      return new Response(JSON.stringify({
-        reply: "Done — disconnected. Re-link anytime from the app.",
-      }), { headers: { "Content-Type": "application/json" } });
-    }
-
-    // Update last_seen (fire and forget)
-    admin.from("messaging_chat_bindings")
-      .update({ last_seen_at: new Date().toISOString() })
-      .eq("channel", channel)
-      .eq("chat_id", chat_id)
-      .then(() => {});
-
-    // Resolve role + language + guest phase
+    // ── Resolve role + language + phase ──
     const [{ data: roles }, { data: profile }] = await Promise.all([
-      admin.from("user_roles").select("role").eq("user_id", binding.user_id),
-      admin.from("profiles").select("preferred_language, full_name").eq("user_id", binding.user_id).maybeSingle(),
+      admin.from("user_roles").select("role").eq("user_id", userId),
+      admin.from("profiles").select("preferred_language, full_name").eq("user_id", userId).maybeSingle(),
     ]);
     const role = deriveRole(roles ?? []);
-    const langCode = profile?.preferred_language || "en";
-    const langName = LANG_NAMES[langCode] || "English";
     const friendlyName = display_name || profile?.full_name || "there";
-    const guestPhase = !isStaffRole(role) ? await getGuestPhase(admin, binding.user_id) : undefined;
+    const guestPhase = !isStaffRole(role) ? await getGuestPhase(admin, userId) : undefined;
 
     // Block guests with no booking
     if (!isStaffRole(role) && guestPhase === "none") {
       const reply = "I can't help until you have a booking confirmed. Front desk can assist.";
       await admin.from("messaging_inbound_log").insert({
-        channel, chat_id, user_id: binding.user_id,
+        channel, chat_id, user_id: userId,
         inbound_text: trimmed.slice(0, 1000), outbound_text: reply, outcome: "guest_no_booking",
       });
       return new Response(JSON.stringify({ reply }), { headers: { "Content-Type": "application/json" } });
     }
 
-    // /note <text> — staff only, capture-capable roles only
+    // /note <text> — staff only
     const noteMatch = trimmed.match(/^\/?note\s+(.+)/is);
-    if (noteMatch && canCapture(role)) {
+    if (noteMatch && canCapture(role) && !simulate_user_id) {
       const noteText = noteMatch[1].trim().slice(0, 2000);
       const { data: lastBooking } = await admin
-        .from("bookings")
-        .select("id")
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .from("bookings").select("id").order("updated_at", { ascending: false }).limit(1).maybeSingle();
       if (!lastBooking) {
         return new Response(JSON.stringify({
           reply: "No active booking found to attach the note to.",
         }), { headers: { "Content-Type": "application/json" } });
       }
       await admin.from("messages").insert({
-        booking_id: lastBooking.id,
-        sender_id: binding.user_id,
-        content: `[via ${channel}] ${noteText}`,
-        is_internal: true,
-        draft: false,
+        booking_id: lastBooking.id, sender_id: userId,
+        content: `[via ${channel}] ${noteText}`, is_internal: true, draft: false,
       });
       await admin.from("messaging_inbound_log").insert({
-        channel, chat_id, user_id: binding.user_id,
+        channel, chat_id, user_id: userId,
         inbound_text: trimmed, outcome: "note_captured",
       });
       return new Response(JSON.stringify({
@@ -632,67 +774,107 @@ serve(async (req) => {
       return new Response(JSON.stringify({ reply: helpByRole[role] ?? helpByRole.guest }), { headers: { "Content-Type": "application/json" } });
     }
 
-    // Slash commands (role-gated, returns null if not a recognized command for this role)
+    // Slash commands (staff)
     if (isStaffRole(role)) {
-      const cmdReply = await tryCommand(trimmed, role, admin, binding.user_id);
+      const cmdReply = await tryCommand(trimmed, role, admin, userId);
       if (cmdReply !== null) {
         await admin.from("messaging_inbound_log").insert({
-          channel, chat_id, user_id: binding.user_id,
+          channel, chat_id, user_id: userId,
           inbound_text: trimmed.slice(0, 500),
-          outbound_text: cmdReply.slice(0, 2000),
-          outcome: "command",
+          outbound_text: cmdReply.slice(0, 2000), outcome: "command",
         });
         return new Response(JSON.stringify({ reply: cmdReply }), { headers: { "Content-Type": "application/json" } });
       }
     }
 
-    // ── Pull rolling thread memory (last 10 turns) ──
+    // Pull rolling thread memory (last 10 user/assistant turns)
     const { data: memoryRows } = await admin
       .from("messaging_thread_memory")
       .select("role, content")
-      .eq("user_id", binding.user_id)
-      .eq("channel", channel)
-      .order("created_at", { ascending: false })
-      .limit(10);
+      .eq("user_id", userId).eq("channel", channel)
+      .in("role", ["user", "assistant"])
+      .order("created_at", { ascending: false }).limit(10);
     const history = (memoryRows ?? []).reverse() as { role: "user" | "assistant"; content: string }[];
 
-    // Self-report arrival detection (guests with active/upcoming bookings only)
-    if (!isStaffRole(role) && (guestPhase === "active" || guestPhase === "upcoming")) {
-      const stage = await detectAndFireSelfReport(admin, binding.user_id, trimmed, lovableApiKey);
-      if (stage) {
-        // The guest-arrival-journey function dispatches the prompt via notify-via-messaging.
-        // We still let the AI reply naturally below for warmth — no double-send because
-        // the prompt goes to the bridge channel, the AI reply goes back inline here.
-        console.log(`Self-report stage detected for user ${binding.user_id}: ${stage}`);
+    // Soft-state flags (staffEngaged, langOverride)
+    const flags = await readFlags(admin, userId, channel);
+    const staffEngaged = flags.staffEngaged === "true";
+    const langOverride = flags.langOverride;
+
+    // Active language awareness — preferred vs detected vs explicit override
+    const detectedLang = detectScript(trimmed);
+    const switchTo = detectLanguageSwitchRequest(trimmed);
+    if (switchTo) {
+      await writeFlag(admin, userId, channel, "langOverride", switchTo);
+    }
+    const effectiveLangCode = (switchTo ?? langOverride ?? profile?.preferred_language ?? "en").toLowerCase();
+    const effectiveLangName = LANG_NAMES[effectiveLangCode] || "English";
+    const preferredLangCode = (profile?.preferred_language ?? "en").toLowerCase();
+
+    // Self-report arrival detection (real bindings only)
+    if (!simulate_user_id && !isStaffRole(role) && (guestPhase === "active" || guestPhase === "upcoming")) {
+      const stage = await detectAndFireSelfReport(admin, userId, trimmed, lovableApiKey);
+      if (stage) console.log(`Self-report stage detected for user ${userId}: ${stage}`);
+    }
+
+    // Urgency classification
+    const urgency = detectUrgency(trimmed, history);
+
+    // ── Guest -> Staff escalation flow (only for guest role, not in simulate mode persistence) ──
+    if (!isStaffRole(role) && !staffEngaged && !simulate_user_id) {
+      const offered = flags.escalationOffered === "true";
+      // If we previously offered escalation and the guest now says yes, trigger handoff
+      if (offered && isAffirmative(trimmed)) {
+        const summary = await summariseConversation(history, trimmed, lovableApiKey);
+        await admin.from("guest_escalations").insert({
+          guest_user_id: userId, channel, chat_id,
+          summary: `Guest ${friendlyName}, ${channel}: ${summary}`,
+        });
+        await writeFlag(admin, userId, channel, "staffEngaged", "true");
+        await writeFlag(admin, userId, channel, "escalationOffered", "false");
+        const reply = "Done — front desk has been notified. They'll follow up with you directly.";
+        await admin.from("messaging_inbound_log").insert({
+          channel, chat_id, user_id: userId,
+          inbound_text: trimmed.slice(0, 1000), outbound_text: reply, outcome: "escalated",
+        });
+        await admin.from("messaging_thread_memory").insert([
+          { user_id: userId, channel, role: "user", content: trimmed.slice(0, 1500) },
+          { user_id: userId, channel, role: "assistant", content: reply },
+        ]);
+        return new Response(JSON.stringify({ reply }), { headers: { "Content-Type": "application/json" } });
+      }
+      // If urgency triggers an offer this turn, mark it so a follow-up "yes" is recognised
+      if (urgency === "critical" || urgency === "confused") {
+        await writeFlag(admin, userId, channel, "escalationOffered", "true");
       }
     }
 
-    // Q&A path
-    const context = await buildContext(admin, binding.user_id, role, guestPhase);
-    const systemPrompt = buildSystemPrompt(role, langName, channel, friendlyName, guestPhase) + "\n\n" + context;
+    // ── Build prompt + call AI ──
+    const context = await buildContext(admin, userId, role, guestPhase);
+    const systemPrompt = buildSystemPrompt({
+      role, language: effectiveLangName, channel, displayName: friendlyName,
+      guestPhase, urgency, detectedLang, preferredLangCode, staffEngaged,
+    }) + "\n\n" + context;
     const reply = await callAI(systemPrompt, history, trimmed, lovableApiKey);
 
-    // Persist to thread memory (trimmed by trigger)
-    await admin.from("messaging_thread_memory").insert([
-      { user_id: binding.user_id, channel, role: "user", content: trimmed.slice(0, 1500) },
-      { user_id: binding.user_id, channel, role: "assistant", content: reply.slice(0, 1500) },
-    ]);
+    // Persist memory + log (skip persistence in simulate mode so simulator runs are clean)
+    if (!simulate_user_id) {
+      await admin.from("messaging_thread_memory").insert([
+        { user_id: userId, channel, role: "user", content: trimmed.slice(0, 1500) },
+        { user_id: userId, channel, role: "assistant", content: reply.slice(0, 1500) },
+      ]);
+      await admin.from("messaging_inbound_log").insert({
+        channel, chat_id, user_id: userId,
+        inbound_text: trimmed.slice(0, 1000),
+        outbound_text: reply.slice(0, 2000), outcome: "answered",
+      });
+      admin.from("security_events").insert({
+        event_type: "ai_assistant_call", severity: "info",
+        actor_id: userId, details: { source: `messaging-bridge:${channel}` },
+      }).then(() => {});
+    }
 
-    await admin.from("messaging_inbound_log").insert({
-      channel, chat_id, user_id: binding.user_id,
-      inbound_text: trimmed.slice(0, 1000),
-      outbound_text: reply.slice(0, 2000),
-      outcome: "answered",
-    });
-
-    admin.from("security_events").insert({
-      event_type: "ai_assistant_call",
-      severity: "info",
-      actor_id: binding.user_id,
-      details: { source: `messaging-bridge:${channel}` },
-    }).then(() => {});
-
-    return new Response(JSON.stringify({ reply }), {
+    return new Response(JSON.stringify({ reply, urgency, simulated: !!simulate_user_id }), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (e) {
