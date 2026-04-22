@@ -857,6 +857,31 @@ serve(async (req) => {
     const staffEngaged = flags.staffEngaged === "true";
     const langOverride = flags.langOverride;
 
+    // ── Hard step-back: if staff have taken over, Kru Glitch goes silent.
+    // No AI call, no reply text. Allow only an explicit /resume command from
+    // staff-capable roles to clear the flag.
+    if (staffEngaged) {
+      if (/^\/?resume\b/i.test(trimmed) && canCapture(role)) {
+        await writeFlag(admin, userId, channel, "staffEngaged", "false");
+        await admin.from("messaging_inbound_log").insert({
+          channel, chat_id, user_id: userId,
+          inbound_text: trimmed.slice(0, 500), outbound_text: "resumed",
+          outcome: "staff_resume",
+        });
+        return new Response(JSON.stringify({
+          reply: "Kru Glitch is back online for this chat.",
+        }), { headers: { "Content-Type": "application/json" } });
+      }
+      await admin.from("messaging_inbound_log").insert({
+        channel, chat_id, user_id: userId,
+        inbound_text: trimmed.slice(0, 1000), outcome: "staff_engaged_silent",
+      });
+      // Empty reply tells the inbound adapter (telegram-poll / twilio-webhook) to send nothing.
+      return new Response(JSON.stringify({ reply: "", silent: true }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     // Active language awareness — preferred vs detected vs explicit override
     const detectedLang = detectScript(trimmed);
     const switchTo = detectLanguageSwitchRequest(trimmed);
