@@ -29,7 +29,10 @@ const TWILIO_KEYS = ["twilio_account_sid", "twilio_auth_token", "twilio_sms_from
 
 export function MessagingBridgeSettings() {
   const { role } = useAuth();
-  const canManage = role === "admin" || role === "manager";
+  // Admin-only for ALL bridge configuration (credentials, webhooks, toggles, dashboards, ping).
+  // Every other role — including manager, front_desk, maintenance, guest — only sees the
+  // personal "Connect your chat" card below. No platform config UI leaks to non-admins.
+  const canManage = role === "admin";
   const { data: settings } = usePolicySettings();
   const { data: secretStatuses } = useSecretStatuses();
   const setSecret = useSetSecret();
