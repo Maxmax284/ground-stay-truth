@@ -275,8 +275,7 @@ function buildSystemPrompt(args: {
   // ── Staff banter throttle ──
   // Sensitive ops keywords in the latest user turn force professional fallback.
   const lastUserTurn = [...history].reverse().find((h) => h.role === "user")?.content ?? "";
-  const sensitiveOps = /\b(refund|charge ?back|chargeback|cancel(?:lation|led|ling)?|no[\s-]?show|complaint|injur(?:y|ed)|hospital|police|emergency|fire|theft|stolen|deposit|dispute|fraud|lawsuit|legal|overbook|double[\s-]?book|lockout|locked out|key (?:lost|missing)|allergic|incident|escalat(?:e|ion))\b/i;
-  const sensitiveOpsHit = sensitiveOps.test(lastUserTurn);
+  const sensitiveOpsHit = detectSensitiveOps(lastUserTurn);
   // Throttle: count assistant turns since last banter — require 3 plain turns between callbacks.
   const turnsSinceCallback = popCallback.used ? popCallback.turnsAgo ?? 0 : 999;
   const staffBanterAllowed =
