@@ -169,52 +169,53 @@ export function MessagingBridgeSettings() {
     toast({ title: "Copied" });
   };
 
+  const linkChatCard = (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Send className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <CardTitle className="text-base">Link your chat</CardTitle>
+            <CardDescription>Generate a one-time code, then send it to the bot to connect your account</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Button onClick={handleGenerateCode} disabled={generatingCode} size="sm" variant="outline">
+            <RefreshCw className={`h-4 w-4 mr-2 ${generatingCode ? "animate-spin" : ""}`} />
+            {linkCode ? "Generate new code" : "Generate code"}
+          </Button>
+          {linkCode && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted font-mono text-lg tracking-widest">
+              {linkCode}
+              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copy(`/link ${linkCode}`)}>
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
+        </div>
+        {linkCode && (
+          <p className="text-xs text-muted-foreground">
+            Send <code className="px-1.5 py-0.5 rounded bg-muted">/link {linkCode}</code> to your Telegram / WhatsApp / SMS bot. Code expires in 15 minutes.
+          </p>
+        )}
+        <Separator />
+        <NotificationPreferencesPanel />
+      </CardContent>
+    </Card>
+  );
+
+  // Non-admins only see the link-your-chat card + notification prefs.
+  if (!canManage) {
+    return <div className="space-y-6">{linkChatCard}</div>;
+  }
+
   return (
     <div className="space-y-6">
-      {/* Account linking — works regardless of which channels are configured */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Send className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-base">Link your chat</CardTitle>
-              <CardDescription>Generate a one-time code, then send it to the bot to connect your account</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Button onClick={handleGenerateCode} disabled={generatingCode} size="sm" variant="outline">
-              <RefreshCw className={`h-4 w-4 mr-2 ${generatingCode ? "animate-spin" : ""}`} />
-              {linkCode ? "Generate new code" : "Generate code"}
-            </Button>
-            {linkCode && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted font-mono text-lg tracking-widest">
-                {linkCode}
-                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copy(`/link ${linkCode}`)}>
-                  <Copy className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            )}
-          </div>
-          {linkCode && (
-            <p className="text-xs text-muted-foreground">
-              Send <code className="px-1.5 py-0.5 rounded bg-muted">/link {linkCode}</code> to your Telegram / WhatsApp / SMS bot. Code expires in 15 minutes.
-            </p>
-          )}
-          <Separator />
-          <NotificationPreferencesPanel />
-        </CardContent>
-      </Card>
-
-      {canManage && (<>
-      {/* Admin simulator + system ping */}
-      <MessagingAdminTools />
-
-      {/* Delivery dashboard + global ping */}
-      <MessagingDeliveryDashboard />
+      {/* 1. ADMIN CREDENTIALS FIRST — Telegram bot token + webhook activation */}
 
       {/* Telegram */}
       <Card>
