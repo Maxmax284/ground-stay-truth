@@ -112,9 +112,15 @@ Deno.serve(async (req) => {
           body: JSON.stringify({ channel: "line", chat_id: chatId, text, display_name: displayName }),
         });
         const out = await routerResp.json().catch(() => ({}));
-        if (out?.reply && !out.silent && replyToken) {
+        if (out?.silent || !replyToken) continue;
+        // Router may return either plain `reply` text or a richer
+        // `line_messages` array (Flex/Carousel). Plain-text fallback always
+        // accompanies rich messages via altText, so older clients still see it.
+        if (Array.isArray(out?.line_messages) && out.line_messages.length > 0) {
           // Reply API is always free — no monthly quota.
-          await lineReply(accessToken, replyToken, out.reply);
+          await lineReply(accessToken, replyToken, out.line_messages);
+        } else if (out?.reply) {
+          await lineReply(accessToken, replyToken, [textMessage(out.reply)]);
         }
       } catch (e) {
         console.error("line-webhook: router/send failed", e);
