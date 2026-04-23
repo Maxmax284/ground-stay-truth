@@ -383,7 +383,88 @@ export function MessagingBridgeSettings() {
         )}
       </Card>
 
-      {/* Internal token */}
+      {/* LINE */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <MessageCircle className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-base">LINE Bridge</CardTitle>
+                <CardDescription>Inbound LINE messages routed through Kru Glitch (capture-only)</CardDescription>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Label htmlFor="line-toggle" className="text-sm text-muted-foreground">Enabled</Label>
+              <Switch
+                id="line-toggle"
+                checked={lineEnabled}
+                onCheckedChange={(checked) => handleToggle("line_bridge_enabled", checked)}
+              />
+            </div>
+          </div>
+        </CardHeader>
+        {lineEnabled && (
+          <CardContent className="space-y-4">
+            <Alert variant="destructive" className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 [&>svg]:text-amber-600">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Read this before going live</AlertTitle>
+              <AlertDescription className="space-y-1.5 text-xs">
+                <p><strong>Push messages have a monthly free quota.</strong> Outbound notifications count against LINE's free tier. Once exceeded, a paid LINE Official Account plan is required.</p>
+                <p><strong>Reply messages are always free</strong> — replies to users who messaged you first don't count.</p>
+                <p><strong>Users must add your LINE Official Account as a friend</strong> before you can message them.</p>
+              </AlertDescription>
+            </Alert>
+
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <button className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground group">
+                  <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-90" />
+                  How to get your LINE credentials
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="mt-2 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-2">
+                  <ol className="list-decimal pl-4 space-y-1">
+                    <li>Open the <strong>LINE Developers Console</strong> and create a Provider + Messaging API channel.</li>
+                    <li>Under <em>Messaging API</em>, issue a long-lived <strong>Channel Access Token</strong>.</li>
+                    <li>Under <em>Basic settings</em>, copy the <strong>Channel Secret</strong>.</li>
+                    <li>Paste both below and Save.</li>
+                    <li>Click <strong>Activate Webhook</strong> — we'll set the endpoint and run LINE's verify ping.</li>
+                    <li>In the console, set <em>Use webhook</em> = ON and <em>Auto-reply messages</em> = OFF.</li>
+                  </ol>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {renderSecretField("line_channel_access_token", "Channel Access Token", "long-lived token from LINE console")}
+            {renderSecretField("line_channel_secret", "Channel Secret", "32-char hex from Basic settings")}
+
+            <Separator />
+
+            <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-2">
+              <p className="font-medium text-foreground">Webhook URL (auto-generated)</p>
+              <div className="flex items-center gap-2">
+                <code className="block flex-1 bg-background rounded px-2 py-1 text-[11px] break-all">
+                  {webhookBase}/line-webhook
+                </code>
+                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copy(`${webhookBase}/line-webhook`)}>
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <p>Activate Webhook below sets and verifies this endpoint with LINE in one click.</p>
+            </div>
+
+            <Separator />
+
+            <LineWebhookControl />
+          </CardContent>
+        )}
+      </Card>
+
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Internal Bridge Token</CardTitle>
