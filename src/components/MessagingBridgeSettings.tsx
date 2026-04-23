@@ -77,7 +77,10 @@ export function MessagingBridgeSettings() {
       toast({ title: "Saved securely", description: `${key} stored.` });
       setEditValues((prev) => { const next = { ...prev }; delete next[key]; return next; });
       // Bot identity (Telegram username, WhatsApp number) depends on these secrets — refresh.
-      if (key === "telegram_bot_token" || key === "twilio_whatsapp_from") refetchIdentity();
+      if (key === "telegram_bot_token" || key === "twilio_whatsapp_from") {
+        await qc.invalidateQueries({ queryKey: ["bot-identity"] });
+        await refetchIdentity();
+      }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -87,7 +90,10 @@ export function MessagingBridgeSettings() {
     try {
       await deleteSecret.mutateAsync(key);
       toast({ title: "Removed", description: `${key} cleared.` });
-      if (key === "telegram_bot_token" || key === "twilio_whatsapp_from") refetchIdentity();
+      if (key === "telegram_bot_token" || key === "twilio_whatsapp_from") {
+        await qc.invalidateQueries({ queryKey: ["bot-identity"] });
+        await refetchIdentity();
+      }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
