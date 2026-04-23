@@ -268,12 +268,9 @@ export function MessagingBridgeSettings() {
 
             {/* Step 2: Token input */}
             {renderSecretField("telegram_bot_token", "Bot Token", "1234567890:ABCdef…")}
-            <BotConfigField
-              label="Public bot username (for guest deep-link)"
-              placeholder="GroundStayBot"
-              field="telegram_bot_username"
-              helper="No @ — used to build https://t.me/<username>?start=link_<code> for the guest onboarding card."
-            />
+            <p className="text-[11px] text-muted-foreground">
+              Bot username is auto-resolved from the token via Telegram's <code>getMe</code> — no manual entry needed.
+            </p>
 
             <Separator />
 
