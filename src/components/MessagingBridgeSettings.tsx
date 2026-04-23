@@ -19,6 +19,7 @@ import { MessagingAdminTools } from "@/components/MessagingAdminTools";
 import { TelegramWebhookControl } from "@/components/TelegramWebhookControl";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useBotIdentity, buildConnectUrl } from "@/hooks/useBotIdentity";
+import { useQueryClient } from "@tanstack/react-query";
 
 const TELEGRAM_KEYS = ["telegram_bot_token"] as const;
 const TWILIO_KEYS = ["twilio_account_sid", "twilio_auth_token", "twilio_sms_from", "twilio_whatsapp_from"] as const;
@@ -32,11 +33,12 @@ export function MessagingBridgeSettings() {
   const deleteSecret = useDeleteSecret();
   const updateSetting = useUpdatePolicySetting();
   const { toast } = useToast();
+  const qc = useQueryClient();
 
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [connectBusy, setConnectBusy] = useState<"telegram" | "whatsapp" | null>(null);
-  const { data: botIdentity, isLoading: identityLoading, refetch: refetchIdentity } = useBotIdentity();
+  const { data: botIdentity, isLoading: identityLoading, isFetching: identityFetching, refetch: refetchIdentity } = useBotIdentity();
 
   const getSetting = (key: string) => settings?.find((s) => s.key === key);
   const getValue = (key: string) => {
@@ -53,13 +55,18 @@ export function MessagingBridgeSettings() {
 
   const handleToggle = async (key: string, checked: boolean) => {
     const setting = getSetting(key);
-    if (setting) {
-      await updateSetting.mutateAsync({ id: setting.id, value: String(checked) });
-    } else {
-      // policy_settings row doesn't exist yet — create via direct insert
-      await supabase.from("policy_settings").insert({ key, value: String(checked) });
+    try {
+      if (setting) {
+        await updateSetting.mutateAsync({ id: setting.id, value: String(checked) });
+      } else {
+        const { error } = await supabase.from("policy_settings").insert({ key, value: String(checked) });
+        if (error) throw error;
+        await qc.invalidateQueries({ queryKey: ["policy_settings"] });
+      }
+      toast({ title: "Saved", description: `${key} ${checked ? "enabled" : "disabled"}.` });
+    } catch (err: any) {
+      toast({ title: "Couldn't save toggle", description: err.message, variant: "destructive" });
     }
-    toast({ title: "Saved", description: `${key} updated.` });
   };
 
   const handleSaveSecret = async (key: string) => {
@@ -70,7 +77,10 @@ export function MessagingBridgeSettings() {
       toast({ title: "Saved securely", description: `${key} stored.` });
       setEditValues((prev) => { const next = { ...prev }; delete next[key]; return next; });
       // Bot identity (Telegram username, WhatsApp number) depends on these secrets — refresh.
-      if (key === "telegram_bot_token" || key === "twilio_whatsapp_from") refetchIdentity();
+      if (key === "telegram_bot_token" || key === "twilio_whatsapp_from") {
+        await qc.invalidateQueries({ queryKey: ["bot-identity"] });
+        await refetchIdentity();
+      }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -80,7 +90,10 @@ export function MessagingBridgeSettings() {
     try {
       await deleteSecret.mutateAsync(key);
       toast({ title: "Removed", description: `${key} cleared.` });
-      if (key === "telegram_bot_token" || key === "twilio_whatsapp_from") refetchIdentity();
+      if (key === "telegram_bot_token" || key === "twilio_whatsapp_from") {
+        await qc.invalidateQueries({ queryKey: ["bot-identity"] });
+        await refetchIdentity();
+      }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -175,7 +188,7 @@ export function MessagingBridgeSettings() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
           <Button
             onClick={() => handleConnect("telegram")}
             disabled={!botIdentity?.telegram.username || connectBusy !== null || identityLoading}
@@ -197,16 +210,37 @@ export function MessagingBridgeSettings() {
               : <MessageCircle className="h-4 w-4 mr-2" />}
             Connect WhatsApp
           </Button>
+          <Button
+            onClick={() => refetchIdentity()}
+            disabled={identityFetching}
+            size="sm"
+            variant="ghost"
+          >
+            {identityFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh"}
+          </Button>
         </div>
-        {botIdentity && !botIdentity.telegram.username && !botIdentity.whatsapp.number && (
+        {botIdentity?.telegram.username && (
+          <p className="text-[11px] text-muted-foreground">
+            Telegram bot: <span className="font-mono">@{botIdentity.telegram.username}</span>
+          </p>
+        )}
+        {botIdentity && !botIdentity.telegram.username && !botIdentity.whatsapp.number && !botIdentity.telegram.error && (
           <p className="text-xs text-muted-foreground">
             No channels are configured yet. Save a Telegram bot token or Twilio WhatsApp credentials above first.
           </p>
         )}
-        {botIdentity?.telegram.error && (
-          <p className="text-xs text-destructive">
-            Telegram: {botIdentity.telegram.error}
+        {botIdentity?.telegram.configured && !botIdentity.telegram.username && !botIdentity.telegram.error && (
+          <p className="text-xs text-amber-600 dark:text-amber-400">
+            Telegram bot token is saved but the username hasn't resolved yet. Click Refresh, or check the token is valid.
           </p>
+        )}
+        {botIdentity?.telegram.error && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
+            <span className="font-medium">Telegram error:</span> {botIdentity.telegram.error}
+            <p className="mt-1 text-[11px] opacity-80">
+              Double-check the bot token from BotFather. The token must look like <code>1234567890:ABC…</code>.
+            </p>
+          </div>
         )}
         <Separator />
         <NotificationPreferencesPanel />
@@ -270,7 +304,7 @@ export function MessagingBridgeSettings() {
             </Collapsible>
 
             {/* Step 2: Token input */}
-            {renderSecretField("telegram_bot_token", "Bot Token", "1234567890:ABCdef…")}
+            {renderSecretField("telegram_bot_token", "Telegram Bot Token", "1234567890:ABCdef…")}
             <p className="text-[11px] text-muted-foreground">
               Bot username is auto-resolved from the token via Telegram's <code>getMe</code> — no manual entry needed.
             </p>
