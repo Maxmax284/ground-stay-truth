@@ -220,6 +220,25 @@ function pickOpener(args: {
   return pool[idx];
 }
 
+// Detect whether Kru already made a pop-culture callback in the recent thread window.
+// One callback per window — after that, references are locked off until the window rolls.
+function recentPopCultureCallback(
+  history: { role: "user" | "assistant"; content: string }[],
+  windowSize = 6,
+): { used: boolean; turnsAgo: number | null } {
+  const recent = history.filter((h) => h.role === "assistant").slice(-windowSize);
+  const cues = /\b(vibe like|straight out of|channeling|à la|a la|like in|reminds me of|reminiscent of|very (?:matrix|rocky|tarantino|wes anderson)|kru fu|mr\.? miyagi|cobra kai|john wick|top gun|jaws|james bond|bond film|breaking bad|stranger things|game of thrones|simpsons|seinfeld|friends episode|the office)\b/i;
+  for (let i = recent.length - 1; i >= 0; i--) {
+    const c = recent[i].content;
+    const quoted = /["“][^"”]{6,80}["”]/.test(c);
+    const titleish = /\b[A-Z][a-z]+(?:\s+(?:of|the|and|in|on|de|la|le)\s+)?[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2}\b/.test(c);
+    if (cues.test(c) || quoted || titleish) {
+      return { used: true, turnsAgo: recent.length - 1 - i };
+    }
+  }
+  return { used: false, turnsAgo: null };
+}
+
 // ── Persona prompts (role-differentiated, urgency-aware) ──────────────────
 function buildSystemPrompt(args: {
   role: string;
