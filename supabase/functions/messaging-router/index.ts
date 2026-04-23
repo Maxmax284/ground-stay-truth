@@ -1205,9 +1205,10 @@ serve(async (req) => {
 
     // ── Build prompt + call AI ──
     const audience = isStaffRole(role) ? "staff" : "guest";
-    const [context, intel] = await Promise.all([
+    const [context, intel, liveOps] = await Promise.all([
       buildContext(admin, userId, role, guestPhase),
       fetchRelevantIntelligence(admin, trimmed, audience),
+      buildStaffContext(admin, userId, role),
     ]);
     const promptParts = [
       buildSystemPrompt({
@@ -1217,6 +1218,7 @@ serve(async (req) => {
       context,
     ];
     if (intel) promptParts.push(intel);
+    if (liveOps) promptParts.push(liveOps);
     const systemPrompt = promptParts.join("\n\n");
     const reply = await callAI(systemPrompt, history, trimmed, lovableApiKey);
 
