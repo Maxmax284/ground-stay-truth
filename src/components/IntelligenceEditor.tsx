@@ -40,6 +40,17 @@ const LOCATIONS = [
   { value: "island", label: "Island General" },
 ];
 
+const TRANSLATION_LANGS: { code: string; label: string; flag: string }[] = [
+  { code: "th", label: "Thai", flag: "🇹🇭" },
+  { code: "fr", label: "French", flag: "🇫🇷" },
+  { code: "de", label: "German", flag: "🇩🇪" },
+  { code: "ru", label: "Russian", flag: "🇷🇺" },
+  { code: "zh", label: "Chinese", flag: "🇨🇳" },
+  { code: "ja", label: "Japanese", flag: "🇯🇵" },
+  { code: "ko", label: "Korean", flag: "🇰🇷" },
+  { code: "es", label: "Spanish", flag: "🇪🇸" },
+];
+
 const STATUS_COLORS: Record<IntelligenceStatus, string> = {
   draft: "bg-muted text-muted-foreground",
   active: "bg-primary/10 text-primary",
