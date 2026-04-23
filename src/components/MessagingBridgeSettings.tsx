@@ -347,6 +347,161 @@ export function MessagingBridgeSettings() {
         </CardHeader>
         {twilioEnabled && (
           <CardContent className="space-y-4">
+            {/* Meta WhatsApp Cloud API setup guide */}
+            <Alert className="border-primary/30 bg-primary/5">
+              <MessageCircle className="h-4 w-4" />
+              <AlertTitle className="text-sm">Going direct with Meta instead of Twilio?</AlertTitle>
+              <AlertDescription className="text-xs">
+                Twilio is the fastest path. If you'd rather connect WhatsApp directly through Meta's Cloud API (no middleman, lower per-message cost), follow the full setup guide below — it walks you through every step.
+              </AlertDescription>
+            </Alert>
+
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <button className="flex items-center gap-1 text-xs font-medium text-foreground hover:text-primary group w-full text-left">
+                  <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-90" />
+                  WhatsApp Cloud API setup guide (Meta direct) — full walkthrough
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="mt-3 space-y-3">
+                  <p className="text-xs text-muted-foreground">
+                    Eight steps. Block out about 30 minutes the first time. You'll need a Facebook account and a phone number you can receive a verification code on.
+                  </p>
+
+                  <div className="rounded-md border bg-muted/30 p-3 space-y-3">
+                    <div>
+                      <p className="text-sm font-semibold">Step 1 — Create a Meta Developer account</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Head to <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">developers.facebook.com</a> and sign in with your Facebook account. Click <em>Get Started</em> in the top right and accept the developer terms. If you already have one, skip ahead.
+                      </p>
+                    </div>
+
+                    <Separator />
+
+                    <div>
+                      <p className="text-sm font-semibold">Step 2 — Create a new Meta App</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        From <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="text-primary underline">My Apps</a>, click <em>Create App</em>. Choose the <strong>Business</strong> app type — this is the only type that supports WhatsApp. Name it something you'll recognize (e.g. "Ground Stay Messaging").
+                      </p>
+                    </div>
+
+                    <Separator />
+
+                    <div>
+                      <p className="text-sm font-semibold">Step 3 — Add the WhatsApp product</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        On your app dashboard, scroll to <em>Add products to your app</em> and click <strong>Set up</strong> on the WhatsApp tile. Meta will create or link a WhatsApp Business Account (WABA) for you. <a href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started" target="_blank" rel="noopener noreferrer" className="text-primary underline">Meta's getting-started doc</a>.
+                      </p>
+                    </div>
+
+                    <Separator />
+
+                    <div>
+                      <p className="text-sm font-semibold">Step 4 — Set up a phone number</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Two options under <em>WhatsApp → API Setup</em>:
+                      </p>
+                      <ul className="text-xs text-muted-foreground mt-1.5 space-y-1 list-disc pl-4">
+                        <li><strong>Meta's free test number</strong> — instant, good for testing. You can only message up to 5 pre-verified recipients.</li>
+                        <li><strong>Your own business number</strong> — required for production. Add it under <em>Phone numbers → Add phone number</em> and verify via SMS or voice call.</li>
+                      </ul>
+                      <Alert className="mt-2 border-amber-500/40 bg-amber-50 dark:bg-amber-950/30 [&>svg]:text-amber-600 py-2">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        <AlertDescription className="text-[11px] text-amber-900 dark:text-amber-200">
+                          Test numbers can't message random users — only the recipients you whitelist in the dashboard. Don't ship to production with one.
+                        </AlertDescription>
+                      </Alert>
+                    </div>
+
+                    <Separator />
+
+                    <div>
+                      <p className="text-sm font-semibold">Step 5 — Grab your three credentials</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        All three live on the <em>WhatsApp → API Setup</em> page:
+                      </p>
+                      <ul className="text-xs text-muted-foreground mt-1.5 space-y-1.5 list-disc pl-4">
+                        <li><strong>Phone Number ID</strong> — under the <em>From</em> dropdown, the long numeric ID below your selected number.</li>
+                        <li><strong>WhatsApp Business Account ID</strong> — labeled <em>WhatsApp Business Account ID</em> right on the same page.</li>
+                        <li><strong>Permanent Access Token</strong> — see warning below.</li>
+                      </ul>
+                      <Alert variant="destructive" className="mt-2 border-destructive/40 bg-destructive/5 py-2">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        <AlertTitle className="text-xs">Use a permanent token — always</AlertTitle>
+                        <AlertDescription className="text-[11px]">
+                          The token shown on the API Setup page is a <strong>temporary 24-hour token</strong>. Don't use it. Generate a permanent one: go to <em>Business Settings → Users → System Users</em>, create a system user with <em>Admin</em> role, assign your app with full control, then click <em>Generate New Token</em> and select <code>whatsapp_business_messaging</code> + <code>whatsapp_business_management</code> scopes. Set expiration to <strong>Never</strong>. <a href="https://developers.facebook.com/docs/whatsapp/business-management-api/get-started" target="_blank" rel="noopener noreferrer" className="underline">Full token guide</a>.
+                        </AlertDescription>
+                      </Alert>
+                    </div>
+
+                    <Separator />
+
+                    <div>
+                      <p className="text-sm font-semibold">Step 6 — Configure the webhook</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        In your Meta app, go to <em>WhatsApp → Configuration → Webhook</em> and click <strong>Edit</strong>. You'll need two things:
+                      </p>
+                      <ul className="text-xs text-muted-foreground mt-1.5 space-y-1.5 list-disc pl-4">
+                        <li>
+                          <strong>Callback URL</strong> — paste this auto-generated URL:
+                          <div className="flex items-center gap-2 mt-1">
+                            <code className="block flex-1 bg-background border rounded px-2 py-1 text-[11px] break-all">
+                              {webhookBase}/whatsapp-meta-webhook
+                            </code>
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copy(`${webhookBase}/whatsapp-meta-webhook`)}>
+                              <Copy className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </li>
+                        <li>
+                          <strong>Verify Token</strong> — you make this up. Any random string works (e.g. <code>kru-glitch-9f2a-verify</code>). Save the same string in your Meta app config and as a secret here so the verification handshake passes.
+                        </li>
+                      </ul>
+                    </div>
+
+                    <Separator />
+
+                    <div>
+                      <p className="text-sm font-semibold">Step 7 — Subscribe to the <code>messages</code> field</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Same page, under <em>Webhook fields</em>, click <strong>Manage</strong> and toggle on <code>messages</code>. This is the only field that's required for inbound message routing. Subscribe to others (<code>message_status</code>, <code>message_template_status_update</code>) only if you want delivery receipts and template approval pings.
+                      </p>
+                    </div>
+
+                    <Separator />
+
+                    <div>
+                      <p className="text-sm font-semibold">Step 8 — Templates vs. replies</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        WhatsApp splits outbound messaging into two buckets — this trips a lot of people up:
+                      </p>
+                      <ul className="text-xs text-muted-foreground mt-1.5 space-y-1.5 list-disc pl-4">
+                        <li><strong>Reply messages</strong> — responses to someone who messaged you in the last 24 hours. Work immediately, no approval needed, no template required.</li>
+                        <li><strong>Template messages</strong> — proactive outbound (booking confirmations, arrival reminders, etc.). Must be submitted to Meta for approval.</li>
+                      </ul>
+                      <Alert className="mt-2 border-amber-500/40 bg-amber-50 dark:bg-amber-950/30 [&>svg]:text-amber-600 py-2">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        <AlertTitle className="text-xs">Template approval takes time</AlertTitle>
+                        <AlertDescription className="text-[11px] text-amber-900 dark:text-amber-200">
+                          Plan for <strong>a few hours to two business days</strong>. Submit your templates from <em>WhatsApp Manager → Message Templates</em> early so they're approved before you need them. Rejections usually come back fast — read Meta's category rules carefully and resubmit.
+                        </AlertDescription>
+                      </Alert>
+                    </div>
+
+                    <Separator />
+
+                    <p className="text-[11px] text-muted-foreground italic">
+                      Once all three credentials are saved and the webhook verifies, you're live. Send a test message to your business number — it should land in Kru Glitch within a second.
+                    </p>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            <Separator />
+
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Twilio credentials</p>
             {renderSecretField("twilio_account_sid", "Account SID", "AC…")}
             {renderSecretField("twilio_auth_token", "Auth Token", "your auth token")}
             {renderSecretField("twilio_sms_from", "SMS From Number", "+15551234567")}
