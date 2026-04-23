@@ -87,7 +87,12 @@ interface Payload {
 
 // ── Channel senders ──
 
-async function sendTelegram(admin: any, chatId: string, text: string): Promise<{ ok: boolean; error?: string }> {
+async function sendTelegram(
+  admin: any,
+  chatId: string,
+  text: string,
+  rich?: { text: string; parse_mode: "MarkdownV2"; reply_markup?: any; plainText: string } | null,
+): Promise<{ ok: boolean; error?: string }> {
   const { data: tokenRow } = await admin
     .from("integration_secrets")
     .select("encrypted_value")
@@ -96,10 +101,28 @@ async function sendTelegram(admin: any, chatId: string, text: string): Promise<{
   if (!tokenRow?.encrypted_value) return { ok: false, error: "telegram_bot_token not configured" };
 
   const url = `https://api.telegram.org/bot${tokenRow.encrypted_value}/sendMessage`;
+
+  // Try rich (MarkdownV2 + inline_keyboard) first if provided.
+  if (rich) {
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: rich.text,
+        parse_mode: rich.parse_mode,
+        disable_web_page_preview: true,
+        reply_markup: rich.reply_markup,
+      }),
+    });
+    if (r.ok) return { ok: true };
+    // Telegram MarkdownV2 is strict — on parse failure, fall through to plain.
+  }
+
   const resp = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
+    body: JSON.stringify({ chat_id: chatId, text: rich?.plainText ?? text, disable_web_page_preview: true }),
   });
   if (!resp.ok) {
     const body = await resp.text();
