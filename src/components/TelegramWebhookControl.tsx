@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, AlertTriangle, XCircle, Loader2, Zap, Copy, RefreshCw } from "lucide-react";
+import { CheckCircle2, AlertTriangle, XCircle, Loader2, Zap, Copy, RefreshCw, Send } from "lucide-react";
 
 interface WebhookStatus {
   configured: boolean;
