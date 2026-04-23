@@ -11,14 +11,14 @@ import { useSecretStatuses, useSetSecret, useDeleteSecret } from "@/hooks/useInt
 import { usePolicySettings, useUpdatePolicySetting } from "@/hooks/usePolicySettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { CheckCircle2, XCircle, Eye, EyeOff, Save, Trash2, MessageCircle, Copy, RefreshCw, Send } from "lucide-react";
+import { CheckCircle2, XCircle, Eye, EyeOff, Save, Trash2, MessageCircle, Copy, Send, Loader2, ChevronRight } from "lucide-react";
 import { NotificationPreferencesPanel } from "@/components/NotificationPreferencesPanel";
 import { MessagingDeliveryDashboard } from "@/components/MessagingDeliveryDashboard";
 import { LinkedChatsList } from "@/components/LinkedChatsList";
 import { MessagingAdminTools } from "@/components/MessagingAdminTools";
 import { TelegramWebhookControl } from "@/components/TelegramWebhookControl";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronRight } from "lucide-react";
+import { useBotIdentity, buildConnectUrl } from "@/hooks/useBotIdentity";
 
 const TELEGRAM_KEYS = ["telegram_bot_token"] as const;
 const TWILIO_KEYS = ["twilio_account_sid", "twilio_auth_token", "twilio_sms_from", "twilio_whatsapp_from"] as const;
@@ -35,8 +35,8 @@ export function MessagingBridgeSettings() {
 
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
-  const [linkCode, setLinkCode] = useState<string | null>(null);
-  const [generatingCode, setGeneratingCode] = useState(false);
+  const [connectBusy, setConnectBusy] = useState<"telegram" | "whatsapp" | null>(null);
+  const { data: botIdentity, isLoading: identityLoading, refetch: refetchIdentity } = useBotIdentity();
 
   const getSetting = (key: string) => settings?.find((s) => s.key === key);
   const getValue = (key: string) => {
@@ -69,6 +69,8 @@ export function MessagingBridgeSettings() {
       await setSecret.mutateAsync({ key, value });
       toast({ title: "Saved securely", description: `${key} stored.` });
       setEditValues((prev) => { const next = { ...prev }; delete next[key]; return next; });
+      // Bot identity (Telegram username, WhatsApp number) depends on these secrets — refresh.
+      if (key === "telegram_bot_token" || key === "twilio_whatsapp_from") refetchIdentity();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -78,36 +80,26 @@ export function MessagingBridgeSettings() {
     try {
       await deleteSecret.mutateAsync(key);
       toast({ title: "Removed", description: `${key} cleared.` });
+      if (key === "telegram_bot_token" || key === "twilio_whatsapp_from") refetchIdentity();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
 
-  const handleGenerateCode = async () => {
-    setGeneratingCode(true);
+  const handleConnect = async (channel: "telegram" | "whatsapp") => {
+    if (!botIdentity) return;
+    setConnectBusy(channel);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not signed in");
-      const resp = await fetch(`${webhookBase}/messaging-link`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({}),
+      const url = await buildConnectUrl(channel, botIdentity);
+      window.open(url, "_blank", "noopener,noreferrer");
+      toast({
+        title: "Opening " + (channel === "telegram" ? "Telegram" : "WhatsApp"),
+        description: "Tap Start in the chat to finish connecting.",
       });
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to generate code");
-      }
-      const data = await resp.json();
-      setLinkCode(data.code);
-      toast({ title: "Code ready", description: `Send "/link ${data.code}" to your bot. Expires in 15 min.` });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Couldn't open chat", description: err.message, variant: "destructive" });
     } finally {
-      setGeneratingCode(false);
+      setConnectBusy(null);
     }
   };
 
@@ -178,28 +170,42 @@ export function MessagingBridgeSettings() {
           </div>
           <div>
             <CardTitle className="text-base">Link your chat</CardTitle>
-            <CardDescription>Generate a one-time code, then send it to the bot to connect your account</CardDescription>
+            <CardDescription>One tap connects your account — no codes to copy.</CardDescription>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Button onClick={handleGenerateCode} disabled={generatingCode} size="sm" variant="outline">
-            <RefreshCw className={`h-4 w-4 mr-2 ${generatingCode ? "animate-spin" : ""}`} />
-            {linkCode ? "Generate new code" : "Generate code"}
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={() => handleConnect("telegram")}
+            disabled={!botIdentity?.telegram.username || connectBusy !== null || identityLoading}
+            size="sm"
+          >
+            {connectBusy === "telegram"
+              ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              : <Send className="h-4 w-4 mr-2" />}
+            Connect Telegram
           </Button>
-          {linkCode && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted font-mono text-lg tracking-widest">
-              {linkCode}
-              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copy(`/link ${linkCode}`)}>
-                <Copy className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          )}
+          <Button
+            onClick={() => handleConnect("whatsapp")}
+            disabled={!botIdentity?.whatsapp.number || connectBusy !== null || identityLoading}
+            size="sm"
+            variant="outline"
+          >
+            {connectBusy === "whatsapp"
+              ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              : <MessageCircle className="h-4 w-4 mr-2" />}
+            Connect WhatsApp
+          </Button>
         </div>
-        {linkCode && (
+        {botIdentity && !botIdentity.telegram.username && !botIdentity.whatsapp.number && (
           <p className="text-xs text-muted-foreground">
-            Send <code className="px-1.5 py-0.5 rounded bg-muted">/link {linkCode}</code> to your Telegram / WhatsApp / SMS bot. Code expires in 15 minutes.
+            No channels are configured yet. Save a Telegram bot token or Twilio WhatsApp credentials above first.
+          </p>
+        )}
+        {botIdentity?.telegram.error && (
+          <p className="text-xs text-destructive">
+            Telegram: {botIdentity.telegram.error}
           </p>
         )}
         <Separator />
@@ -265,12 +271,9 @@ export function MessagingBridgeSettings() {
 
             {/* Step 2: Token input */}
             {renderSecretField("telegram_bot_token", "Bot Token", "1234567890:ABCdef…")}
-            <BotConfigField
-              label="Public bot username (for guest deep-link)"
-              placeholder="GroundStayBot"
-              field="telegram_bot_username"
-              helper="No @ — used to build https://t.me/<username>?start=link_<code> for the guest onboarding card."
-            />
+            <p className="text-[11px] text-muted-foreground">
+              Bot username is auto-resolved from the token via Telegram's <code>getMe</code> — no manual entry needed.
+            </p>
 
             <Separator />
 
@@ -309,12 +312,10 @@ export function MessagingBridgeSettings() {
             {renderSecretField("twilio_auth_token", "Auth Token", "your auth token")}
             {renderSecretField("twilio_sms_from", "SMS From Number", "+15551234567")}
             {renderSecretField("twilio_whatsapp_from", "WhatsApp From Number", "+14155238886 (sandbox)")}
-            <BotConfigField
-              label="Public WhatsApp number (for guest deep-link)"
-              placeholder="+14155238886"
-              field="whatsapp_number"
-              helper="E.164 format. Used to build https://wa.me/<number>?text=/link <code> for guest onboarding."
-            />
+            <p className="text-[11px] text-muted-foreground">
+              Public WhatsApp number for guest deep-links is auto-derived from the &ldquo;WhatsApp From&rdquo; secret above.
+            </p>
+
             <Separator />
             <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-2">
               <p className="font-medium text-foreground">Webhook URLs (paste into Twilio)</p>

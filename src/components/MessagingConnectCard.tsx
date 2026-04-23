@@ -1,59 +1,42 @@
-// MessagingConnectCard — guest-facing card to link WhatsApp/Telegram/SMS
-// to a Lovable account. Lives on /stay (GuestPortal) so guests don't need
-// access to the Settings page. Generates a one-time 6-digit link code via
-// the messaging-link edge function, then walks the user through sending it
-// to the bot.
+// MessagingConnectCard — guest-facing card to link WhatsApp/Telegram
+// to a Lovable account. One-tap: clicks the channel button, we mint a code,
+// then open the bot's deep link in a new tab. The bot auto-handles
+// `/start link_<code>` (Telegram) or `/link <code>` (WhatsApp) and links
+// the account — no copy/paste.
 
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { Send, Copy, RefreshCw, MessageCircle } from "lucide-react";
+import { MessageCircle, Send, Loader2 } from "lucide-react";
 import { NotificationPreferencesPanel } from "@/components/NotificationPreferencesPanel";
+import { useBotIdentity, buildConnectUrl } from "@/hooks/useBotIdentity";
 
 export function MessagingConnectCard() {
   const { toast } = useToast();
-  const [linkCode, setLinkCode] = useState<string | null>(null);
-  const [generatingCode, setGeneratingCode] = useState(false);
+  const { data: identity, isLoading } = useBotIdentity();
+  const [busy, setBusy] = useState<"telegram" | "whatsapp" | null>(null);
 
-  const generate = async () => {
-    setGeneratingCode(true);
+  const connect = async (channel: "telegram" | "whatsapp") => {
+    if (!identity) return;
+    setBusy(channel);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not signed in");
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/messaging-link`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({}),
-        }
-      );
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to generate code");
-      }
-      const data = await resp.json();
-      setLinkCode(data.code);
-      toast({ title: "Code ready", description: `Send "/link ${data.code}" to your bot. Expires in 15 min.` });
+      const url = await buildConnectUrl(channel, identity);
+      window.open(url, "_blank", "noopener,noreferrer");
+      toast({
+        title: "Opening " + (channel === "telegram" ? "Telegram" : "WhatsApp"),
+        description: "Tap Start in the chat to finish connecting.",
+      });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Couldn't open chat", description: err.message, variant: "destructive" });
     } finally {
-      setGeneratingCode(false);
+      setBusy(null);
     }
   };
 
-  const copy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ title: "Copied" });
-  };
+  const tgReady = identity?.telegram.configured && !!identity.telegram.username;
+  const waReady = identity?.whatsapp.configured && !!identity.whatsapp.number;
 
   return (
     <Card>
@@ -63,39 +46,38 @@ export function MessagingConnectCard() {
             <MessageCircle className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <CardTitle className="text-base">Connect WhatsApp / Telegram / SMS</CardTitle>
-            <CardDescription>Get stay updates and chat with us right from your messaging app.</CardDescription>
+            <CardTitle className="text-base">Connect WhatsApp / Telegram</CardTitle>
+            <CardDescription>One tap to get stay updates and chat with us in your favorite app.</CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button onClick={generate} disabled={generatingCode} size="sm" variant="outline">
-            <RefreshCw className={`h-4 w-4 mr-2 ${generatingCode ? "animate-spin" : ""}`} />
-            {linkCode ? "Generate new code" : "Generate code"}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={() => connect("telegram")}
+            disabled={!tgReady || busy !== null || isLoading}
+            size="sm"
+          >
+            {busy === "telegram"
+              ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              : <Send className="h-4 w-4 mr-2" />}
+            Connect Telegram
           </Button>
-          {linkCode && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted font-mono text-lg tracking-widest">
-              {linkCode}
-              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copy(`/link ${linkCode}`)}>
-                <Copy className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          )}
+          <Button
+            onClick={() => connect("whatsapp")}
+            disabled={!waReady || busy !== null || isLoading}
+            size="sm"
+            variant="outline"
+          >
+            {busy === "whatsapp"
+              ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              : <MessageCircle className="h-4 w-4 mr-2" />}
+            Connect WhatsApp
+          </Button>
         </div>
-        {linkCode ? (
-          <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-2">
-            <p className="font-medium text-foreground">Next steps:</p>
-            <ol className="list-decimal pl-4 space-y-1">
-              <li>Open the bot we set up on your preferred channel.</li>
-              <li>Send: <code className="px-1.5 py-0.5 rounded bg-background">/link {linkCode}</code></li>
-              <li>You'll get a confirmation reply. After that, just chat normally.</li>
-            </ol>
-            <p className="pt-1.5"><Badge variant="outline" className="text-[10px]">15 min</Badge> code expires after 15 minutes.</p>
-          </div>
-        ) : (
+        {!tgReady && !waReady && !isLoading && (
           <p className="text-xs text-muted-foreground">
-            Generate a one-time 6-digit code, then send it to our bot on Telegram, WhatsApp, or SMS to link your account.
+            Messaging channels aren't set up yet. Check back soon.
           </p>
         )}
         <Separator />
