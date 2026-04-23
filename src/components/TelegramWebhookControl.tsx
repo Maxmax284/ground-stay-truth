@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, AlertTriangle, XCircle, Loader2, Zap, Copy, RefreshCw } from "lucide-react";
+import { CheckCircle2, AlertTriangle, XCircle, Loader2, Zap, Copy, RefreshCw, Send } from "lucide-react";
 
 interface WebhookStatus {
   configured: boolean;
@@ -19,6 +19,8 @@ export function TelegramWebhookControl() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [activating, setActivating] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
 
   const { data, isLoading, refetch } = useQuery<WebhookStatus>({
     queryKey: ["telegram-webhook-status"],
@@ -48,6 +50,29 @@ export function TelegramWebhookControl() {
       toast({ title: "Activation failed", description: err.message, variant: "destructive" });
     } finally {
       setActivating(false);
+    }
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const { data: resp, error } = await supabase.functions.invoke("messaging-system-ping", {
+        body: { channel: "telegram" },
+      });
+      if (error) throw error;
+      if (resp?.error) throw new Error(resp.error);
+      const sent = resp?.sent ?? 0;
+      const failed = resp?.failed ?? 0;
+      const total = resp?.total ?? 0;
+      setTestResult({
+        ok: sent > 0 || failed === 0,
+        message: `${sent} delivered, ${failed} failed (of ${total} linked Telegram chats).`,
+      });
+    } catch (err: any) {
+      setTestResult({ ok: false, message: err.message ?? "Test failed" });
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -117,9 +142,21 @@ export function TelegramWebhookControl() {
       )}
 
       {data?.configured && (
-        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => refetch()}>
-          <RefreshCw className="h-3 w-3 mr-1" /> Refresh status
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleTest} disabled={testing}>
+            {testing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Send className="h-3 w-3 mr-1" />}
+            Send test message
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => refetch()}>
+            <RefreshCw className="h-3 w-3 mr-1" /> Refresh status
+          </Button>
+        </div>
+      )}
+
+      {testResult && (
+        <p className={`text-xs ${testResult.ok ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+          {testResult.ok ? "✓ " : "✗ "}{testResult.message}
+        </p>
       )}
     </div>
   );
