@@ -21,6 +21,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { buildFlexForEvent, type LineLang } from "../_shared/lineFlex.ts";
+import {
+  buildTelegramForEvent,
+  buildWhatsAppForEvent,
+  whatsAppIntentToText,
+  type RichLang,
+  type Role,
+} from "../_shared/richMessages.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -80,7 +87,12 @@ interface Payload {
 
 // ── Channel senders ──
 
-async function sendTelegram(admin: any, chatId: string, text: string): Promise<{ ok: boolean; error?: string }> {
+async function sendTelegram(
+  admin: any,
+  chatId: string,
+  text: string,
+  rich?: { text: string; parse_mode: "MarkdownV2"; reply_markup?: any; plainText: string } | null,
+): Promise<{ ok: boolean; error?: string }> {
   const { data: tokenRow } = await admin
     .from("integration_secrets")
     .select("encrypted_value")
@@ -89,10 +101,28 @@ async function sendTelegram(admin: any, chatId: string, text: string): Promise<{
   if (!tokenRow?.encrypted_value) return { ok: false, error: "telegram_bot_token not configured" };
 
   const url = `https://api.telegram.org/bot${tokenRow.encrypted_value}/sendMessage`;
+
+  // Try rich (MarkdownV2 + inline_keyboard) first if provided.
+  if (rich) {
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: rich.text,
+        parse_mode: rich.parse_mode,
+        disable_web_page_preview: true,
+        reply_markup: rich.reply_markup,
+      }),
+    });
+    if (r.ok) return { ok: true };
+    // Telegram MarkdownV2 is strict — on parse failure, fall through to plain.
+  }
+
   const resp = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
+    body: JSON.stringify({ chat_id: chatId, text: rich?.plainText ?? text, disable_web_page_preview: true }),
   });
   if (!resp.ok) {
     const body = await resp.text();
@@ -148,7 +178,13 @@ async function sendLine(
   return { ok: true };
 }
 
-async function sendTwilio(admin: any, channel: "sms" | "whatsapp", toNumber: string, text: string): Promise<{ ok: boolean; error?: string }> {
+async function sendTwilio(
+  admin: any,
+  channel: "sms" | "whatsapp",
+  toNumber: string,
+  text: string,
+  waIntent?: import("../_shared/richMessages.ts").WhatsAppIntent | null,
+): Promise<{ ok: boolean; error?: string }> {
   const [{ data: sidRow }, { data: tokenRow }, { data: smsFromRow }, { data: waFromRow }] = await Promise.all([
     admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "twilio_account_sid").maybeSingle(),
     admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "twilio_auth_token").maybeSingle(),
@@ -165,6 +201,64 @@ async function sendTwilio(admin: any, channel: "sms" | "whatsapp", toNumber: str
 
   const auth = btoa(`${sid}:${tokenRow.encrypted_value}`);
   const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
+
+  // ── WhatsApp rich-format path ─────────────────────────────────────────
+  // Twilio's WhatsApp interactive messages (Reply Buttons / List Messages)
+  // require a pre-approved Content Template SID. If the org has configured a
+  // Content SID for this intent kind in integration_secrets, use it. Otherwise
+  // we still upgrade the presentation by attaching media (for media intents)
+  // or sending a clearly numbered options text (matches the human-voice rules
+  // and is fully WhatsApp-compatible without templates).
+  if (channel === "whatsapp" && waIntent) {
+    if (waIntent.kind === "media") {
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ To: to, From: from, Body: waIntent.caption.slice(0, 1500), MediaUrl: waIntent.mediaUrl }),
+      });
+      if (r.ok) return { ok: true };
+      // Fall through to plain text on failure.
+    } else {
+      // Look for an org-configured Content Template SID for this intent kind.
+      const sidKey = waIntent.kind === "reply_buttons"
+        ? "twilio_wa_content_sid_reply_buttons"
+        : "twilio_wa_content_sid_list";
+      const { data: contentRow } = await admin
+        .from("integration_secrets").select("encrypted_value").eq("secret_key", sidKey).maybeSingle();
+      const contentSid = contentRow?.encrypted_value;
+      if (contentSid) {
+        // Variables passed positionally; template owner controls layout.
+        const vars: Record<string, string> = { "1": waIntent.body.slice(0, 1024) };
+        if (waIntent.kind === "reply_buttons") {
+          waIntent.buttons.slice(0, 3).forEach((b, i) => { vars[String(i + 2)] = b.label.slice(0, 24); });
+        } else {
+          // First 9 list items as variables 2..10.
+          const flat = waIntent.sections.flatMap((s) => s.items).slice(0, 9);
+          flat.forEach((it, i) => { vars[String(i + 2)] = it.title.slice(0, 24); });
+        }
+        const r = await fetch(url, {
+          method: "POST",
+          headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ To: to, From: from, ContentSid: contentSid, ContentVariables: JSON.stringify(vars) }),
+        });
+        if (r.ok) return { ok: true };
+        // Fall through to structured plain-text fallback.
+      }
+      // No template configured (or template send failed) — send numbered text
+      // representation so the upgrade still beats a plain wall of text.
+      const fallback = whatsAppIntentToText(waIntent);
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ To: to, From: from, Body: fallback.slice(0, 1500) }),
+      });
+      if (r.ok) return { ok: true };
+      const body = await r.text();
+      return { ok: false, error: `twilio ${r.status}: ${body.slice(0, 200)}` };
+    }
+  }
+
+  // ── SMS / WhatsApp plain-text path (unchanged) ────────────────────────
   const resp = await fetch(url, {
     method: "POST",
     headers: {
@@ -303,18 +397,26 @@ serve(async (req) => {
       });
     }
 
-    // Fetch bindings + per-user prefs + profile language in one shot
+    // Fetch bindings + per-user prefs + profile language + roles in one shot
     const userIds = Array.from(recipientUserIds);
-    const [{ data: bindings }, { data: prefs }, { data: profileRows }] = await Promise.all([
+    const [{ data: bindings }, { data: prefs }, { data: profileRows }, { data: roleRows2 }] = await Promise.all([
       admin.from("messaging_chat_bindings").select("user_id, channel, chat_id").in("user_id", userIds),
       admin.from("messaging_notification_prefs").select("user_id, channel, notification_type, enabled")
         .in("user_id", userIds).eq("notification_type", event_type),
       admin.from("profiles").select("user_id, preferred_language").in("user_id", userIds),
+      admin.from("user_roles").select("user_id, role").in("user_id", userIds),
     ]);
     const langByUser = new Map<string, LineLang>();
     (profileRows ?? []).forEach((p: any) => {
       const l = (p.preferred_language ?? "en").slice(0, 2).toLowerCase();
       langByUser.set(p.user_id, l as LineLang);
+    });
+    // Highest-tier role wins for presentation purposes (admin > manager > supervisor > front_desk > maintenance > guest).
+    const ROLE_RANK: Record<string, number> = { super_admin: 6, admin: 5, manager: 4, front_desk_supervisor: 3, front_desk: 2, maintenance: 1, guest: 0 };
+    const roleByUser = new Map<string, Role>();
+    (roleRows2 ?? []).forEach((r: any) => {
+      const cur = roleByUser.get(r.user_id);
+      if (!cur || (ROLE_RANK[r.role] ?? 0) > (ROLE_RANK[cur] ?? 0)) roleByUser.set(r.user_id, r.role);
     });
 
     const text = buildMessage(event_type, metadata);
@@ -328,15 +430,21 @@ serve(async (req) => {
       );
       if (!pref || pref.enabled === false) continue;
 
+      const lang = (langByUser.get(b.user_id) ?? "en") as RichLang;
+      const role = roleByUser.get(b.user_id) ?? "guest";
+
       let result: { ok: boolean; error?: string };
       if (b.channel === "telegram") {
-        result = await sendTelegram(admin, b.chat_id, text);
-      } else if (b.channel === "sms" || b.channel === "whatsapp") {
+        const tgRich = buildTelegramForEvent(event_type, metadata as Record<string, any>, lang, role);
+        result = await sendTelegram(admin, b.chat_id, text, tgRich);
+      } else if (b.channel === "whatsapp") {
+        const waIntent = buildWhatsAppForEvent(event_type, metadata as Record<string, any>, lang, role);
+        result = await sendTwilio(admin, b.channel, b.chat_id, text, waIntent);
+      } else if (b.channel === "sms") {
         result = await sendTwilio(admin, b.channel, b.chat_id, text);
       } else if (b.channel === "line") {
         // Presentation upgrade only — text fallback unchanged.
-        const lang = langByUser.get(b.user_id) ?? "en";
-        const flex = buildFlexForEvent(event_type, metadata as Record<string, any>, lang);
+        const flex = buildFlexForEvent(event_type, metadata as Record<string, any>, lang as LineLang);
         result = await sendLine(admin, b.chat_id, text, flex);
       } else {
         result = { ok: false, error: `unknown channel: ${b.channel}` };
