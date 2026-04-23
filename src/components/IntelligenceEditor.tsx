@@ -313,6 +313,17 @@ export function IntelligenceEditor() {
                       {entry.status}
                     </Badge>
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0">{entry.category}</Badge>
+                    {(() => {
+                      const t = entry.translations || {};
+                      const count = TRANSLATION_LANGS.filter((l) => t[l.code]?.trim()).length;
+                      if (!count) return null;
+                      return (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1">
+                          <Languages className="h-2.5 w-2.5" />
+                          {count}/{TRANSLATION_LANGS.length}
+                        </Badge>
+                      );
+                    })()}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{entry.body}</p>
                   <div className="flex items-center gap-1 mt-1">
