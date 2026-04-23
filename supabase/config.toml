@@ -74,3 +74,12 @@ verify_jwt = false
 
 [functions.daily-briefing]
 verify_jwt = false
+
+[functions.line-webhook]
+verify_jwt = false
+
+[functions.line-register-webhook]
+verify_jwt = false
+
+[functions.line-check-webhook]
+verify_jwt = false
