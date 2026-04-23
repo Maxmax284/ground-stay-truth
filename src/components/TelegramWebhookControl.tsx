@@ -53,6 +53,29 @@ export function TelegramWebhookControl() {
     }
   };
 
+  const handleTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const { data: resp, error } = await supabase.functions.invoke("messaging-system-ping", {
+        body: { channel: "telegram" },
+      });
+      if (error) throw error;
+      if (resp?.error) throw new Error(resp.error);
+      const sent = resp?.sent ?? 0;
+      const failed = resp?.failed ?? 0;
+      const total = resp?.total ?? 0;
+      setTestResult({
+        ok: sent > 0 || failed === 0,
+        message: `${sent} delivered, ${failed} failed (of ${total} linked Telegram chats).`,
+      });
+    } catch (err: any) {
+      setTestResult({ ok: false, message: err.message ?? "Test failed" });
+    } finally {
+      setTesting(false);
+    }
+  };
+
   const copy = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({ title: "Copied" });
