@@ -26,6 +26,7 @@ export interface IntelligenceEntry {
   created_by: string | null;
   approved_by: string | null;
   property_id: string | null;
+  translations: Record<string, string> | null;
   created_at: string;
   updated_at: string;
 }
