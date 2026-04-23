@@ -365,6 +365,15 @@ const GuestPortal = () => {
           </Card>
         )}
 
+        {/* Hero: Personal Guide (Telegram/WhatsApp featured perk) — shown
+            once the guest has a real booking on file. Pre-arrival variant when
+            they're not yet on-site, default portal copy otherwise. */}
+        {(upcomingBookings.length > 0 || activeBookings.length > 0) && (
+          <GuestPersonalGuideCard
+            variant={activeBookings.length === 0 && confirmedBookings.length > 0 ? "pre_arrival" : "portal"}
+          />
+        )}
+
         {/* Passive Layer: Your Stay Summary */}
         <GuestStaySummary focusSection={focusSection} onSectionFocused={() => setFocusSection(null)} />
 
