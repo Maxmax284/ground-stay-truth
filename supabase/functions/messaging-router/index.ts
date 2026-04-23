@@ -301,7 +301,7 @@ function buildSystemPrompt(args: {
   isFirstMessage: boolean;
 }): string {
   const { role, language, channel, displayName, guestPhase, urgency, detectedLang, preferredLangCode, staffEngaged, history, isFirstMessage } = args;
-  const channelLabel = channel === "sms" ? "SMS" : channel === "whatsapp" ? "WhatsApp" : "Telegram";
+  const channelLabel = channel === "sms" ? "SMS" : channel === "whatsapp" ? "WhatsApp" : channel === "line" ? "LINE" : "Telegram";
 
   if (staffEngaged) {
     // Hard step-back: prompt is unused because the serve() handler short-circuits
@@ -1236,7 +1236,7 @@ serve(async (req) => {
 
     const body = await req.json();
     const { channel, chat_id, text, display_name, simulate_user_id } = body as {
-      channel: "telegram" | "whatsapp" | "sms";
+      channel: "telegram" | "whatsapp" | "sms" | "line";
       chat_id: string;
       text: string;
       display_name?: string;

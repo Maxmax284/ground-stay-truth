@@ -100,6 +100,33 @@ async function sendTelegram(admin: any, chatId: string, text: string): Promise<{
   return { ok: true };
 }
 
+async function sendLine(admin: any, chatId: string, text: string): Promise<{ ok: boolean; error?: string }> {
+  const { data: tokenRow } = await admin
+    .from("integration_secrets")
+    .select("encrypted_value")
+    .eq("secret_key", "line_channel_access_token")
+    .maybeSingle();
+  if (!tokenRow?.encrypted_value) return { ok: false, error: "line_channel_access_token not configured" };
+
+  // LINE push message — counts against the channel's monthly free quota.
+  const resp = await fetch("https://api.line.me/v2/bot/message/push", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${tokenRow.encrypted_value}`,
+    },
+    body: JSON.stringify({
+      to: chatId,
+      messages: [{ type: "text", text: text.slice(0, 5000) }],
+    }),
+  });
+  if (!resp.ok) {
+    const body = await resp.text();
+    return { ok: false, error: `line ${resp.status}: ${body.slice(0, 200)}` };
+  }
+  return { ok: true };
+}
+
 async function sendTwilio(admin: any, channel: "sms" | "whatsapp", toNumber: string, text: string): Promise<{ ok: boolean; error?: string }> {
   const [{ data: sidRow }, { data: tokenRow }, { data: smsFromRow }, { data: waFromRow }] = await Promise.all([
     admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "twilio_account_sid").maybeSingle(),
@@ -279,6 +306,8 @@ serve(async (req) => {
         result = await sendTelegram(admin, b.chat_id, text);
       } else if (b.channel === "sms" || b.channel === "whatsapp") {
         result = await sendTwilio(admin, b.channel, b.chat_id, text);
+      } else if (b.channel === "line") {
+        result = await sendLine(admin, b.chat_id, text);
       } else {
         result = { ok: false, error: `unknown channel: ${b.channel}` };
       }

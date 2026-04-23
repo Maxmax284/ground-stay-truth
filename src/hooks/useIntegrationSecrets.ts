@@ -13,6 +13,8 @@ const SECRET_KEYS = [
   "twilio_auth_token",
   "twilio_sms_from",
   "twilio_whatsapp_from",
+  "line_channel_access_token",
+  "line_channel_secret",
   "messaging_bridge_internal_token",
 ] as const;
 
