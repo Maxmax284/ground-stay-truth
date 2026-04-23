@@ -28,6 +28,15 @@ async function sendTelegram(token: string, chatId: string, text: string): Promis
   if (!r.ok) throw new Error(`Telegram ${r.status}: ${await r.text()}`);
 }
 
+async function sendLine(accessToken: string, chatId: string, text: string): Promise<void> {
+  const r = await fetch("https://api.line.me/v2/bot/message/push", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ to: chatId, messages: [{ type: "text", text: text.slice(0, 5000) }] }),
+  });
+  if (!r.ok) throw new Error(`LINE ${r.status}: ${await r.text()}`);
+}
+
 async function sendTwilio(
   sid: string,
   authToken: string,
@@ -105,13 +114,17 @@ serve(async (req) => {
     const { data: twTok } = await admin.rpc("get_integration_secret", { _key: "twilio_auth_token" });
     const { data: twSms } = await admin.rpc("get_integration_secret", { _key: "twilio_sms_from" });
     const { data: twWa } = await admin.rpc("get_integration_secret", { _key: "twilio_whatsapp_from" });
+    const { data: lineSecret } = await admin.rpc("get_integration_secret", { _key: "line_channel_access_token" });
 
     const results: PingResult[] = [];
     const logRows: any[] = [];
 
     for (const b of bindings || []) {
       const channelLabel =
-        b.channel === "telegram" ? "Telegram" : b.channel === "whatsapp" ? "WhatsApp" : "SMS";
+        b.channel === "telegram" ? "Telegram"
+        : b.channel === "whatsapp" ? "WhatsApp"
+        : b.channel === "line" ? "LINE"
+        : "SMS";
       const text = `✅ Ground Stay messaging is live — you're connected. ${channelLabel} is working.`;
       const sentAt = new Date().toISOString();
       try {
@@ -124,6 +137,9 @@ serve(async (req) => {
         } else if (b.channel === "sms") {
           if (!twSid || !twTok || !twSms) throw new Error("Twilio SMS credentials missing");
           await sendTwilio(twSid, twTok, twSms, b.chat_id, text, false);
+        } else if (b.channel === "line") {
+          if (!lineSecret) throw new Error("LINE Channel Access Token not configured");
+          await sendLine(lineSecret, b.chat_id, text);
         } else {
           throw new Error(`Unknown channel: ${b.channel}`);
         }

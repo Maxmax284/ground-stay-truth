@@ -31,6 +31,14 @@ async function sendTwilio(sid: string, tok: string, from: string, to: string, bo
   });
   if (!r.ok) throw new Error(`Twilio ${r.status}: ${await r.text()}`);
 }
+async function sendLine(accessToken: string, chatId: string, text: string) {
+  const r = await fetch("https://api.line.me/v2/bot/message/push", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ to: chatId, messages: [{ type: "text", text: text.slice(0, 5000) }] }),
+  });
+  if (!r.ok) throw new Error(`LINE ${r.status}: ${await r.text()}`);
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -91,12 +99,13 @@ serve(async (req) => {
       .from("messaging_chat_bindings")
       .select("id, user_id, channel, chat_id, display_name");
 
-    const [tg, twSid, twTok, twSms, twWa] = await Promise.all([
+    const [tg, twSid, twTok, twSms, twWa, line] = await Promise.all([
       admin.rpc("get_integration_secret", { _key: "telegram_bot_token" }),
       admin.rpc("get_integration_secret", { _key: "twilio_account_sid" }),
       admin.rpc("get_integration_secret", { _key: "twilio_auth_token" }),
       admin.rpc("get_integration_secret", { _key: "twilio_sms_from" }),
       admin.rpc("get_integration_secret", { _key: "twilio_whatsapp_from" }),
+      admin.rpc("get_integration_secret", { _key: "line_channel_access_token" }),
     ]);
 
     let sent = 0, failed = 0;
@@ -112,6 +121,9 @@ serve(async (req) => {
         } else if (b.channel === "sms") {
           if (!twSid.data || !twTok.data || !twSms.data) throw new Error("Twilio SMS not configured");
           await sendTwilio(twSid.data, twTok.data, twSms.data, b.chat_id, PING_TEXT, false);
+        } else if (b.channel === "line") {
+          if (!line.data) throw new Error("LINE Channel Access Token not configured");
+          await sendLine(line.data, b.chat_id, PING_TEXT);
         } else {
           throw new Error(`Unknown channel: ${b.channel}`);
         }
