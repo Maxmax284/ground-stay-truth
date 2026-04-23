@@ -167,28 +167,42 @@ export function MessagingBridgeSettings() {
           </div>
           <div>
             <CardTitle className="text-base">Link your chat</CardTitle>
-            <CardDescription>Generate a one-time code, then send it to the bot to connect your account</CardDescription>
+            <CardDescription>One tap connects your account — no codes to copy.</CardDescription>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Button onClick={handleGenerateCode} disabled={generatingCode} size="sm" variant="outline">
-            <RefreshCw className={`h-4 w-4 mr-2 ${generatingCode ? "animate-spin" : ""}`} />
-            {linkCode ? "Generate new code" : "Generate code"}
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={() => handleConnect("telegram")}
+            disabled={!botIdentity?.telegram.username || connectBusy !== null || identityLoading}
+            size="sm"
+          >
+            {connectBusy === "telegram"
+              ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              : <Send className="h-4 w-4 mr-2" />}
+            Connect Telegram
           </Button>
-          {linkCode && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted font-mono text-lg tracking-widest">
-              {linkCode}
-              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copy(`/link ${linkCode}`)}>
-                <Copy className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          )}
+          <Button
+            onClick={() => handleConnect("whatsapp")}
+            disabled={!botIdentity?.whatsapp.number || connectBusy !== null || identityLoading}
+            size="sm"
+            variant="outline"
+          >
+            {connectBusy === "whatsapp"
+              ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              : <MessageCircle className="h-4 w-4 mr-2" />}
+            Connect WhatsApp
+          </Button>
         </div>
-        {linkCode && (
+        {botIdentity && !botIdentity.telegram.username && !botIdentity.whatsapp.number && (
           <p className="text-xs text-muted-foreground">
-            Send <code className="px-1.5 py-0.5 rounded bg-muted">/link {linkCode}</code> to your Telegram / WhatsApp / SMS bot. Code expires in 15 minutes.
+            No channels are configured yet. Save a Telegram bot token or Twilio WhatsApp credentials above first.
+          </p>
+        )}
+        {botIdentity?.telegram.error && (
+          <p className="text-xs text-destructive">
+            Telegram: {botIdentity.telegram.error}
           </p>
         )}
         <Separator />
