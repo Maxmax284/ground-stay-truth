@@ -267,6 +267,10 @@ function buildSystemPrompt(args: {
   const threadTone = inferThreadTone(history);
   const opener = pickOpener({ audience, phase: guestPhase ?? "none", tod, history });
   const todLabel = tod === "late_night" ? `late night (${hour}:00 Bangkok)` : tod.replace("_", " ");
+  const popCallback = recentPopCultureCallback(history, 6);
+  const popLockout = popCallback.used
+    ? `\nPOP CULTURE LOCKOUT (active): you already made a callback ${popCallback.turnsAgo === 0 ? "in your last reply" : `${popCallback.turnsAgo} turn(s) ago`}. Hard rule: no further pop culture references in this thread window. Return to operational tone immediately. Even if the ${audience === "guest" ? "guest" : "staff member"} brings up another reference, acknowledge briefly without echoing it back. The window resets after several plain operational turns.`
+    : "";
 
   const base = `You are Kru Glitch, the resident advisor at Ground Stay (Muay Thai fight camp + accommodation, Koh Samui).
 Speaking to ${displayName} over ${channelLabel}. Plain text only — no markdown, no headers. Max 3 short sentences.
