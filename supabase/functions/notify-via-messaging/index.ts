@@ -397,18 +397,26 @@ serve(async (req) => {
       });
     }
 
-    // Fetch bindings + per-user prefs + profile language in one shot
+    // Fetch bindings + per-user prefs + profile language + roles in one shot
     const userIds = Array.from(recipientUserIds);
-    const [{ data: bindings }, { data: prefs }, { data: profileRows }] = await Promise.all([
+    const [{ data: bindings }, { data: prefs }, { data: profileRows }, { data: roleRows2 }] = await Promise.all([
       admin.from("messaging_chat_bindings").select("user_id, channel, chat_id").in("user_id", userIds),
       admin.from("messaging_notification_prefs").select("user_id, channel, notification_type, enabled")
         .in("user_id", userIds).eq("notification_type", event_type),
       admin.from("profiles").select("user_id, preferred_language").in("user_id", userIds),
+      admin.from("user_roles").select("user_id, role").in("user_id", userIds),
     ]);
     const langByUser = new Map<string, LineLang>();
     (profileRows ?? []).forEach((p: any) => {
       const l = (p.preferred_language ?? "en").slice(0, 2).toLowerCase();
       langByUser.set(p.user_id, l as LineLang);
+    });
+    // Highest-tier role wins for presentation purposes (admin > manager > supervisor > front_desk > maintenance > guest).
+    const ROLE_RANK: Record<string, number> = { super_admin: 6, admin: 5, manager: 4, front_desk_supervisor: 3, front_desk: 2, maintenance: 1, guest: 0 };
+    const roleByUser = new Map<string, Role>();
+    (roleRows2 ?? []).forEach((r: any) => {
+      const cur = roleByUser.get(r.user_id);
+      if (!cur || (ROLE_RANK[r.role] ?? 0) > (ROLE_RANK[cur] ?? 0)) roleByUser.set(r.user_id, r.role);
     });
 
     const text = buildMessage(event_type, metadata);
@@ -422,15 +430,21 @@ serve(async (req) => {
       );
       if (!pref || pref.enabled === false) continue;
 
+      const lang = (langByUser.get(b.user_id) ?? "en") as RichLang;
+      const role = roleByUser.get(b.user_id) ?? "guest";
+
       let result: { ok: boolean; error?: string };
       if (b.channel === "telegram") {
-        result = await sendTelegram(admin, b.chat_id, text);
-      } else if (b.channel === "sms" || b.channel === "whatsapp") {
+        const tgRich = buildTelegramForEvent(event_type, metadata as Record<string, any>, lang, role);
+        result = await sendTelegram(admin, b.chat_id, text, tgRich);
+      } else if (b.channel === "whatsapp") {
+        const waIntent = buildWhatsAppForEvent(event_type, metadata as Record<string, any>, lang, role);
+        result = await sendTwilio(admin, b.channel, b.chat_id, text, waIntent);
+      } else if (b.channel === "sms") {
         result = await sendTwilio(admin, b.channel, b.chat_id, text);
       } else if (b.channel === "line") {
         // Presentation upgrade only — text fallback unchanged.
-        const lang = langByUser.get(b.user_id) ?? "en";
-        const flex = buildFlexForEvent(event_type, metadata as Record<string, any>, lang);
+        const flex = buildFlexForEvent(event_type, metadata as Record<string, any>, lang as LineLang);
         result = await sendLine(admin, b.chat_id, text, flex);
       } else {
         result = { ok: false, error: `unknown channel: ${b.channel}` };
