@@ -302,6 +302,212 @@ Recent staff intel:
 ${intelLines || "(none active)"}`;
 }
 
+// ── LIVE OPERATIONAL CONTEXT (staff/admin only) ──────────────────────────
+// Pulls real-time DB data scoped strictly by role and injects it into the
+// system prompt so Kru Glitch can answer operational questions with truth,
+// not guesses. Guests get nothing here — they go through buildContext only.
+//
+// Failure-tolerant: any individual query that errors or returns empty is
+// silently skipped. Never throws.
+function bangkokToday(): { today: string; tomorrow: string } {
+  // Asia/Bangkok = UTC+7, no DST
+  const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const today = now.toISOString().slice(0, 10);
+  const tmw = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  return { today, tomorrow: tmw };
+}
+
+async function buildStaffContext(
+  admin: any,
+  userId: string,
+  role: string,
+): Promise<string> {
+  if (!isStaffRole(role)) return "";
+  const { today, tomorrow } = bangkokToday();
+  const sections: string[] = [];
+
+  const fmtGuest = (b: any) => {
+    const name = b.profiles?.full_name || "Guest";
+    const unit = b.units?.name || "Unit?";
+    return { name, unit };
+  };
+
+  // ── FRONT DESK + above: today's arrivals ──
+  try {
+    const { data: arrivals } = await admin
+      .from("bookings")
+      .select("check_in, state, num_guests, units(name), profiles:guest_id(full_name)")
+      .eq("check_in", today)
+      .in("state", ["confirmed", "pending_deposit", "checked_in"])
+      .order("check_in");
+    if (arrivals?.length) {
+      const lines = arrivals.map((b: any) => {
+        const { name, unit } = fmtGuest(b);
+        return `- ${name} → ${unit} (${b.state}, ${b.num_guests}p)`;
+      });
+      sections.push(`Today's arrivals (${arrivals.length}):\n${lines.join("\n")}`);
+    } else {
+      sections.push("Today's arrivals: none.");
+    }
+  } catch (_) { /* skip */ }
+
+  // ── Today's departures ──
+  try {
+    const { data: deps } = await admin
+      .from("bookings")
+      .select("check_out, state, units(name), profiles:guest_id(full_name)")
+      .eq("check_out", today)
+      .in("state", ["checked_in", "confirmed"])
+      .order("check_out");
+    if (deps?.length) {
+      const lines = deps.map((b: any) => {
+        const { name, unit } = fmtGuest(b);
+        return `- ${name} ← ${unit} (${b.state})`;
+      });
+      sections.push(`Today's departures (${deps.length}):\n${lines.join("\n")}`);
+    } else {
+      sections.push("Today's departures: none.");
+    }
+  } catch (_) { /* skip */ }
+
+  // ── Open guest escalations on currently checked-in bookings ──
+  try {
+    const { data: esc } = await admin
+      .from("guest_escalations")
+      .select("summary, channel, created_at")
+      .eq("resolved", false)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    if (esc?.length) {
+      const lines = esc.map((e: any) =>
+        `- [${e.channel}] ${String(e.summary).slice(0, 120)}`
+      );
+      sections.push(`Open guest escalations (${esc.length}):\n${lines.join("\n")}`);
+    }
+  } catch (_) { /* skip */ }
+
+  // ── Front desk: own assigned maintenance tasks ──
+  if (role === "front_desk" || role === "front_desk_supervisor" || role === "maintenance") {
+    try {
+      const { data: tasks } = await admin
+        .from("housekeeping_tasks")
+        .select("status, due_by, units(name)")
+        .eq("assigned_to", userId)
+        .in("status", ["pending", "in_progress"])
+        .order("due_by", { ascending: true })
+        .limit(8);
+      if (tasks?.length) {
+        const lines = tasks.map((t: any) =>
+          `- ${t.units?.name ?? "Unit"} (${t.status}${t.due_by ? `, due ${String(t.due_by).slice(0, 16)}` : ""})`
+        );
+        sections.push(`Your open tasks (${tasks.length}):\n${lines.join("\n")}`);
+      }
+    } catch (_) { /* skip */ }
+  }
+
+  // ── MANAGER + above ──
+  if (role === "manager" || role === "admin") {
+    // Occupancy snapshot
+    try {
+      const [unitsRes, occupiedRes, blocksRes] = await Promise.all([
+        admin.from("units").select("id", { count: "exact", head: true }).eq("is_active", true),
+        admin.from("bookings").select("unit_id", { count: "exact", head: true })
+          .eq("state", "checked_in").lte("check_in", today).gt("check_out", today),
+        admin.from("maintenance_blocks").select("unit_id", { count: "exact", head: true })
+          .lte("start_date", today).gte("end_date", today),
+      ]);
+      const total = unitsRes.count ?? 0;
+      const occ = occupiedRes.count ?? 0;
+      const blocked = blocksRes.count ?? 0;
+      const avail = Math.max(0, total - occ - blocked);
+      sections.push(`Occupancy: ${occ}/${total} occupied, ${avail} available, ${blocked} maintenance.`);
+    } catch (_) { /* skip */ }
+
+    // Tomorrow's arrivals + departures
+    try {
+      const [arrTmw, depTmw] = await Promise.all([
+        admin.from("bookings")
+          .select("units(name), profiles:guest_id(full_name)")
+          .eq("check_in", tomorrow)
+          .in("state", ["confirmed", "pending_deposit"]),
+        admin.from("bookings")
+          .select("units(name), profiles:guest_id(full_name)")
+          .eq("check_out", tomorrow)
+          .in("state", ["checked_in", "confirmed"]),
+      ]);
+      const aLines = (arrTmw.data ?? []).map((b: any) => {
+        const { name, unit } = fmtGuest(b);
+        return `- ${name} → ${unit}`;
+      });
+      const dLines = (depTmw.data ?? []).map((b: any) => {
+        const { name, unit } = fmtGuest(b);
+        return `- ${name} ← ${unit}`;
+      });
+      const parts = [];
+      if (aLines.length) parts.push(`Tomorrow arrivals (${aLines.length}):\n${aLines.join("\n")}`);
+      if (dLines.length) parts.push(`Tomorrow departures (${dLines.length}):\n${dLines.join("\n")}`);
+      if (parts.length) sections.push(parts.join("\n"));
+    } catch (_) { /* skip */ }
+
+    // Open maintenance requests
+    try {
+      const { data: maint } = await admin
+        .from("maintenance_requests")
+        .select("priority, description, units(name)")
+        .in("status", ["open", "in_progress"])
+        .order("created_at", { ascending: false })
+        .limit(8);
+      if (maint?.length) {
+        const lines = maint.map((m: any) =>
+          `- [${m.priority}] ${m.units?.name ?? "Unit?"}: ${String(m.description).slice(0, 100)}`
+        );
+        sections.push(`Open maintenance (${maint.length}):\n${lines.join("\n")}`);
+      } else {
+        sections.push("Open maintenance: none.");
+      }
+    } catch (_) { /* skip */ }
+
+    // Pending approval queue
+    try {
+      const { data: pend } = await admin
+        .from("bookings")
+        .select("check_in, units(name), profiles:guest_id(full_name)")
+        .eq("state", "pending_approval")
+        .order("check_in")
+        .limit(8);
+      if (pend?.length) {
+        const lines = pend.map((b: any) => {
+          const { name, unit } = fmtGuest(b);
+          return `- ${name} → ${unit} (arrives ${b.check_in})`;
+        });
+        sections.push(`Pending approval (${pend.length}):\n${lines.join("\n")}`);
+      }
+    } catch (_) { /* skip */ }
+  }
+
+  // ── ADMIN only ──
+  if (role === "admin") {
+    // Flagged / pending payments
+    try {
+      const { data: pays } = await admin
+        .from("payments")
+        .select("amount, status, payment_type, booking_id, created_at")
+        .in("status", ["pending", "failed"])
+        .order("created_at", { ascending: false })
+        .limit(8);
+      if (pays?.length) {
+        const lines = pays.map((p: any) =>
+          `- ${p.payment_type} ${p.amount} (${p.status})`
+        );
+        sections.push(`Flagged payments (${pays.length}):\n${lines.join("\n")}`);
+      }
+    } catch (_) { /* skip */ }
+  }
+
+  if (!sections.length) return "";
+  return `LIVE OPERATIONAL CONTEXT (as of now, Asia/Bangkok ${today}):\n${sections.join("\n\n")}`;
+}
+
 // ── Intelligence Layer lookup (Playbook + Heads Up) ──────────────────────
 // Pulls active entries the user is allowed to see and ranks by lexical overlap
 // with the inbound message. Returned content becomes the source of truth in
