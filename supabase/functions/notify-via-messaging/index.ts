@@ -303,13 +303,19 @@ serve(async (req) => {
       });
     }
 
-    // Fetch bindings + per-user prefs in one shot
+    // Fetch bindings + per-user prefs + profile language in one shot
     const userIds = Array.from(recipientUserIds);
-    const [{ data: bindings }, { data: prefs }] = await Promise.all([
+    const [{ data: bindings }, { data: prefs }, { data: profileRows }] = await Promise.all([
       admin.from("messaging_chat_bindings").select("user_id, channel, chat_id").in("user_id", userIds),
       admin.from("messaging_notification_prefs").select("user_id, channel, notification_type, enabled")
         .in("user_id", userIds).eq("notification_type", event_type),
+      admin.from("profiles").select("user_id, preferred_language").in("user_id", userIds),
     ]);
+    const langByUser = new Map<string, LineLang>();
+    (profileRows ?? []).forEach((p: any) => {
+      const l = (p.preferred_language ?? "en").slice(0, 2).toLowerCase();
+      langByUser.set(p.user_id, l as LineLang);
+    });
 
     const text = buildMessage(event_type, metadata);
     const dispatched: any[] = [];
@@ -328,7 +334,10 @@ serve(async (req) => {
       } else if (b.channel === "sms" || b.channel === "whatsapp") {
         result = await sendTwilio(admin, b.channel, b.chat_id, text);
       } else if (b.channel === "line") {
-        result = await sendLine(admin, b.chat_id, text);
+        // Presentation upgrade only — text fallback unchanged.
+        const lang = langByUser.get(b.user_id) ?? "en";
+        const flex = buildFlexForEvent(event_type, metadata as Record<string, any>, lang);
+        result = await sendLine(admin, b.chat_id, text, flex);
       } else {
         result = { ok: false, error: `unknown channel: ${b.channel}` };
       }
