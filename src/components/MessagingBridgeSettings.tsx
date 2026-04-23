@@ -309,12 +309,10 @@ export function MessagingBridgeSettings() {
             {renderSecretField("twilio_auth_token", "Auth Token", "your auth token")}
             {renderSecretField("twilio_sms_from", "SMS From Number", "+15551234567")}
             {renderSecretField("twilio_whatsapp_from", "WhatsApp From Number", "+14155238886 (sandbox)")}
-            <BotConfigField
-              label="Public WhatsApp number (for guest deep-link)"
-              placeholder="+14155238886"
-              field="whatsapp_number"
-              helper="E.164 format. Used to build https://wa.me/<number>?text=/link <code> for guest onboarding."
-            />
+            <p className="text-[11px] text-muted-foreground">
+              Public WhatsApp number for guest deep-links is auto-derived from the &ldquo;WhatsApp From&rdquo; secret above.
+            </p>
+
             <Separator />
             <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-2">
               <p className="font-medium text-foreground">Webhook URLs (paste into Twilio)</p>
