@@ -41,6 +41,7 @@ export function MessagingBridgeSettings() {
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [connectBusy, setConnectBusy] = useState<"telegram" | "whatsapp" | null>(null);
+  const [lineOaIdDraft, setLineOaIdDraft] = useState<string | null>(null);
   const { data: botIdentity, isLoading: identityLoading, isFetching: identityFetching, refetch: refetchIdentity } = useBotIdentity();
 
   const getSetting = (key: string) => settings?.find((s) => s.key === key);
