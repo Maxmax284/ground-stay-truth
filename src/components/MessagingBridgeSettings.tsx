@@ -16,6 +16,9 @@ import { NotificationPreferencesPanel } from "@/components/NotificationPreferenc
 import { MessagingDeliveryDashboard } from "@/components/MessagingDeliveryDashboard";
 import { LinkedChatsList } from "@/components/LinkedChatsList";
 import { MessagingAdminTools } from "@/components/MessagingAdminTools";
+import { TelegramWebhookControl } from "@/components/TelegramWebhookControl";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronRight } from "lucide-react";
 
 const TELEGRAM_KEYS = ["telegram_bot_token"] as const;
 const TWILIO_KEYS = ["twilio_account_sid", "twilio_auth_token", "twilio_sms_from", "twilio_whatsapp_from"] as const;
@@ -238,6 +241,28 @@ export function MessagingBridgeSettings() {
         </CardHeader>
         {telegramEnabled && (
           <CardContent className="space-y-4">
+            {/* Step 1: BotFather setup guide */}
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <button className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground group">
+                  <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-90" />
+                  How to create your Telegram bot
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="mt-2 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-2">
+                  <ol className="list-decimal pl-4 space-y-1">
+                    <li>Open Telegram and search for <strong>@BotFather</strong>.</li>
+                    <li>Send <code>/newbot</code> and follow the prompts to name your bot.</li>
+                    <li>BotFather will give you a <strong>Bot Token</strong> — copy it.</li>
+                    <li>Paste the token below and click Save.</li>
+                    <li>Then click <strong>Activate Webhook</strong> to go live.</li>
+                  </ol>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Step 2: Token input */}
             {renderSecretField("telegram_bot_token", "Bot Token", "1234567890:ABCdef…")}
             <BotConfigField
               label="Public bot username (for guest deep-link)"
@@ -245,18 +270,11 @@ export function MessagingBridgeSettings() {
               field="telegram_bot_username"
               helper="No @ — used to build https://t.me/<username>?start=link_<code> for the guest onboarding card."
             />
+
             <Separator />
-            <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-2">
-              <p className="font-medium text-foreground">Setup (5 steps)</p>
-              <ol className="list-decimal pl-4 space-y-1">
-                <li>Open Telegram, message <strong>@BotFather</strong>, send <code>/newbot</code>, follow the prompts.</li>
-                <li>Copy the bot token BotFather gives you and paste it above.</li>
-                <li>Toggle this section on (you just did that).</li>
-                <li>Open your new bot in Telegram and send <code>/start</code>.</li>
-                <li>Generate a link code above and send it as <code>/link 123456</code>.</li>
-              </ol>
-              <p className="pt-2"><strong>Note:</strong> Inbound messages are picked up roughly every minute by a background poller. No public webhook needed.</p>
-            </div>
+
+            {/* Step 3: Webhook activation */}
+            <TelegramWebhookControl />
           </CardContent>
         )}
       </Card>
