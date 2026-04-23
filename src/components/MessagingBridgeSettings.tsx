@@ -35,8 +35,8 @@ export function MessagingBridgeSettings() {
 
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
-  const [linkCode, setLinkCode] = useState<string | null>(null);
-  const [generatingCode, setGeneratingCode] = useState(false);
+  const [connectBusy, setConnectBusy] = useState<"telegram" | "whatsapp" | null>(null);
+  const { data: botIdentity, isLoading: identityLoading, refetch: refetchIdentity } = useBotIdentity();
 
   const getSetting = (key: string) => settings?.find((s) => s.key === key);
   const getValue = (key: string) => {
@@ -83,31 +83,20 @@ export function MessagingBridgeSettings() {
     }
   };
 
-  const handleGenerateCode = async () => {
-    setGeneratingCode(true);
+  const handleConnect = async (channel: "telegram" | "whatsapp") => {
+    if (!botIdentity) return;
+    setConnectBusy(channel);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not signed in");
-      const resp = await fetch(`${webhookBase}/messaging-link`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({}),
+      const url = await buildConnectUrl(channel, botIdentity);
+      window.open(url, "_blank", "noopener,noreferrer");
+      toast({
+        title: "Opening " + (channel === "telegram" ? "Telegram" : "WhatsApp"),
+        description: "Tap Start in the chat to finish connecting.",
       });
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to generate code");
-      }
-      const data = await resp.json();
-      setLinkCode(data.code);
-      toast({ title: "Code ready", description: `Send "/link ${data.code}" to your bot. Expires in 15 min.` });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Couldn't open chat", description: err.message, variant: "destructive" });
     } finally {
-      setGeneratingCode(false);
+      setConnectBusy(null);
     }
   };
 
