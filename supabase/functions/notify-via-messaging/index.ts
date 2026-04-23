@@ -178,7 +178,13 @@ async function sendLine(
   return { ok: true };
 }
 
-async function sendTwilio(admin: any, channel: "sms" | "whatsapp", toNumber: string, text: string): Promise<{ ok: boolean; error?: string }> {
+async function sendTwilio(
+  admin: any,
+  channel: "sms" | "whatsapp",
+  toNumber: string,
+  text: string,
+  waIntent?: import("../_shared/richMessages.ts").WhatsAppIntent | null,
+): Promise<{ ok: boolean; error?: string }> {
   const [{ data: sidRow }, { data: tokenRow }, { data: smsFromRow }, { data: waFromRow }] = await Promise.all([
     admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "twilio_account_sid").maybeSingle(),
     admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "twilio_auth_token").maybeSingle(),
@@ -195,6 +201,64 @@ async function sendTwilio(admin: any, channel: "sms" | "whatsapp", toNumber: str
 
   const auth = btoa(`${sid}:${tokenRow.encrypted_value}`);
   const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
+
+  // ── WhatsApp rich-format path ─────────────────────────────────────────
+  // Twilio's WhatsApp interactive messages (Reply Buttons / List Messages)
+  // require a pre-approved Content Template SID. If the org has configured a
+  // Content SID for this intent kind in integration_secrets, use it. Otherwise
+  // we still upgrade the presentation by attaching media (for media intents)
+  // or sending a clearly numbered options text (matches the human-voice rules
+  // and is fully WhatsApp-compatible without templates).
+  if (channel === "whatsapp" && waIntent) {
+    if (waIntent.kind === "media") {
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ To: to, From: from, Body: waIntent.caption.slice(0, 1500), MediaUrl: waIntent.mediaUrl }),
+      });
+      if (r.ok) return { ok: true };
+      // Fall through to plain text on failure.
+    } else {
+      // Look for an org-configured Content Template SID for this intent kind.
+      const sidKey = waIntent.kind === "reply_buttons"
+        ? "twilio_wa_content_sid_reply_buttons"
+        : "twilio_wa_content_sid_list";
+      const { data: contentRow } = await admin
+        .from("integration_secrets").select("encrypted_value").eq("secret_key", sidKey).maybeSingle();
+      const contentSid = contentRow?.encrypted_value;
+      if (contentSid) {
+        // Variables passed positionally; template owner controls layout.
+        const vars: Record<string, string> = { "1": waIntent.body.slice(0, 1024) };
+        if (waIntent.kind === "reply_buttons") {
+          waIntent.buttons.slice(0, 3).forEach((b, i) => { vars[String(i + 2)] = b.label.slice(0, 24); });
+        } else {
+          // First 9 list items as variables 2..10.
+          const flat = waIntent.sections.flatMap((s) => s.items).slice(0, 9);
+          flat.forEach((it, i) => { vars[String(i + 2)] = it.title.slice(0, 24); });
+        }
+        const r = await fetch(url, {
+          method: "POST",
+          headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ To: to, From: from, ContentSid: contentSid, ContentVariables: JSON.stringify(vars) }),
+        });
+        if (r.ok) return { ok: true };
+        // Fall through to structured plain-text fallback.
+      }
+      // No template configured (or template send failed) — send numbered text
+      // representation so the upgrade still beats a plain wall of text.
+      const fallback = whatsAppIntentToText(waIntent);
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ To: to, From: from, Body: fallback.slice(0, 1500) }),
+      });
+      if (r.ok) return { ok: true };
+      const body = await r.text();
+      return { ok: false, error: `twilio ${r.status}: ${body.slice(0, 200)}` };
+    }
+  }
+
+  // ── SMS / WhatsApp plain-text path (unchanged) ────────────────────────
   const resp = await fetch(url, {
     method: "POST",
     headers: {
