@@ -101,13 +101,24 @@ async function sendTelegram(admin: any, chatId: string, text: string): Promise<{
   return { ok: true };
 }
 
-async function sendLine(admin: any, chatId: string, text: string): Promise<{ ok: boolean; error?: string }> {
+async function sendLine(
+  admin: any,
+  chatId: string,
+  text: string,
+  flexMessage: any | null,
+): Promise<{ ok: boolean; error?: string }> {
   const { data: tokenRow } = await admin
     .from("integration_secrets")
     .select("encrypted_value")
     .eq("secret_key", "line_channel_access_token")
     .maybeSingle();
   if (!tokenRow?.encrypted_value) return { ok: false, error: "line_channel_access_token not configured" };
+
+  // Prefer rich Flex when available; LINE auto-falls-back to altText on
+  // unsupported clients / push notification previews.
+  const messages = flexMessage
+    ? [flexMessage]
+    : [{ type: "text", text: text.slice(0, 5000) }];
 
   // LINE push message — counts against the channel's monthly free quota.
   const resp = await fetch("https://api.line.me/v2/bot/message/push", {
@@ -116,13 +127,22 @@ async function sendLine(admin: any, chatId: string, text: string): Promise<{ ok:
       "Content-Type": "application/json",
       Authorization: `Bearer ${tokenRow.encrypted_value}`,
     },
-    body: JSON.stringify({
-      to: chatId,
-      messages: [{ type: "text", text: text.slice(0, 5000) }],
-    }),
+    body: JSON.stringify({ to: chatId, messages }),
   });
   if (!resp.ok) {
     const body = await resp.text();
+    // If Flex was rejected (rare schema issue), fall back to plain text once.
+    if (flexMessage) {
+      const retry = await fetch("https://api.line.me/v2/bot/message/push", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${tokenRow.encrypted_value}`,
+        },
+        body: JSON.stringify({ to: chatId, messages: [{ type: "text", text: text.slice(0, 5000) }] }),
+      });
+      if (retry.ok) return { ok: true };
+    }
     return { ok: false, error: `line ${resp.status}: ${body.slice(0, 200)}` };
   }
   return { ok: true };
