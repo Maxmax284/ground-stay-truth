@@ -23,7 +23,7 @@ function verifyLineSignature(channelSecret: string, rawBody: string, signature: 
   return expected === signature;
 }
 
-async function lineReply(accessToken: string, replyToken: string, text: string) {
+async function lineReply(accessToken: string, replyToken: string, messages: any[]) {
   await fetch("https://api.line.me/v2/bot/message/reply", {
     method: "POST",
     headers: {
@@ -32,9 +32,14 @@ async function lineReply(accessToken: string, replyToken: string, text: string) 
     },
     body: JSON.stringify({
       replyToken,
-      messages: [{ type: "text", text: text.slice(0, 5000) }],
+      // LINE accepts up to 5 message objects per reply call.
+      messages: messages.slice(0, 5),
     }),
   });
+}
+
+function textMessage(text: string) {
+  return { type: "text", text: text.slice(0, 5000) };
 }
 
 async function fetchLineDisplayName(accessToken: string, userId: string): Promise<string | null> {
