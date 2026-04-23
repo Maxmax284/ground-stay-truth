@@ -498,15 +498,40 @@ async function tryCommand(text: string, role: string, admin: any, userId: string
   return null;
 }
 
-async function getGuestPhase(admin: any, userId: string): Promise<"active" | "upcoming" | "none"> {
+async function getGuestPhase(
+  admin: any,
+  userId: string,
+): Promise<"active" | "upcoming" | "departure" | "post_stay" | "none"> {
   const today = new Date().toISOString().slice(0, 10);
+
+  // Active stay → also check whether today is checkout day → "departure"
   const { data: active } = await admin
-    .from("bookings").select("id").eq("guest_id", userId).eq("state", "checked_in").limit(1);
-  if (active?.length) return "active";
+    .from("bookings")
+    .select("id, check_out")
+    .eq("guest_id", userId)
+    .eq("state", "checked_in")
+    .limit(1);
+  if (active?.length) {
+    if (active[0].check_out === today) return "departure";
+    return "active";
+  }
+
+  // Upcoming confirmed booking
   const { data: upcoming } = await admin
     .from("bookings").select("id").eq("guest_id", userId)
     .in("state", ["confirmed", "pending_deposit"]).gte("check_in", today).limit(1);
   if (upcoming?.length) return "upcoming";
+
+  // Just checked out today (post-stay window — same calendar day only)
+  const { data: justOut } = await admin
+    .from("bookings")
+    .select("id")
+    .eq("guest_id", userId)
+    .eq("state", "completed")
+    .eq("check_out", today)
+    .limit(1);
+  if (justOut?.length) return "post_stay";
+
   return "none";
 }
 
