@@ -33,11 +33,12 @@ export function MessagingBridgeSettings() {
   const deleteSecret = useDeleteSecret();
   const updateSetting = useUpdatePolicySetting();
   const { toast } = useToast();
+  const qc = useQueryClient();
 
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [connectBusy, setConnectBusy] = useState<"telegram" | "whatsapp" | null>(null);
-  const { data: botIdentity, isLoading: identityLoading, refetch: refetchIdentity } = useBotIdentity();
+  const { data: botIdentity, isLoading: identityLoading, isFetching: identityFetching, refetch: refetchIdentity } = useBotIdentity();
 
   const getSetting = (key: string) => settings?.find((s) => s.key === key);
   const getValue = (key: string) => {
@@ -54,13 +55,18 @@ export function MessagingBridgeSettings() {
 
   const handleToggle = async (key: string, checked: boolean) => {
     const setting = getSetting(key);
-    if (setting) {
-      await updateSetting.mutateAsync({ id: setting.id, value: String(checked) });
-    } else {
-      // policy_settings row doesn't exist yet — create via direct insert
-      await supabase.from("policy_settings").insert({ key, value: String(checked) });
+    try {
+      if (setting) {
+        await updateSetting.mutateAsync({ id: setting.id, value: String(checked) });
+      } else {
+        const { error } = await supabase.from("policy_settings").insert({ key, value: String(checked) });
+        if (error) throw error;
+        await qc.invalidateQueries({ queryKey: ["policy_settings"] });
+      }
+      toast({ title: "Saved", description: `${key} ${checked ? "enabled" : "disabled"}.` });
+    } catch (err: any) {
+      toast({ title: "Couldn't save toggle", description: err.message, variant: "destructive" });
     }
-    toast({ title: "Saved", description: `${key} updated.` });
   };
 
   const handleSaveSecret = async (key: string) => {
