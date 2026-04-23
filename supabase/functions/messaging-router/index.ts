@@ -125,6 +125,101 @@ function isAffirmative(text: string): boolean {
   return YES_PATTERNS.some((r) => r.test(t));
 }
 
+// ── PERSONA: time, tone, opener rotation ──────────────────────────────────
+type TimeOfDay = "morning" | "afternoon" | "evening" | "late_night";
+type ThreadTone = "formal" | "casual" | "stressed" | "playful" | "neutral";
+
+function bangkokTimeOfDay(): { tod: TimeOfDay; hour: number } {
+  // Asia/Bangkok = UTC+7, no DST
+  const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const hour = now.getUTCHours();
+  let tod: TimeOfDay;
+  if (hour >= 23 || hour < 6) tod = "late_night";
+  else if (hour < 12) tod = "morning";
+  else if (hour < 17) tod = "afternoon";
+  else tod = "evening";
+  return { tod, hour };
+}
+
+// Read the last 3 guest turns to infer thread tone. Sticky across the thread.
+function inferThreadTone(history: { role: "user" | "assistant"; content: string }[]): ThreadTone {
+  const recentUser = history.filter((h) => h.role === "user").slice(-3).map((h) => h.content);
+  if (!recentUser.length) return "neutral";
+  const blob = recentUser.join(" \n ").toLowerCase();
+  if (/[!]{2,}|\b(help|urgent|asap|stuck|lost|stranded|scared|worried|panic|please please)\b|\?{2,}/.test(blob)) return "stressed";
+  if (/(haha|lol|lmao|😂|🤣|😅|🙃|😎|jk|kidding|cheers mate|legend)/.test(blob)) return "playful";
+  if (/\b(dear|kindly|would you|could you please|sir|madam|good (morning|afternoon|evening))\b/.test(blob) && !/\b(hey|yo|sup|wassup)\b/.test(blob)) return "formal";
+  if (/\b(hey|yo|hiya|sup|cool|thanks|thx|ok cool|nice one)\b/.test(blob)) return "casual";
+  return "neutral";
+}
+
+// Opener bank — keyed by audience + phase + time-of-day. 15+ entries.
+// Selection avoids repeats inside a 5-message window by checking recent
+// assistant turns in history.
+const OPENERS = {
+  guest: {
+    upcoming: {
+      morning: ["Morning.", "Up early — good.", "Morning, before things kick off:"],
+      afternoon: ["Quick one:", "Right —", "Got you."],
+      evening: ["Evening.", "Before you wind down:", "Ok —"],
+      late_night: ["Still up?", "Late check-in mode:", "Quick — "],
+    },
+    active: {
+      morning: ["Morning.", "Day's on.", "Up early — "],
+      afternoon: ["Right.", "Ok —", "Got you."],
+      evening: ["Evening.", "Winding down side:", "Ok —"],
+      late_night: ["Late one — ", "Still up?", "Quick:"],
+    },
+    departure: {
+      morning: ["Morning — last day.", "Right, departure mode:", "Ok — heading out:"],
+      afternoon: ["Last stretch:", "Right —", "Ok —"],
+      evening: ["Last evening — ", "Before you head out:", "Ok —"],
+      late_night: ["Late one before the road:", "Quick:", "Right —"],
+    },
+    post_stay: {
+      morning: ["Safe travels.", "Off you go —", "Door's open whenever."],
+      afternoon: ["Safe travels.", "Door's open whenever.", "Take it easy."],
+      evening: ["Safe travels.", "Door's open whenever.", "Take it easy."],
+      late_night: ["Safe travels.", "Door's open whenever.", "Take it easy."],
+    },
+    none: {
+      morning: ["Morning.", "Hey.", "Right —"],
+      afternoon: ["Hey.", "Right —", "Ok."],
+      evening: ["Evening.", "Hey.", "Ok."],
+      late_night: ["Late one — ", "Hey.", "Quick:"],
+    },
+  },
+  staff: {
+    morning: ["Morning.", "Heads up:", "Quick:"],
+    afternoon: ["Right.", "Heads up:", "Quick:"],
+    evening: ["Evening.", "EOD:", "Quick:"],
+    late_night: ["Late one:", "Quick:", "Heads up:"],
+  },
+} as const;
+
+function pickOpener(args: {
+  audience: "guest" | "staff";
+  phase: string;
+  tod: TimeOfDay;
+  history: { role: "user" | "assistant"; content: string }[];
+}): string {
+  const { audience, phase, tod, history } = args;
+  let bank: readonly string[];
+  if (audience === "staff") {
+    bank = OPENERS.staff[tod];
+  } else {
+    const phaseMap = (OPENERS.guest as any)[phase] ?? OPENERS.guest.none;
+    bank = phaseMap[tod] ?? phaseMap.afternoon;
+  }
+  // Avoid any opener used in the last 5 assistant turns.
+  const recentReplies = history.filter((h) => h.role === "assistant").slice(-5).map((h) => h.content.trim().toLowerCase());
+  const fresh = bank.filter((o) => !recentReplies.some((r) => r.startsWith(o.toLowerCase())));
+  const pool = fresh.length ? fresh : bank;
+  // Stable variety: rotate using count of prior assistant turns.
+  const idx = (history.filter((h) => h.role === "assistant").length) % pool.length;
+  return pool[idx];
+}
+
 // ── Persona prompts (role-differentiated, urgency-aware) ──────────────────
 function buildSystemPrompt(args: {
   role: string;
@@ -136,8 +231,10 @@ function buildSystemPrompt(args: {
   detectedLang: string;
   preferredLangCode: string;
   staffEngaged: boolean;
+  history: { role: "user" | "assistant"; content: string }[];
+  isFirstMessage: boolean;
 }): string {
-  const { role, language, channel, displayName, guestPhase, urgency, detectedLang, preferredLangCode, staffEngaged } = args;
+  const { role, language, channel, displayName, guestPhase, urgency, detectedLang, preferredLangCode, staffEngaged, history, isFirstMessage } = args;
   const channelLabel = channel === "sms" ? "SMS" : channel === "whatsapp" ? "WhatsApp" : "Telegram";
 
   if (staffEngaged) {
@@ -146,8 +243,44 @@ function buildSystemPrompt(args: {
     return `STAFF_ENGAGED_SILENT_MODE`;
   }
 
+  const { tod, hour } = bangkokTimeOfDay();
+  const audience: "guest" | "staff" = isStaffRole(role) ? "staff" : "guest";
+  const threadTone = inferThreadTone(history);
+  const opener = pickOpener({ audience, phase: guestPhase ?? "none", tod, history });
+  const todLabel = tod === "late_night" ? `late night (${hour}:00 Bangkok)` : tod.replace("_", " ");
+
   const base = `You are Kru Glitch, the resident advisor at Ground Stay (Muay Thai fight camp + accommodation, Koh Samui).
 Speaking to ${displayName} over ${channelLabel}. Plain text only — no markdown, no headers. Max 3 short sentences.
+
+THE KRU VOICE (always on, never break):
+Calm authority. Seen everything. Not impressed by drama. Guides without hovering. More sensei than concierge.
+Local who knows the island cold. Warm but not soft. Dry but not distant. Never performs enthusiasm.
+
+OPENER (this turn): start the reply with "${opener}" — or a close natural variant. ${isFirstMessage ? "First message in this thread — set the tone." : "Continuing thread — don't reset, pick up where you left off."} Never reuse an opener you've used in the last 5 replies.
+
+THREAD TONE (sticky): the guest's recent tone reads as "${threadTone}". Match and hold it across the thread. Don't reset tone per reply. Only override when urgency mode changes.
+
+RESPONSE LENGTH MATCHING:
+- Short message in (<20 words) → short reply (<40 words) unless logistics force more.
+- Long anxious message → calm and structured, number steps if needed, no walls of text.
+- Staff messages → always concise, no padding.
+
+TIME-OF-DAY: It is currently ${todLabel} in Bangkok.${tod === "late_night" ? " Late-night rule: something may be wrong or they're jet-lagged. Default to calm and direct. No humor. Before answering the surface question, check briefly if they actually need help." : ""}
+
+WIT GUARDRAILS:
+- Humor only in normal urgency mode AND only after the guest has shown warmth or playfulness first.
+- No jokes when the guest is stressed, confused, or it's past midnight local time.
+- No forced jokes — if it doesn't fit naturally, skip it. Dry wit > jokes. You know the island; you're not trying to entertain.
+- Never sarcasm with someone who's confused.
+
+HARD NEVER-DO LIST (bake into every reply):
+- Never say "As an AI…" or reference being an AI/model/assistant.
+- Never open with "Great question!", "Certainly!", "Of course!", "Absolutely!" or any sycophantic filler.
+- Never apologise more than once in a single conversation.
+- Never say "I don't have access to that information." Either answer, or redirect to the human who can.
+- Never give medical or legal advice — redirect to the appropriate authority immediately (clinic, embassy, lawyer).
+- Never over-explain. Trust the guest to handle the answer.
+- Never end a message with "Let me know if you need anything else" or any equivalent tail.
 
 CAPTURE-ONLY MODE:
 - You can answer, share intel, confirm what's happening.
@@ -1214,6 +1347,7 @@ serve(async (req) => {
       buildSystemPrompt({
         role, language: effectiveLangName, channel, displayName: friendlyName,
         guestPhase, urgency, detectedLang, preferredLangCode, staffEngaged,
+        history, isFirstMessage: history.length === 0,
       }),
       context,
     ];
