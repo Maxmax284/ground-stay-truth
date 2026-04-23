@@ -142,9 +142,21 @@ export function TelegramWebhookControl() {
       )}
 
       {data?.configured && (
-        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => refetch()}>
-          <RefreshCw className="h-3 w-3 mr-1" /> Refresh status
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleTest} disabled={testing}>
+            {testing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Send className="h-3 w-3 mr-1" />}
+            Send test message
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => refetch()}>
+            <RefreshCw className="h-3 w-3 mr-1" /> Refresh status
+          </Button>
+        </div>
+      )}
+
+      {testResult && (
+        <p className={`text-xs ${testResult.ok ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+          {testResult.ok ? "✓ " : "✗ "}{testResult.message}
+        </p>
       )}
     </div>
   );
