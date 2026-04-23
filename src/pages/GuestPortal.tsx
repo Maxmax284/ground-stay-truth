@@ -52,6 +52,7 @@ import {
 } from "lucide-react";
 import { GuestStaySupport } from "@/components/GuestStaySupport";
 import { MessagingConnectCard } from "@/components/MessagingConnectCard";
+import { GuestPersonalGuideCard } from "@/components/GuestPersonalGuideCard";
 import { GuestStaySummary } from "@/components/GuestStaySummary";
 import { GuestPickupCard } from "@/components/GuestPickupCard";
 import { GuestDepositSection } from "@/components/GuestDepositSection";
@@ -362,6 +363,15 @@ const GuestPortal = () => {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Hero: Personal Guide (Telegram/WhatsApp featured perk) — shown
+            once the guest has a real booking on file. Pre-arrival variant when
+            they're not yet on-site, default portal copy otherwise. */}
+        {(upcomingBookings.length > 0 || activeBookings.length > 0) && (
+          <GuestPersonalGuideCard
+            variant={activeBookings.length === 0 && confirmedBookings.length > 0 ? "pre_arrival" : "portal"}
+          />
         )}
 
         {/* Passive Layer: Your Stay Summary */}
