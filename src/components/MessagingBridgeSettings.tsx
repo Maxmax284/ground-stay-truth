@@ -304,7 +304,7 @@ export function MessagingBridgeSettings() {
             </Collapsible>
 
             {/* Step 2: Token input */}
-            {renderSecretField("telegram_bot_token", "Bot Token", "1234567890:ABCdef…")}
+            {renderSecretField("telegram_bot_token", "Telegram Bot Token", "1234567890:ABCdef…")}
             <p className="text-[11px] text-muted-foreground">
               Bot username is auto-resolved from the token via Telegram's <code>getMe</code> — no manual entry needed.
             </p>
