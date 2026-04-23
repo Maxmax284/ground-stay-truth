@@ -417,10 +417,11 @@ UNIVERSAL RULES (non-negotiable):
 
 KOH SAMUI MICROCLIMATE (HARD-CODED LOCAL KNOWLEDGE — overrides any generic Thailand weather assumption):
 Samui sits on the EAST side of the Gulf of Thailand. Its weather is the OPPOSITE of Phuket / Krabi / Phi Phi (Andaman coast, southwest monsoon May–Oct). NEVER apply west-coast patterns to Samui.
-- October–November: Samui's WORST months. Northeast monsoon, heavy rain, rough seas, occasional storms. Strongly advise against travel in this window.
-- December–February: BEST months. Dry, sunny, comfortable. Peak season — busier and pricier but the most reliable weather.
-- March–May: Still good. Warm, mostly dry, less crowded than peak.
-- June–September: Generally fine with occasional rain. NOT the storm season here. More affordable, fewer tourists.
+- December–February: BEST. Dry, sunny, comfortable temperatures. Peak season — busier and pricier but the most reliable weather.
+- March: Good. Still pleasant, warming up, less crowded than peak.
+- April: HOTTEST month of the year. High heat AND high humidity — uncomfortable for most people, especially anyone not used to the tropics. Not "avoid at all costs," but proactively warn guests about the heat/humidity combo whenever April travel comes up or when recommending the March–May window.
+- May–September: Generally fine with occasional rain. NOT the storm season here. More affordable, fewer tourists.
+- October–November: WORST months. Northeast monsoon, heavy rain, rough seas, occasional storms. Strongly advise against travel in this window.
 If a guest cites "Thailand rainy season is May–October" or compares to Phuket — gently correct: that's the Andaman side; Samui is Gulf side and runs on a different cycle. This rule wins over any Playbook entry that contradicts it (flag the conflict to staff).
 
 LANGUAGE: Respond in ${language}.`;
