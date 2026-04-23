@@ -188,7 +188,7 @@ export function MessagingBridgeSettings() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
           <Button
             onClick={() => handleConnect("telegram")}
             disabled={!botIdentity?.telegram.username || connectBusy !== null || identityLoading}
@@ -210,17 +210,41 @@ export function MessagingBridgeSettings() {
               : <MessageCircle className="h-4 w-4 mr-2" />}
             Connect WhatsApp
           </Button>
+          <Button
+            onClick={() => refetchIdentity()}
+            disabled={identityFetching}
+            size="sm"
+            variant="ghost"
+          >
+            {identityFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh"}
+          </Button>
         </div>
-        {botIdentity && !botIdentity.telegram.username && !botIdentity.whatsapp.number && (
+        {botIdentity?.telegram.username && (
+          <p className="text-[11px] text-muted-foreground">
+            Telegram bot: <span className="font-mono">@{botIdentity.telegram.username}</span>
+          </p>
+        )}
+        {botIdentity && !botIdentity.telegram.username && !botIdentity.whatsapp.number && !botIdentity.telegram.error && (
           <p className="text-xs text-muted-foreground">
             No channels are configured yet. Save a Telegram bot token or Twilio WhatsApp credentials above first.
           </p>
         )}
-        {botIdentity?.telegram.error && (
-          <p className="text-xs text-destructive">
-            Telegram: {botIdentity.telegram.error}
+        {botIdentity?.telegram.configured && !botIdentity.telegram.username && !botIdentity.telegram.error && (
+          <p className="text-xs text-amber-600 dark:text-amber-400">
+            Telegram bot token is saved but the username hasn't resolved yet. Click Refresh, or check the token is valid.
           </p>
         )}
+        {botIdentity?.telegram.error && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
+            <span className="font-medium">Telegram error:</span> {botIdentity.telegram.error}
+            <p className="mt-1 text-[11px] opacity-80">
+              Double-check the bot token from BotFather. The token must look like <code>1234567890:ABC…</code>.
+            </p>
+          </div>
+        )}
+        <Separator />
+        <NotificationPreferencesPanel />
+      </CardContent>
         <Separator />
         <NotificationPreferencesPanel />
       </CardContent>
