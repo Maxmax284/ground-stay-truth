@@ -52,6 +52,7 @@ import {
 } from "lucide-react";
 import { GuestStaySupport } from "@/components/GuestStaySupport";
 import { MessagingConnectCard } from "@/components/MessagingConnectCard";
+import { GuestPersonalGuideCard } from "@/components/GuestPersonalGuideCard";
 import { GuestStaySummary } from "@/components/GuestStaySummary";
 import { GuestPickupCard } from "@/components/GuestPickupCard";
 import { GuestDepositSection } from "@/components/GuestDepositSection";
