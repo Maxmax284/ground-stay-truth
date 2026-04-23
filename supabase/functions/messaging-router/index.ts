@@ -239,6 +239,53 @@ function recentPopCultureCallback(
   return { used: false, turnsAgo: null };
 }
 
+// ── Sensitive operational keyword detector (typo + phrase tolerant) ──
+// Normalises text (lowercase, collapse repeats, strip punctuation) then runs
+// patterns that allow common misspellings, spacing, hyphenation, and
+// multi-word variants (e.g. "no show", "noshow", "no-show", "didnt show up").
+function detectSensitiveOps(raw: string): boolean {
+  if (!raw) return false;
+  // Normalise: lowercase, collapse 3+ repeated chars (refunddd → refundd → refund-ish),
+  // replace punctuation with space, collapse whitespace.
+  const norm = raw
+    .toLowerCase()
+    .replace(/(.)\1{2,}/g, "$1$1")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const patterns: RegExp[] = [
+    // Refund / chargeback (common typos: refnd, refound, reffund, chrgback)
+    /\b(re+f+(?:o|u)?n+d|reffund|refnd|refound)s?\b/,
+    /\b(charge ?back|chrg ?back|chargback|chrgeback)s?\b/,
+    // Cancel family (cancelation/cancellation/cancled/cancled/cnacel)
+    /\b(cancel(?:l?ation|l?ed|l?ing|s)?|cancle|cnacel|canc?ell?)\b/,
+    // No-show variants and "didn't show / didnt show up / never showed"
+    /\b(no[\s-]?show|noshow|no[\s-]?showed)\b/,
+    /\b(did ?n['’]?t|didnt|never|hasn['’]?t|hasnt) (?:show(?:ed)? ?up|arrive[d]?|come|came)\b/,
+    /\b(failed to (?:arrive|show|check[\s-]?in))\b/,
+    // Complaint / dispute / fraud / lawsuit
+    /\b(complain(?:t|ts|ing|ed)?|disput(?:e|es|ed|ing)|fraud(?:ulent)?|lawsuit|sue(?:d|ing)?|legal action)\b/,
+    // Injury / medical (injurd, injuri, hospitle)
+    /\b(injur(?:y|ies|ed|y[ie]s)|injuri|hospital|hospitle|ambulance|paramedic|broken (?:bone|arm|leg|nose|rib))\b/,
+    /\b(allerg(?:y|ic|ies|ie)|anaphyla(?:xis|ctic))\b/,
+    // Police / emergency / fire / theft
+    /\b(police|emergenc(?:y|ies)|fire|smoke|theft|stolen|stole|robbed|break[\s-]?in)\b/,
+    // Deposit problems
+    /\b(deposit (?:dispute|hold|return|back|issue|problem)|withh[ae]ld deposit|kept (?:my|the) deposit)\b/,
+    /\b(securit?y deposit)\b/,
+    // Overbooking / double booking
+    /\b(over ?book(?:ed|ing)?|double[\s-]?book(?:ed|ing)?|booked twice)\b/,
+    // Lockout / key issues
+    /\b(lock ?out|locked out|cant get in|can ?not get in|key (?:lost|missing|gone|broken)|lost (?:my )?key)\b/,
+    // Escalation
+    /\b(escalat(?:e|ed|ion|ing)|speak to (?:a )?(?:manager|supervisor|admin)|get (?:a )?manager)\b/,
+    // Incident catch-all
+    /\b(incident|accident|emergency situation)\b/,
+  ];
+  return patterns.some((re) => re.test(norm));
+}
+
 // ── Persona prompts (role-differentiated, urgency-aware) ──────────────────
 function buildSystemPrompt(args: {
   role: string;
@@ -275,8 +322,7 @@ function buildSystemPrompt(args: {
   // ── Staff banter throttle ──
   // Sensitive ops keywords in the latest user turn force professional fallback.
   const lastUserTurn = [...history].reverse().find((h) => h.role === "user")?.content ?? "";
-  const sensitiveOps = /\b(refund|charge ?back|chargeback|cancel(?:lation|led|ling)?|no[\s-]?show|complaint|injur(?:y|ed)|hospital|police|emergency|fire|theft|stolen|deposit|dispute|fraud|lawsuit|legal|overbook|double[\s-]?book|lockout|locked out|key (?:lost|missing)|allergic|incident|escalat(?:e|ion))\b/i;
-  const sensitiveOpsHit = sensitiveOps.test(lastUserTurn);
+  const sensitiveOpsHit = detectSensitiveOps(lastUserTurn);
   // Throttle: count assistant turns since last banter — require 3 plain turns between callbacks.
   const turnsSinceCallback = popCallback.used ? popCallback.turnsAgo ?? 0 : 999;
   const staffBanterAllowed =
