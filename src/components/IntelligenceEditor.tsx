@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, ArrowUpCircle, Zap, BookOpen, Archive, Sparkles, Loader2, Radar, ImageIcon, ImageOff, Upload, X, CheckCircle2, AlertTriangle, MonitorPlay, Layers, RefreshCw, RotateCcw, Type, Radio, GalleryHorizontal, Swords, ListCollapse, Activity, Waves } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowUpCircle, Zap, BookOpen, Archive, Sparkles, Loader2, Radar, ImageIcon, ImageOff, Upload, X, CheckCircle2, AlertTriangle, MonitorPlay, Layers, RefreshCw, RotateCcw, Type, Radio, GalleryHorizontal, Swords, ListCollapse, Activity, Waves, Languages } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "sonner";
 
 const CATEGORIES: { value: IntelligenceCategory; label: string }[] = [
@@ -37,6 +38,17 @@ const LOCATIONS = [
   { value: "transit", label: "In Transit" },
   { value: "bus", label: "Bus Route" },
   { value: "island", label: "Island General" },
+];
+
+const TRANSLATION_LANGS: { code: string; label: string; flag: string }[] = [
+  { code: "th", label: "Thai", flag: "🇹🇭" },
+  { code: "fr", label: "French", flag: "🇫🇷" },
+  { code: "de", label: "German", flag: "🇩🇪" },
+  { code: "ru", label: "Russian", flag: "🇷🇺" },
+  { code: "zh", label: "Chinese", flag: "🇨🇳" },
+  { code: "ja", label: "Japanese", flag: "🇯🇵" },
+  { code: "ko", label: "Korean", flag: "🇰🇷" },
+  { code: "es", label: "Spanish", flag: "🇪🇸" },
 ];
 
 const STATUS_COLORS: Record<IntelligenceStatus, string> = {
@@ -301,6 +313,17 @@ export function IntelligenceEditor() {
                       {entry.status}
                     </Badge>
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0">{entry.category}</Badge>
+                    {(() => {
+                      const t = entry.translations || {};
+                      const count = TRANSLATION_LANGS.filter((l) => t[l.code]?.trim()).length;
+                      if (!count) return null;
+                      return (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1">
+                          <Languages className="h-2.5 w-2.5" />
+                          {count}/{TRANSLATION_LANGS.length}
+                        </Badge>
+                      );
+                    })()}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{entry.body}</p>
                   <div className="flex items-center gap-1 mt-1">
@@ -743,6 +766,63 @@ export function IntelligenceEditor() {
                   <Input type="datetime-local" value={editEntry.expires_at?.slice(0, 16) || ""} onChange={(e) => setEditEntry({ ...editEntry, expires_at: e.target.value ? new Date(e.target.value).toISOString() : null })} className="h-8 text-sm" />
                 </div>
               )}
+
+              {/* Translations */}
+              <Accordion type="single" collapsible className="border rounded-md">
+                <AccordionItem value="translations" className="border-0">
+                  <AccordionTrigger className="px-3 py-2 text-xs hover:no-underline">
+                    <div className="flex items-center gap-2">
+                      <Languages className="h-3.5 w-3.5" />
+                      <span className="font-medium">Translations</span>
+                      {(() => {
+                        const t = (editEntry.translations || {}) as Record<string, string>;
+                        const count = TRANSLATION_LANGS.filter((l) => t[l.code]?.trim()).length;
+                        return (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            {count}/{TRANSLATION_LANGS.length}
+                          </Badge>
+                        );
+                      })()}
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-3 pb-3">
+                    <p className="text-[11px] text-muted-foreground mb-2">
+                      English (above) is the base. Translations are used by Kru Glitch when guests message in that language. Leave blank to fall back to English.
+                    </p>
+                    <div className="space-y-3">
+                      {TRANSLATION_LANGS.map((l) => {
+                        const current = (editEntry.translations || {}) as Record<string, string>;
+                        const val = current[l.code] || "";
+                        return (
+                          <div key={l.code}>
+                            <Label className="text-[11px] flex items-center gap-1.5">
+                              <span>{l.flag}</span>
+                              <span>{l.label}</span>
+                              {val.trim() && (
+                                <Badge variant="outline" className="text-[9px] px-1 py-0 ml-1">
+                                  <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" />
+                                  Set
+                                </Badge>
+                              )}
+                            </Label>
+                            <Textarea
+                              value={val}
+                              onChange={(e) => {
+                                const next = { ...current };
+                                if (e.target.value.trim()) next[l.code] = e.target.value;
+                                else delete next[l.code];
+                                setEditEntry({ ...editEntry, translations: next });
+                              }}
+                              placeholder={`${l.label} version of body…`}
+                              className="text-sm min-h-[60px] mt-1"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
 
               <Button onClick={handleSave} disabled={upsert.isPending} className="w-full">
                 {upsert.isPending ? "Saving…" : editEntry.id ? "Update Entry" : "Create Entry"}

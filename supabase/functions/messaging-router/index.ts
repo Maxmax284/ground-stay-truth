@@ -649,10 +649,11 @@ async function fetchRelevantIntelligence(
   admin: any,
   text: string,
   audience: "guest" | "staff",
+  detectedLang: string = "en",
 ): Promise<string> {
   const { data } = await admin
     .from("intelligence_entries")
-    .select("type, title, body, severity, location, expires_at")
+    .select("type, title, body, severity, location, expires_at, translations")
     .eq("status", "active")
     .contains("audience", [audience])
     .limit(40);
@@ -678,11 +679,17 @@ async function fetchRelevantIntelligence(
     .slice(0, 3);
 
   if (!scored.length) return "";
+  const lang = (detectedLang || "en").toLowerCase();
   const lines = scored.map(({ e }) => {
     const tag = e.type === "heads_up"
       ? `HEADS UP${e.severity && e.severity !== "normal" ? ` [${e.severity}]` : ""}`
       : "PLAYBOOK";
-    return `- ${tag}: ${e.title}\n  ${String(e.body).slice(0, 400)}`;
+    const translated = lang !== "en" && e.translations && typeof e.translations === "object"
+      ? (e.translations as Record<string, string>)[lang]
+      : null;
+    const bodyText = (translated && translated.trim()) ? translated : e.body;
+    const langTag = (translated && translated.trim()) ? ` (${lang})` : "";
+    return `- ${tag}${langTag}: ${e.title}\n  ${String(bodyText).slice(0, 400)}`;
   });
   return `INTELLIGENCE LAYER (verified platform content — use as source of truth, verbatim or faithful summary):\n${lines.join("\n")}`;
 }
@@ -1340,7 +1347,7 @@ serve(async (req) => {
     const audience = isStaffRole(role) ? "staff" : "guest";
     const [context, intel, liveOps] = await Promise.all([
       buildContext(admin, userId, role, guestPhase),
-      fetchRelevantIntelligence(admin, trimmed, audience),
+      fetchRelevantIntelligence(admin, trimmed, audience, detectedLang),
       buildStaffContext(admin, userId, role),
     ]);
     const promptParts = [
