@@ -649,10 +649,11 @@ async function fetchRelevantIntelligence(
   admin: any,
   text: string,
   audience: "guest" | "staff",
+  detectedLang: string = "en",
 ): Promise<string> {
   const { data } = await admin
     .from("intelligence_entries")
-    .select("type, title, body, severity, location, expires_at")
+    .select("type, title, body, severity, location, expires_at, translations")
     .eq("status", "active")
     .contains("audience", [audience])
     .limit(40);
