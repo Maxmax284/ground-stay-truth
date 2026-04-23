@@ -1,3 +1,5 @@
+// DEPRECATED: superseded by telegram-webhook. Keep for reference but cron should be removed.
+//
 // Polls Telegram getUpdates and forwards each message to messaging-router.
 // Designed to be invoked by pg_cron every minute. Each invocation long-polls
 // for up to ~50s, fitting inside the 60s cron interval.
