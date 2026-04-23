@@ -461,6 +461,84 @@ export function MessagingBridgeSettings() {
 
             <Separator />
 
+            {(() => {
+              const oaIdSetting = getSetting("line_oa_id");
+              const savedOaId = getValue("line_oa_id");
+              const draft = lineOaIdDraft ?? savedOaId;
+              const cleaned = draft.trim().replace(/^@/, "");
+              const friendUrl = cleaned ? `https://line.me/R/ti/p/@${cleaned}` : "";
+              const dirty = lineOaIdDraft !== null && lineOaIdDraft.trim() !== savedOaId;
+
+              const saveOaId = async () => {
+                const value = (lineOaIdDraft ?? "").trim().replace(/^@/, "");
+                try {
+                  if (oaIdSetting) {
+                    await updateSetting.mutateAsync({ id: oaIdSetting.id, value });
+                  } else {
+                    const { error } = await supabase.from("policy_settings").insert({ key: "line_oa_id", value });
+                    if (error) throw error;
+                    await qc.invalidateQueries({ queryKey: ["policy_settings"] });
+                  }
+                  toast({ title: "Saved", description: "LINE Official Account ID stored." });
+                  setLineOaIdDraft(null);
+                } catch (err: any) {
+                  toast({ title: "Couldn't save", description: err.message, variant: "destructive" });
+                }
+              };
+
+              return (
+                <div className="rounded-md border bg-muted/30 p-3 space-y-3">
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium">Official Account ID</Label>
+                    <p className="text-[11px] text-muted-foreground">
+                      The LINE OA ID staff search for (e.g. <code>@groundtruth</code>). Found in LINE Official Account Manager → Settings → Basic information.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">@</span>
+                    <Input
+                      value={cleaned}
+                      onChange={(e) => setLineOaIdDraft(e.target.value)}
+                      placeholder="groundtruth"
+                      className="font-mono text-sm"
+                    />
+                    {dirty && (
+                      <Button size="icon" variant="outline" onClick={saveOaId} disabled={updateSetting.isPending}>
+                        <Save className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  {savedOaId && !dirty && (
+                    <div className="grid grid-cols-[auto,1fr] gap-4 items-start pt-2">
+                      <div className="rounded-md bg-background p-2 border">
+                        <QRCodeSVG value={friendUrl} size={128} level="M" />
+                      </div>
+                      <div className="space-y-2 text-xs">
+                        <p className="font-medium text-foreground">Staff onboarding — 3 steps</p>
+                        <ol className="list-decimal pl-4 space-y-1 text-muted-foreground">
+                          <li>Scan the QR code, or open LINE and search <code className="bg-muted px-1 rounded">@{savedOaId}</code></li>
+                          <li>Add the Official Account as a friend</li>
+                          <li>Send <code className="bg-muted px-1 rounded">/link CODE</code> (get your code from your profile) to connect your account</li>
+                        </ol>
+                        <div className="flex items-center gap-2 pt-1">
+                          <code className="block flex-1 bg-background rounded border px-2 py-1 text-[11px] break-all">{friendUrl}</code>
+                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copy(friendUrl)}>
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          LINE doesn't support deep-link auto-connect like Telegram — staff must friend the OA first before <code>/link</code> works.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            <Separator />
+
             <LineWebhookControl />
           </CardContent>
         )}
