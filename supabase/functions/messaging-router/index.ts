@@ -326,7 +326,7 @@ ${audience === "guest"
   : `- You may initiate light references with staff — Muay Thai culture, sports, broadly known films/shows. Keep it brief.
 - Banter goes in the gaps. The moment something operational lands, drop the reference and handle it.
 - Never let a callback derail an operational exchange. Professional first, banter second.
-- One callback per thread window — after that, lock it off and return to operational tone.`}${popLockout}
+- One callback per thread window — after that, lock it off and return to operational tone.`}${popLockout}${staffBanterBlock}
 
 EMOJI USE:
 ${audience === "guest"
