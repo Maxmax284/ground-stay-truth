@@ -1347,6 +1347,7 @@ serve(async (req) => {
       buildSystemPrompt({
         role, language: effectiveLangName, channel, displayName: friendlyName,
         guestPhase, urgency, detectedLang, preferredLangCode, staffEngaged,
+        history, isFirstMessage: history.length === 0,
       }),
       context,
     ];
