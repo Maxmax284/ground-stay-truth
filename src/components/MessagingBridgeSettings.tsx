@@ -11,12 +11,14 @@ import { useSecretStatuses, useSetSecret, useDeleteSecret } from "@/hooks/useInt
 import { usePolicySettings, useUpdatePolicySetting } from "@/hooks/usePolicySettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { CheckCircle2, XCircle, Eye, EyeOff, Save, Trash2, MessageCircle, Copy, Send, Loader2, ChevronRight } from "lucide-react";
+import { CheckCircle2, XCircle, Eye, EyeOff, Save, Trash2, MessageCircle, Copy, Send, Loader2, ChevronRight, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { NotificationPreferencesPanel } from "@/components/NotificationPreferencesPanel";
 import { MessagingDeliveryDashboard } from "@/components/MessagingDeliveryDashboard";
 import { LinkedChatsList } from "@/components/LinkedChatsList";
 import { MessagingAdminTools } from "@/components/MessagingAdminTools";
 import { TelegramWebhookControl } from "@/components/TelegramWebhookControl";
+import { LineWebhookControl } from "@/components/LineWebhookControl";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useBotIdentity, buildConnectUrl } from "@/hooks/useBotIdentity";
 import { useQueryClient } from "@tanstack/react-query";
@@ -50,6 +52,7 @@ export function MessagingBridgeSettings() {
 
   const telegramEnabled = getValue("telegram_bridge_enabled") === "true";
   const twilioEnabled = getValue("twilio_bridge_enabled") === "true";
+  const lineEnabled = getValue("line_bridge_enabled") === "true";
 
   const webhookBase = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
