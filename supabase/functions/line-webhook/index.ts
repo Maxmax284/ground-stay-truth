@@ -23,7 +23,7 @@ function verifyLineSignature(channelSecret: string, rawBody: string, signature: 
   return expected === signature;
 }
 
-async function lineReply(accessToken: string, replyToken: string, text: string) {
+async function lineReply(accessToken: string, replyToken: string, messages: any[]) {
   await fetch("https://api.line.me/v2/bot/message/reply", {
     method: "POST",
     headers: {
@@ -32,9 +32,14 @@ async function lineReply(accessToken: string, replyToken: string, text: string) 
     },
     body: JSON.stringify({
       replyToken,
-      messages: [{ type: "text", text: text.slice(0, 5000) }],
+      // LINE accepts up to 5 message objects per reply call.
+      messages: messages.slice(0, 5),
     }),
   });
+}
+
+function textMessage(text: string) {
+  return { type: "text", text: text.slice(0, 5000) };
 }
 
 async function fetchLineDisplayName(accessToken: string, userId: string): Promise<string | null> {
@@ -107,9 +112,15 @@ Deno.serve(async (req) => {
           body: JSON.stringify({ channel: "line", chat_id: chatId, text, display_name: displayName }),
         });
         const out = await routerResp.json().catch(() => ({}));
-        if (out?.reply && !out.silent && replyToken) {
+        if (out?.silent || !replyToken) continue;
+        // Router may return either plain `reply` text or a richer
+        // `line_messages` array (Flex/Carousel). Plain-text fallback always
+        // accompanies rich messages via altText, so older clients still see it.
+        if (Array.isArray(out?.line_messages) && out.line_messages.length > 0) {
           // Reply API is always free — no monthly quota.
-          await lineReply(accessToken, replyToken, out.reply);
+          await lineReply(accessToken, replyToken, out.line_messages);
+        } else if (out?.reply) {
+          await lineReply(accessToken, replyToken, [textMessage(out.reply)]);
         }
       } catch (e) {
         console.error("line-webhook: router/send failed", e);

@@ -20,6 +20,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildFlexForEvent, type LineLang } from "../_shared/lineFlex.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -100,13 +101,24 @@ async function sendTelegram(admin: any, chatId: string, text: string): Promise<{
   return { ok: true };
 }
 
-async function sendLine(admin: any, chatId: string, text: string): Promise<{ ok: boolean; error?: string }> {
+async function sendLine(
+  admin: any,
+  chatId: string,
+  text: string,
+  flexMessage: any | null,
+): Promise<{ ok: boolean; error?: string }> {
   const { data: tokenRow } = await admin
     .from("integration_secrets")
     .select("encrypted_value")
     .eq("secret_key", "line_channel_access_token")
     .maybeSingle();
   if (!tokenRow?.encrypted_value) return { ok: false, error: "line_channel_access_token not configured" };
+
+  // Prefer rich Flex when available; LINE auto-falls-back to altText on
+  // unsupported clients / push notification previews.
+  const messages = flexMessage
+    ? [flexMessage]
+    : [{ type: "text", text: text.slice(0, 5000) }];
 
   // LINE push message — counts against the channel's monthly free quota.
   const resp = await fetch("https://api.line.me/v2/bot/message/push", {
@@ -115,13 +127,22 @@ async function sendLine(admin: any, chatId: string, text: string): Promise<{ ok:
       "Content-Type": "application/json",
       Authorization: `Bearer ${tokenRow.encrypted_value}`,
     },
-    body: JSON.stringify({
-      to: chatId,
-      messages: [{ type: "text", text: text.slice(0, 5000) }],
-    }),
+    body: JSON.stringify({ to: chatId, messages }),
   });
   if (!resp.ok) {
     const body = await resp.text();
+    // If Flex was rejected (rare schema issue), fall back to plain text once.
+    if (flexMessage) {
+      const retry = await fetch("https://api.line.me/v2/bot/message/push", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${tokenRow.encrypted_value}`,
+        },
+        body: JSON.stringify({ to: chatId, messages: [{ type: "text", text: text.slice(0, 5000) }] }),
+      });
+      if (retry.ok) return { ok: true };
+    }
     return { ok: false, error: `line ${resp.status}: ${body.slice(0, 200)}` };
   }
   return { ok: true };
@@ -282,13 +303,19 @@ serve(async (req) => {
       });
     }
 
-    // Fetch bindings + per-user prefs in one shot
+    // Fetch bindings + per-user prefs + profile language in one shot
     const userIds = Array.from(recipientUserIds);
-    const [{ data: bindings }, { data: prefs }] = await Promise.all([
+    const [{ data: bindings }, { data: prefs }, { data: profileRows }] = await Promise.all([
       admin.from("messaging_chat_bindings").select("user_id, channel, chat_id").in("user_id", userIds),
       admin.from("messaging_notification_prefs").select("user_id, channel, notification_type, enabled")
         .in("user_id", userIds).eq("notification_type", event_type),
+      admin.from("profiles").select("user_id, preferred_language").in("user_id", userIds),
     ]);
+    const langByUser = new Map<string, LineLang>();
+    (profileRows ?? []).forEach((p: any) => {
+      const l = (p.preferred_language ?? "en").slice(0, 2).toLowerCase();
+      langByUser.set(p.user_id, l as LineLang);
+    });
 
     const text = buildMessage(event_type, metadata);
     const dispatched: any[] = [];
@@ -307,7 +334,10 @@ serve(async (req) => {
       } else if (b.channel === "sms" || b.channel === "whatsapp") {
         result = await sendTwilio(admin, b.channel, b.chat_id, text);
       } else if (b.channel === "line") {
-        result = await sendLine(admin, b.chat_id, text);
+        // Presentation upgrade only — text fallback unchanged.
+        const lang = langByUser.get(b.user_id) ?? "en";
+        const flex = buildFlexForEvent(event_type, metadata as Record<string, any>, lang);
+        result = await sendLine(admin, b.chat_id, text, flex);
       } else {
         result = { ok: false, error: `unknown channel: ${b.channel}` };
       }
