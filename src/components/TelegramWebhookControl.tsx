@@ -19,6 +19,8 @@ export function TelegramWebhookControl() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [activating, setActivating] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
 
   const { data, isLoading, refetch } = useQuery<WebhookStatus>({
     queryKey: ["telegram-webhook-status"],
