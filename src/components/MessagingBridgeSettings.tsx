@@ -245,9 +245,6 @@ export function MessagingBridgeSettings() {
         <Separator />
         <NotificationPreferencesPanel />
       </CardContent>
-        <Separator />
-        <NotificationPreferencesPanel />
-      </CardContent>
     </Card>
   );
 
