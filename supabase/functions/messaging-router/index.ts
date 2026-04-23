@@ -220,6 +220,25 @@ function pickOpener(args: {
   return pool[idx];
 }
 
+// Detect whether Kru already made a pop-culture callback in the recent thread window.
+// One callback per window — after that, references are locked off until the window rolls.
+function recentPopCultureCallback(
+  history: { role: "user" | "assistant"; content: string }[],
+  windowSize = 6,
+): { used: boolean; turnsAgo: number | null } {
+  const recent = history.filter((h) => h.role === "assistant").slice(-windowSize);
+  const cues = /\b(vibe like|straight out of|channeling|à la|a la|like in|reminds me of|reminiscent of|very (?:matrix|rocky|tarantino|wes anderson)|kru fu|mr\.? miyagi|cobra kai|john wick|top gun|jaws|james bond|bond film|breaking bad|stranger things|game of thrones|simpsons|seinfeld|friends episode|the office)\b/i;
+  for (let i = recent.length - 1; i >= 0; i--) {
+    const c = recent[i].content;
+    const quoted = /["“][^"”]{6,80}["”]/.test(c);
+    const titleish = /\b[A-Z][a-z]+(?:\s+(?:of|the|and|in|on|de|la|le)\s+)?[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2}\b/.test(c);
+    if (cues.test(c) || quoted || titleish) {
+      return { used: true, turnsAgo: recent.length - 1 - i };
+    }
+  }
+  return { used: false, turnsAgo: null };
+}
+
 // ── Persona prompts (role-differentiated, urgency-aware) ──────────────────
 function buildSystemPrompt(args: {
   role: string;
@@ -248,6 +267,10 @@ function buildSystemPrompt(args: {
   const threadTone = inferThreadTone(history);
   const opener = pickOpener({ audience, phase: guestPhase ?? "none", tod, history });
   const todLabel = tod === "late_night" ? `late night (${hour}:00 Bangkok)` : tod.replace("_", " ");
+  const popCallback = recentPopCultureCallback(history, 6);
+  const popLockout = popCallback.used
+    ? `\nPOP CULTURE LOCKOUT (active): you already made a callback ${popCallback.turnsAgo === 0 ? "in your last reply" : `${popCallback.turnsAgo} turn(s) ago`}. Hard rule: no further pop culture references in this thread window. Return to operational tone immediately. Even if the ${audience === "guest" ? "guest" : "staff member"} brings up another reference, acknowledge briefly without echoing it back. The window resets after several plain operational turns.`
+    : "";
 
   const base = `You are Kru Glitch, the resident advisor at Ground Stay (Muay Thai fight camp + accommodation, Koh Samui).
 Speaking to ${displayName} over ${channelLabel}. Plain text only — no markdown, no headers. Max 3 short sentences.
@@ -281,7 +304,8 @@ ${audience === "guest"
 - Hard timing gate: zero references during critical or confused urgency. Never between 11pm–6am Bangkok time. Currently ${todLabel}${urgency !== "normal" ? ` and urgency is ${urgency} — references OFF` : ""}.`
   : `- You may initiate light references with staff — Muay Thai culture, sports, broadly known films/shows. Keep it brief.
 - Banter goes in the gaps. The moment something operational lands, drop the reference and handle it.
-- Never let a callback derail an operational exchange. Professional first, banter second.`}
+- Never let a callback derail an operational exchange. Professional first, banter second.
+- One callback per thread window — after that, lock it off and return to operational tone.`}${popLockout}
 
 EMOJI USE:
 ${audience === "guest"
