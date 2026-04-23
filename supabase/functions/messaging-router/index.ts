@@ -310,7 +310,12 @@ function buildSystemPrompt(args: {
   }
 
   const { tod, hour } = bangkokTimeOfDay();
-  const audience: "guest" | "staff" = isStaffRole(role) ? "staff" : "guest";
+  // Verified-staff gate: role must be a non-empty, recognised staff role.
+  // Anything unknown, blank, or guest-tier defaults to "guest" → professional tone.
+  const KNOWN_STAFF = new Set(["admin", "manager", "front_desk_supervisor", "front_desk", "maintenance", "viewer"]);
+  const normalisedRole = (role ?? "").trim().toLowerCase();
+  const verifiedStaff = normalisedRole.length > 0 && KNOWN_STAFF.has(normalisedRole) && isStaffRole(normalisedRole);
+  const audience: "guest" | "staff" = verifiedStaff ? "staff" : "guest";
   const threadTone = inferThreadTone(history);
   const opener = pickOpener({ audience, phase: guestPhase ?? "none", tod, history });
   const todLabel = tod === "late_night" ? `late night (${hour}:00 Bangkok)` : tod.replace("_", " ");
@@ -320,24 +325,23 @@ function buildSystemPrompt(args: {
     : "";
 
   // ── Staff banter throttle ──
-  // Sensitive ops keywords in the latest user turn force professional fallback.
+  // Only applies when role is verified staff. Unknown/unverified → professional default.
   const lastUserTurn = [...history].reverse().find((h) => h.role === "user")?.content ?? "";
   const sensitiveOpsHit = detectSensitiveOps(lastUserTurn);
-  // Throttle: count assistant turns since last banter — require 3 plain turns between callbacks.
   const turnsSinceCallback = popCallback.used ? popCallback.turnsAgo ?? 0 : 999;
   const staffBanterAllowed =
-    audience === "staff" &&
+    verifiedStaff &&
     urgency === "normal" &&
     !sensitiveOpsHit &&
     !popCallback.used &&
     turnsSinceCallback >= 3;
-  const staffBanterBlock = audience === "staff"
-    ? `\nSTAFF BANTER THROTTLE:
+  const staffBanterBlock = verifiedStaff
+    ? `\nSTAFF BANTER THROTTLE (verified ${normalisedRole}):
 - Banter window is ${staffBanterAllowed ? "OPEN" : "CLOSED"} this turn.${sensitiveOpsHit ? " Sensitive operational keywords detected in their message — drop ALL banter, drop emoji, professional tone only, get to the action." : ""}${popCallback.used ? ` Cooldown active (last callback ${turnsSinceCallback} turn(s) ago, need 3 plain turns).` : ""}
 - When open: one short callback max, then immediately pivot to the operational answer in the same reply. Never two replies of banter back-to-back.
 - When closed: no callbacks, no jokes, no emoji beyond ✅. Confirm/dispatch/answer cleanly.
 - The instant a sensitive action is requested (refund, cancellation, no-show, injury, deposit dispute, lockout, escalation) — fall back to professional wording mid-thread, even if you were bantering one turn ago. Acknowledge the shift implicitly by tone, don't announce it.`
-    : "";
+    : `\nUNVERIFIED ROLE FALLBACK: role context is "${normalisedRole || "missing"}" — not a confirmed staff identity. Default to professional, guest-safe tone. No banter, no callbacks, no operational disclosures. If they claim to be staff, ask them to send the message from a linked staff account.`;
 
   const base = `You are Kru Glitch, the resident advisor at Ground Stay (Muay Thai fight camp + accommodation, Koh Samui).
 Speaking to ${displayName} over ${channelLabel}. Plain text only — no markdown, no headers. Max 3 short sentences.
