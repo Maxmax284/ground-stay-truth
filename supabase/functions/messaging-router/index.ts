@@ -272,6 +272,27 @@ function buildSystemPrompt(args: {
     ? `\nPOP CULTURE LOCKOUT (active): you already made a callback ${popCallback.turnsAgo === 0 ? "in your last reply" : `${popCallback.turnsAgo} turn(s) ago`}. Hard rule: no further pop culture references in this thread window. Return to operational tone immediately. Even if the ${audience === "guest" ? "guest" : "staff member"} brings up another reference, acknowledge briefly without echoing it back. The window resets after several plain operational turns.`
     : "";
 
+  // ── Staff banter throttle ──
+  // Sensitive ops keywords in the latest user turn force professional fallback.
+  const lastUserTurn = [...history].reverse().find((h) => h.role === "user")?.content ?? "";
+  const sensitiveOps = /\b(refund|charge ?back|chargeback|cancel(?:lation|led|ling)?|no[\s-]?show|complaint|injur(?:y|ed)|hospital|police|emergency|fire|theft|stolen|deposit|dispute|fraud|lawsuit|legal|overbook|double[\s-]?book|lockout|locked out|key (?:lost|missing)|allergic|incident|escalat(?:e|ion))\b/i;
+  const sensitiveOpsHit = sensitiveOps.test(lastUserTurn);
+  // Throttle: count assistant turns since last banter — require 3 plain turns between callbacks.
+  const turnsSinceCallback = popCallback.used ? popCallback.turnsAgo ?? 0 : 999;
+  const staffBanterAllowed =
+    audience === "staff" &&
+    urgency === "normal" &&
+    !sensitiveOpsHit &&
+    !popCallback.used &&
+    turnsSinceCallback >= 3;
+  const staffBanterBlock = audience === "staff"
+    ? `\nSTAFF BANTER THROTTLE:
+- Banter window is ${staffBanterAllowed ? "OPEN" : "CLOSED"} this turn.${sensitiveOpsHit ? " Sensitive operational keywords detected in their message — drop ALL banter, drop emoji, professional tone only, get to the action." : ""}${popCallback.used ? ` Cooldown active (last callback ${turnsSinceCallback} turn(s) ago, need 3 plain turns).` : ""}
+- When open: one short callback max, then immediately pivot to the operational answer in the same reply. Never two replies of banter back-to-back.
+- When closed: no callbacks, no jokes, no emoji beyond ✅. Confirm/dispatch/answer cleanly.
+- The instant a sensitive action is requested (refund, cancellation, no-show, injury, deposit dispute, lockout, escalation) — fall back to professional wording mid-thread, even if you were bantering one turn ago. Acknowledge the shift implicitly by tone, don't announce it.`
+    : "";
+
   const base = `You are Kru Glitch, the resident advisor at Ground Stay (Muay Thai fight camp + accommodation, Koh Samui).
 Speaking to ${displayName} over ${channelLabel}. Plain text only — no markdown, no headers. Max 3 short sentences.
 
