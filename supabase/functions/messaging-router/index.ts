@@ -1347,7 +1347,7 @@ serve(async (req) => {
     const audience = isStaffRole(role) ? "staff" : "guest";
     const [context, intel, liveOps] = await Promise.all([
       buildContext(admin, userId, role, guestPhase),
-      fetchRelevantIntelligence(admin, trimmed, audience),
+      fetchRelevantIntelligence(admin, trimmed, audience, detectedLang),
       buildStaffContext(admin, userId, role),
     ]);
     const promptParts = [
