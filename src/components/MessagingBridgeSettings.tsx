@@ -356,9 +356,22 @@ export function MessagingBridgeSettings() {
         </CardContent>
       </Card>
 
+      {/* 2. ADMIN OPERATIONS — simulator, ping, delivery dashboard */}
+      <MessagingAdminTools />
+      <MessagingDeliveryDashboard />
+
+      {/* 3. STAFF SELF-SERVICE — link your own chat (separated from admin credentials) */}
+      <Separator className="my-2" />
+      <div className="space-y-2">
+        <div className="px-1">
+          <h3 className="text-sm font-semibold text-foreground">Staff: link your own chat</h3>
+          <p className="text-xs text-muted-foreground">Once the bot is live above, generate a personal code to connect your Telegram / WhatsApp account.</p>
+        </div>
+        {linkChatCard}
+      </div>
+
       {/* Linked chats — admin view of all guest/staff bindings */}
       <LinkedChatsList />
-      </>)}
     </div>
   );
 }
