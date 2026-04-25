@@ -104,7 +104,11 @@ export function arrivalLocationLabel(code: string | null): string {
   if (!code) return "Unknown";
   const map: Record<string, string> = {
     bkk: "BKK (Suvarnabhumi)",
+    dmk: "DMK (Don Mueang)",
+    urt: "URT (Surat Thani)",
+    surat_thani: "URT (Surat Thani)",
     samui: "USM (Koh Samui)",
+    usm: "USM (Koh Samui)",
     nathon: "Nathon Pier",
     lipa_noi: "Lipa Noi Pier",
     bus: "Bus / Van Arrival",
