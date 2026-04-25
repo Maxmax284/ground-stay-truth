@@ -427,9 +427,9 @@ serve(async (req) => {
         result = await sendTelegram(admin, b.chat_id, text, tgRich);
       } else if (b.channel === "whatsapp") {
         const waIntent = buildWhatsAppForEvent(event_type, metadata as Record<string, any>, lang, role);
-        result = await sendTwilio(admin, b.channel, b.chat_id, text, waIntent);
+        result = await sendWhatsAppMeta(admin, b.chat_id, text, waIntent);
       } else if (b.channel === "sms") {
-        result = await sendTwilio(admin, b.channel, b.chat_id, text);
+        result = await sendTwilioSms(admin, b.chat_id, text);
       } else if (b.channel === "line") {
         // Presentation upgrade only — text fallback unchanged.
         const flex = buildFlexForEvent(event_type, metadata as Record<string, any>, lang as LineLang);
