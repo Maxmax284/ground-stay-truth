@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
         Authorization: `Bearer ${serviceRoleKey}`,
         apikey: serviceRoleKey,
       },
-      body: JSON.stringify({ channel, chat_id: chatId, text, display_name: profileName }),
+      body: JSON.stringify({ channel, chat_id: chatId, text }),
     });
     const out = await routerResp.json().catch(() => ({}));
     // Silent mode (staff has taken over): return empty TwiML so Twilio sends nothing.
