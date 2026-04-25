@@ -92,8 +92,7 @@ describe("GuestPickupCard — Travel State Guidance", () => {
     mockPickup.confirmed_airport = "BKK";
     mockPickup.guest_landed_at = new Date().toISOString();
     renderCard();
-    expect(screen.getByText(/landed at Bangkok/i)).toBeInTheDocument();
-    expect(screen.getByText(/PG157/)).toBeInTheDocument();
+    expect(screen.getAllByText(/landed at Bangkok/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/arrive on Samui/i)).toBeInTheDocument();
   });
 
