@@ -96,7 +96,7 @@ export function ArrivalRouteFAQ({ bookingId }: Props = {}) {
     if (stage === "usm") return "usm-direct";
     if (stage === "bkk") return "bkk-usm";
     if (stage === "dmk") return "dmk-usm";
-    if (stage === "urt" || stage === "ferry" || stage === "pier") return "urt-ferry";
+    if (stage === "urt" || stage === "pier") return "urt-ferry";
     return null;
   }, [stage]);
 
