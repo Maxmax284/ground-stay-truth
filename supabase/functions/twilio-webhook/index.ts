@@ -1,10 +1,12 @@
-// Public webhook for Twilio SMS + WhatsApp inbound messages.
+// Public webhook for Twilio SMS inbound messages.
 // Verifies the X-Twilio-Signature, dispatches to messaging-router,
 // and replies with TwiML <Response><Message>...</Message></Response>.
 //
+// WhatsApp is no longer handled here — it now uses Meta Cloud API direct
+// (see whatsapp-meta-webhook). This endpoint accepts ?channel=sms only.
+//
 // Configure in Twilio Console:
 //  - SMS number: A MESSAGE COMES IN -> Webhook -> POST <fn-url>?channel=sms
-//  - WhatsApp sandbox/number: WHEN A MESSAGE COMES IN -> POST <fn-url>?channel=whatsapp
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createHmac } from "node:crypto";
 
