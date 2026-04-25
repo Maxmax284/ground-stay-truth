@@ -23,9 +23,10 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useBotIdentity, buildConnectUrl } from "@/hooks/useBotIdentity";
 import { useQueryClient } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
+import { WhatsAppMetaSetupWizard } from "@/components/WhatsAppMetaSetupWizard";
 
 const TELEGRAM_KEYS = ["telegram_bot_token"] as const;
-const TWILIO_KEYS = ["twilio_account_sid", "twilio_auth_token", "twilio_sms_from", "twilio_whatsapp_from"] as const;
+const TWILIO_KEYS = ["twilio_account_sid", "twilio_auth_token", "twilio_sms_from"] as const;
 
 export function MessagingBridgeSettings() {
   const { role } = useAuth();
@@ -84,8 +85,8 @@ export function MessagingBridgeSettings() {
       await setSecret.mutateAsync({ key, value });
       toast({ title: "Saved securely", description: `${key} stored.` });
       setEditValues((prev) => { const next = { ...prev }; delete next[key]; return next; });
-      // Bot identity (Telegram username, WhatsApp number) depends on these secrets — refresh.
-      if (key === "telegram_bot_token" || key === "twilio_whatsapp_from") {
+      // Bot identity (Telegram username) depends on these secrets — refresh.
+      if (key === "telegram_bot_token") {
         await qc.invalidateQueries({ queryKey: ["bot-identity"] });
         await refetchIdentity();
       }
@@ -98,7 +99,7 @@ export function MessagingBridgeSettings() {
     try {
       await deleteSecret.mutateAsync(key);
       toast({ title: "Removed", description: `${key} cleared.` });
-      if (key === "telegram_bot_token" || key === "twilio_whatsapp_from") {
+      if (key === "telegram_bot_token") {
         await qc.invalidateQueries({ queryKey: ["bot-identity"] });
         await refetchIdentity();
       }
@@ -234,7 +235,7 @@ export function MessagingBridgeSettings() {
         )}
         {botIdentity && !botIdentity.telegram.username && !botIdentity.whatsapp.number && !botIdentity.telegram.error && (
           <p className="text-xs text-muted-foreground">
-            No channels are configured yet. Save a Telegram bot token or Twilio WhatsApp credentials above first.
+            No channels are configured yet. Save a Telegram bot token, or complete the WhatsApp Meta setup wizard above.
           </p>
         )}
         {botIdentity?.telegram.configured && !botIdentity.telegram.username && !botIdentity.telegram.error && (
