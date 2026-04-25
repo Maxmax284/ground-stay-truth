@@ -55,6 +55,7 @@ import { MessagingConnectCard } from "@/components/MessagingConnectCard";
 import { GuestPersonalGuideCard } from "@/components/GuestPersonalGuideCard";
 import { GuestStaySummary } from "@/components/GuestStaySummary";
 import { GuestPickupCard } from "@/components/GuestPickupCard";
+import { ArrivalRouteFAQ } from "@/components/ArrivalRouteFAQ";
 import { GuestDepositSection } from "@/components/GuestDepositSection";
 import { GuestPaymentSummary } from "@/components/GuestPaymentSummary";
 import { PreArrivalChecklist } from "@/components/PreArrivalChecklist";
@@ -849,6 +850,11 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
         {/* Airport Pickup info */}
         {!["completed", "cancelled", "no_show"].includes(state) && (
           <GuestPickupCard bookingId={booking.id} guestName={guestName} />
+        )}
+
+        {/* Transit vs. Arrival FAQ — clarifies BKK/DMK/URT vs USM */}
+        {!["completed", "cancelled", "no_show"].includes(state) && (
+          <ArrivalRouteFAQ />
         )}
 
         {/* Training Program info (only shown if booking has training links) */}
