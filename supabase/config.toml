@@ -83,3 +83,6 @@ verify_jwt = false
 
 [functions.line-check-webhook]
 verify_jwt = false
+
+[functions.whatsapp-meta-webhook]
+verify_jwt = false
