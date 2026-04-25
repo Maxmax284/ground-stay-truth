@@ -403,6 +403,232 @@ export const AIRPORT_FACTS: Record<string, AirportFacts> = {
       transportAvailability: "Pre-arranged pickup is best for late arrivals. Grab is unreliable after 21:00. No songthaews at night.",
     },
   },
+
+  dmk: {
+    code: "DMK",
+    name: "Don Mueang",
+    fullName: "Don Mueang International Airport (DMK)",
+    type: "Bangkok's secondary airport — budget carrier hub (AirAsia, Nok Air, Thai Lion)",
+    immigration: {
+      estimatedTime: "15–45 minutes — usually faster than BKK",
+      tips: [
+        "Have passport and TDAC confirmation ready",
+        "Smaller and less crowded than Suvarnabhumi (BKK)",
+        "If arriving on a domestic flight, no immigration needed",
+      ],
+      formRequired: "Thailand Digital Arrival Card (TDAC) — complete online before travel at tdac.immigration.go.th",
+      eVisaAvailable: true,
+    },
+    customs: {
+      greenChannel: true,
+      declarationForm: false,
+      tips: [
+        "Walk through the green channel unless declaring something",
+        "Same restrictions: no vapes/e-cigarettes, alcohol/cigarette limits apply",
+      ],
+    },
+    simCards: {
+      providers: ["AIS", "TrueMove H", "DTAC"],
+      locations: "Arrivals hall — counters near the exit",
+      costRange: "฿299–฿599 tourist SIM (7–30 days)",
+      tips: [
+        "AIS and TrueMove H both have great Samui coverage",
+        "Bring passport for SIM registration",
+        "If counters are closed late at night, any 7-Eleven sells SIMs",
+      ],
+    },
+    cash: {
+      atmLocations: "ATMs in arrivals area — multiple options",
+      exchangeLocations: "Exchange counters at arrivals. SuperRich kiosks tend to give the best rates.",
+      tips: [
+        "฿220 ATM fee for foreign cards — withdraw a larger amount",
+        "Cash is king on Samui — have baht ready",
+      ],
+      recommendedAmount: "฿5,000–10,000 for first few days",
+    },
+    transport: {
+      toCamp: [
+        {
+          name: "Domestic flight DMK → USM",
+          cost: "฿1,500–4,000",
+          duration: "~1.5 hours flight + transfers",
+          notes: "AirAsia and Nok Air operate budget flights. Often cheaper than BKK direct flights to Samui.",
+        },
+        {
+          name: "Flight DMK → URT (Surat Thani) + ferry",
+          cost: "฿1,200–2,500 total",
+          duration: "~4–6 hours total (flight + transfer + ferry)",
+          notes: "Popular budget route. Fly to Surat Thani, take a transfer bus to Donsak Pier, then ferry to Samui. Lomprayah and Raja Ferry operate the route.",
+        },
+        {
+          name: "Lomprayah / bus + ferry combo",
+          cost: "฿1,100–1,500",
+          duration: "~10–12 hours",
+          notes: "Long but cheap overland option. Departs from central Bangkok areas.",
+        },
+      ],
+      withinAirport: [
+        "Free shuttle bus between DMK and BKK (~50 min, 04:00–24:00)",
+        "Metered taxis from Level 1 (meter + ฿50 surcharge)",
+        "Grab/Bolt available from Level 1",
+        "Airport bus to central Bangkok (฿30–50)",
+      ],
+      tips: [
+        "DMK has 2 terminals — T1 (international) and T2 (domestic). Walking distance between them.",
+        "If connecting from international to domestic flight, allow 2+ hours",
+        "Always use the official taxi queue — never the touts inside",
+      ],
+    },
+    terminal: {
+      layout: "Two terminals (T1 international, T2 domestic) connected by a covered walkway",
+      floors: "Standard layout — Arrivals on Level 1, Departures on Level 3",
+      meetingPoints: ["Arrivals hall meeting point near exit", "Information counters in both terminals"],
+      food: "Food court on Level 4. 7-Eleven and small cafes throughout. 24-hour options available.",
+      tips: [
+        "Free WiFi: 'DMK Free WiFi' — re-register every 2 hours",
+        "Smaller and easier to navigate than BKK",
+        "Luggage carts free in arrivals",
+      ],
+    },
+    routeToCamp: {
+      estimatedTime: "Not direct — connecting flight or flight+ferry needed to reach Samui",
+      landmarks: ["DMK → USM (direct flight)", "DMK → URT → Donsak Pier → Nathon", "Final 20–30 min drive to camp"],
+      description: "DMK is in northern Bangkok, ~30km from BKK. Guests must take a connecting flight or the budget flight+ferry route via Surat Thani to reach Koh Samui. From the Samui airport or pier, the camp is 20–30 min south to Lamai.",
+    },
+    weather: {
+      rainySeasonMonths: "May – October (Bangkok pattern, different from Samui)",
+      hotSeasonMonths: "March – May",
+      tips: [
+        "Bangkok weather doesn't predict Samui weather — they have separate patterns",
+        "Pack a light layer — flights and airports are heavily air-conditioned",
+      ],
+    },
+    connectivity: {
+      airportWifi: "'DMK Free WiFi' — 2-hour sessions, re-register to extend",
+      tips: [
+        "WiFi is decent for messaging — slow for downloads",
+        "Get a SIM if you'll be in Bangkok for any layover time",
+      ],
+    },
+    lateNight: {
+      lastFlightApprox: "Arrivals continue past midnight on budget routes",
+      safetyTips: [
+        "DMK is safe 24/7 with active security",
+        "Use only the official taxi queue",
+        "Late-night Grab works but surge pricing applies",
+      ],
+      transportAvailability: "Taxis 24/7. Free shuttle to BKK runs 04:00–24:00. Airport buses limited overnight.",
+    },
+  },
+
+  urt: {
+    code: "URT",
+    name: "Surat Thani",
+    fullName: "Surat Thani International Airport (URT)",
+    type: "Small mainland airport — gateway to the Samui-Phangan-Tao ferry route",
+    immigration: {
+      estimatedTime: "5–15 minutes (small airport, fast)",
+      tips: [
+        "Most arrivals here are domestic (no immigration)",
+        "International immigration only for limited regional flights",
+      ],
+      formRequired: "TDAC required for international arrivals — complete online beforehand",
+      eVisaAvailable: false,
+    },
+    customs: {
+      greenChannel: true,
+      declarationForm: false,
+      tips: [
+        "Very relaxed — most passengers walk straight through",
+      ],
+    },
+    simCards: {
+      providers: ["AIS", "TrueMove H"],
+      locations: "Limited counters at arrivals — 7-Eleven nearby is reliable backup",
+      costRange: "฿299–฿499 tourist SIM",
+      tips: [
+        "If you didn't grab a SIM in Bangkok, do it here — coverage is solid on the ferry route",
+        "AIS works best across Surat Thani → Donsak → Samui",
+      ],
+    },
+    cash: {
+      atmLocations: "1–2 ATMs at arrivals",
+      exchangeLocations: "Limited — better to arrive with baht already",
+      tips: [
+        "Withdraw enough cash here for your transfer + ferry tickets",
+        "Ferry counters often prefer cash",
+      ],
+      recommendedAmount: "฿2,000–3,000 for transfer + ferry + snacks",
+    },
+    transport: {
+      toCamp: [
+        {
+          name: "Airport transfer bus + Lomprayah / Raja ferry",
+          cost: "฿400–800 combo ticket",
+          duration: "3–5 hours (transfer ~1.5hr + ferry ~1.5–2hr)",
+          notes: "Most common route. Buy combo ticket at airport — they'll bus you to Donsak Pier and you connect to the ferry.",
+        },
+        {
+          name: "Private taxi to Donsak Pier + ferry",
+          cost: "฿1,200–1,800 taxi + ฿300–500 ferry",
+          duration: "~3 hours total",
+          notes: "Faster than bus transfer. Useful if your flight times don't align with the bus.",
+        },
+        {
+          name: "Songserm slow ferry (alternative)",
+          cost: "฿200–400 ferry",
+          duration: "Longer ferry crossing (~3+ hours)",
+          notes: "Cheaper but slower. Only use if you have time and want to save money.",
+        },
+      ],
+      withinAirport: [
+        "Tiny single-terminal airport — everything is within 2 minutes walk",
+        "Airport buses depart from outside arrivals",
+      ],
+      tips: [
+        "Buy your ferry combo ticket at the airport counter — easier than arranging at the pier",
+        "Don't engage with aggressive touts — go to official ferry/transfer counters",
+      ],
+    },
+    terminal: {
+      layout: "Single small terminal, single level",
+      floors: "One floor only — arrivals and departures share the building",
+      meetingPoints: ["Main exit area outside arrivals"],
+      food: "Very basic — small cafe and convenience options. Eat on the ferry or at Donsak Pier.",
+      tips: [
+        "Very calm, easy airport — almost no waiting",
+        "If your bus to Donsak isn't ready, there's a covered waiting area",
+      ],
+    },
+    routeToCamp: {
+      estimatedTime: "Not direct — transfer to Donsak Pier (~1.5hr) then ferry to Samui (~1.5–2hr)",
+      landmarks: ["URT Airport", "Surat Thani town (bypass)", "Donsak Pier", "Ferry crossing", "Nathon or Lipa Noi Pier on Samui", "20–30 min drive to camp"],
+      description: "URT is on the mainland, ~70km from Donsak Pier. The standard route: airport transfer bus to Donsak (~1.5hr) → ferry to Samui (~1.5–2hr) → land at Nathon or Lipa Noi → 20–30 min drive south to camp in Lamai.",
+    },
+    weather: {
+      rainySeasonMonths: "October – December (Gulf coast pattern, similar to Samui)",
+      hotSeasonMonths: "February – May",
+      tips: [
+        "Surat Thani weather usually mirrors Samui — if it's stormy here, it might be stormy on the crossing",
+        "Heavy rain can delay ferries",
+      ],
+    },
+    connectivity: {
+      airportWifi: "Basic free WiFi at the terminal",
+      tips: [
+        "Mobile signal is solid across the route — AIS/True work well",
+        "WiFi on ferries is limited or absent — download offline content beforehand",
+      ],
+    },
+    lateNight: {
+      lastFlightApprox: "Last flights ~21:00",
+      safetyTips: [
+        "Very safe small airport",
+        "If you arrive too late for the last ferry, there are guesthouses near Donsak Pier",
+      ],
+      transportAvailability: "Transfer buses align with flight arrivals. Last ferries usually ~17:00–18:00 — late arrivals may need to overnight on the mainland.",
+    },
+  },
 };
 
 // ── Pier Facts ──────────────────────────────────────────────────────────────
