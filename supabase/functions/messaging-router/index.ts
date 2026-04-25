@@ -812,13 +812,13 @@ async function fetchRelevantIntelligence(
     for (const t of tokens) if (hay.includes(t)) score += 1;
     if (e.type === "heads_up" && (e.severity === "urgent" || e.severity === "attention")) score += 1;
     return { e, score };
-  }).filter((x) => x.score > 0)
-    .sort((a, b) => b.score - a.score)
+  }).filter((x: any) => x.score > 0)
+    .sort((a: any, b: any) => b.score - a.score)
     .slice(0, 3);
 
   if (!scored.length) return "";
   const lang = (detectedLang || "en").toLowerCase();
-  const lines = scored.map(({ e }) => {
+  const lines = scored.map(({ e }: any) => {
     const tag = e.type === "heads_up"
       ? `HEADS UP${e.severity && e.severity !== "normal" ? ` [${e.severity}]` : ""}`
       : "PLAYBOOK";
