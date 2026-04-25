@@ -28,7 +28,7 @@ export type TravelState =
   | "pre_departure"        // No landing, no transit — guest hasn't left yet
   | "missing_final_flight" // Has international flight but no domestic — can't schedule pickup
   | "awaiting_departure"   // Final flight known, guest hasn't landed yet
-  | "in_transit_bkk"       // Guest landed in BKK, connecting flight expected
+  | "in_transit_bkk"       // Guest landed at a mainland transit node (BKK, DMK, URT) — final leg pending
   | "arriving"             // Guest confirmed landing at final destination
   | "arrived"              // Pickup completed
   | "cancelled"            // Pickup cancelled
@@ -224,7 +224,11 @@ export function getTravelState(pickup: PickupData): TravelStateInfo {
   const hasFinalFlight = !!finalFlight;
   const confirmedAirportLower = confirmed_airport?.toLowerCase() ?? null;
   const hasLanded = !!guest_landed_at;
-  const isInTransit = hasLanded && confirmedAirportLower === "bkk" && hasContextFlight && arrivalType === "flight";
+  // Mainland transit airports: BKK (Suvarnabhumi), DMK (Don Mueang), URT (Surat Thani).
+  // None of these are the final Samui arrival — guest still needs a connecting flight or ferry.
+  const MAINLAND_TRANSIT_AIRPORTS = new Set(["bkk", "dmk", "urt", "surat_thani", "suratthani"]);
+  const isAtMainlandTransit = !!confirmedAirportLower && MAINLAND_TRANSIT_AIRPORTS.has(confirmedAirportLower);
+  const isInTransit = hasLanded && isAtMainlandTransit && (arrivalType === "flight" || arrivalType === "hybrid");
 
   const pickupRes = resolvePickupStatus(transportIntent, pickupEnabled);
   const isNoPickup = pickupRes !== "pickup_scheduled";
