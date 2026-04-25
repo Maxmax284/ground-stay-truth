@@ -92,9 +92,9 @@ describe("GuestPickupCard — Travel State Guidance", () => {
     mockPickup.confirmed_airport = "BKK";
     mockPickup.guest_landed_at = new Date().toISOString();
     renderCard();
-    expect(screen.getByText(/landed in Bangkok/i)).toBeInTheDocument();
-    expect(screen.getByText(/connecting flight PG157/i)).toBeInTheDocument();
-    expect(screen.getByText(/driver will meet you at Samui/i)).toBeInTheDocument();
+    expect(screen.getByText(/landed at Bangkok/i)).toBeInTheDocument();
+    expect(screen.getByText(/PG157/)).toBeInTheDocument();
+    expect(screen.getByText(/arrive on Samui/i)).toBeInTheDocument();
   });
 
   it("in_transit_bkk (without domestic): prompts for connecting flight", () => {
@@ -102,8 +102,8 @@ describe("GuestPickupCard — Travel State Guidance", () => {
     mockPickup.confirmed_airport = "BKK";
     mockPickup.guest_landed_at = new Date().toISOString();
     renderCard();
-    expect(screen.getByText(/landed in Bangkok/i)).toBeInTheDocument();
-    expect(screen.getByText(/provide your connecting flight/i)).toBeInTheDocument();
+    expect(screen.getByText(/landed at Bangkok/i)).toBeInTheDocument();
+    expect(screen.getByText(/share your connecting flight/i)).toBeInTheDocument();
   });
 
   it("arriving: shows arrival confirmation", () => {
