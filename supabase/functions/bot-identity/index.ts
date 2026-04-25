@@ -89,14 +89,20 @@ serve(async (req) => {
       }
     }
 
-    // ── WhatsApp: derive number from saved Twilio "from" secret ──
-    // twilio_whatsapp_from is stored as +14155238886 (or "whatsapp:+14155238886")
+    // ── WhatsApp: derive number from saved policy setting (admin-entered) ──
+    // whatsapp_public_number is the public-facing E.164 number guests deep-link to.
+    // Stored as a policy setting because it's display-only (not a secret).
     let whatsapp: { configured: boolean; number: string | null } = {
       configured: false, number: null,
     };
-    const waFrom = await getSecret(admin, "twilio_whatsapp_from");
-    if (waFrom) {
-      const cleaned = waFrom.replace(/^whatsapp:/i, "").replace(/[^\d+]/g, "");
+    const { data: waNumberRow } = await admin
+      .from("policy_settings")
+      .select("value")
+      .eq("key", "whatsapp_public_number")
+      .maybeSingle();
+    const waFromRaw = waNumberRow?.value ? String(waNumberRow.value).replace(/^"|"$/g, "") : "";
+    if (waFromRaw) {
+      const cleaned = waFromRaw.replace(/^whatsapp:/i, "").replace(/[^\d+]/g, "");
       if (cleaned.length >= 6) {
         whatsapp = { configured: true, number: cleaned.startsWith("+") ? cleaned.slice(1) : cleaned };
       }

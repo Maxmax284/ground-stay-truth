@@ -178,98 +178,86 @@ async function sendLine(
   return { ok: true };
 }
 
-async function sendTwilio(
+async function sendTwilioSms(
   admin: any,
-  channel: "sms" | "whatsapp",
   toNumber: string,
   text: string,
-  waIntent?: import("../_shared/richMessages.ts").WhatsAppIntent | null,
 ): Promise<{ ok: boolean; error?: string }> {
-  const [{ data: sidRow }, { data: tokenRow }, { data: smsFromRow }, { data: waFromRow }] = await Promise.all([
+  const [{ data: sidRow }, { data: tokenRow }, { data: smsFromRow }] = await Promise.all([
     admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "twilio_account_sid").maybeSingle(),
     admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "twilio_auth_token").maybeSingle(),
     admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "twilio_sms_from").maybeSingle(),
-    admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "twilio_whatsapp_from").maybeSingle(),
   ]);
   if (!sidRow?.encrypted_value || !tokenRow?.encrypted_value) return { ok: false, error: "twilio not configured" };
   const sid = sidRow.encrypted_value;
-  const fromRaw = (channel === "sms" ? smsFromRow?.encrypted_value : waFromRow?.encrypted_value);
-  if (!fromRaw) return { ok: false, error: `twilio_${channel}_from not configured` };
-
-  const from = channel === "whatsapp" ? `whatsapp:${fromRaw}` : fromRaw;
-  const to = channel === "whatsapp" && !toNumber.startsWith("whatsapp:") ? `whatsapp:${toNumber}` : toNumber;
+  const from = smsFromRow?.encrypted_value;
+  if (!from) return { ok: false, error: "twilio_sms_from not configured" };
 
   const auth = btoa(`${sid}:${tokenRow.encrypted_value}`);
   const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
 
-  // ── WhatsApp rich-format path ─────────────────────────────────────────
-  // Twilio's WhatsApp interactive messages (Reply Buttons / List Messages)
-  // require a pre-approved Content Template SID. If the org has configured a
-  // Content SID for this intent kind in integration_secrets, use it. Otherwise
-  // we still upgrade the presentation by attaching media (for media intents)
-  // or sending a clearly numbered options text (matches the human-voice rules
-  // and is fully WhatsApp-compatible without templates).
-  if (channel === "whatsapp" && waIntent) {
-    if (waIntent.kind === "media") {
-      const r = await fetch(url, {
-        method: "POST",
-        headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ To: to, From: from, Body: waIntent.caption.slice(0, 1500), MediaUrl: waIntent.mediaUrl }),
-      });
-      if (r.ok) return { ok: true };
-      // Fall through to plain text on failure.
-    } else {
-      // Look for an org-configured Content Template SID for this intent kind.
-      const sidKey = waIntent.kind === "reply_buttons"
-        ? "twilio_wa_content_sid_reply_buttons"
-        : "twilio_wa_content_sid_list";
-      const { data: contentRow } = await admin
-        .from("integration_secrets").select("encrypted_value").eq("secret_key", sidKey).maybeSingle();
-      const contentSid = contentRow?.encrypted_value;
-      if (contentSid) {
-        // Variables passed positionally; template owner controls layout.
-        const vars: Record<string, string> = { "1": waIntent.body.slice(0, 1024) };
-        if (waIntent.kind === "reply_buttons") {
-          waIntent.buttons.slice(0, 3).forEach((b, i) => { vars[String(i + 2)] = b.label.slice(0, 24); });
-        } else {
-          // First 9 list items as variables 2..10.
-          const flat = waIntent.sections.flatMap((s) => s.items).slice(0, 9);
-          flat.forEach((it, i) => { vars[String(i + 2)] = it.title.slice(0, 24); });
-        }
-        const r = await fetch(url, {
-          method: "POST",
-          headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({ To: to, From: from, ContentSid: contentSid, ContentVariables: JSON.stringify(vars) }),
-        });
-        if (r.ok) return { ok: true };
-        // Fall through to structured plain-text fallback.
-      }
-      // No template configured (or template send failed) — send numbered text
-      // representation so the upgrade still beats a plain wall of text.
-      const fallback = whatsAppIntentToText(waIntent);
-      const r = await fetch(url, {
-        method: "POST",
-        headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ To: to, From: from, Body: fallback.slice(0, 1500) }),
-      });
-      if (r.ok) return { ok: true };
-      const body = await r.text();
-      return { ok: false, error: `twilio ${r.status}: ${body.slice(0, 200)}` };
-    }
-  }
-
-  // ── SMS / WhatsApp plain-text path (unchanged) ────────────────────────
   const resp = await fetch(url, {
     method: "POST",
-    headers: {
-      Authorization: `Basic ${auth}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({ To: to, From: from, Body: text }),
+    headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ To: toNumber, From: from, Body: text }),
   });
   if (!resp.ok) {
     const body = await resp.text();
     return { ok: false, error: `twilio ${resp.status}: ${body.slice(0, 200)}` };
+  }
+  return { ok: true };
+}
+
+// WhatsApp via Meta Cloud API (direct, no Twilio).
+// Sends a free-form text message inside the 24h customer service window.
+// For proactive sends outside the window, an approved template is required —
+// not implemented here (caller should use email/SMS for proactive in that case).
+async function sendWhatsAppMeta(
+  admin: any,
+  toNumber: string,
+  text: string,
+  waIntent?: import("../_shared/richMessages.ts").WhatsAppIntent | null,
+): Promise<{ ok: boolean; error?: string }> {
+  const [{ data: tokenRow }, { data: phoneIdRow }] = await Promise.all([
+    admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "whatsapp_meta_access_token").maybeSingle(),
+    admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "whatsapp_meta_phone_number_id").maybeSingle(),
+  ]);
+  if (!tokenRow?.encrypted_value || !phoneIdRow?.encrypted_value) {
+    return { ok: false, error: "whatsapp_meta not configured" };
+  }
+  const accessToken = tokenRow.encrypted_value;
+  const phoneId = phoneIdRow.encrypted_value;
+
+  // Meta expects E.164 without leading "+" allowed either way; strip whatsapp: prefix.
+  const to = toNumber.replace(/^whatsapp:/i, "").replace(/^\+/, "");
+
+  // Build body — use rich-intent fallback to numbered text if provided.
+  let body = text;
+  if (waIntent) {
+    if (waIntent.kind === "media") {
+      body = waIntent.caption;
+    } else {
+      body = whatsAppIntentToText(waIntent);
+    }
+  }
+
+  const url = `https://graph.facebook.com/v21.0/${phoneId}/messages`;
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to,
+      type: "text",
+      text: { body: body.slice(0, 4096) },
+    }),
+  });
+  if (!resp.ok) {
+    const errBody = await resp.text();
+    return { ok: false, error: `whatsapp_meta ${resp.status}: ${errBody.slice(0, 200)}` };
   }
   return { ok: true };
 }
@@ -439,9 +427,9 @@ serve(async (req) => {
         result = await sendTelegram(admin, b.chat_id, text, tgRich);
       } else if (b.channel === "whatsapp") {
         const waIntent = buildWhatsAppForEvent(event_type, metadata as Record<string, any>, lang, role);
-        result = await sendTwilio(admin, b.channel, b.chat_id, text, waIntent);
+        result = await sendWhatsAppMeta(admin, b.chat_id, text, waIntent);
       } else if (b.channel === "sms") {
-        result = await sendTwilio(admin, b.channel, b.chat_id, text);
+        result = await sendTwilioSms(admin, b.chat_id, text);
       } else if (b.channel === "line") {
         // Presentation upgrade only — text fallback unchanged.
         const flex = buildFlexForEvent(event_type, metadata as Record<string, any>, lang as LineLang);
