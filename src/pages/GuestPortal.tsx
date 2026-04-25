@@ -852,9 +852,9 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
           <GuestPickupCard bookingId={booking.id} guestName={guestName} />
         )}
 
-        {/* Transit vs. Arrival FAQ — clarifies BKK/DMK/URT vs USM */}
+        {/* Transit vs. Arrival FAQ — clarifies BKK/DMK/URT vs USM, with stage awareness */}
         {!["completed", "cancelled", "no_show"].includes(state) && (
-          <ArrivalRouteFAQ />
+          <ArrivalRouteFAQ bookingId={booking.id} />
         )}
 
         {/* Training Program info (only shown if booking has training links) */}

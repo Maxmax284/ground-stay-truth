@@ -1326,5 +1326,94 @@
       "landedSuccess": "Confirmed! Staff has been notified. Your driver is on the way.",
       "alreadyLanded": "You've already confirmed your landing."
     }
+  },
+  "arrivalFAQ": {
+    "title": "Getting to Koh Samui — Quick FAQ",
+    "badge": "Transit vs. Arrival",
+    "lead": "Only USM (Koh Samui Airport) and the island piers count as your final arrival. Everything else is still in transit — even if you've already landed in Thailand.",
+    "youAreHere": "You're here",
+    "messageStaff": "Message staff at this stage",
+    "printSheet": "Print arrival sheet",
+    "printBlocked": "Pop-up blocked — please allow pop-ups to print.",
+    "printTitle": "Arrival Instructions — Koh Samui",
+    "arrivedNote": "You've arrived. No further transit steps needed.",
+    "nextStep": "Next step",
+    "stage": {
+      "pre_departure": "Not yet landed",
+      "bkk": "At BKK (Bangkok)",
+      "dmk": "At DMK (Don Mueang)",
+      "urt": "At URT (Surat Thani)",
+      "ferry": "On the ferry",
+      "pier": "At Samui pier",
+      "usm": "Landed at USM"
+    },
+    "next": {
+      "pre_departure": "Confirm you've landed once you reach Thailand.",
+      "bkk": "Catch your connecting flight to USM, or onward to URT for the ferry.",
+      "dmk": "Catch your connecting flight (USM or URT). Allow 4+ hrs if transferring to BKK.",
+      "urt": "Take the shuttle to Donsak pier, then ferry to Nathon or Lipa Noi.",
+      "ferry": "Tell us when you're a few minutes from the pier.",
+      "pier": "Pickup activates — your driver is on the way.",
+      "usm": "Pickup activates — your driver is on the way."
+    },
+    "timeline": {
+      "depart": "Departing",
+      "transit": "Mainland transit",
+      "crossing": "Ferry / connecting",
+      "samui": "On Koh Samui"
+    },
+    "q": {
+      "why": "Why doesn't BKK / DMK / URT count as \"arrived\"?",
+      "whatToTell": "What should I tell staff at each stage?"
+    },
+    "a": {
+      "why": "Those airports are on the Thai mainland. You still need a connecting flight or a ferry to reach the island. Until your feet hit Samui, the team treats you as in transit — pickup isn't dispatched yet, but staff can see your route."
+    },
+    "s": {
+      "bkkUsm": {
+        "title": "Scenario: BKK → USM (direct connection)",
+        "body": "You land at BKK, clear immigration, then catch your domestic leg to Samui (USM). The system shows you as in transit — Bangkok until USM lands. Once USM lands, status flips to arrived and pickup goes live."
+      },
+      "dmkUsm": {
+        "title": "Scenario: DMK → USM (budget Bangkok route)",
+        "body": "Don Mueang is Bangkok's second airport — usually cheaper, mostly budget carriers. Same rule: landing at DMK keeps you in transit. Final arrival is USM. Heads up: BKK and DMK are not the same airport — leave 4+ hours if connecting."
+      },
+      "urtFerry": {
+        "title": "Scenario: DMK / BKK → URT → ferry → Samui",
+        "body": "The budget route. Fly into Surat Thani (URT), then ferry to Nathon or Lipa Noi pier. Status stays in transit through both URT and the ferry. Final arrival = the pier you land at on Samui."
+      },
+      "usmDirect": {
+        "title": "Scenario: Direct flight straight to USM",
+        "body": "Easiest path. You land, you're arrived. No transit state. Pickup (if enabled) goes live the moment USM logs your landing."
+      }
+    },
+    "script": {
+      "title": "Message to send staff",
+      "desc": "Copy this and send it on any messaging channel you've connected."
+    },
+    "scriptText": {
+      "bkk": "Hi — I just landed at BKK (Bangkok Suvarnabhumi). Heading to my connecting flight now. I'll message again when I'm closer to Samui.",
+      "dmk": "Hi — I just landed at DMK (Don Mueang). Catching my next flight soon. Will update once I'm in Samui.",
+      "urt": "Hi — I've landed at Surat Thani (URT). Heading to the ferry to Samui. I'll let you know when I'm on the boat.",
+      "ferry": "Hi — I'm on the ferry to Samui now. Will message again when I'm a few minutes from the pier.",
+      "pier": "Hi — just reached the pier on Samui (Nathon / Lipa Noi). Ready for pickup.",
+      "usm": "Hi — landed at USM (Koh Samui Airport). Ready for pickup."
+    },
+    "print": {
+      "bookingId": "Booking",
+      "intlFlight": "International flight",
+      "finalFlight": "Final/connecting flight",
+      "arrivalTime": "Arrival time",
+      "ruleTitle": "Transit vs. Arrival rule",
+      "ruleBody": "BKK, DMK and URT are mainland transit checkpoints — staff sees you in transit until you reach Koh Samui. USM (Samui Airport) and the Nathon / Lipa Noi piers count as final arrival. Pickup activates only at final arrival.",
+      "checkpoints": "Checkpoints",
+      "code": "Code",
+      "name": "Place",
+      "status": "Status",
+      "transit": "Transit",
+      "arrived": "Arrived",
+      "cheatTitle": "What to message staff at each stage",
+      "footer": "Print this sheet or save as PDF — keep it on your phone for the trip."
+    }
   }
 }
