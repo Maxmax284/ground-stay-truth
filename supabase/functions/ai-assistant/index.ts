@@ -515,7 +515,18 @@ Units: ${units.length} total (${activeUnits.length} active). Names: ${activeUnit
 Active bookings: ${bookingStates["confirmed"] || 0} confirmed, ${bookingStates["checked_in"] || 0} checked_in, ${bookingStates["pending_approval"] || 0} pending_approval, ${bookingStates["pending_deposit"] || 0} pending_deposit.
 Open maintenance requests: ${(maintenanceRes.data ?? []).length}.
 Active laundry requests: ${(laundryRes.data ?? []).length}.
-Deposit policy: ${depositMode}. Currency: ${currencySymbol}.`;
+Deposit policy: ${depositMode}. Currency: ${currencySymbol}.
+
+ROUTE CONTEXT — KOH SAMUI ARRIVAL OPTIONS (use only if relevant):
+- Direct flight to USM (Koh Samui) — fastest, most expensive. Bangkok Airways dominates.
+- BKK (Suvarnabhumi) → connecting domestic flight to USM — standard two-flight route.
+- DMK (Don Mueang) → connecting flight to USM — Bangkok's budget hub (AirAsia, Nok Air, Thai Lion). Often cheaper than BKK direct.
+- DMK or BKK → URT (Surat Thani) → transfer bus → Donsak Pier → ferry to Samui (Nathon or Lipa Noi). The "Bangkok budget route" — saves money vs flying direct, much faster than the 10–12hr overland bus.
+- Lomprayah / overland bus + ferry combo from Bangkok — cheapest, ~10–12 hours.
+
+CRITICAL: BKK, DMK, and URT (Surat Thani) are MAINLAND TRANSIT POINTS — not final arrival. The guest is not "on island" until they reach USM, Nathon Pier, or Lipa Noi Pier. If a guest says "I'm at DMK" or "I'm at Surat Thani" or "I'm on the ferry", they're still in transit — don't say their pickup is starting yet.
+
+Honest budget-route answer: "DMK is usually the cheaper Bangkok airport. From there, flying to Surat Thani and taking the ferry can save money vs flying direct to Samui, and it's way faster than the bus. What matters operationally is when you actually reach the island."`;
 
     // ─── ROLE-SPECIFIC CONTEXT EXPANSIONS ──────────────────────────────────
     const now = new Date();

@@ -812,13 +812,13 @@ async function fetchRelevantIntelligence(
     for (const t of tokens) if (hay.includes(t)) score += 1;
     if (e.type === "heads_up" && (e.severity === "urgent" || e.severity === "attention")) score += 1;
     return { e, score };
-  }).filter((x) => x.score > 0)
-    .sort((a, b) => b.score - a.score)
+  }).filter((x: any) => x.score > 0)
+    .sort((a: any, b: any) => b.score - a.score)
     .slice(0, 3);
 
   if (!scored.length) return "";
   const lang = (detectedLang || "en").toLowerCase();
-  const lines = scored.map(({ e }) => {
+  const lines = scored.map(({ e }: any) => {
     const tag = e.type === "heads_up"
       ? `HEADS UP${e.severity && e.severity !== "normal" ? ` [${e.severity}]` : ""}`
       : "PLAYBOOK";
@@ -1062,18 +1062,26 @@ async function getGuestPhase(
 }
 
 // ── Self-report arrival intent detection (hybrid: keyword + AI fallback) ──
+// Stage 2 = guest landed at a MAINLAND transit node (BKK, DMK, URT/Surat Thani) — still in transit.
+// Stage 3 = guest reached Koh Samui (USM, Nathon, Lipa Noi, ferry-onboard, on the island).
 const STAGE2_KEYWORDS = [
   /\bjust\s+landed\b/i, /\blanded\b/i, /\btouched?\s*down\b/i,
-  /\bat\s+bkk\b/i, /\bat\s+suvarnabhumi\b/i, /\bat\s+don\s*mueang\b/i,
-  /\bmade\s+it\s+to\s+(bangkok|thailand|bkk)\b/i,
-  /\barrived\s+(in|at)\s+(bangkok|bkk|thailand)\b/i,
+  /\bat\s+bkk\b/i, /\bat\s+suvarnabhumi\b/i,
+  /\bat\s+dmk\b/i, /\bat\s+don\s*mueang\b/i, /\bdon\s*muang\b/i,
+  /\bat\s+urt\b/i, /\bat\s+surat\s*thani\b/i, /\bin\s+surat\s*thani\b/i,
+  /\bmade\s+it\s+to\s+(bangkok|thailand|bkk|dmk|surat\s*thani)\b/i,
+  /\barrived\s+(in|at)\s+(bangkok|bkk|dmk|don\s*mueang|surat\s*thani|urt|thailand)\b/i,
   /\bin\s+bangkok\b/i,
+  /\bdoing\s+the\s+(cheap|budget)\s+route\b/i, /\bbudget\s+route\b/i,
 ];
 const STAGE3_KEYWORDS = [
   /\bon\s+the\s+(ferry|boat)\b/i, /\bat\s+the\s+pier\b/i,
+  /\bat\s+(nathon|lipa\s*noi)\s*(pier)?\b/i,
+  /\breached\s+(nathon|lipa\s*noi|samui)\b/i,
   /\bgot\s+to\s+samui\b/i, /\barrived\s+on\s+(island|samui)\b/i,
   /\bon\s+samui\b/i, /\bjust\s+got\s+(here|to\s+samui)\b/i,
   /\bat\s+(usm|samui)\s*airport\b/i, /\blanded\s+(in|on|at)\s+samui\b/i,
+  /\bferry\s+(arrived|docked|landed)\b/i,
 ];
 function keywordMatchStage(text: string): "stage_2_landed" | "stage_3_island" | null {
   if (STAGE3_KEYWORDS.some((r) => r.test(text))) return "stage_3_island";

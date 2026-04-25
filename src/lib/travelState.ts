@@ -28,7 +28,7 @@ export type TravelState =
   | "pre_departure"        // No landing, no transit — guest hasn't left yet
   | "missing_final_flight" // Has international flight but no domestic — can't schedule pickup
   | "awaiting_departure"   // Final flight known, guest hasn't landed yet
-  | "in_transit_bkk"       // Guest landed in BKK, connecting flight expected
+  | "in_transit_bkk"       // Guest landed at a mainland transit node (BKK, DMK, URT) — final leg pending
   | "arriving"             // Guest confirmed landing at final destination
   | "arrived"              // Pickup completed
   | "cancelled"            // Pickup cancelled
@@ -224,7 +224,11 @@ export function getTravelState(pickup: PickupData): TravelStateInfo {
   const hasFinalFlight = !!finalFlight;
   const confirmedAirportLower = confirmed_airport?.toLowerCase() ?? null;
   const hasLanded = !!guest_landed_at;
-  const isInTransit = hasLanded && confirmedAirportLower === "bkk" && hasContextFlight && arrivalType === "flight";
+  // Mainland transit airports: BKK (Suvarnabhumi), DMK (Don Mueang), URT (Surat Thani).
+  // None of these are the final Samui arrival — guest still needs a connecting flight or ferry.
+  const MAINLAND_TRANSIT_AIRPORTS = new Set(["bkk", "dmk", "urt", "surat_thani", "suratthani"]);
+  const isAtMainlandTransit = !!confirmedAirportLower && MAINLAND_TRANSIT_AIRPORTS.has(confirmedAirportLower);
+  const isInTransit = hasLanded && isAtMainlandTransit && (arrivalType === "flight" || arrivalType === "hybrid");
 
   const pickupRes = resolvePickupStatus(transportIntent, pickupEnabled);
   const isNoPickup = pickupRes !== "pickup_scheduled";
@@ -339,21 +343,28 @@ export function getTravelState(pickup: PickupData): TravelStateInfo {
 
   // ── Flight-based arrival logic (existing, preserved) ──
 
-  // Guest is in transit at BKK — NOT ready for dispatch
+  // Guest is in transit at a mainland node (BKK / DMK / URT) — NOT ready for dispatch
   if (isInTransit) {
+    const nodeLabel =
+      confirmedAirportLower === "dmk" ? "DMK (Don Mueang)" :
+      confirmedAirportLower === "urt" || confirmedAirportLower === "surat_thani" || confirmedAirportLower === "suratthani" ? "Surat Thani (URT)" :
+      "Bangkok (BKK)";
+    const nextLeg = confirmedAirportLower === "urt" || confirmedAirportLower === "surat_thani" || confirmedAirportLower === "suratthani"
+      ? "ferry to Koh Samui"
+      : "connecting flight to Koh Samui";
     return {
       state: "in_transit_bkk",
       operationallyReady: false,
       hasContextFlight,
       hasFinalFlight,
       isInTransit: true,
-      staffLabel: "In Transit (BKK)",
+      staffLabel: `In Transit (${confirmedAirportLower?.toUpperCase()})`,
       staffDetail: hasFinalFlight
-        ? `Guest landed in Bangkok. Connecting via ${finalFlight} to Koh Samui. Do NOT dispatch driver yet.`
-        : `Guest landed in Bangkok but final flight to Samui is not confirmed. Await domestic flight details.`,
+        ? `Guest landed at ${nodeLabel}. ${nextLeg.charAt(0).toUpperCase() + nextLeg.slice(1)} via ${finalFlight}. Do NOT dispatch driver yet.`
+        : `Guest landed at ${nodeLabel}. Final ${nextLeg} not yet confirmed. Await onward leg details.`,
       guestGuidance: hasFinalFlight
-        ? `You've landed in Bangkok! Your connecting flight ${finalFlight} to Koh Samui is confirmed. Your driver will meet you at Samui airport.`
-        : "You've landed in Bangkok! Please provide your connecting flight to Koh Samui so we can time your pickup perfectly.",
+        ? `You've landed at ${nodeLabel}! Your ${nextLeg} (${finalFlight}) is confirmed. Your driver will meet you when you arrive on Samui.`
+        : `You've landed at ${nodeLabel}! Please share your ${nextLeg} details so we can time your pickup perfectly.`,
       severity: "warning",
     };
   }
