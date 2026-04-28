@@ -337,6 +337,7 @@ export type Database = {
           created_by: string | null
           flight_number: string | null
           guest_id: string | null
+          guest_tax_id: string | null
           guest_type: string | null
           id: string
           notes: string | null
@@ -357,6 +358,7 @@ export type Database = {
           created_by?: string | null
           flight_number?: string | null
           guest_id?: string | null
+          guest_tax_id?: string | null
           guest_type?: string | null
           id?: string
           notes?: string | null
@@ -377,6 +379,7 @@ export type Database = {
           created_by?: string | null
           flight_number?: string | null
           guest_id?: string | null
+          guest_tax_id?: string | null
           guest_type?: string | null
           id?: string
           notes?: string | null
@@ -1418,31 +1421,40 @@ export type Database = {
           created_at: string
           event_type: string
           id: string
+          last_error: string | null
+          last_retry_at: string | null
           payload: Json
           payment_id: string | null
           processed: boolean
           provider: string
           provider_event_id: string
+          retry_count: number
         }
         Insert: {
           created_at?: string
           event_type: string
           id?: string
+          last_error?: string | null
+          last_retry_at?: string | null
           payload?: Json
           payment_id?: string | null
           processed?: boolean
           provider: string
           provider_event_id: string
+          retry_count?: number
         }
         Update: {
           created_at?: string
           event_type?: string
           id?: string
+          last_error?: string | null
+          last_retry_at?: string | null
           payload?: Json
           payment_id?: string | null
           processed?: boolean
           provider?: string
           provider_event_id?: string
+          retry_count?: number
         }
         Relationships: [
           {
@@ -1454,10 +1466,50 @@ export type Database = {
           },
         ]
       }
+      payment_reconciliation_log: {
+        Row: {
+          actual: number | null
+          created_at: string
+          details: Json
+          expected: number | null
+          id: string
+          kind: string
+          payment_id: string | null
+          run_at: string
+          severity: string
+          stripe_object_id: string | null
+        }
+        Insert: {
+          actual?: number | null
+          created_at?: string
+          details?: Json
+          expected?: number | null
+          id?: string
+          kind: string
+          payment_id?: string | null
+          run_at?: string
+          severity?: string
+          stripe_object_id?: string | null
+        }
+        Update: {
+          actual?: number | null
+          created_at?: string
+          details?: Json
+          expected?: number | null
+          id?: string
+          kind?: string
+          payment_id?: string | null
+          run_at?: string
+          severity?: string
+          stripe_object_id?: string | null
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
-          booking_id: string
+          archived_booking_snapshot: Json | null
+          booking_id: string | null
           created_at: string
           description: string | null
           expires_at: string | null
@@ -1479,7 +1531,8 @@ export type Database = {
         }
         Insert: {
           amount: number
-          booking_id: string
+          archived_booking_snapshot?: Json | null
+          booking_id?: string | null
           created_at?: string
           description?: string | null
           expires_at?: string | null
@@ -1501,7 +1554,8 @@ export type Database = {
         }
         Update: {
           amount?: number
-          booking_id?: string
+          archived_booking_snapshot?: Json | null
+          booking_id?: string | null
           created_at?: string
           description?: string | null
           expires_at?: string | null
@@ -2118,6 +2172,74 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_invoices: {
+        Row: {
+          booking_id: string | null
+          buyer_email: string | null
+          buyer_name: string | null
+          buyer_tax_id: string | null
+          created_at: string
+          currency_code: string
+          gross_amount: number
+          id: string
+          invoice_number: string
+          issued_at: string
+          issued_by: string | null
+          net_amount: number
+          payment_id: string | null
+          pdf_storage_path: string | null
+          seller_snapshot: Json | null
+          tax_rate: number
+          vat_amount: number
+        }
+        Insert: {
+          booking_id?: string | null
+          buyer_email?: string | null
+          buyer_name?: string | null
+          buyer_tax_id?: string | null
+          created_at?: string
+          currency_code?: string
+          gross_amount: number
+          id?: string
+          invoice_number: string
+          issued_at?: string
+          issued_by?: string | null
+          net_amount: number
+          payment_id?: string | null
+          pdf_storage_path?: string | null
+          seller_snapshot?: Json | null
+          tax_rate: number
+          vat_amount: number
+        }
+        Update: {
+          booking_id?: string | null
+          buyer_email?: string | null
+          buyer_name?: string | null
+          buyer_tax_id?: string | null
+          created_at?: string
+          currency_code?: string
+          gross_amount?: number
+          id?: string
+          invoice_number?: string
+          issued_at?: string
+          issued_by?: string | null
+          net_amount?: number
+          payment_id?: string | null
+          pdf_storage_path?: string | null
+          seller_snapshot?: Json | null
+          tax_rate?: number
+          vat_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_invoices_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: true
+            referencedRelation: "payments"
             referencedColumns: ["id"]
           },
         ]
