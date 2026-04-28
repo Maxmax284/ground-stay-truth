@@ -2540,6 +2540,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_payment_event_retry: {
+        Args: { _error: string; _provider_event_id: string }
+        Returns: undefined
+      }
       is_secret_configured: { Args: { _key: string }; Returns: boolean }
     }
     Enums: {
