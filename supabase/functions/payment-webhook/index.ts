@@ -105,6 +105,34 @@ async function verifyAndNormalizeStripe(
     };
   }
 
+  // Refund lifecycle events (async confirmations from Stripe)
+  if (
+    event.type === "charge.refunded" ||
+    event.type === "refund.created" ||
+    event.type === "refund.updated" ||
+    event.type === "refund.failed"
+  ) {
+    const obj = event.data.object as any;
+    const normalizedType =
+      event.type === "refund.failed"
+        ? "refund.failed"
+        : obj.status === "succeeded"
+          ? "refund.succeeded"
+          : "refund.updated";
+    return {
+      provider: "stripe",
+      eventType: normalizedType,
+      providerEventId: event.id,
+      bookingId: obj.metadata?.booking_id || null,
+      idempotencyKey: obj.metadata?.payment_id || null,
+      amountPaid: (obj.amount || 0) / 100,
+      transactionId: obj.payment_intent || obj.id || null,
+      receiptUrl: null,
+      sessionId: null,
+      rawPayload: event.data.object,
+    };
+  }
+
   // Unhandled event type — log but don't process
   return {
     provider: "stripe",
