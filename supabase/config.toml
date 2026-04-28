@@ -86,3 +86,15 @@ verify_jwt = false
 
 [functions.whatsapp-meta-webhook]
 verify_jwt = false
+
+[functions.refund-payment]
+verify_jwt = false
+
+[functions.generate-tax-invoice]
+verify_jwt = false
+
+[functions.payment-webhook-watchdog]
+verify_jwt = false
+
+[functions.payment-reconciliation]
+verify_jwt = false

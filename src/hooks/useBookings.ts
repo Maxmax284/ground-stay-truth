@@ -456,7 +456,7 @@ export function useCreatePayment() {
   });
 }
 
-// ── Refund a payment ──
+// ── Refund a payment (calls Stripe FIRST via edge function, then DB) ──
 export function useRefundPayment() {
   const qc = useQueryClient();
   return useMutation({
@@ -466,51 +466,47 @@ export function useRefundPayment() {
       refundAmount: number;
       reason: string;
     }) => {
-      const { data: payment } = await supabase
-        .from("payments")
-        .select("amount, refund_amount")
-        .eq("id", params.paymentId)
-        .single();
-      if (!payment) throw new Error("Payment not found");
-
-      const alreadyRefunded = Number(payment.refund_amount ?? 0);
-      const totalRefund = alreadyRefunded + params.refundAmount;
-      const isFullRefund = totalRefund >= Number(payment.amount);
-
-      const { data, error } = await supabase
-        .from("payments")
-        .update({
-          refund_amount: totalRefund,
-          refund_reason: params.reason,
-          status: isFullRefund ? "refunded" : "partially_refunded",
-        } as any)
-        .eq("id", params.paymentId)
-        .select()
-        .single();
+      // Server-side: validates admin, calls Stripe, mutates DB only on Stripe success.
+      const { data, error } = await supabase.functions.invoke("refund-payment", {
+        body: {
+          payment_id: params.paymentId,
+          refund_amount: params.refundAmount,
+          reason: params.reason,
+        },
+      });
       if (error) throw error;
-
-      // Notify admins
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: currencyPolicy } = await supabase
-        .from("policy_settings")
-        .select("value")
-        .eq("key", "currency_symbol")
-        .maybeSingle();
-      const currSym = currencyPolicy?.value ? String(currencyPolicy.value).replace(/^"|"$/g, "") : "฿";
-
-      const { data: admins } = await supabase.from("user_roles").select("user_id").in("role", ["admin", "manager"]);
-      const batch: Array<{ user_id: string; type: string; reference_id: string; message: string }> = [];
-      for (const admin of admins ?? []) {
-        if (admin.user_id !== user?.id) {
-          batch.push({
-            user_id: admin.user_id,
-            type: "booking",
-            reference_id: params.bookingId,
-            message: `Refund of ${currSym}${params.refundAmount.toFixed(2)} issued: ${params.reason}`,
-          });
-        }
+      if (data?.error) {
+        const msg = data.provider_message
+          ? `${data.error}: ${data.provider_message}`
+          : data.error;
+        throw new Error(msg);
       }
-      await createNotifications(batch);
+
+      // Stripe path: edge function already inserted admin notifications.
+      // Manual path: insert client-side notifications so admins still see it.
+      const { data: { user } } = await supabase.auth.getUser();
+      if (data?.provider === "manual") {
+        const { data: currencyPolicy } = await supabase
+          .from("policy_settings")
+          .select("value")
+          .eq("key", "currency_symbol")
+          .maybeSingle();
+        const currSym = currencyPolicy?.value ? String(currencyPolicy.value).replace(/^"|"$/g, "") : "฿";
+
+        const { data: admins } = await supabase.from("user_roles").select("user_id").in("role", ["admin", "manager"]);
+        const batch: Array<{ user_id: string; type: string; reference_id: string; message: string }> = [];
+        for (const admin of admins ?? []) {
+          if (admin.user_id !== user?.id) {
+            batch.push({
+              user_id: admin.user_id,
+              type: "booking",
+              reference_id: params.bookingId,
+              message: `Manual refund of ${currSym}${params.refundAmount.toFixed(2)} recorded: ${params.reason}`,
+            });
+          }
+        }
+        await createNotifications(batch);
+      }
 
       // Emit Fenrir security event for refund
       if (user) {

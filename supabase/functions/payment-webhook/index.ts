@@ -105,6 +105,34 @@ async function verifyAndNormalizeStripe(
     };
   }
 
+  // Refund lifecycle events (async confirmations from Stripe)
+  if (
+    event.type === "charge.refunded" ||
+    event.type === "refund.created" ||
+    event.type === "refund.updated" ||
+    event.type === "refund.failed"
+  ) {
+    const obj = event.data.object as any;
+    const normalizedType =
+      event.type === "refund.failed"
+        ? "refund.failed"
+        : obj.status === "succeeded"
+          ? "refund.succeeded"
+          : "refund.updated";
+    return {
+      provider: "stripe",
+      eventType: normalizedType,
+      providerEventId: event.id,
+      bookingId: obj.metadata?.booking_id || null,
+      idempotencyKey: obj.metadata?.payment_id || null,
+      amountPaid: (obj.amount || 0) / 100,
+      transactionId: obj.payment_intent || obj.id || null,
+      receiptUrl: null,
+      sessionId: null,
+      rawPayload: event.data.object,
+    };
+  }
+
   // Unhandled event type — log but don't process
   return {
     provider: "stripe",
@@ -201,6 +229,7 @@ serve(async (req) => {
     // ── Handle normalized events ──
 
     let handlerSuccess = false;
+    let handlerError: string | null = null;
     try {
       if (normalized.eventType === "payment.success") {
         await handlePaymentSuccess(adminClient, normalized, supabaseUrl, serviceRoleKey);
@@ -208,18 +237,36 @@ serve(async (req) => {
         await handlePaymentFailed(adminClient, normalized);
       } else if (normalized.eventType === "session.expired") {
         await handleSessionExpired(adminClient, normalized);
+      } else if (
+        normalized.eventType === "refund.succeeded" ||
+        normalized.eventType === "refund.updated" ||
+        normalized.eventType === "refund.failed"
+      ) {
+        await handleRefundEvent(adminClient, normalized, supabaseUrl, serviceRoleKey);
       }
       handlerSuccess = true;
     } catch (handlerErr) {
+      handlerError = handlerErr instanceof Error ? handlerErr.message : String(handlerErr);
       console.error(`[payment-webhook] Handler failed for ${normalized.eventType}:`, handlerErr);
-      // Do NOT mark as processed — allow retry on next webhook delivery
     }
 
     if (handlerSuccess) {
       await adminClient
         .from("payment_events")
-        .update({ processed: true })
+        .update({ processed: true, last_error: null })
         .eq("provider_event_id", normalized.providerEventId);
+    } else {
+      // Bump retry counter so the watchdog can escalate stuck events
+      await adminClient.rpc("increment_payment_event_retry", {
+        _provider_event_id: normalized.providerEventId,
+        _error: handlerError,
+      }).catch(async () => {
+        // Fallback if RPC absent — direct update
+        await adminClient
+          .from("payment_events")
+          .update({ last_error: handlerError, last_retry_at: new Date().toISOString() })
+          .eq("provider_event_id", normalized.providerEventId);
+      });
     }
 
     return new Response(
@@ -489,4 +536,64 @@ async function handleSessionExpired(
       .eq("provider_session_id", event.sessionId)
       .eq("status", "pending");
   }
+}
+
+async function handleRefundEvent(
+  adminClient: any,
+  event: NormalizedPaymentEvent,
+  supabaseUrl: string,
+  serviceRoleKey: string
+) {
+  // Find the matching payment by Stripe payment_intent (transactionId)
+  if (!event.transactionId) {
+    console.warn("[refund] No payment_intent in refund event; skipping");
+    return;
+  }
+  const { data: payment } = await adminClient
+    .from("payments")
+    .select("id, amount, refund_amount, status, booking_id")
+    .eq("provider_transaction_id", event.transactionId)
+    .maybeSingle();
+  if (!payment) {
+    console.warn("[refund] No matching payment for", event.transactionId);
+    return;
+  }
+
+  const refundObj = event.rawPayload as any;
+  const refundedTotalCents = Number(refundObj.amount_refunded ?? refundObj.amount ?? 0);
+  const refundedTotal = refundedTotalCents / 100;
+
+  if (event.eventType === "refund.failed") {
+    // Stripe failed an async refund — alert admins, do not mutate amount
+    if (payment.booking_id) {
+      const { data: admins } = await adminClient
+        .from("user_roles").select("user_id").in("role", ["admin", "manager"]);
+      const notifs = (admins ?? []).map((a: any) => ({
+        user_id: a.user_id,
+        type: "booking",
+        message: `Refund FAILED at provider: ${refundObj.failure_reason || "unknown"}`,
+        reference_id: payment.booking_id,
+      }));
+      if (notifs.length > 0) await adminClient.from("notifications").insert(notifs);
+    }
+    return;
+  }
+
+  // refund.succeeded / refund.updated — sync DB to Stripe's truth
+  if (refundedTotal > 0) {
+    const isFull = Math.abs(refundedTotal - Number(payment.amount)) < 0.01;
+    await adminClient
+      .from("payments")
+      .update({
+        refund_amount: refundedTotal,
+        status: isFull ? "refunded" : "partially_refunded",
+      })
+      .eq("id", payment.id);
+  }
+
+  // Link this event to the payment
+  await adminClient
+    .from("payment_events")
+    .update({ payment_id: payment.id })
+    .eq("provider_event_id", event.providerEventId);
 }

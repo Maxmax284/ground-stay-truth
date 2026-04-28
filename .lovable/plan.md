@@ -1,93 +1,178 @@
-# Operational Intelligence Layer — Refinement Plan
+# Payment Audit Recommendations — Implementation Plan
 
-## Current State (Already Built)
+Extending the existing payment architecture. Stripe stays the source of truth for money movement; DB updates only after provider confirmation. No rebuilds.
 
-The core system exists and is functional:
+---
 
-- **Database**: `intelligence_entries` table with RLS (admin CRUD, staff read active, guest read active+audience-filtered)
-- **Data**: 11 entries seeded (8 Playbook, 3 Heads Up)
-- **Components**: `IntelligenceEditor`, `GuestHeadsUpStrip`, `GuestPlaybook`, `StaffIntelStrip` — all wired into Settings, GuestPortal, and Dashboard
-- **AI Integration**: Edge function injects active entries into context (lines 908-948)
-- **Lifecycle**: Promote flow (Heads Up → Playbook + archive) working
-- **No "Ask AI" remnants** — already uses "Ask Kru Glitch"
+## Priority 1 — Real Stripe Refunds
 
-## Gaps to Address
+**Problem:** `useRefundPayment` in `src/hooks/useBookings.ts` writes `refund_amount` and flips status to `refunded`/`partially_refunded` directly against the DB. Stripe never moves money. The platform can lie.
 
-### 1. Expand Location Tags
+**Fix:** New edge function `refund-payment` that calls Stripe first, then updates the DB only on confirmed Stripe response.
 
-The `LOCATIONS` array in `IntelligenceEditor.tsx` and the `IntelligenceLocation` type in `useIntelligence.ts` are missing `phuket`, `pattaya`, and `transit`. The `GuestPlaybook.tsx` and `StaffIntelStrip.tsx` location label maps also need these additions.
+### New file: `supabase/functions/refund-payment/index.ts`
+- `verify_jwt = false`, in-code JWT validation, admin-only (`has_role('admin')`).
+- Input: `{ payment_id, refund_amount, reason }`. Zod-validated.
+- Flow:
+  1. Load payment; verify `status IN ('recorded','partially_refunded')`, `provider='stripe'`, `provider_transaction_id` present.
+  2. Compute `alreadyRefunded`, enforce `alreadyRefunded + refund_amount <= amount`.
+  3. Generate idempotency key: `refund_${payment_id}_${alreadyRefunded + refund_amount}`.
+  4. Call `stripe.refunds.create({ payment_intent, amount: cents, reason: 'requested_by_customer', metadata })` with that idempotency key.
+  5. **Only on Stripe success** (`refund.status IN ('succeeded','pending')`):
+     - UPDATE `payments` SET `refund_amount`, `refund_reason`, `status` (full vs partial), append refund metadata.
+     - INSERT into `payment_events` (`provider='stripe'`, `event_type='refund.created'`, `payment_id`, payload).
+     - Insert admin notification + dispatch `notify-via-messaging` event `refund_issued`.
+  6. On Stripe error → return 502 with provider error code; **no DB mutation**.
+- Add `refund.updated` / `refund.failed` event handlers to existing `payment-webhook` so async refund failures flip status back and alert admins.
 
-**Files**: `useIntelligence.ts`, `IntelligenceEditor.tsx`, `GuestPlaybook.tsx`, `StaffIntelStrip.tsx`
+### Frontend rewire
+- `src/hooks/useBookings.ts` → `useRefundPayment` calls `supabase.functions.invoke('refund-payment', …)` instead of direct table update. Manual (`provider='manual'`) payments keep the legacy DB-only path with a clearly labeled "Manual refund recorded — no provider call" reason.
+- `RefundDialog.tsx`: minor copy update so Stripe payments show "Stripe will be charged" vs manual payments show "DB record only."
 
-### 2. Lookout Layer (Admin-Only Draft Suggestion System)
+### Config
+- `supabase/config.toml`: add `[functions.refund-payment]` block with `verify_jwt = false`.
 
-Not yet built. This is a background intelligence suggestion system that monitors patterns and generates draft entries for admin review.
+---
 
-**Implementation**: Add a "Lookout" section within `IntelligenceEditor.tsx` that:
+## Priority 2 — Thai Tax Invoice PDF
 
-- Shows a "Scan for Patterns" button (admin only)
-- Calls the AI assistant with a specialized prompt asking it to analyze recent guest questions, repeated issues, and system patterns
-- Returns suggested draft entries that load directly into the editor as `status: draft`
-- Never auto-publishes, never notifies, never interacts with guests/staff
-- This extends the existing "Suggest Draft" button into a more structured pattern-analysis tool
+**Goal:** "Download Tax Invoice" action producing a Revenue-Department-style THB/VAT PDF for any `recorded` payment.
 
-**No new components needed** — this enhances the existing `IntelligenceEditor` with a dedicated "Lookout" section below the entry list.
+### New file: `supabase/functions/generate-tax-invoice/index.ts`
+- `verify_jwt = false`, in-code JWT check. Admin/manager OR the booking's guest may download.
+- Input: `{ payment_id }`.
+- Generates PDF server-side using `pdf-lib` (Deno-compatible, ESM import) — **not** the existing client-side audit-PDF skill, since we want server attribution and consistent fonts.
+- Reads:
+  - `payments` + `bookings` + `units` + `profiles` (guest name/email).
+  - `policy_settings`: `tax_rate` (7), `tax_included` (false), `currency_code` (THB), `currency_symbol` (฿), plus 4 new keys below.
+- Computes per Thai Revenue Code §86/1:
+  - If `tax_included=false`: `net = amount / (1 + tax_rate/100) … wait` — actually if `tax_included=false`, the recorded `amount` already excludes VAT; `vat = amount * tax_rate/100`; `gross = amount + vat`.
+  - If `tax_included=true`: `gross = amount`; `net = gross / (1 + tax_rate/100)`; `vat = gross - net`.
+- Renders A4 PDF with required Thai tax-invoice fields:
+  - Header: "ใบกำกับภาษี / Tax Invoice"
+  - Seller block: company name, address, Tax ID (13-digit), branch ("00000" / สำนักงานใหญ่)
+  - Buyer block: guest name + email + (optional) tax ID from new `bookings.guest_tax_id` field (nullable, see migration)
+  - Invoice number (sequential, see migration), issue date (Asia/Bangkok), original payment date
+  - Line item: stay description, dates, nights
+  - Totals: net, VAT 7%, grand total — all in THB (฿)
+  - Footer: payment method (Credit Card via Stripe), Stripe transaction ID for reference
+- Returns `application/pdf` with `Content-Disposition: attachment; filename=tax-invoice-{seq}.pdf`.
 
-### 3. Guest Heads Up Strip — Location Awareness
+### Migration
+- Table `tax_invoices`:
+  - `id uuid pk`, `payment_id uuid unique not null`, `invoice_number text unique not null`, `issued_at timestamptz`, `net_amount numeric`, `vat_amount numeric`, `gross_amount numeric`, `tax_rate numeric`, `pdf_storage_path text`, `issued_by uuid` (NO ACTION), `created_at`.
+  - RLS: admin/manager full; guest SELECT via booking ownership.
+- Sequence `tax_invoice_seq` for `INV-YYYY-NNNNNN` numbering, generated server-side.
+- Add nullable column `bookings.guest_tax_id text`.
+- Add 4 policy_settings rows: `company_legal_name`, `company_address`, `company_tax_id`, `company_branch_code` (default "00000").
+- New private storage bucket `tax-invoices` with RLS scoped same as `tax_invoices` table.
 
-Currently `GuestHeadsUpStrip` accepts optional `locations` prop but is rendered in GuestPortal without passing locations. It should derive the guest's arrival location from their active booking's arrival model and pass it through.
+### Frontend
+- `BookingDetailSheet.tsx`: next to each `recorded`/`partially_refunded` payment row, add "Download Tax Invoice" button (admin/manager + guest-on-own-booking). Calls function, opens returned blob.
+- New tab in `PolicySettingsForm.tsx` → "Company / Tax Identity" group for the 4 company fields.
+- Guest-side: button on `GuestPaymentSummary.tsx` per recorded payment.
 
-**Files**: `GuestPortal.tsx` (derive location from booking's arrival data and pass to `GuestHeadsUpStrip`)
+---
 
-### 4. Expires_at Enforcement
+## Priority 3 — Financial Record Retention
 
-Client-side filtering in `useIntelligence.ts` already filters expired entries. This is sufficient — no changes needed.
+**Audit gap:** `payments.booking_id → bookings(id) ON DELETE CASCADE`. If a booking is deleted, every payment row vanishes — violates 5–7yr Thai financial retention.
 
-### 5. Seed Additional Location-Specific Entries
+Other risky FKs already safe (`recorded_by NO ACTION`, `bookings.guest_id SET NULL`). The retention bug is the booking→payments cascade.
 
-Add Phuket and Pattaya playbook entries for the expanded location support, plus a transit-specific entry.
+### Migration
+- `ALTER TABLE payments DROP CONSTRAINT payments_booking_id_fkey, ADD CONSTRAINT payments_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE SET NULL;`
+- Make `payments.booking_id` nullable.
+- Add `payments.archived_booking_snapshot jsonb` — populated by trigger before booking delete with `{check_in, check_out, unit_id, unit_name, guest_full_name, guest_email, total_price}`. So even with booking gone, the financial record retains audit data.
+- Trigger `before_booking_delete_snapshot_payments`:
+  - For each payment of the booking, write the snapshot.
+- Same SET NULL + snapshot treatment for `tax_invoices.payment_id` (after Priority 2 lands).
+- Update `cleanup-retention/index.ts`: explicitly **exclude** `payments`, `payment_events`, `tax_invoices` from any retention-purge code paths (add comment + assertion).
+- `delete-account` edge function: when deleting a guest user, do NOT delete their bookings; instead set `bookings.guest_id = NULL` (already FK behavior) and write the snapshot via the same trigger if any related booking ever gets purged later. Add explicit log line.
 
-**Method**: Database insert (not migration)
+### Frontend
+- No UI change needed; admin payment list already tolerates missing booking via `archived_booking_snapshot` fallback (small render tweak in `PaymentAnalytics.tsx` and `BookingDetailSheet.tsx` payment rows: when `bookings` join is null, show "Archived booking — {snapshot.check_in} → {snapshot.check_out}, {snapshot.guest_full_name}").
 
-## Implementation Steps
+---
 
+## Priority 4 — Webhook Failure Watcher + Reconciliation
 
-| Step | What                                                                                  | Files                                                                                      |
-| ---- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| 1    | Add `phuket`, `pattaya`, `transit` to location type, LOCATIONS arrays, and label maps | `useIntelligence.ts`, `IntelligenceEditor.tsx`, `GuestPlaybook.tsx`, `StaffIntelStrip.tsx` |
-| 2    | Pass derived guest location to `GuestHeadsUpStrip` in GuestPortal                     | `GuestPortal.tsx`                                                                          |
-| 3    | Add Lookout section to `IntelligenceEditor` with pattern-analysis prompt              | `IntelligenceEditor.tsx`                                                                   |
-| 4    | Seed new entries for phuket, pattaya, transit contexts                                | Database insert                                                                            |
+### 4a. Daily watcher: `supabase/functions/payment-webhook-watchdog/index.ts`
+- Auth via service role or anon key (pg_cron pattern).
+- Query `payment_events WHERE processed=false AND created_at < now() - interval '1 hour'`.
+- For each: attempt to re-run the appropriate handler (refactor `payment-webhook` handlers into a shared module imported here, OR re-fetch the event from Stripe by `provider_event_id` and re-process).
+- After 3 retries (track in new column `payment_events.retry_count`), insert a `notifications` row to all admins: "Payment webhook stuck: {event_type} {provider_event_id}". Also dispatch `notify-via-messaging` `payment_webhook_stuck`.
 
+### 4b. Weekly reconciliation: `supabase/functions/payment-reconciliation/index.ts`
+- Pull last 7 days of Stripe `charges.list` + `refunds.list` (use `created[gte]`).
+- For each Stripe charge:
+  - Look up matching `payments` row by `provider_transaction_id`.
+  - Mismatch cases logged into new table `payment_reconciliation_log`:
+    - `missing_in_db` — Stripe says paid, no DB row.
+    - `missing_in_stripe` — DB says recorded, Stripe charge not found / refunded.
+    - `amount_mismatch` — amounts differ.
+    - `refund_mismatch` — refund_amount differs.
+- Insert summary notification to admins. If any non-zero discrepancies → also dispatch messaging event `payment_reconciliation_alert`.
 
-**No new files created. No new tables. No new edge functions. No architectural changes.**
+### Migration
+- `payment_events`: add `retry_count int NOT NULL DEFAULT 0`, `last_retry_at timestamptz`, `last_error text`.
+- New table `payment_reconciliation_log` (run_at, severity, kind, payment_id, stripe_object_id, expected, actual, details jsonb). RLS admin-only.
 
-&nbsp;
+### Cron schedule (pg_cron, via insert tool not migration — contains anon key)
+- Watchdog: hourly `0 * * * *`.
+- Reconciliation: weekly `0 3 * * 1` (Monday 03:00 UTC = 10:00 Bangkok).
 
-&nbsp;
+### Frontend
+- New Settings → Payments → "Reconciliation" panel showing the latest `payment_reconciliation_log` entries with severity badges and a "Run now" button (admin-only) that invokes `payment-reconciliation` ad hoc.
+- New badge on the Admin dashboard StaffQuickActions: "Stuck webhooks: N" linking to a filtered view of `payment_events` where `retry_count >= 3 AND processed=false`.
 
-Ensure the expanded location model (phuket, pattaya, transit) is consistently applied across all intelligence layers, including filtering, tagging, and UI display, so the system reflects real travel context rather than a limited regional scope.
+---
 
-&nbsp;
+## Testing (after all four ship — separate follow-up loop)
 
-Ensure GuestHeadsUpStrip receives and uses the actual derived arrival/location data from the booking model in GuestPortal, eliminating any fallback or generic behavior and guaranteeing fully context-aware delivery.
+- Extend `src/lib/__tests__/paymentSystem.test.ts`:
+  - Refund VAT math (tax-included vs excluded).
+  - Snapshot fallback rendering.
+  - Reconciliation classifier pure function.
+- New Deno tests under `supabase/functions/refund-payment/index.test.ts` and `supabase/functions/generate-tax-invoice/index.test.ts` using mocked Stripe.
+- Manual end-to-end Stripe **test mode** runbook: book → pay → partial refund → full refund → tax invoice download → simulate webhook failure (drop event) → confirm watchdog reprocess → confirm reconciliation flags nothing.
 
-&nbsp;
+---
 
-Ensure the Lookout Layer remains strictly a draft suggestion system within IntelligenceEditor, with zero auto-publish, zero guest/staff exposure, and full admin control over all outputs before activation.
+## Files Touched (summary)
 
-&nbsp;
+**New**
+- `supabase/functions/refund-payment/index.ts`
+- `supabase/functions/generate-tax-invoice/index.ts`
+- `supabase/functions/payment-webhook-watchdog/index.ts`
+- `supabase/functions/payment-reconciliation/index.ts`
+- 1 migration: payments FK change + snapshot column + trigger + tax_invoices table + reconciliation log table + payment_events retry columns + storage bucket + 4 policy_settings keys + bookings.guest_tax_id
 
-Ensure all newly seeded entries (phuket, pattaya, transit) are written with the same concise, practical, and real-world tone as existing Playbook entries, avoiding generic or overly descriptive content.
+**Edited**
+- `src/hooks/useBookings.ts` — refund hook calls edge function
+- `src/components/RefundDialog.tsx` — copy + provider awareness
+- `src/components/BookingDetailSheet.tsx` — invoice download button + archived snapshot fallback
+- `src/components/GuestPaymentSummary.tsx` — guest invoice download
+- `src/components/PolicySettingsForm.tsx` — company tax identity tab
+- `src/components/reports/PaymentAnalytics.tsx` — snapshot fallback
+- `src/components/StaffQuickActionsWidget.tsx` — stuck-webhook badge
+- `src/pages/Settings.tsx` — reconciliation panel route
+- `supabase/functions/payment-webhook/index.ts` — refund.* event handlers, retry_count++ on handler failure
+- `supabase/functions/cleanup-retention/index.ts` — explicit exclusion comment
+- `supabase/functions/delete-account/index.ts` — preserve bookings + log
+- `supabase/config.toml` — 4 new function blocks
 
-&nbsp;
+**Cron (insert tool, not migration)** — 2 pg_cron schedules.
 
-Ensure no additional dashboards, feeds, or parallel systems are introduced; all intelligence creation, review, and promotion must remain centralized within the existing IntelligenceEditor workflow.
+---
 
-&nbsp;
+## Order of execution
 
-Ensure the system maintains strict separation between Heads Up (temporary, real-time awareness) and Playbook (permanent, validated knowledge), with no duplication or overlap between the two layers.
+1. Migration (schemas first so functions can write).
+2. P1 refund function + frontend rewire.
+3. P2 tax invoice function + UI + company settings.
+4. P3 retention is mostly the migration; verify snapshot trigger works and update fallbacks.
+5. P4 watchdog + reconciliation + cron + UI.
+6. Hand back for end-to-end testing.
 
-&nbsp;
-
-Ensure all AI responses (Kru Glitch) prioritize approved Playbook and Heads Up entries as primary sources, avoiding generic fallback responses and maintaining consistent tone and accuracy across all interactions.
+Confirm and I'll execute in this order.
