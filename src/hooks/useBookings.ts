@@ -482,28 +482,31 @@ export function useRefundPayment() {
         throw new Error(msg);
       }
 
-      // Notify admins
+      // Stripe path: edge function already inserted admin notifications.
+      // Manual path: insert client-side notifications so admins still see it.
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: currencyPolicy } = await supabase
-        .from("policy_settings")
-        .select("value")
-        .eq("key", "currency_symbol")
-        .maybeSingle();
-      const currSym = currencyPolicy?.value ? String(currencyPolicy.value).replace(/^"|"$/g, "") : "฿";
+      if (data?.provider === "manual") {
+        const { data: currencyPolicy } = await supabase
+          .from("policy_settings")
+          .select("value")
+          .eq("key", "currency_symbol")
+          .maybeSingle();
+        const currSym = currencyPolicy?.value ? String(currencyPolicy.value).replace(/^"|"$/g, "") : "฿";
 
-      const { data: admins } = await supabase.from("user_roles").select("user_id").in("role", ["admin", "manager"]);
-      const batch: Array<{ user_id: string; type: string; reference_id: string; message: string }> = [];
-      for (const admin of admins ?? []) {
-        if (admin.user_id !== user?.id) {
-          batch.push({
-            user_id: admin.user_id,
-            type: "booking",
-            reference_id: params.bookingId,
-            message: `Refund of ${currSym}${params.refundAmount.toFixed(2)} issued: ${params.reason}`,
-          });
+        const { data: admins } = await supabase.from("user_roles").select("user_id").in("role", ["admin", "manager"]);
+        const batch: Array<{ user_id: string; type: string; reference_id: string; message: string }> = [];
+        for (const admin of admins ?? []) {
+          if (admin.user_id !== user?.id) {
+            batch.push({
+              user_id: admin.user_id,
+              type: "booking",
+              reference_id: params.bookingId,
+              message: `Manual refund of ${currSym}${params.refundAmount.toFixed(2)} recorded: ${params.reason}`,
+            });
+          }
         }
+        await createNotifications(batch);
       }
-      await createNotifications(batch);
 
       // Emit Fenrir security event for refund
       if (user) {
