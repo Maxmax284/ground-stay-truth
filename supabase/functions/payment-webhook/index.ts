@@ -537,3 +537,63 @@ async function handleSessionExpired(
       .eq("status", "pending");
   }
 }
+
+async function handleRefundEvent(
+  adminClient: any,
+  event: NormalizedPaymentEvent,
+  supabaseUrl: string,
+  serviceRoleKey: string
+) {
+  // Find the matching payment by Stripe payment_intent (transactionId)
+  if (!event.transactionId) {
+    console.warn("[refund] No payment_intent in refund event; skipping");
+    return;
+  }
+  const { data: payment } = await adminClient
+    .from("payments")
+    .select("id, amount, refund_amount, status, booking_id")
+    .eq("provider_transaction_id", event.transactionId)
+    .maybeSingle();
+  if (!payment) {
+    console.warn("[refund] No matching payment for", event.transactionId);
+    return;
+  }
+
+  const refundObj = event.rawPayload as any;
+  const refundedTotalCents = Number(refundObj.amount_refunded ?? refundObj.amount ?? 0);
+  const refundedTotal = refundedTotalCents / 100;
+
+  if (event.eventType === "refund.failed") {
+    // Stripe failed an async refund — alert admins, do not mutate amount
+    if (payment.booking_id) {
+      const { data: admins } = await adminClient
+        .from("user_roles").select("user_id").in("role", ["admin", "manager"]);
+      const notifs = (admins ?? []).map((a: any) => ({
+        user_id: a.user_id,
+        type: "booking",
+        message: `Refund FAILED at provider: ${refundObj.failure_reason || "unknown"}`,
+        reference_id: payment.booking_id,
+      }));
+      if (notifs.length > 0) await adminClient.from("notifications").insert(notifs);
+    }
+    return;
+  }
+
+  // refund.succeeded / refund.updated — sync DB to Stripe's truth
+  if (refundedTotal > 0) {
+    const isFull = Math.abs(refundedTotal - Number(payment.amount)) < 0.01;
+    await adminClient
+      .from("payments")
+      .update({
+        refund_amount: refundedTotal,
+        status: isFull ? "refunded" : "partially_refunded",
+      })
+      .eq("id", payment.id);
+  }
+
+  // Link this event to the payment
+  await adminClient
+    .from("payment_events")
+    .update({ payment_id: payment.id })
+    .eq("provider_event_id", event.providerEventId);
+}
