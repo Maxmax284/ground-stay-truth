@@ -67,7 +67,9 @@ export function RefundDialog({ open, onOpenChange, payment, policies, onConfirm,
         <AlertDialogHeader>
           <AlertDialogTitle>{t("payments.issueRefund", { defaultValue: "Issue Refund" })}</AlertDialogTitle>
           <AlertDialogDescription>
-            {t("payments.refundDescription", { defaultValue: "This will update the payment record. Provider-side refunds must be processed separately." })}
+            {(payment as any).provider === "stripe"
+              ? t("payments.refundDescriptionStripe", { defaultValue: "Stripe will be charged immediately. The database record updates only after Stripe confirms the refund." })
+              : t("payments.refundDescriptionManual", { defaultValue: "Manual refund — this updates the database record only. No provider will be charged. Process the actual refund separately." })}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
