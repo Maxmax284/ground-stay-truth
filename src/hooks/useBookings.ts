@@ -456,7 +456,7 @@ export function useCreatePayment() {
   });
 }
 
-// ── Refund a payment ──
+// ── Refund a payment (calls Stripe FIRST via edge function, then DB) ──
 export function useRefundPayment() {
   const qc = useQueryClient();
   return useMutation({
@@ -466,28 +466,21 @@ export function useRefundPayment() {
       refundAmount: number;
       reason: string;
     }) => {
-      const { data: payment } = await supabase
-        .from("payments")
-        .select("amount, refund_amount")
-        .eq("id", params.paymentId)
-        .single();
-      if (!payment) throw new Error("Payment not found");
-
-      const alreadyRefunded = Number(payment.refund_amount ?? 0);
-      const totalRefund = alreadyRefunded + params.refundAmount;
-      const isFullRefund = totalRefund >= Number(payment.amount);
-
-      const { data, error } = await supabase
-        .from("payments")
-        .update({
-          refund_amount: totalRefund,
-          refund_reason: params.reason,
-          status: isFullRefund ? "refunded" : "partially_refunded",
-        } as any)
-        .eq("id", params.paymentId)
-        .select()
-        .single();
+      // Server-side: validates admin, calls Stripe, mutates DB only on Stripe success.
+      const { data, error } = await supabase.functions.invoke("refund-payment", {
+        body: {
+          payment_id: params.paymentId,
+          refund_amount: params.refundAmount,
+          reason: params.reason,
+        },
+      });
       if (error) throw error;
+      if (data?.error) {
+        const msg = data.provider_message
+          ? `${data.error}: ${data.provider_message}`
+          : data.error;
+        throw new Error(msg);
+      }
 
       // Notify admins
       const { data: { user } } = await supabase.auth.getUser();
