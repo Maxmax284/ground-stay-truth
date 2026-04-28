@@ -229,6 +229,7 @@ serve(async (req) => {
     // ── Handle normalized events ──
 
     let handlerSuccess = false;
+    let handlerError: string | null = null;
     try {
       if (normalized.eventType === "payment.success") {
         await handlePaymentSuccess(adminClient, normalized, supabaseUrl, serviceRoleKey);
@@ -236,18 +237,36 @@ serve(async (req) => {
         await handlePaymentFailed(adminClient, normalized);
       } else if (normalized.eventType === "session.expired") {
         await handleSessionExpired(adminClient, normalized);
+      } else if (
+        normalized.eventType === "refund.succeeded" ||
+        normalized.eventType === "refund.updated" ||
+        normalized.eventType === "refund.failed"
+      ) {
+        await handleRefundEvent(adminClient, normalized, supabaseUrl, serviceRoleKey);
       }
       handlerSuccess = true;
     } catch (handlerErr) {
+      handlerError = handlerErr instanceof Error ? handlerErr.message : String(handlerErr);
       console.error(`[payment-webhook] Handler failed for ${normalized.eventType}:`, handlerErr);
-      // Do NOT mark as processed — allow retry on next webhook delivery
     }
 
     if (handlerSuccess) {
       await adminClient
         .from("payment_events")
-        .update({ processed: true })
+        .update({ processed: true, last_error: null })
         .eq("provider_event_id", normalized.providerEventId);
+    } else {
+      // Bump retry counter so the watchdog can escalate stuck events
+      await adminClient.rpc("increment_payment_event_retry", {
+        _provider_event_id: normalized.providerEventId,
+        _error: handlerError,
+      }).catch(async () => {
+        // Fallback if RPC absent — direct update
+        await adminClient
+          .from("payment_events")
+          .update({ last_error: handlerError, last_retry_at: new Date().toISOString() })
+          .eq("provider_event_id", normalized.providerEventId);
+      });
     }
 
     return new Response(
