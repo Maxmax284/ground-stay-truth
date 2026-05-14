@@ -489,6 +489,7 @@ const GuestPortal = () => {
           {activeBookings.length > 0 && (
             <TabsContent value="stay-support">
               <div className="space-y-6">
+                <MessagingConnectCard />
                 <GuestStaySupport
                   focusSection={focusSection}
                   onSectionFocused={() => setFocusSection(null)}
@@ -498,7 +499,6 @@ const GuestPortal = () => {
                     units: b.units ? { name: b.units.name } : null,
                   }))}
                 />
-                <MessagingConnectCard />
               </div>
             </TabsContent>
           )}

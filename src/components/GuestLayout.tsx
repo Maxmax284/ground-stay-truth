@@ -10,6 +10,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AIAssistantPanel } from "@/components/AIAssistantPanel";
 import { TutorialOverlay } from "@/components/TutorialOverlay";
+import { FrontDeskFAB } from "@/components/FrontDeskFAB";
 import lamaiLogo from "@/assets/lamai-logo.png";
 import {
   Dialog,
@@ -137,6 +138,7 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
         </div>
       </footer>
       <AIAssistantPanel />
+      <FrontDeskFAB />
       <TutorialOverlay variant="guest" />
     </div>
   );
