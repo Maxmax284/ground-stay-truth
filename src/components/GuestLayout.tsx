@@ -138,6 +138,7 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
         </div>
       </footer>
       <AIAssistantPanel />
+      <FrontDeskFAB />
       <TutorialOverlay variant="guest" />
     </div>
   );
