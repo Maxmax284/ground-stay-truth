@@ -11,7 +11,7 @@ const ProofSection = () => (
 
       <div className="space-y-4 text-muted-foreground leading-relaxed mb-12">
         <p>
-          GroundsDay is backed by structured system architecture, real operational workflows, and continuous development history. It's in active use coordinating real arrivals at a real property.
+          Ground Stay is backed by structured system architecture, real operational workflows, and continuous development history. It's in active use coordinating real arrivals at a real property.
         </p>
         <p>
           We don't claim global scale. We don't cite fabricated adoption numbers. What exists is the work itself — the tables, the policies, the functions, the edge cases handled, the commits logged.

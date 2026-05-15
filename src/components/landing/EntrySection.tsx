@@ -11,7 +11,7 @@ const EntrySection = () => (
     {/* Nav bar */}
     <nav className="relative z-10 w-full max-w-6xl mx-auto px-6 pt-6 flex items-center justify-between">
       <span className="text-xs tracking-[0.2em] uppercase text-[hsl(36,20%,50%)] font-medium">
-        GroundsDay
+        Ground Stay
       </span>
       <a
         href="#built-from-inside"
@@ -34,7 +34,7 @@ const EntrySection = () => (
           </div>
 
           <h1 className="font-stat text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-[hsl(36,33%,97%)] leading-[0.95] mb-6">
-            GROUNDSDAY
+            GROUND STAY
           </h1>
 
           <p className="text-lg sm:text-xl text-[hsl(36,20%,70%)] leading-relaxed mb-4 max-w-lg">
