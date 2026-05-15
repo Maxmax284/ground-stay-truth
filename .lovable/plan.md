@@ -1,178 +1,117 @@
-# Payment Audit Recommendations — Implementation Plan
+# Ground Stay Brand Cleanup + Accommodation Showcase
 
-Extending the existing payment architecture. Stripe stays the source of truth for money movement; DB updates only after provider confirmation. No rebuilds.
-
----
-
-## Priority 1 — Real Stripe Refunds
-
-**Problem:** `useRefundPayment` in `src/hooks/useBookings.ts` writes `refund_amount` and flips status to `refunded`/`partially_refunded` directly against the DB. Stripe never moves money. The platform can lie.
-
-**Fix:** New edge function `refund-payment` that calls Stripe first, then updates the DB only on confirmed Stripe response.
-
-### New file: `supabase/functions/refund-payment/index.ts`
-- `verify_jwt = false`, in-code JWT validation, admin-only (`has_role('admin')`).
-- Input: `{ payment_id, refund_amount, reason }`. Zod-validated.
-- Flow:
-  1. Load payment; verify `status IN ('recorded','partially_refunded')`, `provider='stripe'`, `provider_transaction_id` present.
-  2. Compute `alreadyRefunded`, enforce `alreadyRefunded + refund_amount <= amount`.
-  3. Generate idempotency key: `refund_${payment_id}_${alreadyRefunded + refund_amount}`.
-  4. Call `stripe.refunds.create({ payment_intent, amount: cents, reason: 'requested_by_customer', metadata })` with that idempotency key.
-  5. **Only on Stripe success** (`refund.status IN ('succeeded','pending')`):
-     - UPDATE `payments` SET `refund_amount`, `refund_reason`, `status` (full vs partial), append refund metadata.
-     - INSERT into `payment_events` (`provider='stripe'`, `event_type='refund.created'`, `payment_id`, payload).
-     - Insert admin notification + dispatch `notify-via-messaging` event `refund_issued`.
-  6. On Stripe error → return 502 with provider error code; **no DB mutation**.
-- Add `refund.updated` / `refund.failed` event handlers to existing `payment-webhook` so async refund failures flip status back and alert admins.
-
-### Frontend rewire
-- `src/hooks/useBookings.ts` → `useRefundPayment` calls `supabase.functions.invoke('refund-payment', …)` instead of direct table update. Manual (`provider='manual'`) payments keep the legacy DB-only path with a clearly labeled "Manual refund recorded — no provider call" reason.
-- `RefundDialog.tsx`: minor copy update so Stripe payments show "Stripe will be charged" vs manual payments show "DB record only."
-
-### Config
-- `supabase/config.toml`: add `[functions.refund-payment]` block with `verify_jwt = false`.
+Two surgical changes. No new media system, no new dashboard, no schema migration.
 
 ---
 
-## Priority 2 — Thai Tax Invoice PDF
+## 1. Brand typo fix: "GroundsDay" → "Ground Stay"
 
-**Goal:** "Download Tax Invoice" action producing a Revenue-Department-style THB/VAT PDF for any `recorded` payment.
+Audit confirmed **8 occurrences across 7 landing-page files** (all guest-facing copy). No DB tables, routes, or technical IDs are affected.
 
-### New file: `supabase/functions/generate-tax-invoice/index.ts`
-- `verify_jwt = false`, in-code JWT check. Admin/manager OR the booking's guest may download.
-- Input: `{ payment_id }`.
-- Generates PDF server-side using `pdf-lib` (Deno-compatible, ESM import) — **not** the existing client-side audit-PDF skill, since we want server attribution and consistent fonts.
-- Reads:
-  - `payments` + `bookings` + `units` + `profiles` (guest name/email).
-  - `policy_settings`: `tax_rate` (7), `tax_included` (false), `currency_code` (THB), `currency_symbol` (฿), plus 4 new keys below.
-- Computes per Thai Revenue Code §86/1:
-  - If `tax_included=false`: `net = amount / (1 + tax_rate/100) … wait` — actually if `tax_included=false`, the recorded `amount` already excludes VAT; `vat = amount * tax_rate/100`; `gross = amount + vat`.
-  - If `tax_included=true`: `gross = amount`; `net = gross / (1 + tax_rate/100)`; `vat = gross - net`.
-- Renders A4 PDF with required Thai tax-invoice fields:
-  - Header: "ใบกำกับภาษี / Tax Invoice"
-  - Seller block: company name, address, Tax ID (13-digit), branch ("00000" / สำนักงานใหญ่)
-  - Buyer block: guest name + email + (optional) tax ID from new `bookings.guest_tax_id` field (nullable, see migration)
-  - Invoice number (sequential, see migration), issue date (Asia/Bangkok), original payment date
-  - Line item: stay description, dates, nights
-  - Totals: net, VAT 7%, grand total — all in THB (฿)
-  - Footer: payment method (Credit Card via Stripe), Stripe transaction ID for reference
-- Returns `application/pdf` with `Content-Disposition: attachment; filename=tax-invoice-{seq}.pdf`.
+Files to edit (text-only string swaps):
+- `src/components/landing/EntrySection.tsx` (×2 — heading + watermark `GROUNDSDAY` becomes `GROUND STAY`)
+- `src/components/landing/BuiltFromInsideSection.tsx` (×2)
+- `src/components/landing/ComplianceSection.tsx` (×1)
+- `src/components/landing/FailureSection.tsx` (×1)
+- `src/components/landing/FinalCTASection.tsx` (×1)
+- `src/components/landing/ProofSection.tsx` (×1)
+- `src/components/landing/SovereigntySection.tsx` (×1)
 
-### Migration
-- Table `tax_invoices`:
-  - `id uuid pk`, `payment_id uuid unique not null`, `invoice_number text unique not null`, `issued_at timestamptz`, `net_amount numeric`, `vat_amount numeric`, `gross_amount numeric`, `tax_rate numeric`, `pdf_storage_path text`, `issued_by uuid` (NO ACTION), `created_at`.
-  - RLS: admin/manager full; guest SELECT via booking ownership.
-- Sequence `tax_invoice_seq` for `INV-YYYY-NNNNNN` numbering, generated server-side.
-- Add nullable column `bookings.guest_tax_id text`.
-- Add 4 policy_settings rows: `company_legal_name`, `company_address`, `company_tax_id`, `company_branch_code` (default "00000").
-- New private storage bucket `tax-invoices` with RLS scoped same as `tax_invoices` table.
-
-### Frontend
-- `BookingDetailSheet.tsx`: next to each `recorded`/`partially_refunded` payment row, add "Download Tax Invoice" button (admin/manager + guest-on-own-booking). Calls function, opens returned blob.
-- New tab in `PolicySettingsForm.tsx` → "Company / Tax Identity" group for the 4 company fields.
-- Guest-side: button on `GuestPaymentSummary.tsx` per recorded payment.
+Everywhere else (PWA title, i18n locales, sidebar, push toast, embeds, Stay hero, footer, edge-function copy) already says **Ground Stay** — verified via grep.
 
 ---
 
-## Priority 3 — Financial Record Retention
+## 2. Accommodation Showcase block on `/stay`
 
-**Audit gap:** `payments.booking_id → bookings(id) ON DELETE CASCADE`. If a booking is deleted, every payment row vanishes — violates 5–7yr Thai financial retention.
+Reuse existing infrastructure: **`policy_settings`** table (already stores `camp_info` as JSON, already publicly readable, already editable via `PolicySettingsForm`) and **existing `units.photos[]`** as the image source. No new table, no new bucket.
 
-Other risky FKs already safe (`recorded_by NO ACTION`, `bookings.guest_id SET NULL`). The retention bug is the booking→payments cascade.
+### Storage shape
 
-### Migration
-- `ALTER TABLE payments DROP CONSTRAINT payments_booking_id_fkey, ADD CONSTRAINT payments_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE SET NULL;`
-- Make `payments.booking_id` nullable.
-- Add `payments.archived_booking_snapshot jsonb` — populated by trigger before booking delete with `{check_in, check_out, unit_id, unit_name, guest_full_name, guest_email, total_price}`. So even with booking gone, the financial record retains audit data.
-- Trigger `before_booking_delete_snapshot_payments`:
-  - For each payment of the booking, write the snapshot.
-- Same SET NULL + snapshot treatment for `tax_invoices.payment_id` (after Priority 2 lands).
-- Update `cleanup-retention/index.ts`: explicitly **exclude** `payments`, `payment_events`, `tax_invoices` from any retention-purge code paths (add comment + assertion).
-- `delete-account` edge function: when deleting a guest user, do NOT delete their bookings; instead set `bookings.guest_id = NULL` (already FK behavior) and write the snapshot via the same trigger if any related booking ever gets purged later. Add explicit log line.
+New `policy_settings` row, key = `stay_showcase`, value = JSON:
 
-### Frontend
-- No UI change needed; admin payment list already tolerates missing booking via `archived_booking_snapshot` fallback (small render tweak in `PaymentAnalytics.tsx` and `BookingDetailSheet.tsx` payment rows: when `bookings` join is null, show "Archived booking — {snapshot.check_in} → {snapshot.check_out}, {snapshot.guest_full_name}").
+```json
+{
+  "enabled": true,
+  "layout": "hero_fade",        // hero_fade | card_carousel | gallery_strip
+  "autoplay": true,
+  "speed": "normal",            // slow | normal | fast
+  "transition": "fade",         // fade | slide
+  "image_fit": "cover",         // cover | contain
+  "show_captions": true,
+  "show_indicators": true,
+  "slides": [
+    {
+      "id": "uuid",
+      "image_url": "https://…",   // typically a URL already in units.photos
+      "caption": "Fighter's Studio",
+      "alt": "Studio room interior with twin beds",
+      "link_unit_id": "uuid|null", // optional — clicking scrolls to that unit
+      "link_url": null,            // optional override
+      "active": true,
+      "order": 0
+    }
+  ]
+}
+```
 
----
+### New file: `src/components/AccommodationShowcase.tsx`
 
-## Priority 4 — Webhook Failure Watcher + Reconciliation
+Public, read-only renderer used on `/stay`.
+- Reads `stay_showcase` JSON via the same anon REST pattern already used for `camp_info` in `Stay.tsx`.
+- Three layouts:
+  - **hero_fade** — single full-width image (16/9 desktop, 4/5 mobile), crossfade between slides
+  - **card_carousel** — Embla carousel (already in deps), 1 card on mobile / 2–3 on desktop, swipeable, dot indicators
+  - **gallery_strip** — horizontally scroll-snapped row, 1 visible on mobile, 3 on desktop
+- Autoplay pauses on hover/focus and respects `prefers-reduced-motion`.
+- Click on a slide with `link_unit_id` → smooth-scrolls to `#unit-{id}` on the same page (we add that id to `UnitCard`'s wrapper).
+- Empty state (no active slides): renders a quiet placeholder card — "Room photos coming soon — villas and camp rooms will appear here." No fake stock images.
+- If `enabled: false` or block missing: renders nothing (graceful absence).
 
-### 4a. Daily watcher: `supabase/functions/payment-webhook-watchdog/index.ts`
-- Auth via service role or anon key (pg_cron pattern).
-- Query `payment_events WHERE processed=false AND created_at < now() - interval '1 hour'`.
-- For each: attempt to re-run the appropriate handler (refactor `payment-webhook` handlers into a shared module imported here, OR re-fetch the event from Stripe by `provider_event_id` and re-process).
-- After 3 retries (track in new column `payment_events.retry_count`), insert a `notifications` row to all admins: "Payment webhook stuck: {event_type} {provider_event_id}". Also dispatch `notify-via-messaging` `payment_webhook_stuck`.
+### Placement on `/stay`
 
-### 4b. Weekly reconciliation: `supabase/functions/payment-reconciliation/index.ts`
-- Pull last 7 days of Stripe `charges.list` + `refunds.list` (use `created[gte]`).
-- For each Stripe charge:
-  - Look up matching `payments` row by `provider_transaction_id`.
-  - Mismatch cases logged into new table `payment_reconciliation_log`:
-    - `missing_in_db` — Stripe says paid, no DB row.
-    - `missing_in_stripe` — DB says recorded, Stripe charge not found / refunded.
-    - `amount_mismatch` — amounts differ.
-    - `refund_mismatch` — refund_amount differs.
-- Insert summary notification to admins. If any non-zero discrepancies → also dispatch messaging event `payment_reconciliation_alert`.
+In `src/pages/Stay.tsx`, render `<AccommodationShowcase />` **immediately below the hero `<header>` and above the units `<main>`**. This keeps the booking flow as the page's primary purpose.
 
-### Migration
-- `payment_events`: add `retry_count int NOT NULL DEFAULT 0`, `last_retry_at timestamptz`, `last_error text`.
-- New table `payment_reconciliation_log` (run_at, severity, kind, payment_id, stripe_object_id, expected, actual, details jsonb). RLS admin-only.
+### Admin editor: `src/components/AccommodationShowcaseEditor.tsx`
 
-### Cron schedule (pg_cron, via insert tool not migration — contains anon key)
-- Watchdog: hourly `0 * * * *`.
-- Reconciliation: weekly `0 3 * * 1` (Monday 03:00 UTC = 10:00 Bangkok).
+Lives inside the existing Settings → Policies area (same surface as `PolicySettingsForm`). Added as a new tab/section "Stay Showcase" — does **not** spawn a new page or dashboard.
 
-### Frontend
-- New Settings → Payments → "Reconciliation" panel showing the latest `payment_reconciliation_log` entries with severity badges and a "Run now" button (admin-only) that invokes `payment-reconciliation` ad hoc.
-- New badge on the Admin dashboard StaffQuickActions: "Stuck webhooks: N" linking to a filtered view of `payment_events` where `retry_count >= 3 AND processed=false`.
+Editor controls:
+- Image source picker — dropdown of existing `units` with their `photos[]`, plus a free-text URL field for non-unit images. No new uploader.
+- Per-slide: caption, alt text, optional unit link, active toggle, drag handle for reorder.
+- Block-level: enabled toggle, layout select, autoplay toggle, speed (slow/normal/fast), transition (fade/slide), image fit (cover/contain), show captions, show indicators.
+- Live mini-preview rendering the same `AccommodationShowcase` component with current draft state.
+- Helper text under the editor: *"Use real room/villa photos. Avoid blurry images. Landscape works best. Don't use stock photos."*
 
----
+Persisted via the existing `usePolicySettings` upsert mutation (admin-only RLS already enforced).
 
-## Testing (after all four ship — separate follow-up loop)
+### Mobile behavior
 
-- Extend `src/lib/__tests__/paymentSystem.test.ts`:
-  - Refund VAT math (tax-included vs excluded).
-  - Snapshot fallback rendering.
-  - Reconciliation classifier pure function.
-- New Deno tests under `supabase/functions/refund-payment/index.test.ts` and `supabase/functions/generate-tax-invoice/index.test.ts` using mocked Stripe.
-- Manual end-to-end Stripe **test mode** runbook: book → pay → partial refund → full refund → tax invoice download → simulate webhook failure (drop event) → confirm watchdog reprocess → confirm reconciliation flags nothing.
-
----
-
-## Files Touched (summary)
-
-**New**
-- `supabase/functions/refund-payment/index.ts`
-- `supabase/functions/generate-tax-invoice/index.ts`
-- `supabase/functions/payment-webhook-watchdog/index.ts`
-- `supabase/functions/payment-reconciliation/index.ts`
-- 1 migration: payments FK change + snapshot column + trigger + tax_invoices table + reconciliation log table + payment_events retry columns + storage bucket + 4 policy_settings keys + bookings.guest_tax_id
-
-**Edited**
-- `src/hooks/useBookings.ts` — refund hook calls edge function
-- `src/components/RefundDialog.tsx` — copy + provider awareness
-- `src/components/BookingDetailSheet.tsx` — invoice download button + archived snapshot fallback
-- `src/components/GuestPaymentSummary.tsx` — guest invoice download
-- `src/components/PolicySettingsForm.tsx` — company tax identity tab
-- `src/components/reports/PaymentAnalytics.tsx` — snapshot fallback
-- `src/components/StaffQuickActionsWidget.tsx` — stuck-webhook badge
-- `src/pages/Settings.tsx` — reconciliation panel route
-- `supabase/functions/payment-webhook/index.ts` — refund.* event handlers, retry_count++ on handler failure
-- `supabase/functions/cleanup-retention/index.ts` — explicit exclusion comment
-- `supabase/functions/delete-account/index.ts` — preserve bookings + log
-- `supabase/config.toml` — 4 new function blocks
-
-**Cron (insert tool, not migration)** — 2 pg_cron schedules.
+- One slide visible, swipeable (Embla `dragFree: false`).
+- Indicators are minimal dots, tap-able.
+- No hover-only effects; captions always visible when enabled.
+- Touch targets ≥ 44px.
 
 ---
 
-## Order of execution
+## Technical Notes
 
-1. Migration (schemas first so functions can write).
-2. P1 refund function + frontend rewire.
-3. P2 tax invoice function + UI + company settings.
-4. P3 retention is mostly the migration; verify snapshot trigger works and update fallbacks.
-5. P4 watchdog + reconciliation + cron + UI.
-6. Hand back for end-to-end testing.
+- **No migration required.** `policy_settings` already exists, anon-readable, admin-writable. Just a new key.
+- **No types.ts edit.** JSON value column accepts the new shape as-is.
+- **i18n.** Editor labels added to `src/i18n/locales/en.json` only (others fall back to English) — out of scope for non-English on first pass.
+- **Reuse:** Embla (`embla-carousel-react`) already installed for `src/components/ui/carousel.tsx`.
+- **Anchor links:** Add `id={`unit-${unit.id}`}` to each `UnitCard` wrapper so showcase slides can deep-link.
 
-Confirm and I'll execute in this order.
+---
+
+## Validation Checklist
+
+- [ ] `rg -i groundsday` returns zero matches
+- [ ] `/stay` hero still says "Ground Stay" and renders showcase below it
+- [ ] All three layouts render correctly on 384px and 1280px widths
+- [ ] Mobile swipe + dot indicators work
+- [ ] Captions show/hide per setting
+- [ ] Disabled toggle hides block with no layout shift
+- [ ] Empty slides → friendly placeholder (no broken images)
+- [ ] Clicking a slide with `link_unit_id` scrolls to that unit
+- [ ] Settings editor saves and the public page reflects changes after refresh
+- [ ] Landing page (`/`) renders without "GroundsDay" anywhere
