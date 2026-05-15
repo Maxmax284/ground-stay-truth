@@ -13,12 +13,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Save, Banknote, Percent, Heart, Bot, Wrench, Mail, Receipt,
   Clock, Shield, CreditCard, ToggleLeft, CalendarClock, Sparkles, Plane, Wifi, Phone, ScrollText,
-  Volume2, Images,
+  Volume2,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { playGroundSound, SOUND_NAMES, type SoundName } from "@/lib/groundSounds";
 import { StayEssentialsEditor } from "@/components/StayEssentialsEditor";
-import { AccommodationShowcaseEditor } from "@/components/AccommodationShowcaseEditor";
 
 /* ── Setting Groups ────────────────────────────────────────── */
 
@@ -152,13 +151,6 @@ const GROUPS: SettingGroup[] = [
     summary: (g) => g("sound_effects_enabled") === "true"
       ? `Active • Volume: ${g("sound_effects_volume") || "50"}%`
       : "Disabled",
-  },
-  {
-    id: "stay_showcase",
-    label: "Stay Showcase",
-    icon: <Images className="h-4 w-4" />,
-    keys: [],
-    summary: () => "Public accommodation gallery on /stay",
   },
 ];
 
@@ -412,11 +404,9 @@ export function PolicySettingsForm() {
             </CardHeader>
           </Card>
 
-          {/* Settings grid — use custom editor for Stay Essentials and Stay Showcase */}
+          {/* Settings grid — use custom editor for Stay Essentials */}
           {group.id === "stay_essentials" ? (
             <StayEssentialsEditor />
-          ) : group.id === "stay_showcase" ? (
-            <AccommodationShowcaseEditor />
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               {group.keys.map((key) => renderSetting(key))}

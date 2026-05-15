@@ -15,7 +15,6 @@ import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { FetchErrorState } from "@/components/FetchErrorState";
 import { logClientError } from "@/lib/errorLogging";
-import AccommodationShowcase from "@/components/AccommodationShowcase";
 import lamaiLogo from "@/assets/lamai-logo.png";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -197,9 +196,6 @@ export default function Stay() {
         </div>
         <div className="thai-stripe" />
       </header>
-
-      {/* Accommodation Showcase (CMS-managed; hidden when disabled) */}
-      <AccommodationShowcase />
 
       {/* Units Grid — grouped by property */}
       <main className="max-w-5xl mx-auto px-4 py-10 space-y-10">
