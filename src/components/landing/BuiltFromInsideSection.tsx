@@ -312,7 +312,7 @@ const BuiltFromInsideSection = () => (
           The Build
         </p>
         <div className="space-y-4 text-muted-foreground leading-relaxed">
-          <p>GroundsDay wasn't built the traditional way.</p>
+          <p>Ground Stay wasn't built the traditional way.</p>
           <p>
             No large dev team.<br />
             No layered handoffs.<br />
@@ -353,7 +353,7 @@ const BuiltFromInsideSection = () => (
           <p>One side saw the pattern.</p>
           <p>The other built the system.</p>
           <p className="text-foreground font-medium">
-            GroundsDay exists at that intersection.
+            Ground Stay exists at that intersection.
           </p>
           <p>
             Not as an idea—<br />

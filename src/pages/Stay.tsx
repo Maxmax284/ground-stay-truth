@@ -15,6 +15,7 @@ import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { FetchErrorState } from "@/components/FetchErrorState";
 import { logClientError } from "@/lib/errorLogging";
+import AccommodationShowcase from "@/components/AccommodationShowcase";
 import lamaiLogo from "@/assets/lamai-logo.png";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -197,6 +198,9 @@ export default function Stay() {
         <div className="thai-stripe" />
       </header>
 
+      {/* Accommodation Showcase (CMS-managed; hidden when disabled) */}
+      <AccommodationShowcase />
+
       {/* Units Grid — grouped by property */}
       <main className="max-w-5xl mx-auto px-4 py-10 space-y-10">
         {loading ? (
@@ -367,7 +371,7 @@ function UnitCard({ unit, currencySymbol, expandedUnit, blockedByUnit, onToggleA
   onRequestBooking: (id: string) => void;
 }) {
   return (
-    <Card className="overflow-hidden hover-lift">
+    <Card id={`unit-${unit.id}`} className="overflow-hidden hover-lift scroll-mt-24">
       {unit.photos && unit.photos.length > 0 && (
         <div className="aspect-[16/9] overflow-hidden">
           <img src={unit.photos[0]} alt={`${unit.name} accommodation`} className="w-full h-full object-cover" loading="lazy" />

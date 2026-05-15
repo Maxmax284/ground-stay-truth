@@ -7,7 +7,7 @@ const ComplianceSection = () => (
 
       <div className="border border-border rounded-sm p-8 bg-card">
         <p className="text-sm text-foreground font-medium mb-6">
-          GroundsDay is an operational coordination system. It is not a replacement for personal responsibility or external authorities.
+          Ground Stay is an operational coordination system. It is not a replacement for personal responsibility or external authorities.
         </p>
 
         <div className="space-y-3 mb-8">
