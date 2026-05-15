@@ -23,6 +23,10 @@ interface Props {
 
 export default function AccommodationShowcase({ configOverride, forceShow }: Props) {
   const [fetched, setFetched] = useState<StayShowcaseConfig | null>(null);
+  const [rowMissing, setRowMissing] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const { role } = useAuth();
+  const isStaff = !!role && role !== "guest";
 
   useEffect(() => {
     if (configOverride) return;
@@ -34,9 +38,18 @@ export default function AccommodationShowcase({ configOverride, forceShow }: Pro
           { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
         );
         const data = await resp.json();
-        if (!cancelled) setFetched(normalizeShowcase(data?.[0]?.value ?? null));
-      } catch {
-        if (!cancelled) setFetched({ ...DEFAULT_SHOWCASE });
+        if (cancelled) return;
+        if (!Array.isArray(data) || data.length === 0) {
+          setRowMissing(true);
+          setFetched({ ...DEFAULT_SHOWCASE });
+        } else {
+          setFetched(normalizeShowcase(data[0]?.value ?? null));
+        }
+      } catch (e: any) {
+        if (!cancelled) {
+          setFetchError(e?.message ?? "Failed to load showcase");
+          setFetched({ ...DEFAULT_SHOWCASE });
+        }
       }
     })();
     return () => {
@@ -46,26 +59,49 @@ export default function AccommodationShowcase({ configOverride, forceShow }: Pro
 
   const config = configOverride ?? fetched;
 
-  if (!config) return null;
-  if (!forceShow && !config.enabled) return null;
-
   const activeSlides = useMemo(
-    () => [...config.slides].filter((s) => s.active).sort((a, b) => a.order - b.order),
-    [config.slides],
+    () =>
+      config
+        ? [...config.slides].filter((s) => s.active).sort((a, b) => a.order - b.order)
+        : [],
+    [config],
   );
 
-  if (activeSlides.length === 0) {
+  if (!config) return null;
+
+  const disabled = !config.enabled;
+  const empty = activeSlides.length === 0;
+
+  if (!forceShow && (disabled || empty || rowMissing || fetchError)) {
+    if (!isStaff) return null;
     return (
-      <section className="max-w-5xl mx-auto px-4 -mt-2 mb-2">
-        <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 px-6 py-10 text-center">
-          <ImageOff className="h-6 w-6 mx-auto mb-2 text-muted-foreground/60" aria-hidden />
-          <p className="text-sm text-muted-foreground">
-            Room photos coming soon — villas and camp rooms will appear here.
-          </p>
+      <section className="max-w-5xl mx-auto px-4 mt-6 mb-4">
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 flex items-start gap-3">
+          <AlertTriangle className="h-4 w-4 mt-0.5 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden />
+          <div className="flex-1 text-sm">
+            <p className="font-medium text-foreground">Stay Showcase is hidden from guests</p>
+            <p className="text-muted-foreground mt-0.5">
+              {fetchError
+                ? `Failed to load showcase config: ${fetchError}`
+                : rowMissing
+                  ? "No stay_showcase row exists in policy_settings yet."
+                  : disabled
+                    ? "Showcase is disabled. Toggle 'Show on /stay page' on and Save."
+                    : "Showcase is enabled but has no active slides. Add slides from your unit photos."}
+            </p>
+            <a
+              href="/settings"
+              className="inline-block mt-1 text-xs font-medium text-primary hover:underline"
+            >
+              Open Settings → Policies → Stay Showcase →
+            </a>
+            <p className="text-[11px] text-muted-foreground/70 mt-1">Only staff see this notice.</p>
+          </div>
         </div>
       </section>
     );
   }
+
 
   const handleSlideClick = (slide: ShowcaseSlide) => {
     if (slide.link_url) {
