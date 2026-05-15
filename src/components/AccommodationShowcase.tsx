@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
+import { Link } from "react-router-dom";
 import useEmblaCarousel from "embla-carousel-react";
-import { ChevronLeft, ChevronRight, ImageOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImageOff, AlertTriangle } from "lucide-react";
 import {
   type StayShowcaseConfig,
   type ShowcaseSlide,
@@ -8,6 +9,7 @@ import {
   SPEED_MS,
   normalizeShowcase,
 } from "@/lib/stayShowcase";
+import { useAuth } from "@/hooks/useAuth";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
