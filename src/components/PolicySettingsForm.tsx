@@ -412,9 +412,11 @@ export function PolicySettingsForm() {
             </CardHeader>
           </Card>
 
-          {/* Settings grid — use custom editor for Stay Essentials */}
+          {/* Settings grid — use custom editor for Stay Essentials and Stay Showcase */}
           {group.id === "stay_essentials" ? (
             <StayEssentialsEditor />
+          ) : group.id === "stay_showcase" ? (
+            <AccommodationShowcaseEditor />
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               {group.keys.map((key) => renderSetting(key))}
