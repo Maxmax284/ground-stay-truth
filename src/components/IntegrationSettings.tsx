@@ -213,6 +213,7 @@ export function IntegrationSettings() {
               </code>
               <p>Events to listen for: <code>checkout.session.completed</code>, <code>charge.refunded</code></p>
             </div>
+            <WebhookHealthCard />
           </CardContent>
         )}
       </Card>
