@@ -9,6 +9,7 @@ import DRSInfraMap from "@/components/disaster-recovery/DRSInfraMap";
 import DRSRecoveryProtocol from "@/components/disaster-recovery/DRSRecoveryProtocol";
 import DRSValidation from "@/components/disaster-recovery/DRSValidation";
 import DRSAuditLog from "@/components/disaster-recovery/DRSAuditLog";
+import DRSSnapshots from "@/components/disaster-recovery/DRSSnapshots";
 
 export default function DisasterRecovery() {
   return (
@@ -30,6 +31,7 @@ export default function DisasterRecovery() {
             <TabsTrigger value="protocol" className="text-xs">Protocol</TabsTrigger>
             <TabsTrigger value="git" className="text-xs">Source</TabsTrigger>
             <TabsTrigger value="database" className="text-xs">Database</TabsTrigger>
+            <TabsTrigger value="snapshots" className="text-xs">Snapshots</TabsTrigger>
             <TabsTrigger value="env" className="text-xs">Environment</TabsTrigger>
             <TabsTrigger value="infra" className="text-xs">Infrastructure</TabsTrigger>
             <TabsTrigger value="validation" className="text-xs">Validation</TabsTrigger>
@@ -41,6 +43,7 @@ export default function DisasterRecovery() {
             <TabsContent value="protocol"><DRSRecoveryProtocol /></TabsContent>
             <TabsContent value="git"><DRSGitRecovery /></TabsContent>
             <TabsContent value="database"><DRSDatabaseBackup /></TabsContent>
+            <TabsContent value="snapshots"><DRSSnapshots /></TabsContent>
             <TabsContent value="env"><DRSEnvironment /></TabsContent>
             <TabsContent value="infra"><DRSInfraMap /></TabsContent>
             <TabsContent value="validation"><DRSValidation /></TabsContent>
