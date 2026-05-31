@@ -29,6 +29,7 @@ import Stay from "./pages/Stay";
 import Simulation from "./pages/Simulation";
 import LandingPage from "./pages/LandingPage";
 import DisasterRecovery from "./pages/DisasterRecovery";
+import GuestPaymentLink from "./pages/GuestPaymentLink";
 
 const queryClient = new QueryClient();
 
