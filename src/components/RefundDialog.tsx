@@ -74,6 +74,7 @@ export function RefundDialog({ open, onOpenChange, payment, policies, onConfirm,
   };
 
   return (
+    <>
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
