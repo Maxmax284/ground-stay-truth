@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import {
   Home,
   Building2,
+  Images,
   CalendarDays,
   BookOpen,
   DollarSign,
