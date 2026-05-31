@@ -12,6 +12,7 @@ import { StaffAuditLog } from "@/components/security/StaffAuditLog";
 import { SecurityEventLog } from "@/components/SecurityEventLog";
 import { WebhookHealthCard } from "@/components/WebhookHealthCard";
 import { StaffMfaCard } from "@/components/security/StaffMfaCard";
+import { PaymentLinkAbuseCard } from "@/components/security/PaymentLinkAbuseCard";
 import { ShieldCheck } from "lucide-react";
 
 export default function SecurityCenter() {
