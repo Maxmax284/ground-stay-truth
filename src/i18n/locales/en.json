@@ -51,6 +51,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "units": "Units",
+    "mediaLibrary": "Media Library",
     "bookings": "Bookings",
     "calendar": "Calendar",
     "pricing": "Pricing",

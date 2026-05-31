@@ -31,6 +31,7 @@ import LandingPage from "./pages/LandingPage";
 import DisasterRecovery from "./pages/DisasterRecovery";
 import GuestPaymentLink from "./pages/GuestPaymentLink";
 import PaymentReport from "./pages/PaymentReport";
+import MediaLibrary from "./pages/MediaLibrary";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ const App = () => (
                 {/* Staff routes — each enforced by canAccessRoute */}
                 <Route path="/dashboard" element={<ProtectedRoute requiredPath="/dashboard"><Index /></ProtectedRoute>} />
                 <Route path="/units" element={<ProtectedRoute requiredPath="/units"><Units /></ProtectedRoute>} />
+                <Route path="/media-library" element={<ProtectedRoute requiredPath="/media-library"><MediaLibrary /></ProtectedRoute>} />
                 <Route path="/bookings" element={<ProtectedRoute requiredPath="/bookings"><Bookings /></ProtectedRoute>} />
                 <Route path="/calendar" element={<ProtectedRoute requiredPath="/calendar"><CalendarView /></ProtectedRoute>} />
                 <Route path="/pricing" element={<ProtectedRoute requiredPath="/pricing"><Pricing /></ProtectedRoute>} />
