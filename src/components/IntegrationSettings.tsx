@@ -14,6 +14,7 @@ import { useSecretStatuses, useSetSecret, useDeleteSecret } from "@/hooks/useInt
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreditCard, Mail, Eye, EyeOff, Save, CheckCircle2, XCircle, ShieldCheck, Plane, Trash2 } from "lucide-react";
 import { MessagingBridgeSettings } from "@/components/MessagingBridgeSettings";
+import { WebhookHealthCard } from "@/components/WebhookHealthCard";
 
 const SECRET_KEYS = ["stripe_secret_key", "stripe_publishable_key", "stripe_webhook_secret", "resend_api_key", "fenrir_api_key", "fenrir_receive_token"];
 
@@ -212,6 +213,7 @@ export function IntegrationSettings() {
               </code>
               <p>Events to listen for: <code>checkout.session.completed</code>, <code>charge.refunded</code></p>
             </div>
+            <WebhookHealthCard />
           </CardContent>
         )}
       </Card>

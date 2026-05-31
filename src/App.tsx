@@ -29,6 +29,7 @@ import Stay from "./pages/Stay";
 import Simulation from "./pages/Simulation";
 import LandingPage from "./pages/LandingPage";
 import DisasterRecovery from "./pages/DisasterRecovery";
+import GuestPaymentLink from "./pages/GuestPaymentLink";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +74,7 @@ const App = () => (
                 <Route path="/embed/:type/:unitId" element={<EmbedWidget />} />
                 <Route path="/embed/:type" element={<EmbedWidget />} />
                 <Route path="/stay" element={<Stay />} />
+                <Route path="/pay/:token" element={<GuestPaymentLink />} />
                 <Route path="/legal" element={<Legal />} />
                 <Route path="/landing" element={<LandingPage />} />
 
