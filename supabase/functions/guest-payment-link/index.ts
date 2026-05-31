@@ -22,12 +22,25 @@ import {
   getCanonicalSiteUrl,
 } from "../_shared/cors.ts";
 
-async function hashToken(raw: string): Promise<string> {
-  const enc = new TextEncoder().encode(raw);
+const ATTEMPT_CAP = 12; // per-link lifetime cap on resolve attempts
+
+async function sha256Hex(input: string): Promise<string> {
+  const enc = new TextEncoder().encode(input);
   const digest = await crypto.subtle.digest("SHA-256", enc);
   return Array.from(new Uint8Array(digest))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
+}
+async function hashToken(raw: string) { return sha256Hex(raw); }
+
+function extractIp(req: Request): string | null {
+  const xff = req.headers.get("x-forwarded-for");
+  if (xff) return xff.split(",")[0].trim();
+  return req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip");
+}
+async function hashIp(ip: string | null): Promise<string | null> {
+  if (!ip) return null;
+  return (await sha256Hex(ip)).slice(0, 32);
 }
 
 async function logEvent(
@@ -39,12 +52,14 @@ async function logEvent(
   extra: Record<string, any> = {},
 ) {
   try {
+    const ipHash = await hashIp(extractIp(req));
     await adminClient.from("payment_link_events").insert({
       payment_link_id: linkId,
       booking_id: bookingId,
       event_type: eventType,
       actor_role: "guest",
       context: extra,
+      ip_hash: ipHash,
       user_agent: (req.headers.get("user-agent") || "").slice(0, 300),
     });
   } catch (err) {
