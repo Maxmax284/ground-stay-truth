@@ -2229,6 +2229,51 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_audit_events: {
+        Row: {
+          actor_email: string | null
+          actor_id: string | null
+          actor_role: string | null
+          created_at: string
+          event_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json
+          reason: string | null
+          severity: string
+          target_user_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          reason?: string | null
+          severity?: string
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          reason?: string | null
+          severity?: string
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       stay_support_log: {
         Row: {
           action: string
@@ -2684,6 +2729,17 @@ export type Database = {
         Returns: undefined
       }
       is_secret_configured: { Args: { _key: string }; Returns: boolean }
+      log_staff_audit_event: {
+        Args: {
+          _actor_id: string
+          _event_type: string
+          _metadata?: Json
+          _reason?: string
+          _severity: string
+          _target_user_id?: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role:
