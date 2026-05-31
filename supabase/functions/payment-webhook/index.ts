@@ -175,7 +175,11 @@ serve(async (req) => {
         webhookSecret
       );
     } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
       console.error("Webhook verification failed:", err);
+      await recordWebhookEvent(adminClient, "stripe", "failure", {
+        reason: `Signature verification failed: ${reason}`,
+      });
       return new Response(JSON.stringify({ error: "Invalid signature" }), {
         status: 400,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
