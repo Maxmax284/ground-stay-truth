@@ -20,6 +20,7 @@ const ROLE_HIERARCHY: Record<AppRole, number> = {
 const NAV_ACCESS: Record<string, AppRole[]> = {
   "/dashboard": ["front_desk", "front_desk_supervisor", "manager", "admin", "viewer", "maintenance"],
   "/units":     ["manager", "admin"],
+  "/media-library": ["manager", "admin"],
   "/bookings":  ["front_desk", "front_desk_supervisor", "manager", "admin", "viewer"],
   "/calendar":  ["front_desk", "front_desk_supervisor", "manager", "admin", "viewer", "maintenance"],
   "/pricing":   ["manager", "admin"],
