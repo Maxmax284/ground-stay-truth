@@ -2039,6 +2039,45 @@ export type Database = {
         }
         Relationships: []
       }
+      recovery_snapshots: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          created_by_email: string | null
+          id: string
+          kind: string
+          label: string
+          notes: string | null
+          payload: Json
+          size_bytes: number
+          table_counts: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          id?: string
+          kind?: string
+          label: string
+          notes?: string | null
+          payload?: Json
+          size_bytes?: number
+          table_counts?: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          id?: string
+          kind?: string
+          label?: string
+          notes?: string | null
+          payload?: Json
+          size_bytes?: number
+          table_counts?: Json
+        }
+        Relationships: []
+      }
       review_audit_log: {
         Row: {
           action: string
@@ -2724,6 +2763,10 @@ export type Database = {
     }
     Functions: {
       cleanup_expired_link_codes: { Args: never; Returns: undefined }
+      create_recovery_snapshot: {
+        Args: { _kind?: string; _label: string; _notes?: string }
+        Returns: string
+      }
       get_integration_secret: { Args: { _key: string }; Returns: string }
       has_property_access: {
         Args: { _property_id: string; _user_id: string }
