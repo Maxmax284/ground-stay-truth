@@ -98,16 +98,25 @@ serve(async (req) => {
       return jsonResponse(req, { error: "invalid_token" }, 404);
     }
 
-    const now = Date.now();
-    const expired = new Date(link.expires_at).getTime() < now;
-    const used = !!link.used_at;
-    const revoked = !!link.revoked_at;
-
-    const booking: any = (link as any).bookings;
-    if (!booking) {
-      await logEvent(adminClient, link.id, link.booking_id, "invalid_attempt", req, { reason: "missing_booking" });
-      return jsonResponse(req, { error: "booking_missing" }, 404);
+    // ── Abuse cap: increment lifetime attempt counter; lock once exceeded.
+    const { data: newCount } = await adminClient.rpc("increment_payment_link_attempt", {
+      _link_id: link.id,
+    });
+    if (link.abuse_locked_at || (typeof newCount === "number" && newCount > ATTEMPT_CAP)) {
+      if (!link.abuse_locked_at) {
+        await adminClient.rpc("lock_payment_link_abuse", {
+          _link_id: link.id,
+          _reason: `attempt_cap_exceeded:${newCount}`,
+        });
+        await logEvent(adminClient, link.id, link.booking_id, "abuse_locked", req, {
+          attempt_count: newCount, cap: ATTEMPT_CAP, action,
+        });
+      } else {
+        await logEvent(adminClient, link.id, link.booking_id, "locked_attempt", req, { action });
+      }
+      return jsonResponse(req, { error: "link_unavailable" }, 410);
     }
+
 
     // Check the booking hasn't already been paid through any other channel.
     const { data: paid } = await adminClient
