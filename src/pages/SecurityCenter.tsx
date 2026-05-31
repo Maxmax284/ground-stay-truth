@@ -42,8 +42,7 @@ export default function SecurityCenter() {
 
         <MfaPolicyForm />
 
-        <StaffAuditLog />
-        <SecurityEventLog />
+        <SecurityDashboard />
       </div>
     </DashboardLayout>
   );
