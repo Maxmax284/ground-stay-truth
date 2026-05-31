@@ -4,7 +4,7 @@ import Stripe from "https://esm.sh/stripe@14.14.0?target=deno";
 import { getCorsHeaders, corsPreflight, jsonResponse } from "../_shared/cors.ts";
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: getCorsHeaders(req) });
+  if (req.method === "OPTIONS") return corsPreflight(req);
 
   try {
     const authHeader = req.headers.get("Authorization");
