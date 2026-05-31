@@ -153,6 +153,9 @@ serve(async (req) => {
       webhookSecret.length < 10
     ) {
       console.error("Stripe webhook secret or secret key not configured");
+      await recordWebhookEvent(adminClient, "stripe", "failure", {
+        reason: "Webhook secret or Stripe secret key not configured",
+      });
       return new Response(JSON.stringify({ error: "Not configured" }), {
         status: 500,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
