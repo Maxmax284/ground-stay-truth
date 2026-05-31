@@ -127,7 +127,7 @@ async function verifyAndNormalizeStripe(
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: getCorsHeaders(req) });
+    return corsPreflight(req);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
