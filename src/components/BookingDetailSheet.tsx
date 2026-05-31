@@ -29,6 +29,7 @@ import { formatPrice } from "@/lib/currency";
 import { calculateOutstanding, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_VARIANTS, PAYMENT_TYPE_LABELS, type PaymentStatus, type PaymentType } from "@/lib/paymentTypes";
 import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText, Info, Wrench, Shirt, Globe, Sparkles, RotateCcw, Paperclip, Image as ImageIcon, File, X, Loader2 } from "lucide-react";
 import { RefundDialog } from "@/components/RefundDialog";
+import { PaymentLinkManager } from "@/components/PaymentLinkManager";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { SecurityDepositSection } from "@/components/SecurityDepositSection";
 import { BookingTrainingSection } from "@/components/BookingTrainingSection";
