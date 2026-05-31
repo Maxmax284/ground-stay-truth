@@ -267,6 +267,21 @@ serve(async (req) => {
     const guestEmail = (booking as any).profiles?.email;
     const stayDescription = `${booking.check_in} to ${booking.check_out} (${booking.num_guests} guest${booking.num_guests > 1 ? "s" : ""})`;
 
+    // Validate guest-supplied redirect URLs against the allowlist.
+    // Falls back to canonical site URL if missing or rejected.
+    const siteUrl = getCanonicalSiteUrl();
+    const validatedSuccess =
+      validateRedirectUrl(success_url) || `${siteUrl}/guest?payment=success`;
+    const validatedCancel =
+      validateRedirectUrl(cancel_url) || `${siteUrl}/guest?payment=cancelled`;
+
+    if (success_url && !validateRedirectUrl(success_url)) {
+      console.warn("[process-payment] rejected success_url:", success_url);
+    }
+    if (cancel_url && !validateRedirectUrl(cancel_url)) {
+      console.warn("[process-payment] rejected cancel_url:", cancel_url);
+    }
+
     // Create checkout session via provider adapter
     const result = await adapter.createCheckoutSession({
       amount: depositAmount,
@@ -277,12 +292,8 @@ serve(async (req) => {
         idempotency_key: idempotencyKey,
         stay_description: stayDescription,
       },
-      successUrl:
-        success_url ||
-        `${req.headers.get("origin")}/guest?payment=success`,
-      cancelUrl:
-        cancel_url ||
-        `${req.headers.get("origin")}/guest?payment=cancelled`,
+      successUrl: validatedSuccess,
+      cancelUrl: validatedCancel,
       customerEmail: guestEmail || undefined,
       idempotencyKey,
     });
