@@ -57,10 +57,9 @@ describe("GuestPickupCard — Travel State Guidance", () => {
     });
   });
 
-  it("pre_departure: shows guidance to provide flight details", () => {
+  it("pre_departure: shows guidance to provide travel details", () => {
     renderCard();
-    expect(screen.getByText(/provide your flight details/i)).toBeInTheDocument();
-    expect(screen.getByText(/connecting flight to Koh Samui/i)).toBeInTheDocument();
+    expect(screen.getByText(/Please let us know how you're getting to Koh Samui/i)).toBeInTheDocument();
   });
 
   it("missing_final_flight: warns about Bangkok landing, asks for domestic", () => {
