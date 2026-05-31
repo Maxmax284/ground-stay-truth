@@ -239,6 +239,9 @@ serve(async (req) => {
         .from("payment_events")
         .update({ processed: true, last_error: null })
         .eq("provider_event_id", normalized.providerEventId);
+      await recordWebhookEvent(adminClient, normalized.provider, "success", {
+        eventId: normalized.providerEventId,
+      });
     } else {
       // Bump retry counter so the watchdog can escalate stuck events
       await adminClient.rpc("increment_payment_event_retry", {
@@ -250,6 +253,10 @@ serve(async (req) => {
           .from("payment_events")
           .update({ last_error: handlerError, last_retry_at: new Date().toISOString() })
           .eq("provider_event_id", normalized.providerEventId);
+      });
+      await recordWebhookEvent(adminClient, normalized.provider, "failure", {
+        eventId: normalized.providerEventId,
+        reason: handlerError ?? "Handler failed",
       });
     }
 
