@@ -255,6 +255,10 @@ export function AppSidebar() {
         )}
         {isAdmin && (
           <>
+            <Link to="/security-center" className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+              <ShieldAlert className="h-3.5 w-3.5" />
+              Security Center
+            </Link>
             <Link to="/disaster-recovery" className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
               <ShieldAlert className="h-3.5 w-3.5" />
               Disaster Recovery

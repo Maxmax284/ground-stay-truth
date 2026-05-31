@@ -32,6 +32,7 @@ import DisasterRecovery from "./pages/DisasterRecovery";
 import GuestPaymentLink from "./pages/GuestPaymentLink";
 import PaymentReport from "./pages/PaymentReport";
 import MediaLibrary from "./pages/MediaLibrary";
+import SecurityCenter from "./pages/SecurityCenter";
 
 const queryClient = new QueryClient();
 
@@ -69,6 +70,7 @@ const App = () => (
                 <Route path="/embeds" element={<ProtectedRoute requiredPath="/embeds"><Embeds /></ProtectedRoute>} />
                 <Route path="/simulation" element={<ProtectedRoute requiredPath="/simulation"><Simulation /></ProtectedRoute>} />
                 <Route path="/disaster-recovery" element={<ProtectedRoute requiredPath="/disaster-recovery"><DisasterRecovery /></ProtectedRoute>} />
+                <Route path="/security-center" element={<ProtectedRoute requiredPath="/security-center"><SecurityCenter /></ProtectedRoute>} />
                 <Route path="/admin/payment-report" element={<ProtectedRoute><PaymentReport /></ProtectedRoute>} />
 
 

@@ -3,7 +3,7 @@
  * Foundation page for staff MFA, role/permission audit, sensitive-action
  * protection, and security visibility.
  */
-import { DashboardLayout } from "@/components/DashboardLayout";
+import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { SecurityCenterOverview } from "@/components/security/SecurityCenterOverview";
