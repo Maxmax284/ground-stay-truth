@@ -31,6 +31,7 @@ import LandingPage from "./pages/LandingPage";
 import DisasterRecovery from "./pages/DisasterRecovery";
 import GuestPaymentLink from "./pages/GuestPaymentLink";
 import PaymentReport from "./pages/PaymentReport";
+import MediaLibrary from "./pages/MediaLibrary";
 
 const queryClient = new QueryClient();
 
