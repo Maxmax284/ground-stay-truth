@@ -117,6 +117,16 @@ serve(async (req) => {
       return jsonResponse(req, { error: "link_unavailable" }, 410);
     }
 
+    const now = Date.now();
+    const expired = new Date(link.expires_at).getTime() < now;
+    const used = !!link.used_at;
+    const revoked = !!link.revoked_at;
+
+    const booking: any = (link as any).bookings;
+    if (!booking) {
+      await logEvent(adminClient, link.id, link.booking_id, "invalid_attempt", req, { reason: "missing_booking" });
+      return jsonResponse(req, { error: "booking_missing" }, 404);
+    }
 
     // Check the booking hasn't already been paid through any other channel.
     const { data: paid } = await adminClient
