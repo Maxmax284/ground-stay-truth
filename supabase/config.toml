@@ -98,3 +98,9 @@ verify_jwt = false
 
 [functions.payment-reconciliation]
 verify_jwt = false
+
+[functions.create-payment-link]
+verify_jwt = false
+
+[functions.guest-payment-link]
+verify_jwt = false

@@ -1,31 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.14.0?target=deno";
-
-const ALLOWED_ORIGINS = [
-  Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
-  "https://ground-stay-truth.lovable.app",
-  "http://localhost:5173",
-  "http://localhost:8080",
-];
-
-function isAllowedOrigin(origin: string): boolean {
-  if (ALLOWED_ORIGINS.includes(origin)) return true;
-  // Allow Lovable preview/dev origins
-  if (/^https:\/\/[a-z0-9-]+\.lovableproject\.com$/.test(origin)) return true;
-  if (/^https:\/\/[a-z0-9-]+\.lovable\.app$/.test(origin)) return true;
-  if (/^https:\/\/id-preview--[a-z0-9-]+\.lovable\.app$/.test(origin)) return true;
-  return false;
-}
-
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("origin") || "";
-  const allowedOrigin = isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
-  };
-}
+import { getCorsHeaders, corsPreflight } from "../_shared/cors.ts";
+import { recordWebhookEvent } from "../_shared/webhookHealth.ts";
 
 // ── Provider Webhook Verifiers ──
 interface NormalizedPaymentEvent {
@@ -150,7 +127,7 @@ async function verifyAndNormalizeStripe(
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: getCorsHeaders(req) });
+    return corsPreflight(req);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -176,6 +153,9 @@ serve(async (req) => {
       webhookSecret.length < 10
     ) {
       console.error("Stripe webhook secret or secret key not configured");
+      await recordWebhookEvent(adminClient, "stripe", "failure", {
+        reason: "Webhook secret or Stripe secret key not configured",
+      });
       return new Response(JSON.stringify({ error: "Not configured" }), {
         status: 500,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
@@ -195,7 +175,11 @@ serve(async (req) => {
         webhookSecret
       );
     } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
       console.error("Webhook verification failed:", err);
+      await recordWebhookEvent(adminClient, "stripe", "failure", {
+        reason: `Signature verification failed: ${reason}`,
+      });
       return new Response(JSON.stringify({ error: "Invalid signature" }), {
         status: 400,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
@@ -255,6 +239,9 @@ serve(async (req) => {
         .from("payment_events")
         .update({ processed: true, last_error: null })
         .eq("provider_event_id", normalized.providerEventId);
+      await recordWebhookEvent(adminClient, normalized.provider, "success", {
+        eventId: normalized.providerEventId,
+      });
     } else {
       // Bump retry counter so the watchdog can escalate stuck events
       await adminClient.rpc("increment_payment_event_retry", {
@@ -266,6 +253,10 @@ serve(async (req) => {
           .from("payment_events")
           .update({ last_error: handlerError, last_retry_at: new Date().toISOString() })
           .eq("provider_event_id", normalized.providerEventId);
+      });
+      await recordWebhookEvent(adminClient, normalized.provider, "failure", {
+        eventId: normalized.providerEventId,
+        reason: handlerError ?? "Handler failed",
       });
     }
 

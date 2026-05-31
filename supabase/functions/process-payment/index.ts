@@ -1,31 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.14.0?target=deno";
-
-const ALLOWED_ORIGINS = [
-  Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
-  "https://ground-stay-truth.lovable.app",
-  "http://localhost:5173",
-  "http://localhost:8080",
-];
-
-function isAllowedOrigin(origin: string): boolean {
-  if (ALLOWED_ORIGINS.includes(origin)) return true;
-  // Allow Lovable preview/dev origins
-  if (/^https:\/\/[a-z0-9-]+\.lovableproject\.com$/.test(origin)) return true;
-  if (/^https:\/\/[a-z0-9-]+\.lovable\.app$/.test(origin)) return true;
-  if (/^https:\/\/id-preview--[a-z0-9-]+\.lovable\.app$/.test(origin)) return true;
-  return false;
-}
-
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("origin") || "";
-  const allowedOrigin = isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-  };
-}
+import {
+  getCorsHeaders,
+  corsPreflight,
+  validateRedirectUrl,
+  getCanonicalSiteUrl,
+  configWarnings,
+} from "../_shared/cors.ts";
 
 // ── Provider Adapter Interface ──
 interface CheckoutResult {
@@ -117,8 +99,10 @@ async function resolveProvider(
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: getCorsHeaders(req) });
+    return corsPreflight(req);
   }
+  const warnings = configWarnings();
+  if (warnings.length) console.warn("[process-payment]", warnings.join(" | "));
 
   try {
     // Authenticate the caller
@@ -283,6 +267,21 @@ serve(async (req) => {
     const guestEmail = (booking as any).profiles?.email;
     const stayDescription = `${booking.check_in} to ${booking.check_out} (${booking.num_guests} guest${booking.num_guests > 1 ? "s" : ""})`;
 
+    // Validate guest-supplied redirect URLs against the allowlist.
+    // Falls back to canonical site URL if missing or rejected.
+    const siteUrl = getCanonicalSiteUrl();
+    const validatedSuccess =
+      validateRedirectUrl(success_url) || `${siteUrl}/guest?payment=success`;
+    const validatedCancel =
+      validateRedirectUrl(cancel_url) || `${siteUrl}/guest?payment=cancelled`;
+
+    if (success_url && !validateRedirectUrl(success_url)) {
+      console.warn("[process-payment] rejected success_url:", success_url);
+    }
+    if (cancel_url && !validateRedirectUrl(cancel_url)) {
+      console.warn("[process-payment] rejected cancel_url:", cancel_url);
+    }
+
     // Create checkout session via provider adapter
     const result = await adapter.createCheckoutSession({
       amount: depositAmount,
@@ -293,12 +292,8 @@ serve(async (req) => {
         idempotency_key: idempotencyKey,
         stay_description: stayDescription,
       },
-      successUrl:
-        success_url ||
-        `${req.headers.get("origin")}/guest?payment=success`,
-      cancelUrl:
-        cancel_url ||
-        `${req.headers.get("origin")}/guest?payment=cancelled`,
+      successUrl: validatedSuccess,
+      cancelUrl: validatedCancel,
       customerEmail: guestEmail || undefined,
       idempotencyKey,
     });

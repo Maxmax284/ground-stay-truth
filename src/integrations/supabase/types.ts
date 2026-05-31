@@ -1466,6 +1466,109 @@ export type Database = {
           },
         ]
       }
+      payment_link_events: {
+        Row: {
+          actor_id: string | null
+          actor_role: string | null
+          booking_id: string | null
+          context: Json
+          created_at: string
+          event_type: string
+          id: string
+          ip_hash: string | null
+          payment_link_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_role?: string | null
+          booking_id?: string | null
+          context?: Json
+          created_at?: string
+          event_type: string
+          id?: string
+          ip_hash?: string | null
+          payment_link_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_role?: string | null
+          booking_id?: string | null
+          context?: Json
+          created_at?: string
+          event_type?: string
+          id?: string
+          ip_hash?: string | null
+          payment_link_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_link_events_payment_link_id_fkey"
+            columns: ["payment_link_id"]
+            isOneToOne: false
+            referencedRelation: "payment_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_links: {
+        Row: {
+          amount: number
+          booking_id: string
+          created_at: string
+          created_by: string
+          currency: string
+          expires_at: string
+          id: string
+          metadata: Json
+          revoked_at: string | null
+          revoked_by: string | null
+          token_hash: string
+          used_at: string | null
+          used_session_id: string | null
+        }
+        Insert: {
+          amount: number
+          booking_id: string
+          created_at?: string
+          created_by: string
+          currency?: string
+          expires_at: string
+          id?: string
+          metadata?: Json
+          revoked_at?: string | null
+          revoked_by?: string | null
+          token_hash: string
+          used_at?: string | null
+          used_session_id?: string | null
+        }
+        Update: {
+          amount?: number
+          booking_id?: string
+          created_at?: string
+          created_by?: string
+          currency?: string
+          expires_at?: string
+          id?: string
+          metadata?: Json
+          revoked_at?: string | null
+          revoked_by?: string | null
+          token_hash?: string
+          used_at?: string | null
+          used_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_links_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_reconciliation_log: {
         Row: {
           actual: number | null
@@ -2519,6 +2622,42 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      webhook_health: {
+        Row: {
+          id: string
+          last_event_id: string | null
+          last_failure_at: string | null
+          last_failure_reason: string | null
+          last_received_at: string | null
+          last_success_at: string | null
+          provider: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          last_event_id?: string | null
+          last_failure_at?: string | null
+          last_failure_reason?: string | null
+          last_received_at?: string | null
+          last_success_at?: string | null
+          provider: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          last_event_id?: string | null
+          last_failure_at?: string | null
+          last_failure_reason?: string | null
+          last_received_at?: string | null
+          last_success_at?: string | null
+          provider?: string
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
