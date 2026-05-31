@@ -408,6 +408,13 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
         </ScrollArea>
       ) : <p className="text-sm text-muted-foreground">{t("payments.noPayments")}</p>}
 
+      {canRecord && (
+        <>
+          <Separator />
+          <PaymentLinkManager bookingId={bookingId} />
+        </>
+      )}
+
       {/* Record payment form */}
       {canRecord && (
         <>
