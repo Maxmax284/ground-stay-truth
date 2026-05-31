@@ -1515,13 +1515,17 @@ export type Database = {
       }
       payment_links: {
         Row: {
+          abuse_locked_at: string | null
+          abuse_reason: string | null
           amount: number
+          attempt_count: number
           booking_id: string
           created_at: string
           created_by: string
           currency: string
           expires_at: string
           id: string
+          last_attempt_at: string | null
           metadata: Json
           revoked_at: string | null
           revoked_by: string | null
@@ -1530,13 +1534,17 @@ export type Database = {
           used_session_id: string | null
         }
         Insert: {
+          abuse_locked_at?: string | null
+          abuse_reason?: string | null
           amount: number
+          attempt_count?: number
           booking_id: string
           created_at?: string
           created_by: string
           currency?: string
           expires_at: string
           id?: string
+          last_attempt_at?: string | null
           metadata?: Json
           revoked_at?: string | null
           revoked_by?: string | null
@@ -1545,13 +1553,17 @@ export type Database = {
           used_session_id?: string | null
         }
         Update: {
+          abuse_locked_at?: string | null
+          abuse_reason?: string | null
           amount?: number
+          attempt_count?: number
           booking_id?: string
           created_at?: string
           created_by?: string
           currency?: string
           expires_at?: string
           id?: string
+          last_attempt_at?: string | null
           metadata?: Json
           revoked_at?: string | null
           revoked_by?: string | null
@@ -2728,7 +2740,15 @@ export type Database = {
         Args: { _error: string; _provider_event_id: string }
         Returns: undefined
       }
+      increment_payment_link_attempt: {
+        Args: { _link_id: string }
+        Returns: number
+      }
       is_secret_configured: { Args: { _key: string }; Returns: boolean }
+      lock_payment_link_abuse: {
+        Args: { _link_id: string; _reason: string }
+        Returns: undefined
+      }
       log_staff_audit_event: {
         Args: {
           _actor_id: string
