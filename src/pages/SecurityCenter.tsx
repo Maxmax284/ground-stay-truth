@@ -11,6 +11,7 @@ import { MfaPolicyForm } from "@/components/security/MfaPolicyForm";
 import { StaffAuditLog } from "@/components/security/StaffAuditLog";
 import { SecurityEventLog } from "@/components/SecurityEventLog";
 import { WebhookHealthCard } from "@/components/WebhookHealthCard";
+import { StaffMfaCard } from "@/components/security/StaffMfaCard";
 import { ShieldCheck } from "lucide-react";
 
 export default function SecurityCenter() {
@@ -33,9 +34,11 @@ export default function SecurityCenter() {
         <SecurityCenterOverview />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <MfaPolicyForm />
+          <StaffMfaCard />
           <WebhookHealthCard />
         </div>
+
+        <MfaPolicyForm />
 
         <StaffAuditLog />
         <SecurityEventLog />
