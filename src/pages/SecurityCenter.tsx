@@ -39,6 +39,8 @@ export default function SecurityCenter() {
           <WebhookHealthCard />
         </div>
 
+        <PaymentLinkAbuseCard />
+
         <MfaPolicyForm />
 
         <StaffAuditLog />
