@@ -99,8 +99,10 @@ async function resolveProvider(
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: getCorsHeaders(req) });
+    return corsPreflight(req);
   }
+  const warnings = configWarnings();
+  if (warnings.length) console.warn("[process-payment]", warnings.join(" | "));
 
   try {
     // Authenticate the caller
