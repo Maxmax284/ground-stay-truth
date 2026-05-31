@@ -1,31 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.14.0?target=deno";
-
-const ALLOWED_ORIGINS = [
-  Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
-  "https://ground-stay-truth.lovable.app",
-  "http://localhost:5173",
-  "http://localhost:8080",
-];
-
-function isAllowedOrigin(origin: string): boolean {
-  if (ALLOWED_ORIGINS.includes(origin)) return true;
-  // Allow Lovable preview/dev origins
-  if (/^https:\/\/[a-z0-9-]+\.lovableproject\.com$/.test(origin)) return true;
-  if (/^https:\/\/[a-z0-9-]+\.lovable\.app$/.test(origin)) return true;
-  if (/^https:\/\/id-preview--[a-z0-9-]+\.lovable\.app$/.test(origin)) return true;
-  return false;
-}
-
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("origin") || "";
-  const allowedOrigin = isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
-  };
-}
+import { getCorsHeaders, corsPreflight } from "../_shared/cors.ts";
+import { recordWebhookEvent } from "../_shared/webhookHealth.ts";
 
 // ── Provider Webhook Verifiers ──
 interface NormalizedPaymentEvent {
