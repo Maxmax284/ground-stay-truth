@@ -16,6 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/currency";
 import { PAYMENT_STATUS_LABELS, PAYMENT_TYPE_LABELS, type PaymentStatus, type PaymentType } from "@/lib/paymentTypes";
+import { StepUpDialog } from "@/components/security/StepUpDialog";
+import { useMfaPolicy, isStepUpFresh } from "@/hooks/useMfa";
 
 interface RefundDialogProps {
   open: boolean;
@@ -36,6 +38,8 @@ export function RefundDialog({ open, onOpenChange, payment, policies, onConfirm,
   const { t } = useTranslation();
   const [refundAmount, setRefundAmount] = useState("");
   const [reason, setReason] = useState("");
+  const [stepUpOpen, setStepUpOpen] = useState(false);
+  const policy = useMfaPolicy();
 
   if (!payment) return null;
 
@@ -45,12 +49,20 @@ export function RefundDialog({ open, onOpenChange, payment, policies, onConfirm,
   const isValid = currentAmount > 0 && currentAmount <= maxRefundable && reason.trim().length > 0;
   const isFullRefund = currentAmount === Number(payment.amount) && alreadyRefunded === 0;
 
-  const handleConfirm = async () => {
-    if (!isValid) return;
+  const doConfirm = async () => {
     await onConfirm(payment.id, currentAmount, reason.trim());
     setRefundAmount("");
     setReason("");
     onOpenChange(false);
+  };
+
+  const handleConfirm = async () => {
+    if (!isValid) return;
+    if (policy.requireForSensitiveActions && !isStepUpFresh()) {
+      setStepUpOpen(true);
+      return;
+    }
+    await doConfirm();
   };
 
   const handleOpenChange = (v: boolean) => {
@@ -62,6 +74,7 @@ export function RefundDialog({ open, onOpenChange, payment, policies, onConfirm,
   };
 
   return (
+    <>
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -138,5 +151,12 @@ export function RefundDialog({ open, onOpenChange, payment, policies, onConfirm,
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+    <StepUpDialog
+      open={stepUpOpen}
+      onOpenChange={setStepUpOpen}
+      action="issuing this refund"
+      onVerified={doConfirm}
+    />
+    </>
   );
 }

@@ -1,0 +1,2 @@
+REVOKE EXECUTE ON FUNCTION public.log_staff_audit_event(TEXT, TEXT, UUID, UUID, TEXT, JSONB) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.log_staff_audit_event(TEXT, TEXT, UUID, UUID, TEXT, JSONB) TO authenticated, service_role;
