@@ -229,51 +229,51 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-3 border-t border-sidebar-border">
-        <div className="flex items-center gap-2 px-1 mb-2">
-          <div className="text-xs text-sidebar-foreground/60 truncate flex-1">
+      <SidebarFooter className="px-5 py-4 border-t border-sidebar-border">
+        <div className="flex items-center gap-3 px-1 mb-3">
+          <div className="text-sm text-sidebar-foreground/60 truncate flex-1">
             {user?.email}
           </div>
           {role && (
-            <Badge variant="outline" className="text-[10px] shrink-0">
+            <Badge variant="outline" className="text-xs shrink-0">
               {t(`roles.${role}`)}
             </Badge>
           )}
         </div>
-        <Link to="/simulation" className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
-          <Target className="h-3.5 w-3.5" />
+        <Link to="/simulation" className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-md text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+          <Target className="h-4 w-4" />
           {t("nav.warRoomSim", "War Room Sim")}
         </Link>
         {showInstall && (
           <button
             onClick={() => setInstallDialogOpen(true)}
-            className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors w-full text-left"
+              className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-md text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors w-full text-left"
           >
-            <Download className="h-3.5 w-3.5" />
+              <Download className="h-4 w-4" />
             Install App
           </button>
         )}
         {isAdmin && (
           <>
-            <Link to="/security-center" className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
-              <ShieldAlert className="h-3.5 w-3.5" />
+            <Link to="/security-center" className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-md text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+              <ShieldAlert className="h-4 w-4" />
               Security Center
             </Link>
-            <Link to="/disaster-recovery" className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
-              <ShieldAlert className="h-3.5 w-3.5" />
+            <Link to="/disaster-recovery" className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-md text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+              <ShieldAlert className="h-4 w-4" />
               Disaster Recovery
             </Link>
-            <Link to="/guest?preview=true" className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
-              <Eye className="h-3.5 w-3.5" />
+            <Link to="/guest?preview=true" className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-md text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+              <Eye className="h-4 w-4" />
               {t("nav.previewGuestPortal")}
             </Link>
-            <div className="flex items-center gap-2 px-2 py-1.5 mb-1 text-xs">
-              <ScanEye className="h-3.5 w-3.5 text-sidebar-foreground/60 shrink-0" />
+            <div className="flex items-center gap-3 px-3 py-2.5 mb-1 text-sm">
+              <ScanEye className="h-4 w-4 text-sidebar-foreground/60 shrink-0" />
               <Select
                 value={previewRole ?? "none"}
                 onValueChange={(val) => setPreviewRole(val === "none" ? null : val as AppRole)}
               >
-                <SelectTrigger className="h-7 text-xs border-sidebar-border">
+                <SelectTrigger className="h-9 text-sm border-sidebar-border">
                   <SelectValue placeholder={t("preview.selectRole")} />
                 </SelectTrigger>
                 <SelectContent>
