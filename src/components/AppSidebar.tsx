@@ -229,76 +229,82 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="px-5 py-4 border-t border-sidebar-border">
-        <div className="flex items-center gap-3 px-1 mb-3">
-          <div className="text-sm text-sidebar-foreground/60 truncate flex-1">
+      <SidebarFooter className="px-3 py-2 border-t border-sidebar-border gap-0">
+        <div className="flex items-center gap-2 px-2 py-1.5 min-w-0">
+          <div className="text-xs text-sidebar-foreground/60 truncate flex-1 min-w-0">
             {user?.email}
           </div>
           {role && (
-            <Badge variant="outline" className="text-xs shrink-0">
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 shrink-0">
               {t(`roles.${role}`)}
             </Badge>
           )}
-        </div>
-        <Link to="/simulation" className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-md text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
-          <Target className="h-4 w-4" />
-          {t("nav.warRoomSim", "War Room Sim")}
-        </Link>
-        {showInstall && (
-          <button
-            onClick={() => setInstallDialogOpen(true)}
-              className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-md text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors w-full text-left"
-          >
-              <Download className="h-4 w-4" />
-            Install App
-          </button>
-        )}
-        {isAdmin && (
-          <>
-            <Link to="/security-center" className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-md text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
-              <ShieldAlert className="h-4 w-4" />
-              Security Center
-            </Link>
-            <Link to="/disaster-recovery" className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-md text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
-              <ShieldAlert className="h-4 w-4" />
-              Disaster Recovery
-            </Link>
-            <Link to="/guest?preview=true" className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-md text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
-              <Eye className="h-4 w-4" />
-              {t("nav.previewGuestPortal")}
-            </Link>
-            <div className="flex items-center gap-3 px-3 py-2.5 mb-1 text-sm">
-              <ScanEye className="h-4 w-4 text-sidebar-foreground/60 shrink-0" />
-              <Select
-                value={previewRole ?? "none"}
-                onValueChange={(val) => setPreviewRole(val === "none" ? null : val as AppRole)}
-              >
-                <SelectTrigger className="h-9 text-sm border-sidebar-border">
-                  <SelectValue placeholder={t("preview.selectRole")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{t("preview.actualRole")}</SelectItem>
-                  {PREVIEW_ROLES.map((r) => (
-                    <SelectItem key={r} value={r}>{t(`roles.${r}`)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </>
-        )}
-        <div className="px-1 mb-2">
-          <LanguageSelector compact />
+          {(isAdmin || showInstall) && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
+                  <MoreVertical className="h-3.5 w-3.5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent side="top" align="end" className="w-60 p-1">
+                {showInstall && (
+                  <button
+                    onClick={() => setInstallDialogOpen(true)}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm w-full text-left hover:bg-accent"
+                  >
+                    <Download className="h-4 w-4" /> Install App
+                  </button>
+                )}
+                <Link to="/simulation" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent">
+                  <Target className="h-4 w-4" /> {t("nav.warRoomSim", "War Room Sim")}
+                </Link>
+                {isAdmin && (
+                  <>
+                    <Link to="/security-center" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent">
+                      <ShieldAlert className="h-4 w-4" /> Security Center
+                    </Link>
+                    <Link to="/disaster-recovery" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent">
+                      <ShieldAlert className="h-4 w-4" /> Disaster Recovery
+                    </Link>
+                    <Link to="/guest?preview=true" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent">
+                      <Eye className="h-4 w-4" /> {t("nav.previewGuestPortal")}
+                    </Link>
+                    <div className="flex items-center gap-2 px-2 py-1.5">
+                      <ScanEye className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <Select
+                        value={previewRole ?? "none"}
+                        onValueChange={(val) => setPreviewRole(val === "none" ? null : val as AppRole)}
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder={t("preview.selectRole")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">{t("preview.actualRole")}</SelectItem>
+                          {PREVIEW_ROLES.map((r) => (
+                            <SelectItem key={r} value={r}>{t(`roles.${r}`)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
+                <div className="px-2 py-1.5">
+                  <LanguageSelector compact />
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
         </div>
         <Button
           variant="ghost"
           size="sm"
-          className="h-11 w-full justify-start px-3 text-base text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          className="h-8 w-full justify-start px-2 text-sm text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
           onClick={signOut}
         >
-          <LogOut className="mr-3 h-5 w-5" />
+          <LogOut className="mr-2 h-4 w-4" />
           {t("common.signOut")}
         </Button>
-        <div className="text-[10px] text-sidebar-foreground/30 text-center mt-1">
+        <div className="text-[9px] text-sidebar-foreground/30 text-center mt-0.5">
           v{__APP_BUILD_DATE__}
         </div>
       </SidebarFooter>
