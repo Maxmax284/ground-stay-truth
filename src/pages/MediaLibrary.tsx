@@ -105,7 +105,6 @@ export default function MediaLibrary() {
         .from(BUCKET)
         .list(LIBRARY_PREFIX, { limit: 1000 });
       if (cancelled || !files) return;
-      setStoragePaths(new Set(files.filter((f) => f.id !== null).map((f) => `${LIBRARY_PREFIX}/${f.name}`)));
       const existing = new Set(assets.map((a) => a.storage_path));
       const orphans = files.filter((f) => f.id !== null && !existing.has(`${LIBRARY_PREFIX}/${f.name}`));
       for (const f of orphans) {
