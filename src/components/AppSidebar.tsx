@@ -176,34 +176,34 @@ export function AppSidebar() {
 
   return (
     <>
-    <Sidebar>
-      <div className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-2">
-          <Swords className="h-5 w-5 text-sidebar-primary shrink-0" />
+    <Sidebar className="min-w-[22rem]">
+      <div className="px-6 py-5 border-b border-sidebar-border">
+        <div className="flex items-center gap-3">
+          <Swords className="h-6 w-6 text-sidebar-primary shrink-0" />
           <div>
-            <h2 className="text-lg font-bold text-sidebar-foreground" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <h2 className="text-xl font-bold text-sidebar-foreground" style={{ fontFamily: "'Playfair Display', serif" }}>
               {t("auth.groundStay")}
             </h2>
-            <p className="text-xs text-sidebar-foreground/60 mt-0.5">{t("common.propertyManagement")}</p>
+            <p className="text-sm text-sidebar-foreground/60 mt-0.5">{t("common.propertyManagement")}</p>
           </div>
         </div>
       </div>
 
-      <SidebarContent>
-        <SidebarGroup>
+      <SidebarContent className="py-3">
+        <SidebarGroup className="px-4 py-2">
           <SidebarGroupLabel>{t("nav.navigation")}</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1.5">
               {visibleNavItems.map((item) => (
                 <SidebarMenuItem key={item.titleKey}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild className="h-11 px-4 text-[15px]">
                     <NavLink
                       to={item.url}
                       end={item.url === "/dashboard"}
                       className="hover:bg-sidebar-accent/50 hover-slide-right"
                       activeClassName="bg-sidebar-accent text-sidebar-primary font-medium border-l-[3px] border-sidebar-primary"
                     >
-                      <item.icon className="mr-2 h-4 w-4" />
+                      <item.icon className="mr-3 h-4 w-4" />
                       <span>{t(item.titleKey)}</span>
                       {item.url === "/settings" && !!pendingCount && pendingCount > 0 && (
                         <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-4 min-w-4 justify-center animate-bounce-badge">
