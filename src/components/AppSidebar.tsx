@@ -292,10 +292,10 @@ export function AppSidebar() {
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          className="h-11 w-full justify-start px-3 text-base text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
           onClick={signOut}
         >
-          <LogOut className="mr-2 h-4 w-4" />
+          <LogOut className="mr-3 h-5 w-5" />
           {t("common.signOut")}
         </Button>
         <div className="text-[10px] text-sidebar-foreground/30 text-center mt-1">
