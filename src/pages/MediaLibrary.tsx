@@ -361,24 +361,67 @@ export default function MediaLibrary() {
         </div>
 
         {uploadJobs.length > 0 && (
-          <Card className="fixed bottom-4 right-4 z-50 p-3 space-y-2 w-[min(360px,calc(100vw-2rem))] shadow-2xl border-primary/30 bg-card/95 backdrop-blur">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              Uploading {uploadJobs.filter((j) => j.status === "uploading").length || "complete"}
-              {uploadJobs.some((j) => j.status === "uploading") && ` of ${uploadJobs.length}`}
-            </div>
-            {uploadJobs.map((j) => (
-              <div key={j.id} className="space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="truncate max-w-[60%]">{j.name}</span>
-                  <span className={j.status === "error" ? "text-destructive" : "text-muted-foreground"}>
-                    {j.status === "error" ? j.error ?? "Failed" : j.status === "done" ? "Done" : `${j.progress}%`}
+          <Card className="fixed bottom-4 right-4 z-50 w-[min(420px,calc(100vw-2rem))] max-h-[min(560px,calc(100vh-2rem))] shadow-2xl border-primary/30 bg-card/95 backdrop-blur flex flex-col overflow-hidden">
+            <div className="p-3 border-b space-y-2 shrink-0">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm font-medium min-w-0">
+                  {uploadStats.uploading > 0 ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+                  ) : uploadStats.failed > 0 ? (
+                    <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+                  ) : (
+                    <Check className="h-4 w-4 text-primary shrink-0" />
+                  )}
+                  <span className="truncate">
+                    {uploadStats.uploading > 0 ? "Uploading media" : uploadStats.failed > 0 ? "Upload finished with misses" : "Upload complete"}
                   </span>
                 </div>
-                <Progress value={j.progress} className="h-1.5" />
+                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setUploadJobs([])}>
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-            ))}
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="rounded-md bg-accent/60 px-2 py-1.5"><span className="font-semibold">{uploadStats.done}</span> done</div>
+                <div className="rounded-md bg-accent/60 px-2 py-1.5"><span className="font-semibold">{uploadStats.uploading}</span> moving</div>
+                <div className="rounded-md bg-accent/60 px-2 py-1.5"><span className="font-semibold text-destructive">{uploadStats.failed}</span> failed</div>
+              </div>
+              {uploadStats.failed > 0 && (
+                <Button size="sm" variant="outline" className="w-full" onClick={retryFailedUploads} disabled={uploadStats.uploading > 0}>
+                  <RotateCcw className="h-4 w-4" /> Retry failed
+                </Button>
+              )}
+            </div>
+            <ScrollArea className="min-h-0 max-h-[420px]">
+              <div className="p-3 space-y-2">
+                {uploadJobs.map((j) => (
+                  <div key={j.id} className="space-y-1 rounded-md border bg-background/40 p-2">
+                    <div className="flex justify-between gap-3 text-xs">
+                      <span className="truncate min-w-0">{j.name}</span>
+                      <span className={j.status === "error" ? "text-destructive shrink-0" : "text-muted-foreground shrink-0"}>
+                        {j.status === "error" ? "Failed" : j.status === "done" ? "Done" : `${j.progress}%`}
+                      </span>
+                    </div>
+                    <Progress value={j.progress} className="h-1.5" />
+                    {j.status === "error" && j.error && (
+                      <p className="text-[11px] text-destructive line-clamp-2">{j.error}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
           </Card>
+        )}
+
+        {uploadStats.failed > 0 && uploadStats.uploading === 0 && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+              <span>{uploadStats.done} uploaded, {uploadStats.failed} failed. Library count only reflects files that actually made it through.</span>
+            </div>
+            <Button size="sm" variant="outline" onClick={retryFailedUploads}>
+              <RotateCcw className="h-4 w-4" /> Retry failed
+            </Button>
+          </div>
         )}
 
         <div className="grid md:grid-cols-[220px_1fr] gap-4">
