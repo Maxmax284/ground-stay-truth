@@ -287,8 +287,8 @@ export default function MediaLibrary() {
       await deleteAssets.mutateAsync(allSelectedPaths.map((p) => p.storage_path));
       toast({ title: "Deleted" });
       setSelected(new Set());
-    } catch (err: any) {
-      toast({ title: "Delete failed", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Delete failed", description: errorMessage(err), variant: "destructive" });
     }
   };
 
@@ -298,8 +298,8 @@ export default function MediaLibrary() {
       await bulkFolder.mutateAsync({ ids: allSelectedPaths.map((p) => p.id), folder: moveTarget });
       toast({ title: `Moved to ${moveTarget}` });
       setMoveOpen(false); setMoveTarget(""); setSelected(new Set());
-    } catch (err: any) {
-      toast({ title: "Move failed", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Move failed", description: errorMessage(err), variant: "destructive" });
     }
   };
 
@@ -314,8 +314,8 @@ export default function MediaLibrary() {
       await updateUnit.mutateAsync({ id: unit.id, photos: [...existing, ...additions] });
       toast({ title: `Assigned ${additions.length} to ${unit.name}` });
       setAssignOpen(false); setAssignTargetUnitId(""); setSelected(new Set());
-    } catch (err: any) {
-      toast({ title: "Assignment failed", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Assignment failed", description: errorMessage(err), variant: "destructive" });
     }
   };
 
@@ -331,8 +331,8 @@ export default function MediaLibrary() {
       await updateUnit.mutateAsync({ id: unit.id, photos: next });
       toast({ title: `Removed ${removed} from ${unit.name}` });
       setRemoveUnitOpen(false); setRemoveUnitId(""); setSelected(new Set());
-    } catch (err: any) {
-      toast({ title: "Remove failed", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Remove failed", description: errorMessage(err), variant: "destructive" });
     }
   };
 
