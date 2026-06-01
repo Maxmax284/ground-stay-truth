@@ -80,14 +80,18 @@ export default function MediaLibrary() {
   const [uploadJobs, setUploadJobs] = useState<UploadJob[]>([]);
   const [customFolders, setCustomFolders] = useState<string[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [storagePaths, setStoragePaths] = useState<Set<string> | null>(null);
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   // Build photo rows: combine assets with public URLs
   const photos: PhotoRow[] = useMemo(() => {
-    return (assets ?? []).map((a) => {
+    return (assets ?? []).filter((a) => !storagePaths || storagePaths.has(a.storage_path)).map((a) => {
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(a.storage_path);
       return { ...a, url: data.publicUrl };
     });
-  }, [assets]);
+  }, [assets, storagePaths]);
+
+  const displayPhotos = useMemo(() => photos.filter((p) => !imageErrors.has(p.id)), [photos, imageErrors]);
 
   // Sync orphans: storage files in `library/` not in DB (legacy)
   useEffect(() => {
