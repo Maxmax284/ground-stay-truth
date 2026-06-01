@@ -1,192 +1,298 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Upload, Loader2, Trash2, Link2, Check, ImageOff, Copy } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import {
+  Upload, Loader2, Trash2, Link2, Check, ImageOff, Copy, Folder, FolderPlus,
+  FolderInput, Filter, X, Tag, Pencil, Unlink, Search, ZoomIn,
+} from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUnits, useUpdateUnit } from "@/hooks/useUnits";
+import {
+  useMediaAssets, useUpsertMediaAsset, useUpdateMediaAsset,
+  useBulkUpdateFolder, useDeleteMediaAssets,
+  DEFAULT_FOLDERS, UNCATEGORIZED, type MediaAsset,
+} from "@/hooks/useMediaLibrary";
 
 const BUCKET = "unit-photos";
 const LIBRARY_PREFIX = "library";
 
-type LibraryPhoto = {
-  path: string;
-  url: string;
-  name: string;
-  size: number;
-  createdAt: string;
-};
+type PhotoRow = MediaAsset & { url: string };
 
-async function listAllPhotos(): Promise<LibraryPhoto[]> {
-  // List root folders, then each folder's files. unit-photos is structured
-  // as `{unitId|library}/{filename}`.
-  const { data: folders, error } = await supabase.storage
-    .from(BUCKET)
-    .list("", { limit: 1000, sortBy: { column: "name", order: "asc" } });
-  if (error) throw error;
-
-  const results: LibraryPhoto[] = [];
-  for (const folder of folders ?? []) {
-    if (!folder.name) continue;
-    const { data: files } = await supabase.storage
-      .from(BUCKET)
-      .list(folder.name, { limit: 1000, sortBy: { column: "created_at", order: "desc" } });
-    for (const f of files ?? []) {
-      if (!f.name || f.id === null) continue; // skip subfolders
-      const path = `${folder.name}/${f.name}`;
-      const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
-      results.push({
-        path,
-        url: urlData.publicUrl,
-        name: f.name,
-        size: (f.metadata as any)?.size ?? 0,
-        createdAt: (f as any).created_at ?? "",
-      });
-    }
-  }
-  results.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
-  return results;
-}
+type UploadJob = { id: string; name: string; progress: number; status: "uploading" | "done" | "error"; error?: string };
 
 export default function MediaLibrary() {
   const { toast } = useToast();
   const { data: units } = useUnits();
   const updateUnit = useUpdateUnit();
-  const fileRef = useRef<HTMLInputElement>(null);
+  const { data: assets, isLoading } = useMediaAssets();
+  const upsertAsset = useUpsertMediaAsset();
+  const updateAsset = useUpdateMediaAsset();
+  const bulkFolder = useBulkUpdateFolder();
+  const deleteAssets = useDeleteMediaAssets();
 
-  const [photos, setPhotos] = useState<LibraryPhoto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set()); // by asset id
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [activeFolder, setActiveFolder] = useState<string>("__all__");
+  const [unitFilter, setUnitFilter] = useState<string>("__all__");
+  const [usageFilter, setUsageFilter] = useState<"all" | "used" | "unused">("all");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest">("newest");
+
+  const [newFolderOpen, setNewFolderOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [moveTarget, setMoveTarget] = useState<string>("");
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignTargetUnitId, setAssignTargetUnitId] = useState<string>("");
+  const [removeUnitOpen, setRemoveUnitOpen] = useState(false);
+  const [removeUnitId, setRemoveUnitId] = useState<string>("");
+  const [editing, setEditing] = useState<PhotoRow | null>(null);
+  const [lightbox, setLightbox] = useState<PhotoRow | null>(null);
+  const [uploadFolder, setUploadFolder] = useState<string>(UNCATEGORIZED);
+  const [uploadFolderOpen, setUploadFolderOpen] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[] | null>(null);
+  const [duplicateWarning, setDuplicateWarning] = useState<{ files: File[]; duplicates: string[] } | null>(null);
+  const [uploadJobs, setUploadJobs] = useState<UploadJob[]>([]);
+  const [customFolders, setCustomFolders] = useState<string[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
 
-  const refresh = async () => {
-    setLoading(true);
-    try {
-      setPhotos(await listAllPhotos());
-    } catch (err: any) {
-      toast({ title: "Failed to load library", description: err.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Build photo rows: combine assets with public URLs
+  const photos: PhotoRow[] = useMemo(() => {
+    return (assets ?? []).map((a) => {
+      const { data } = supabase.storage.from(BUCKET).getPublicUrl(a.storage_path);
+      return { ...a, url: data.publicUrl };
+    });
+  }, [assets]);
 
+  // Sync orphans: storage files in `library/` not in DB (legacy)
   useEffect(() => {
-    refresh();
-  }, []);
+    if (!assets) return;
+    let cancelled = false;
+    (async () => {
+      const { data: files } = await supabase.storage
+        .from(BUCKET)
+        .list(LIBRARY_PREFIX, { limit: 1000 });
+      if (cancelled || !files) return;
+      const existing = new Set(assets.map((a) => a.storage_path));
+      const orphans = files.filter((f) => f.id !== null && !existing.has(`${LIBRARY_PREFIX}/${f.name}`));
+      for (const f of orphans) {
+        await upsertAsset.mutateAsync({
+          storage_path: `${LIBRARY_PREFIX}/${f.name}`,
+          original_filename: f.name,
+          folder: UNCATEGORIZED,
+        });
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assets?.length]);
 
-  // Map url -> unit names that use it
+  // Usage map: url -> unit names
   const usageByUrl = useMemo(() => {
-    const map = new Map<string, string[]>();
+    const m = new Map<string, { id: string; name: string }[]>();
     (units ?? []).forEach((u) => {
       (u.photos ?? []).forEach((p) => {
-        const arr = map.get(p) ?? [];
-        arr.push(u.name);
-        map.set(p, arr);
+        const arr = m.get(p) ?? [];
+        arr.push({ id: u.id, name: u.name });
+        m.set(p, arr);
       });
     });
-    return map;
+    return m;
   }, [units]);
 
-  const filteredPhotos = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return photos;
-    return photos.filter((p) => p.path.toLowerCase().includes(q));
-  }, [photos, search]);
+  // Folder list
+  const folders = useMemo(() => {
+    const set = new Set<string>([UNCATEGORIZED, ...DEFAULT_FOLDERS, ...customFolders]);
+    (assets ?? []).forEach((a) => set.add(a.folder));
+    return Array.from(set).sort((a, b) => {
+      if (a === UNCATEGORIZED) return -1;
+      if (b === UNCATEGORIZED) return 1;
+      return a.localeCompare(b);
+    });
+  }, [assets, customFolders]);
 
-  const handleUpload = async (files: FileList) => {
-    setUploading(true);
-    try {
-      for (const file of Array.from(files)) {
+  // Folder counts
+  const folderCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    (assets ?? []).forEach((a) => m.set(a.folder, (m.get(a.folder) ?? 0) + 1));
+    return m;
+  }, [assets]);
+
+  const filtered: PhotoRow[] = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let out = photos.filter((p) => {
+      if (activeFolder === "__unused__") {
+        if ((usageByUrl.get(p.url) ?? []).length !== 0) return false;
+      } else if (activeFolder !== "__all__") {
+        if (p.folder !== activeFolder) return false;
+      }
+      if (usageFilter === "used" && (usageByUrl.get(p.url) ?? []).length === 0) return false;
+      if (usageFilter === "unused" && (usageByUrl.get(p.url) ?? []).length > 0) return false;
+      if (unitFilter !== "__all__") {
+        const u = usageByUrl.get(p.url) ?? [];
+        if (!u.some((x) => x.id === unitFilter)) return false;
+      }
+      if (q) {
+        const hay = [p.original_filename, p.caption, p.alt_text, p.folder, ...(p.tags ?? [])]
+          .filter(Boolean).join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    out = [...out].sort((a, b) => {
+      const cmp = (b.created_at || "").localeCompare(a.created_at || "");
+      return sortBy === "newest" ? cmp : -cmp;
+    });
+    return out;
+  }, [photos, activeFolder, usageFilter, unitFilter, search, sortBy, usageByUrl]);
+
+  const selectedPhotos = useMemo(() => filtered.filter((p) => selected.has(p.id)), [filtered, selected]);
+  const allSelectedPaths = useMemo(() => photos.filter((p) => selected.has(p.id)), [photos, selected]);
+
+  const toggleSelect = (id: string) =>
+    setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const selectAllVisible = () => {
+    if (selected.size === filtered.length && filtered.length > 0) setSelected(new Set());
+    else setSelected(new Set(filtered.map((p) => p.id)));
+  };
+
+  // Upload flow
+  const beginUpload = (files: File[]) => {
+    if (!files.length) return;
+    const existingNames = new Set((assets ?? []).map((a) => a.original_filename).filter(Boolean) as string[]);
+    const duplicates = files.map((f) => f.name).filter((n) => existingNames.has(n));
+    if (duplicates.length > 0) { setDuplicateWarning({ files, duplicates }); return; }
+    setPendingFiles(files);
+    setUploadFolderOpen(true);
+  };
+
+  const performUpload = async (files: File[], folder: string) => {
+    const jobs: UploadJob[] = files.map((f) => ({
+      id: crypto.randomUUID(), name: f.name, progress: 0, status: "uploading",
+    }));
+    setUploadJobs((prev) => [...jobs, ...prev]);
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]; const job = jobs[i];
+      try {
         const ext = file.name.split(".").pop() ?? "jpg";
         const path = `${LIBRARY_PREFIX}/${crypto.randomUUID()}.${ext}`;
+        // Storage SDK has no granular progress; show 50% then 100%
+        setUploadJobs((p) => p.map((j) => j.id === job.id ? { ...j, progress: 40 } : j));
         const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false });
         if (error) throw error;
+        const { data: u } = await supabase.auth.getUser();
+        await upsertAsset.mutateAsync({
+          storage_path: path, original_filename: file.name, folder,
+          uploaded_by: u.user?.id ?? null,
+        });
+        setUploadJobs((p) => p.map((j) => j.id === job.id ? { ...j, progress: 100, status: "done" } : j));
+      } catch (err: any) {
+        setUploadJobs((p) => p.map((j) => j.id === job.id ? { ...j, status: "error", error: err.message } : j));
+        toast({ title: "Upload failed", description: `${file.name}: ${err.message}`, variant: "destructive" });
       }
-      toast({ title: `Uploaded ${files.length} photo${files.length > 1 ? "s" : ""}` });
-      await refresh();
-    } catch (err: any) {
-      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
-    } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
     }
+    setTimeout(() => setUploadJobs((p) => p.filter((j) => j.status === "uploading")), 4000);
+    if (fileRef.current) fileRef.current.value = "";
   };
 
-  const toggleSelect = (path: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(path)) next.delete(path);
-      else next.add(path);
-      return next;
-    });
+  const handleConfirmUploadFolder = () => {
+    if (!pendingFiles) return;
+    setUploadFolderOpen(false);
+    performUpload(pendingFiles, uploadFolder);
+    setPendingFiles(null);
   };
 
-  const selectedPhotos = useMemo(
-    () => photos.filter((p) => selected.has(p.path)),
-    [photos, selected],
-  );
-
-  const handleAssign = async () => {
-    if (!assignTargetUnitId || selectedPhotos.length === 0) return;
-    const unit = units?.find((u) => u.id === assignTargetUnitId);
-    if (!unit) return;
-    const existing = unit.photos ?? [];
-    const additions = selectedPhotos.map((p) => p.url).filter((u) => !existing.includes(u));
-    if (additions.length === 0) {
-      toast({ title: "Already assigned", description: "These photos are already on the unit." });
-      setAssignOpen(false);
-      return;
-    }
+  // Bulk ops
+  const handleBulkDelete = async () => {
+    if (allSelectedPaths.length === 0) return;
+    const inUse = allSelectedPaths.filter((p) => (usageByUrl.get(p.url) ?? []).length > 0);
+    const msg = inUse.length > 0
+      ? `Delete ${allSelectedPaths.length} photo(s)? ${inUse.length} are still assigned to units and will become broken links.`
+      : `Delete ${allSelectedPaths.length} photo(s)?`;
+    if (!confirm(msg)) return;
     try {
-      await updateUnit.mutateAsync({ id: unit.id, photos: [...existing, ...additions] });
-      toast({ title: `Assigned ${additions.length} photo${additions.length > 1 ? "s" : ""} to ${unit.name}` });
-      setAssignOpen(false);
-      setSelected(new Set());
-      setAssignTargetUnitId("");
-    } catch (err: any) {
-      toast({ title: "Assignment failed", description: err.message, variant: "destructive" });
-    }
-  };
-
-  const handleDelete = async () => {
-    if (selectedPhotos.length === 0) return;
-    const inUse = selectedPhotos.filter((p) => (usageByUrl.get(p.url) ?? []).length > 0);
-    const confirmMsg =
-      inUse.length > 0
-        ? `Delete ${selectedPhotos.length} photo(s)? ${inUse.length} are assigned to units and will become broken links.`
-        : `Delete ${selectedPhotos.length} photo(s) from storage?`;
-    if (!confirm(confirmMsg)) return;
-    try {
-      const { error } = await supabase.storage.from(BUCKET).remove(selectedPhotos.map((p) => p.path));
-      if (error) throw error;
+      await deleteAssets.mutateAsync(allSelectedPaths.map((p) => p.storage_path));
       toast({ title: "Deleted" });
       setSelected(new Set());
-      await refresh();
     } catch (err: any) {
       toast({ title: "Delete failed", description: err.message, variant: "destructive" });
     }
   };
 
-  const copyUrl = async (url: string) => {
-    await navigator.clipboard.writeText(url);
-    toast({ title: "URL copied" });
+  const handleBulkMove = async () => {
+    if (!moveTarget || allSelectedPaths.length === 0) return;
+    try {
+      await bulkFolder.mutateAsync({ ids: allSelectedPaths.map((p) => p.id), folder: moveTarget });
+      toast({ title: `Moved to ${moveTarget}` });
+      setMoveOpen(false); setMoveTarget(""); setSelected(new Set());
+    } catch (err: any) {
+      toast({ title: "Move failed", description: err.message, variant: "destructive" });
+    }
   };
+
+  const handleBulkAssign = async () => {
+    if (!assignTargetUnitId || allSelectedPaths.length === 0) return;
+    const unit = units?.find((u) => u.id === assignTargetUnitId);
+    if (!unit) return;
+    const existing = unit.photos ?? [];
+    const additions = allSelectedPaths.map((p) => p.url).filter((u) => !existing.includes(u));
+    if (additions.length === 0) { toast({ title: "Already assigned" }); setAssignOpen(false); return; }
+    try {
+      await updateUnit.mutateAsync({ id: unit.id, photos: [...existing, ...additions] });
+      toast({ title: `Assigned ${additions.length} to ${unit.name}` });
+      setAssignOpen(false); setAssignTargetUnitId(""); setSelected(new Set());
+    } catch (err: any) {
+      toast({ title: "Assignment failed", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleBulkRemoveFromUnit = async () => {
+    if (!removeUnitId || allSelectedPaths.length === 0) return;
+    const unit = units?.find((u) => u.id === removeUnitId);
+    if (!unit) return;
+    const urls = new Set(allSelectedPaths.map((p) => p.url));
+    const next = (unit.photos ?? []).filter((u) => !urls.has(u));
+    const removed = (unit.photos ?? []).length - next.length;
+    if (removed === 0) { toast({ title: "Nothing to remove" }); setRemoveUnitOpen(false); return; }
+    try {
+      await updateUnit.mutateAsync({ id: unit.id, photos: next });
+      toast({ title: `Removed ${removed} from ${unit.name}` });
+      setRemoveUnitOpen(false); setRemoveUnitId(""); setSelected(new Set());
+    } catch (err: any) {
+      toast({ title: "Remove failed", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const copyUrl = async (url: string) => { await navigator.clipboard.writeText(url); toast({ title: "URL copied" }); };
+
+  // Drag-drop on whole grid
+  const onDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); if (e.dataTransfer.types.includes("Files")) setIsDragOver(true);
+  }, []);
+  const onDragLeave = useCallback((e: React.DragEvent) => {
+    if (e.currentTarget === e.target) setIsDragOver(false);
+  }, []);
+  const onDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); setIsDragOver(false);
+    const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith("image/"));
+    if (files.length) beginUpload(files);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assets]);
 
   return (
     <DashboardLayout>
@@ -194,156 +300,448 @@ export default function MediaLibrary() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Media Library</h1>
-            <p className="text-sm text-muted-foreground">
-              Upload, organize, and assign photos to units.
-            </p>
+            <p className="text-sm text-muted-foreground">Organize, tag, and assign photos to units.</p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => fileRef.current?.click()} disabled={uploading}>
-              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              Upload
+            <Button variant="outline" onClick={() => setNewFolderOpen(true)}>
+              <FolderPlus className="h-4 w-4" /> New folder
             </Button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              multiple
-              hidden
-              onChange={(e) => e.target.files && handleUpload(e.target.files)}
-            />
+            <Button onClick={() => fileRef.current?.click()}>
+              <Upload className="h-4 w-4" /> Upload
+            </Button>
+            <input ref={fileRef} type="file" accept="image/*" multiple hidden
+              onChange={(e) => e.target.files && beginUpload(Array.from(e.target.files))} />
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-          <Input
-            placeholder="Search filename or folder…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="sm:max-w-xs"
-          />
-          {selected.size > 0 && (
-            <div className="flex flex-wrap gap-2 items-center">
-              <Badge variant="secondary">{selected.size} selected</Badge>
-              <Button size="sm" variant="outline" onClick={() => setAssignOpen(true)}>
-                <Link2 className="h-4 w-4" /> Assign to unit
-              </Button>
-              <Button size="sm" variant="outline" onClick={handleDelete}>
-                <Trash2 className="h-4 w-4" /> Delete
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
-                Clear
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : filteredPhotos.length === 0 ? (
-          <Card className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-            <ImageOff className="h-10 w-10 mb-2" />
-            <p>No photos yet. Upload some to get started.</p>
+        {uploadJobs.length > 0 && (
+          <Card className="p-3 space-y-2">
+            {uploadJobs.map((j) => (
+              <div key={j.id} className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="truncate max-w-[60%]">{j.name}</span>
+                  <span className={j.status === "error" ? "text-destructive" : "text-muted-foreground"}>
+                    {j.status === "error" ? j.error ?? "Failed" : j.status === "done" ? "Done" : `${j.progress}%`}
+                  </span>
+                </div>
+                <Progress value={j.progress} className="h-1" />
+              </div>
+            ))}
           </Card>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {filteredPhotos.map((p) => {
-              const usage = usageByUrl.get(p.url) ?? [];
-              const isSelected = selected.has(p.path);
-              return (
-                <div
-                  key={p.path}
-                  onClick={() => toggleSelect(p.path)}
-                  className={`group relative aspect-square rounded-md overflow-hidden border cursor-pointer transition-all ${
-                    isSelected ? "ring-2 ring-primary border-primary" : "border-border hover:border-primary/50"
-                  }`}
-                >
-                  <img src={p.url} alt={p.name} loading="lazy" className="w-full h-full object-cover" />
+        )}
 
-                  <div className="absolute top-1.5 left-1.5">
-                    <div
-                      className={`h-5 w-5 rounded border-2 flex items-center justify-center transition-colors ${
-                        isSelected ? "bg-primary border-primary" : "bg-background/80 border-background/80"
-                      }`}
-                    >
-                      {isSelected && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
-                    </div>
-                  </div>
+        <div className="grid md:grid-cols-[220px_1fr] gap-4">
+          {/* Folders sidebar */}
+          <Card className="p-2 h-fit">
+            <ScrollArea className="max-h-[60vh]">
+              <div className="space-y-0.5">
+                <FolderButton label="All photos" count={assets?.length ?? 0}
+                  active={activeFolder === "__all__"} onClick={() => setActiveFolder("__all__")} icon="all" />
+                <FolderButton label="Unused" count={photos.filter((p) => (usageByUrl.get(p.url) ?? []).length === 0).length}
+                  active={activeFolder === "__unused__"} onClick={() => setActiveFolder("__unused__")} icon="unused" />
+                <div className="h-px bg-border my-1" />
+                {folders.map((f) => (
+                  <FolderButton key={f} label={f} count={folderCounts.get(f) ?? 0}
+                    active={activeFolder === f} onClick={() => setActiveFolder(f)} icon="folder" />
+                ))}
+              </div>
+            </ScrollArea>
+          </Card>
 
-                  {usage.length > 0 && (
-                    <Badge variant="secondary" className="absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0">
-                      {usage.length} unit{usage.length > 1 ? "s" : ""}
-                    </Badge>
-                  )}
+          {/* Main */}
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="h-4 w-4 absolute left-2.5 top-2.5 text-muted-foreground" />
+                <Input placeholder="Search filename, caption, tags…" value={search}
+                  onChange={(e) => setSearch(e.target.value)} className="pl-8" />
+              </div>
+              <Select value={unitFilter} onValueChange={setUnitFilter}>
+                <SelectTrigger className="sm:w-44"><SelectValue placeholder="Unit" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All units</SelectItem>
+                  {(units ?? []).map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={usageFilter} onValueChange={(v: any) => setUsageFilter(v)}>
+                <SelectTrigger className="sm:w-36"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All usage</SelectItem>
+                  <SelectItem value="used">Used</SelectItem>
+                  <SelectItem value="unused">Unused</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+                <SelectTrigger className="sm:w-36"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Newest</SelectItem>
+                  <SelectItem value="oldest">Oldest</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      copyUrl(p.url);
-                    }}
-                    className="absolute bottom-1.5 right-1.5 bg-background/80 rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Copy URL"
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </button>
+            {selected.size > 0 && (
+              <div className="flex flex-wrap gap-2 items-center p-2 rounded-md bg-accent/50 border">
+                <Badge variant="secondary">{selected.size} selected</Badge>
+                <Button size="sm" variant="outline" onClick={() => setMoveOpen(true)}>
+                  <FolderInput className="h-4 w-4" /> Move
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setAssignOpen(true)}>
+                  <Link2 className="h-4 w-4" /> Assign to unit
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setRemoveUnitOpen(true)}>
+                  <Unlink className="h-4 w-4" /> Remove from unit
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleBulkDelete}>
+                  <Trash2 className="h-4 w-4" /> Delete
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>Clear</Button>
+              </div>
+            )}
 
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1.5 pt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <p className="text-[10px] text-white truncate font-mono">{p.path}</p>
+            <div className="flex justify-between items-center text-xs text-muted-foreground">
+              <span>{filtered.length} photo(s)</span>
+              {filtered.length > 0 && (
+                <button className="hover:text-foreground" onClick={selectAllVisible}>
+                  {selected.size === filtered.length ? "Deselect all" : "Select all"}
+                </button>
+              )}
+            </div>
+
+            <div
+              onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
+              className={`relative rounded-md transition-colors ${isDragOver ? "ring-2 ring-primary bg-primary/5" : ""}`}
+            >
+              {isDragOver && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+                  <div className="bg-background/90 border-2 border-dashed border-primary rounded-md px-6 py-4 text-sm">
+                    Drop to upload
                   </div>
                 </div>
-              );
-            })}
+              )}
+              {isLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : filtered.length === 0 ? (
+                <Card className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                  <ImageOff className="h-10 w-10 mb-2" />
+                  <p>No photos match these filters.</p>
+                  <p className="text-xs mt-1">Drop image files here or click Upload.</p>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  {filtered.map((p) => {
+                    const usage = usageByUrl.get(p.url) ?? [];
+                    const isSelected = selected.has(p.id);
+                    return (
+                      <div key={p.id}
+                        className={`group relative aspect-square rounded-md overflow-hidden border transition-all ${
+                          isSelected ? "ring-2 ring-primary border-primary" : "border-border hover:border-primary/50"
+                        }`}>
+                        <img src={p.url} alt={p.alt_text ?? p.original_filename ?? ""} loading="lazy"
+                          className="w-full h-full object-cover cursor-pointer"
+                          onClick={() => toggleSelect(p.id)} />
+
+                        <button type="button" onClick={(e) => { e.stopPropagation(); toggleSelect(p.id); }}
+                          className="absolute top-1.5 left-1.5">
+                          <div className={`h-5 w-5 rounded border-2 flex items-center justify-center ${
+                            isSelected ? "bg-primary border-primary" : "bg-background/80 border-background/80"
+                          }`}>
+                            {isSelected && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
+                          </div>
+                        </button>
+
+                        {usage.length > 0 && (
+                          <Badge variant="secondary" className="absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0">
+                            {usage.length} unit{usage.length > 1 ? "s" : ""}
+                          </Badge>
+                        )}
+
+                        <div className="absolute bottom-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button type="button" onClick={(e) => { e.stopPropagation(); setLightbox(p); }}
+                            className="bg-background/80 rounded p-1" title="Preview">
+                            <ZoomIn className="h-3.5 w-3.5" />
+                          </button>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); setEditing(p); }}
+                            className="bg-background/80 rounded p-1" title="Edit details">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); copyUrl(p.url); }}
+                            className="bg-background/80 rounded p-1" title="Copy URL">
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 pt-4">
+                          <p className="text-[10px] text-white truncate">{p.caption || p.original_filename || p.folder}</p>
+                          {usage.length > 0 && (
+                            <p className="text-[9px] text-white/80 truncate">{usage.map((x) => x.name).join(", ")}</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
-        )}
+        </div>
       </div>
 
+      {/* New folder */}
+      <Dialog open={newFolderOpen} onOpenChange={setNewFolderOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>New folder</DialogTitle></DialogHeader>
+          <Input placeholder="Folder name" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setNewFolderOpen(false)}>Cancel</Button>
+            <Button onClick={() => {
+              const n = newFolderName.trim();
+              if (!n) return;
+              setCustomFolders((p) => Array.from(new Set([...p, n])));
+              setActiveFolder(n); setNewFolderName(""); setNewFolderOpen(false);
+            }}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upload folder picker */}
+      <Dialog open={uploadFolderOpen} onOpenChange={setUploadFolderOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload {pendingFiles?.length ?? 0} photo(s)</DialogTitle>
+            <DialogDescription>Choose a folder to upload into.</DialogDescription>
+          </DialogHeader>
+          <Select value={uploadFolder} onValueChange={setUploadFolder}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {folders.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => { setUploadFolderOpen(false); setPendingFiles(null); }}>Cancel</Button>
+            <Button onClick={handleConfirmUploadFolder}>Upload</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicate warning */}
+      <Dialog open={!!duplicateWarning} onOpenChange={(o) => !o && setDuplicateWarning(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Duplicate filenames</DialogTitle>
+            <DialogDescription>
+              The following file name(s) already exist in the library. Uploading creates new copies — the original files stay untouched.
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="text-sm list-disc pl-5 max-h-40 overflow-auto">
+            {duplicateWarning?.duplicates.map((n) => <li key={n}>{n}</li>)}
+          </ul>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDuplicateWarning(null)}>Cancel</Button>
+            <Button onClick={() => {
+              const files = duplicateWarning?.files ?? [];
+              setDuplicateWarning(null);
+              setPendingFiles(files);
+              setUploadFolderOpen(true);
+            }}>Upload anyway</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move dialog */}
+      <Dialog open={moveOpen} onOpenChange={setMoveOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Move {selected.size} photo(s)</DialogTitle></DialogHeader>
+          <Select value={moveTarget} onValueChange={setMoveTarget}>
+            <SelectTrigger><SelectValue placeholder="Choose folder" /></SelectTrigger>
+            <SelectContent>{folders.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
+          </Select>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setMoveOpen(false)}>Cancel</Button>
+            <Button onClick={handleBulkMove} disabled={!moveTarget || bulkFolder.isPending}>
+              {bulkFolder.isPending && <Loader2 className="h-4 w-4 animate-spin" />} Move
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign to unit */}
       <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Assign {selectedPhotos.length} photo(s) to a unit</DialogTitle>
-            <DialogDescription>
-              Photos will be appended to the unit's existing gallery. The first photo on the unit
-              remains the hero.
-            </DialogDescription>
+            <DialogTitle>Assign {selected.size} photo(s) to a unit</DialogTitle>
+            <DialogDescription>Photos are appended to the unit's gallery.</DialogDescription>
           </DialogHeader>
           <ScrollArea className="max-h-72 -mx-2 px-2">
             <div className="space-y-1">
               {(units ?? []).map((u) => (
-                <label
-                  key={u.id}
-                  className={`flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-accent ${
-                    assignTargetUnitId === u.id ? "bg-accent" : ""
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="assign-unit"
-                    checked={assignTargetUnitId === u.id}
-                    onChange={() => setAssignTargetUnitId(u.id)}
-                  />
+                <label key={u.id} className={`flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-accent ${
+                  assignTargetUnitId === u.id ? "bg-accent" : ""}`}>
+                  <input type="radio" name="assign-unit" checked={assignTargetUnitId === u.id}
+                    onChange={() => setAssignTargetUnitId(u.id)} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{u.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(u.photos ?? []).length} existing photo(s)
-                    </p>
+                    <p className="text-xs text-muted-foreground">{(u.photos ?? []).length} existing photo(s)</p>
                   </div>
                 </label>
               ))}
             </div>
           </ScrollArea>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setAssignOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAssign} disabled={!assignTargetUnitId || updateUnit.isPending}>
-              {updateUnit.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-              Assign
+            <Button variant="ghost" onClick={() => setAssignOpen(false)}>Cancel</Button>
+            <Button onClick={handleBulkAssign} disabled={!assignTargetUnitId || updateUnit.isPending}>
+              {updateUnit.isPending && <Loader2 className="h-4 w-4 animate-spin" />} Assign
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Remove from unit */}
+      <Dialog open={removeUnitOpen} onOpenChange={setRemoveUnitOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove {selected.size} photo(s) from a unit</DialogTitle>
+            <DialogDescription>Photos stay in the library; only the unit assignment is removed.</DialogDescription>
+          </DialogHeader>
+          <Select value={removeUnitId} onValueChange={setRemoveUnitId}>
+            <SelectTrigger><SelectValue placeholder="Choose unit" /></SelectTrigger>
+            <SelectContent>{(units ?? []).map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+          </Select>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRemoveUnitOpen(false)}>Cancel</Button>
+            <Button onClick={handleBulkRemoveFromUnit} disabled={!removeUnitId || updateUnit.isPending}>
+              {updateUnit.isPending && <Loader2 className="h-4 w-4 animate-spin" />} Remove
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit details */}
+      {editing && (
+        <EditAssetDialog
+          asset={editing} folders={folders}
+          onClose={() => setEditing(null)}
+          onSave={async (updates) => {
+            try {
+              await updateAsset.mutateAsync({ id: editing.id, ...updates });
+              toast({ title: "Saved" }); setEditing(null);
+            } catch (err: any) {
+              toast({ title: "Save failed", description: err.message, variant: "destructive" });
+            }
+          }}
+        />
+      )}
+
+      {/* Lightbox */}
+      <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>
+        <DialogContent className="max-w-5xl p-2">
+          {lightbox && (
+            <div className="space-y-2">
+              <img src={lightbox.url} alt={lightbox.alt_text ?? ""} className="w-full max-h-[80vh] object-contain rounded" />
+              <div className="px-2 pb-2 text-sm">
+                <p className="font-medium">{lightbox.caption || lightbox.original_filename}</p>
+                <p className="text-xs text-muted-foreground">
+                  {lightbox.folder} · {(lightbox.tags ?? []).join(", ") || "No tags"}
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
+  );
+}
+
+function FolderButton({ label, count, active, onClick, icon }: {
+  label: string; count: number; active: boolean; onClick: () => void; icon: "all" | "unused" | "folder";
+}) {
+  const Icon = icon === "folder" ? Folder : icon === "unused" ? ImageOff : Filter;
+  return (
+    <button onClick={onClick}
+      className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-sm transition-colors ${
+        active ? "bg-primary/10 text-primary font-medium" : "hover:bg-accent text-foreground"
+      }`}>
+      <span className="flex items-center gap-2 truncate"><Icon className="h-4 w-4 shrink-0" /><span className="truncate">{label}</span></span>
+      <span className="text-xs text-muted-foreground">{count}</span>
+    </button>
+  );
+}
+
+function EditAssetDialog({ asset, folders, onClose, onSave }: {
+  asset: PhotoRow; folders: string[]; onClose: () => void;
+  onSave: (updates: Partial<MediaAsset>) => Promise<void>;
+}) {
+  const [caption, setCaption] = useState(asset.caption ?? "");
+  const [altText, setAltText] = useState(asset.alt_text ?? "");
+  const [folder, setFolder] = useState(asset.folder);
+  const [tagInput, setTagInput] = useState("");
+  const [tags, setTags] = useState<string[]>(asset.tags ?? []);
+  const [saving, setSaving] = useState(false);
+
+  const addTag = () => {
+    const t = tagInput.trim().toLowerCase();
+    if (!t || tags.includes(t)) { setTagInput(""); return; }
+    setTags((p) => [...p, t]); setTagInput("");
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader><DialogTitle>Edit photo details</DialogTitle></DialogHeader>
+        <div className="grid sm:grid-cols-[200px_1fr] gap-4">
+          <img src={asset.url} alt="" className="w-full aspect-square object-cover rounded-md border" />
+          <div className="space-y-3">
+            <div>
+              <Label>Folder</Label>
+              <Select value={folder} onValueChange={setFolder}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{folders.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Caption</Label>
+              <Input value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={200} />
+            </div>
+            <div>
+              <Label>Alt text</Label>
+              <Textarea value={altText} onChange={(e) => setAltText(e.target.value)} maxLength={300} rows={2} />
+            </div>
+            <div>
+              <Label>Tags</Label>
+              <div className="flex gap-2">
+                <Input value={tagInput} onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
+                  placeholder="e.g. pool view, king bed" />
+                <Button type="button" variant="outline" onClick={addTag}><Tag className="h-4 w-4" /></Button>
+              </div>
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {tags.map((t) => (
+                    <Badge key={t} variant="secondary" className="gap-1">
+                      {t}
+                      <button onClick={() => setTags((p) => p.filter((x) => x !== t))}>
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button disabled={saving} onClick={async () => {
+            setSaving(true);
+            await onSave({ caption: caption || null, alt_text: altText || null, folder, tags });
+            setSaving(false);
+          }}>
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />} Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
