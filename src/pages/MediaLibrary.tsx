@@ -171,14 +171,16 @@ export default function MediaLibrary() {
     else setSelected(new Set(filtered.map((p) => p.id)));
   };
 
-  // Upload flow
+  // Upload flow — skip folder modal, use active folder (or Uncategorized)
   const beginUpload = (files: File[]) => {
     if (!files.length) return;
     const existingNames = new Set((assets ?? []).map((a) => a.original_filename).filter(Boolean) as string[]);
     const duplicates = files.map((f) => f.name).filter((n) => existingNames.has(n));
     if (duplicates.length > 0) { setDuplicateWarning({ files, duplicates }); return; }
-    setPendingFiles(files);
-    setUploadFolderOpen(true);
+    const targetFolder = activeFolder && activeFolder !== "__all__" && activeFolder !== "__unused__"
+      ? activeFolder
+      : UNCATEGORIZED;
+    performUpload(files, targetFolder);
   };
 
   const performUpload = async (files: File[], folder: string) => {
@@ -186,14 +188,20 @@ export default function MediaLibrary() {
       id: crypto.randomUUID(), name: f.name, progress: 0, status: "uploading",
     }));
     setUploadJobs((prev) => [...jobs, ...prev]);
+    toast({ title: `Uploading ${files.length} photo${files.length > 1 ? "s" : ""}…` });
     for (let i = 0; i < files.length; i++) {
       const file = files[i]; const job = jobs[i];
       try {
         const ext = file.name.split(".").pop() ?? "jpg";
         const path = `${LIBRARY_PREFIX}/${crypto.randomUUID()}.${ext}`;
-        // Storage SDK has no granular progress; show 50% then 100%
-        setUploadJobs((p) => p.map((j) => j.id === job.id ? { ...j, progress: 40 } : j));
+        setUploadJobs((p) => p.map((j) => j.id === job.id ? { ...j, progress: 10 } : j));
+        // Steady progress while awaiting the SDK (no native progress events)
+        const tick = setInterval(() => {
+          setUploadJobs((p) => p.map((j) => j.id === job.id && j.status === "uploading" && j.progress < 85
+            ? { ...j, progress: Math.min(85, j.progress + 7) } : j));
+        }, 300);
         const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false });
+        clearInterval(tick);
         if (error) throw error;
         const { data: u } = await supabase.auth.getUser();
         await upsertAsset.mutateAsync({
@@ -206,7 +214,8 @@ export default function MediaLibrary() {
         toast({ title: "Upload failed", description: `${file.name}: ${err.message}`, variant: "destructive" });
       }
     }
-    setTimeout(() => setUploadJobs((p) => p.filter((j) => j.status === "uploading")), 4000);
+    toast({ title: "Upload complete" });
+    setTimeout(() => setUploadJobs((p) => p.filter((j) => j.status === "uploading")), 3000);
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -315,7 +324,12 @@ export default function MediaLibrary() {
         </div>
 
         {uploadJobs.length > 0 && (
-          <Card className="p-3 space-y-2">
+          <Card className="fixed bottom-4 right-4 z-50 p-3 space-y-2 w-[min(360px,calc(100vw-2rem))] shadow-2xl border-primary/30 bg-card/95 backdrop-blur">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              Uploading {uploadJobs.filter((j) => j.status === "uploading").length || "complete"}
+              {uploadJobs.some((j) => j.status === "uploading") && ` of ${uploadJobs.length}`}
+            </div>
             {uploadJobs.map((j) => (
               <div key={j.id} className="space-y-1">
                 <div className="flex justify-between text-xs">
@@ -324,7 +338,7 @@ export default function MediaLibrary() {
                     {j.status === "error" ? j.error ?? "Failed" : j.status === "done" ? "Done" : `${j.progress}%`}
                   </span>
                 </div>
-                <Progress value={j.progress} className="h-1" />
+                <Progress value={j.progress} className="h-1.5" />
               </div>
             ))}
           </Card>
