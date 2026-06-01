@@ -80,16 +80,18 @@ export default function MediaLibrary() {
   const [uploadJobs, setUploadJobs] = useState<UploadJob[]>([]);
   const [customFolders, setCustomFolders] = useState<string[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [storagePaths, setStoragePaths] = useState<Set<string> | null>(null);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   // Build photo rows: combine assets with public URLs
   const photos: PhotoRow[] = useMemo(() => {
-    return (assets ?? []).filter((a) => !storagePaths || storagePaths.has(a.storage_path)).map((a) => {
+    // Trust the DB — show every media_library_assets row. Broken/missing files
+    // are filtered later via the <img onError> handler, not by storage listing
+    // (which only sees the `library/` prefix and would hide backfilled unit photos).
+    return (assets ?? []).map((a) => {
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(a.storage_path);
       return { ...a, url: data.publicUrl };
     });
-  }, [assets, storagePaths]);
+  }, [assets]);
 
   const displayPhotos = useMemo(() => photos.filter((p) => !imageErrors.has(p.id)), [photos, imageErrors]);
 
@@ -102,7 +104,6 @@ export default function MediaLibrary() {
         .from(BUCKET)
         .list(LIBRARY_PREFIX, { limit: 1000 });
       if (cancelled || !files) return;
-      setStoragePaths(new Set(files.filter((f) => f.id !== null).map((f) => `${LIBRARY_PREFIX}/${f.name}`)));
       const existing = new Set(assets.map((a) => a.storage_path));
       const orphans = files.filter((f) => f.id !== null && !existing.has(`${LIBRARY_PREFIX}/${f.name}`));
       for (const f of orphans) {
