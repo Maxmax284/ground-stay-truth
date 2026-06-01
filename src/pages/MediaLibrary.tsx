@@ -102,6 +102,7 @@ export default function MediaLibrary() {
         .from(BUCKET)
         .list(LIBRARY_PREFIX, { limit: 1000 });
       if (cancelled || !files) return;
+      setStoragePaths(new Set(files.filter((f) => f.id !== null).map((f) => `${LIBRARY_PREFIX}/${f.name}`)));
       const existing = new Set(assets.map((a) => a.storage_path));
       const orphans = files.filter((f) => f.id !== null && !existing.has(`${LIBRARY_PREFIX}/${f.name}`));
       for (const f of orphans) {
@@ -132,24 +133,24 @@ export default function MediaLibrary() {
   // Folder list
   const folders = useMemo(() => {
     const set = new Set<string>([UNCATEGORIZED, ...DEFAULT_FOLDERS, ...customFolders]);
-    (assets ?? []).forEach((a) => set.add(a.folder));
+    photos.forEach((a) => set.add(a.folder));
     return Array.from(set).sort((a, b) => {
       if (a === UNCATEGORIZED) return -1;
       if (b === UNCATEGORIZED) return 1;
       return a.localeCompare(b);
     });
-  }, [assets, customFolders]);
+  }, [photos, customFolders]);
 
   // Folder counts
   const folderCounts = useMemo(() => {
     const m = new Map<string, number>();
-    (assets ?? []).forEach((a) => m.set(a.folder, (m.get(a.folder) ?? 0) + 1));
+    displayPhotos.forEach((a) => m.set(a.folder, (m.get(a.folder) ?? 0) + 1));
     return m;
-  }, [assets]);
+  }, [displayPhotos]);
 
   const filtered: PhotoRow[] = useMemo(() => {
     const q = search.trim().toLowerCase();
-    let out = photos.filter((p) => {
+    let out = displayPhotos.filter((p) => {
       if (activeFolder === "__unused__") {
         if ((usageByUrl.get(p.url) ?? []).length !== 0) return false;
       } else if (activeFolder !== "__all__") {
@@ -173,7 +174,7 @@ export default function MediaLibrary() {
       return sortBy === "newest" ? cmp : -cmp;
     });
     return out;
-  }, [photos, activeFolder, usageFilter, unitFilter, search, sortBy, usageByUrl]);
+  }, [displayPhotos, activeFolder, usageFilter, unitFilter, search, sortBy, usageByUrl]);
 
   const selectedPhotos = useMemo(() => filtered.filter((p) => selected.has(p.id)), [filtered, selected]);
   const allSelectedPaths = useMemo(() => photos.filter((p) => selected.has(p.id)), [photos, selected]);
