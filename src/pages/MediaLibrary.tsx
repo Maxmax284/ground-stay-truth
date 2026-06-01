@@ -253,7 +253,11 @@ export default function MediaLibrary() {
   const retryFailedUploads = () => {
     const failedJobs = uploadJobs.filter((j) => j.status === "error");
     if (!failedJobs.length) return;
-    performUpload(failedJobs.map((j) => j.file), failedJobs[0].folder, failedJobs.map((j) => j.id));
+    const byFolder = new Map<string, UploadJob[]>();
+    failedJobs.forEach((job) => byFolder.set(job.folder, [...(byFolder.get(job.folder) ?? []), job]));
+    byFolder.forEach((jobs, folder) => {
+      performUpload(jobs.map((j) => j.file), folder, jobs.map((j) => j.id));
+    });
   };
 
   const handleConfirmUploadFolder = () => {
@@ -403,7 +407,13 @@ export default function MediaLibrary() {
                     </div>
                     <Progress value={j.progress} className="h-1.5" />
                     {j.status === "error" && j.error && (
-                      <p className="text-[11px] text-destructive line-clamp-2">{j.error}</p>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-[11px] text-destructive line-clamp-2 min-w-0">{j.error}</p>
+                        <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px] shrink-0"
+                          onClick={() => performUpload([j.file], j.folder, [j.id])} disabled={uploadStats.uploading > 0}>
+                          Retry
+                        </Button>
+                      </div>
                     )}
                   </div>
                 ))}
