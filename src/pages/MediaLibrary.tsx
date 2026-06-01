@@ -80,7 +80,6 @@ export default function MediaLibrary() {
   const [uploadJobs, setUploadJobs] = useState<UploadJob[]>([]);
   const [customFolders, setCustomFolders] = useState<string[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [storagePaths, setStoragePaths] = useState<Set<string> | null>(null);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   // Build photo rows: combine assets with public URLs
