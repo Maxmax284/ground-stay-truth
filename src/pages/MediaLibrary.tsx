@@ -475,7 +475,7 @@ export default function MediaLibrary() {
                   {(units ?? []).map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Select value={usageFilter} onValueChange={(v: any) => setUsageFilter(v)}>
+              <Select value={usageFilter} onValueChange={(v) => setUsageFilter(v as "all" | "used" | "unused")}>
                 <SelectTrigger className="sm:w-36"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All usage</SelectItem>
@@ -483,7 +483,7 @@ export default function MediaLibrary() {
                   <SelectItem value="unused">Unused</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as "newest" | "oldest")}>
                 <SelectTrigger className="sm:w-36"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="newest">Newest</SelectItem>
@@ -739,8 +739,8 @@ export default function MediaLibrary() {
             try {
               await updateAsset.mutateAsync({ id: editing.id, ...updates });
               toast({ title: "Saved" }); setEditing(null);
-            } catch (err: any) {
-              toast({ title: "Save failed", description: err.message, variant: "destructive" });
+            } catch (err: unknown) {
+              toast({ title: "Save failed", description: errorMessage(err), variant: "destructive" });
             }
           }}
         />
