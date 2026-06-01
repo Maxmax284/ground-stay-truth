@@ -452,9 +452,9 @@ export default function MediaLibrary() {
           <Card className="p-2 h-fit">
             <ScrollArea className="max-h-[60vh]">
               <div className="space-y-0.5">
-                <FolderButton label="All photos" count={assets?.length ?? 0}
+                <FolderButton label="All photos" count={displayPhotos.length}
                   active={activeFolder === "__all__"} onClick={() => setActiveFolder("__all__")} icon="all" />
-                <FolderButton label="Unused" count={photos.filter((p) => (usageByUrl.get(p.url) ?? []).length === 0).length}
+                <FolderButton label="Unused" count={displayPhotos.filter((p) => (usageByUrl.get(p.url) ?? []).length === 0).length}
                   active={activeFolder === "__unused__"} onClick={() => setActiveFolder("__unused__")} icon="unused" />
                 <div className="h-px bg-border my-1" />
                 {folders.map((f) => (
@@ -517,7 +517,10 @@ export default function MediaLibrary() {
             )}
 
             <div className="flex justify-between items-center text-xs text-muted-foreground">
-              <span>{filtered.length} photo(s)</span>
+              <span>
+                {filtered.length} visible photo(s)
+                {assets && assets.length !== displayPhotos.length && ` · ${assets.length - displayPhotos.length} hidden/broken`}
+              </span>
               {filtered.length > 0 && (
                 <button className="hover:text-foreground" onClick={selectAllVisible}>
                   {selected.size === filtered.length ? "Deselect all" : "Select all"}
@@ -558,6 +561,7 @@ export default function MediaLibrary() {
                         }`}>
                         <img src={p.url} alt={p.alt_text ?? p.original_filename ?? ""} loading="lazy"
                           className="w-full h-full object-cover cursor-pointer"
+                          onError={() => setImageErrors((prev) => new Set(prev).add(p.id))}
                           onClick={() => toggleSelect(p.id)} />
 
                         <button type="button" onClick={(e) => { e.stopPropagation(); toggleSelect(p.id); }}
