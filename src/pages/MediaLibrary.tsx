@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   Upload, Loader2, Trash2, Link2, Check, ImageOff, Copy, Folder, FolderPlus,
   FolderInput, Filter, X, Tag, Pencil, Unlink, Search, ZoomIn,
+  AlertTriangle, RotateCcw,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
@@ -32,7 +33,15 @@ const LIBRARY_PREFIX = "library";
 
 type PhotoRow = MediaAsset & { url: string };
 
-type UploadJob = { id: string; name: string; progress: number; status: "uploading" | "done" | "error"; error?: string };
+type UploadJob = {
+  id: string;
+  name: string;
+  progress: number;
+  status: "uploading" | "done" | "error";
+  file: File;
+  folder: string;
+  error?: string;
+};
 
 export default function MediaLibrary() {
   const { toast } = useToast();
@@ -162,6 +171,12 @@ export default function MediaLibrary() {
 
   const selectedPhotos = useMemo(() => filtered.filter((p) => selected.has(p.id)), [filtered, selected]);
   const allSelectedPaths = useMemo(() => photos.filter((p) => selected.has(p.id)), [photos, selected]);
+  const uploadStats = useMemo(() => {
+    const done = uploadJobs.filter((j) => j.status === "done").length;
+    const failed = uploadJobs.filter((j) => j.status === "error").length;
+    const uploading = uploadJobs.filter((j) => j.status === "uploading").length;
+    return { done, failed, uploading, total: uploadJobs.length };
+  }, [uploadJobs]);
 
   const toggleSelect = (id: string) =>
     setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -183,40 +198,62 @@ export default function MediaLibrary() {
     performUpload(files, targetFolder);
   };
 
-  const performUpload = async (files: File[], folder: string) => {
+  const uploadOne = async (file: File, jobId: string, folder: string) => {
+    let tick: ReturnType<typeof setInterval> | null = null;
+    try {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${LIBRARY_PREFIX}/${crypto.randomUUID()}.${ext}`;
+      setUploadJobs((p) => p.map((j) => j.id === jobId ? { ...j, progress: 10, status: "uploading", error: undefined } : j));
+      // Steady progress while awaiting the SDK (no native progress events)
+      tick = setInterval(() => {
+        setUploadJobs((p) => p.map((j) => j.id === jobId && j.status === "uploading" && j.progress < 85
+          ? { ...j, progress: Math.min(85, j.progress + 7) } : j));
+      }, 300);
+      const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false });
+      if (error) throw error;
+      const { data: u } = await supabase.auth.getUser();
+      await upsertAsset.mutateAsync({
+        storage_path: path, original_filename: file.name, folder,
+        uploaded_by: u.user?.id ?? null,
+      });
+      setUploadJobs((p) => p.map((j) => j.id === jobId ? { ...j, progress: 100, status: "done" } : j));
+      return true;
+    } catch (err: any) {
+      setUploadJobs((p) => p.map((j) => j.id === jobId ? {
+        ...j, progress: 100, status: "error", error: err?.message ?? "Failed",
+      } : j));
+      return false;
+    } finally {
+      if (tick) clearInterval(tick);
+    }
+  };
+
+  const performUpload = async (files: File[], folder: string, replaceIds: string[] = []) => {
     const jobs: UploadJob[] = files.map((f) => ({
-      id: crypto.randomUUID(), name: f.name, progress: 0, status: "uploading",
+      id: crypto.randomUUID(), name: f.name, progress: 0, status: "uploading", file: f, folder,
     }));
-    setUploadJobs((prev) => [...jobs, ...prev]);
+    setUploadJobs((prev) => [...jobs, ...prev.filter((j) => !replaceIds.includes(j.id))]);
     toast({ title: `Uploading ${files.length} photo${files.length > 1 ? "s" : ""}…` });
+    let succeeded = 0;
+    let failed = 0;
     for (let i = 0; i < files.length; i++) {
       const file = files[i]; const job = jobs[i];
-      try {
-        const ext = file.name.split(".").pop() ?? "jpg";
-        const path = `${LIBRARY_PREFIX}/${crypto.randomUUID()}.${ext}`;
-        setUploadJobs((p) => p.map((j) => j.id === job.id ? { ...j, progress: 10 } : j));
-        // Steady progress while awaiting the SDK (no native progress events)
-        const tick = setInterval(() => {
-          setUploadJobs((p) => p.map((j) => j.id === job.id && j.status === "uploading" && j.progress < 85
-            ? { ...j, progress: Math.min(85, j.progress + 7) } : j));
-        }, 300);
-        const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false });
-        clearInterval(tick);
-        if (error) throw error;
-        const { data: u } = await supabase.auth.getUser();
-        await upsertAsset.mutateAsync({
-          storage_path: path, original_filename: file.name, folder,
-          uploaded_by: u.user?.id ?? null,
-        });
-        setUploadJobs((p) => p.map((j) => j.id === job.id ? { ...j, progress: 100, status: "done" } : j));
-      } catch (err: any) {
-        setUploadJobs((p) => p.map((j) => j.id === job.id ? { ...j, status: "error", error: err.message } : j));
-        toast({ title: "Upload failed", description: `${file.name}: ${err.message}`, variant: "destructive" });
-      }
+      const ok = await uploadOne(file, job.id, folder);
+      ok ? succeeded++ : failed++;
     }
-    toast({ title: "Upload complete" });
-    setTimeout(() => setUploadJobs((p) => p.filter((j) => j.status === "uploading")), 3000);
+    toast({
+      title: failed ? `Uploaded ${succeeded} of ${files.length}` : `Uploaded ${succeeded} photo${succeeded === 1 ? "" : "s"}`,
+      description: failed ? `${failed} failed. Use Retry failed in the upload panel.` : undefined,
+      variant: failed ? "destructive" : undefined,
+    });
+    if (!failed) setTimeout(() => setUploadJobs((p) => p.filter((j) => j.status === "uploading")), 3000);
     if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const retryFailedUploads = () => {
+    const failedJobs = uploadJobs.filter((j) => j.status === "error");
+    if (!failedJobs.length) return;
+    performUpload(failedJobs.map((j) => j.file), failedJobs[0].folder, failedJobs.map((j) => j.id));
   };
 
   const handleConfirmUploadFolder = () => {
