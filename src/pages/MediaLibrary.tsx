@@ -85,11 +85,14 @@ export default function MediaLibrary() {
 
   // Build photo rows: combine assets with public URLs
   const photos: PhotoRow[] = useMemo(() => {
-    return (assets ?? []).filter((a) => !storagePaths || storagePaths.has(a.storage_path)).map((a) => {
+    // Trust the DB — show every media_library_assets row. Broken/missing files
+    // are filtered later via the <img onError> handler, not by storage listing
+    // (which only sees the `library/` prefix and would hide backfilled unit photos).
+    return (assets ?? []).map((a) => {
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(a.storage_path);
       return { ...a, url: data.publicUrl };
     });
-  }, [assets, storagePaths]);
+  }, [assets]);
 
   const displayPhotos = useMemo(() => photos.filter((p) => !imageErrors.has(p.id)), [photos, imageErrors]);
 
