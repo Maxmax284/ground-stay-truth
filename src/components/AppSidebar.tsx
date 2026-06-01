@@ -176,34 +176,34 @@ export function AppSidebar() {
 
   return (
     <>
-    <Sidebar>
-      <div className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-2">
-          <Swords className="h-5 w-5 text-sidebar-primary shrink-0" />
+    <Sidebar className="min-w-[22rem]">
+      <div className="px-6 py-5 border-b border-sidebar-border">
+        <div className="flex items-center gap-3">
+          <Swords className="h-6 w-6 text-sidebar-primary shrink-0" />
           <div>
-            <h2 className="text-lg font-bold text-sidebar-foreground" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <h2 className="text-xl font-bold text-sidebar-foreground" style={{ fontFamily: "'Playfair Display', serif" }}>
               {t("auth.groundStay")}
             </h2>
-            <p className="text-xs text-sidebar-foreground/60 mt-0.5">{t("common.propertyManagement")}</p>
+            <p className="text-sm text-sidebar-foreground/60 mt-0.5">{t("common.propertyManagement")}</p>
           </div>
         </div>
       </div>
 
-      <SidebarContent>
-        <SidebarGroup>
+      <SidebarContent className="py-3">
+        <SidebarGroup className="px-4 py-2">
           <SidebarGroupLabel>{t("nav.navigation")}</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1.5">
               {visibleNavItems.map((item) => (
                 <SidebarMenuItem key={item.titleKey}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild className="h-11 px-4 text-[15px]">
                     <NavLink
                       to={item.url}
                       end={item.url === "/dashboard"}
                       className="hover:bg-sidebar-accent/50 hover-slide-right"
                       activeClassName="bg-sidebar-accent text-sidebar-primary font-medium border-l-[3px] border-sidebar-primary"
                     >
-                      <item.icon className="mr-2 h-4 w-4" />
+                      <item.icon className="mr-3 h-4 w-4" />
                       <span>{t(item.titleKey)}</span>
                       {item.url === "/settings" && !!pendingCount && pendingCount > 0 && (
                         <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-4 min-w-4 justify-center animate-bounce-badge">
@@ -229,51 +229,51 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-3 border-t border-sidebar-border">
-        <div className="flex items-center gap-2 px-1 mb-2">
-          <div className="text-xs text-sidebar-foreground/60 truncate flex-1">
+      <SidebarFooter className="px-5 py-4 border-t border-sidebar-border">
+        <div className="flex items-center gap-3 px-1 mb-3">
+          <div className="text-sm text-sidebar-foreground/60 truncate flex-1">
             {user?.email}
           </div>
           {role && (
-            <Badge variant="outline" className="text-[10px] shrink-0">
+            <Badge variant="outline" className="text-xs shrink-0">
               {t(`roles.${role}`)}
             </Badge>
           )}
         </div>
-        <Link to="/simulation" className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
-          <Target className="h-3.5 w-3.5" />
+        <Link to="/simulation" className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-md text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+          <Target className="h-4 w-4" />
           {t("nav.warRoomSim", "War Room Sim")}
         </Link>
         {showInstall && (
           <button
             onClick={() => setInstallDialogOpen(true)}
-            className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors w-full text-left"
+              className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-md text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors w-full text-left"
           >
-            <Download className="h-3.5 w-3.5" />
+              <Download className="h-4 w-4" />
             Install App
           </button>
         )}
         {isAdmin && (
           <>
-            <Link to="/security-center" className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
-              <ShieldAlert className="h-3.5 w-3.5" />
+            <Link to="/security-center" className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-md text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+              <ShieldAlert className="h-4 w-4" />
               Security Center
             </Link>
-            <Link to="/disaster-recovery" className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
-              <ShieldAlert className="h-3.5 w-3.5" />
+            <Link to="/disaster-recovery" className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-md text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+              <ShieldAlert className="h-4 w-4" />
               Disaster Recovery
             </Link>
-            <Link to="/guest?preview=true" className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
-              <Eye className="h-3.5 w-3.5" />
+            <Link to="/guest?preview=true" className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-md text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+              <Eye className="h-4 w-4" />
               {t("nav.previewGuestPortal")}
             </Link>
-            <div className="flex items-center gap-2 px-2 py-1.5 mb-1 text-xs">
-              <ScanEye className="h-3.5 w-3.5 text-sidebar-foreground/60 shrink-0" />
+            <div className="flex items-center gap-3 px-3 py-2.5 mb-1 text-sm">
+              <ScanEye className="h-4 w-4 text-sidebar-foreground/60 shrink-0" />
               <Select
                 value={previewRole ?? "none"}
                 onValueChange={(val) => setPreviewRole(val === "none" ? null : val as AppRole)}
               >
-                <SelectTrigger className="h-7 text-xs border-sidebar-border">
+                <SelectTrigger className="h-9 text-sm border-sidebar-border">
                   <SelectValue placeholder={t("preview.selectRole")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -292,10 +292,10 @@ export function AppSidebar() {
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          className="h-11 w-full justify-start px-3 text-base text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
           onClick={signOut}
         >
-          <LogOut className="mr-2 h-4 w-4" />
+          <LogOut className="mr-3 h-5 w-5" />
           {t("common.signOut")}
         </Button>
         <div className="text-[10px] text-sidebar-foreground/30 text-center mt-1">
