@@ -1137,6 +1137,48 @@ export type Database = {
           },
         ]
       }
+      media_library_assets: {
+        Row: {
+          alt_text: string | null
+          caption: string | null
+          created_at: string
+          folder: string
+          id: string
+          original_filename: string | null
+          property_id: string | null
+          storage_path: string
+          tags: string[]
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          alt_text?: string | null
+          caption?: string | null
+          created_at?: string
+          folder?: string
+          id?: string
+          original_filename?: string | null
+          property_id?: string | null
+          storage_path: string
+          tags?: string[]
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          alt_text?: string | null
+          caption?: string | null
+          created_at?: string
+          folder?: string
+          id?: string
+          original_filename?: string | null
+          property_id?: string | null
+          storage_path?: string
+          tags?: string[]
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           approved_by: string | null
