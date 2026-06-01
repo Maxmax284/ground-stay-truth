@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   Upload, Loader2, Trash2, Link2, Check, ImageOff, Copy, Folder, FolderPlus,
   FolderInput, Filter, X, Tag, Pencil, Unlink, Search, ZoomIn,
+  AlertTriangle, RotateCcw,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
@@ -32,7 +33,17 @@ const LIBRARY_PREFIX = "library";
 
 type PhotoRow = MediaAsset & { url: string };
 
-type UploadJob = { id: string; name: string; progress: number; status: "uploading" | "done" | "error"; error?: string };
+type UploadJob = {
+  id: string;
+  name: string;
+  progress: number;
+  status: "uploading" | "done" | "error";
+  file: File;
+  folder: string;
+  error?: string;
+};
+
+const errorMessage = (err: unknown) => err instanceof Error ? err.message : String(err || "Failed");
 
 export default function MediaLibrary() {
   const { toast } = useToast();
@@ -162,9 +173,20 @@ export default function MediaLibrary() {
 
   const selectedPhotos = useMemo(() => filtered.filter((p) => selected.has(p.id)), [filtered, selected]);
   const allSelectedPaths = useMemo(() => photos.filter((p) => selected.has(p.id)), [photos, selected]);
+  const uploadStats = useMemo(() => {
+    const done = uploadJobs.filter((j) => j.status === "done").length;
+    const failed = uploadJobs.filter((j) => j.status === "error").length;
+    const uploading = uploadJobs.filter((j) => j.status === "uploading").length;
+    return { done, failed, uploading, total: uploadJobs.length };
+  }, [uploadJobs]);
 
   const toggleSelect = (id: string) =>
-    setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
 
   const selectAllVisible = () => {
     if (selected.size === filtered.length && filtered.length > 0) setSelected(new Set());
@@ -183,40 +205,67 @@ export default function MediaLibrary() {
     performUpload(files, targetFolder);
   };
 
-  const performUpload = async (files: File[], folder: string) => {
+  const uploadOne = async (file: File, jobId: string, folder: string) => {
+    let tick: ReturnType<typeof setInterval> | null = null;
+    try {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${LIBRARY_PREFIX}/${crypto.randomUUID()}.${ext}`;
+      setUploadJobs((p) => p.map((j) => j.id === jobId ? { ...j, progress: 10, status: "uploading", error: undefined } : j));
+      // Steady progress while awaiting the SDK (no native progress events)
+      tick = setInterval(() => {
+        setUploadJobs((p) => p.map((j) => j.id === jobId && j.status === "uploading" && j.progress < 85
+          ? { ...j, progress: Math.min(85, j.progress + 7) } : j));
+      }, 300);
+      const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false });
+      if (error) throw error;
+      const { data: u } = await supabase.auth.getUser();
+      await upsertAsset.mutateAsync({
+        storage_path: path, original_filename: file.name, folder,
+        uploaded_by: u.user?.id ?? null,
+      });
+      setUploadJobs((p) => p.map((j) => j.id === jobId ? { ...j, progress: 100, status: "done" } : j));
+      return true;
+    } catch (err: unknown) {
+      setUploadJobs((p) => p.map((j) => j.id === jobId ? {
+        ...j, progress: 100, status: "error", error: errorMessage(err),
+      } : j));
+      return false;
+    } finally {
+      if (tick) clearInterval(tick);
+    }
+  };
+
+  const performUpload = async (files: File[], folder: string, replaceIds: string[] = []) => {
     const jobs: UploadJob[] = files.map((f) => ({
-      id: crypto.randomUUID(), name: f.name, progress: 0, status: "uploading",
+      id: crypto.randomUUID(), name: f.name, progress: 0, status: "uploading", file: f, folder,
     }));
-    setUploadJobs((prev) => [...jobs, ...prev]);
+    setUploadJobs((prev) => [...jobs, ...prev.filter((j) => !replaceIds.includes(j.id))]);
     toast({ title: `Uploading ${files.length} photo${files.length > 1 ? "s" : ""}…` });
+    let succeeded = 0;
+    let failed = 0;
     for (let i = 0; i < files.length; i++) {
       const file = files[i]; const job = jobs[i];
-      try {
-        const ext = file.name.split(".").pop() ?? "jpg";
-        const path = `${LIBRARY_PREFIX}/${crypto.randomUUID()}.${ext}`;
-        setUploadJobs((p) => p.map((j) => j.id === job.id ? { ...j, progress: 10 } : j));
-        // Steady progress while awaiting the SDK (no native progress events)
-        const tick = setInterval(() => {
-          setUploadJobs((p) => p.map((j) => j.id === job.id && j.status === "uploading" && j.progress < 85
-            ? { ...j, progress: Math.min(85, j.progress + 7) } : j));
-        }, 300);
-        const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false });
-        clearInterval(tick);
-        if (error) throw error;
-        const { data: u } = await supabase.auth.getUser();
-        await upsertAsset.mutateAsync({
-          storage_path: path, original_filename: file.name, folder,
-          uploaded_by: u.user?.id ?? null,
-        });
-        setUploadJobs((p) => p.map((j) => j.id === job.id ? { ...j, progress: 100, status: "done" } : j));
-      } catch (err: any) {
-        setUploadJobs((p) => p.map((j) => j.id === job.id ? { ...j, status: "error", error: err.message } : j));
-        toast({ title: "Upload failed", description: `${file.name}: ${err.message}`, variant: "destructive" });
-      }
+      const ok = await uploadOne(file, job.id, folder);
+      if (ok) succeeded++;
+      else failed++;
     }
-    toast({ title: "Upload complete" });
-    setTimeout(() => setUploadJobs((p) => p.filter((j) => j.status === "uploading")), 3000);
+    toast({
+      title: failed ? `Uploaded ${succeeded} of ${files.length}` : `Uploaded ${succeeded} photo${succeeded === 1 ? "" : "s"}`,
+      description: failed ? `${failed} failed. Use Retry failed in the upload panel.` : undefined,
+      variant: failed ? "destructive" : undefined,
+    });
+    if (!failed) setTimeout(() => setUploadJobs((p) => p.filter((j) => j.status === "uploading")), 3000);
     if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const retryFailedUploads = () => {
+    const failedJobs = uploadJobs.filter((j) => j.status === "error");
+    if (!failedJobs.length) return;
+    const byFolder = new Map<string, UploadJob[]>();
+    failedJobs.forEach((job) => byFolder.set(job.folder, [...(byFolder.get(job.folder) ?? []), job]));
+    byFolder.forEach((jobs, folder) => {
+      performUpload(jobs.map((j) => j.file), folder, jobs.map((j) => j.id));
+    });
   };
 
   const handleConfirmUploadFolder = () => {
@@ -238,8 +287,8 @@ export default function MediaLibrary() {
       await deleteAssets.mutateAsync(allSelectedPaths.map((p) => p.storage_path));
       toast({ title: "Deleted" });
       setSelected(new Set());
-    } catch (err: any) {
-      toast({ title: "Delete failed", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Delete failed", description: errorMessage(err), variant: "destructive" });
     }
   };
 
@@ -249,8 +298,8 @@ export default function MediaLibrary() {
       await bulkFolder.mutateAsync({ ids: allSelectedPaths.map((p) => p.id), folder: moveTarget });
       toast({ title: `Moved to ${moveTarget}` });
       setMoveOpen(false); setMoveTarget(""); setSelected(new Set());
-    } catch (err: any) {
-      toast({ title: "Move failed", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Move failed", description: errorMessage(err), variant: "destructive" });
     }
   };
 
@@ -265,8 +314,8 @@ export default function MediaLibrary() {
       await updateUnit.mutateAsync({ id: unit.id, photos: [...existing, ...additions] });
       toast({ title: `Assigned ${additions.length} to ${unit.name}` });
       setAssignOpen(false); setAssignTargetUnitId(""); setSelected(new Set());
-    } catch (err: any) {
-      toast({ title: "Assignment failed", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Assignment failed", description: errorMessage(err), variant: "destructive" });
     }
   };
 
@@ -282,8 +331,8 @@ export default function MediaLibrary() {
       await updateUnit.mutateAsync({ id: unit.id, photos: next });
       toast({ title: `Removed ${removed} from ${unit.name}` });
       setRemoveUnitOpen(false); setRemoveUnitId(""); setSelected(new Set());
-    } catch (err: any) {
-      toast({ title: "Remove failed", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Remove failed", description: errorMessage(err), variant: "destructive" });
     }
   };
 
@@ -324,24 +373,73 @@ export default function MediaLibrary() {
         </div>
 
         {uploadJobs.length > 0 && (
-          <Card className="fixed bottom-4 right-4 z-50 p-3 space-y-2 w-[min(360px,calc(100vw-2rem))] shadow-2xl border-primary/30 bg-card/95 backdrop-blur">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              Uploading {uploadJobs.filter((j) => j.status === "uploading").length || "complete"}
-              {uploadJobs.some((j) => j.status === "uploading") && ` of ${uploadJobs.length}`}
-            </div>
-            {uploadJobs.map((j) => (
-              <div key={j.id} className="space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="truncate max-w-[60%]">{j.name}</span>
-                  <span className={j.status === "error" ? "text-destructive" : "text-muted-foreground"}>
-                    {j.status === "error" ? j.error ?? "Failed" : j.status === "done" ? "Done" : `${j.progress}%`}
+          <Card className="fixed bottom-4 right-4 z-50 w-[min(420px,calc(100vw-2rem))] max-h-[min(560px,calc(100vh-2rem))] shadow-2xl border-primary/30 bg-card/95 backdrop-blur flex flex-col overflow-hidden">
+            <div className="p-3 border-b space-y-2 shrink-0">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm font-medium min-w-0">
+                  {uploadStats.uploading > 0 ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+                  ) : uploadStats.failed > 0 ? (
+                    <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+                  ) : (
+                    <Check className="h-4 w-4 text-primary shrink-0" />
+                  )}
+                  <span className="truncate">
+                    {uploadStats.uploading > 0 ? "Uploading media" : uploadStats.failed > 0 ? "Upload finished with misses" : "Upload complete"}
                   </span>
                 </div>
-                <Progress value={j.progress} className="h-1.5" />
+                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setUploadJobs([])}>
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-            ))}
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="rounded-md bg-accent/60 px-2 py-1.5"><span className="font-semibold">{uploadStats.done}</span> done</div>
+                <div className="rounded-md bg-accent/60 px-2 py-1.5"><span className="font-semibold">{uploadStats.uploading}</span> moving</div>
+                <div className="rounded-md bg-accent/60 px-2 py-1.5"><span className="font-semibold text-destructive">{uploadStats.failed}</span> failed</div>
+              </div>
+              {uploadStats.failed > 0 && (
+                <Button size="sm" variant="outline" className="w-full" onClick={retryFailedUploads} disabled={uploadStats.uploading > 0}>
+                  <RotateCcw className="h-4 w-4" /> Retry failed
+                </Button>
+              )}
+            </div>
+            <ScrollArea className="min-h-0 max-h-[420px]">
+              <div className="p-3 space-y-2">
+                {uploadJobs.map((j) => (
+                  <div key={j.id} className="space-y-1 rounded-md border bg-background/40 p-2">
+                    <div className="flex justify-between gap-3 text-xs">
+                      <span className="truncate min-w-0">{j.name}</span>
+                      <span className={j.status === "error" ? "text-destructive shrink-0" : "text-muted-foreground shrink-0"}>
+                        {j.status === "error" ? "Failed" : j.status === "done" ? "Done" : `${j.progress}%`}
+                      </span>
+                    </div>
+                    <Progress value={j.progress} className="h-1.5" />
+                    {j.status === "error" && j.error && (
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-[11px] text-destructive line-clamp-2 min-w-0">{j.error}</p>
+                        <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px] shrink-0"
+                          onClick={() => performUpload([j.file], j.folder, [j.id])} disabled={uploadStats.uploading > 0}>
+                          Retry
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
           </Card>
+        )}
+
+        {uploadStats.failed > 0 && uploadStats.uploading === 0 && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+              <span>{uploadStats.done} uploaded, {uploadStats.failed} failed. Library count only reflects files that actually made it through.</span>
+            </div>
+            <Button size="sm" variant="outline" onClick={retryFailedUploads}>
+              <RotateCcw className="h-4 w-4" /> Retry failed
+            </Button>
+          </div>
         )}
 
         <div className="grid md:grid-cols-[220px_1fr] gap-4">
@@ -377,7 +475,7 @@ export default function MediaLibrary() {
                   {(units ?? []).map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Select value={usageFilter} onValueChange={(v: any) => setUsageFilter(v)}>
+              <Select value={usageFilter} onValueChange={(v) => setUsageFilter(v as "all" | "used" | "unused")}>
                 <SelectTrigger className="sm:w-36"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All usage</SelectItem>
@@ -385,7 +483,7 @@ export default function MediaLibrary() {
                   <SelectItem value="unused">Unused</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as "newest" | "oldest")}>
                 <SelectTrigger className="sm:w-36"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="newest">Newest</SelectItem>
@@ -641,8 +739,8 @@ export default function MediaLibrary() {
             try {
               await updateAsset.mutateAsync({ id: editing.id, ...updates });
               toast({ title: "Saved" }); setEditing(null);
-            } catch (err: any) {
-              toast({ title: "Save failed", description: err.message, variant: "destructive" });
+            } catch (err: unknown) {
+              toast({ title: "Save failed", description: errorMessage(err), variant: "destructive" });
             }
           }}
         />
