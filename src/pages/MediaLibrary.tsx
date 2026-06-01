@@ -43,6 +43,8 @@ type UploadJob = {
   error?: string;
 };
 
+const errorMessage = (err: unknown) => err instanceof Error ? err.message : String(err || "Failed");
+
 export default function MediaLibrary() {
   const { toast } = useToast();
   const { data: units } = useUnits();
@@ -179,7 +181,12 @@ export default function MediaLibrary() {
   }, [uploadJobs]);
 
   const toggleSelect = (id: string) =>
-    setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
 
   const selectAllVisible = () => {
     if (selected.size === filtered.length && filtered.length > 0) setSelected(new Set());
@@ -218,9 +225,9 @@ export default function MediaLibrary() {
       });
       setUploadJobs((p) => p.map((j) => j.id === jobId ? { ...j, progress: 100, status: "done" } : j));
       return true;
-    } catch (err: any) {
+    } catch (err: unknown) {
       setUploadJobs((p) => p.map((j) => j.id === jobId ? {
-        ...j, progress: 100, status: "error", error: err?.message ?? "Failed",
+        ...j, progress: 100, status: "error", error: errorMessage(err),
       } : j));
       return false;
     } finally {
@@ -239,7 +246,8 @@ export default function MediaLibrary() {
     for (let i = 0; i < files.length; i++) {
       const file = files[i]; const job = jobs[i];
       const ok = await uploadOne(file, job.id, folder);
-      ok ? succeeded++ : failed++;
+      if (ok) succeeded++;
+      else failed++;
     }
     toast({
       title: failed ? `Uploaded ${succeeded} of ${files.length}` : `Uploaded ${succeeded} photo${succeeded === 1 ? "" : "s"}`,
