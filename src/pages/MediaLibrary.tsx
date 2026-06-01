@@ -518,7 +518,7 @@ export default function MediaLibrary() {
 
             <div className="flex justify-between items-center text-xs text-muted-foreground">
               <span>
-                {filtered.length} visible photo(s)
+                {filtered.length} matching photo(s)
                 {assets && assets.length !== displayPhotos.length && ` · ${assets.length - displayPhotos.length} hidden/broken`}
               </span>
               {filtered.length > 0 && (
