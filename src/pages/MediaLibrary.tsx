@@ -324,7 +324,12 @@ export default function MediaLibrary() {
         </div>
 
         {uploadJobs.length > 0 && (
-          <Card className="p-3 space-y-2">
+          <Card className="fixed bottom-4 right-4 z-50 p-3 space-y-2 w-[min(360px,calc(100vw-2rem))] shadow-2xl border-primary/30 bg-card/95 backdrop-blur">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              Uploading {uploadJobs.filter((j) => j.status === "uploading").length || "complete"}
+              {uploadJobs.some((j) => j.status === "uploading") && ` of ${uploadJobs.length}`}
+            </div>
             {uploadJobs.map((j) => (
               <div key={j.id} className="space-y-1">
                 <div className="flex justify-between text-xs">
@@ -333,7 +338,7 @@ export default function MediaLibrary() {
                     {j.status === "error" ? j.error ?? "Failed" : j.status === "done" ? "Done" : `${j.progress}%`}
                   </span>
                 </div>
-                <Progress value={j.progress} className="h-1" />
+                <Progress value={j.progress} className="h-1.5" />
               </div>
             ))}
           </Card>
