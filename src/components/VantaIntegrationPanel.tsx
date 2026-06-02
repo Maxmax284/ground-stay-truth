@@ -36,11 +36,12 @@ export function VantaIntegrationPanel() {
   const effectiveUrl = url || session.vanta_webhook_url || "";
   const effectiveSource = sourceId || session.source_id || "";
   const effectiveOwnerIdentifier = ownerIdentifier ?? session.vanta_owner_identifier ?? "";
-  const ownerMissing = !effectiveOwnerIdentifier.trim();
+  const persistedOwnerMissing = !(session.vanta_owner_identifier ?? "").trim();
+  const ownerInputMissing = !effectiveOwnerIdentifier.trim();
 
   const statusBadge = () => {
     if (!session.enabled) return <Badge variant="secondary">Paused</Badge>;
-    if (!session.vanta_webhook_url || ownerMissing) return <Badge variant="outline">Needs setup</Badge>;
+    if (!session.vanta_webhook_url || persistedOwnerMissing) return <Badge variant="outline">Needs setup</Badge>;
     if (!secretConfigured) return <Badge variant="outline">Needs secret</Badge>;
     if (session.status === "error") return <Badge variant="destructive">Error</Badge>;
     if (session.status === "live") return <Badge>Live</Badge>;
@@ -99,12 +100,20 @@ export function VantaIntegrationPanel() {
 
   const handleTest = async () => {
     try {
-      if (ownerMissing) {
+      if (!session.vanta_webhook_url) {
+        toast({ title: "Webhook URL required", description: "Save the Vanta webhook URL before sending a test event.", variant: "destructive" });
+        return;
+      }
+      if (persistedOwnerMissing) {
         toast({
           title: "Vanta owner required",
           description: "Save the Vanta owner identifier before sending a test event.",
           variant: "destructive",
         });
+        return;
+      }
+      if (!session.enabled) {
+        toast({ title: "Sync is paused", description: "Enable sync before sending a test event.", variant: "destructive" });
         return;
       }
       const res: any = await sendTest.mutateAsync();
@@ -130,7 +139,7 @@ export function VantaIntegrationPanel() {
 
   const resetHealth = async () => {
     await update.mutateAsync({
-      status: session.enabled && session.vanta_webhook_url && !ownerMissing ? "live" : "needs_setup",
+      status: session.enabled && session.vanta_webhook_url && !persistedOwnerMissing ? "live" : "needs_setup",
       failure_count: 0,
       last_error_summary: null,
       last_failure_at: null,
@@ -139,7 +148,7 @@ export function VantaIntegrationPanel() {
   };
 
   const toggleEnabled = async (on: boolean) => {
-    if (on && ownerMissing) {
+    if (on && (persistedOwnerMissing || ownerInputMissing)) {
       toast({
         title: "Vanta owner required",
         description: "Save the Vanta owner identifier before enabling sync.",
