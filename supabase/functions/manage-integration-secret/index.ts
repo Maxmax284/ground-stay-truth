@@ -97,6 +97,8 @@ serve(async (req) => {
       "twilio_sms_from",
       "twilio_whatsapp_from",
       "messaging_bridge_internal_token",
+      // Vanta integration
+      "vanta_webhook_secret",
     ];
 
     if (!ALLOWED_KEYS.includes(key)) {
