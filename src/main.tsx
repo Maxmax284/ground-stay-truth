@@ -21,6 +21,17 @@ if (isPreviewHost || isInIframe) {
     registrations.forEach((r) => r.unregister());
   });
 } else {
+  navigator.serviceWorker?.getRegistration().then((reg) => {
+    reg?.update();
+  });
+
+  navigator.serviceWorker?.addEventListener("controllerchange", () => {
+    if (!sessionStorage.getItem("sw-controller-refreshed")) {
+      sessionStorage.setItem("sw-controller-refreshed", "1");
+      window.location.reload();
+    }
+  });
+
   // Force check for SW updates every 5 minutes so published changes propagate fast
   setInterval(() => {
     navigator.serviceWorker?.getRegistration().then((reg) => {
