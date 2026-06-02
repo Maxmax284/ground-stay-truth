@@ -214,7 +214,43 @@ export function VantaIntegrationPanel() {
                 {secretConfigured ? "Rotate" : "Set"}
               </Button>
             </div>
+            <div className="flex items-center gap-2 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={generateSecret}
+                disabled={setSecret.isPending}
+              >
+                <KeyRound className="h-4 w-4 mr-2" />
+                {secretConfigured ? "Generate & rotate" : "Generate secret"}
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Creates a strong random secret. Paste it into Vanta's webhook config.
+              </span>
+            </div>
+            {generatedSecret && (
+              <div className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
+                <div className="text-xs font-medium text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  Copy this now — it won't be shown again
+                </div>
+                <div className="flex gap-2">
+                  <Input readOnly value={generatedSecret} className="font-mono text-xs" onFocus={(e) => e.currentTarget.select()} />
+                  <Button type="button" size="sm" variant="secondary" onClick={copyGenerated}>
+                    <Copy className="h-4 w-4 mr-1" /> Copy
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setGeneratedSecret(null)}>
+                    Done
+                  </Button>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Paste into Vanta's "Webhook signing secret" field for this source, then click Done.
+                </div>
+              </div>
+            )}
           </div>
+
 
           <Button onClick={saveConnection} disabled={update.isPending}>Save connection</Button>
         </CardContent>
