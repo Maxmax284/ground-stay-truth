@@ -435,6 +435,14 @@ async function handlePaymentSuccess(
     });
   }
 
+  await dispatchVanta(supabaseUrl, serviceRoleKey, "payment.received", {
+    booking_id: bookingId,
+    session_id: event.sessionId ?? null,
+    amount: event.amountPaid ?? null,
+    currency: (event as any).currency ?? null,
+  }, `ground_truth_hub:payment.received:${event.sessionId ?? bookingId}`);
+
+
   // Trigger confirmation email
   try {
     await fetch(
