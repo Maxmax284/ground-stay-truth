@@ -68,6 +68,29 @@ export function VantaIntegrationPanel() {
     toast({ title: "Secret saved" });
   };
 
+  const generateSecret = async () => {
+    // 32 random bytes → base64url, ~43 chars. Strong enough for HMAC-SHA256.
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    const b64 = btoa(String.fromCharCode(...bytes))
+      .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    const value = `vws_${b64}`;
+    await setSecret.mutateAsync({ key: "vanta_webhook_secret", value });
+    await update.mutateAsync({ shared_secret_configured: true });
+    setGeneratedSecret(value);
+    toast({ title: "Secret generated", description: "Copy it now and paste into Vanta. It won't be shown again." });
+  };
+
+  const copyGenerated = async () => {
+    if (!generatedSecret) return;
+    try {
+      await navigator.clipboard.writeText(generatedSecret);
+      toast({ title: "Copied to clipboard" });
+    } catch {
+      toast({ title: "Copy failed", description: "Select and copy manually.", variant: "destructive" });
+    }
+  };
+
   const handleTest = async () => {
     try {
       const res = await sendTest.mutateAsync();
