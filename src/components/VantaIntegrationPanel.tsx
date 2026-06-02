@@ -36,10 +36,11 @@ export function VantaIntegrationPanel() {
   const effectiveUrl = url || session.vanta_webhook_url || "";
   const effectiveSource = sourceId || session.source_id || "";
   const effectiveOwnerIdentifier = ownerIdentifier ?? session.vanta_owner_identifier ?? "";
+  const ownerMissing = !effectiveOwnerIdentifier.trim();
 
   const statusBadge = () => {
     if (!session.enabled) return <Badge variant="secondary">Paused</Badge>;
-    if (!session.vanta_webhook_url) return <Badge variant="outline">Needs setup</Badge>;
+    if (!session.vanta_webhook_url || ownerMissing) return <Badge variant="outline">Needs setup</Badge>;
     if (!secretConfigured) return <Badge variant="outline">Needs secret</Badge>;
     if (session.status === "error") return <Badge variant="destructive">Error</Badge>;
     if (session.status === "live") return <Badge>Live</Badge>;
@@ -58,8 +59,9 @@ export function VantaIntegrationPanel() {
       vanta_webhook_url: effectiveUrl || null,
       source_id: effectiveSource || "gth_main",
       vanta_owner_identifier: effectiveOwnerIdentifier.trim() || null,
-      identity_strategy: effectiveOwnerIdentifier.trim() ? "vanta_owner" : "payload_user",
-      status: effectiveUrl ? "configured" : "needs_setup",
+      identity_strategy: "vanta_owner",
+      enabled: !!(effectiveUrl && effectiveOwnerIdentifier.trim() && session.enabled),
+      status: effectiveUrl && effectiveOwnerIdentifier.trim() ? "configured" : "needs_setup",
     });
     toast({ title: "Saved", description: "Connection updated." });
   };
@@ -97,6 +99,14 @@ export function VantaIntegrationPanel() {
 
   const handleTest = async () => {
     try {
+      if (ownerMissing) {
+        toast({
+          title: "Vanta owner required",
+          description: "Save the Vanta owner identifier before sending a test event.",
+          variant: "destructive",
+        });
+        return;
+      }
       const res: any = await sendTest.mutateAsync();
       const code = Number(res?.response_code ?? 0);
       // Trust the HTTP code first. ok is only false when Vanta actually rejected (4xx/5xx).
@@ -120,7 +130,7 @@ export function VantaIntegrationPanel() {
 
   const resetHealth = async () => {
     await update.mutateAsync({
-      status: session.enabled && session.vanta_webhook_url ? "live" : "configured",
+      status: session.enabled && session.vanta_webhook_url && !ownerMissing ? "live" : "needs_setup",
       failure_count: 0,
       last_error_summary: null,
       last_failure_at: null,
@@ -129,6 +139,14 @@ export function VantaIntegrationPanel() {
   };
 
   const toggleEnabled = async (on: boolean) => {
+    if (on && ownerMissing) {
+      toast({
+        title: "Vanta owner required",
+        description: "Save the Vanta owner identifier before enabling sync.",
+        variant: "destructive",
+      });
+      return;
+    }
     await update.mutateAsync({ enabled: on, status: on ? "live" : "paused" });
   };
 
