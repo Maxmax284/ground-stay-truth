@@ -25,12 +25,11 @@ function summarize(payload: Record<string, unknown>): Record<string, unknown> {
   return out;
 }
 
-function resolveEnvelopeUserId(session: any, payload: Record<string, unknown>): string | null {
+function resolveEnvelopeUserId(session: any): string | null {
   const ownerIdentifier = typeof session.vanta_owner_identifier === "string"
     ? session.vanta_owner_identifier.trim()
     : "";
-  if (session.identity_strategy === "vanta_owner" && ownerIdentifier) return ownerIdentifier;
-  return typeof payload.user_id === "string" ? payload.user_id : null;
+  return ownerIdentifier || null;
 }
 
 async function hmacSha256Hex(secret: string, message: string): Promise<string> {
@@ -101,7 +100,48 @@ Deno.serve(async (req) => {
     const eventId = crypto.randomUUID();
     const now = new Date().toISOString();
 
-    const envelopeUserId = resolveEnvelopeUserId(session, body.payload);
+    const summary = summarize(body.payload);
+    const envelopeUserId = resolveEnvelopeUserId(session);
+
+    if (!envelopeUserId) {
+      const errorSummary = "Vanta owner identifier required before sending outbound signals";
+      await supabase.from("vanta_event_log").upsert({
+        event_id: eventId,
+        event_type: body.event_type,
+        direction: "outbound_to_vanta",
+        status: "failed",
+        payload_summary: summary,
+        idempotency_key: body.idempotency_key,
+        sent_at: now,
+        failed_at: now,
+        retry_count: 0,
+        vanta_response_code: null,
+        error_summary: errorSummary,
+      }, { onConflict: "idempotency_key" });
+
+      await supabase.from("vanta_integration_session").update({
+        status: "needs_setup",
+        last_event_sent_at: now,
+        last_failure_at: null,
+        failure_count: 0,
+        last_error_summary: errorSummary,
+        last_response_code: null,
+        last_response_snippet: null,
+        last_event_id: eventId,
+        identity_strategy: "vanta_owner",
+      }).eq("id", session.id);
+
+      return new Response(JSON.stringify({
+        ok: false,
+        status: "misconfigured",
+        error: "vanta_owner_identifier_required",
+        event_id: eventId,
+        response_code: null,
+      }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const envelope = {
       event_id: eventId,
       event_type: body.event_type,
@@ -109,7 +149,7 @@ Deno.serve(async (req) => {
       source_id: session.source_id,
       environment: session.environment,
       user_id: envelopeUserId,
-      identity_strategy: session.identity_strategy ?? "payload_user",
+      identity_strategy: "vanta_owner",
       occurred_at: now,
       sent_at: now,
       idempotency_key: body.idempotency_key,
@@ -117,13 +157,13 @@ Deno.serve(async (req) => {
       payload: body.payload,
     };
 
-    const summary = summarize(body.payload);
     const envelopeJson = JSON.stringify(envelope);
 
     const { data: secretRow } = await supabase.rpc("get_integration_secret", { _key: "vanta_webhook_secret" });
     const secret = (typeof secretRow === "string" ? secretRow : "") ?? "";
     const timestamp = Math.floor(Date.now() / 1000).toString();
-    const signature = secret ? await hmacSha256Hex(secret, `${timestamp}.${envelopeJson}`) : "";
+    const signatureHex = secret ? await hmacSha256Hex(secret, `${timestamp}.${envelopeJson}`) : "";
+    const signature = signatureHex ? `sha256=${signatureHex}` : "";
 
     await supabase.from("vanta_event_log").upsert({
       event_id: eventId,

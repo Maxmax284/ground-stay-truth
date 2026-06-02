@@ -36,10 +36,12 @@ export function VantaIntegrationPanel() {
   const effectiveUrl = url || session.vanta_webhook_url || "";
   const effectiveSource = sourceId || session.source_id || "";
   const effectiveOwnerIdentifier = ownerIdentifier ?? session.vanta_owner_identifier ?? "";
+  const persistedOwnerMissing = !(session.vanta_owner_identifier ?? "").trim();
+  const ownerInputMissing = !effectiveOwnerIdentifier.trim();
 
   const statusBadge = () => {
     if (!session.enabled) return <Badge variant="secondary">Paused</Badge>;
-    if (!session.vanta_webhook_url) return <Badge variant="outline">Needs setup</Badge>;
+    if (!session.vanta_webhook_url || persistedOwnerMissing) return <Badge variant="outline">Needs setup</Badge>;
     if (!secretConfigured) return <Badge variant="outline">Needs secret</Badge>;
     if (session.status === "error") return <Badge variant="destructive">Error</Badge>;
     if (session.status === "live") return <Badge>Live</Badge>;
@@ -54,12 +56,17 @@ export function VantaIntegrationPanel() {
   };
 
   const saveConnection = async () => {
+    const nextOwnerIdentifier = effectiveOwnerIdentifier.trim();
     await update.mutateAsync({
       vanta_webhook_url: effectiveUrl || null,
       source_id: effectiveSource || "gth_main",
-      vanta_owner_identifier: effectiveOwnerIdentifier.trim() || null,
-      identity_strategy: effectiveOwnerIdentifier.trim() ? "vanta_owner" : "payload_user",
-      status: effectiveUrl ? "configured" : "needs_setup",
+      vanta_owner_identifier: nextOwnerIdentifier || null,
+      identity_strategy: "vanta_owner",
+      enabled: !!(effectiveUrl && nextOwnerIdentifier && session.enabled),
+      status: effectiveUrl && nextOwnerIdentifier ? "configured" : "needs_setup",
+      failure_count: nextOwnerIdentifier ? 0 : session.failure_count,
+      last_failure_at: nextOwnerIdentifier ? null : session.last_failure_at,
+      last_error_summary: nextOwnerIdentifier ? null : "Vanta owner identifier required before sending outbound signals",
     });
     toast({ title: "Saved", description: "Connection updated." });
   };
@@ -97,6 +104,22 @@ export function VantaIntegrationPanel() {
 
   const handleTest = async () => {
     try {
+      if (!session.vanta_webhook_url) {
+        toast({ title: "Webhook URL required", description: "Save the Vanta webhook URL before sending a test event.", variant: "destructive" });
+        return;
+      }
+      if (persistedOwnerMissing) {
+        toast({
+          title: "Vanta owner required",
+          description: "Save the Vanta owner identifier before sending a test event.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!session.enabled) {
+        toast({ title: "Sync is paused", description: "Enable sync before sending a test event.", variant: "destructive" });
+        return;
+      }
       const res: any = await sendTest.mutateAsync();
       const code = Number(res?.response_code ?? 0);
       // Trust the HTTP code first. ok is only false when Vanta actually rejected (4xx/5xx).
@@ -120,7 +143,7 @@ export function VantaIntegrationPanel() {
 
   const resetHealth = async () => {
     await update.mutateAsync({
-      status: session.enabled && session.vanta_webhook_url ? "live" : "configured",
+      status: session.enabled && session.vanta_webhook_url && !persistedOwnerMissing ? "live" : "needs_setup",
       failure_count: 0,
       last_error_summary: null,
       last_failure_at: null,
@@ -129,6 +152,14 @@ export function VantaIntegrationPanel() {
   };
 
   const toggleEnabled = async (on: boolean) => {
+    if (on && (persistedOwnerMissing || ownerInputMissing)) {
+      toast({
+        title: "Vanta owner required",
+        description: "Save the Vanta owner identifier before enabling sync.",
+        variant: "destructive",
+      });
+      return;
+    }
     await update.mutateAsync({ enabled: on, status: on ? "live" : "paused" });
   };
 
@@ -214,14 +245,14 @@ export function VantaIntegrationPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label>Vanta owner identifier</Label>
+            <Label>Vanta owner UUID</Label>
             <Input
               value={effectiveOwnerIdentifier}
               onChange={(e) => setOwnerIdentifier(e.target.value)}
-              placeholder="Vanta user, workspace, org, or service account ID"
+              placeholder="Paste the Vanta workspace owner UUID"
             />
             <p className="text-xs text-muted-foreground">
-              Used as the root user_id Vanta authorizes against. Event payloads still keep the original local actor IDs inside payload.
+              Used as the root user_id and X-Vanta-Owner value. Event payloads still keep original local actor IDs inside payload.
             </p>
           </div>
 
