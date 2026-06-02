@@ -12,7 +12,7 @@ import { toast } from "@/hooks/use-toast";
 import { useVantaSession, useUpdateVantaSession, useVantaEventLog, useSendVantaTestEvent } from "@/hooks/useVantaIntegration";
 import { useSecretStatuses, useSetSecret } from "@/hooks/useIntegrationSecrets";
 import { VANTA_EVENT_TYPES, VANTA_EVENT_LABELS, VANTA_EVENT_SENSITIVE, type VantaEventType } from "@/lib/vanta/events";
-import { AlertTriangle, CheckCircle2, ChevronDown, PauseCircle, Send } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronDown, Copy, KeyRound, PauseCircle, Send } from "lucide-react";
 
 export function VantaIntegrationPanel() {
   const { data: session, isLoading } = useVantaSession();
@@ -25,6 +25,7 @@ export function VantaIntegrationPanel() {
   const [url, setUrl] = useState("");
   const [sourceId, setSourceId] = useState("");
   const [secretInput, setSecretInput] = useState("");
+  const [generatedSecret, setGeneratedSecret] = useState<string | null>(null);
 
   if (isLoading || !session) {
     return <div className="text-sm text-muted-foreground">Loading…</div>;
@@ -65,6 +66,29 @@ export function VantaIntegrationPanel() {
     await update.mutateAsync({ shared_secret_configured: true });
     setSecretInput("");
     toast({ title: "Secret saved" });
+  };
+
+  const generateSecret = async () => {
+    // 32 random bytes → base64url, ~43 chars. Strong enough for HMAC-SHA256.
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    const b64 = btoa(String.fromCharCode(...bytes))
+      .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    const value = `vws_${b64}`;
+    await setSecret.mutateAsync({ key: "vanta_webhook_secret", value });
+    await update.mutateAsync({ shared_secret_configured: true });
+    setGeneratedSecret(value);
+    toast({ title: "Secret generated", description: "Copy it now and paste into Vanta. It won't be shown again." });
+  };
+
+  const copyGenerated = async () => {
+    if (!generatedSecret) return;
+    try {
+      await navigator.clipboard.writeText(generatedSecret);
+      toast({ title: "Copied to clipboard" });
+    } catch {
+      toast({ title: "Copy failed", description: "Select and copy manually.", variant: "destructive" });
+    }
   };
 
   const handleTest = async () => {
@@ -190,7 +214,43 @@ export function VantaIntegrationPanel() {
                 {secretConfigured ? "Rotate" : "Set"}
               </Button>
             </div>
+            <div className="flex items-center gap-2 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={generateSecret}
+                disabled={setSecret.isPending}
+              >
+                <KeyRound className="h-4 w-4 mr-2" />
+                {secretConfigured ? "Generate & rotate" : "Generate secret"}
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Creates a strong random secret. Paste it into Vanta's webhook config.
+              </span>
+            </div>
+            {generatedSecret && (
+              <div className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
+                <div className="text-xs font-medium text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  Copy this now — it won't be shown again
+                </div>
+                <div className="flex gap-2">
+                  <Input readOnly value={generatedSecret} className="font-mono text-xs" onFocus={(e) => e.currentTarget.select()} />
+                  <Button type="button" size="sm" variant="secondary" onClick={copyGenerated}>
+                    <Copy className="h-4 w-4 mr-1" /> Copy
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setGeneratedSecret(null)}>
+                    Done
+                  </Button>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Paste into Vanta's "Webhook signing secret" field for this source, then click Done.
+                </div>
+              </div>
+            )}
           </div>
+
 
           <Button onClick={saveConnection} disabled={update.isPending}>Save connection</Button>
         </CardContent>
