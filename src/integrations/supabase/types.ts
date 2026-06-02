@@ -2823,6 +2823,7 @@ export type Database = {
           environment: string
           failure_count: number
           id: string
+          identity_strategy: string
           last_error_summary: string | null
           last_event_sent_at: string | null
           last_failure_at: string | null
@@ -2834,6 +2835,7 @@ export type Database = {
           status: string
           updated_at: string
           updated_by: string | null
+          vanta_owner_identifier: string | null
           vanta_webhook_url: string | null
         }
         Insert: {
@@ -2844,6 +2846,7 @@ export type Database = {
           environment?: string
           failure_count?: number
           id?: string
+          identity_strategy?: string
           last_error_summary?: string | null
           last_event_sent_at?: string | null
           last_failure_at?: string | null
@@ -2855,6 +2858,7 @@ export type Database = {
           status?: string
           updated_at?: string
           updated_by?: string | null
+          vanta_owner_identifier?: string | null
           vanta_webhook_url?: string | null
         }
         Update: {
@@ -2865,6 +2869,7 @@ export type Database = {
           environment?: string
           failure_count?: number
           id?: string
+          identity_strategy?: string
           last_error_summary?: string | null
           last_event_sent_at?: string | null
           last_failure_at?: string | null
@@ -2876,6 +2881,7 @@ export type Database = {
           status?: string
           updated_at?: string
           updated_by?: string | null
+          vanta_owner_identifier?: string | null
           vanta_webhook_url?: string | null
         }
         Relationships: []

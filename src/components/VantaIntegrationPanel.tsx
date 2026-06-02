@@ -24,6 +24,7 @@ export function VantaIntegrationPanel() {
 
   const [url, setUrl] = useState("");
   const [sourceId, setSourceId] = useState("");
+  const [ownerIdentifier, setOwnerIdentifier] = useState<string | null>(null);
   const [secretInput, setSecretInput] = useState("");
   const [generatedSecret, setGeneratedSecret] = useState<string | null>(null);
 
@@ -34,6 +35,7 @@ export function VantaIntegrationPanel() {
   const secretConfigured = !!secrets?.["vanta_webhook_secret"]?.configured;
   const effectiveUrl = url || session.vanta_webhook_url || "";
   const effectiveSource = sourceId || session.source_id || "";
+  const effectiveOwnerIdentifier = ownerIdentifier ?? session.vanta_owner_identifier ?? "";
 
   const statusBadge = () => {
     if (!session.enabled) return <Badge variant="secondary">Paused</Badge>;
@@ -55,6 +57,8 @@ export function VantaIntegrationPanel() {
     await update.mutateAsync({
       vanta_webhook_url: effectiveUrl || null,
       source_id: effectiveSource || "gth_main",
+      vanta_owner_identifier: effectiveOwnerIdentifier.trim() || null,
+      identity_strategy: effectiveOwnerIdentifier.trim() ? "vanta_owner" : "payload_user",
       status: effectiveUrl ? "configured" : "needs_setup",
     });
     toast({ title: "Saved", description: "Connection updated." });
@@ -188,6 +192,18 @@ export function VantaIntegrationPanel() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Vanta owner identifier</Label>
+            <Input
+              value={effectiveOwnerIdentifier}
+              onChange={(e) => setOwnerIdentifier(e.target.value)}
+              placeholder="Vanta user, workspace, org, or service account ID"
+            />
+            <p className="text-xs text-muted-foreground">
+              Used as the root user_id Vanta authorizes against. Event payloads still keep the original local actor IDs inside payload.
+            </p>
           </div>
 
           <div className="space-y-2">
