@@ -20,6 +20,7 @@ const SECRET_KEYS = [
   "whatsapp_meta_business_account_id",
   "whatsapp_meta_access_token",
   "whatsapp_meta_webhook_verify_token",
+  "vanta_webhook_secret",
 ] as const;
 
 type SecretKey = (typeof SECRET_KEYS)[number];

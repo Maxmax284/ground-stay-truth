@@ -2763,6 +2763,123 @@ export type Database = {
         }
         Relationships: []
       }
+      vanta_event_log: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          direction: string
+          error_summary: string | null
+          event_id: string
+          event_type: string
+          failed_at: string | null
+          id: string
+          idempotency_key: string
+          payload_summary: Json
+          retry_count: number
+          sent_at: string | null
+          status: string
+          vanta_response_code: number | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          direction?: string
+          error_summary?: string | null
+          event_id: string
+          event_type: string
+          failed_at?: string | null
+          id?: string
+          idempotency_key: string
+          payload_summary?: Json
+          retry_count?: number
+          sent_at?: string | null
+          status?: string
+          vanta_response_code?: number | null
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          direction?: string
+          error_summary?: string | null
+          event_id?: string
+          event_type?: string
+          failed_at?: string | null
+          id?: string
+          idempotency_key?: string
+          payload_summary?: Json
+          retry_count?: number
+          sent_at?: string | null
+          status?: string
+          vanta_response_code?: number | null
+        }
+        Relationships: []
+      }
+      vanta_integration_session: {
+        Row: {
+          allowed_events: Json
+          callback_mode: string
+          created_at: string
+          enabled: boolean
+          environment: string
+          failure_count: number
+          id: string
+          last_error_summary: string | null
+          last_event_sent_at: string | null
+          last_failure_at: string | null
+          last_success_at: string | null
+          platform_key: string
+          platform_name: string
+          shared_secret_configured: boolean
+          source_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          vanta_webhook_url: string | null
+        }
+        Insert: {
+          allowed_events?: Json
+          callback_mode?: string
+          created_at?: string
+          enabled?: boolean
+          environment?: string
+          failure_count?: number
+          id?: string
+          last_error_summary?: string | null
+          last_event_sent_at?: string | null
+          last_failure_at?: string | null
+          last_success_at?: string | null
+          platform_key?: string
+          platform_name?: string
+          shared_secret_configured?: boolean
+          source_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          vanta_webhook_url?: string | null
+        }
+        Update: {
+          allowed_events?: Json
+          callback_mode?: string
+          created_at?: string
+          enabled?: boolean
+          environment?: string
+          failure_count?: number
+          id?: string
+          last_error_summary?: string | null
+          last_event_sent_at?: string | null
+          last_failure_at?: string | null
+          last_success_at?: string | null
+          platform_key?: string
+          platform_name?: string
+          shared_secret_configured?: boolean
+          source_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          vanta_webhook_url?: string | null
+        }
+        Relationships: []
+      }
       webhook_health: {
         Row: {
           id: string

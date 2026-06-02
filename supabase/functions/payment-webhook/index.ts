@@ -435,6 +435,14 @@ async function handlePaymentSuccess(
     });
   }
 
+  await dispatchVanta(supabaseUrl, serviceRoleKey, "payment.received", {
+    booking_id: bookingId,
+    session_id: event.sessionId ?? null,
+    amount: event.amountPaid ?? null,
+    currency: (event as any).currency ?? null,
+  }, `ground_truth_hub:payment.received:${event.sessionId ?? bookingId}`);
+
+
   // Trigger confirmation email
   try {
     await fetch(
@@ -470,6 +478,33 @@ async function dispatchNotify(
     });
   } catch (err) {
     console.warn("notify-via-messaging dispatch failed:", err);
+  }
+}
+
+// ── Helper: fire-and-forget Vanta signal. Never blocks payment flow. ──
+async function dispatchVanta(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  event_type: "payment.received" | "payment.failed",
+  payload: Record<string, unknown>,
+  idempotency_key: string,
+) {
+  try {
+    await fetch(`${supabaseUrl}/functions/v1/vanta-emit`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${serviceRoleKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        event_type,
+        payload,
+        idempotency_key,
+        internal_token: serviceRoleKey,
+      }),
+    });
+  } catch (err) {
+    console.warn("vanta-emit dispatch failed:", err);
   }
 }
 
@@ -512,6 +547,12 @@ async function handlePaymentFailed(
       subject_id: event.bookingId,
       metadata: { amount: event.amountPaid, reason: "card declined" },
     });
+    await dispatchVanta(supabaseUrl, serviceRoleKey, "payment.failed", {
+      booking_id: event.bookingId,
+      session_id: event.sessionId ?? null,
+      amount: event.amountPaid ?? null,
+      currency: (event as any).currency ?? null,
+    }, `ground_truth_hub:payment.failed:${event.sessionId ?? event.bookingId}`);
   }
 }
 
