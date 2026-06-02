@@ -1,8 +1,9 @@
 {
-  "name": "Ground Stay",
+  "name": "Ground Stay — Lamai Muay Thai",
   "short_name": "Ground Stay",
-  "description": "Accommodation booking platform for Koh Samui",
-  "start_url": "/stay",
+  "description": "Your stay at Lamai Muay Thai, Koh Samui",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#1a1a2e",
   "theme_color": "#1a1a2e",
