@@ -195,6 +195,18 @@ export function VantaIntegrationPanel() {
           </div>
 
           <div className="space-y-2">
+            <Label>Vanta owner identifier</Label>
+            <Input
+              value={ownerIdentifier || session.vanta_owner_identifier || ""}
+              onChange={(e) => setOwnerIdentifier(e.target.value)}
+              placeholder="Vanta user, workspace, org, or service account ID"
+            />
+            <p className="text-xs text-muted-foreground">
+              Used as the root user_id Vanta authorizes against. Event payloads still keep the original local actor IDs inside payload.
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <Label>Shared signing secret</Label>
             <div className="flex items-center gap-2 text-sm">
               {secretConfigured ? (
