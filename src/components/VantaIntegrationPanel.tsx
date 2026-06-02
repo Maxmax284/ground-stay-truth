@@ -12,7 +12,7 @@ import { toast } from "@/hooks/use-toast";
 import { useVantaSession, useUpdateVantaSession, useVantaEventLog, useSendVantaTestEvent } from "@/hooks/useVantaIntegration";
 import { useSecretStatuses, useSetSecret } from "@/hooks/useIntegrationSecrets";
 import { VANTA_EVENT_TYPES, VANTA_EVENT_LABELS, VANTA_EVENT_SENSITIVE, type VantaEventType } from "@/lib/vanta/events";
-import { AlertTriangle, CheckCircle2, ChevronDown, PauseCircle, Send } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronDown, Copy, KeyRound, PauseCircle, Send } from "lucide-react";
 
 export function VantaIntegrationPanel() {
   const { data: session, isLoading } = useVantaSession();
