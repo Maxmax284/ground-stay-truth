@@ -13,6 +13,7 @@ import { ArrivalWelcomeEditor } from "@/components/ArrivalWelcomeEditor";
 import { SecurityEventLog } from "@/components/SecurityEventLog";
 import { IntelligenceEditor } from "@/components/IntelligenceEditor";
 import PropertyManagementPanel from "@/components/PropertyManagementPanel";
+import { VantaIntegrationPanel } from "@/components/VantaIntegrationPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 
@@ -47,6 +48,7 @@ const Settings = () => {
             {canManageReviews && <TabsTrigger value="reviews" className="text-xs sm:text-sm">{t("settings.reviewsTab")}</TabsTrigger>}
             {isAdmin && <TabsTrigger value="security" className="text-xs sm:text-sm">Security</TabsTrigger>}
             {isAdmin && <TabsTrigger value="intelligence" className="text-xs sm:text-sm">Intel</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="vanta" className="text-xs sm:text-sm">Vanta</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="profile"><ProfileEditor /></TabsContent>
@@ -61,6 +63,7 @@ const Settings = () => {
           {canManageReviews && <TabsContent value="reviews"><ReviewsManager /></TabsContent>}
           {isAdmin && <TabsContent value="security"><SecurityEventLog /></TabsContent>}
           {isAdmin && <TabsContent value="intelligence"><IntelligenceEditor /></TabsContent>}
+          {isAdmin && <TabsContent value="vanta"><VantaIntegrationPanel /></TabsContent>}
         </Tabs>
       </div>
     </DashboardLayout>
