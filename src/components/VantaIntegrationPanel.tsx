@@ -347,10 +347,36 @@ export function VantaIntegrationPanel() {
             <Button onClick={handleTest} disabled={sendTest.isPending} variant="secondary">
               <Send className="h-4 w-4 mr-2" /> Send test event
             </Button>
+            <Button onClick={resetHealth} variant="outline" disabled={update.isPending}>
+              Reset health
+            </Button>
             <Button onClick={disconnect} variant="destructive">Disconnect</Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Outbound diagnostics — ground truth from our last send */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Outbound diagnostics</CardTitle>
+          <CardDescription>What we actually saw on the last send to Vanta.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+          <Stat label="Last sent" value={fmt(session.last_event_sent_at)} />
+          <Stat label="Last status code" value={session.last_response_code ? String(session.last_response_code) : "—"} />
+          <Stat label="Last event id" value={session.last_event_id ?? "—"} />
+          <Stat label="Health" value={session.status} />
+          {session.last_response_snippet && (
+            <div className="col-span-2 sm:col-span-4">
+              <div className="text-xs text-muted-foreground mb-1">Last response body</div>
+              <pre className="text-xs bg-muted/40 rounded p-2 overflow-x-auto whitespace-pre-wrap break-all">
+                {session.last_response_snippet}
+              </pre>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
 
       {/* Logs */}
       <Card>
