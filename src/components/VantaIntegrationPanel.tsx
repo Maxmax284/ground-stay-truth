@@ -24,7 +24,7 @@ export function VantaIntegrationPanel() {
 
   const [url, setUrl] = useState("");
   const [sourceId, setSourceId] = useState("");
-  const [ownerIdentifier, setOwnerIdentifier] = useState("");
+  const [ownerIdentifier, setOwnerIdentifier] = useState<string | null>(null);
   const [secretInput, setSecretInput] = useState("");
   const [generatedSecret, setGeneratedSecret] = useState<string | null>(null);
 
@@ -35,7 +35,7 @@ export function VantaIntegrationPanel() {
   const secretConfigured = !!secrets?.["vanta_webhook_secret"]?.configured;
   const effectiveUrl = url || session.vanta_webhook_url || "";
   const effectiveSource = sourceId || session.source_id || "";
-  const effectiveOwnerIdentifier = ownerIdentifier || session.vanta_owner_identifier || "";
+  const effectiveOwnerIdentifier = ownerIdentifier ?? session.vanta_owner_identifier ?? "";
 
   const statusBadge = () => {
     if (!session.enabled) return <Badge variant="secondary">Paused</Badge>;
@@ -197,7 +197,7 @@ export function VantaIntegrationPanel() {
           <div className="space-y-2">
             <Label>Vanta owner identifier</Label>
             <Input
-              value={ownerIdentifier || session.vanta_owner_identifier || ""}
+              value={effectiveOwnerIdentifier}
               onChange={(e) => setOwnerIdentifier(e.target.value)}
               placeholder="Vanta user, workspace, org, or service account ID"
             />
