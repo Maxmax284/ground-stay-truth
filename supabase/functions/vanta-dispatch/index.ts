@@ -80,8 +80,9 @@ Deno.serve(async (req) => {
       });
     }
 
+    const isTestEvent = body.event_type === "integration.test";
     const allowed: string[] = Array.isArray(session.allowed_events) ? session.allowed_events : [];
-    if (!session.enabled || !session.vanta_webhook_url || !allowed.includes(body.event_type)) {
+    if (!session.vanta_webhook_url || (!isTestEvent && (!session.enabled || !allowed.includes(body.event_type)))) {
       return new Response(JSON.stringify({ skipped: "disabled_or_not_allowed" }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
