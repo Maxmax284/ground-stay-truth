@@ -21,8 +21,8 @@ if (isPreviewHost || isInIframe) {
     registrations.forEach((r) => r.unregister());
   });
 } else {
-  navigator.serviceWorker?.getRegistration().then((reg) => {
-    reg?.update();
+  navigator.serviceWorker?.register("/sw.js", { scope: "/" }).then((reg) => {
+    reg.update();
   });
 
   navigator.serviceWorker?.addEventListener("controllerchange", () => {
