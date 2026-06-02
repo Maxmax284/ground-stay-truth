@@ -20,6 +20,9 @@ export interface VantaSession {
   last_failure_at: string | null;
   failure_count: number;
   last_error_summary: string | null;
+  last_response_code: number | null;
+  last_response_snippet: string | null;
+  last_event_id: string | null;
 }
 
 export interface VantaLogRow {

@@ -2825,8 +2825,11 @@ export type Database = {
           id: string
           identity_strategy: string
           last_error_summary: string | null
+          last_event_id: string | null
           last_event_sent_at: string | null
           last_failure_at: string | null
+          last_response_code: number | null
+          last_response_snippet: string | null
           last_success_at: string | null
           platform_key: string
           platform_name: string
@@ -2848,8 +2851,11 @@ export type Database = {
           id?: string
           identity_strategy?: string
           last_error_summary?: string | null
+          last_event_id?: string | null
           last_event_sent_at?: string | null
           last_failure_at?: string | null
+          last_response_code?: number | null
+          last_response_snippet?: string | null
           last_success_at?: string | null
           platform_key?: string
           platform_name?: string
@@ -2871,8 +2877,11 @@ export type Database = {
           id?: string
           identity_strategy?: string
           last_error_summary?: string | null
+          last_event_id?: string | null
           last_event_sent_at?: string | null
           last_failure_at?: string | null
+          last_response_code?: number | null
+          last_response_snippet?: string | null
           last_success_at?: string | null
           platform_key?: string
           platform_name?: string

@@ -97,16 +97,35 @@ export function VantaIntegrationPanel() {
 
   const handleTest = async () => {
     try {
-      const res = await sendTest.mutateAsync();
-      const ok = (res as any)?.ok;
-      toast({
-        title: ok ? "Test event accepted" : "Test event failed",
-        description: `Response code: ${(res as any)?.response_code ?? "n/a"}`,
-        variant: ok ? "default" : "destructive",
-      });
+      const res: any = await sendTest.mutateAsync();
+      const code = Number(res?.response_code ?? 0);
+      // Trust the HTTP code first. ok is only false when Vanta actually rejected (4xx/5xx).
+      const accepted = code >= 200 && code < 300;
+      if (accepted) {
+        toast({
+          title: "Test event accepted",
+          description: `Vanta responded ${code}. Health reset to live.`,
+        });
+      } else {
+        toast({
+          title: "Test event not accepted",
+          description: `Response code: ${code || "n/a"}${res?.status ? ` · ${res.status}` : ""}`,
+          variant: "destructive",
+        });
+      }
     } catch (e: any) {
       toast({ title: "Test failed", description: e.message, variant: "destructive" });
     }
+  };
+
+  const resetHealth = async () => {
+    await update.mutateAsync({
+      status: session.enabled && session.vanta_webhook_url ? "live" : "configured",
+      failure_count: 0,
+      last_error_summary: null,
+      last_failure_at: null,
+    } as any);
+    toast({ title: "Health reset", description: "Stale failure state cleared." });
   };
 
   const toggleEnabled = async (on: boolean) => {
@@ -328,10 +347,36 @@ export function VantaIntegrationPanel() {
             <Button onClick={handleTest} disabled={sendTest.isPending} variant="secondary">
               <Send className="h-4 w-4 mr-2" /> Send test event
             </Button>
+            <Button onClick={resetHealth} variant="outline" disabled={update.isPending}>
+              Reset health
+            </Button>
             <Button onClick={disconnect} variant="destructive">Disconnect</Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Outbound diagnostics — ground truth from our last send */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Outbound diagnostics</CardTitle>
+          <CardDescription>What we actually saw on the last send to Vanta.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+          <Stat label="Last sent" value={fmt(session.last_event_sent_at)} />
+          <Stat label="Last status code" value={session.last_response_code ? String(session.last_response_code) : "—"} />
+          <Stat label="Last event id" value={session.last_event_id ?? "—"} />
+          <Stat label="Health" value={session.status} />
+          {session.last_response_snippet && (
+            <div className="col-span-2 sm:col-span-4">
+              <div className="text-xs text-muted-foreground mb-1">Last response body</div>
+              <pre className="text-xs bg-muted/40 rounded p-2 overflow-x-auto whitespace-pre-wrap break-all">
+                {session.last_response_snippet}
+              </pre>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
 
       {/* Logs */}
       <Card>

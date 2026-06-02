@@ -181,9 +181,13 @@ Deno.serve(async (req) => {
     await supabase.from("vanta_integration_session").update({
       last_event_sent_at: new Date().toISOString(),
       last_success_at: ok ? new Date().toISOString() : session.last_success_at,
-      last_failure_at: ok ? session.last_failure_at : new Date().toISOString(),
+      // On success, fully clear stale failure state so the UI stops yelling.
+      last_failure_at: ok ? null : new Date().toISOString(),
       failure_count: ok ? 0 : (session.failure_count ?? 0) + 1,
       last_error_summary: ok ? null : (lastError || responseBody).slice(0, 500),
+      last_response_code: responseCode || null,
+      last_response_snippet: responseBody ? responseBody.slice(0, 500) : null,
+      last_event_id: eventId,
       status: ok ? "live" : "error",
     }).eq("id", session.id);
 
