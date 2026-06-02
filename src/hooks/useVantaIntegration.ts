@@ -8,6 +8,8 @@ export interface VantaSession {
   environment: "sandbox" | "production";
   vanta_webhook_url: string | null;
   source_id: string;
+  vanta_owner_identifier: string | null;
+  identity_strategy: "vanta_owner" | "payload_user";
   enabled: boolean;
   status: string;
   shared_secret_configured: boolean;
