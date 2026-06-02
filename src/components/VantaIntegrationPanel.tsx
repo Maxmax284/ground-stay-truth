@@ -26,7 +26,6 @@ export function VantaIntegrationPanel() {
   const sendTest = useSendVantaTestEvent();
 
   const [url, setUrl] = useState("");
-  const [sourceId, setSourceId] = useState("");
   const [secretInput, setSecretInput] = useState("");
   const [generatedSecret, setGeneratedSecret] = useState<string | null>(null);
 
@@ -36,7 +35,6 @@ export function VantaIntegrationPanel() {
 
   const secretConfigured = !!secrets?.["vanta_webhook_secret"]?.configured;
   const effectiveUrl = url || session.vanta_webhook_url || "";
-  const effectiveSource = sourceId || session.source_id || VANTA_SOURCE_ID;
 
   const statusBadge = () => {
     if (!session.enabled) return <Badge variant="secondary">Paused</Badge>;
@@ -55,10 +53,9 @@ export function VantaIntegrationPanel() {
   };
 
   const saveConnection = async () => {
-    const nextSourceId = (effectiveSource || VANTA_SOURCE_ID).trim();
     await update.mutateAsync({
       vanta_webhook_url: effectiveUrl || null,
-      source_id: nextSourceId || VANTA_SOURCE_ID,
+      source_id: VANTA_SOURCE_ID,
       vanta_owner_identifier: VANTA_OWNER_IDENTIFIER,
       identity_strategy: "vanta_owner",
       enabled: !!(effectiveUrl && session.enabled),
@@ -107,10 +104,6 @@ export function VantaIntegrationPanel() {
         toast({ title: "Webhook URL required", description: "Save the Vanta webhook URL before sending a test event.", variant: "destructive" });
         return;
       }
-      if (!session.enabled) {
-        toast({ title: "Sync is paused", description: "Enable sync before sending a test event.", variant: "destructive" });
-        return;
-      }
       const res: any = await sendTest.mutateAsync();
       const code = Number(res?.response_code ?? 0);
       // Trust the HTTP code first. ok is only false when Vanta actually rejected (4xx/5xx).
@@ -150,7 +143,7 @@ export function VantaIntegrationPanel() {
       status: on ? "live" : "paused",
       vanta_owner_identifier: VANTA_OWNER_IDENTIFIER,
       identity_strategy: "vanta_owner",
-      source_id: effectiveSource || VANTA_SOURCE_ID,
+      source_id: VANTA_SOURCE_ID,
       failure_count: on ? 0 : session.failure_count,
       last_error_summary: on ? null : session.last_error_summary,
     });
