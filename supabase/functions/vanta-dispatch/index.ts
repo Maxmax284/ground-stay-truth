@@ -7,6 +7,8 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const SCHEMA_VERSION = "1.0";
 const INTERNAL_TOKEN = Deno.env.get("VANTA_INTERNAL_TOKEN") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const VANTA_SOURCE_ID = "ground_truth_hub";
+const VANTA_OWNER_IDENTIFIER = "761b9440-c013-4b5a-a77a-53d826cd4329";
 
 interface DispatchRequest {
   event_type: string;
@@ -29,7 +31,7 @@ function resolveEnvelopeUserId(session: any): string | null {
   const ownerIdentifier = typeof session.vanta_owner_identifier === "string"
     ? session.vanta_owner_identifier.trim()
     : "";
-  return ownerIdentifier || null;
+  return ownerIdentifier || VANTA_OWNER_IDENTIFIER;
 }
 
 async function hmacSha256Hex(secret: string, message: string): Promise<string> {
@@ -78,8 +80,9 @@ Deno.serve(async (req) => {
       });
     }
 
+    const isTestEvent = body.event_type === "integration.test";
     const allowed: string[] = Array.isArray(session.allowed_events) ? session.allowed_events : [];
-    if (!session.enabled || !session.vanta_webhook_url || !allowed.includes(body.event_type)) {
+    if (!session.vanta_webhook_url || (!isTestEvent && (!session.enabled || !allowed.includes(body.event_type)))) {
       return new Response(JSON.stringify({ skipped: "disabled_or_not_allowed" }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -103,50 +106,13 @@ Deno.serve(async (req) => {
     const summary = summarize(body.payload);
     const envelopeUserId = resolveEnvelopeUserId(session);
 
-    if (!envelopeUserId) {
-      const errorSummary = "Vanta owner identifier required before sending outbound signals";
-      await supabase.from("vanta_event_log").upsert({
-        event_id: eventId,
-        event_type: body.event_type,
-        direction: "outbound_to_vanta",
-        status: "failed",
-        payload_summary: summary,
-        idempotency_key: body.idempotency_key,
-        sent_at: now,
-        failed_at: now,
-        retry_count: 0,
-        vanta_response_code: null,
-        error_summary: errorSummary,
-      }, { onConflict: "idempotency_key" });
-
-      await supabase.from("vanta_integration_session").update({
-        status: "needs_setup",
-        last_event_sent_at: now,
-        last_failure_at: null,
-        failure_count: 0,
-        last_error_summary: errorSummary,
-        last_response_code: null,
-        last_response_snippet: null,
-        last_event_id: eventId,
-        identity_strategy: "vanta_owner",
-      }).eq("id", session.id);
-
-      return new Response(JSON.stringify({
-        ok: false,
-        status: "misconfigured",
-        error: "vanta_owner_identifier_required",
-        event_id: eventId,
-        response_code: null,
-      }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const sourceId = VANTA_SOURCE_ID;
 
     const envelope = {
       event_id: eventId,
       event_type: body.event_type,
       source_platform: session.platform_key,
-      source_id: session.source_id,
+      source_id: sourceId,
       environment: session.environment,
       user_id: envelopeUserId,
       identity_strategy: "vanta_owner",
@@ -188,9 +154,9 @@ Deno.serve(async (req) => {
             "Content-Type": "application/json",
             "X-Vanta-Signature": signature,
             "X-Vanta-Timestamp": timestamp,
-            "X-Vanta-Source": session.source_id,
+            "X-Vanta-Source": sourceId,
             "X-Vanta-Event-Id": eventId,
-            ...(envelopeUserId ? { "X-Vanta-Owner": envelopeUserId } : {}),
+            "X-Vanta-Owner": envelopeUserId,
           },
           body: envelopeJson,
         });
