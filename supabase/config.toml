@@ -104,3 +104,6 @@ verify_jwt = false
 
 [functions.guest-payment-link]
 verify_jwt = false
+
+[functions.vanta-emit]
+verify_jwt = false

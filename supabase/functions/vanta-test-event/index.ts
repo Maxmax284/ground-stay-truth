@@ -49,6 +49,7 @@ Deno.serve(async (req) => {
         event_type: "integration.test",
         payload: {
           message: "Test signal from Ground Truth Hub",
+          user_id: user.id,
           created_by: user.email ?? user.id,
           test: true,
         },

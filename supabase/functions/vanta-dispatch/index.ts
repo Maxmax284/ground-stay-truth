@@ -99,6 +99,7 @@ Deno.serve(async (req) => {
       source_platform: session.platform_key,
       source_id: session.source_id,
       environment: session.environment,
+      user_id: typeof body.payload.user_id === "string" ? body.payload.user_id : null,
       occurred_at: now,
       sent_at: now,
       idempotency_key: body.idempotency_key,
