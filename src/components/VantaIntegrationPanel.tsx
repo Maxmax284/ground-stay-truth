@@ -25,6 +25,7 @@ export function VantaIntegrationPanel() {
   const [url, setUrl] = useState("");
   const [sourceId, setSourceId] = useState("");
   const [secretInput, setSecretInput] = useState("");
+  const [generatedSecret, setGeneratedSecret] = useState<string | null>(null);
 
   if (isLoading || !session) {
     return <div className="text-sm text-muted-foreground">Loading…</div>;
