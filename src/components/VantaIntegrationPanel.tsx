@@ -56,13 +56,17 @@ export function VantaIntegrationPanel() {
   };
 
   const saveConnection = async () => {
+    const nextOwnerIdentifier = effectiveOwnerIdentifier.trim();
     await update.mutateAsync({
       vanta_webhook_url: effectiveUrl || null,
       source_id: effectiveSource || "gth_main",
-      vanta_owner_identifier: effectiveOwnerIdentifier.trim() || null,
+      vanta_owner_identifier: nextOwnerIdentifier || null,
       identity_strategy: "vanta_owner",
-      enabled: !!(effectiveUrl && effectiveOwnerIdentifier.trim() && session.enabled),
-      status: effectiveUrl && effectiveOwnerIdentifier.trim() ? "configured" : "needs_setup",
+      enabled: !!(effectiveUrl && nextOwnerIdentifier && session.enabled),
+      status: effectiveUrl && nextOwnerIdentifier ? "configured" : "needs_setup",
+      failure_count: nextOwnerIdentifier ? 0 : session.failure_count,
+      last_failure_at: nextOwnerIdentifier ? null : session.last_failure_at,
+      last_error_summary: nextOwnerIdentifier ? null : "Vanta owner identifier required before sending outbound signals",
     });
     toast({ title: "Saved", description: "Connection updated." });
   };
