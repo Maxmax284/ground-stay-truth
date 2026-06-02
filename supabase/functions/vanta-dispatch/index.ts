@@ -109,7 +109,8 @@ Deno.serve(async (req) => {
     const summary = summarize(body.payload);
     const envelopeJson = JSON.stringify(envelope);
 
-    const secret = Deno.env.get("VANTA_WEBHOOK_SECRET") ?? "";
+    const { data: secretRow } = await supabase.rpc("get_integration_secret", { _key: "vanta_webhook_secret" });
+    const secret = (typeof secretRow === "string" ? secretRow : "") ?? "";
     const timestamp = Math.floor(Date.now() / 1000).toString();
     const signature = secret ? await hmacSha256Hex(secret, `${timestamp}.${envelopeJson}`) : "";
 
