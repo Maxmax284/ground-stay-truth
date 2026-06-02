@@ -25,6 +25,14 @@ function summarize(payload: Record<string, unknown>): Record<string, unknown> {
   return out;
 }
 
+function resolveEnvelopeUserId(session: any, payload: Record<string, unknown>): string | null {
+  const ownerIdentifier = typeof session.vanta_owner_identifier === "string"
+    ? session.vanta_owner_identifier.trim()
+    : "";
+  if (session.identity_strategy === "vanta_owner" && ownerIdentifier) return ownerIdentifier;
+  return typeof payload.user_id === "string" ? payload.user_id : null;
+}
+
 async function hmacSha256Hex(secret: string, message: string): Promise<string> {
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -93,13 +101,15 @@ Deno.serve(async (req) => {
     const eventId = crypto.randomUUID();
     const now = new Date().toISOString();
 
+    const envelopeUserId = resolveEnvelopeUserId(session, body.payload);
     const envelope = {
       event_id: eventId,
       event_type: body.event_type,
       source_platform: session.platform_key,
       source_id: session.source_id,
       environment: session.environment,
-      user_id: typeof body.payload.user_id === "string" ? body.payload.user_id : null,
+      user_id: envelopeUserId,
+      identity_strategy: session.identity_strategy ?? "payload_user",
       occurred_at: now,
       sent_at: now,
       idempotency_key: body.idempotency_key,
@@ -140,6 +150,7 @@ Deno.serve(async (req) => {
             "X-Vanta-Timestamp": timestamp,
             "X-Vanta-Source": session.source_id,
             "X-Vanta-Event-Id": eventId,
+            ...(envelopeUserId ? { "X-Vanta-Owner": envelopeUserId } : {}),
           },
           body: envelopeJson,
         });
