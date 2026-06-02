@@ -245,14 +245,14 @@ export function VantaIntegrationPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label>Vanta owner identifier</Label>
+            <Label>Vanta owner UUID</Label>
             <Input
               value={effectiveOwnerIdentifier}
               onChange={(e) => setOwnerIdentifier(e.target.value)}
-              placeholder="Vanta user, workspace, org, or service account ID"
+              placeholder="Paste the Vanta workspace owner UUID"
             />
             <p className="text-xs text-muted-foreground">
-              Used as the root user_id Vanta authorizes against. Event payloads still keep the original local actor IDs inside payload.
+              Used as the root user_id and X-Vanta-Owner value. Event payloads still keep original local actor IDs inside payload.
             </p>
           </div>
 
