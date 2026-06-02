@@ -43,7 +43,7 @@ export function useVantaSession() {
         .limit(1)
         .maybeSingle();
       if (error) throw error;
-      return data as VantaSession | null;
+      return data as unknown as VantaSession | null;
     },
   });
 }
@@ -78,7 +78,7 @@ export function useVantaEventLog(limit = 50) {
         .order("created_at", { ascending: false })
         .limit(limit);
       if (error) throw error;
-      return (data ?? []) as VantaLogRow[];
+      return (data ?? []) as unknown as VantaLogRow[];
     },
     refetchInterval: 15_000,
   });
