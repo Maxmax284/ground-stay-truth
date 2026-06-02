@@ -97,16 +97,35 @@ export function VantaIntegrationPanel() {
 
   const handleTest = async () => {
     try {
-      const res = await sendTest.mutateAsync();
-      const ok = (res as any)?.ok;
-      toast({
-        title: ok ? "Test event accepted" : "Test event failed",
-        description: `Response code: ${(res as any)?.response_code ?? "n/a"}`,
-        variant: ok ? "default" : "destructive",
-      });
+      const res: any = await sendTest.mutateAsync();
+      const code = Number(res?.response_code ?? 0);
+      // Trust the HTTP code first. ok is only false when Vanta actually rejected (4xx/5xx).
+      const accepted = code >= 200 && code < 300;
+      if (accepted) {
+        toast({
+          title: "Test event accepted",
+          description: `Vanta responded ${code}. Health reset to live.`,
+        });
+      } else {
+        toast({
+          title: "Test event not accepted",
+          description: `Response code: ${code || "n/a"}${res?.status ? ` · ${res.status}` : ""}`,
+          variant: "destructive",
+        });
+      }
     } catch (e: any) {
       toast({ title: "Test failed", description: e.message, variant: "destructive" });
     }
+  };
+
+  const resetHealth = async () => {
+    await update.mutateAsync({
+      status: session.enabled && session.vanta_webhook_url ? "live" : "configured",
+      failure_count: 0,
+      last_error_summary: null,
+      last_failure_at: null,
+    } as any);
+    toast({ title: "Health reset", description: "Stale failure state cleared." });
   };
 
   const toggleEnabled = async (on: boolean) => {
