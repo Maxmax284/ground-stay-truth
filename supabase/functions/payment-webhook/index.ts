@@ -539,6 +539,12 @@ async function handlePaymentFailed(
       subject_id: event.bookingId,
       metadata: { amount: event.amountPaid, reason: "card declined" },
     });
+    await dispatchVanta(supabaseUrl, serviceRoleKey, "payment.failed", {
+      booking_id: event.bookingId,
+      session_id: event.sessionId ?? null,
+      amount: event.amountPaid ?? null,
+      currency: (event as any).currency ?? null,
+    }, `ground_truth_hub:payment.failed:${event.sessionId ?? event.bookingId}`);
   }
 }
 
