@@ -211,14 +211,6 @@ export function VantaIntegrationPanel() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Source ID</Label>
-              <Input
-                value={sourceId || session.source_id}
-                onChange={(e) => setSourceId(e.target.value)}
-                placeholder="gth_main"
-              />
-            </div>
-            <div className="space-y-2">
               <Label>Environment</Label>
               <Select value={session.environment} onValueChange={(v) => changeEnvironment(v as any)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
