@@ -107,3 +107,6 @@ verify_jwt = false
 
 [functions.vanta-emit]
 verify_jwt = false
+
+[functions.vanta-lookup]
+verify_jwt = false
