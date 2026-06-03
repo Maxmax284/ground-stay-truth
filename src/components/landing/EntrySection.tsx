@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import lamaiCampLogo from "@/assets/lamai-camp-logo.jpg";
+import lamaiCampLogo from "@/assets/lamai-camp-logo.jpg.asset.json";
 
 const EntrySection = () => (
   <section className="min-h-[85vh] flex flex-col relative overflow-hidden">
