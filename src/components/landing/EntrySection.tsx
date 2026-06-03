@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import lamaiLogo from "@/assets/lamai-logo.png";
+import lamaiCampLogo from "@/assets/lamai-camp-logo.jpg";
 
 const EntrySection = () => (
   <section className="min-h-[85vh] flex flex-col relative overflow-hidden">
@@ -10,9 +10,17 @@ const EntrySection = () => (
 
     {/* Nav bar */}
     <nav className="relative z-10 w-full max-w-6xl mx-auto px-6 pt-6 flex items-center justify-between">
-      <span className="text-xs tracking-[0.2em] uppercase text-[hsl(36,20%,50%)] font-medium">
-        Ground Stay
-      </span>
+      <div className="flex items-center gap-3">
+        <img
+          src={lamaiCampLogo}
+          alt="Lamai Muay Thai Camp"
+          className="h-10 w-10 rounded-full object-cover border border-[hsl(36,20%,25%)]"
+          loading="lazy"
+        />
+        <span className="text-xs tracking-[0.2em] uppercase text-[hsl(36,20%,50%)] font-medium">
+          Ground Stay
+        </span>
+      </div>
       <a
         href="#built-from-inside"
         className="text-[10px] tracking-[0.15em] uppercase text-[hsl(36,20%,38%)] hover:text-[hsl(36,20%,65%)] transition-colors"
@@ -38,7 +46,7 @@ const EntrySection = () => (
           </h1>
 
           <p className="text-lg sm:text-xl text-[hsl(36,20%,70%)] leading-relaxed mb-4 max-w-lg">
-            Arrival, handled. Chaos, not invited.
+            Powered by Lamai Muay Thai
           </p>
 
           <p className="text-sm text-[hsl(36,20%,45%)] leading-relaxed max-w-md">
@@ -71,15 +79,6 @@ const EntrySection = () => (
       </div>
     </div>
 
-    {/* Powered by */}
-    <div className="relative z-10 w-full max-w-6xl mx-auto px-6 pb-6">
-      <div className="flex items-center gap-2">
-        <img src={lamaiLogo} alt="Lamai Muay Thai" className="h-4 w-4 opacity-35" loading="lazy" />
-        <span className="text-[10px] tracking-[0.15em] uppercase text-[hsl(36,20%,30%)]">
-          Powered by Lamai Muay Thai
-        </span>
-      </div>
-    </div>
   </section>
 );
 
