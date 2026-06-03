@@ -12,7 +12,7 @@ const EntrySection = () => (
     <nav className="relative z-10 w-full max-w-6xl mx-auto px-6 pt-6 flex items-center justify-between">
       <div className="flex items-center gap-3">
         <img
-          src={lamaiCampLogo}
+          src={lamaiCampLogo.url}
           alt="Lamai Muay Thai Camp"
           className="h-10 w-10 rounded-full object-cover border border-[hsl(36,20%,25%)]"
           loading="lazy"
