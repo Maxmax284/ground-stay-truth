@@ -79,15 +79,6 @@ const EntrySection = () => (
       </div>
     </div>
 
-    {/* Powered by */}
-    <div className="relative z-10 w-full max-w-6xl mx-auto px-6 pb-6">
-      <div className="flex items-center gap-2">
-        <img src={lamaiLogo} alt="Lamai Muay Thai" className="h-4 w-4 opacity-35" loading="lazy" />
-        <span className="text-[10px] tracking-[0.15em] uppercase text-[hsl(36,20%,30%)]">
-          Powered by Lamai Muay Thai
-        </span>
-      </div>
-    </div>
   </section>
 );
 
