@@ -46,7 +46,7 @@ const EntrySection = () => (
           </h1>
 
           <p className="text-lg sm:text-xl text-[hsl(36,20%,70%)] leading-relaxed mb-4 max-w-lg">
-            Arrival, handled. Chaos, not invited.
+            Powered by Lamai Muay Thai
           </p>
 
           <p className="text-sm text-[hsl(36,20%,45%)] leading-relaxed max-w-md">
