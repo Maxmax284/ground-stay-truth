@@ -10,9 +10,17 @@ const EntrySection = () => (
 
     {/* Nav bar */}
     <nav className="relative z-10 w-full max-w-6xl mx-auto px-6 pt-6 flex items-center justify-between">
-      <span className="text-xs tracking-[0.2em] uppercase text-[hsl(36,20%,50%)] font-medium">
-        Ground Stay
-      </span>
+      <div className="flex items-center gap-3">
+        <img
+          src={lamaiCampLogo}
+          alt="Lamai Muay Thai Camp"
+          className="h-10 w-10 rounded-full object-cover border border-[hsl(36,20%,25%)]"
+          loading="lazy"
+        />
+        <span className="text-xs tracking-[0.2em] uppercase text-[hsl(36,20%,50%)] font-medium">
+          Ground Stay
+        </span>
+      </div>
       <a
         href="#built-from-inside"
         className="text-[10px] tracking-[0.15em] uppercase text-[hsl(36,20%,38%)] hover:text-[hsl(36,20%,65%)] transition-colors"
