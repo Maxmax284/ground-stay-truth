@@ -2895,6 +2895,60 @@ export type Database = {
         }
         Relationships: []
       }
+      vanta_lookup_audit: {
+        Row: {
+          audit_id: string
+          authorized: boolean
+          created_at: string
+          environment: string | null
+          error_summary: string | null
+          fields_returned: string[]
+          id: string
+          lookup_id: string | null
+          lookup_type: string
+          purpose: string | null
+          request_id: string | null
+          requester_source: string
+          response_status: string
+          sensitivity_level: string | null
+          signature_valid: boolean
+        }
+        Insert: {
+          audit_id: string
+          authorized?: boolean
+          created_at?: string
+          environment?: string | null
+          error_summary?: string | null
+          fields_returned?: string[]
+          id?: string
+          lookup_id?: string | null
+          lookup_type: string
+          purpose?: string | null
+          request_id?: string | null
+          requester_source?: string
+          response_status: string
+          sensitivity_level?: string | null
+          signature_valid?: boolean
+        }
+        Update: {
+          audit_id?: string
+          authorized?: boolean
+          created_at?: string
+          environment?: string | null
+          error_summary?: string | null
+          fields_returned?: string[]
+          id?: string
+          lookup_id?: string | null
+          lookup_type?: string
+          purpose?: string | null
+          request_id?: string | null
+          requester_source?: string
+          response_status?: string
+          sensitivity_level?: string | null
+          signature_valid?: boolean
+        }
+        Relationships: []
+      }
       webhook_health: {
         Row: {
           id: string
