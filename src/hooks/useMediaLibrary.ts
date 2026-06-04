@@ -21,6 +21,8 @@ export type MediaAsset = {
 export function useMediaAssets() {
   return useQuery({
     queryKey: ["media-library-assets"],
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("media_library_assets")
