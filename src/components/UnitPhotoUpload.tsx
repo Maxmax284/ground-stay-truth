@@ -19,11 +19,28 @@ export function UnitPhotoUpload({ unitId, photos, onChange }: UnitPhotoUploadPro
     setUploading(true);
     const newPhotos = [...photos];
     try {
-      for (const file of Array.from(files)) { const ext = file.name.split(".").pop(); const path = `${unitId}/${crypto.randomUUID()}.${ext}`; const { error } = await supabase.storage.from("unit-photos").upload(path, file, { upsert: false }); if (error) throw error; const { data: urlData } = supabase.storage.from("unit-photos").getPublicUrl(path); newPhotos.push(urlData.publicUrl); }
+      const { data: { user } } = await supabase.auth.getUser();
+      for (const file of Array.from(files)) {
+        const ext = file.name.split(".").pop();
+        const path = `${unitId}/${crypto.randomUUID()}.${ext}`;
+        const { error } = await supabase.storage.from("unit-photos").upload(path, file, { upsert: false });
+        if (error) throw error;
+        const { data: urlData } = supabase.storage.from("unit-photos").getPublicUrl(path);
+        newPhotos.push(urlData.publicUrl);
+        // Register in media library index so it appears in /media
+        await supabase.from("media_library_assets").upsert({
+          storage_path: path,
+          original_filename: file.name,
+          folder: "Uncategorized",
+          uploaded_by: user?.id ?? null,
+          tags: [],
+        } as any, { onConflict: "storage_path" });
+      }
       onChange(newPhotos);
     } catch (err: any) { toast({ title: t("common.error"), description: err.message, variant: "destructive" }); }
     finally { setUploading(false); }
   };
+
 
   const removePhoto = async (url: string) => { const parts = url.split("/unit-photos/"); if (parts.length === 2) { await supabase.storage.from("unit-photos").remove([parts[1]]); } onChange(photos.filter((p) => p !== url)); };
 
