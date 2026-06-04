@@ -25,28 +25,36 @@ if (isPreviewHost || isInIframe) {
     reg.update();
   });
 
+  // Reload once per controllerchange event (not once per session).
+  // iOS users keep tabs alive for days — sessionStorage gating broke repeat updates.
+  let reloadingForNewSW = false;
   navigator.serviceWorker?.addEventListener("controllerchange", () => {
-    if (!sessionStorage.getItem("sw-controller-refreshed")) {
-      sessionStorage.setItem("sw-controller-refreshed", "1");
-      window.location.reload();
-    }
+    if (reloadingForNewSW) return;
+    reloadingForNewSW = true;
+    window.location.reload();
   });
 
-  // Force check for SW updates every 5 minutes so published changes propagate fast
-  setInterval(() => {
-    navigator.serviceWorker?.getRegistration().then((reg) => {
-      reg?.update();
-    });
-  }, 5 * 60 * 1000);
+  const checkForUpdate = () => {
+    navigator.serviceWorker?.getRegistration().then((reg) => reg?.update());
+  };
 
-  // Also check immediately on page visibility change (user returns to app)
+  // Background timers are throttled/frozen on iOS, so this is best-effort.
+  setInterval(checkForUpdate, 5 * 60 * 1000);
+
+  // Fires when tab is foregrounded.
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") {
-      navigator.serviceWorker?.getRegistration().then((reg) => {
-        reg?.update();
-      });
-    }
+    if (document.visibilityState === "visible") checkForUpdate();
   });
+
+  // Critical for iOS Safari: pageshow fires on bfcache restore (swipe-back,
+  // tab switch, app resume) when visibilitychange may not. event.persisted
+  // === true means the page came from bfcache and likely missed updates.
+  window.addEventListener("pageshow", (event) => {
+    if ((event as PageTransitionEvent).persisted) checkForUpdate();
+  });
+
+  // Also re-check when network comes back (iOS spotty wifi / cell handoff).
+  window.addEventListener("online", checkForUpdate);
 }
 
 // Listen for NOTIFICATION_CLICK from service worker to handle deep-link routing
