@@ -14,6 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_model_costs: {
+        Row: {
+          input_micro_usd_per_1k: number
+          model: string
+          notes: string | null
+          output_micro_usd_per_1k: number
+          updated_at: string
+        }
+        Insert: {
+          input_micro_usd_per_1k?: number
+          model: string
+          notes?: string | null
+          output_micro_usd_per_1k?: number
+          updated_at?: string
+        }
+        Update: {
+          input_micro_usd_per_1k?: number
+          model?: string
+          notes?: string | null
+          output_micro_usd_per_1k?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_usage_events: {
+        Row: {
+          actor_id: string | null
+          actor_role: string | null
+          channel: string | null
+          cost_estimate_micro_usd: number | null
+          created_at: string
+          error_code: string | null
+          function_name: string
+          id: string
+          ip_hash: string | null
+          latency_ms: number | null
+          mode: string | null
+          model: string | null
+          property_id: string | null
+          request_hash: string | null
+          status: string
+          tokens_in: number | null
+          tokens_out: number | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_role?: string | null
+          channel?: string | null
+          cost_estimate_micro_usd?: number | null
+          created_at?: string
+          error_code?: string | null
+          function_name: string
+          id?: string
+          ip_hash?: string | null
+          latency_ms?: number | null
+          mode?: string | null
+          model?: string | null
+          property_id?: string | null
+          request_hash?: string | null
+          status?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_role?: string | null
+          channel?: string | null
+          cost_estimate_micro_usd?: number | null
+          created_at?: string
+          error_code?: string | null
+          function_name?: string
+          id?: string
+          ip_hash?: string | null
+          latency_ms?: number | null
+          mode?: string | null
+          model?: string | null
+          property_id?: string | null
+          request_hash?: string | null
+          status?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+        }
+        Relationships: []
+      }
       airport_pickups: {
         Row: {
           arrival_confidence: string

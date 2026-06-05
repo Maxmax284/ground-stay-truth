@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logAiUsage as logAiUsageEvent } from "../_shared/aiGuard.ts";
 
 // F-53: PII minimization — strip sensitive data before sending to AI
 function minimizePII(text: string): string {
@@ -335,6 +336,17 @@ serve(async (req) => {
       actor_id: userData.user.id,
       details: { source: "ai-assistant" },
     }).then(() => {});
+
+    // Mirror into ai_usage_events (governance + cost attribution)
+    logAiUsageEvent({
+      functionName: "ai-assistant",
+      actorId: userData.user.id,
+      actorRole: null,
+      propertyId: null,
+      channel: "web",
+      status: "ok",
+      model: "google/gemini-2.5-flash",
+    }).catch(() => {});
 
     const body = await req.json();
     const { mode, role: clientRole, messages, context, language, property_id, operational_mode } = body;

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkAiGuard, logAiUsage, hashIp, resolveRoleAndProperty } from "../_shared/aiGuard.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
@@ -10,7 +11,6 @@ const ALLOWED_ORIGINS = [
 
 function isAllowedOrigin(origin: string): boolean {
   if (ALLOWED_ORIGINS.includes(origin)) return true;
-  // Allow Lovable preview/dev origins
   if (/^https:\/\/[a-z0-9-]+\.lovableproject\.com$/.test(origin)) return true;
   if (/^https:\/\/[a-z0-9-]+\.lovable\.app$/.test(origin)) return true;
   if (/^https:\/\/id-preview--[a-z0-9-]+\.lovable\.app$/.test(origin)) return true;
@@ -26,10 +26,18 @@ function getCorsHeaders(req: Request) {
   };
 }
 
+const FN = "verify-document";
+const MODEL = "google/gemini-2.5-flash";
+const MAX_BYTES = 10 * 1024 * 1024;
+const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: getCorsHeaders(req) });
   }
+
+  const t0 = Date.now();
+  const ipHash = await hashIp(req);
 
   try {
     const { documentId, filePath } = await req.json();
@@ -47,13 +55,34 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Mark as analyzing
+    // Resolve actor + property for governance
+    const { data: docRow } = await supabase
+      .from("guest_documents")
+      .select("uploaded_by, booking_id, bookings!inner(property_id)")
+      .eq("id", documentId)
+      .maybeSingle();
+    const actorId: string | null = (docRow as any)?.uploaded_by ?? null;
+    const propertyId: string | null = (docRow as any)?.bookings?.property_id ?? null;
+    const { role } = await resolveRoleAndProperty(supabase, actorId);
+
+    // AI Guard
+    const decision = await checkAiGuard({
+      functionName: FN, actorId, actorRole: role, propertyId, channel: "web", ipHash,
+    });
+    if (!decision.allow) {
+      await supabase.from("guest_documents")
+        .update({ verification_status: "error", verification_notes: { error: decision.reason } })
+        .eq("id", documentId);
+      return new Response(JSON.stringify({ error: decision.reason }), {
+        status: decision.status, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+
     await supabase
       .from("guest_documents")
       .update({ verification_status: "analyzing" })
       .eq("id", documentId);
 
-    // Download the document from storage
     const { data: fileData, error: downloadError } = await supabase.storage
       .from("guest-documents")
       .download(filePath);
@@ -66,12 +95,29 @@ serve(async (req) => {
       throw new Error(`Failed to download file: ${downloadError?.message}`);
     }
 
-    // Convert to base64
+    if (fileData.size > MAX_BYTES) {
+      await supabase.from("guest_documents")
+        .update({ verification_status: "error", verification_notes: { error: "File too large" }, verified_at: new Date().toISOString() })
+        .eq("id", documentId);
+      await logAiUsage({ functionName: FN, actorId, actorRole: role, propertyId, status: "blocked", errorCode: "file_too_large", ipHash });
+      return new Response(JSON.stringify({ error: "File exceeds 10 MB limit." }), {
+        status: 413, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+    const mimeType = fileData.type || "image/jpeg";
+    if (!ALLOWED_MIME.has(mimeType)) {
+      await supabase.from("guest_documents")
+        .update({ verification_status: "error", verification_notes: { error: `Unsupported file type: ${mimeType}` }, verified_at: new Date().toISOString() })
+        .eq("id", documentId);
+      await logAiUsage({ functionName: FN, actorId, actorRole: role, propertyId, status: "blocked", errorCode: "bad_mime", ipHash });
+      return new Response(JSON.stringify({ error: "Only JPEG, PNG, WebP, or PDF allowed." }), {
+        status: 415, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+
     const arrayBuffer = await fileData.arrayBuffer();
     const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-    const mimeType = fileData.type || "image/jpeg";
 
-    // Call Lovable AI Gateway with vision
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -79,7 +125,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: MODEL,
         messages: [
           {
             role: "system",
@@ -96,14 +142,8 @@ IMPORTANT GUIDELINES:
           {
             role: "user",
             content: [
-              {
-                type: "text",
-                text: "Analyze this identification document image. Use the analyze_document tool to provide your structured assessment.",
-              },
-              {
-                type: "image_url",
-                image_url: { url: `data:${mimeType};base64,${base64}` },
-              },
+              { type: "text", text: "Analyze this identification document image. Use the analyze_document tool to provide your structured assessment." },
+              { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64}` } },
             ],
           },
         ],
@@ -116,55 +156,20 @@ IMPORTANT GUIDELINES:
               parameters: {
                 type: "object",
                 properties: {
-                  document_type: {
-                    type: "string",
-                    enum: ["passport", "national_id", "drivers_license", "residence_permit", "unknown"],
-                    description: "Type of identification document detected",
-                  },
-                  issuing_country: {
-                    type: "string",
-                    description: "Country that issued the document, or 'unknown'",
-                  },
-                  expiry_date: {
-                    type: "string",
-                    description: "Expiry date if visible (format: YYYY-MM or YYYY), or null if not visible",
-                  },
-                  is_expired: {
-                    type: "boolean",
-                    description: "Whether the document appears to be expired based on visible expiry date",
-                  },
-                  holder_name_readable: {
-                    type: "boolean",
-                    description: "Whether the holder's name is clearly readable",
-                  },
-                  document_number_readable: {
-                    type: "boolean",
-                    description: "Whether the document number is clearly readable",
-                  },
-                  quality_issues: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "List of quality concerns, e.g. 'blurry text', 'low resolution', 'glare obscuring data', 'possible digital alteration'",
-                  },
-                  confidence: {
-                    type: "string",
-                    enum: ["low", "medium", "high"],
-                    description: "Overall confidence that the document appears genuine",
-                  },
-                  summary: {
-                    type: "string",
-                    description: "One-line human-readable summary of the assessment",
-                  },
+                  document_type: { type: "string", enum: ["passport", "national_id", "drivers_license", "residence_permit", "unknown"] },
+                  issuing_country: { type: "string" },
+                  expiry_date: { type: "string" },
+                  is_expired: { type: "boolean" },
+                  holder_name_readable: { type: "boolean" },
+                  document_number_readable: { type: "boolean" },
+                  quality_issues: { type: "array", items: { type: "string" } },
+                  confidence: { type: "string", enum: ["low", "medium", "high"] },
+                  summary: { type: "string" },
                 },
                 required: [
-                  "document_type",
-                  "issuing_country",
-                  "is_expired",
-                  "holder_name_readable",
-                  "document_number_readable",
-                  "quality_issues",
-                  "confidence",
-                  "summary",
+                  "document_type", "issuing_country", "is_expired",
+                  "holder_name_readable", "document_number_readable",
+                  "quality_issues", "confidence", "summary",
                 ],
                 additionalProperties: false,
               },
@@ -178,6 +183,11 @@ IMPORTANT GUIDELINES:
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
       console.error("AI gateway error:", aiResponse.status, errText);
+      await logAiUsage({
+        functionName: FN, actorId, actorRole: role, propertyId,
+        status: "provider_error", model: MODEL, errorCode: `upstream_${aiResponse.status}`,
+        latencyMs: Date.now() - t0, ipHash,
+      });
       await supabase
         .from("guest_documents")
         .update({
@@ -193,9 +203,16 @@ IMPORTANT GUIDELINES:
     }
 
     const aiData = await aiResponse.json();
+    const usage = aiData.usage ?? {};
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
 
     if (!toolCall?.function?.arguments) {
+      await logAiUsage({
+        functionName: FN, actorId, actorRole: role, propertyId,
+        status: "provider_error", model: MODEL, errorCode: "no_tool_call",
+        tokensIn: usage.prompt_tokens ?? 0, tokensOut: usage.completion_tokens ?? 0,
+        latencyMs: Date.now() - t0, ipHash,
+      });
       await supabase
         .from("guest_documents")
         .update({
@@ -212,7 +229,6 @@ IMPORTANT GUIDELINES:
 
     const analysis = JSON.parse(toolCall.function.arguments);
 
-    // Determine status: flagged if low confidence, expired, or has quality issues
     const isFlagged =
       analysis.confidence === "low" ||
       analysis.is_expired ||
@@ -230,6 +246,14 @@ IMPORTANT GUIDELINES:
       })
       .eq("id", documentId);
 
+    await logAiUsage({
+      functionName: FN, actorId, actorRole: role, propertyId,
+      status: "ok", model: MODEL,
+      tokensIn: usage.prompt_tokens ?? 0,
+      tokensOut: usage.completion_tokens ?? 0,
+      latencyMs: Date.now() - t0, ipHash,
+    });
+
     return new Response(JSON.stringify({ status, analysis }), {
       status: 200,
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
@@ -238,7 +262,7 @@ IMPORTANT GUIDELINES:
     console.error("verify-document error:", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+      { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } },
     );
   }
 });
