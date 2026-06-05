@@ -1,106 +1,182 @@
 
-# Vanta Integration Session — GTH side, inbound-only
+# AI Governance Hardening Plan — Ground Stay
 
-GTH sends signed signals to Vanta. Vanta drafts. A human approves there. Nothing in GTH executes because of this integration. No callbacks in this pass — the settings page shows callback mode as **None (inbound only)** with a "coming later" note, so the doctrine is visible but no execution surface exists.
+Builds on the prior audit. Closes the HIGH-risk gaps: unbounded `translate-message` and `verify-document`, no usage logging, no cost attribution, no per-property quotas, no per-feature kill switches, no admin visibility.
 
-## What gets built
+---
 
-### 1. New DB tables (one migration)
+## Scorecard (current → target)
 
-- `vanta_integration_session` (single-row, admin-only)
-  - `id`, `platform_key = 'ground_truth_hub'`, `platform_name`, `environment` (`sandbox` | `production`)
-  - `vanta_webhook_url`, `source_id`, `enabled bool`, `status text`
-  - `shared_secret_configured bool` (mirror of the secret existing in `integration_secrets`)
-  - `callback_mode text default 'none'`
-  - `allowed_events jsonb` (array of event-type strings)
-  - `last_event_sent_at`, `last_success_at`, `last_failure_at`, `failure_count int`, `last_error_summary text`
-  - `created_at`, `updated_at`, `updated_by`
-- `vanta_event_log`
-  - `id`, `event_id` (uuid, unique), `event_type`, `direction default 'outbound_to_vanta'`, `status` (`queued|sent|accepted|rejected|failed|retrying|paused`)
-  - `payload_summary jsonb` (NOT full payload — small fields only, PII-masked)
-  - `idempotency_key text unique`, `sent_at`, `accepted_at`, `failed_at`, `retry_count int`, `vanta_response_code int`, `error_summary text`, `created_at`
-- GRANTs: `authenticated` SELECT only; `service_role` ALL. RLS: admin-only SELECT via `has_role(auth.uid(),'admin')`. Writes go through edge functions with service role.
-- Retention: log purge job (reuse `cleanup-retention` pattern) trims `vanta_event_log` to 90 days.
+| Dimension | Now | Target after plan |
+|---|---|---|
+| AI Governance | 4 | 8 |
+| Cost Control | 2 | 8 |
+| Abuse Prevention | 3 | 7 |
+| Observability | 3 | 9 |
+| Multi-Tenant Readiness | 2 | 8 |
+| Business Readiness | 3 | 8 |
 
-### 2. Secret storage
+Verdict moves from **READY WITH HIGH RISK** → **READY WITH MINOR ISSUES** for AI cost/abuse.
 
-- Shared secret stored as `VANTA_WEBHOOK_SECRET` via `integration_secrets` (existing pattern, reuses `manage-integration-secret` function + `useIntegrationSecrets` hook). Never returned to the browser.
-- URL + source_id stored in the table (not secret).
+---
 
-### 3. Edge functions
+## Phase A — Foundation: `ai_usage_events` table (HIGH)
 
-- `vanta-dispatch` (internal): builds the signed envelope, POSTs to `vanta_webhook_url`, writes to `vanta_event_log`, handles retry/backoff (network + 5xx only, max 3, exponential), skips on `enabled=false` or kill-switch paused, dedupes on `idempotency_key`. HMAC-SHA256 over `${timestamp}.${body}` with `VANTA_WEBHOOK_SECRET`. Headers: `X-Vanta-Signature`, `X-Vanta-Timestamp`, `X-Vanta-Source`, `X-Vanta-Event-Id`.
-- `vanta-test-event`: admin-only, JWT-validated. Sends `integration.test` envelope, returns Vanta's response code + body summary. Marked `test: true` in payload.
-- `vanta-emit` (internal trigger target): tiny wrapper invoked by DB triggers / existing edge functions; forwards to `vanta-dispatch`.
+New table — single source of truth for every AI call.
 
-### 4. Event sources wired (first batch)
+```text
+ai_usage_events
+  id            uuid pk
+  created_at    timestamptz default now()
+  function_name text        -- 'ai-assistant' | 'translate-message' | 'verify-document' | ...
+  mode          text        -- e.g. 'chat','digest','passport' (nullable)
+  actor_id      uuid        -- auth.users.id (nullable for webhook calls)
+  actor_role    app_role    -- snapshot
+  property_id   uuid        -- nullable
+  channel       text        -- 'web','whatsapp','telegram','line','cron' (nullable)
+  status        text        -- 'ok','rate_limited','provider_error','blocked'
+  model         text
+  tokens_in     int
+  tokens_out    int
+  latency_ms    int
+  cost_estimate_micro_usd  bigint   -- computed server-side from model price table
+  request_hash  text        -- short hash for dedup/abuse correlation
+  ip_hash       text        -- sha256(ip+salt), nullable
+  error_code    text        -- nullable
 
-- **Bookings**: DB trigger `AFTER INSERT OR UPDATE OF state ON bookings` → `pg_net` call to `vanta-emit` with `booking.created` / `booking.state_changed`. Payload summary: `booking_id`, `unit_id`, `check_in`, `check_out`, `state`, `previous_state`. No guest PII beyond `guest_id` (UUID).
-- **Guest messages / requests**: hook into existing message-insert path (whichever edge function or trigger handles `messages` / `guest_requests`) → emit `guest_message.received` / `guest_request.created` with `id`, `booking_id`, `channel`, truncated `preview` (first 120 chars).
-- **Payments**: extend `payment-webhook` success/failure branches to fire `payment.received` / `payment.failed` with `payment_id`, `booking_id`, `amount`, `currency`, `status`.
+Indexes:
+  (actor_id, created_at desc)
+  (property_id, created_at desc)
+  (function_name, created_at desc)
+  (created_at desc)
 
-Each emit site checks `enabled = true` and event-type is in `allowed_events` before dispatch. Failure of Vanta send NEVER fails the business operation — wrap in try/catch, log to `vanta_event_log`, move on.
+RLS:
+  admin/manager: SELECT scoped to their property_id
+  service_role:  full
+  others:        no access
+```
 
-### 5. UI: `src/pages/VantaIntegration.tsx` + route under Settings
+A small `ai_model_costs(model, input_per_1k, output_per_1k)` lookup keeps cost math out of code. Adding a row enables new models without redeploy.
 
-New tab in `src/pages/Settings.tsx` (admin-only), label "Vanta". Page sections:
+---
 
-- **Header** — title, doctrine subtitle: *"This platform sends signals to Vanta. Vanta turns them into drafts. Nothing executes without approval."*
-- **Status panel** — current `status`, environment badge, enabled/paused, last success / last failure / failure count, last error.
-- **Connection** — Vanta webhook URL (editable), Source ID, Environment select (`sandbox` / `production` with confirm dialog when flipping to production), Shared secret status ("Configured" / "Missing") with "Set secret" button (reuses `useSetSecret`), "Rotate secret" button.
-- **Allowed events** — checklist of: `booking.created`, `booking.state_changed`, `guest_message.received`, `guest_request.created`, `payment.received`, `payment.failed`, `integration.test`. Each row has a sensitivity tag where relevant.
-- **Callbacks** — read-only card: *"Callback mode: None (inbound only). Approved callbacks will be added in a later pass."*
-- **Controls** — Send Test Event, Pause Sync (kill switch toggle on `enabled`), Disconnect (clears URL + disables, keeps logs).
-- **Logs** — last 50 rows from `vanta_event_log`: event id, type, status, sent_at, response code, error. Collapsible "Advanced".
+## Phase B — Universal rate-limit middleware (HIGH)
 
-Copy is plain English. No "orchestration mesh" anything.
+New shared helper `supabase/functions/_shared/aiGuard.ts`:
 
-### 6. Access control
+- `checkAndLog({ functionName, mode, req, user, propertyId })`
+- DB-backed (queries `ai_usage_events`), not in-memory — survives cold starts.
+- Returns `{ allow, reason, remaining }`.
+- Enforces, in order:
+  1. Global kill switch (`ai_assistant_enabled`).
+  2. Per-feature kill switch (new policy keys, see Phase D).
+  3. Per-user hourly + daily caps (role-scoped).
+  4. Per-property daily cap.
+  5. Per-IP burst cap for anonymous webhook paths.
+- Logs every call (allowed or denied) into `ai_usage_events`.
+- Replaces the bespoke `security_events`-based limiter currently in `ai-assistant`.
 
-- Settings tab gated by `role === 'admin'` (matches `Integrations` tab pattern in `Settings.tsx`).
-- All edge functions validate JWT + `has_role(user, 'admin')` for config/test actions. Emit functions are service-role-only, called from triggers or trusted edge functions.
+Default caps (admin-overridable via `policy_settings`):
 
-### 7. Doctrine guards baked in
+| Function | Guest | Staff | Manager | Admin | Property/day |
+|---|---|---|---|---|---|
+| ai-assistant | 20/hr, 60/day | 60/hr, 300/day | 200/hr, 1000/day | unlimited | 5000 |
+| translate-message | 30/hr, 120/day | 60/hr, 400/day | same | unlimited | 4000 |
+| verify-document | 5/hr, 10/day | 20/hr, 60/day | same | unlimited | 300 |
+| draft-arrival-welcome | n/a | 20/hr, 80/day | same | unlimited | 500 |
+| messaging-router (per remote channel id) | — | — | — | — | 200/channel/day |
 
-- No code path lets a Vanta response mutate GTH state.
-- No callback routes exist in this pass.
-- All sends are best-effort; business writes always win.
-- Secrets never reach the browser.
-- Test event is clearly tagged `test: true` and never touches business tables.
+---
 
-## Files touched
+## Phase C — Endpoint hardening (HIGH)
 
-**New**
-- `supabase/migrations/<ts>_vanta_integration_session.sql`
-- `supabase/functions/vanta-dispatch/index.ts`
-- `supabase/functions/vanta-test-event/index.ts`
-- `supabase/functions/vanta-emit/index.ts`
-- `src/pages/VantaIntegration.tsx`
-- `src/components/VantaIntegrationPanel.tsx` (the actual settings UI; page is a thin wrapper if needed, or rendered as a Settings tab)
-- `src/hooks/useVantaIntegration.ts`
-- `src/lib/vanta/events.ts` (event-type constants, payload-summary builders)
+1. **`translate-message`** — wrap with `aiGuard`, cap text length to 4000 chars, add request hash dedup (return cached result for identical text+lang within 24h).
+2. **`verify-document`** — wrap with `aiGuard`, enforce ≤ 10 MB image, mime-type allowlist (`image/jpeg`, `image/png`, `application/pdf`), reject animated formats.
+3. **`ai-assistant`** — swap existing limiter for `aiGuard`.
+4. **`draft-arrival-welcome`**, **`corner-talk`**, **`daily-briefing`** — log via `aiGuard` (cron exemption flag), no user caps.
+5. **`messaging-router`** — per-remote-sender daily cap; webhook signature already enforced.
+6. **`fraud-detection`**, **`guest-arrival-journey`** — server-internal; log only.
 
-**Modified**
-- `src/pages/Settings.tsx` — add admin-only "Vanta" tab
-- `supabase/functions/payment-webhook/index.ts` — fire `payment.received` / `payment.failed`
-- Whatever function/trigger inserts guest messages/requests — add Vanta emit
-- `supabase/functions/cleanup-retention/index.ts` — add `vanta_event_log` 90-day purge
+All wrapped functions also capture `usage` block from gateway response to populate `tokens_in/out` accurately.
 
-**Out of scope (deferred)**
-- Callback endpoints + signed-token verification
-- Wiring Fenrir/CampCore/Website sources (this is the GTH side only)
-- Sandbox vs production split-secrets (single secret for now; switch is just a label + payload flag)
+---
 
-## Acceptance
+## Phase D — Admin controls (HIGH)
 
-1. Admin sees a "Vanta" tab in Settings; non-admins do not.
-2. Admin can set webhook URL, source ID, environment, and the `VANTA_WEBHOOK_SECRET` secret.
-3. Admin can toggle allowed events.
-4. "Send Test Event" hits the configured URL with a signed `integration.test` envelope and shows the response.
-5. Kill switch (`enabled=false`) stops all outbound sends within one request cycle.
-6. Bookings, guest messages/requests, and payment success/failure produce signed events with `event_id` + `idempotency_key`, logged in `vanta_event_log`.
-7. A Vanta outage never breaks a booking, message, or payment in GTH.
-8. Secrets never appear in any browser response.
-9. No callback routes exist.
+New policy keys (property-scoped where applicable):
 
-Ready to switch to build mode and ship this when you give the word.
+```
+ai_translate_enabled        bool
+ai_verify_document_enabled  bool
+ai_messaging_enabled        bool
+ai_drafts_enabled           bool
+
+ai_user_daily_limit_guest   int
+ai_user_daily_limit_staff   int
+ai_user_daily_limit_manager int
+ai_property_daily_limit     int
+ai_property_monthly_budget_usd numeric
+ai_alert_threshold_pct      int   -- e.g. 75
+```
+
+UI: extend Security Center with an **AI Usage** tab — toggles, quota inputs, current month-to-date counters, top consumers.
+
+---
+
+## Phase E — Observability & alerts (MEDIUM)
+
+- **Admin AI Dashboard** (under Security Center):
+  - MTD requests + estimated cost, split by function / role / property / user.
+  - 14-day sparkline.
+  - Top 10 consumers.
+  - Recent rate-limit denials.
+- **Budget alerts**: cron `ai-budget-watchdog` (15-min) checks per-property spend vs threshold and pushes via `notify-via-messaging` to admins at 75% / 90% / 100%.
+- **Anomaly flag**: spike detection (>3× rolling 7-day median in a 1-hr window) raises a `security_event`.
+
+---
+
+## Phase F — Abuse hardening (MEDIUM)
+
+- IP-hash velocity check on `verify-document` and `translate-message` (anon path: 20/day/IP).
+- `request_hash` dedup short-circuit for identical translate payloads.
+- Multi-account heuristic: flag accounts sharing IP-hash with >3 unique `actor_id` per 24h on verify-document.
+- Pause-AI breaker: if property hits monthly budget, `aiGuard` returns 402 for everything except admin-tier functions.
+
+---
+
+## Phase G — Roadmap & effort
+
+| Item | Priority | Effort | Risk reduction |
+|---|---|---|---|
+| `ai_usage_events` + `ai_model_costs` | HIGH | 0.5 d | Foundational |
+| `aiGuard` middleware + wire into all 6 functions | HIGH | 1 d | Closes top 3 cost vectors |
+| File-size/mime caps on verify-document | HIGH | 0.25 d | Caps highest-cost vector |
+| Per-feature kill switches + quota policy keys | HIGH | 0.5 d | Operator safety |
+| Admin AI Dashboard (Security Center tab) | MEDIUM | 1 d | Visibility |
+| Budget watchdog + Telegram/email alerts | MEDIUM | 0.5 d | Early warning |
+| Anomaly / multi-account heuristics | MEDIUM | 0.5 d | Abuse |
+| CSV export of `ai_usage_events` | LOW | 0.25 d | Finance |
+
+Total ≈ **4.5 dev-days**.
+
+---
+
+## Out of scope (intentionally)
+
+- Streaming token metering at the SDK level (gateway returns aggregate `usage` — sufficient).
+- Real-time anomaly ML (rule-based threshold is enough at current volume).
+- Replacing `ai-assistant`'s existing `security_events` log retroactively — new events go to `ai_usage_events` going forward.
+
+---
+
+## Verification checklist
+
+After build:
+- [ ] Hit `translate-message` 200× in a loop as a guest → blocked at cap, logged.
+- [ ] Upload 50 MB to `verify-document` → 413.
+- [ ] Toggle `ai_translate_enabled=false` → all translate calls return 403 within seconds.
+- [ ] Two properties run heavy load → each sees only its own rows in the dashboard.
+- [ ] Budget watchdog fires at 75%, 90%, 100% (simulate by lowering threshold).
+- [ ] Admin sees MTD spend per function with no extra config.
+
+Ready to switch to build mode and execute Phases A–D first (the HIGH block), then layer E–F.
