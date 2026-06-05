@@ -41,6 +41,8 @@ export default function SecurityCenter() {
 
         <PaymentLinkAbuseCard />
 
+        <AIUsageDashboard />
+
         <MfaPolicyForm />
 
         <SecurityDashboard />
