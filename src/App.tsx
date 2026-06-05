@@ -34,7 +34,20 @@ import PaymentReport from "./pages/PaymentReport";
 import MediaLibrary from "./pages/MediaLibrary";
 import SecurityCenter from "./pages/SecurityCenter";
 
-const queryClient = new QueryClient();
+// Global React Query defaults — consistent caching across all hooks.
+// Per-hook overrides remain authoritative; this only sets the floor.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,          // 1 min — kill the request-storm-on-mount pattern
+      gcTime: 5 * 60_000,         // 5 min cache retention
+      refetchOnWindowFocus: true, // self-heal when users return to the tab
+      refetchOnReconnect: true,   // self-heal after network blips (iOS bfcache, etc.)
+      retry: 1,
+    },
+    mutations: { retry: 0 },
+  },
+});
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
