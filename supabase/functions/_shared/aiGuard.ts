@@ -160,6 +160,61 @@ export async function checkAiGuard(input: GuardInput): Promise<GuardDecision> {
     }
   }
 
+  // 5. Manual pause window (admin "pause AI" button)
+  const pauseUntil = await readPolicy(sb, "ai_pause_until");
+  if (pauseUntil && pauseUntil.replace(/"/g, "")) {
+    const until = new Date(pauseUntil.replace(/"/g, ""));
+    if (!isNaN(until.getTime()) && until.getTime() > Date.now()) {
+      await logBlocked(sb, input, "manually_paused");
+      return { allow: false, reason: "AI is temporarily paused by an administrator.", status: 503 };
+    }
+  }
+
+  // 6. IP-hash velocity guard (anti-abuse)
+  if (input.ipHash) {
+    const ipLimit = asInt(await readPolicy(sb, "ai_ip_hourly_limit"), 100);
+    if (ipLimit > 0) {
+      const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const { count } = await sb
+        .from("ai_usage_events")
+        .select("id", { count: "exact", head: true })
+        .eq("ip_hash", input.ipHash)
+        .gte("created_at", hourAgo);
+      if ((count ?? 0) >= ipLimit) {
+        await logBlocked(sb, input, "ip_velocity");
+        try {
+          await sb.from("security_events").insert({
+            event_type: "ai_ip_velocity_block",
+            severity: "warning",
+            context: { ip_hash: input.ipHash, function_name: input.functionName, count },
+          });
+        } catch (_) { /* noop */ }
+        return { allow: false, reason: "Too many requests from your network. Try again later.", status: 429 };
+      }
+    }
+  }
+
+  // 7. Request dedup (same actor + function + payload hash within window)
+  if (input.actorId && (input as any).requestHash) {
+    const win = asInt(await readPolicy(sb, "ai_dedup_window_seconds"), 60);
+    if (win > 0) {
+      const since = new Date(Date.now() - win * 1000).toISOString();
+      const { data } = await sb
+        .from("ai_usage_events")
+        .select("id")
+        .eq("actor_id", input.actorId)
+        .eq("function_name", input.functionName)
+        .eq("request_hash", (input as any).requestHash)
+        .gte("created_at", since)
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        await logBlocked(sb, input, "duplicate_request");
+        return { allow: false, reason: "Duplicate request detected. Please wait a moment.", status: 429 };
+      }
+    }
+  }
+
   return { allow: true, status: 200 };
 }
 
