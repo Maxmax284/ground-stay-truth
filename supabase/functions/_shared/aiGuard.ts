@@ -17,6 +17,7 @@ export interface GuardInput {
   propertyId?: string | null;
   channel?: string | null;     // 'web' | 'whatsapp' | 'telegram' | 'line' | 'cron'
   ipHash?: string | null;
+  requestHash?: string | null;
   bypassQuota?: boolean;       // cron / internal callers
 }
 
