@@ -12,6 +12,7 @@ import { SecurityDashboard } from "@/components/security/SecurityDashboard";
 import { WebhookHealthCard } from "@/components/WebhookHealthCard";
 import { StaffMfaCard } from "@/components/security/StaffMfaCard";
 import { PaymentLinkAbuseCard } from "@/components/security/PaymentLinkAbuseCard";
+import { AIUsageDashboard } from "@/components/security/AIUsageDashboard";
 import { ShieldCheck } from "lucide-react";
 
 export default function SecurityCenter() {
@@ -39,6 +40,8 @@ export default function SecurityCenter() {
         </div>
 
         <PaymentLinkAbuseCard />
+
+        <AIUsageDashboard />
 
         <MfaPolicyForm />
 
