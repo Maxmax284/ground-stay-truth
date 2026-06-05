@@ -337,6 +337,17 @@ serve(async (req) => {
       details: { source: "ai-assistant" },
     }).then(() => {});
 
+    // Mirror into ai_usage_events (governance + cost attribution)
+    logAiUsageEvent({
+      functionName: "ai-assistant",
+      actorId: userData.user.id,
+      actorRole: null,
+      propertyId: null,
+      channel: "web",
+      status: "ok",
+      model: "google/gemini-2.5-flash",
+    }).catch(() => {});
+
     const body = await req.json();
     const { mode, role: clientRole, messages, context, language, property_id, operational_mode } = body;
     // Support both "message" (singular, used by Lookout scan) and "messages" (array, used by chat)
