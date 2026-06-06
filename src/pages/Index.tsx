@@ -24,6 +24,7 @@ import { FlightForecastWidget } from "@/components/FlightForecastWidget";
 import { CornerTalkPanel } from "@/components/CornerTalkPanel";
 import { StaffIntelStrip } from "@/components/StaffIntelStrip";
 import { StaffQuickActionsWidget } from "@/components/StaffQuickActionsWidget";
+import { ReconcilePaymentsCard } from "@/components/ReconcilePaymentsCard";
 import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
 import { usePendingHousekeepingCount } from "@/hooks/useHousekeepingTasks";
 import { useCountUp } from "@/hooks/useCountUp";
@@ -222,9 +223,13 @@ const Index = () => {
                 <LaundryPanel />
               </div>
             )}
+
+            {/* Admin-only payment reconciliation sweep */}
+            {isAdmin && <ReconcilePaymentsCard />}
           </>
         )}
       </div>
+
 
       {/* Detail sheet for clicking on bookings from arrivals/departures/activity */}
       <BookingDetailSheet
