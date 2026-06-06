@@ -25,36 +25,18 @@ if (isPreviewHost || isInIframe) {
     reg.update();
   });
 
-  // Reload once per controllerchange event (not once per session).
-  // iOS users keep tabs alive for days — sessionStorage gating broke repeat updates.
-  let reloadingForNewSW = false;
-  navigator.serviceWorker?.addEventListener("controllerchange", () => {
-    if (reloadingForNewSW) return;
-    reloadingForNewSW = true;
-    window.location.reload();
-  });
+  // IMPORTANT: do NOT auto-reload on controllerchange.
+  // Auto-reloading destroys in-progress form state (API keys, edits, etc.)
+  // whenever the user returns to the tab and an update is pending. The new
+  // service worker will take control naturally on the user's next manual
+  // navigation or refresh.
 
-  const checkForUpdate = () => {
+  // Background update check only — never forces a reload, never runs on
+  // visibilitychange / pageshow / online (those events fire constantly when
+  // the user tabs back, which is exactly when we must NOT disturb them).
+  setInterval(() => {
     navigator.serviceWorker?.getRegistration().then((reg) => reg?.update());
-  };
-
-  // Background timers are throttled/frozen on iOS, so this is best-effort.
-  setInterval(checkForUpdate, 5 * 60 * 1000);
-
-  // Fires when tab is foregrounded.
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") checkForUpdate();
-  });
-
-  // Critical for iOS Safari: pageshow fires on bfcache restore (swipe-back,
-  // tab switch, app resume) when visibilitychange may not. event.persisted
-  // === true means the page came from bfcache and likely missed updates.
-  window.addEventListener("pageshow", (event) => {
-    if ((event as PageTransitionEvent).persisted) checkForUpdate();
-  });
-
-  // Also re-check when network comes back (iOS spotty wifi / cell handoff).
-  window.addEventListener("online", checkForUpdate);
+  }, 30 * 60 * 1000);
 }
 
 // Listen for NOTIFICATION_CLICK from service worker to handle deep-link routing
