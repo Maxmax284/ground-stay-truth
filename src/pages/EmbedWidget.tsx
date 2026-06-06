@@ -142,26 +142,32 @@ function SingleUnitWidget({ type, unitId, cfg, contactUrl }: { type?: string; un
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
+    let cancelled = false;
+    const fetchData = async (attempt = 0) => {
       try {
         const params = unitId ? `?unit_id=${unitId}` : "";
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/get-availability${params}`, {
-          headers: { apikey: SUPABASE_KEY },
-        });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || "Failed to load");
-        if (json.currencySymbol) setCurrencySymbol(json.currencySymbol);
-        if (unitId) {
-          setUnit(json.unit);
-          setBlocked(json.blockedRanges ?? []);
+        const json = await safeFetchJson(`${SUPABASE_URL}/functions/v1/get-availability${params}`);
+        if (cancelled) return;
+        if (json?.__fallback) {
+          setError(json.message);
+        } else {
+          if (json.currencySymbol) setCurrencySymbol(json.currencySymbol);
+          if (unitId) {
+            setUnit(json.unit);
+            setBlocked(json.blockedRanges ?? []);
+          }
         }
       } catch (err: any) {
-        setError(err.message);
+        if (cancelled) return;
+        // One automatic retry for transient network errors (mobile, captive portals)
+        if (attempt === 0) return setTimeout(() => fetchData(1), 1200);
+        setError("Unable to load — please refresh");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchData();
+    return () => { cancelled = true; };
   }, [unitId]);
 
   if (loading) return <div style={containerStyle(cfg)}><p style={{ color: mutedColor(cfg.dark) }}>Loading…</p></div>;
