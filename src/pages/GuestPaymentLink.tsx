@@ -26,6 +26,7 @@ export default function GuestPaymentLink() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
+  const [verifying, setVerifying] = useState(false);
 
   const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/guest-payment-link`;
   const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -34,6 +35,21 @@ export default function GuestPaymentLink() {
     if (!token) return setStatus("invalid");
     (async () => {
       try {
+        // If the guest just returned from Stripe with status=success, run the
+        // webhook fallback verifier before showing UI. This ensures the booking
+        // gets confirmed even if Stripe's webhook hasn't fired yet.
+        if (urlStatus === "success") {
+          setVerifying(true);
+          try {
+            await fetch(fnUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", apikey },
+              body: JSON.stringify({ action: "verify", token }),
+            });
+          } catch { /* swallow — lookup below still runs */ }
+          setVerifying(false);
+        }
+
         const resp = await fetch(fnUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey },
@@ -52,7 +68,7 @@ export default function GuestPaymentLink() {
         setStatus("error");
       }
     })();
-  }, [token, fnUrl, apikey]);
+  }, [token, fnUrl, apikey, urlStatus]);
 
   const handlePay = async () => {
     if (!token) return;
