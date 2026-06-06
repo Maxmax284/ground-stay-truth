@@ -1,7 +1,63 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { getAmenityIcon } from "@/lib/amenityIcons";
 import { Sparkles } from "lucide-react";
 import { useParams, useSearchParams } from "react-router-dom";
+
+/** Embed-safe photo carousel: arrows on desktop, swipe on mobile, dots, no external deps. */
+function EmbedPhotoCarousel({
+  photos,
+  alt,
+  height,
+  dark,
+}: { photos: string[]; alt: string; height: number; dark: boolean }) {
+  const [idx, setIdx] = useState(0);
+  const touchStartX = useRef<number | null>(null);
+  if (!photos.length) return null;
+  const multi = photos.length > 1;
+  const go = (n: number) => setIdx((n + photos.length) % photos.length);
+  const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current == null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 40) go(idx + (dx < 0 ? 1 : -1));
+    touchStartX.current = null;
+  };
+  const btn: React.CSSProperties = {
+    position: "absolute", top: "50%", transform: "translateY(-50%)",
+    width: 32, height: 32, borderRadius: "50%", border: "none",
+    background: "rgba(0,0,0,0.55)", color: "#fff", fontSize: 18, fontWeight: 700,
+    cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+    lineHeight: 1, zIndex: 2,
+  };
+  return (
+    <div style={{ position: "relative", width: "100%", height, overflow: "hidden", background: dark ? "#111827" : "#f3f4f6" }}
+         onTouchStart={multi ? onTouchStart : undefined} onTouchEnd={multi ? onTouchEnd : undefined}>
+      <img
+        src={photos[idx]}
+        alt={`${alt} photo ${idx + 1} of ${photos.length}`}
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+        loading={idx === 0 ? "eager" : "lazy"}
+      />
+      {multi && (
+        <>
+          <button type="button" aria-label="Previous photo" style={{ ...btn, left: 8 }} onClick={() => go(idx - 1)}>‹</button>
+          <button type="button" aria-label="Next photo" style={{ ...btn, right: 8 }} onClick={() => go(idx + 1)}>›</button>
+          <div style={{ position: "absolute", bottom: 8, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 4, zIndex: 2 }}>
+            {photos.map((_, i) => (
+              <button key={i} type="button" aria-label={`Go to photo ${i + 1}`} onClick={() => go(i)}
+                style={{
+                  width: i === idx ? 16 : 6, height: 6, borderRadius: 3, border: "none",
+                  background: i === idx ? "#fff" : "rgba(255,255,255,0.55)",
+                  cursor: "pointer", padding: 0, transition: "width 200ms",
+                }} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 import {
   format,
   addMonths,
@@ -256,7 +312,7 @@ function GridOverview({ cfg, contactUrl }: { cfg: StyleConfig; contactUrl: strin
             background: cfg.dark ? "#1f2937" : "#fff",
           }}>
             {rt.photos.length > 0 && (
-              <img src={rt.photos[0]} alt={rt.name} style={{ width: "100%", height: 160, objectFit: "cover", display: "block" }} />
+              <EmbedPhotoCarousel photos={rt.photos} alt={rt.name} height={160} dark={cfg.dark} />
             )}
             <div style={{ padding: 14 }}>
               <h3 style={{ fontSize: getFontSize(cfg.font) + 1, fontWeight: 600, margin: "0 0 4px" }}>{rt.name}</h3>
@@ -332,7 +388,7 @@ function FullListing({ unit, blocked, cfg, contactUrl, cs }: { unit: UnitData; b
     <div style={containerStyle(cfg)}>
       {!h.has("photo") && unit.photos && unit.photos.length > 0 && (
         <div style={{ margin: "-20px -20px 16px", borderRadius: `${cfg.radius}px ${cfg.radius}px 0 0`, overflow: "hidden" }}>
-          <img src={unit.photos[0]} alt={unit.name} style={{ width: "100%", height: 200, objectFit: "cover", display: "block" }} />
+          <EmbedPhotoCarousel photos={unit.photos} alt={unit.name} height={200} dark={cfg.dark} />
         </div>
       )}
       <div style={{ marginBottom: 16 }}>
@@ -389,7 +445,7 @@ function CompactCard({ unit, cfg, contactUrl, cs }: { unit: UnitData; blocked: B
   return (
     <div style={{ ...containerStyle(cfg), padding: 0, overflow: "hidden", maxWidth: Math.min(cfg.maxWidth, 320) }}>
       {!h.has("photo") && unit.photos && unit.photos.length > 0 && (
-        <img src={unit.photos[0]} alt={unit.name} style={{ width: "100%", height: 140, objectFit: "cover", display: "block" }} />
+        <EmbedPhotoCarousel photos={unit.photos} alt={unit.name} height={140} dark={cfg.dark} />
       )}
       <div style={{ padding: 16 }}>
         <h3 style={{ fontSize: getFontSize(cfg.font) + 1, fontWeight: 600, margin: "0 0 4px" }}>{unit.name}</h3>

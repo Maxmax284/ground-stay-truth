@@ -1,73 +1,70 @@
-# AI Governance — Phases E + F + Executive PDF
+# Ground Stay Cleanup Sprint — Plan
 
-## Phase E — Observability & Admin Dashboard
+Scoped, sequenced plan across 7 areas. I'll group into 3 PR-sized phases so we can verify each before moving on.
 
-**1. Admin AI Usage dashboard** (new tab in Security Center)
-- MTD spend (sum of `cost_estimate_micro_usd` from `ai_usage_events`)
-- 30-day sparkline of daily calls + cost
-- Top consumers (by `actor_id`, by `property_id`, by `function_name`)
-- Recent denials (kill switch / quota hits) from `ai_usage_events` where `status != 'ok'`
-- Per-feature breakdown with current kill-switch state inline
-- Filters: date range, property, function
+## Phase 1 — Guest-facing fixes (low risk, high impact)
 
-**2. Budget watchdog edge function** (`ai-budget-watchdog`)
-- Cron every 15 minutes (pg_cron + pg_net using insert tool, not migration)
-- Reads MTD spend vs `ai_monthly_budget_micro_usd` policy key
-- Fires `security_events` rows at 75% / 90% / 100% thresholds (one row per threshold per month — dedup key)
-- At 100%: auto-flips `ai_global_enabled` to false and logs `staff_audit_event` severity=critical
-- Per-property budget check using `ai_property_monthly_budget_micro_usd`
+**1. Photo browsing (public)**
+- Audit `src/components/GuestBookingRequestForm.tsx`, `src/pages/Stay.tsx`, `src/pages/EmbedWidget.tsx`, and any public room cards.
+- Ensure each accommodation card uses the existing `Carousel` + `CarouselDots` with `CarouselPrevious`/`CarouselNext` arrows visible on desktop (≥md) and swipe enabled on mobile (Embla default).
+- Hide arrows/dots when `photos.length <= 1`.
+- Confirm photos are filtered to the specific `unit_id` (no cross-unit bleed).
+- No auth required — verify routes `/stay` and `/embed` render arrows pre-login.
 
-**3. Read endpoints**
-- New `ai-usage-summary` edge function for the dashboard (server-side aggregation, admin-only)
+**2. Availability audit (read-only fixes)**
+- `supabase/functions/get-availability/index.ts`: filter `units` by `is_active = true`, exclude `archived_at`/`deleted_at` if present, dedupe by `id`.
+- `src/pages/Stay.tsx` and embed widget: same filter applied client-side as defense in depth.
+- Calendar count source (`useUnits`, `CalendarGrid`): ensure inactive units excluded from "X of Y available" math.
+- Verify booking overlap uses states `soft_hold|pending_approval|pending_deposit|confirmed|checked_in` (already in `check_booking_overlap` trigger).
 
-## Phase F — Abuse Prevention
+## Phase 2 — Booking & payment flow correctness
 
-**1. IP-hash velocity guard** inside `aiGuard.ts`
-- Track per-IP-hash hourly count via `ai_usage_events.ip_hash`
-- Threshold: >100 calls/hr from one IP → soft block + `security_events` row
+**3. Package inquiry ≠ booking**
+- In `GuestBookingRequestForm.tsx` (and any package-specific path), when submission type = `inquiry` / package question:
+  - Insert into `bookings` with `state = 'inquiry'` (or dedicated `inquiries` table if present) — do NOT call `auto_create_pending_deposit`.
+- Fix at DB level: modify `auto_create_pending_deposit` and `auto_create_pending_security_deposit` triggers to skip when `state = 'inquiry'` (already do — they only fire on `soft_hold|pending_approval|pending_deposit`). Verify no code path inserts inquiries directly into those states.
+- Audit `supabase/functions/create-payment-link` and `guest-payment-link` to reject `state = 'inquiry'` (already added — keep).
+- Add admin-only "Convert inquiry → booking" action (already exists in `InquiryQueue` — verify it sets state to `pending_approval` so triggers create deposit).
 
-**2. Request dedup**
-- Hash of `(actor_id, function_name, request_payload)` → skip identical call within 60s window, return cached `ok` log entry
+**4. Standard 20% deposit flow**
+- `auto_create_pending_deposit` already defaults to 20% — confirm `policy_settings.deposit_percentage` defaults are seeded; if missing globally, seed `20`.
+- Verify Stripe webhook + reconcile path (added last session) transitions `pending_deposit → confirmed` and stamps `provider = 'stripe'` so provenance badge shows Verified Stripe.
+- Add explicit "Send deposit request" CTA on booking detail for staff (already in `PaymentLinkManager` — verify wording).
 
-**3. Multi-account heuristic**
-- Same `ip_hash` with 3+ distinct `actor_id` in 1hr → flag in `security_events`, no auto-block (admin review)
+**5. Payment hierarchy & buckets**
+- `calculateBookingFinancials` in `src/lib/paymentTypes.ts` already separates deposit / balance / security_deposit. Add `booking_fee` as a 4th `PaymentType`.
+- Update `PAYMENT_TYPE_LABELS`, `sumReceived`/`sumPending` callers, and `BookingFinancialSummary.tsx` to render the 5-row breakdown: Total → Deposit → Balance → Security → Fee → Collected/Outstanding.
+- Guest-facing `GuestPaymentSummary.tsx`: render same hierarchy (guest sees deposit + balance + security, hide fee if "included" mode).
 
-**4. Pause-AI circuit breaker**
-- One-click "Pause all AI for 30 min" button in dashboard → sets `ai_global_enabled=false` + scheduled re-enable timestamp in policy_settings; watchdog cron restores it
+**6. Booking fee controls**
+- Migration: add policy_settings keys `booking_fee_enabled`, `booking_fee_mode` (`none|included|separate`), `booking_fee_percentage`, `booking_fee_fixed`, with property-level overrides supported by existing `property_id` column.
+- Trigger: new `auto_create_booking_fee` fires on same booking states as deposit; respects mode (skip if `none` or `included`).
+- UI: extend `PolicySettingsForm.tsx` with a "Booking Fee" section. Waiver: admin-only action on payment row with reason → writes to `policy_settings_history`/`staff_audit_events`.
 
-## Executive PDF — "AI Governance Brief"
+## Phase 3 — Staff visibility polish
 
-Same aesthetic family as prior audit PDF: dark cover, gold/terracotta accents, sectioned spreads, scorecard tiles, risk matrix, timeline.
+**7. Booking financial summary**
+- `BookingFinancialSummary.tsx`: ensure all 9 fields render in a single card (Total, Deposit Required, Deposit Paid, Balance, Security, Fee, Total Collected, Outstanding, Status).
+- Reuse on `BookingDetailSheet`, `Bookings` row expand, and `Calendar` quick-view.
 
-**Contents:**
-1. **Cover** — "Ground Stay — AI Governance & Cost Control"
-2. **Executive Summary** — one-page: what AI does on the platform, why limits exist, current posture score
-3. **What AI Does Here** — table of all 9 AI endpoints, purpose, who triggers them, business value
-4. **The Limits We Set** — visual breakdown of the 5 enforcement layers (kill switch → feature flag → per-user → per-property → per-IP)
-5. **Numbers That Matter** — default quotas per role (guest/staff/admin), per-function caps, monthly budget ceiling
-6. **Where It Lives** — architecture diagram: `aiGuard` middleware, `ai_usage_events` table, `policy_settings` keys, watchdog cron, admin dashboard location (Security Center → AI Usage tab)
-7. **How It Works** — request lifecycle diagram (call → guard → model → log → aggregate → alert)
-8. **What Admins Can Do** — dashboard screenshots/mockup, kill-switch flow, budget alerts, pause button
-9. **Risk Posture** — before/after matrix, the 4 HIGH items resolved, residual risks
-10. **Roadmap** — what's done, what's next (streaming token metering, ML anomaly)
-11. **Appendix** — full policy_settings key reference
+## Technical notes
 
-Output: `/mnt/documents/Ground_Stay_AI_Governance_Brief.pdf` (ReportLab, matching dark/gold styling from prior brief). Includes mandatory visual QA pass.
+- DB changes go through `supabase--migration` (one migration per phase).
+- All new `payment_type = 'booking_fee'` rows use existing `payments` table — no schema split.
+- No new RLS surface; reuses existing `bookings`/`payments` policies.
+- Inquiry filter on edge functions stays as defense-in-depth even after trigger guards.
 
-## Files
+## Verification per phase
 
-**New:**
-- `supabase/functions/ai-budget-watchdog/index.ts`
-- `supabase/functions/ai-usage-summary/index.ts`
-- `src/components/admin/AIUsageDashboard.tsx`
-- `/tmp/build_ai_governance_pdf.py` → `/mnt/documents/Ground_Stay_AI_Governance_Brief.pdf`
+- Phase 1: open `/stay` incognito on mobile+desktop preview, browse a multi-photo unit; confirm inactive unit hidden from availability JSON.
+- Phase 2: submit a package inquiry → confirm no payment row created; submit a normal booking → confirm 20% deposit row + payment link works → simulate Stripe success via reconcile → state `confirmed`, badge Verified.
+- Phase 3: open a booking with deposit paid + fee enabled → all 9 fields visible, math correct.
 
-**Edited:**
-- `supabase/functions/_shared/aiGuard.ts` (IP velocity + dedup + multi-account)
-- Security Center page (add AI Usage tab)
-- Migration: new policy keys for budgets + watchdog state; pg_cron insert for 15-min schedule
+## Open questions before I start
 
-## Out of scope
-- Real-time streaming token metering
-- ML-based anomaly detection (heuristics only)
-- Backfilling historical AI calls before `ai_usage_events` existed
+1. **Booking fee default**: enabled or disabled out of the box? Suggest **disabled**, opt-in per property.
+2. **Booking fee mode default when enabled**: `separate` (transparent line item) or `included` (rolled into displayed price)?
+3. **Package inquiry**: do you want a dedicated `inquiries` table, or keep using `bookings` with `state='inquiry'` (current pattern)? Current pattern is fine and less churn.
+4. Anything you want me to **skip or defer** to keep this sprint shippable?
+
+Reply with answers (or "go with your defaults") and I'll execute Phase 1 immediately.
