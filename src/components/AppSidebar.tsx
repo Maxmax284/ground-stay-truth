@@ -241,7 +241,7 @@ export function AppSidebar() {
               {t(`roles.${role}`)}
             </Badge>
           )}
-          {(isAdmin || showInstall) && (
+          {(isAdmin || role === "manager" || showInstall) && (
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
