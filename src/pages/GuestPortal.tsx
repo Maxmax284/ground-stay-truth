@@ -844,7 +844,10 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
 
         {/* Payment summary for all non-inquiry bookings */}
         {!["inquiry", "soft_hold"].includes(state) && booking.total_price != null && (
-          <GuestPaymentSummary bookingId={booking.id} totalPrice={booking.total_price} policies={policies} />
+          <>
+            <GuestPaymentSummary bookingId={booking.id} totalPrice={booking.total_price} policies={policies} />
+            <PaymentGuideLink />
+          </>
         )}
 
         {/* Airport Pickup info */}
