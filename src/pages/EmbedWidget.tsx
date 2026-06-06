@@ -388,7 +388,7 @@ function FullListing({ unit, blocked, cfg, contactUrl, cs }: { unit: UnitData; b
     <div style={containerStyle(cfg)}>
       {!h.has("photo") && unit.photos && unit.photos.length > 0 && (
         <div style={{ margin: "-20px -20px 16px", borderRadius: `${cfg.radius}px ${cfg.radius}px 0 0`, overflow: "hidden" }}>
-          <img src={unit.photos[0]} alt={unit.name} style={{ width: "100%", height: 200, objectFit: "cover", display: "block" }} />
+          <EmbedPhotoCarousel photos={unit.photos} alt={unit.name} height={200} dark={cfg.dark} />
         </div>
       )}
       <div style={{ marginBottom: 16 }}>
