@@ -157,6 +157,16 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
               hint="Held separately — refundable"
             />
           )}
+          {fin.feeStatus !== "not_required" && (
+            <Row
+              label="Booking fee"
+              required={fin.feeRequired}
+              paid={fin.feePaid}
+              status={fin.feeStatus}
+              fmt={fmt}
+              hint={fin.feeMode === "hidden" ? "Internal only" : undefined}
+            />
+          )}
           {fin.totalRefunded > 0 && (
             <div className="flex items-center justify-between text-xs text-[hsl(var(--info))] pt-1">
               <span>↩ Refunded</span>
@@ -165,10 +175,10 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
           )}
         </div>
 
-        {/* Footer total collected (incl. security) */}
-        {fin.securityPaid > 0 && (
+        {/* Footer total collected (incl. security + fee) */}
+        {(fin.securityPaid > 0 || fin.feePaid > 0) && (
           <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/50 pt-2">
-            <span>Total in hand (incl. security)</span>
+            <span>Total in hand (incl. security & fees)</span>
             <span className="font-medium text-foreground tabular-nums">{fmt(fin.totalCollected)}</span>
           </div>
         )}
