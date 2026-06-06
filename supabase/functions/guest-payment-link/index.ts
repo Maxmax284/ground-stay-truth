@@ -128,14 +128,33 @@ serve(async (req) => {
       return jsonResponse(req, { error: "booking_missing" }, 404);
     }
 
-    // Check the booking hasn't already been paid through any other channel.
-    const { data: paid } = await adminClient
+    // Each link has a specific bucket (deposit | balance | full | security_deposit).
+    // Block only when THAT bucket has already been settled — not when the booking
+    // simply has other payments recorded against it.
+    const linkCollect = String(((link as any).metadata?.collect) || "deposit");
+    const linkPaymentType: string = ((link as any).metadata?.payment_type)
+      || (linkCollect === "security_deposit" ? "security_deposit"
+        : linkCollect === "balance" || linkCollect === "full" ? "balance"
+        : "deposit");
+
+    const { data: paidRowsForType } = await adminClient
       .from("payments")
-      .select("id")
+      .select("amount, refund_amount, status")
       .eq("booking_id", link.booking_id)
-      .eq("status", "recorded")
-      .limit(1);
-    const alreadyPaid = !!(paid && paid.length > 0);
+      .eq("payment_type", linkPaymentType)
+      .in("status", ["recorded", "partially_refunded"]);
+    const paidNet = (paidRowsForType ?? []).reduce(
+      (s: number, p: any) => s + Number(p.amount) - Number(p.refund_amount ?? 0),
+      0,
+    );
+    // Tolerate rounding (1 unit). Bucket is "settled" once paidNet covers link.amount.
+    const bucketSettled = paidNet + 1 >= Number(link.amount);
+
+    // Allowed booking states depend on collection type
+    const DEPOSIT_STATES = ["pending_deposit"];
+    const POST_DEPOSIT_STATES = ["pending_deposit", "confirmed", "checked_in"];
+    const allowedStates = linkCollect === "deposit" ? DEPOSIT_STATES : POST_DEPOSIT_STATES;
+    const stateOk = allowedStates.includes(booking.state);
 
     // Common masked summary, never returns guest PII.
     const summary = {
@@ -147,6 +166,7 @@ serve(async (req) => {
       currency: link.currency,
       expires_at: link.expires_at,
       booking_state: booking.state,
+      collect: linkCollect,
     };
 
     if (revoked) {
@@ -157,9 +177,9 @@ serve(async (req) => {
       await logEvent(adminClient, link.id, link.booking_id, "expired_attempt", req, { action });
       return jsonResponse(req, { status: "expired", summary }, 410);
     }
-    if (alreadyPaid || booking.state !== "pending_deposit") {
+    if (bucketSettled || !stateOk) {
       await logEvent(adminClient, link.id, link.booking_id, "already_paid_attempt", req, {
-        booking_state: booking.state, action,
+        booking_state: booking.state, action, collect: linkCollect, bucket_settled: bucketSettled,
       });
       return jsonResponse(req, { status: "already_paid", summary }, 409);
     }
