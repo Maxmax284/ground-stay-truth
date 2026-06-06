@@ -100,7 +100,9 @@ serve(async (req) => {
     // What's payable depends on what we're collecting.
     // - deposit: only pre-arrival states (soft_hold | pending_approval | pending_deposit)
     // - balance | full | security_deposit: also allowed after the room is confirmed or the guest is checked in
-    const DEPOSIT_STATES = ["soft_hold", "pending_approval", "pending_deposit"];
+    // Inquiry is allowed for deposit collection — we'll auto-advance it through
+    // the workflow to pending_deposit so staff can collect upfront from a fresh inquiry.
+    const DEPOSIT_STATES = ["inquiry", "soft_hold", "pending_approval", "pending_deposit"];
     const POST_DEPOSIT_STATES = ["pending_deposit", "confirmed", "checked_in"];
     const collectKind = String(body.collect || "deposit");
     const allowedStates = collectKind === "deposit" ? DEPOSIT_STATES : POST_DEPOSIT_STATES;
@@ -117,7 +119,7 @@ serve(async (req) => {
         .from("bookings")
         .update({ state: "pending_deposit", updated_at: new Date().toISOString() })
         .eq("id", bookingId)
-        .in("state", ["soft_hold", "pending_approval"]);
+        .in("state", ["inquiry", "soft_hold", "pending_approval"]);
       if (advErr) {
         console.error("[create-payment-link] state advance failed:", advErr);
         return jsonResponse(req, { error: "Could not move booking to pending_deposit" }, 500);
