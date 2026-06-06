@@ -175,6 +175,7 @@ export function SecurityDepositSection({ bookingId, bookingState }: { bookingId:
                 );
               })}
             </div>
+            <p className="text-[10px] text-muted-foreground">Card = Stripe link only. No manual card entry.</p>
           </div>
           {canCollect && (
             <Button
