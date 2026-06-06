@@ -9,6 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Home, Users, Moon, Sparkles, ChevronLeft, ChevronRight, CalendarDays, ArrowRight, MapPin, Clock, Shield, ListChecks, LogIn, Building2 } from "lucide-react";
 import { formatPriceSimple } from "@/lib/currency";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
+import { CarouselDots } from "@/components/CarouselDots";
 import { TestimonialSection } from "@/components/TestimonialSection";
 import { AmenityList } from "@/components/AmenityBadge";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
@@ -369,9 +371,7 @@ function UnitCard({ unit, currencySymbol, expandedUnit, blockedByUnit, onToggleA
   return (
     <Card id={`unit-${unit.id}`} className="overflow-hidden hover-lift scroll-mt-24">
       {unit.photos && unit.photos.length > 0 && (
-        <div className="aspect-[16/9] overflow-hidden">
-          <img src={unit.photos[0]} alt={`${unit.name} accommodation`} className="w-full h-full object-cover" loading="lazy" />
-        </div>
+        <UnitPhotoCarousel photos={unit.photos} name={unit.name} />
       )}
       <CardHeader className="pb-2">
         <CardTitle className="text-xl flex items-center gap-2">
@@ -465,6 +465,51 @@ function MiniCalendar({ blockedRanges }: { blockedRanges: BlockedRange[] }) {
       <div className="flex gap-3 text-[10px] text-muted-foreground justify-center">
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-destructive/30" /> Unavailable</span>
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary/30" /> Today</span>
+      </div>
+    </div>
+  );
+}
+
+function UnitPhotoCarousel({ photos, name }: { photos: string[]; name: string }) {
+  const [api, setApi] = useState<CarouselApi>();
+  const hasMultiple = photos.length > 1;
+
+  if (!hasMultiple) {
+    return (
+      <div className="aspect-[16/9] overflow-hidden">
+        <img src={photos[0]} alt={`${name} accommodation`} className="w-full h-full object-cover" loading="lazy" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative group">
+      <Carousel setApi={setApi} opts={{ loop: true }}>
+        <CarouselContent>
+          {photos.map((src, i) => (
+            <CarouselItem key={i}>
+              <div className="aspect-[16/9] overflow-hidden">
+                <img
+                  src={src}
+                  alt={`${name} photo ${i + 1} of ${photos.length}`}
+                  className="w-full h-full object-cover"
+                  loading={i === 0 ? "eager" : "lazy"}
+                />
+              </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <CarouselPrevious
+          className="left-2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+          aria-label="Previous photo"
+        />
+        <CarouselNext
+          className="right-2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+          aria-label="Next photo"
+        />
+      </Carousel>
+      <div className="absolute bottom-1 left-0 right-0">
+        <CarouselDots api={api} count={photos.length} />
       </div>
     </div>
   );
