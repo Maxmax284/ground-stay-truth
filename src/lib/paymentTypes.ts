@@ -51,6 +51,7 @@ export const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
   balance: "Balance",
   addon: "Add-on",
   security_deposit: "Security Deposit",
+  booking_fee: "Booking Fee",
 };
 
 /** Provenance badge — how trustworthy is this payment record? */
