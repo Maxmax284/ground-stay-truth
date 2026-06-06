@@ -195,6 +195,113 @@ serve(async (req) => {
       return jsonResponse(req, { status: "ok", summary });
     }
 
+    if (action === "verify") {
+      // Fallback for when the Stripe webhook hasn't fired (e.g. webhook endpoint
+      // not yet registered in Stripe dashboard, or signing secret mismatch).
+      // Called from the success page right after Stripe redirects the guest back.
+      const sessionId = (link as any).used_session_id;
+      if (!sessionId) return jsonResponse(req, { status: "no_session" }, 200);
+
+      const { data: secretRow2 } = await adminClient
+        .from("integration_secrets")
+        .select("encrypted_value")
+        .eq("secret_key", "stripe_secret_key")
+        .maybeSingle();
+      const stripeSecret2 = secretRow2?.encrypted_value;
+      if (!stripeSecret2 || stripeSecret2.length < 10) {
+        return jsonResponse(req, { error: "Online payments not configured" }, 400);
+      }
+      const stripe2 = new Stripe(stripeSecret2, { apiVersion: "2023-10-16" });
+      let session: any;
+      try {
+        session = await stripe2.checkout.sessions.retrieve(sessionId);
+      } catch (e) {
+        return jsonResponse(req, { status: "lookup_failed", error: String(e) }, 200);
+      }
+      if (session.payment_status !== "paid") {
+        return jsonResponse(req, { status: "not_paid", payment_status: session.payment_status }, 200);
+      }
+
+      const amountPaid = (session.amount_total || 0) / 100;
+      const transactionId = (session.payment_intent as string) || null;
+
+      const { data: pendingPayment } = await adminClient
+        .from("payments")
+        .select("id, status")
+        .eq("provider_session_id", sessionId)
+        .maybeSingle();
+
+      const alreadyRecorded = pendingPayment?.status === "recorded";
+      if (pendingPayment && !alreadyRecorded) {
+        await adminClient.from("payments").update({
+          status: "recorded",
+          provider_status: "completed",
+          provider_transaction_id: transactionId,
+        }).eq("id", pendingPayment.id).eq("status", "pending");
+      } else if (!pendingPayment) {
+        await adminClient.from("payments").insert({
+          booking_id: link.booking_id,
+          amount: amountPaid,
+          method: "card",
+          status: "recorded",
+          payment_type: linkPaymentType,
+          description: "Online payment (verified on return)",
+          source_channel: "online",
+          provider: "stripe",
+          provider_transaction_id: transactionId,
+          provider_session_id: sessionId,
+          provider_status: "completed",
+          idempotency_key: `stripe_${sessionId}`,
+        });
+      }
+
+      if (booking.state === "pending_deposit") {
+        const { error: transErr } = await adminClient
+          .from("bookings")
+          .update({ state: "confirmed" })
+          .eq("id", link.booking_id)
+          .eq("state", "pending_deposit");
+        if (!transErr) {
+          await adminClient.from("booking_state_log").insert({
+            booking_id: link.booking_id,
+            from_state: "pending_deposit",
+            to_state: "confirmed",
+            reason: `Online payment verified on guest return (${transactionId ?? sessionId})`,
+          });
+          if (booking.guest_id) {
+            await adminClient.from("notifications").insert({
+              user_id: booking.guest_id,
+              type: "booking_confirmed",
+              message: "Your deposit has been received and your booking is now confirmed!",
+              reference_id: link.booking_id,
+            });
+          }
+          const { data: admins } = await adminClient
+            .from("user_roles").select("user_id").in("role", ["admin", "manager"]);
+          const adminNotifs = (admins ?? []).map((a: any) => ({
+            user_id: a.user_id,
+            type: "booking",
+            message: `Online deposit received (verified on return): ${amountPaid} — booking auto-confirmed`,
+            reference_id: link.booking_id,
+          }));
+          if (adminNotifs.length) await adminClient.from("notifications").insert(adminNotifs);
+          try {
+            await fetch(`${supabaseUrl}/functions/v1/send-booking-confirmation`, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${serviceRoleKey}`, "Content-Type": "application/json" },
+              body: JSON.stringify({ booking_id: link.booking_id }),
+            });
+          } catch { /* ignore */ }
+        }
+      }
+
+      await logEvent(adminClient, link.id, link.booking_id, "verified_on_return", req, {
+        session_id: sessionId, amount: amountPaid, already_recorded: alreadyRecorded,
+      });
+
+      return jsonResponse(req, { status: "verified", amount: amountPaid });
+    }
+
     if (action !== "checkout") {
       return jsonResponse(req, { error: "invalid_action" }, 400);
     }
