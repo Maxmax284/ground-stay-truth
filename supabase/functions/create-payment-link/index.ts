@@ -175,22 +175,21 @@ serve(async (req) => {
     }
 
 
-    // Confirm there's no already-completed ONLINE payment.
-    // Auto-created pending obligations (provider='pending') and manual offline
-    // records should NOT block link generation — only a real settled online
-    // charge does.
-    const { data: paid } = await adminClient
-      .from("payments")
-      .select("id")
-      .eq("booking_id", bookingId)
-      .eq("status", "recorded")
-      .in("provider", ["stripe", "paddle"])
-      .limit(1);
-    if (paid && paid.length > 0) {
-      return jsonResponse(req, { error: "Booking already paid" }, 409);
+    // Only block when we're trying to collect a deposit that's already settled online.
+    if (collect === "deposit") {
+      const { data: paid } = await adminClient
+        .from("payments")
+        .select("id")
+        .eq("booking_id", bookingId)
+        .eq("status", "recorded")
+        .eq("payment_type", "deposit")
+        .in("provider", ["stripe", "paddle"])
+        .limit(1);
+      if (paid && paid.length > 0) {
+        return jsonResponse(req, { error: "Deposit already paid online" }, 409);
+      }
     }
 
-    // Revoke any active link if regenerating.
     if (regenerate) {
       await adminClient
         .from("payment_links")
@@ -213,10 +212,11 @@ serve(async (req) => {
         currency: currencyCode,
         expires_at: expiresAt,
         created_by: user.id,
-        metadata: { created_via: "create-payment-link", role: callerRole },
+        metadata: { created_via: "create-payment-link", role: callerRole, collect, payment_type: paymentTypeForRecord, label: collectLabel },
       })
       .select()
       .single();
+
 
     if (insertErr || !link) {
       console.error("[create-payment-link] insert failed:", insertErr);
