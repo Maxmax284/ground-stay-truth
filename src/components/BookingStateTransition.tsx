@@ -404,6 +404,23 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
           {targetState === "checked_in" && checkInBufferBlocked && (
             <div className="flex items-center gap-2 text-sm text-warning-foreground bg-warning/10 rounded-md p-3"><AlertTriangle className="h-4 w-4 shrink-0" /><span>{t("stateTransition.bufferBlocked")}</span></div>
           )}
+          {/* Unpaid-balance guardrail at check-in */}
+          {targetState === "checked_in" && outstandingAtCheckin != null && outstandingAtCheckin > 0 && (
+            <div className="flex items-start gap-2 text-sm rounded-md p-3 bg-warning/10 text-warning-foreground border border-warning/30">
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium">
+                  {t("checkin.balanceDueWarning", {
+                    defaultValue: "Guest has {{amount}} still owed before check-in is complete.",
+                    amount: formatPrice(outstandingAtCheckin, policies),
+                  })}
+                </p>
+                <p className="text-xs mt-1 opacity-90">
+                  Send a balance link from the Payments tab, record the payment below, or use Admin Override with a reason.
+                </p>
+              </div>
+            </div>
+          )}
           {refundInfo && (
             <div className={`flex items-start gap-2 text-sm rounded-md p-3 ${refundInfo.tier === "free" ? "bg-success/10 text-[hsl(var(--success))]" : refundInfo.tier === "partial" ? "bg-warning/10 text-warning-foreground" : "bg-destructive/10 text-destructive"}`}>
               <DollarSign className="h-4 w-4 shrink-0 mt-0.5" />
@@ -501,11 +518,12 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
                   <Select value={depositMethod} onValueChange={setDepositMethod}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="cash">{t("payments.methods.cash")}</SelectItem>
-                      <SelectItem value="card">{t("payments.methods.card")}</SelectItem>
-                      <SelectItem value="bank_transfer">{t("payments.methods.bank_transfer")}</SelectItem>
+                      <SelectItem value="cash">{t("payments.methods.cash", { defaultValue: "Cash" })}</SelectItem>
+                      <SelectItem value="bank_transfer">{t("payments.methods.bank_transfer", { defaultValue: "Bank Transfer" })}</SelectItem>
+                      <SelectItem value="other">{t("payments.methods.other", { defaultValue: "Other (offline)" })}</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-[10px] text-muted-foreground">Card payments must go through the Stripe link — not recorded manually.</p>
                 </div>
               </div>
               <Textarea placeholder={t("payments.paymentNotes")} value={depositNotes} onChange={(e) => setDepositNotes(e.target.value)} rows={1} />
@@ -537,12 +555,13 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
                       <Select value={checkinPayMethod} onValueChange={setCheckinPayMethod}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="cash">{t("payments.methods.cash")}</SelectItem>
-                          <SelectItem value="card">{t("payments.methods.card")}</SelectItem>
+                          <SelectItem value="cash">{t("payments.methods.cash", { defaultValue: "Cash" })}</SelectItem>
+                          <SelectItem value="bank_transfer">{t("payments.methods.bank_transfer", { defaultValue: "Bank Transfer" })}</SelectItem>
                           <SelectItem value="in_person">{t("payments.methods.in_person", { defaultValue: "In Person" })}</SelectItem>
-                          <SelectItem value="bank_transfer">{t("payments.methods.bank_transfer")}</SelectItem>
+                          <SelectItem value="other">{t("payments.methods.other", { defaultValue: "Other (offline)" })}</SelectItem>
                         </SelectContent>
                       </Select>
+                      <p className="text-[10px] text-muted-foreground">Card = Stripe link only. No manual card entry.</p>
                     </div>
                   </div>
                   <Textarea placeholder={t("checkin.paymentNotes", { defaultValue: "Payment notes (e.g. receipt number)" })} value={checkinPayNotes} onChange={(e) => setCheckinPayNotes(e.target.value)} rows={1} />

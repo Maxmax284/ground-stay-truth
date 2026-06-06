@@ -97,14 +97,22 @@ serve(async (req) => {
 
     if (!booking) return jsonResponse(req, { error: "Booking not found" }, 404);
 
-    const PAYABLE_PRE_STATES = ["soft_hold", "pending_approval", "pending_deposit"];
-    if (!PAYABLE_PRE_STATES.includes(booking.state)) {
+    // What's payable depends on what we're collecting.
+    // - deposit: only pre-arrival states (soft_hold | pending_approval | pending_deposit)
+    // - balance | full | security_deposit: also allowed after the room is confirmed or the guest is checked in
+    const DEPOSIT_STATES = ["soft_hold", "pending_approval", "pending_deposit"];
+    const POST_DEPOSIT_STATES = ["pending_deposit", "confirmed", "checked_in"];
+    const collectKind = String(body.collect || "deposit");
+    const allowedStates = collectKind === "deposit" ? DEPOSIT_STATES : POST_DEPOSIT_STATES;
+    if (!allowedStates.includes(booking.state)) {
       return jsonResponse(req, {
-        error: "Booking is not in a payable state",
+        error: "Booking is not in a payable state for this collection type",
         booking_state: booking.state,
+        collect: collectKind,
       }, 400);
     }
-    if (booking.state !== "pending_deposit") {
+    // Only auto-advance to pending_deposit for an actual deposit collection
+    if (collectKind === "deposit" && booking.state !== "pending_deposit") {
       const { error: advErr } = await adminClient
         .from("bookings")
         .update({ state: "pending_deposit", updated_at: new Date().toISOString() })
