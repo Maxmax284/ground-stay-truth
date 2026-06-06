@@ -90,11 +90,29 @@ serve(async (req) => {
       .single();
 
     if (!booking) return jsonResponse(req, { error: "Booking not found" }, 404);
-    if (booking.state !== "pending_deposit") {
+
+    // Allow link generation for any pre-confirmed payable state.
+    // If the booking is still upstream of pending_deposit, auto-advance it so
+    // operators don't have to click through soft_hold → pending_approval → pending_deposit
+    // just to send a deposit link.
+    const PAYABLE_PRE_STATES = ["soft_hold", "pending_approval", "pending_deposit"];
+    if (!PAYABLE_PRE_STATES.includes(booking.state)) {
       return jsonResponse(req, {
         error: "Booking is not awaiting deposit",
         booking_state: booking.state,
       }, 400);
+    }
+    if (booking.state !== "pending_deposit") {
+      const { error: advErr } = await adminClient
+        .from("bookings")
+        .update({ state: "pending_deposit", updated_at: new Date().toISOString() })
+        .eq("id", bookingId)
+        .in("state", ["soft_hold", "pending_approval"]);
+      if (advErr) {
+        console.error("[create-payment-link] state advance failed:", advErr);
+        return jsonResponse(req, { error: "Could not move booking to pending_deposit" }, 500);
+      }
+      booking.state = "pending_deposit";
     }
 
     // Compute deposit amount the same way process-payment does.
