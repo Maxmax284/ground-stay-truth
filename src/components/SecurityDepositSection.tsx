@@ -21,10 +21,11 @@ const STATUS_COLORS: Record<string, string> = {
   deducted: "bg-destructive/15 text-destructive",
 };
 
+// Card intentionally excluded — card payments must go through a Stripe link, never recorded manually.
 const COLLECTION_METHODS = [
   { value: "cash", label: "Cash", icon: Banknote },
-  { value: "card", label: "Card", icon: CreditCard },
   { value: "bank_transfer", label: "Bank Transfer", icon: HandCoins },
+  { value: "other", label: "Other (offline)", icon: HandCoins },
 ];
 
 export function SecurityDepositSection({ bookingId, bookingState }: { bookingId: string; bookingState: string }) {
