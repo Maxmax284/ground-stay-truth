@@ -312,7 +312,7 @@ function GridOverview({ cfg, contactUrl }: { cfg: StyleConfig; contactUrl: strin
             background: cfg.dark ? "#1f2937" : "#fff",
           }}>
             {rt.photos.length > 0 && (
-              <img src={rt.photos[0]} alt={rt.name} style={{ width: "100%", height: 160, objectFit: "cover", display: "block" }} />
+              <EmbedPhotoCarousel photos={rt.photos} alt={rt.name} height={160} dark={cfg.dark} />
             )}
             <div style={{ padding: 14 }}>
               <h3 style={{ fontSize: getFontSize(cfg.font) + 1, fontWeight: 600, margin: "0 0 4px" }}>{rt.name}</h3>
