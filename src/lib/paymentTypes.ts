@@ -17,7 +17,8 @@ export type PaymentType =
   | "deposit"           // Booking deposit
   | "balance"           // Remaining balance
   | "addon"             // Airport pickup, training, etc.
-  | "security_deposit"; // Damage deposit
+  | "security_deposit"  // Damage deposit
+  | "booking_fee";      // Platform/processing fee (separate from room cost)
 
 /** Supported payment providers */
 export type PaymentProvider = "stripe" | "paypal" | "manual";
