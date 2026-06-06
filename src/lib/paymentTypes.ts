@@ -52,6 +52,59 @@ export const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
   security_deposit: "Security Deposit",
 };
 
+/** Provenance badge — how trustworthy is this payment record? */
+export type PaymentProvenance = "verified_stripe" | "manual_recorded" | "unverified_legacy";
+
+export interface ProvenanceBadge {
+  kind: PaymentProvenance;
+  label: string;
+  icon: string; // emoji
+  className: string;
+  tooltip: string;
+}
+
+export function getPaymentProvenance(p: {
+  provider?: string | null;
+  method?: string | null;
+  status?: string | null;
+  provider_session_id?: string | null;
+}): ProvenanceBadge {
+  const provider = (p.provider || "").toLowerCase();
+  const method = (p.method || "").toLowerCase();
+  const hasStripeId = !!p.provider_session_id;
+
+  // Verified: real online charge confirmed by webhook
+  if ((provider === "stripe" || provider === "paddle") && (hasStripeId || p.status === "recorded")) {
+    return {
+      kind: "verified_stripe",
+      label: "Verified Stripe",
+      icon: "🟢",
+      className: "bg-success/15 text-[hsl(var(--success))] border-0",
+      tooltip: "Confirmed by payment provider webhook",
+    };
+  }
+
+  // Legacy/risky: manual entry that claims card without Stripe proof
+  if (method === "card" && provider !== "stripe" && provider !== "paddle") {
+    return {
+      kind: "unverified_legacy",
+      label: "Unverified",
+      icon: "🔴",
+      className: "bg-destructive/10 text-destructive border-0",
+      tooltip: "Manual card entry with no Stripe confirmation — review",
+    };
+  }
+
+  // Manual offline (cash, bank_transfer, other)
+  return {
+    kind: "manual_recorded",
+    label: "Manual recorded",
+    icon: "🟡",
+    className: "bg-warning/15 text-warning-foreground border-0",
+    tooltip: "Staff-entered offline payment",
+  };
+}
+
 /** Whether a payment status counts as "money received" */
 export function isPaymentReceived(status: string): boolean {
   return status === "recorded" || status === "partially_refunded";
