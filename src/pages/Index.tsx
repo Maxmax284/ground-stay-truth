@@ -222,9 +222,13 @@ const Index = () => {
                 <LaundryPanel />
               </div>
             )}
+
+            {/* Admin-only payment reconciliation sweep */}
+            {isAdmin && <ReconcilePaymentsCard />}
           </>
         )}
       </div>
+
 
       {/* Detail sheet for clicking on bookings from arrivals/departures/activity */}
       <BookingDetailSheet
