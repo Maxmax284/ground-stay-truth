@@ -101,10 +101,12 @@ export default function Stay() {
         try {
           const cached = localStorage.getItem("gs_cache_units");
           const cachedProps = localStorage.getItem("gs_cache_props");
+          const cachedGroups = localStorage.getItem("gs_cache_groups");
           const cachedCurrency = localStorage.getItem("gs_cache_currency");
           if (cached) {
             setUnits(JSON.parse(cached));
             if (cachedProps) setProperties(JSON.parse(cachedProps));
+            if (cachedGroups) setGroups(JSON.parse(cachedGroups));
             if (cachedCurrency) setCurrencySymbol(cachedCurrency);
           } else {
             setFetchError(true);
