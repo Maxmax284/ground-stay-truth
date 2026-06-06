@@ -425,12 +425,12 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
             <div className="space-y-1"><Label className="text-xs">{t("payments.method")}</Label>
               <Select value={method} onValueChange={setMethod}><SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="cash">{t("payments.methods.cash")}</SelectItem>
-                  <SelectItem value="card">{t("payments.methods.card")}</SelectItem>
-                  <SelectItem value="bank_transfer">{t("payments.methods.bank_transfer")}</SelectItem>
-                  <SelectItem value="in_person">{t("payments.methods.in_person", { defaultValue: "In Person" })}</SelectItem>
+                  <SelectItem value="cash">{t("payments.methods.cash", { defaultValue: "Cash" })}</SelectItem>
+                  <SelectItem value="bank_transfer">{t("payments.methods.bank_transfer", { defaultValue: "Bank Transfer" })}</SelectItem>
+                  <SelectItem value="other">{t("payments.methods.other", { defaultValue: "Other (offline)" })}</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-[10px] text-muted-foreground">Card payments go through Stripe only — use Generate Payment Link above.</p>
             </div>
           </div>
           <div className="space-y-1">
