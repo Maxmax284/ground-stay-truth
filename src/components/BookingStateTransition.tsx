@@ -404,6 +404,23 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
           {targetState === "checked_in" && checkInBufferBlocked && (
             <div className="flex items-center gap-2 text-sm text-warning-foreground bg-warning/10 rounded-md p-3"><AlertTriangle className="h-4 w-4 shrink-0" /><span>{t("stateTransition.bufferBlocked")}</span></div>
           )}
+          {/* Unpaid-balance guardrail at check-in */}
+          {targetState === "checked_in" && outstandingAtCheckin != null && outstandingAtCheckin > 0 && (
+            <div className="flex items-start gap-2 text-sm rounded-md p-3 bg-warning/10 text-warning-foreground border border-warning/30">
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium">
+                  {t("checkin.balanceDueWarning", {
+                    defaultValue: "Guest has {{amount}} still owed before check-in is complete.",
+                    amount: formatPrice(outstandingAtCheckin, policies),
+                  })}
+                </p>
+                <p className="text-xs mt-1 opacity-90">
+                  Send a balance link from the Payments tab, record the payment below, or use Admin Override with a reason.
+                </p>
+              </div>
+            </div>
+          )}
           {refundInfo && (
             <div className={`flex items-start gap-2 text-sm rounded-md p-3 ${refundInfo.tier === "free" ? "bg-success/10 text-[hsl(var(--success))]" : refundInfo.tier === "partial" ? "bg-warning/10 text-warning-foreground" : "bg-destructive/10 text-destructive"}`}>
               <DollarSign className="h-4 w-4 shrink-0 mt-0.5" />
