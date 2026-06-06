@@ -501,11 +501,12 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
                   <Select value={depositMethod} onValueChange={setDepositMethod}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="cash">{t("payments.methods.cash")}</SelectItem>
-                      <SelectItem value="card">{t("payments.methods.card")}</SelectItem>
-                      <SelectItem value="bank_transfer">{t("payments.methods.bank_transfer")}</SelectItem>
+                      <SelectItem value="cash">{t("payments.methods.cash", { defaultValue: "Cash" })}</SelectItem>
+                      <SelectItem value="bank_transfer">{t("payments.methods.bank_transfer", { defaultValue: "Bank Transfer" })}</SelectItem>
+                      <SelectItem value="other">{t("payments.methods.other", { defaultValue: "Other (offline)" })}</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-[10px] text-muted-foreground">Card payments must go through the Stripe link — not recorded manually.</p>
                 </div>
               </div>
               <Textarea placeholder={t("payments.paymentNotes")} value={depositNotes} onChange={(e) => setDepositNotes(e.target.value)} rows={1} />
