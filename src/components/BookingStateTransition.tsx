@@ -538,12 +538,13 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
                       <Select value={checkinPayMethod} onValueChange={setCheckinPayMethod}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="cash">{t("payments.methods.cash")}</SelectItem>
-                          <SelectItem value="card">{t("payments.methods.card")}</SelectItem>
+                          <SelectItem value="cash">{t("payments.methods.cash", { defaultValue: "Cash" })}</SelectItem>
+                          <SelectItem value="bank_transfer">{t("payments.methods.bank_transfer", { defaultValue: "Bank Transfer" })}</SelectItem>
                           <SelectItem value="in_person">{t("payments.methods.in_person", { defaultValue: "In Person" })}</SelectItem>
-                          <SelectItem value="bank_transfer">{t("payments.methods.bank_transfer")}</SelectItem>
+                          <SelectItem value="other">{t("payments.methods.other", { defaultValue: "Other (offline)" })}</SelectItem>
                         </SelectContent>
                       </Select>
+                      <p className="text-[10px] text-muted-foreground">Card = Stripe link only. No manual card entry.</p>
                     </div>
                   </div>
                   <Textarea placeholder={t("checkin.paymentNotes", { defaultValue: "Payment notes (e.g. receipt number)" })} value={checkinPayNotes} onChange={(e) => setCheckinPayNotes(e.target.value)} rows={1} />
