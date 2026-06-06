@@ -254,8 +254,9 @@ Deno.serve(async (req) => {
       stack: err?.stack,
       timestamp: new Date().toISOString(),
     }));
-    return new Response(JSON.stringify({ error: "Failed to load availability" }), {
-      status: 500,
+    // Return 200 + fallback signal so the embed never crashes external pages with a hard error.
+    return new Response(JSON.stringify({ error: "SERVICE_UNAVAILABLE", fallback: true, message: "Availability temporarily unavailable" }), {
+      status: 200,
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }
