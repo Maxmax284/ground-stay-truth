@@ -58,6 +58,7 @@ import { GuestPickupCard } from "@/components/GuestPickupCard";
 import { ArrivalRouteFAQ } from "@/components/ArrivalRouteFAQ";
 import { GuestDepositSection } from "@/components/GuestDepositSection";
 import { GuestPaymentSummary } from "@/components/GuestPaymentSummary";
+import { PaymentGuideLink } from "@/components/PaymentGuideLink";
 import { PreArrivalChecklist } from "@/components/PreArrivalChecklist";
 import { GuestStayUpdatesPrompt } from "@/components/GuestStayUpdatesPrompt";
 import { GuestMessagingOnboarding } from "@/components/GuestMessagingOnboarding";
