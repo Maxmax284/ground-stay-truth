@@ -234,6 +234,70 @@ serve(async (req) => {
 
     const url = `${getCanonicalSiteUrl()}/pay/${rawToken}`;
 
+    // ── Auto-send: email + guest portal notification (WhatsApp/LINE stay human-gated) ──
+    const guest: any = (booking as any).profiles ?? {};
+    const unitName = (booking as any).units?.name ?? "Your stay";
+    let emailSent = false;
+    let notificationCreated = false;
+
+    if (guest.email) {
+      try {
+        const amountFormatted = `${currencyCode.toUpperCase()} ${amount.toLocaleString()}`;
+        const expiresHuman = `in ${expiresInHours}h`;
+        const emailResp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${serviceRoleKey}`,
+            "Content-Type": "application/json",
+            apikey: serviceRoleKey,
+          },
+          body: JSON.stringify({
+            template_key: "payment_link_sent",
+            recipient_email: guest.email,
+            booking_id: bookingId,
+            language: guest.preferred_language || "en",
+            idempotency_key: `paylink-${link.id}`,
+            data: {
+              guest_name: guest.full_name || "",
+              unit_name: unitName,
+              payment_label: collectLabel,
+              amount_formatted: amountFormatted,
+              check_in: booking.check_in,
+              check_out: booking.check_out,
+              payment_url: url,
+              expires_at_human: expiresHuman,
+            },
+          }),
+        });
+        emailSent = emailResp.ok;
+      } catch (e) {
+        console.error("[create-payment-link] email send failed:", e);
+      }
+    }
+
+    if (booking.guest_id) {
+      try {
+        await adminClient.from("notifications").insert({
+          user_id: booking.guest_id,
+          type: "payment_link",
+          reference_id: bookingId,
+          message: `Your ${collectLabel.toLowerCase()} link is ready — tap to pay securely.`,
+        });
+        notificationCreated = true;
+      } catch (e) {
+        console.error("[create-payment-link] notification insert failed:", e);
+      }
+    }
+
+    await adminClient.from("payment_link_events").insert({
+      payment_link_id: link.id,
+      booking_id: bookingId,
+      event_type: "auto_dispatched",
+      actor_id: user.id,
+      actor_role: callerRole,
+      context: { email_sent: emailSent, notification_created: notificationCreated, channel: "email+portal" },
+    });
+
     return jsonResponse(req, {
       token: rawToken,
       url,
@@ -241,7 +305,13 @@ serve(async (req) => {
       payment_link_id: link.id,
       amount,
       currency: currencyCode,
+      collect,
+      payment_type: paymentTypeForRecord,
+      label: collectLabel,
+      email_sent: emailSent,
+      notification_created: notificationCreated,
     });
+
   } catch (err) {
     console.error("[create-payment-link] error:", err);
     return jsonResponse(req, {
