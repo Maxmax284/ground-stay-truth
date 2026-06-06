@@ -35,7 +35,7 @@ function StatusPill({ status }: { status: "paid" | "partial" | "pending" | "not_
 function TrustPill({ trust }: { trust: "verified" | "mixed" | "manual_only" | "none" }) {
   if (trust === "verified") return <Badge className="gap-1 bg-[hsl(var(--success))]/15 text-[hsl(var(--success))] border-0"><ShieldCheck className="h-3 w-3" />Verified Stripe</Badge>;
   if (trust === "mixed") return <Badge className="gap-1 bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))] border-0"><Shield className="h-3 w-3" />Mixed</Badge>;
-  if (trust === "manual_only") return <Badge className="gap-1 bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))] border-0"><ShieldAlert className="h-3 w-3" />Manual only</Badge>;
+  if (trust === "manual_only") return <Badge className="gap-1 bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))] border-0"><ShieldAlert className="h-3 w-3" />Manual recorded</Badge>;
   return <Badge variant="outline" className="text-xs">No payments yet</Badge>;
 }
 
