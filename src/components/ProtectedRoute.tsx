@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { canAccessRoute, permissions } from "@/lib/permissions";
 import { useTranslation } from "react-i18next";
@@ -13,6 +13,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children, requiredPath, guestOnly = false }: ProtectedRouteProps) => {
   const { t } = useTranslation();
   const { user, loading, role, roleResolved } = useAuth();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const [timedOut, setTimedOut] = useState(false);
   const isPreview = searchParams.get("preview") === "true";
@@ -35,7 +36,10 @@ const ProtectedRoute = ({ children, requiredPath, guestOnly = false }: Protected
     );
   }
 
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!user) {
+    const target = guestOnly ? `/auth/guest${location.search}` : "/auth";
+    return <Navigate to={target} replace />;
+  }
 
   if (user && !roleResolved && !timedOut) {
     return (
