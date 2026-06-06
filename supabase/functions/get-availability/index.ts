@@ -18,10 +18,16 @@ function isAllowedOrigin(origin: string): boolean {
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
-  const allowedOrigin = isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0];
+  // For a public embed widget, reflecting the origin is safe (no cookies/credentials)
+  // and prevents CDN/proxy caching from serving the wrong Allow-Origin to another site.
+  const allowedOrigin = origin && (isAllowedOrigin(origin) || origin.startsWith("https://")) ? origin : "*";
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "Access-Control-Max-Age": "86400",
+    "Vary": "Origin",
+    "Cache-Control": "public, max-age=30, s-maxage=60",
   };
 }
 
