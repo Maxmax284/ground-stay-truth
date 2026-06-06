@@ -47,6 +47,27 @@ interface StyleConfig {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+// Cross-browser safe fetch with timeout + structured fallback handling.
+// Avoids hanging embeds on Safari/Brave/ad-blockers and never throws on transient errors.
+async function safeFetchJson(url: string, timeoutMs = 8000): Promise<any> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+      signal: controller.signal,
+      mode: "cors",
+      credentials: "omit",
+    });
+    const json = await res.json().catch(() => ({}));
+    if (json?.fallback) return { __fallback: true, message: json.message || "Temporarily unavailable" };
+    if (!res.ok) throw new Error(json?.error || `Request failed (${res.status})`);
+    return json;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function isDateBlocked(date: Date, ranges: BlockedRange[]): boolean {
   const d = format(date, "yyyy-MM-dd");
   return ranges.some((r) => d >= r.start && d < r.end);
