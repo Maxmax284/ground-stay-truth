@@ -56,6 +56,7 @@ export default function Stay() {
   const navigate = useNavigate();
   const [units, setUnits] = useState<UnitData[]>([]);
   const [properties, setProperties] = useState<PropertyData[]>([]);
+  const [groups, setGroups] = useState<GroupData[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [currencySymbol, setCurrencySymbol] = useState("฿");
@@ -75,15 +76,18 @@ export default function Stay() {
         const data = await resp.json();
         const fetchedUnits = data.units ?? [];
         const fetchedProperties = data.properties ?? [];
+        const fetchedGroups = data.groups ?? [];
         const fetchedSymbol = data.currencySymbol ?? "฿";
         setUnits(fetchedUnits);
         setProperties(fetchedProperties);
+        setGroups(fetchedGroups);
         setCurrencySymbol(fetchedSymbol);
         setFetchError(false);
         // Cache for offline use
         try {
           localStorage.setItem("gs_cache_units", JSON.stringify(fetchedUnits));
           localStorage.setItem("gs_cache_props", JSON.stringify(fetchedProperties));
+          localStorage.setItem("gs_cache_groups", JSON.stringify(fetchedGroups));
           localStorage.setItem("gs_cache_currency", fetchedSymbol);
         } catch { /* quota */ }
       } catch (err: any) {
