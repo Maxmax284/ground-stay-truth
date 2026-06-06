@@ -393,24 +393,33 @@ export default function Stay() {
 
 /* Mini Calendar for availability preview */
 /* Unit Card extracted for use in property sections */
-function UnitCard({ unit, currencySymbol, expandedUnit, blockedByUnit, onToggleAvailability, onRequestBooking }: {
+function UnitCard({ unit, displayName, availableCount, currencySymbol, expandedUnit, blockedByUnit, onToggleAvailability, onRequestBooking }: {
   unit: UnitData;
+  displayName?: string;
+  availableCount?: number;
   currencySymbol: string;
   expandedUnit: string | null;
   blockedByUnit: Record<string, BlockedRange[]>;
   onToggleAvailability: (id: string) => void;
   onRequestBooking: (id: string) => void;
 }) {
+  const title = displayName ?? unit.name;
+  const count = availableCount ?? 1;
   return (
     <Card id={`unit-${unit.id}`} className="overflow-hidden hover-lift scroll-mt-24">
       {unit.photos && unit.photos.length > 0 && (
-        <UnitPhotoCarousel photos={unit.photos} name={unit.name} />
+        <UnitPhotoCarousel photos={unit.photos} name={title} />
       )}
       <CardHeader className="pb-2">
         <CardTitle className="text-xl flex items-center gap-2">
           <Home className="h-5 w-5 text-primary" />
-          {unit.name}
+          {title}
         </CardTitle>
+        {count > 1 && (
+          <p className="text-xs text-muted-foreground">
+            {count} rooms of this type — we'll assign one automatically
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-3">
         {unit.description && <p className="text-sm text-muted-foreground line-clamp-2">{unit.description}</p>}
