@@ -56,8 +56,9 @@ Deno.serve(async (req) => {
   // Rate limit by IP (or fallback to generic key)
   const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   if (!checkRateLimit(clientIp)) {
-    return new Response(JSON.stringify({ error: "Too many requests" }), {
-      status: 429,
+    // Return 200 with fallback signal so the embed degrades gracefully instead of showing a red error
+    return new Response(JSON.stringify({ error: "RATE_LIMITED", fallback: true, message: "Please try again in a moment" }), {
+      status: 200,
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }
