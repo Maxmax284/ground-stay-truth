@@ -18,16 +18,22 @@ function isAllowedOrigin(origin: string): boolean {
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
-  const allowedOrigin = isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0];
+  // For a public embed widget, reflecting the origin is safe (no cookies/credentials)
+  // and prevents CDN/proxy caching from serving the wrong Allow-Origin to another site.
+  const allowedOrigin = origin && (isAllowedOrigin(origin) || origin.startsWith("https://")) ? origin : "*";
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "Access-Control-Max-Age": "86400",
+    "Vary": "Origin",
+    "Cache-Control": "public, max-age=30, s-maxage=60",
   };
 }
 
 // ── Simple in-memory rate limiter (per IP) ──
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT = 30; // max calls per window
+const RATE_LIMIT = 120; // max calls per window — generous for shared NAT / corporate / mobile carriers
 const RATE_WINDOW_MS = 60 * 1000; // 1 minute
 
 function checkRateLimit(key: string): boolean {
@@ -50,8 +56,9 @@ Deno.serve(async (req) => {
   // Rate limit by IP (or fallback to generic key)
   const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   if (!checkRateLimit(clientIp)) {
-    return new Response(JSON.stringify({ error: "Too many requests" }), {
-      status: 429,
+    // Return 200 with fallback signal so the embed degrades gracefully instead of showing a red error
+    return new Response(JSON.stringify({ error: "RATE_LIMITED", fallback: true, message: "Please try again in a moment" }), {
+      status: 200,
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }
@@ -247,8 +254,9 @@ Deno.serve(async (req) => {
       stack: err?.stack,
       timestamp: new Date().toISOString(),
     }));
-    return new Response(JSON.stringify({ error: "Failed to load availability" }), {
-      status: 500,
+    // Return 200 + fallback signal so the embed never crashes external pages with a hard error.
+    return new Response(JSON.stringify({ error: "SERVICE_UNAVAILABLE", fallback: true, message: "Availability temporarily unavailable" }), {
+      status: 200,
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }

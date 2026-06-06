@@ -47,6 +47,27 @@ interface StyleConfig {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+// Cross-browser safe fetch with timeout + structured fallback handling.
+// Avoids hanging embeds on Safari/Brave/ad-blockers and never throws on transient errors.
+async function safeFetchJson(url: string, timeoutMs = 8000): Promise<any> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+      signal: controller.signal,
+      mode: "cors",
+      credentials: "omit",
+    });
+    const json = await res.json().catch(() => ({}));
+    if (json?.fallback) return { __fallback: true, message: json.message || "Temporarily unavailable" };
+    if (!res.ok) throw new Error(json?.error || `Request failed (${res.status})`);
+    return json;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function isDateBlocked(date: Date, ranges: BlockedRange[]): boolean {
   const d = format(date, "yyyy-MM-dd");
   return ranges.some((r) => d >= r.start && d < r.end);
@@ -121,26 +142,32 @@ function SingleUnitWidget({ type, unitId, cfg, contactUrl }: { type?: string; un
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
+    let cancelled = false;
+    const fetchData = async (attempt = 0) => {
       try {
         const params = unitId ? `?unit_id=${unitId}` : "";
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/get-availability${params}`, {
-          headers: { apikey: SUPABASE_KEY },
-        });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || "Failed to load");
-        if (json.currencySymbol) setCurrencySymbol(json.currencySymbol);
-        if (unitId) {
-          setUnit(json.unit);
-          setBlocked(json.blockedRanges ?? []);
+        const json = await safeFetchJson(`${SUPABASE_URL}/functions/v1/get-availability${params}`);
+        if (cancelled) return;
+        if (json?.__fallback) {
+          setError(json.message);
+        } else {
+          if (json.currencySymbol) setCurrencySymbol(json.currencySymbol);
+          if (unitId) {
+            setUnit(json.unit);
+            setBlocked(json.blockedRanges ?? []);
+          }
         }
       } catch (err: any) {
-        setError(err.message);
+        if (cancelled) return;
+        // One automatic retry for transient network errors (mobile, captive portals)
+        if (attempt === 0) return setTimeout(() => fetchData(1), 1200);
+        setError("Unable to load — please refresh");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchData();
+    return () => { cancelled = true; };
   }, [unitId]);
 
   if (loading) return <div style={containerStyle(cfg)}><p style={{ color: mutedColor(cfg.dark) }}>Loading…</p></div>;
@@ -179,22 +206,27 @@ function GridOverview({ cfg, contactUrl }: { cfg: StyleConfig; contactUrl: strin
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
+    let cancelled = false;
+    const fetchData = async (attempt = 0) => {
       try {
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/get-availability?mode=groups`, {
-          headers: { apikey: SUPABASE_KEY },
-        });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || "Failed to load");
-        setRoomTypes(json.roomTypes ?? []);
-        if (json.currencySymbol) setCurrencySymbol(json.currencySymbol);
+        const json = await safeFetchJson(`${SUPABASE_URL}/functions/v1/get-availability?mode=groups`);
+        if (cancelled) return;
+        if (json?.__fallback) {
+          setError(json.message);
+        } else {
+          setRoomTypes(json.roomTypes ?? []);
+          if (json.currencySymbol) setCurrencySymbol(json.currencySymbol);
+        }
       } catch (err: any) {
-        setError(err.message);
+        if (cancelled) return;
+        if (attempt === 0) return setTimeout(() => fetchData(1), 1200);
+        setError("Unable to load — please refresh");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchData();
+    return () => { cancelled = true; };
   }, []);
 
   if (loading) return <div style={containerStyle(cfg)}><p style={{ color: mutedColor(cfg.dark) }}>Loading…</p></div>;
