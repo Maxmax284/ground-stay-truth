@@ -246,6 +246,10 @@ const FRIENDLY_LABELS: Record<string, string> = {
   emergency_contact_phone: "Emergency Contact Phone",
   sound_effects_enabled: "Enable Ground Sounds",
   sound_effects_volume: "Volume",
+  booking_fee_enabled: "Charge Booking Fee",
+  booking_fee_mode: "Display Mode (included / separate / hidden)",
+  booking_fee_percentage: "Fee Percentage (%)",
+  booking_fee_fixed: "Fee Fixed Amount (฿)",
 };
 
 const SETTING_ICONS: Record<string, React.ReactNode> = {
