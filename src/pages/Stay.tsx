@@ -34,6 +34,7 @@ interface UnitData {
   amenities: string[] | null;
   photos: string[] | null;
   property_id: string | null;
+  group_id: string | null;
 }
 
 interface PropertyData {
@@ -43,12 +44,19 @@ interface PropertyData {
   operational_mode: string;
 }
 
+interface GroupData {
+  id: string;
+  name: string;
+  sort_order: number | null;
+}
+
 interface BlockedRange { start: string; end: string; }
 
 export default function Stay() {
   const navigate = useNavigate();
   const [units, setUnits] = useState<UnitData[]>([]);
   const [properties, setProperties] = useState<PropertyData[]>([]);
+  const [groups, setGroups] = useState<GroupData[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [currencySymbol, setCurrencySymbol] = useState("฿");
@@ -68,15 +76,18 @@ export default function Stay() {
         const data = await resp.json();
         const fetchedUnits = data.units ?? [];
         const fetchedProperties = data.properties ?? [];
+        const fetchedGroups = data.groups ?? [];
         const fetchedSymbol = data.currencySymbol ?? "฿";
         setUnits(fetchedUnits);
         setProperties(fetchedProperties);
+        setGroups(fetchedGroups);
         setCurrencySymbol(fetchedSymbol);
         setFetchError(false);
         // Cache for offline use
         try {
           localStorage.setItem("gs_cache_units", JSON.stringify(fetchedUnits));
           localStorage.setItem("gs_cache_props", JSON.stringify(fetchedProperties));
+          localStorage.setItem("gs_cache_groups", JSON.stringify(fetchedGroups));
           localStorage.setItem("gs_cache_currency", fetchedSymbol);
         } catch { /* quota */ }
       } catch (err: any) {
@@ -90,10 +101,12 @@ export default function Stay() {
         try {
           const cached = localStorage.getItem("gs_cache_units");
           const cachedProps = localStorage.getItem("gs_cache_props");
+          const cachedGroups = localStorage.getItem("gs_cache_groups");
           const cachedCurrency = localStorage.getItem("gs_cache_currency");
           if (cached) {
             setUnits(JSON.parse(cached));
             if (cachedProps) setProperties(JSON.parse(cachedProps));
+            if (cachedGroups) setGroups(JSON.parse(cachedGroups));
             if (cachedCurrency) setCurrencySymbol(cachedCurrency);
           } else {
             setFetchError(true);
@@ -255,17 +268,37 @@ export default function Stay() {
                       )}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {sectionUnits.map((unit) => (
-                        <UnitCard
-                          key={unit.id}
-                          unit={unit}
-                          currencySymbol={currencySymbol}
-                          expandedUnit={expandedUnit}
-                          blockedByUnit={blockedByUnit}
-                          onToggleAvailability={toggleAvailability}
-                          onRequestBooking={handleRequestBooking}
-                        />
-                      ))}
+                      {(() => {
+                        // Collapse sibling units (same group_id) into a single card so guests
+                        // don't see "Superior Twin 8 / 9 / 10" as three near-identical listings.
+                        // Ungrouped units keep their individual cards.
+                        const seenGroups = new Set<string>();
+                        const cards: { unit: UnitData; displayName: string; count: number }[] = [];
+                        for (const unit of sectionUnits) {
+                          if (unit.group_id) {
+                            if (seenGroups.has(unit.group_id)) continue;
+                            seenGroups.add(unit.group_id);
+                            const siblings = sectionUnits.filter((u) => u.group_id === unit.group_id);
+                            const groupName = groups.find((g) => g.id === unit.group_id)?.name ?? unit.name;
+                            cards.push({ unit, displayName: groupName, count: siblings.length });
+                          } else {
+                            cards.push({ unit, displayName: unit.name, count: 1 });
+                          }
+                        }
+                        return cards.map(({ unit, displayName, count }) => (
+                          <UnitCard
+                            key={unit.group_id ?? unit.id}
+                            unit={unit}
+                            displayName={displayName}
+                            availableCount={count}
+                            currencySymbol={currencySymbol}
+                            expandedUnit={expandedUnit}
+                            blockedByUnit={blockedByUnit}
+                            onToggleAvailability={toggleAvailability}
+                            onRequestBooking={handleRequestBooking}
+                          />
+                        ));
+                      })()}
                     </div>
                     {propId !== orderedKeys[orderedKeys.length - 1] && <Separator className="mt-4" />}
                   </section>
@@ -360,24 +393,33 @@ export default function Stay() {
 
 /* Mini Calendar for availability preview */
 /* Unit Card extracted for use in property sections */
-function UnitCard({ unit, currencySymbol, expandedUnit, blockedByUnit, onToggleAvailability, onRequestBooking }: {
+function UnitCard({ unit, displayName, availableCount, currencySymbol, expandedUnit, blockedByUnit, onToggleAvailability, onRequestBooking }: {
   unit: UnitData;
+  displayName?: string;
+  availableCount?: number;
   currencySymbol: string;
   expandedUnit: string | null;
   blockedByUnit: Record<string, BlockedRange[]>;
   onToggleAvailability: (id: string) => void;
   onRequestBooking: (id: string) => void;
 }) {
+  const title = displayName ?? unit.name;
+  const count = availableCount ?? 1;
   return (
     <Card id={`unit-${unit.id}`} className="overflow-hidden hover-lift scroll-mt-24">
       {unit.photos && unit.photos.length > 0 && (
-        <UnitPhotoCarousel photos={unit.photos} name={unit.name} />
+        <UnitPhotoCarousel photos={unit.photos} name={title} />
       )}
       <CardHeader className="pb-2">
         <CardTitle className="text-xl flex items-center gap-2">
           <Home className="h-5 w-5 text-primary" />
-          {unit.name}
+          {title}
         </CardTitle>
+        {count > 1 && (
+          <p className="text-xs text-muted-foreground">
+            {count} rooms of this type — we'll assign one automatically
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-3">
         {unit.description && <p className="text-sm text-muted-foreground line-clamp-2">{unit.description}</p>}

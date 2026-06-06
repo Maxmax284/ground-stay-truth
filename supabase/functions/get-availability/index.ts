@@ -227,11 +227,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // All active units with property info
+    // All active units with property + group info (group_id lets the client
+    // collapse sibling rooms into a single "X available" card to prevent the
+    // appearance of duplicate listings).
     const { data: units, error } = await supabase
       .from("units")
-      .select("id, name, description, capacity, base_price, weekend_price, cleaning_fee, min_nights, amenities, photos, property_id")
+      .select("id, name, description, capacity, base_price, weekend_price, cleaning_fee, min_nights, amenities, photos, property_id, group_id, sort_order")
       .eq("is_active", true)
+      .order("sort_order", { ascending: true, nullsFirst: false })
       .order("base_price", { ascending: true });
 
     if (error) throw error;
@@ -243,7 +246,14 @@ Deno.serve(async (req) => {
       .eq("is_active", true)
       .order("name");
 
-    return new Response(JSON.stringify({ units, properties: properties ?? [], currencySymbol }), {
+    // Fetch active groups so the client can show group display name + count
+    const { data: groups } = await supabase
+      .from("unit_groups")
+      .select("id, name, sort_order")
+      .eq("is_active", true)
+      .order("sort_order");
+
+    return new Response(JSON.stringify({ units, properties: properties ?? [], groups: groups ?? [], currencySymbol }), {
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   } catch (err: any) {
