@@ -33,6 +33,7 @@ import GuestPaymentLink from "./pages/GuestPaymentLink";
 import PaymentReport from "./pages/PaymentReport";
 import MediaLibrary from "./pages/MediaLibrary";
 import SecurityCenter from "./pages/SecurityCenter";
+import MonitoringCenter from "./pages/MonitoringCenter";
 
 // Global React Query defaults — consistent caching across all hooks.
 // Per-hook overrides remain authoritative; this only sets the floor.
@@ -84,6 +85,7 @@ const App = () => (
                 <Route path="/simulation" element={<ProtectedRoute requiredPath="/simulation"><Simulation /></ProtectedRoute>} />
                 <Route path="/disaster-recovery" element={<ProtectedRoute requiredPath="/disaster-recovery"><DisasterRecovery /></ProtectedRoute>} />
                 <Route path="/security-center" element={<ProtectedRoute requiredPath="/security-center"><SecurityCenter /></ProtectedRoute>} />
+                <Route path="/monitoring" element={<ProtectedRoute requiredPath="/monitoring"><MonitoringCenter /></ProtectedRoute>} />
                 <Route path="/admin/payment-report" element={<ProtectedRoute><PaymentReport /></ProtectedRoute>} />
 
 
