@@ -428,6 +428,7 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
         <>
           <Separator />
           <PaymentLinkManager bookingId={bookingId} />
+          <PaymentGuideLink />
         </>
       )}
 
