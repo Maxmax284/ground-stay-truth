@@ -51,6 +51,7 @@ export function useUnitGroups() {
         const rep = groupUnits[0];
         return {
           ...g,
+          unitIds: groupUnits.map((u) => u.id),
           unitCount: groupUnits.length,
           base_price: rep?.base_price ?? 0,
           capacity: rep?.capacity ?? 2,

@@ -11,7 +11,7 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 
 const GuestAuth = () => {
   const { t } = useTranslation();
-  const { user, role, loading, signIn, signUp } = useAuth();
+  const { user, role, loading, roleResolved, signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const unitParam = searchParams.get("unit");
@@ -24,6 +24,14 @@ const GuestAuth = () => {
   const { toast } = useToast();
 
   if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center auth-hero-bg-guest">
+        <div className="roundhouse-spinner" />
+      </div>
+    );
+  }
+
+  if (user && !roleResolved) {
     return (
       <div className="flex min-h-screen items-center justify-center auth-hero-bg-guest">
         <div className="roundhouse-spinner" />
