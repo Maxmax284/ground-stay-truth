@@ -372,6 +372,8 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
               const statusLabel = PAYMENT_STATUS_LABELS[p.status as PaymentStatus] ?? p.status;
               const statusVariant = PAYMENT_STATUS_VARIANTS[p.status as PaymentStatus] ?? "bg-muted text-muted-foreground";
               const typeLabel = PAYMENT_TYPE_LABELS[p.payment_type as PaymentType] ?? p.payment_type;
+              const showProvenance = p.status === "recorded" || p.status === "partially_refunded";
+              const prov = showProvenance ? getPaymentProvenance(p) : null;
               return (
                 <div key={p.id} className="flex items-start justify-between text-sm border rounded-md p-3 gap-2">
                   <div className="flex-1 min-w-0 space-y-1">
@@ -379,10 +381,15 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
                       {canSeeAmounts ? <span className="font-medium">{formatPrice(p.amount, policies)}</span> : <Badge variant="outline" className="text-xs">{Number(p.amount) > 0 ? t("payments.paid") : t("payments.unpaid")}</Badge>}
                       <Badge className={`text-[10px] border-0 ${statusVariant}`}>{statusLabel}</Badge>
                       <Badge variant="outline" className="text-[10px]">{typeLabel}</Badge>
+                      {prov && (
+                        <Badge className={`text-[10px] ${prov.className}`} title={prov.tooltip}>
+                          {prov.icon} {prov.label}
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-1.5 flex-wrap text-xs text-muted-foreground">
-                      {canSeeAmounts && <span>{t(`payments.methods.${p.method}`)}</span>}
-                      {canSeeAmounts && p.provider && p.provider !== "manual" && <span>· {p.provider}</span>}
+                      {canSeeAmounts && p.method && <span>{t(`payments.methods.${p.method}`, { defaultValue: p.method })}</span>}
+                      {canSeeAmounts && p.provider && p.provider !== "manual" && p.provider !== "pending" && <span>· {p.provider}</span>}
                       {canSeeAmounts && p.source_channel && p.source_channel !== "front_desk" && (
                         <Badge variant="secondary" className="text-[10px]">{t(`deposit.channels.${p.source_channel}`, { defaultValue: p.source_channel })}</Badge>
                       )}
