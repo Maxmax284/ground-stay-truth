@@ -65,7 +65,13 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
       const { data, error } = await supabase
         .from("policy_settings")
         .select("*")
-        .in("key", ["deposit_percentage", "security_deposit_required", "security_deposit_amount", "currency_symbol"]);
+        .in("key", [
+          "deposit_percentage",
+          "security_deposit_required", "security_deposit_amount",
+          "currency_symbol",
+          "booking_fee_enabled", "booking_fee_mode",
+          "booking_fee_percentage", "booking_fee_fixed",
+        ]);
       if (error) throw error;
       return data ?? [];
     },
@@ -75,10 +81,18 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
     const pct = Number(readPolicy(policies, "deposit_percentage", propertyId) ?? 20);
     const secReq = String(readPolicy(policies, "security_deposit_required", propertyId) ?? "false") === "true";
     const secAmt = Number(readPolicy(policies, "security_deposit_amount", propertyId) ?? 0);
+    const feeEnabled = String(readPolicy(policies, "booking_fee_enabled", propertyId) ?? "false") === "true";
+    const feeMode = (readPolicy(policies, "booking_fee_mode", propertyId) ?? "separate") as "included" | "separate" | "hidden";
+    const feePct = Number(readPolicy(policies, "booking_fee_percentage", propertyId) ?? 0);
+    const feeFixed = Number(readPolicy(policies, "booking_fee_fixed", propertyId) ?? 0);
     return calculateBookingFinancials(totalPrice, payments ?? [], {
       depositPercentage: pct,
       securityDepositRequired: secReq,
       securityDepositAmount: secAmt,
+      bookingFeeEnabled: feeEnabled,
+      bookingFeeMode: feeMode,
+      bookingFeePercentage: feePct,
+      bookingFeeFixed: feeFixed,
     });
   }, [totalPrice, payments, policies, propertyId]);
 
