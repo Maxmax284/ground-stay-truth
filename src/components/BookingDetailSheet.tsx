@@ -32,6 +32,7 @@ import { RefundDialog } from "@/components/RefundDialog";
 import { PaymentLinkManager } from "@/components/PaymentLinkManager";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { SecurityDepositSection } from "@/components/SecurityDepositSection";
+import { BookingFinancialSummary } from "@/components/BookingFinancialSummary";
 import { BookingTrainingSection } from "@/components/BookingTrainingSection";
 import { useBookingTrainingLinks } from "@/hooks/useTrainingPackages";
 import { AirportPickupSection } from "@/components/AirportPickupSection";
@@ -221,6 +222,14 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
         {isAdmin && <AdminOverrideMenu bookingId={booking.id} pickupId={pickup?.id ?? null} />}
         <SecurityDepositSection bookingId={booking.id} bookingState={booking.state} />
         <BookingTrainingSection bookingId={booking.id} />
+        <div className="pt-3">
+          <BookingFinancialSummary
+            bookingId={booking.id}
+            totalPrice={booking.total_price}
+            propertyId={(booking as any).property_id ?? null}
+            canSeeAmounts={canSeeAmounts}
+          />
+        </div>
         <Separator />
         <div className="py-4"><BookingStateTransition bookingId={booking.id} currentState={booking.state as BookingState} isAdmin={isAdmin} checkInDate={booking.check_in} totalPrice={booking.total_price} unitId={booking.unit_id} /></div>
         <Tabs defaultValue="history" className="mt-2" onValueChange={(val) => {
