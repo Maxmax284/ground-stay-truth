@@ -445,7 +445,7 @@ function CompactCard({ unit, cfg, contactUrl, cs }: { unit: UnitData; blocked: B
   return (
     <div style={{ ...containerStyle(cfg), padding: 0, overflow: "hidden", maxWidth: Math.min(cfg.maxWidth, 320) }}>
       {!h.has("photo") && unit.photos && unit.photos.length > 0 && (
-        <img src={unit.photos[0]} alt={unit.name} style={{ width: "100%", height: 140, objectFit: "cover", display: "block" }} />
+        <EmbedPhotoCarousel photos={unit.photos} alt={unit.name} height={140} dark={cfg.dark} />
       )}
       <div style={{ padding: 16 }}>
         <h3 style={{ fontSize: getFontSize(cfg.font) + 1, fontWeight: 600, margin: "0 0 4px" }}>{unit.name}</h3>
