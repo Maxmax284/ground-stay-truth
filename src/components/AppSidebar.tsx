@@ -14,6 +14,7 @@ import {
   Eye,
   Swords,
   ShieldAlert,
+  Activity,
   ScanEye,
   Target,
   Download,
