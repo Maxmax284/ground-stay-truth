@@ -127,3 +127,113 @@ export function calculateOutstanding(
 
   return { totalPaid, totalRefunded, outstanding: Math.max(0, outstanding) };
 }
+
+type PaymentRow = {
+  amount: number;
+  status: string;
+  payment_type?: string | null;
+  refund_amount?: number | null;
+  provider?: string | null;
+};
+
+function sumReceived(rows: PaymentRow[], type: string): number {
+  return rows
+    .filter((p) => (p.payment_type ?? "deposit") === type && isPaymentReceived(p.status))
+    .reduce((sum, p) => sum + Number(p.amount) - Number(p.refund_amount ?? 0), 0);
+}
+
+function sumPending(rows: PaymentRow[], type: string): number {
+  return rows
+    .filter((p) => (p.payment_type ?? "deposit") === type && p.status === "pending")
+    .reduce((sum, p) => sum + Number(p.amount), 0);
+}
+
+/**
+ * Full breakdown of a booking's money, bucketed by payment_type.
+ * Used by the Financial Summary Card and reconciliation views.
+ */
+export function calculateBookingFinancials(
+  totalPrice: number | null,
+  payments: PaymentRow[],
+  opts?: { depositPercentage?: number; securityDepositAmount?: number; securityDepositRequired?: boolean }
+) {
+  const total = Number(totalPrice ?? 0);
+  const depositPct = opts?.depositPercentage ?? 20;
+  const secRequired = opts?.securityDepositRequired ?? false;
+  const secAmount = secRequired ? Number(opts?.securityDepositAmount ?? 0) : 0;
+
+  const depositRequired = total > 0 ? Math.round(total * depositPct) / 100 : 0;
+  const balanceRequired = Math.max(0, total - depositRequired);
+
+  const depositPaid = sumReceived(payments, "deposit");
+  const balancePaid = sumReceived(payments, "balance");
+  const securityPaid = sumReceived(payments, "security_deposit");
+
+  const depositPending = sumPending(payments, "deposit");
+  const balancePending = sumPending(payments, "balance");
+  const securityPending = sumPending(payments, "security_deposit");
+
+  const totalRefunded = payments
+    .filter((p) => p.status === "refunded" || p.status === "partially_refunded")
+    .reduce((s, p) => s + Number(p.refund_amount ?? 0), 0);
+
+  const bookingCollected = depositPaid + balancePaid;
+  const totalCollected = bookingCollected + securityPaid;
+  const outstanding = Math.max(0, total - bookingCollected);
+  const securityOutstanding = Math.max(0, secAmount - securityPaid);
+
+  const depositStatus: "paid" | "partial" | "pending" | "not_required" =
+    depositRequired <= 0 ? "not_required"
+      : depositPaid >= depositRequired ? "paid"
+      : depositPaid > 0 ? "partial" : "pending";
+
+  const balanceStatus: "paid" | "partial" | "pending" =
+    balancePaid >= balanceRequired && balanceRequired > 0 ? "paid"
+      : balancePaid > 0 ? "partial" : "pending";
+
+  const securityStatus: "paid" | "partial" | "pending" | "not_required" =
+    !secRequired || secAmount <= 0 ? "not_required"
+      : securityPaid >= secAmount ? "paid"
+      : securityPaid > 0 ? "partial" : "pending";
+
+  const overallStatus: "paid_in_full" | "deposit_received" | "awaiting_payment" | "refunded" =
+    totalRefunded >= bookingCollected && bookingCollected > 0 ? "refunded"
+      : outstanding <= 0 && total > 0 ? "paid_in_full"
+      : depositPaid >= depositRequired && depositRequired > 0 ? "deposit_received"
+      : "awaiting_payment";
+
+  const hasVerified = payments.some(
+    (p) => isPaymentReceived(p.status) && p.provider === "stripe"
+  );
+  const hasManual = payments.some(
+    (p) => isPaymentReceived(p.status) && p.provider !== "stripe" && p.provider !== "pending"
+  );
+  const trustStatus: "verified" | "mixed" | "manual_only" | "none" =
+    bookingCollected <= 0 ? "none"
+      : hasVerified && hasManual ? "mixed"
+      : hasVerified ? "verified"
+      : "manual_only";
+
+  return {
+    total,
+    depositRequired,
+    depositPaid,
+    depositPending,
+    depositStatus,
+    balanceRequired,
+    balancePaid,
+    balancePending,
+    balanceStatus,
+    securityRequired: secAmount,
+    securityPaid,
+    securityPending,
+    securityStatus,
+    securityOutstanding,
+    totalRefunded,
+    bookingCollected,
+    totalCollected,
+    outstanding,
+    overallStatus,
+    trustStatus,
+  };
+}
