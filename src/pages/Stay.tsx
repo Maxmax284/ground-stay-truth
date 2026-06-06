@@ -34,6 +34,7 @@ interface UnitData {
   amenities: string[] | null;
   photos: string[] | null;
   property_id: string | null;
+  group_id: string | null;
 }
 
 interface PropertyData {
@@ -41,6 +42,12 @@ interface PropertyData {
   name: string;
   slug: string;
   operational_mode: string;
+}
+
+interface GroupData {
+  id: string;
+  name: string;
+  sort_order: number | null;
 }
 
 interface BlockedRange { start: string; end: string; }
