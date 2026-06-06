@@ -31,6 +31,7 @@ const NAV_ACCESS: Record<string, AppRole[]> = {
   "/simulation": ["admin", "manager", "front_desk_supervisor", "front_desk", "maintenance", "viewer", "guest"],
   "/disaster-recovery": ["admin"],
   "/security-center": ["admin"],
+  "/monitoring": ["manager", "admin"],
 };
 
 export function canAccessRoute(role: AppRole | null, path: string): boolean {
