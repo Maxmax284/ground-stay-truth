@@ -33,7 +33,7 @@ function getCorsHeaders(req: Request) {
 
 // ── Simple in-memory rate limiter (per IP) ──
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT = 30; // max calls per window
+const RATE_LIMIT = 120; // max calls per window — generous for shared NAT / corporate / mobile carriers
 const RATE_WINDOW_MS = 60 * 1000; // 1 minute
 
 function checkRateLimit(key: string): boolean {
