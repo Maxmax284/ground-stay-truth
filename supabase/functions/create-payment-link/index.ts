@@ -131,12 +131,16 @@ serve(async (req) => {
       return jsonResponse(req, { error: "Invalid deposit amount" }, 400);
     }
 
-    // Confirm there's no already-completed payment.
+    // Confirm there's no already-completed ONLINE payment.
+    // Auto-created pending obligations (provider='pending') and manual offline
+    // records should NOT block link generation — only a real settled online
+    // charge does.
     const { data: paid } = await adminClient
       .from("payments")
       .select("id")
       .eq("booking_id", bookingId)
       .eq("status", "recorded")
+      .in("provider", ["stripe", "paddle"])
       .limit(1);
     if (paid && paid.length > 0) {
       return jsonResponse(req, { error: "Booking already paid" }, 409);
