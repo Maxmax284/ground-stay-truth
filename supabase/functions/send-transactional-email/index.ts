@@ -102,6 +102,46 @@ const templates: Record<string, Record<string, { subject: string; html: (data: a
         </div>`,
     },
   },
+  payment_link_sent: {
+    en: {
+      subject: "Your payment link is ready",
+      html: (d) => `
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+          <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">Time to lock it in</h1>
+          <p style="color:#444;margin-bottom:20px">${d.guest_name || "Hey"} — here's the secure link to pay your ${d.payment_label || "deposit"} for <strong>${d.unit_name || "your stay"}</strong>.</p>
+          <div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:20px">
+            <table style="width:100%;border-collapse:collapse">
+              <tr><td style="padding:6px 0;color:#666;width:45%">${d.payment_label || "Amount"}</td><td style="padding:6px 0;font-weight:600">${d.amount_formatted}</td></tr>
+              <tr><td style="padding:6px 0;color:#666">Dates</td><td style="padding:6px 0;font-weight:600">${d.check_in} → ${d.check_out}</td></tr>
+            </table>
+          </div>
+          <p style="text-align:center;margin:28px 0">
+            <a href="${d.payment_url}" style="background:#1a1a1a;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;display:inline-block">Pay securely now</a>
+          </p>
+          <p style="color:#666;font-size:13px">Link expires ${d.expires_at_human || "soon"}. Card is processed by Stripe — we never see your details.</p>
+          <p style="color:#999;font-size:12px;margin-top:24px;word-break:break-all">If the button doesn't work, paste this into your browser:<br/>${d.payment_url}</p>
+          <p style="color:#999;font-size:12px;margin-top:24px">Ground Stay — Lamai Muay Thai Fight Camp</p>
+        </div>`,
+    },
+    th: {
+      subject: "ลิงก์ชำระเงินของคุณพร้อมแล้ว",
+      html: (d) => `
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+          <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">ชำระเงินเพื่อยืนยันการจอง</h1>
+          <p style="color:#444;margin-bottom:20px">${d.guest_name || "สวัสดี"} — นี่คือลิงก์ชำระ ${d.payment_label || "มัดจำ"} สำหรับ <strong>${d.unit_name || "การเข้าพักของคุณ"}</strong></p>
+          <div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:20px">
+            <table style="width:100%;border-collapse:collapse">
+              <tr><td style="padding:6px 0;color:#666;width:45%">จำนวนเงิน</td><td style="padding:6px 0;font-weight:600">${d.amount_formatted}</td></tr>
+              <tr><td style="padding:6px 0;color:#666">วันที่</td><td style="padding:6px 0;font-weight:600">${d.check_in} → ${d.check_out}</td></tr>
+            </table>
+          </div>
+          <p style="text-align:center;margin:28px 0">
+            <a href="${d.payment_url}" style="background:#1a1a1a;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;display:inline-block">ชำระเงินอย่างปลอดภัย</a>
+          </p>
+          <p style="color:#999;font-size:12px;word-break:break-all">${d.payment_url}</p>
+        </div>`,
+    },
+  },
   pre_arrival_reminder: {
     en: {
       subject: "Arriving Soon — Pre-Arrival Checklist",
