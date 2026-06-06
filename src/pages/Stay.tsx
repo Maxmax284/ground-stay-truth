@@ -469,3 +469,48 @@ function MiniCalendar({ blockedRanges }: { blockedRanges: BlockedRange[] }) {
     </div>
   );
 }
+
+function UnitPhotoCarousel({ photos, name }: { photos: string[]; name: string }) {
+  const [api, setApi] = useState<CarouselApi>();
+  const hasMultiple = photos.length > 1;
+
+  if (!hasMultiple) {
+    return (
+      <div className="aspect-[16/9] overflow-hidden">
+        <img src={photos[0]} alt={`${name} accommodation`} className="w-full h-full object-cover" loading="lazy" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative group">
+      <Carousel setApi={setApi} opts={{ loop: true }}>
+        <CarouselContent>
+          {photos.map((src, i) => (
+            <CarouselItem key={i}>
+              <div className="aspect-[16/9] overflow-hidden">
+                <img
+                  src={src}
+                  alt={`${name} photo ${i + 1} of ${photos.length}`}
+                  className="w-full h-full object-cover"
+                  loading={i === 0 ? "eager" : "lazy"}
+                />
+              </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <CarouselPrevious
+          className="left-2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+          aria-label="Previous photo"
+        />
+        <CarouselNext
+          className="right-2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+          aria-label="Next photo"
+        />
+      </Carousel>
+      <div className="absolute bottom-1 left-0 right-0">
+        <CarouselDots api={api} count={photos.length} />
+      </div>
+    </div>
+  );
+}
