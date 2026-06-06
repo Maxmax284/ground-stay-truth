@@ -74,6 +74,12 @@ serve(async (req) => {
     const bookingId = String(body.booking_id || "").trim();
     const expiresInHoursRaw = Number(body.expires_in_hours ?? DEFAULT_EXPIRY_HOURS);
     const regenerate = Boolean(body.regenerate);
+    const collect = String(body.collect || "deposit") as
+      | "deposit"
+      | "balance"
+      | "full"
+      | "security_deposit";
+    const overrideAmount = Number(body.amount ?? 0);
 
     if (!bookingId) return jsonResponse(req, { error: "booking_id required" }, 400);
 
@@ -82,23 +88,19 @@ serve(async (req) => {
       MAX_EXPIRY_HOURS,
     );
 
-    // Fetch the booking + verify it's in a payable state
+    // Fetch the booking + guest profile (for email auto-send) + unit name
     const { data: booking } = await adminClient
       .from("bookings")
-      .select("id, state, total_price, check_in, check_out, num_guests, unit_id")
+      .select("id, state, total_price, check_in, check_out, num_guests, unit_id, guest_id, units(name), profiles:guest_id(full_name, email, preferred_language)")
       .eq("id", bookingId)
       .single();
 
     if (!booking) return jsonResponse(req, { error: "Booking not found" }, 404);
 
-    // Allow link generation for any pre-confirmed payable state.
-    // If the booking is still upstream of pending_deposit, auto-advance it so
-    // operators don't have to click through soft_hold → pending_approval → pending_deposit
-    // just to send a deposit link.
     const PAYABLE_PRE_STATES = ["soft_hold", "pending_approval", "pending_deposit"];
     if (!PAYABLE_PRE_STATES.includes(booking.state)) {
       return jsonResponse(req, {
-        error: "Booking is not awaiting deposit",
+        error: "Booking is not in a payable state",
         booking_state: booking.state,
       }, 400);
     }
@@ -115,38 +117,79 @@ serve(async (req) => {
       booking.state = "pending_deposit";
     }
 
-    // Compute deposit amount the same way process-payment does.
+    // Policies
     const { data: policies } = await adminClient
       .from("policy_settings")
       .select("key, value")
-      .in("key", ["deposit_percentage", "currency_code"]);
+      .in("key", ["deposit_percentage", "currency_code", "security_deposit_amount"]);
     const policyMap = new Map(
       (policies ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]),
     );
-    const depositPercentage = Number(policyMap.get("deposit_percentage") || "100");
+    const depositPercentage = Number(policyMap.get("deposit_percentage") || "20");
     const currencyCode = (policyMap.get("currency_code") || "THB").toLowerCase();
-    const amount = Math.round((Number(booking.total_price || 0) * depositPercentage) / 100);
+    const total = Number(booking.total_price || 0);
+    const depositAmount = Math.round((total * depositPercentage) / 100);
+
+    // Compute what we're actually collecting
+    let amount = 0;
+    let paymentTypeForRecord: string = "deposit";
+    let collectLabel = "Deposit";
+
+    if (overrideAmount > 0) {
+      amount = Math.round(overrideAmount);
+      paymentTypeForRecord = collect === "security_deposit" ? "security_deposit" :
+                             collect === "balance" ? "balance" :
+                             collect === "full" ? "balance" : "deposit";
+      collectLabel = collect === "security_deposit" ? "Security deposit" :
+                     collect === "balance" ? "Remaining balance" :
+                     collect === "full" ? "Full payment" : "Deposit";
+    } else if (collect === "balance") {
+      // total - already-paid online deposits
+      const { data: paidRows } = await adminClient
+        .from("payments")
+        .select("amount, payment_type, status, provider")
+        .eq("booking_id", bookingId)
+        .eq("status", "recorded");
+      const paidSum = (paidRows ?? [])
+        .filter((p: any) => p.payment_type !== "security_deposit")
+        .reduce((s: number, p: any) => s + Number(p.amount), 0);
+      amount = Math.max(0, Math.round(total - paidSum));
+      paymentTypeForRecord = "balance";
+      collectLabel = "Remaining balance";
+    } else if (collect === "full") {
+      amount = Math.round(total);
+      paymentTypeForRecord = "balance";
+      collectLabel = "Full payment";
+    } else if (collect === "security_deposit") {
+      amount = Math.round(Number(policyMap.get("security_deposit_amount") || "0"));
+      paymentTypeForRecord = "security_deposit";
+      collectLabel = "Security deposit";
+    } else {
+      amount = depositAmount;
+      paymentTypeForRecord = "deposit";
+      collectLabel = `Deposit (${depositPercentage}%)`;
+    }
 
     if (amount <= 0) {
-      return jsonResponse(req, { error: "Invalid deposit amount" }, 400);
+      return jsonResponse(req, { error: "Invalid amount for this collection type" }, 400);
     }
 
-    // Confirm there's no already-completed ONLINE payment.
-    // Auto-created pending obligations (provider='pending') and manual offline
-    // records should NOT block link generation — only a real settled online
-    // charge does.
-    const { data: paid } = await adminClient
-      .from("payments")
-      .select("id")
-      .eq("booking_id", bookingId)
-      .eq("status", "recorded")
-      .in("provider", ["stripe", "paddle"])
-      .limit(1);
-    if (paid && paid.length > 0) {
-      return jsonResponse(req, { error: "Booking already paid" }, 409);
+
+    // Only block when we're trying to collect a deposit that's already settled online.
+    if (collect === "deposit") {
+      const { data: paid } = await adminClient
+        .from("payments")
+        .select("id")
+        .eq("booking_id", bookingId)
+        .eq("status", "recorded")
+        .eq("payment_type", "deposit")
+        .in("provider", ["stripe", "paddle"])
+        .limit(1);
+      if (paid && paid.length > 0) {
+        return jsonResponse(req, { error: "Deposit already paid online" }, 409);
+      }
     }
 
-    // Revoke any active link if regenerating.
     if (regenerate) {
       await adminClient
         .from("payment_links")
@@ -169,10 +212,11 @@ serve(async (req) => {
         currency: currencyCode,
         expires_at: expiresAt,
         created_by: user.id,
-        metadata: { created_via: "create-payment-link", role: callerRole },
+        metadata: { created_via: "create-payment-link", role: callerRole, collect, payment_type: paymentTypeForRecord, label: collectLabel },
       })
       .select()
       .single();
+
 
     if (insertErr || !link) {
       console.error("[create-payment-link] insert failed:", insertErr);
@@ -190,6 +234,70 @@ serve(async (req) => {
 
     const url = `${getCanonicalSiteUrl()}/pay/${rawToken}`;
 
+    // ── Auto-send: email + guest portal notification (WhatsApp/LINE stay human-gated) ──
+    const guest: any = (booking as any).profiles ?? {};
+    const unitName = (booking as any).units?.name ?? "Your stay";
+    let emailSent = false;
+    let notificationCreated = false;
+
+    if (guest.email) {
+      try {
+        const amountFormatted = `${currencyCode.toUpperCase()} ${amount.toLocaleString()}`;
+        const expiresHuman = `in ${expiresInHours}h`;
+        const emailResp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${serviceRoleKey}`,
+            "Content-Type": "application/json",
+            apikey: serviceRoleKey,
+          },
+          body: JSON.stringify({
+            template_key: "payment_link_sent",
+            recipient_email: guest.email,
+            booking_id: bookingId,
+            language: guest.preferred_language || "en",
+            idempotency_key: `paylink-${link.id}`,
+            data: {
+              guest_name: guest.full_name || "",
+              unit_name: unitName,
+              payment_label: collectLabel,
+              amount_formatted: amountFormatted,
+              check_in: booking.check_in,
+              check_out: booking.check_out,
+              payment_url: url,
+              expires_at_human: expiresHuman,
+            },
+          }),
+        });
+        emailSent = emailResp.ok;
+      } catch (e) {
+        console.error("[create-payment-link] email send failed:", e);
+      }
+    }
+
+    if (booking.guest_id) {
+      try {
+        await adminClient.from("notifications").insert({
+          user_id: booking.guest_id,
+          type: "payment_link",
+          reference_id: bookingId,
+          message: `Your ${collectLabel.toLowerCase()} link is ready — tap to pay securely.`,
+        });
+        notificationCreated = true;
+      } catch (e) {
+        console.error("[create-payment-link] notification insert failed:", e);
+      }
+    }
+
+    await adminClient.from("payment_link_events").insert({
+      payment_link_id: link.id,
+      booking_id: bookingId,
+      event_type: "auto_dispatched",
+      actor_id: user.id,
+      actor_role: callerRole,
+      context: { email_sent: emailSent, notification_created: notificationCreated, channel: "email+portal" },
+    });
+
     return jsonResponse(req, {
       token: rawToken,
       url,
@@ -197,7 +305,13 @@ serve(async (req) => {
       payment_link_id: link.id,
       amount,
       currency: currencyCode,
+      collect,
+      payment_type: paymentTypeForRecord,
+      label: collectLabel,
+      email_sent: emailSent,
+      notification_created: notificationCreated,
     });
+
   } catch (err) {
     console.error("[create-payment-link] error:", err);
     return jsonResponse(req, {

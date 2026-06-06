@@ -3,7 +3,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, Link as LinkIcon, Copy, RefreshCw, Check, Clock } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Link as LinkIcon, Copy, RefreshCw, Check, Clock, Mail, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -21,7 +24,9 @@ interface LinkRow {
   currency: string;
 }
 
-async function callCreate(bookingId: string, regenerate = false) {
+type CollectKind = "deposit" | "balance" | "full" | "security_deposit";
+
+async function callCreate(bookingId: string, regenerate: boolean, collect: CollectKind) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error("Not signed in");
   const resp = await fetch(
@@ -33,18 +38,36 @@ async function callCreate(bookingId: string, regenerate = false) {
         "Content-Type": "application/json",
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       },
-      body: JSON.stringify({ booking_id: bookingId, regenerate }),
+      body: JSON.stringify({ booking_id: bookingId, regenerate, collect }),
     },
   );
   const data = await resp.json();
   if (!resp.ok) throw new Error(data.error || "Failed");
-  return data as { url: string; expires_at: string; payment_link_id: string };
+  return data as {
+    url: string;
+    expires_at: string;
+    payment_link_id: string;
+    amount: number;
+    currency: string;
+    label?: string;
+    email_sent?: boolean;
+    notification_created?: boolean;
+  };
 }
+
+const COLLECT_LABELS: Record<CollectKind, string> = {
+  deposit: "Collect Deposit (default)",
+  balance: "Collect Remaining Balance",
+  full: "Collect Full Payment",
+  security_deposit: "Collect Security Deposit",
+};
 
 export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
   const qc = useQueryClient();
   const [lastUrl, setLastUrl] = useState<string | null>(null);
+  const [lastResult, setLastResult] = useState<Awaited<ReturnType<typeof callCreate>> | null>(null);
   const [copied, setCopied] = useState(false);
+  const [collect, setCollect] = useState<CollectKind>("deposit");
 
   const { data: links, isLoading } = useQuery({
     queryKey: ["payment-links", bookingId],
@@ -61,11 +84,19 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
   });
 
   const createMut = useMutation({
-    mutationFn: (regenerate: boolean) => callCreate(bookingId, regenerate),
+    mutationFn: (regenerate: boolean) => callCreate(bookingId, regenerate, collect),
     onSuccess: (data) => {
       setLastUrl(data.url);
+      setLastResult(data);
       qc.invalidateQueries({ queryKey: ["payment-links", bookingId] });
-      toast.success("Payment link ready — copy and send to guest");
+      const bits: string[] = [];
+      if (data.email_sent) bits.push("emailed");
+      if (data.notification_created) bits.push("portal notified");
+      toast.success(
+        bits.length
+          ? `Link sent to guest (${bits.join(" + ")})`
+          : "Link ready — guest had no email, copy and send manually",
+      );
     },
     onError: (err: any) => toast.error(err.message || "Failed to create link"),
   });
@@ -75,7 +106,6 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
     await navigator.clipboard.writeText(lastUrl);
     setCopied(true);
     toast.success("Link copied");
-    // best-effort audit
     try {
       const links = await supabase.from("payment_links")
         .select("id").eq("booking_id", bookingId).order("created_at", { ascending: false }).limit(1);
@@ -103,15 +133,42 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
         <h3 className="text-sm font-medium text-foreground">Guest Payment Link</h3>
       </div>
       <p className="text-xs text-muted-foreground">
-        Send this link to the guest through WhatsApp, LINE, email, or SMS so they can pay their deposit without logging in.
+        Generates a secure Stripe link, emails it to the guest, and pings their portal.
+        WhatsApp / LINE stay manual — copy + send if you want to use those.
       </p>
 
-      {lastUrl && (
+      <div className="space-y-1">
+        <Label className="text-xs">What to collect</Label>
+        <Select value={collect} onValueChange={(v) => setCollect(v as CollectKind)}>
+          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {(Object.entries(COLLECT_LABELS) as [CollectKind, string][]).map(([v, l]) => (
+              <SelectItem key={v} value={v}>{l}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {lastUrl && lastResult && (
         <div className="rounded-md border border-border bg-muted/40 p-2 space-y-2">
+          <div className="flex items-center gap-2 flex-wrap text-xs">
+            <Badge variant="outline">{lastResult.label || "Payment"}</Badge>
+            <span className="font-medium">{lastResult.currency.toUpperCase()} {Number(lastResult.amount).toLocaleString()}</span>
+            {lastResult.email_sent && (
+              <Badge className="bg-success/15 text-[hsl(var(--success))] border-0 gap-1">
+                <Mail className="h-3 w-3" /> Emailed
+              </Badge>
+            )}
+            {lastResult.notification_created && (
+              <Badge className="bg-info/15 text-[hsl(var(--info))] border-0 gap-1">
+                <Bell className="h-3 w-3" /> In portal
+              </Badge>
+            )}
+          </div>
           <div className="text-xs break-all text-foreground font-mono">{lastUrl}</div>
           <Button size="sm" variant="outline" onClick={handleCopy} className="gap-2">
             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-            {copied ? "Copied" : "Copy link"}
+            {copied ? "Copied" : "Copy for WhatsApp / LINE"}
           </Button>
         </div>
       )}
@@ -120,13 +177,13 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
         {!active && (
           <Button size="sm" onClick={() => createMut.mutate(false)} disabled={createMut.isPending} className="gap-2">
             {createMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LinkIcon className="h-3.5 w-3.5" />}
-            Generate Payment Link
+            Generate &amp; Send Link
           </Button>
         )}
         {active && (
           <Button size="sm" variant="outline" onClick={() => createMut.mutate(true)} disabled={createMut.isPending} className="gap-2">
             <RefreshCw className="h-3.5 w-3.5" />
-            Regenerate Link
+            Regenerate &amp; Resend
           </Button>
         )}
       </div>
