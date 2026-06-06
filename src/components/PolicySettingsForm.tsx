@@ -48,6 +48,25 @@ const GROUPS: SettingGroup[] = [
     },
   },
   {
+    id: "booking_fee",
+    label: "Booking Fee",
+    icon: <CreditCard className="h-4 w-4" />,
+    keys: [
+      "booking_fee_enabled", "booking_fee_mode",
+      "booking_fee_percentage", "booking_fee_fixed",
+    ],
+    summary: (g) => {
+      if (g("booking_fee_enabled") !== "true") return "Disabled — no fees charged";
+      const pct = g("booking_fee_percentage");
+      const fixed = g("booking_fee_fixed");
+      const mode = g("booking_fee_mode") || "separate";
+      const parts: string[] = [];
+      if (Number(pct) > 0) parts.push(`${pct}%`);
+      if (Number(fixed) > 0) parts.push(`฿${fixed}`);
+      return `Active • ${parts.join(" + ") || "0"} • Shown as ${mode}`;
+    },
+  },
+  {
     id: "discounts",
     label: "Long-Stay Discounts",
     icon: <Percent className="h-4 w-4" />,
