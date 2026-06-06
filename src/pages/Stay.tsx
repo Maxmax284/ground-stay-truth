@@ -369,9 +369,7 @@ function UnitCard({ unit, currencySymbol, expandedUnit, blockedByUnit, onToggleA
   return (
     <Card id={`unit-${unit.id}`} className="overflow-hidden hover-lift scroll-mt-24">
       {unit.photos && unit.photos.length > 0 && (
-        <div className="aspect-[16/9] overflow-hidden">
-          <img src={unit.photos[0]} alt={`${unit.name} accommodation`} className="w-full h-full object-cover" loading="lazy" />
-        </div>
+        <UnitPhotoCarousel photos={unit.photos} name={unit.name} />
       )}
       <CardHeader className="pb-2">
         <CardTitle className="text-xl flex items-center gap-2">
