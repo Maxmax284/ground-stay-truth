@@ -85,7 +85,7 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
 
   const createMut = useMutation({
     mutationFn: (regenerate: boolean) => callCreate(bookingId, regenerate, collect),
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       setLastUrl(data.url);
       setLastResult(data);
       qc.invalidateQueries({ queryKey: ["payment-links", bookingId] });
@@ -97,6 +97,27 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
           ? `Link sent to guest (${bits.join(" + ")})`
           : "Link ready — guest had no email, copy and send manually",
       );
+
+      // Audit-only timeline entry on the booking conversation (internal note, no guest visibility, no URL)
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        const channels: string[] = [];
+        if (data.email_sent) channels.push("email");
+        if (data.notification_created) channels.push("guest portal");
+        const channelText = channels.length ? channels.join(" and ") : "no automatic channel (manual delivery)";
+        const label = data.label || COLLECT_LABELS[collect];
+        const amountText = `${data.currency.toUpperCase()} ${Number(data.amount).toLocaleString()}`;
+        const verb = collect === "deposit" ? "Payment request" : `${label}`;
+        await supabase.from("messages").insert({
+          booking_id: bookingId,
+          sender_id: userData.user?.id ?? null,
+          content: `🧾 ${verb} (${amountText}) created and delivered via ${channelText}.`,
+          is_internal: true,
+          draft: false,
+        });
+        qc.invalidateQueries({ queryKey: ["messages", bookingId] });
+        qc.invalidateQueries({ queryKey: ["booking-messages", bookingId] });
+      } catch { /* timeline entry is best-effort */ }
     },
     onError: (err: any) => toast.error(err.message || "Failed to create link"),
   });
