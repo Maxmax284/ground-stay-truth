@@ -190,6 +190,7 @@ const BOOLEAN_KEYS = new Set([
   "tax_included", "require_pre_arrival_completion_before_checkin",
   "transport_enabled", "transport_night_surcharge_enabled",
   "sound_effects_enabled",
+  "booking_fee_enabled",
 ]);
 
 /** Keys that use a slider instead of text input */
