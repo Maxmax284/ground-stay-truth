@@ -64,8 +64,8 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
     queryFn: async () => {
       const { data, error } = await supabase
         .from("policy_settings")
-        .select("key, value, property_id")
-        .in("key", ["deposit_percentage", "security_deposit_required", "security_deposit_amount"]);
+        .select("*")
+        .in("key", ["deposit_percentage", "security_deposit_required", "security_deposit_amount", "currency_symbol"]);
       if (error) throw error;
       return data ?? [];
     },
