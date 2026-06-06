@@ -17,7 +17,8 @@ export type PaymentType =
   | "deposit"           // Booking deposit
   | "balance"           // Remaining balance
   | "addon"             // Airport pickup, training, etc.
-  | "security_deposit"; // Damage deposit
+  | "security_deposit"  // Damage deposit
+  | "booking_fee";      // Platform/processing fee (separate from room cost)
 
 /** Supported payment providers */
 export type PaymentProvider = "stripe" | "paypal" | "manual";
@@ -50,6 +51,7 @@ export const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
   balance: "Balance",
   addon: "Add-on",
   security_deposit: "Security Deposit",
+  booking_fee: "Booking Fee",
 };
 
 /** Provenance badge — how trustworthy is this payment record? */
@@ -155,12 +157,29 @@ function sumPending(rows: PaymentRow[], type: string): number {
 export function calculateBookingFinancials(
   totalPrice: number | null,
   payments: PaymentRow[],
-  opts?: { depositPercentage?: number; securityDepositAmount?: number; securityDepositRequired?: boolean }
+  opts?: {
+    depositPercentage?: number;
+    securityDepositAmount?: number;
+    securityDepositRequired?: boolean;
+    bookingFeeEnabled?: boolean;
+    bookingFeeMode?: "included" | "separate" | "hidden";
+    bookingFeePercentage?: number;
+    bookingFeeFixed?: number;
+  }
 ) {
   const total = Number(totalPrice ?? 0);
   const depositPct = opts?.depositPercentage ?? 20;
   const secRequired = opts?.securityDepositRequired ?? false;
   const secAmount = secRequired ? Number(opts?.securityDepositAmount ?? 0) : 0;
+
+  const feeEnabled = opts?.bookingFeeEnabled ?? false;
+  const feeMode = opts?.bookingFeeMode ?? "separate";
+  const feePct = Number(opts?.bookingFeePercentage ?? 0);
+  const feeFixed = Number(opts?.bookingFeeFixed ?? 0);
+  // "included" mode: fee is rolled into total_price, no separate obligation
+  const feeRequired = feeEnabled && feeMode !== "included"
+    ? Math.round(((total * feePct) / 100 + feeFixed) * 100) / 100
+    : 0;
 
   const depositRequired = total > 0 ? Math.round(total * depositPct) / 100 : 0;
   const balanceRequired = Math.max(0, total - depositRequired);
@@ -168,19 +187,22 @@ export function calculateBookingFinancials(
   const depositPaid = sumReceived(payments, "deposit");
   const balancePaid = sumReceived(payments, "balance");
   const securityPaid = sumReceived(payments, "security_deposit");
+  const feePaid = sumReceived(payments, "booking_fee");
 
   const depositPending = sumPending(payments, "deposit");
   const balancePending = sumPending(payments, "balance");
   const securityPending = sumPending(payments, "security_deposit");
+  const feePending = sumPending(payments, "booking_fee");
 
   const totalRefunded = payments
     .filter((p) => p.status === "refunded" || p.status === "partially_refunded")
     .reduce((s, p) => s + Number(p.refund_amount ?? 0), 0);
 
   const bookingCollected = depositPaid + balancePaid;
-  const totalCollected = bookingCollected + securityPaid;
+  const totalCollected = bookingCollected + securityPaid + feePaid;
   const outstanding = Math.max(0, total - bookingCollected);
   const securityOutstanding = Math.max(0, secAmount - securityPaid);
+  const feeOutstanding = Math.max(0, feeRequired - feePaid);
 
   const depositStatus: "paid" | "partial" | "pending" | "not_required" =
     depositRequired <= 0 ? "not_required"
@@ -195,6 +217,11 @@ export function calculateBookingFinancials(
     !secRequired || secAmount <= 0 ? "not_required"
       : securityPaid >= secAmount ? "paid"
       : securityPaid > 0 ? "partial" : "pending";
+
+  const feeStatus: "paid" | "partial" | "pending" | "not_required" =
+    feeRequired <= 0 ? "not_required"
+      : feePaid >= feeRequired ? "paid"
+      : feePaid > 0 ? "partial" : "pending";
 
   const overallStatus: "paid_in_full" | "deposit_received" | "awaiting_payment" | "refunded" =
     totalRefunded >= bookingCollected && bookingCollected > 0 ? "refunded"
@@ -229,6 +256,13 @@ export function calculateBookingFinancials(
     securityPending,
     securityStatus,
     securityOutstanding,
+    feeRequired,
+    feePaid,
+    feePending,
+    feeStatus,
+    feeOutstanding,
+    feeMode,
+    feeEnabled,
     totalRefunded,
     bookingCollected,
     totalCollected,

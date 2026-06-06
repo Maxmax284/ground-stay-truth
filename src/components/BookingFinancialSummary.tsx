@@ -65,7 +65,13 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
       const { data, error } = await supabase
         .from("policy_settings")
         .select("*")
-        .in("key", ["deposit_percentage", "security_deposit_required", "security_deposit_amount", "currency_symbol"]);
+        .in("key", [
+          "deposit_percentage",
+          "security_deposit_required", "security_deposit_amount",
+          "currency_symbol",
+          "booking_fee_enabled", "booking_fee_mode",
+          "booking_fee_percentage", "booking_fee_fixed",
+        ]);
       if (error) throw error;
       return data ?? [];
     },
@@ -75,10 +81,18 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
     const pct = Number(readPolicy(policies, "deposit_percentage", propertyId) ?? 20);
     const secReq = String(readPolicy(policies, "security_deposit_required", propertyId) ?? "false") === "true";
     const secAmt = Number(readPolicy(policies, "security_deposit_amount", propertyId) ?? 0);
+    const feeEnabled = String(readPolicy(policies, "booking_fee_enabled", propertyId) ?? "false") === "true";
+    const feeMode = (readPolicy(policies, "booking_fee_mode", propertyId) ?? "separate") as "included" | "separate" | "hidden";
+    const feePct = Number(readPolicy(policies, "booking_fee_percentage", propertyId) ?? 0);
+    const feeFixed = Number(readPolicy(policies, "booking_fee_fixed", propertyId) ?? 0);
     return calculateBookingFinancials(totalPrice, payments ?? [], {
       depositPercentage: pct,
       securityDepositRequired: secReq,
       securityDepositAmount: secAmt,
+      bookingFeeEnabled: feeEnabled,
+      bookingFeeMode: feeMode,
+      bookingFeePercentage: feePct,
+      bookingFeeFixed: feeFixed,
     });
   }, [totalPrice, payments, policies, propertyId]);
 
@@ -143,6 +157,16 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
               hint="Held separately — refundable"
             />
           )}
+          {fin.feeStatus !== "not_required" && (
+            <Row
+              label="Booking fee"
+              required={fin.feeRequired}
+              paid={fin.feePaid}
+              status={fin.feeStatus}
+              fmt={fmt}
+              hint={fin.feeMode === "hidden" ? "Internal only" : undefined}
+            />
+          )}
           {fin.totalRefunded > 0 && (
             <div className="flex items-center justify-between text-xs text-[hsl(var(--info))] pt-1">
               <span>↩ Refunded</span>
@@ -151,10 +175,10 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
           )}
         </div>
 
-        {/* Footer total collected (incl. security) */}
-        {fin.securityPaid > 0 && (
+        {/* Footer total collected (incl. security + fee) */}
+        {(fin.securityPaid > 0 || fin.feePaid > 0) && (
           <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/50 pt-2">
-            <span>Total in hand (incl. security)</span>
+            <span>Total in hand (incl. security & fees)</span>
             <span className="font-medium text-foreground tabular-nums">{fmt(fin.totalCollected)}</span>
           </div>
         )}
