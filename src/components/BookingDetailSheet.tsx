@@ -427,6 +427,9 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
         <>
           <Separator />
           <h4 className="text-sm font-semibold">{t("payments.recordPayment")}</h4>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            This is only for offline money — cash, bank transfer, or whatever else happens face-to-face. If the guest already paid through the Stripe link up top, it&apos;s already in the system. You do not need to touch this.
+          </p>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1"><Label className="text-xs">{t("payments.amount")} *</Label><Input type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={balance.outstanding > 0 ? balance.outstanding.toFixed(2) : ""} /></div>
             <div className="space-y-1"><Label className="text-xs">{t("payments.method")}</Label>
