@@ -75,6 +75,12 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
 
   const selectedGroup = unitGroups?.find((g) => g.id === selectedGroupId);
 
+  useEffect(() => {
+    if (!defaultUnitId || selectedGroupId || !unitGroups?.length) return;
+    const matchingGroup = unitGroups.find((g) => g.unitIds?.includes(defaultUnitId));
+    if (matchingGroup) setValue("group_id", matchingGroup.id);
+  }, [defaultUnitId, selectedGroupId, unitGroups, setValue]);
+
   // Auto-assign: find available unit for group + dates
   const { data: assignResult, isLoading: assignLoading } = useAutoAssignUnit(
     selectedGroupId || undefined,
@@ -197,7 +203,7 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
           {/* Room Type Selection */}
           <div className="space-y-2">
             <Label>{t("bookingForm.roomType", { defaultValue: "Room Type" })} *</Label>
-            <Select value={selectedGroupId} onValueChange={(v) => setValue("group_id", v)}>
+            <Select value={selectedGroupId || undefined} onValueChange={(v) => setValue("group_id", v)}>
               <SelectTrigger><SelectValue placeholder={t("bookingForm.selectRoomType", { defaultValue: "Select room type" })} /></SelectTrigger>
               <SelectContent>
                 {unitGroups?.map((g) => (
