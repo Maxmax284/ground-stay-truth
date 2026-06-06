@@ -268,17 +268,37 @@ export default function Stay() {
                       )}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {sectionUnits.map((unit) => (
-                        <UnitCard
-                          key={unit.id}
-                          unit={unit}
-                          currencySymbol={currencySymbol}
-                          expandedUnit={expandedUnit}
-                          blockedByUnit={blockedByUnit}
-                          onToggleAvailability={toggleAvailability}
-                          onRequestBooking={handleRequestBooking}
-                        />
-                      ))}
+                      {(() => {
+                        // Collapse sibling units (same group_id) into a single card so guests
+                        // don't see "Superior Twin 8 / 9 / 10" as three near-identical listings.
+                        // Ungrouped units keep their individual cards.
+                        const seenGroups = new Set<string>();
+                        const cards: { unit: UnitData; displayName: string; count: number }[] = [];
+                        for (const unit of sectionUnits) {
+                          if (unit.group_id) {
+                            if (seenGroups.has(unit.group_id)) continue;
+                            seenGroups.add(unit.group_id);
+                            const siblings = sectionUnits.filter((u) => u.group_id === unit.group_id);
+                            const groupName = groups.find((g) => g.id === unit.group_id)?.name ?? unit.name;
+                            cards.push({ unit, displayName: groupName, count: siblings.length });
+                          } else {
+                            cards.push({ unit, displayName: unit.name, count: 1 });
+                          }
+                        }
+                        return cards.map(({ unit, displayName, count }) => (
+                          <UnitCard
+                            key={unit.group_id ?? unit.id}
+                            unit={unit}
+                            displayName={displayName}
+                            availableCount={count}
+                            currencySymbol={currencySymbol}
+                            expandedUnit={expandedUnit}
+                            blockedByUnit={blockedByUnit}
+                            onToggleAvailability={toggleAvailability}
+                            onRequestBooking={handleRequestBooking}
+                          />
+                        ));
+                      })()}
                     </div>
                     {propId !== orderedKeys[orderedKeys.length - 1] && <Separator className="mt-4" />}
                   </section>
