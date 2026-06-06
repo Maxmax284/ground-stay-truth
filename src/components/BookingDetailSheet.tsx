@@ -32,6 +32,7 @@ import { RefundDialog } from "@/components/RefundDialog";
 import { PaymentLinkManager } from "@/components/PaymentLinkManager";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { SecurityDepositSection } from "@/components/SecurityDepositSection";
+import { BookingFinancialSummary } from "@/components/BookingFinancialSummary";
 import { BookingTrainingSection } from "@/components/BookingTrainingSection";
 import { useBookingTrainingLinks } from "@/hooks/useTrainingPackages";
 import { AirportPickupSection } from "@/components/AirportPickupSection";
