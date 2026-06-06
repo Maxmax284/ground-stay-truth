@@ -33,6 +33,7 @@ import GuestPaymentLink from "./pages/GuestPaymentLink";
 import PaymentReport from "./pages/PaymentReport";
 import MediaLibrary from "./pages/MediaLibrary";
 import SecurityCenter from "./pages/SecurityCenter";
+import MonitoringCenter from "./pages/MonitoringCenter";
 
 // Global React Query defaults — consistent caching across all hooks.
 // Per-hook overrides remain authoritative; this only sets the floor.
