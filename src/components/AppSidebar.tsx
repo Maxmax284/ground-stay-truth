@@ -260,6 +260,11 @@ export function AppSidebar() {
                 <Link to="/simulation" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent">
                   <Target className="h-4 w-4" /> {t("nav.warRoomSim", "War Room Sim")}
                 </Link>
+                {canAccessRoute(role, "/monitoring") && (
+                  <Link to="/monitoring" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent">
+                    <Activity className="h-4 w-4" /> Operations Monitor
+                  </Link>
+                )}
                 {isAdmin && (
                   <>
                     <Link to="/security-center" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent">
