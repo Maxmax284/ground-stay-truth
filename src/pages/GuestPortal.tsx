@@ -375,7 +375,7 @@ const GuestPortal = () => {
     <GuestLayout>
       <div className="space-y-6">
         {isPreview && <GuestPreviewControls />}
-        <fieldset disabled={isViewingAsGuest} className={isViewingAsGuest ? "space-y-6 [&_button:not([data-preview-exit])]:cursor-not-allowed [&_a]:pointer-events-none [&_textarea]:cursor-not-allowed [&_input]:cursor-not-allowed opacity-95" : "space-y-6 contents"}>
+        <fieldset disabled={isViewingAsGuest} className={isViewingAsGuest ? "space-y-6 [&_a]:pointer-events-none opacity-95 pointer-events-auto" : "space-y-6 m-0 p-0 border-0"}>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t("guestPortal.myStay")}</h1>
