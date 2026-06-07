@@ -202,8 +202,44 @@ export function useFrontDeskData() {
     return { arrivingToday, arrivedNotCheckedIn, currentlyStaying, departingToday, upcoming };
   }, [enriched, today, next7]);
 
+  // ─── Operations Intelligence rollups (read-only, presentation only) ───
+
+
+  // Real pickup query — bound to today's arrival window
+  const pickupsTodayQuery = useQuery({
+    queryKey: ["front-desk", "pickups-today", activePropertyId, today],
+    queryFn: async () => {
+      let q: any = supabase
+        .from("airport_pickups")
+        .select("id, status, booking_id, arrival_datetime");
+      if (activePropertyId) q = q.eq("property_id", activePropertyId);
+      // Anything with arrival_datetime today OR linked to a booking checking in today
+      q = q.gte("arrival_datetime", `${today}T00:00:00Z`).lt(
+        "arrival_datetime",
+        `${next7}T00:00:00Z`,
+      );
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
+    },
+    refetchInterval: 120_000,
+  });
+
+  const pickupTodayCount = (pickupsTodayQuery.data ?? []).filter((p: any) => {
+    const d = p.arrival_datetime?.slice(0, 10);
+    return d === today;
+  }).length;
+
+  const turnoverPendingCount = (turnoverQuery.data ?? []).filter(
+    (t: any) => t.status === "pending" || t.status === "in_progress",
+  ).length;
+
   return {
     sections,
+    intelligence: {
+      todaysPickupCount: pickupTodayCount,
+      turnoverPendingCount,
+    },
     isLoading:
       bookingsQuery.isLoading ||
       paymentsQuery.isLoading ||
@@ -215,6 +251,7 @@ export function useFrontDeskData() {
       depositsQuery.refetch();
       turnoverQuery.refetch();
       docsQuery.refetch();
+      pickupsTodayQuery.refetch();
     },
   };
 }
