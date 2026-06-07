@@ -709,14 +709,13 @@ const GuestPortal = () => {
             <ProfileEditor />
           </TabsContent>
         </Tabs>
-      </div>
-
       <GuestBookingRequestForm
         open={bookingFormOpen}
         onOpenChange={setBookingFormOpen}
         defaultUnitId={bookingFormUnitId}
       />
-      </fieldset>
+        </fieldset>
+      </div>
     </GuestLayout>
   );
 };
