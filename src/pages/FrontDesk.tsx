@@ -86,6 +86,13 @@ export default function FrontDesk() {
           </Button>
         </div>
 
+        {/* Today's Briefing — deterministic by default, optional AI narration */}
+        <TodaysBriefing
+          sections={sections}
+          todaysPickupCount={intelligence?.todaysPickupCount ?? 0}
+          turnoverPendingCount={intelligence?.turnoverPendingCount ?? 0}
+        />
+
         {/* Operations Intelligence Panel — surfaces existing data, no new workflows */}
         <OperationsIntelligencePanel
           sections={sections}
@@ -95,6 +102,7 @@ export default function FrontDesk() {
 
         {/* Operational Alerts — risk roll-up */}
         <OperationalAlerts sections={sections} onOpen={setDetailId} />
+
 
 
         <Tabs defaultValue="arriving" className="w-full">
