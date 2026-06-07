@@ -178,9 +178,9 @@ const GuestPortal = () => {
   };
 
   const { data: bookings, isLoading } = useQuery({
-    queryKey: ["guest-bookings", user?.id], enabled: !!user,
+    queryKey: ["guest-bookings", effectiveGuestId], enabled: !!effectiveGuestId,
     queryFn: async () => {
-      const { data, error } = await supabase.from("bookings").select("*, units(name, photos, amenities, rules, capacity, reviews_enabled)").eq("guest_id", user!.id).order("check_in", { ascending: false });
+      const { data, error } = await supabase.from("bookings").select("*, units(name, photos, amenities, rules, capacity, reviews_enabled)").eq("guest_id", effectiveGuestId!).order("check_in", { ascending: false });
       if (error) throw error; return data;
     },
   });
