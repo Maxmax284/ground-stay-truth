@@ -153,6 +153,24 @@ const GuestPortal = () => {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Audit-log every "View as Guest" session, once per (admin, viewed_guest) pair per browser session
+  useEffect(() => {
+    if (!isViewingAsGuest || !viewAsParam || !user?.id) return;
+    const key = `gs_audit_viewas_${user.id}_${viewAsParam}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    supabase.rpc("log_staff_audit_event", {
+      _event_type: "guest_portal_view_as",
+      _severity: "info",
+      _actor_id: user.id,
+      _target_user_id: viewAsParam,
+      _reason: "Admin viewed Guest Portal as this guest (read-only preview)",
+      _metadata: { route: "/guest", mode: "read_only" } as any,
+    }).then(({ error }) => {
+      if (error) console.warn("audit log failed:", error.message);
+    });
+  }, [isViewingAsGuest, viewAsParam, user?.id]);
+
   // Active tab state (controlled for action-button navigation)
   const [activeTab, setActiveTab] = useState("bookings");
 
