@@ -617,7 +617,7 @@ const GuestPortal = () => {
                 currentMonth={calMonth}
                 bookings={bookings ?? []}
                 readOnly
-                guestId={isPreview ? undefined : user?.id}
+                guestId={isPreview && !isViewingAsGuest ? undefined : effectiveGuestId}
               />
               {!bookings?.length && (
                 <p className="text-sm text-muted-foreground text-center py-4">
