@@ -428,6 +428,32 @@ function BookingRow({
           )}
         </div>
 
+        {/* Guest Journey Timeline — presentation only */}
+        <div className="mt-3 pt-3 border-t border-border/50">
+          <GuestJourneyTimeline booking={booking} pickup={pickup ?? null} />
+        </div>
+
+        {/* Comms snapshot — last message, read state, deep link to thread */}
+        {lastMessage && (
+          <button
+            type="button"
+            onClick={() => onOpen(booking.id)}
+            className="mt-3 w-full text-left flex items-start gap-2 text-xs rounded-md p-2 bg-muted/30 hover:bg-muted/60 transition-colors border border-border/40"
+          >
+            <MessageSquare className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${lastMessage.from_guest && lastMessage.is_read === false ? "text-[hsl(var(--info))]" : "text-muted-foreground"}`} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-wide">
+                <span>{lastMessage.from_guest ? "Guest" : "Staff"}</span>
+                <span>· {formatDistanceToNow(new Date(lastMessage.created_at), { addSuffix: true })}</span>
+                {lastMessage.from_guest && lastMessage.is_read === false && (
+                  <span className="text-[hsl(var(--info))] font-medium">· Unread</span>
+                )}
+              </div>
+              <div className="text-foreground truncate mt-0.5">{lastMessage.content || "(attachment)"}</div>
+            </div>
+          </button>
+        )}
+
         {/* Warnings */}
         {warnings.length > 0 && (
           <div className="mt-3 flex items-start gap-2 text-xs text-warning-foreground bg-warning/10 rounded-md p-2 border border-warning/30">
@@ -435,6 +461,7 @@ function BookingRow({
             <div>{warnings.join(" · ")}</div>
           </div>
         )}
+
 
         {/* Actions */}
         <div className="flex gap-2 mt-3 flex-wrap">
