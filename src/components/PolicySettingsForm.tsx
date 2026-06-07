@@ -185,6 +185,7 @@ const HIDDEN_KEYS = new Set([
 const BOOLEAN_KEYS = new Set([
   "ai_assistant_enabled", "ai_guest_enabled", "ai_front_desk_enabled",
   "ai_supervisor_enabled", "ai_manager_enabled", "ai_admin_enabled",
+  "front_desk_briefing_narrative_default",
   "deposits_online_enabled", "deposits_manual_enabled", "deposits_require_online_when_enabled",
   "loyalty_pricing_enabled", "loyalty_discount_stacks_with_long_stay",
   "security_deposit_required", "email_deposit_reminder_enabled", "email_welcome_enabled",
