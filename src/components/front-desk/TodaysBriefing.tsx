@@ -14,6 +14,8 @@ import type { FrontDeskBooking } from "@/hooks/useFrontDesk";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 
+import { usePolicySettings } from "@/hooks/usePolicySettings";
+
 interface Props {
   sections: {
     arrivingToday: FrontDeskBooking[];
@@ -29,13 +31,24 @@ interface Props {
 const STORAGE_KEY = "front-desk.briefing.narrative";
 
 export function TodaysBriefing({ sections, todaysPickupCount, turnoverPendingCount }: Props) {
+  const { data: policies } = usePolicySettings();
+  const policyDefault = useMemo(() => {
+    const s = policies?.find((p) => p.key === "front_desk_briefing_narrative_default");
+    return s ? String(s.value) === "true" : false;
+  }, [policies]);
+
   const [narrative, setNarrative] = useState(false);
   const [aiText, setAiText] = useState<string | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
 
   useEffect(() => {
-    setNarrative(localStorage.getItem(STORAGE_KEY) === "true");
-  }, []);
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === "true" || stored === "false") {
+      setNarrative(stored === "true");
+    } else {
+      setNarrative(policyDefault);
+    }
+  }, [policyDefault]);
 
   const stats = useMemo(() => buildStats(sections, todaysPickupCount, turnoverPendingCount), [
     sections,

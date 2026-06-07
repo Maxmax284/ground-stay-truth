@@ -96,6 +96,7 @@ const GROUPS: SettingGroup[] = [
     keys: [
       "ai_assistant_enabled", "ai_guest_enabled", "ai_front_desk_enabled",
       "ai_supervisor_enabled", "ai_manager_enabled", "ai_admin_enabled",
+      "front_desk_briefing_narrative_default",
     ],
     summary: (g) => g("ai_assistant_enabled") === "true"
       ? `Global: On • ${["guest", "front_desk", "supervisor", "manager", "admin"].filter(r => g(`ai_${r}_enabled`) === "true").length}/5 roles enabled`
@@ -184,6 +185,7 @@ const HIDDEN_KEYS = new Set([
 const BOOLEAN_KEYS = new Set([
   "ai_assistant_enabled", "ai_guest_enabled", "ai_front_desk_enabled",
   "ai_supervisor_enabled", "ai_manager_enabled", "ai_admin_enabled",
+  "front_desk_briefing_narrative_default",
   "deposits_online_enabled", "deposits_manual_enabled", "deposits_require_online_when_enabled",
   "loyalty_pricing_enabled", "loyalty_discount_stacks_with_long_stay",
   "security_deposit_required", "email_deposit_reminder_enabled", "email_welcome_enabled",
@@ -220,6 +222,7 @@ const FRIENDLY_LABELS: Record<string, string> = {
   ai_supervisor_enabled: "Supervisor AI",
   ai_manager_enabled: "Manager AI",
   ai_admin_enabled: "Admin AI",
+  front_desk_briefing_narrative_default: "Briefing AI Narration (default)",
   cleaning_buffer_hours: "Cleaning Buffer (hours)",
   soft_hold_expiration_hours: "Soft Hold Expiry (hours)",
   require_pre_arrival_completion_before_checkin: "Require Pre-Arrival Completion",
