@@ -355,12 +355,7 @@ const GuestPortal = () => {
   return (
     <GuestLayout>
       <div className="space-y-6">
-        {isPreview && (
-          <div className="flex items-center gap-2 bg-warning/10 border border-warning/30 text-warning-foreground rounded-lg px-4 py-2 text-sm">
-            <Eye className="h-4 w-4 shrink-0" />
-            {t("guestPortal.previewBanner")}
-          </div>
-        )}
+        {isPreview && <GuestPreviewControls />}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t("guestPortal.myStay")}</h1>
