@@ -106,7 +106,7 @@ const GuestPortal = () => {
   const { user, role } = useAuth();
   const { data: policies } = usePolicySettings();
   const [searchParams] = useSearchParams();
-  const isPreview = searchParams.get("preview") === "true" && role === "admin";
+  const isPreview = searchParams.get("preview") === "true" && (role === "admin" || role === "manager");
   const viewAsParam = isPreview ? searchParams.get("as") : null;
   const effectiveGuestId = viewAsParam || user?.id;
   const isViewingAsGuest = !!viewAsParam;

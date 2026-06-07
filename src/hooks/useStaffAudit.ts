@@ -26,7 +26,9 @@ export type StaffAuditEventType =
   | "staff_session_revoked"
   // Settings
   | "security_setting_changed"
-  | "mfa_policy_changed";
+  | "mfa_policy_changed"
+  // Guest portal preview
+  | "guest_portal_view_as";
 
 interface LogArgs {
   eventType: StaffAuditEventType;
