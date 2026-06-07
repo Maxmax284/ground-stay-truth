@@ -51,6 +51,7 @@ import {
   Clock, ListChecks, Shield, MapPin, Heart, Star,
 } from "lucide-react";
 import { GuestStaySupport } from "@/components/GuestStaySupport";
+import { GuestPreviewControls } from "@/components/GuestPreviewControls";
 import { MessagingConnectCard } from "@/components/MessagingConnectCard";
 import { GuestPersonalGuideCard } from "@/components/GuestPersonalGuideCard";
 import { GuestStaySummary } from "@/components/GuestStaySummary";
@@ -104,12 +105,32 @@ const GuestPortal = () => {
   const { t } = useTranslation();
   const { user, role } = useAuth();
   const { data: policies } = usePolicySettings();
-  const { data: guestHistory } = useGuestHistory(user?.id);
-  const { data: guestReviews } = useGuestReviews(user?.id);
-  const { profile: profileQuery } = useProfile();
-  const guestName = profileQuery.data?.full_name ?? null;
   const [searchParams] = useSearchParams();
   const isPreview = searchParams.get("preview") === "true" && role === "admin";
+  const viewAsParam = isPreview ? searchParams.get("as") : null;
+  const effectiveGuestId = viewAsParam || user?.id;
+  const isViewingAsGuest = !!viewAsParam;
+
+  // When viewing as a specific guest, fetch THAT guest's profile name for display
+  const { data: viewAsProfile } = useQuery({
+    queryKey: ["preview-as-profile", viewAsParam],
+    enabled: !!viewAsParam,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("user_id", viewAsParam!)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  const { data: guestHistory } = useGuestHistory(effectiveGuestId);
+  const { data: guestReviews } = useGuestReviews(effectiveGuestId);
+  const { profile: profileQuery } = useProfile();
+  const guestName = viewAsParam
+    ? (viewAsProfile?.full_name ?? viewAsProfile?.email ?? null)
+    : (profileQuery.data?.full_name ?? null);
   const queryClient = useQueryClient();
 
   // Month view state for Calendar tab
@@ -158,9 +179,9 @@ const GuestPortal = () => {
   };
 
   const { data: bookings, isLoading } = useQuery({
-    queryKey: ["guest-bookings", user?.id], enabled: !!user,
+    queryKey: ["guest-bookings", effectiveGuestId], enabled: !!effectiveGuestId,
     queryFn: async () => {
-      const { data, error } = await supabase.from("bookings").select("*, units(name, photos, amenities, rules, capacity, reviews_enabled)").eq("guest_id", user!.id).order("check_in", { ascending: false });
+      const { data, error } = await supabase.from("bookings").select("*, units(name, photos, amenities, rules, capacity, reviews_enabled)").eq("guest_id", effectiveGuestId!).order("check_in", { ascending: false });
       if (error) throw error; return data;
     },
   });
@@ -335,12 +356,7 @@ const GuestPortal = () => {
   return (
     <GuestLayout>
       <div className="space-y-6">
-        {isPreview && (
-          <div className="flex items-center gap-2 bg-warning/10 border border-warning/30 text-warning-foreground rounded-lg px-4 py-2 text-sm">
-            <Eye className="h-4 w-4 shrink-0" />
-            {t("guestPortal.previewBanner")}
-          </div>
-        )}
+        {isPreview && <GuestPreviewControls />}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t("guestPortal.myStay")}</h1>
@@ -601,7 +617,7 @@ const GuestPortal = () => {
                 currentMonth={calMonth}
                 bookings={bookings ?? []}
                 readOnly
-                guestId={isPreview ? undefined : user?.id}
+                guestId={isPreview && !isViewingAsGuest ? undefined : effectiveGuestId}
               />
               {!bookings?.length && (
                 <p className="text-sm text-muted-foreground text-center py-4">
