@@ -64,6 +64,21 @@ const GuestAuth = () => {
     setSubmitting(false);
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({ title: t("common.error"), description: "Enter your email first", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) {
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Check your email", description: "We sent you a password reset link." });
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center auth-hero-bg-guest px-4 relative overflow-hidden corner-accent">
       <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
