@@ -27,6 +27,7 @@ import Legal from "./pages/Legal";
 import Embeds from "./pages/Embeds";
 import Stay from "./pages/Stay";
 import Simulation from "./pages/Simulation";
+import FrontDesk from "./pages/FrontDesk";
 import LandingPage from "./pages/LandingPage";
 import DisasterRecovery from "./pages/DisasterRecovery";
 import GuestPaymentLink from "./pages/GuestPaymentLink";
