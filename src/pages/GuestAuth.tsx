@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { supabase } from "@/integrations/supabase/client";
 
 const GuestAuth = () => {
   const { t } = useTranslation();
@@ -61,6 +62,21 @@ const GuestAuth = () => {
       });
     }
     setSubmitting(false);
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({ title: t("common.error"), description: "Enter your email first", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) {
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Check your email", description: "We sent you a password reset link." });
+    }
   };
 
   return (
@@ -121,7 +137,18 @@ const GuestAuth = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">{t("auth.password")}</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">{t("auth.password")}</Label>
+                  {isLogin && (
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
                 <Input
                   id="password"
                   type="password"
