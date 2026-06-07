@@ -43,6 +43,8 @@ import { OperationsIntelligencePanel } from "@/components/front-desk/OperationsI
 import { OperationalAlerts } from "@/components/front-desk/OperationalAlerts";
 import { GuestJourneyTimeline } from "@/components/front-desk/GuestJourneyTimeline";
 import { TodaysBriefing } from "@/components/front-desk/TodaysBriefing";
+import { PickupStatusStrip } from "@/components/front-desk/PickupStatusStrip";
+import { TurnoverBoard } from "@/components/front-desk/TurnoverBoard";
 import { computeOperationalStatus, TONE_CLASS } from "@/lib/operationalStatus";
 import { formatDistanceToNow } from "date-fns";
 
@@ -102,6 +104,22 @@ export default function FrontDesk() {
 
         {/* Operational Alerts — risk roll-up */}
         <OperationalAlerts sections={sections} onOpen={setDetailId} />
+
+        {/* Pickup Status Strip — today's airport pickups, read-only */}
+        <PickupStatusStrip
+          bookings={[...sections.arrivingToday, ...sections.arrivedNotCheckedIn]}
+          pickupByBooking={pickupByBooking}
+          onOpen={setDetailId}
+        />
+
+        {/* Turnover Board — rooms awaiting flip today */}
+        <TurnoverBoard
+          departing={sections.departingToday}
+          arriving={sections.arrivingToday}
+          onOpen={setDetailId}
+        />
+
+
 
 
 
