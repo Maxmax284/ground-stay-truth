@@ -41,7 +41,10 @@ import { format, differenceInCalendarDays, parseISO } from "date-fns";
 import { useTransitionBookingState } from "@/hooks/useBookings";
 import { OperationsIntelligencePanel } from "@/components/front-desk/OperationsIntelligencePanel";
 import { OperationalAlerts } from "@/components/front-desk/OperationalAlerts";
+import { GuestJourneyTimeline } from "@/components/front-desk/GuestJourneyTimeline";
+import { TodaysBriefing } from "@/components/front-desk/TodaysBriefing";
 import { computeOperationalStatus, TONE_CLASS } from "@/lib/operationalStatus";
+import { formatDistanceToNow } from "date-fns";
 
 const TURNOVER_LABELS: Record<string, { label: string; tone: string }> = {
   pending: { label: "Turnover Pending", tone: "bg-warning/20 text-warning-foreground" },
@@ -53,7 +56,7 @@ export default function FrontDesk() {
   const { role } = useAuth();
   const isAdmin = role === "admin";
   const isManagerPlus = role === "admin" || role === "manager";
-  const { sections, intelligence, isLoading, refetch } = useFrontDeskData();
+  const { sections, intelligence, pickupByBooking, lastMessageByBooking, isLoading, refetch } = useFrontDeskData();
   const { data: overrides } = useRecentOverrides(isManagerPlus);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [arrivedDialogFor, setArrivedDialogFor] = useState<FrontDeskBooking | null>(null);
