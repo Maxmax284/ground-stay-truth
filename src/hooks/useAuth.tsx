@@ -97,6 +97,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (event === "PASSWORD_RECOVERY" && window.location.pathname !== "/reset-password") {
+          window.location.replace("/reset-password");
+          return;
+        }
+
         if (event === "TOKEN_REFRESHED" && !session) {
           // Refresh failed — force sign out to clear stale state
           await supabase.auth.signOut();
