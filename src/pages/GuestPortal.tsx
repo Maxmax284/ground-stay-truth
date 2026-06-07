@@ -716,6 +716,7 @@ const GuestPortal = () => {
         onOpenChange={setBookingFormOpen}
         defaultUnitId={bookingFormUnitId}
       />
+      </fieldset>
     </GuestLayout>
   );
 };
