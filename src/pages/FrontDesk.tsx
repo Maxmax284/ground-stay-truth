@@ -41,7 +41,10 @@ import { format, differenceInCalendarDays, parseISO } from "date-fns";
 import { useTransitionBookingState } from "@/hooks/useBookings";
 import { OperationsIntelligencePanel } from "@/components/front-desk/OperationsIntelligencePanel";
 import { OperationalAlerts } from "@/components/front-desk/OperationalAlerts";
+import { GuestJourneyTimeline } from "@/components/front-desk/GuestJourneyTimeline";
+import { TodaysBriefing } from "@/components/front-desk/TodaysBriefing";
 import { computeOperationalStatus, TONE_CLASS } from "@/lib/operationalStatus";
+import { formatDistanceToNow } from "date-fns";
 
 const TURNOVER_LABELS: Record<string, { label: string; tone: string }> = {
   pending: { label: "Turnover Pending", tone: "bg-warning/20 text-warning-foreground" },
@@ -53,7 +56,7 @@ export default function FrontDesk() {
   const { role } = useAuth();
   const isAdmin = role === "admin";
   const isManagerPlus = role === "admin" || role === "manager";
-  const { sections, intelligence, isLoading, refetch } = useFrontDeskData();
+  const { sections, intelligence, pickupByBooking, lastMessageByBooking, isLoading, refetch } = useFrontDeskData();
   const { data: overrides } = useRecentOverrides(isManagerPlus);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [arrivedDialogFor, setArrivedDialogFor] = useState<FrontDeskBooking | null>(null);
@@ -83,6 +86,13 @@ export default function FrontDesk() {
           </Button>
         </div>
 
+        {/* Today's Briefing — deterministic by default, optional AI narration */}
+        <TodaysBriefing
+          sections={sections}
+          todaysPickupCount={intelligence?.todaysPickupCount ?? 0}
+          turnoverPendingCount={intelligence?.turnoverPendingCount ?? 0}
+        />
+
         {/* Operations Intelligence Panel — surfaces existing data, no new workflows */}
         <OperationsIntelligencePanel
           sections={sections}
@@ -92,6 +102,7 @@ export default function FrontDesk() {
 
         {/* Operational Alerts — risk roll-up */}
         <OperationalAlerts sections={sections} onOpen={setDetailId} />
+
 
 
         <Tabs defaultValue="arriving" className="w-full">
@@ -112,6 +123,8 @@ export default function FrontDesk() {
               variant="arriving"
               onOpen={setDetailId}
               onMarkArrived={setArrivedDialogFor}
+              pickupByBooking={pickupByBooking}
+              lastMessageByBooking={lastMessageByBooking}
             />
           </TabsContent>
           <TabsContent value="waiting" className="space-y-3 mt-4">
@@ -121,6 +134,8 @@ export default function FrontDesk() {
               emptyText="No guests waiting for check-in."
               variant="waiting"
               onOpen={setDetailId}
+              pickupByBooking={pickupByBooking}
+              lastMessageByBooking={lastMessageByBooking}
             />
           </TabsContent>
           <TabsContent value="staying" className="space-y-3 mt-4">
@@ -130,6 +145,8 @@ export default function FrontDesk() {
               emptyText="No one is currently staying."
               variant="staying"
               onOpen={setDetailId}
+              pickupByBooking={pickupByBooking}
+              lastMessageByBooking={lastMessageByBooking}
             />
           </TabsContent>
           <TabsContent value="departing" className="space-y-3 mt-4">
@@ -139,6 +156,8 @@ export default function FrontDesk() {
               emptyText="No departures today."
               variant="departing"
               onOpen={setDetailId}
+              pickupByBooking={pickupByBooking}
+              lastMessageByBooking={lastMessageByBooking}
             />
           </TabsContent>
           <TabsContent value="upcoming" className="space-y-3 mt-4">
@@ -148,6 +167,8 @@ export default function FrontDesk() {
               emptyText="No upcoming arrivals in the next 7 days."
               variant="upcoming"
               onOpen={setDetailId}
+              pickupByBooking={pickupByBooking}
+              lastMessageByBooking={lastMessageByBooking}
             />
           </TabsContent>
 
@@ -158,6 +179,7 @@ export default function FrontDesk() {
           )}
         </Tabs>
       </div>
+
 
       <BookingDetailSheet
         bookingId={detailId}
@@ -192,6 +214,9 @@ function KpiTile({ label, value, icon: Icon, tone }: { label: string; value: num
 }
 
 // ─── Section list ───
+type PickupMap = Map<string, { status: string | null; arrival_datetime: string | null }>;
+type LastMsgMap = Map<string, { content: string; sender_id: string | null; created_at: string; is_read: boolean | null; from_guest: boolean }>;
+
 function SectionList({
   isLoading,
   bookings,
@@ -199,6 +224,8 @@ function SectionList({
   variant,
   onOpen,
   onMarkArrived,
+  pickupByBooking,
+  lastMessageByBooking,
 }: {
   isLoading: boolean;
   bookings: FrontDeskBooking[];
@@ -206,6 +233,8 @@ function SectionList({
   variant: "arriving" | "waiting" | "staying" | "departing" | "upcoming";
   onOpen: (id: string) => void;
   onMarkArrived?: (b: FrontDeskBooking) => void;
+  pickupByBooking?: PickupMap;
+  lastMessageByBooking?: LastMsgMap;
 }) {
   if (isLoading) {
     return (
@@ -234,6 +263,8 @@ function SectionList({
           variant={variant}
           onOpen={onOpen}
           onMarkArrived={onMarkArrived}
+          pickup={pickupByBooking?.get(b.id) ?? null}
+          lastMessage={lastMessageByBooking?.get(b.id) ?? null}
         />
       ))}
     </div>
@@ -246,11 +277,15 @@ function BookingRow({
   variant,
   onOpen,
   onMarkArrived,
+  pickup,
+  lastMessage,
 }: {
   booking: FrontDeskBooking;
   variant: "arriving" | "waiting" | "staying" | "departing" | "upcoming";
   onOpen: (id: string) => void;
   onMarkArrived?: (b: FrontDeskBooking) => void;
+  pickup?: { status: string | null; arrival_datetime: string | null } | null;
+  lastMessage?: { content: string; created_at: string; is_read: boolean | null; from_guest: boolean } | null;
 }) {
   const guestName = booking.profiles?.full_name ?? "Guest";
   const unitName = booking.units?.name ?? "—";
@@ -393,6 +428,32 @@ function BookingRow({
           )}
         </div>
 
+        {/* Guest Journey Timeline — presentation only */}
+        <div className="mt-3 pt-3 border-t border-border/50">
+          <GuestJourneyTimeline booking={booking} pickup={pickup ?? null} />
+        </div>
+
+        {/* Comms snapshot — last message, read state, deep link to thread */}
+        {lastMessage && (
+          <button
+            type="button"
+            onClick={() => onOpen(booking.id)}
+            className="mt-3 w-full text-left flex items-start gap-2 text-xs rounded-md p-2 bg-muted/30 hover:bg-muted/60 transition-colors border border-border/40"
+          >
+            <MessageSquare className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${lastMessage.from_guest && lastMessage.is_read === false ? "text-[hsl(var(--info))]" : "text-muted-foreground"}`} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-wide">
+                <span>{lastMessage.from_guest ? "Guest" : "Staff"}</span>
+                <span>· {formatDistanceToNow(new Date(lastMessage.created_at), { addSuffix: true })}</span>
+                {lastMessage.from_guest && lastMessage.is_read === false && (
+                  <span className="text-[hsl(var(--info))] font-medium">· Unread</span>
+                )}
+              </div>
+              <div className="text-foreground truncate mt-0.5">{lastMessage.content || "(attachment)"}</div>
+            </div>
+          </button>
+        )}
+
         {/* Warnings */}
         {warnings.length > 0 && (
           <div className="mt-3 flex items-start gap-2 text-xs text-warning-foreground bg-warning/10 rounded-md p-2 border border-warning/30">
@@ -400,6 +461,7 @@ function BookingRow({
             <div>{warnings.join(" · ")}</div>
           </div>
         )}
+
 
         {/* Actions */}
         <div className="flex gap-2 mt-3 flex-wrap">
@@ -435,11 +497,27 @@ function BookingRow({
             Open Booking
           </Button>
           {booking.profiles?.phone && (
-            <Button size="sm" variant="ghost" asChild>
-              <a href={`tel:${booking.profiles.phone}`}>
-                <Phone className="h-4 w-4 mr-1" /> Call
-              </a>
-            </Button>
+            <>
+              <Button size="sm" variant="ghost" asChild>
+                <a href={`tel:${booking.profiles.phone}`}>
+                  <Phone className="h-4 w-4 mr-1" /> Call
+                </a>
+              </Button>
+              <Button size="sm" variant="ghost" asChild>
+                <a
+                  href={`https://wa.me/${booking.profiles.phone.replace(/[^\d]/g, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MessageSquare className="h-4 w-4 mr-1" /> WhatsApp
+                </a>
+              </Button>
+              <Button size="sm" variant="ghost" asChild>
+                <a href={`sms:${booking.profiles.phone}`}>
+                  <MessageSquare className="h-4 w-4 mr-1" /> SMS
+                </a>
+              </Button>
+            </>
           )}
         </div>
       </CardContent>
