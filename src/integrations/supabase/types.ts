@@ -415,6 +415,9 @@ export type Database = {
       bookings: {
         Row: {
           arrival_details: Json | null
+          arrival_note: string | null
+          arrived_at: string | null
+          arrived_by: string | null
           check_in: string
           check_out: string
           created_at: string
@@ -436,6 +439,9 @@ export type Database = {
         }
         Insert: {
           arrival_details?: Json | null
+          arrival_note?: string | null
+          arrived_at?: string | null
+          arrived_by?: string | null
           check_in: string
           check_out: string
           created_at?: string
@@ -457,6 +463,9 @@ export type Database = {
         }
         Update: {
           arrival_details?: Json | null
+          arrival_note?: string | null
+          arrived_at?: string | null
+          arrived_by?: string | null
           check_in?: string
           check_out?: string
           created_at?: string

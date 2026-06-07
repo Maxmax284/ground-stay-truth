@@ -22,6 +22,7 @@ const NAV_ACCESS: Record<string, AppRole[]> = {
   "/units":     ["manager", "admin"],
   "/media-library": ["manager", "admin"],
   "/bookings":  ["front_desk", "front_desk_supervisor", "manager", "admin", "viewer"],
+  "/front-desk": ["front_desk", "front_desk_supervisor", "manager", "admin"],
   "/calendar":  ["front_desk", "front_desk_supervisor", "manager", "admin", "viewer", "maintenance"],
   "/pricing":   ["manager", "admin"],
   "/reports":   ["manager", "admin", "viewer"],
