@@ -81,7 +81,7 @@ export function useFrontDeskData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("payments")
-        .select("booking_id, amount, status, type")
+        .select("booking_id, amount, status, payment_type")
         .in("booking_id", bookingIds);
       if (error) throw error;
       return data ?? [];
