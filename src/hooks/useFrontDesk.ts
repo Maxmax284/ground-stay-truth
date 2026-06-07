@@ -145,7 +145,7 @@ export function useFrontDeskData() {
       );
       const depositPaid = myPays.some(
         (p: any) =>
-          (p.type === "deposit" || p.type === "online_deposit") &&
+          (p.payment_type === "deposit" || p.payment_type === "online_deposit") &&
           (p.status === "paid" || p.status === "recorded")
       );
       const dep = deps.find((d: any) => d.booking_id === b.id) ?? null;
