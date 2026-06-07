@@ -39,6 +39,9 @@ import { STATE_LABELS, STATE_VARIANTS, type BookingState } from "@/lib/bookingSt
 import { formatPrice } from "@/lib/currency";
 import { format, differenceInCalendarDays, parseISO } from "date-fns";
 import { useTransitionBookingState } from "@/hooks/useBookings";
+import { OperationsIntelligencePanel } from "@/components/front-desk/OperationsIntelligencePanel";
+import { OperationalAlerts } from "@/components/front-desk/OperationalAlerts";
+import { computeOperationalStatus, TONE_CLASS } from "@/lib/operationalStatus";
 
 const TURNOVER_LABELS: Record<string, { label: string; tone: string }> = {
   pending: { label: "Turnover Pending", tone: "bg-warning/20 text-warning-foreground" },
