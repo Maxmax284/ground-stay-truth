@@ -497,11 +497,27 @@ function BookingRow({
             Open Booking
           </Button>
           {booking.profiles?.phone && (
-            <Button size="sm" variant="ghost" asChild>
-              <a href={`tel:${booking.profiles.phone}`}>
-                <Phone className="h-4 w-4 mr-1" /> Call
-              </a>
-            </Button>
+            <>
+              <Button size="sm" variant="ghost" asChild>
+                <a href={`tel:${booking.profiles.phone}`}>
+                  <Phone className="h-4 w-4 mr-1" /> Call
+                </a>
+              </Button>
+              <Button size="sm" variant="ghost" asChild>
+                <a
+                  href={`https://wa.me/${booking.profiles.phone.replace(/[^\d]/g, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MessageSquare className="h-4 w-4 mr-1" /> WhatsApp
+                </a>
+              </Button>
+              <Button size="sm" variant="ghost" asChild>
+                <a href={`sms:${booking.profiles.phone}`}>
+                  <MessageSquare className="h-4 w-4 mr-1" /> SMS
+                </a>
+              </Button>
+            </>
           )}
         </div>
       </CardContent>
