@@ -203,13 +203,7 @@ export function useFrontDeskData() {
   }, [enriched, today, next7]);
 
   // ─── Operations Intelligence rollups (read-only, presentation only) ───
-  const todaysPickupCount = useMemo(() => {
-    const arrivingIds = new Set(sections.arrivingToday.map((b) => b.id));
-    const waitingIds = new Set(sections.arrivedNotCheckedIn.map((b) => b.id));
-    return (turnoverQuery.data ?? []).length > 0 || arrivingIds.size + waitingIds.size > 0
-      ? sections.arrivingToday.length + sections.arrivedNotCheckedIn.length // placeholder, real value from pickupsQuery below
-      : 0;
-  }, [sections]);
+
 
   // Real pickup query — bound to today's arrival window
   const pickupsTodayQuery = useQuery({
