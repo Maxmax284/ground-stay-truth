@@ -222,6 +222,7 @@ const FRIENDLY_LABELS: Record<string, string> = {
   ai_supervisor_enabled: "Supervisor AI",
   ai_manager_enabled: "Manager AI",
   ai_admin_enabled: "Admin AI",
+  front_desk_briefing_narrative_default: "Briefing AI Narration (default)",
   cleaning_buffer_hours: "Cleaning Buffer (hours)",
   soft_hold_expiration_hours: "Soft Hold Expiry (hours)",
   require_pre_arrival_completion_before_checkin: "Require Pre-Arrival Completion",
