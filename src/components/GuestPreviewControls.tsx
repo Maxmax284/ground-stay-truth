@@ -61,12 +61,12 @@ export function GuestPreviewControls() {
 
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm">
-      <div className="flex items-center gap-2 text-warning-foreground">
-        <Eye className="h-4 w-4 shrink-0" />
+      <div className="flex items-start gap-2 text-warning-foreground">
+        <Eye className="h-4 w-4 shrink-0 mt-0.5" />
         <span>
           {viewAs
-            ? <>Viewing as <strong>{currentLabel}</strong> — read-only. Actions are disabled.</>
-            : <>Admin preview. Pick a guest below to view their actual portal exactly as they see it.</>}
+            ? <>Viewing as <strong>{currentLabel}</strong>. Every action below is disabled and this session has been audit-logged. To make changes on this guest's behalf, do it from the Bookings page.</>
+            : <>Admin preview. Pick a guest below to see their actual portal exactly as they see it (read-only).</>}
         </span>
       </div>
       <div className="flex flex-wrap items-center gap-2">
