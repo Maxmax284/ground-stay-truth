@@ -277,11 +277,15 @@ function BookingRow({
   variant,
   onOpen,
   onMarkArrived,
+  pickup,
+  lastMessage,
 }: {
   booking: FrontDeskBooking;
   variant: "arriving" | "waiting" | "staying" | "departing" | "upcoming";
   onOpen: (id: string) => void;
   onMarkArrived?: (b: FrontDeskBooking) => void;
+  pickup?: { status: string | null; arrival_datetime: string | null } | null;
+  lastMessage?: { content: string; created_at: string; is_read: boolean | null; from_guest: boolean } | null;
 }) {
   const guestName = booking.profiles?.full_name ?? "Guest";
   const unitName = booking.units?.name ?? "—";
