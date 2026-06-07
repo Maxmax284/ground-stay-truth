@@ -95,7 +95,17 @@ const Auth = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">{t("auth.password")}</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">{t("auth.password")}</Label>
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={sendingReset}
+                    className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
+                  >
+                    {sendingReset ? "Sending…" : "Forgot password?"}
+                  </button>
+                </div>
                 <Input
                   id="password"
                   type="password"
