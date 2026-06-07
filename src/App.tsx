@@ -35,6 +35,7 @@ import PaymentReport from "./pages/PaymentReport";
 import MediaLibrary from "./pages/MediaLibrary";
 import SecurityCenter from "./pages/SecurityCenter";
 import MonitoringCenter from "./pages/MonitoringCenter";
+import ResetPassword from "./pages/ResetPassword";
 
 // Global React Query defaults — consistent caching across all hooks.
 // Per-hook overrides remain authoritative; this only sets the floor.
@@ -65,6 +66,7 @@ const App = () => (
               <Routes>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/guest" element={<GuestAuth />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
 
 {/* Public landing page */}
                 <Route path="/" element={<LandingPage />} />

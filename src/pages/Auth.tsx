@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { supabase } from "@/integrations/supabase/client";
 
 const Auth = () => {
   const { t } = useTranslation();
@@ -15,6 +16,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
   const { toast } = useToast();
 
   if (loading) {
@@ -37,6 +39,23 @@ const Auth = () => {
       toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     }
     setSubmitting(false);
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email || !email.includes("@")) {
+      toast({ title: "Enter your email above first", variant: "destructive" });
+      return;
+    }
+    setSendingReset(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setSendingReset(false);
+    if (error) {
+      toast({ title: "Could not send reset email", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Reset email sent", description: "Check your inbox for the reset link." });
+    }
   };
 
   return (
@@ -76,7 +95,17 @@ const Auth = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">{t("auth.password")}</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">{t("auth.password")}</Label>
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={sendingReset}
+                    className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
+                  >
+                    {sendingReset ? "Sending…" : "Forgot password?"}
+                  </button>
+                </div>
                 <Input
                   id="password"
                   type="password"
