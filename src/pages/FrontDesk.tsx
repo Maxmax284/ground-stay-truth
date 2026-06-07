@@ -214,6 +214,9 @@ function KpiTile({ label, value, icon: Icon, tone }: { label: string; value: num
 }
 
 // ─── Section list ───
+type PickupMap = Map<string, { status: string | null; arrival_datetime: string | null }>;
+type LastMsgMap = Map<string, { content: string; sender_id: string | null; created_at: string; is_read: boolean | null; from_guest: boolean }>;
+
 function SectionList({
   isLoading,
   bookings,
@@ -221,6 +224,8 @@ function SectionList({
   variant,
   onOpen,
   onMarkArrived,
+  pickupByBooking,
+  lastMessageByBooking,
 }: {
   isLoading: boolean;
   bookings: FrontDeskBooking[];
@@ -228,6 +233,8 @@ function SectionList({
   variant: "arriving" | "waiting" | "staying" | "departing" | "upcoming";
   onOpen: (id: string) => void;
   onMarkArrived?: (b: FrontDeskBooking) => void;
+  pickupByBooking?: PickupMap;
+  lastMessageByBooking?: LastMsgMap;
 }) {
   if (isLoading) {
     return (
@@ -256,6 +263,8 @@ function SectionList({
           variant={variant}
           onOpen={onOpen}
           onMarkArrived={onMarkArrived}
+          pickup={pickupByBooking?.get(b.id) ?? null}
+          lastMessage={lastMessageByBooking?.get(b.id) ?? null}
         />
       ))}
     </div>
