@@ -51,6 +51,7 @@ import {
   Clock, ListChecks, Shield, MapPin, Heart, Star,
 } from "lucide-react";
 import { GuestStaySupport } from "@/components/GuestStaySupport";
+import { GuestPreviewControls } from "@/components/GuestPreviewControls";
 import { MessagingConnectCard } from "@/components/MessagingConnectCard";
 import { GuestPersonalGuideCard } from "@/components/GuestPersonalGuideCard";
 import { GuestStaySummary } from "@/components/GuestStaySummary";
