@@ -96,6 +96,7 @@ const GROUPS: SettingGroup[] = [
     keys: [
       "ai_assistant_enabled", "ai_guest_enabled", "ai_front_desk_enabled",
       "ai_supervisor_enabled", "ai_manager_enabled", "ai_admin_enabled",
+      "front_desk_briefing_narrative_default",
     ],
     summary: (g) => g("ai_assistant_enabled") === "true"
       ? `Global: On • ${["guest", "front_desk", "supervisor", "manager", "admin"].filter(r => g(`ai_${r}_enabled`) === "true").length}/5 roles enabled`
