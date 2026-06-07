@@ -104,12 +104,32 @@ const GuestPortal = () => {
   const { t } = useTranslation();
   const { user, role } = useAuth();
   const { data: policies } = usePolicySettings();
-  const { data: guestHistory } = useGuestHistory(user?.id);
-  const { data: guestReviews } = useGuestReviews(user?.id);
-  const { profile: profileQuery } = useProfile();
-  const guestName = profileQuery.data?.full_name ?? null;
   const [searchParams] = useSearchParams();
   const isPreview = searchParams.get("preview") === "true" && role === "admin";
+  const viewAsParam = isPreview ? searchParams.get("as") : null;
+  const effectiveGuestId = viewAsParam || user?.id;
+  const isViewingAsGuest = !!viewAsParam;
+
+  // When viewing as a specific guest, fetch THAT guest's profile name for display
+  const { data: viewAsProfile } = useQuery({
+    queryKey: ["preview-as-profile", viewAsParam],
+    enabled: !!viewAsParam,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("user_id", viewAsParam!)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  const { data: guestHistory } = useGuestHistory(effectiveGuestId);
+  const { data: guestReviews } = useGuestReviews(effectiveGuestId);
+  const { profile: profileQuery } = useProfile();
+  const guestName = viewAsParam
+    ? (viewAsProfile?.full_name ?? viewAsProfile?.email ?? null)
+    : (profileQuery.data?.full_name ?? null);
   const queryClient = useQueryClient();
 
   // Month view state for Calendar tab
