@@ -291,6 +291,8 @@ function BookingRow({
     warnings.push("Turnover not ready");
   }
 
+  const opStatus = computeOperationalStatus(booking);
+
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-4">
@@ -300,6 +302,9 @@ function BookingRow({
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-semibold text-foreground text-base truncate">{guestName}</h3>
               <Badge variant="outline" className="text-[10px]">{unitName}</Badge>
+              <Badge className={`text-[10px] border ${TONE_CLASS[opStatus.tone]}`}>
+                {opStatus.label}
+              </Badge>
               <Badge className={`text-[10px] ${STATE_VARIANTS[booking.state as BookingState] ?? ""}`}>
                 {STATE_LABELS[booking.state as BookingState] ?? booking.state}
               </Badge>
