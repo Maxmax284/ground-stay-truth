@@ -53,7 +53,7 @@ export default function FrontDesk() {
   const { role } = useAuth();
   const isAdmin = role === "admin";
   const isManagerPlus = role === "admin" || role === "manager";
-  const { sections, isLoading, refetch } = useFrontDeskData();
+  const { sections, intelligence, isLoading, refetch } = useFrontDeskData();
   const { data: overrides } = useRecentOverrides(isManagerPlus);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [arrivedDialogFor, setArrivedDialogFor] = useState<FrontDeskBooking | null>(null);
@@ -68,14 +68,14 @@ export default function FrontDesk() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               <UserCheck className="h-6 w-6 text-primary" /> Front Desk
             </h1>
-            <p className="text-muted-foreground mt-1">
-              Today's arrivals, current stays, and departures — one screen.
+            <p className="text-muted-foreground mt-1 text-sm">
+              Operations Intelligence — every guest, every signal, one screen.
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={refetch}>
@@ -83,14 +83,16 @@ export default function FrontDesk() {
           </Button>
         </div>
 
-        {/* KPI strip */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <KpiTile label="Arriving today" value={totals.arriving} icon={LogIn} tone="text-primary" />
-          <KpiTile label="Arrived, not checked in" value={totals.arrivedWaiting} icon={Clock} tone="text-warning" />
-          <KpiTile label="Currently staying" value={totals.staying} icon={Bed} tone="text-info" />
-          <KpiTile label="Departing today" value={totals.departing} icon={LogOut} tone="text-accent-foreground" />
-          <KpiTile label="Next 7 days" value={totals.upcoming} icon={CalendarClock} tone="text-muted-foreground" />
-        </div>
+        {/* Operations Intelligence Panel — surfaces existing data, no new workflows */}
+        <OperationsIntelligencePanel
+          sections={sections}
+          todaysPickupCount={intelligence?.todaysPickupCount ?? 0}
+          turnoverPendingCount={intelligence?.turnoverPendingCount ?? 0}
+        />
+
+        {/* Operational Alerts — risk roll-up */}
+        <OperationalAlerts sections={sections} onOpen={setDetailId} />
+
 
         <Tabs defaultValue="arriving" className="w-full">
           <TabsList className="flex-wrap h-auto">
