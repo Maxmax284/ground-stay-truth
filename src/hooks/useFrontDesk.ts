@@ -234,12 +234,60 @@ export function useFrontDeskData() {
     (t: any) => t.status === "pending" || t.status === "in_progress",
   ).length;
 
+  // Per-booking pickup map (read-only)
+  const pickupByBooking = useMemo(() => {
+    const map = new Map<string, { status: string | null; arrival_datetime: string | null }>();
+    (pickupsTodayQuery.data ?? []).forEach((p: any) => {
+      if (p.booking_id) map.set(p.booking_id, { status: p.status, arrival_datetime: p.arrival_datetime });
+    });
+    return map;
+  }, [pickupsTodayQuery.data]);
+
+  // Last message per booking (read-only, for comms strip)
+  const lastMessagesQuery = useQuery({
+    queryKey: ["front-desk", "last-messages", bookingIds.sort().join(",")],
+    enabled: bookingIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("booking_id, content, sender_id, created_at, is_read")
+        .in("booking_id", bookingIds)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
+    refetchInterval: 60_000,
+  });
+
+  const lastMessageByBooking = useMemo(() => {
+    const map = new Map<string, { content: string; sender_id: string | null; created_at: string; is_read: boolean | null; from_guest: boolean }>();
+    const rows = (lastMessagesQuery.data ?? []) as any[];
+    const bookings = bookingsQuery.data ?? [];
+    rows.forEach((m) => {
+      if (!m.booking_id) return;
+      if (map.has(m.booking_id)) return;
+      const b = bookings.find((x: any) => x.id === m.booking_id);
+      const fromGuest = !!(b && b.guest_id && m.sender_id === b.guest_id);
+      map.set(m.booking_id, {
+        content: m.content ?? "",
+        sender_id: m.sender_id,
+        created_at: m.created_at,
+        is_read: m.is_read,
+        from_guest: fromGuest,
+      });
+    });
+    return map;
+  }, [lastMessagesQuery.data, bookingsQuery.data]);
+
   return {
     sections,
     intelligence: {
       todaysPickupCount: pickupTodayCount,
       turnoverPendingCount,
     },
+    pickupByBooking,
+    lastMessageByBooking,
     isLoading:
       bookingsQuery.isLoading ||
       paymentsQuery.isLoading ||
@@ -252,6 +300,7 @@ export function useFrontDeskData() {
       turnoverQuery.refetch();
       docsQuery.refetch();
       pickupsTodayQuery.refetch();
+      lastMessagesQuery.refetch();
     },
   };
 }
