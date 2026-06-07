@@ -59,12 +59,15 @@ export function TodaysBriefing({ sections, todaysPickupCount, turnoverPendingCou
         });
         if (cancelled) return;
         if (error) throw error;
-        const text =
-          (data as any)?.reply ??
-          (data as any)?.text ??
-          (data as any)?.message ??
-          null;
-        setAiText(text ?? stats.deterministic);
+        let text: any = null;
+        if (typeof data === "string") {
+          text = data;
+        } else if (data && typeof data === "object") {
+          const d: any = data;
+          const candidate = d.reply ?? d.message ?? d.content ?? d.output ?? null;
+          if (typeof candidate === "string") text = candidate;
+        }
+        setAiText(typeof text === "string" && text.trim() ? text : stats.deterministic);
       } catch {
         if (!cancelled) setAiText(stats.deterministic);
       } finally {
