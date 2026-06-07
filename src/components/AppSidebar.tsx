@@ -22,6 +22,7 @@ import {
   Share,
   PlusSquare,
   MoreVertical,
+  UserCheck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
