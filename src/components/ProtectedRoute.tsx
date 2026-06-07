@@ -67,7 +67,7 @@ const ProtectedRoute = ({ children, requiredPath, guestOnly = false }: Protected
 
   if (guestOnly && permissions.isStaff(role)) {
     // Allow admins to preview the guest portal
-    if (isPreview && role === "admin") {
+    if (isPreview && (role === "admin" || role === "manager")) {
       return <>{children}</>;
     }
     return <Navigate to="/" replace />;
