@@ -123,6 +123,8 @@ export default function FrontDesk() {
               variant="arriving"
               onOpen={setDetailId}
               onMarkArrived={setArrivedDialogFor}
+              pickupByBooking={pickupByBooking}
+              lastMessageByBooking={lastMessageByBooking}
             />
           </TabsContent>
           <TabsContent value="waiting" className="space-y-3 mt-4">
@@ -132,6 +134,8 @@ export default function FrontDesk() {
               emptyText="No guests waiting for check-in."
               variant="waiting"
               onOpen={setDetailId}
+              pickupByBooking={pickupByBooking}
+              lastMessageByBooking={lastMessageByBooking}
             />
           </TabsContent>
           <TabsContent value="staying" className="space-y-3 mt-4">
@@ -141,6 +145,8 @@ export default function FrontDesk() {
               emptyText="No one is currently staying."
               variant="staying"
               onOpen={setDetailId}
+              pickupByBooking={pickupByBooking}
+              lastMessageByBooking={lastMessageByBooking}
             />
           </TabsContent>
           <TabsContent value="departing" className="space-y-3 mt-4">
@@ -150,6 +156,8 @@ export default function FrontDesk() {
               emptyText="No departures today."
               variant="departing"
               onOpen={setDetailId}
+              pickupByBooking={pickupByBooking}
+              lastMessageByBooking={lastMessageByBooking}
             />
           </TabsContent>
           <TabsContent value="upcoming" className="space-y-3 mt-4">
@@ -159,6 +167,8 @@ export default function FrontDesk() {
               emptyText="No upcoming arrivals in the next 7 days."
               variant="upcoming"
               onOpen={setDetailId}
+              pickupByBooking={pickupByBooking}
+              lastMessageByBooking={lastMessageByBooking}
             />
           </TabsContent>
 
@@ -169,6 +179,7 @@ export default function FrontDesk() {
           )}
         </Tabs>
       </div>
+
 
       <BookingDetailSheet
         bookingId={detailId}
