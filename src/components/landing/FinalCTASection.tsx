@@ -27,12 +27,12 @@ const FinalCTASection = () => (
 
         <Link
           to="/auth"
-          className="group flex items-center justify-center gap-3 px-8 py-4 border border-[hsl(36,20%,15%)] hover:border-[hsl(36,20%,28%)] transition-all duration-300 rounded-sm"
+          className="group flex items-center justify-center gap-3 px-8 py-4 border border-[hsl(36,20%,30%)] hover:border-[hsl(36,20%,50%)] active:border-[hsl(36,20%,60%)] transition-all duration-300 rounded-sm cursor-pointer"
         >
-          <span className="text-xs font-medium tracking-wide text-[hsl(36,20%,40%)] group-hover:text-[hsl(36,20%,65%)] transition-colors">
-            Manage Property
+          <span className="text-sm font-medium tracking-wide text-[hsl(36,20%,75%)] group-hover:text-[hsl(36,20%,95%)] transition-colors">
+            Staff Login
           </span>
-          <span className="text-[hsl(36,20%,22%)] group-hover:text-[hsl(36,20%,40%)] transition-colors">→</span>
+          <span className="text-[hsl(36,20%,45%)] group-hover:text-[hsl(36,20%,65%)] transition-colors">→</span>
         </Link>
       </div>
 
