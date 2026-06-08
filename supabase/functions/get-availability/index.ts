@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
         .from("bookings")
         .select("check_in, check_out")
         .eq("unit_id", unitId)
-        .in("state", ["pending_approval", "pending_deposit", "confirmed", "checked_in"])
+        .in("state", ["inquiry", "soft_hold", "pending_approval", "pending_deposit", "confirmed", "checked_in"])
         .gte("check_out", new Date().toISOString().split("T")[0]);
 
       const { data: maintenance } = await supabase
@@ -192,7 +192,7 @@ Deno.serve(async (req) => {
         .from("bookings")
         .select("unit_id, check_in, check_out")
         .in("unit_id", unitIds)
-        .in("state", ["pending_approval", "pending_deposit", "confirmed", "checked_in"])
+        .in("state", ["inquiry", "soft_hold", "pending_approval", "pending_deposit", "confirmed", "checked_in"])
         .gte("check_out", new Date().toISOString().split("T")[0]);
 
       const { data: maintenance } = await supabase
@@ -201,8 +201,7 @@ Deno.serve(async (req) => {
         .in("unit_id", unitIds)
         .gte("end_date", new Date().toISOString().split("T")[0]);
 
-      // A date is only blocked if ALL units in the group are blocked
-      // Collect all blocked ranges per unit
+      // Collect blocked ranges per unit
       const unitBlockedMap = new Map<string, { start: string; end: string }[]>();
       for (const uid of unitIds) {
         const ranges = [
@@ -212,17 +211,50 @@ Deno.serve(async (req) => {
         unitBlockedMap.set(uid, ranges);
       }
 
-      // For the calendar widget, show the representative unit info with group-level blocking
+      // Intersection: a date is only blocked if every active sibling in the
+      // group is unavailable that night. We sweep day-by-day across the
+      // forward 12-month window the public embed cares about.
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+      const horizon = new Date(today);
+      horizon.setUTCFullYear(horizon.getUTCFullYear() + 1);
+
+      const isNightBlocked = (uid: string, dayMs: number) => {
+        const ranges = unitBlockedMap.get(uid) ?? [];
+        return ranges.some((r) => {
+          const s = Date.parse(r.start);
+          const e = Date.parse(r.end);
+          return dayMs >= s && dayMs < e;
+        });
+      };
+
+      const groupBlocked: { start: string; end: string }[] = [];
+      let runStart: string | null = null;
+      let prevDayIso: string | null = null;
+      for (let d = new Date(today); d < horizon; d.setUTCDate(d.getUTCDate() + 1)) {
+        const dayMs = d.getTime();
+        const iso = d.toISOString().split("T")[0];
+        const allBlocked = unitIds.every((uid) => isNightBlocked(uid, dayMs));
+        if (allBlocked && !runStart) {
+          runStart = iso;
+        } else if (!allBlocked && runStart) {
+          // Close run — end-exclusive (use today's iso as end)
+          groupBlocked.push({ start: runStart, end: iso });
+          runStart = null;
+        }
+        prevDayIso = iso;
+      }
+      if (runStart) {
+        // Open run to horizon
+        groupBlocked.push({ start: runStart, end: horizon.toISOString().split("T")[0] });
+      }
+
       const unit = {
         ...rep,
         name: group?.name ?? rep.name,
       };
 
-      // Only show blocked dates where ALL units are unavailable
-      // For simplicity, return union of all blocked ranges - the auto-assign handles actual availability
-      const allRanges = Array.from(unitBlockedMap.values()).flat();
-
-      return new Response(JSON.stringify({ unit, blockedRanges: allRanges, currencySymbol, unitCount: unitIds.length }), {
+      return new Response(JSON.stringify({ unit, blockedRanges: groupBlocked, currencySymbol, unitCount: unitIds.length }), {
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }

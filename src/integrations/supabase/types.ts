@@ -3086,6 +3086,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assign_unit_for_group: {
+        Args: { _check_in: string; _check_out: string; _group_id: string }
+        Returns: {
+          available_count: number
+          total_count: number
+          unit_id: string
+          unit_name: string
+        }[]
+      }
       cleanup_expired_link_codes: { Args: never; Returns: undefined }
       create_recovery_snapshot: {
         Args: { _kind?: string; _label: string; _notes?: string }

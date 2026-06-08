@@ -32,8 +32,18 @@ export const STATE_LABELS: Record<BookingState, string> = {
   no_show: "No-Show",
 };
 
-/** States that block calendar dates (overlap protection) */
+/**
+ * States that block calendar dates (overlap protection).
+ *
+ * Single source of truth — every surface that asks "is this room held?" must
+ * use this list: the DB `check_booking_overlap()` trigger, the
+ * `auto-assign-unit` / `get-availability` edge functions, and the booking
+ * form's local pre-check. `inquiry` is included so an unacknowledged inquiry
+ * soft-holds the dates instead of silently allowing a second booking on top
+ * of it.
+ */
 export const BLOCKING_STATES: BookingState[] = [
+  "inquiry",
   "soft_hold",
   "pending_approval",
   "pending_deposit",
