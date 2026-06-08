@@ -61,11 +61,11 @@ export function RequiredDocumentsCard({ bookingId, checkIn, checkOut }: Props) {
         ))}
       </div>
 
-      {!isLongStay && (
+      {nights === 0 && (
         <div className="flex items-start gap-1.5 text-xs text-muted-foreground border border-dashed rounded-md p-2">
           <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
           <span>
-            TM30 tracking appears automatically for stays of {TM30_LONG_STAY_THRESHOLD_NIGHTS}+ nights.
+            Same-day stays do not trigger TM30 tracking.
           </span>
         </div>
       )}
