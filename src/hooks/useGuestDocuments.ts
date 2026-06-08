@@ -67,7 +67,10 @@ export function useUploadGuestDocument() {
           file_name: file.name,
           file_path: filePath,
           uploaded_by: user?.id ?? null,
+          document_type: documentType,
         } as any)
+        .select()
+        .single();
         .select()
         .single();
       if (error) throw error;
