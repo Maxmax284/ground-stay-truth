@@ -149,7 +149,7 @@ export function OperationsIntelligencePanel({
     },
     {
       key: "missingDocs",
-      label: "Missing Documents",
+      label: "Documents Checklist",
       value: missingDocsList.length,
       icon: FileWarning,
       tone: "orange",
