@@ -38,7 +38,10 @@ export type FrontDeskBooking = {
   securityDeposit: { status: string; amount_held: number } | null;
   turnover: { status: string } | null;
   docCount: number;
+  docTypes: string[];
+  nights: number;
 };
+
 
 const SELECT_BOOKING = `
   id, guest_id, unit_id, check_in, check_out, num_guests, state, total_price,
@@ -122,7 +125,7 @@ export function useFrontDeskData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("guest_documents")
-        .select("booking_id")
+        .select("booking_id, document_type")
         .in("booking_id", bookingIds);
       if (error) throw error;
       return data ?? [];
@@ -154,7 +157,15 @@ export function useFrontDeskData() {
         turns.find((t: any) => t.booking_in_id === b.id) ??
         turns.find((t: any) => t.booking_out_id === b.id) ??
         null;
-      const docCount = docs.filter((d: any) => d.booking_id === b.id).length;
+      const myDocs = docs.filter((d: any) => d.booking_id === b.id);
+      const docCount = myDocs.length;
+      const docTypes = Array.from(new Set(myDocs.map((d: any) => d.document_type ?? "passport")));
+      const nights = Math.max(
+        0,
+        Math.round(
+          (new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / 86400000,
+        ),
+      );
       return {
         ...b,
         outstanding,
@@ -163,6 +174,8 @@ export function useFrontDeskData() {
         securityDeposit: dep,
         turnover: turn,
         docCount,
+        docTypes,
+        nights,
       };
     });
   }, [bookingsQuery.data, paymentsQuery.data, depositsQuery.data, turnoverQuery.data, docsQuery.data]);

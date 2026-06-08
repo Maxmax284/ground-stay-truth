@@ -31,6 +31,7 @@ import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTria
 import { RefundDialog } from "@/components/RefundDialog";
 import { PaymentLinkManager } from "@/components/PaymentLinkManager";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
+import { RequiredDocumentsCard } from "@/components/RequiredDocumentsCard";
 import { SecurityDepositSection } from "@/components/SecurityDepositSection";
 import { BookingFinancialSummary } from "@/components/BookingFinancialSummary";
 import { PaymentGuideLink } from "@/components/PaymentGuideLink";
@@ -135,7 +136,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
         if (hasPaid) return t("bookingDetail.nextSteps.depositPaid");
         return `${t("bookingDetail.nextSteps.depositNeeded")}${amountStr}`;
       }
-      case "confirmed": return !hasDocuments ? t("bookingDetail.nextSteps.docsNeeded") : t("bookingDetail.nextSteps.readyCheckin");
+      case "confirmed": return t("bookingDetail.nextSteps.readyCheckin");
       case "checked_in": {
         const base = t("bookingDetail.nextSteps.checkout");
         return supportAlerts.length > 0 ? `${base} · ${supportAlerts.join(" · ")}` : base;
@@ -250,7 +251,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
           <TabsContent value="history"><StateHistoryTab logs={stateLog ?? []} /></TabsContent>
           <TabsContent value="payments"><PaymentsTab payments={payments ?? []} bookingId={booking.id} canSeeAmounts={canSeeAmounts} canRecord={canRecordPay} policies={policies} totalPrice={booking.total_price} /></TabsContent>
           <TabsContent value="messages"><MessagesTab messages={messages ?? []} bookingId={booking.id} /></TabsContent>
-          <TabsContent value="documents"><div className="py-3"><GuestDocumentUpload bookingId={booking.id} showRequirement={["confirmed", "checked_in"].includes(booking.state)} /></div></TabsContent>
+          <TabsContent value="documents"><div className="py-3"><RequiredDocumentsCard bookingId={booking.id} checkIn={booking.check_in} checkOut={booking.check_out} /></div></TabsContent>
           {isCheckedIn && (
             <TabsContent value="support">
               <BookingSupportTab

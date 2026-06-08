@@ -24,7 +24,10 @@ export interface GuestDocument {
   verification_status: string | null;
   verification_notes: VerificationNotes | null;
   verified_at: string | null;
+  document_type: string;
 }
+
+import type { DocumentType } from "@/lib/requiredDocuments";
 
 export function useGuestDocuments(bookingId: string | null) {
   return useQuery({
@@ -45,7 +48,7 @@ export function useGuestDocuments(bookingId: string | null) {
 export function useUploadGuestDocument() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ bookingId, file }: { bookingId: string; file: File }) => {
+    mutationFn: async ({ bookingId, file, documentType = "passport" }: { bookingId: string; file: File; documentType?: DocumentType }) => {
       const { data: { user } } = await supabase.auth.getUser();
       const ext = file.name.split(".").pop();
       const filePath = `${bookingId}/${crypto.randomUUID()}.${ext}`;
@@ -64,6 +67,7 @@ export function useUploadGuestDocument() {
           file_name: file.name,
           file_path: filePath,
           uploaded_by: user?.id ?? null,
+          document_type: documentType,
         } as any)
         .select()
         .single();

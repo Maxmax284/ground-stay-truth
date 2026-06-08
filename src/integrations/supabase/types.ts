@@ -794,6 +794,7 @@ export type Database = {
         Row: {
           booking_id: string
           created_at: string
+          document_type: string
           file_name: string
           file_path: string
           id: string
@@ -805,6 +806,7 @@ export type Database = {
         Insert: {
           booking_id: string
           created_at?: string
+          document_type?: string
           file_name: string
           file_path: string
           id?: string
@@ -816,6 +818,7 @@ export type Database = {
         Update: {
           booking_id?: string
           created_at?: string
+          document_type?: string
           file_name?: string
           file_path?: string
           id?: string

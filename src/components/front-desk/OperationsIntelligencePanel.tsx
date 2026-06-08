@@ -29,6 +29,13 @@ import type { FrontDeskBooking } from "@/hooks/useFrontDesk";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { formatPrice } from "@/lib/currency";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
+import { getRequiredDocsForBooking, DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/requiredDocuments";
+
+function missingDocTypesFor(b: FrontDeskBooking): DocumentType[] {
+  const required = getRequiredDocsForBooking({ checkIn: b.check_in, checkOut: b.check_out });
+  const have = new Set(b.docTypes ?? []);
+  return required.filter((d) => !have.has(d.type)).map((d) => d.type);
+}
 
 type PickupMap = Map<string, { status: string | null; arrival_datetime: string | null }>;
 
@@ -77,15 +84,18 @@ export function OperationsIntelligencePanel({
   );
 
   const outstandingList = allActive.filter((b) => b.outstanding > 0);
-  const missingDocsList = allActive.filter(
-    (b) =>
-      b.docCount === 0 &&
-      (b.check_in === today ||
-        b.state === "confirmed" ||
-        b.state === "pending_deposit"),
-  );
+  const missingDocsList = allActive.filter((b) => {
+    if (
+      b.check_in !== today &&
+      b.state !== "confirmed" &&
+      b.state !== "pending_deposit" &&
+      b.state !== "checked_in"
+    )
+      return false;
+    return missingDocTypesFor(b).length > 0;
+  });
   const issuesList = sections.arrivingToday.filter(
-    (b) => !b.depositPaid || b.outstanding > 0 || b.docCount === 0,
+    (b) => !b.depositPaid || b.outstanding > 0 || missingDocTypesFor(b).length > 0,
   );
   const turnoverList = [
     ...sections.departingToday,
@@ -139,7 +149,7 @@ export function OperationsIntelligencePanel({
     },
     {
       key: "missingDocs",
-      label: "Missing Documents",
+      label: "Documents Checklist",
       value: missingDocsList.length,
       icon: FileWarning,
       tone: "orange",
@@ -386,14 +396,25 @@ function DrillRow({
         </span>
       );
       break;
-    case "docs":
-      line = <span className="text-warning-foreground">ID document missing</span>;
+    case "docs": {
+      const missing = missingDocTypesFor(booking);
+      line =
+        missing.length > 0 ? (
+          <span className="text-warning-foreground">
+            Missing: {missing.map((t) => DOCUMENT_TYPE_LABELS[t]).join(" · ")}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">All tracked docs on file</span>
+        );
       break;
+    }
     case "issues": {
       const flags: string[] = [];
       if (!booking.depositPaid) flags.push("Deposit unpaid");
       if (booking.outstanding > 0) flags.push(`${formatPrice(booking.outstanding)} owed`);
-      if (booking.docCount === 0) flags.push("Docs missing");
+      const missingDocs = missingDocTypesFor(booking);
+      if (missingDocs.length > 0)
+        flags.push(`${missingDocs.map((t) => DOCUMENT_TYPE_LABELS[t]).join("/")} missing`);
       line = <span className="text-destructive">{flags.join(" · ")}</span>;
       break;
     }
