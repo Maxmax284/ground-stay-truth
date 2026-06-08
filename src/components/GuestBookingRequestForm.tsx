@@ -152,7 +152,7 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
       // useAutoAssignUnit can be stale or shared with another concurrent
       // guest; calling the RPC again here gives us the freshest row under
       // FOR UPDATE SKIP LOCKED right before the insert.
-      const { data: assignRows, error: assignErr } = await supabase.rpc(
+      const { data: assignRows, error: assignErr } = await (supabase as any).rpc(
         "assign_unit_for_group",
         { _group_id: selectedGroupId, _check_in: data.check_in, _check_out: data.check_out }
       );
