@@ -157,7 +157,15 @@ export function useFrontDeskData() {
         turns.find((t: any) => t.booking_in_id === b.id) ??
         turns.find((t: any) => t.booking_out_id === b.id) ??
         null;
-      const docCount = docs.filter((d: any) => d.booking_id === b.id).length;
+      const myDocs = docs.filter((d: any) => d.booking_id === b.id);
+      const docCount = myDocs.length;
+      const docTypes = Array.from(new Set(myDocs.map((d: any) => d.document_type ?? "passport")));
+      const nights = Math.max(
+        0,
+        Math.round(
+          (new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / 86400000,
+        ),
+      );
       return {
         ...b,
         outstanding,
@@ -166,6 +174,8 @@ export function useFrontDeskData() {
         securityDeposit: dep,
         turnover: turn,
         docCount,
+        docTypes,
+        nights,
       };
     });
   }, [bookingsQuery.data, paymentsQuery.data, depositsQuery.data, turnoverQuery.data, docsQuery.data]);
