@@ -7,8 +7,10 @@ export type BookingState = Database["public"]["Enums"]["booking_state"];
  * Only transitions listed here are valid without an admin override.
  */
 export const STATE_TRANSITIONS: Record<BookingState, BookingState[]> = {
-  inquiry: ["soft_hold", "cancelled"],
-  soft_hold: ["pending_approval", "cancelled"],
+  // Streamlined flow: inquiry → pending_deposit → confirmed
+  // soft_hold and pending_approval remain valid states (legacy + admin override only)
+  inquiry: ["pending_deposit", "cancelled"],
+  soft_hold: ["pending_deposit", "cancelled"],
   pending_approval: ["pending_deposit", "cancelled"],
   pending_deposit: ["confirmed", "cancelled"],
   confirmed: ["checked_in", "cancelled", "no_show"],
