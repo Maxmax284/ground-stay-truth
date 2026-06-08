@@ -135,7 +135,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
         if (hasPaid) return t("bookingDetail.nextSteps.depositPaid");
         return `${t("bookingDetail.nextSteps.depositNeeded")}${amountStr}`;
       }
-      case "confirmed": return !hasDocuments ? t("bookingDetail.nextSteps.docsNeeded") : t("bookingDetail.nextSteps.readyCheckin");
+      case "confirmed": return t("bookingDetail.nextSteps.readyCheckin");
       case "checked_in": {
         const base = t("bookingDetail.nextSteps.checkout");
         return supportAlerts.length > 0 ? `${base} · ${supportAlerts.join(" · ")}` : base;
