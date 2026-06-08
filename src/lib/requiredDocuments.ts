@@ -50,7 +50,7 @@ export function nightsBetween(checkIn: string, checkOut: string): number {
 
 /**
  * Determine which documents are RELEVANT for a booking.
- * Order: passport first (always), TM30 for long-stays, then optional extras.
+ * Order: passport first (always), TM30 for all stays 1+ nights, then optional extras.
  */
 export function getRequiredDocsForBooking(opts: {
   checkIn: string;
