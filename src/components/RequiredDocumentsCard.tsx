@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Info } from "lucide-react";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
+import { Tm30ConfirmRow } from "@/components/Tm30ConfirmRow";
 import {
   getRequiredDocsForBooking,
   nightsBetween,
@@ -42,7 +43,6 @@ export function RequiredDocumentsCard({ bookingId, checkIn, checkOut }: Props) {
         </div>
         <Badge variant="outline" className="text-xs shrink-0">
           {nights} night{nights === 1 ? "" : "s"}
-          {isLongStay && " · long-stay"}
         </Badge>
       </div>
 
@@ -50,12 +50,20 @@ export function RequiredDocumentsCard({ bookingId, checkIn, checkOut }: Props) {
         {docs.map((d) => (
           <Card key={d.type} className="bg-muted/30 border-dashed">
             <CardContent className="p-3 space-y-2">
-              <GuestDocumentUpload
-                bookingId={bookingId}
-                documentType={d.type}
-                title={d.label}
-                subtitle={d.description}
-              />
+              {d.type === "tm30" ? (
+                <Tm30ConfirmRow
+                  bookingId={bookingId}
+                  label={d.label}
+                  subtitle={d.description}
+                />
+              ) : (
+                <GuestDocumentUpload
+                  bookingId={bookingId}
+                  documentType={d.type}
+                  title={d.label}
+                  subtitle={d.description}
+                />
+              )}
             </CardContent>
           </Card>
         ))}
@@ -64,11 +72,10 @@ export function RequiredDocumentsCard({ bookingId, checkIn, checkOut }: Props) {
       {nights === 0 && (
         <div className="flex items-start gap-1.5 text-xs text-muted-foreground border border-dashed rounded-md p-2">
           <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-          <span>
-            Same-day stays do not trigger TM30 tracking.
-          </span>
+          <span>Same-day stays do not trigger TM30 tracking.</span>
         </div>
       )}
     </div>
   );
 }
+
