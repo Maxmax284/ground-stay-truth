@@ -38,7 +38,8 @@ export type FrontDeskBooking = {
   securityDeposit: { status: string; amount_held: number } | null;
   turnover: { status: string } | null;
   docCount: number;
-};
+  docTypes: string[];
+  nights: number;
 
 const SELECT_BOOKING = `
   id, guest_id, unit_id, check_in, check_out, num_guests, state, total_price,
