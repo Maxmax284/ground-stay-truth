@@ -170,7 +170,7 @@ export default function Stay() {
       
       {/* Hero */}
       <header className="relative auth-hero-bg text-primary-foreground overflow-hidden">
-        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
           <a
             href={staffLoginHref}
             aria-label="Staff Login"
