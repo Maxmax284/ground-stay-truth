@@ -424,7 +424,7 @@
       "depositExpired": "Deposit overdue — record payment or cancel",
       "depositPaid": "Deposit recorded — advance to Confirmed",
       "depositNeeded": "Record deposit payment",
-      "docsNeeded": "Upload ID documents before check-in",
+      "docsNeeded": "Ready for check-in — documents optional",
       "readyCheckin": "Ready for check-in",
       "checkout": "Complete check-out when guest departs"
     },
