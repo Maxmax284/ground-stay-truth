@@ -255,7 +255,7 @@ export function GuestDocumentUpload({
       return;
     }
     try {
-      await upload.mutateAsync({ bookingId, file });
+      await upload.mutateAsync({ bookingId, file, documentType });
       toast({ title: t("documents.documentUploaded") });
     } catch (err: any) {
       toast({ title: t("common.error"), description: err.message, variant: "destructive" });
