@@ -127,9 +127,9 @@ export default function FrontDesk() {
         <Tabs defaultValue="arriving" className="w-full">
           <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="arriving">Arriving ({totals.arriving})</TabsTrigger>
+            <TabsTrigger value="upcoming">Upcoming ({totals.upcoming})</TabsTrigger>
             <TabsTrigger value="staying">Staying ({totals.staying})</TabsTrigger>
             <TabsTrigger value="departing">Departing ({totals.departing})</TabsTrigger>
-            <TabsTrigger value="upcoming">Upcoming ({totals.upcoming})</TabsTrigger>
             {isManagerPlus && <TabsTrigger value="overrides">Overrides</TabsTrigger>}
           </TabsList>
 

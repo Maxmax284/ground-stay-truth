@@ -22,6 +22,7 @@ import {
   ShieldAlert,
   Sparkles,
   Plane,
+  CalendarClock,
   ArrowRight,
 } from "lucide-react";
 import type { FrontDeskBooking } from "@/hooks/useFrontDesk";
@@ -47,6 +48,7 @@ interface Props {
 type TileKey =
   | "staying"
   | "arriving"
+  | "upcoming"
   | "outstanding"
   | "missingDocs"
   | "issues"
@@ -113,6 +115,16 @@ export function OperationsIntelligencePanel({
       tone: "yellow",
       dot: "🟡",
       bookings: sections.arrivingToday,
+      detail: "checkin",
+    },
+    {
+      key: "upcoming",
+      label: "Upcoming (7 days)",
+      value: sections.upcoming.length,
+      icon: CalendarClock,
+      tone: "info",
+      dot: "📅",
+      bookings: sections.upcoming,
       detail: "checkin",
     },
     {
