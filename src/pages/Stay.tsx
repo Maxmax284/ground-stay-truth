@@ -144,6 +144,8 @@ export default function Stay() {
     navigate(`/auth/guest?unit=${unitId}`);
   };
 
+  const staffLoginHref = `/auth${window.location.search}`;
+
   const toggleAvailability = async (unitId: string) => {
     if (expandedUnit === unitId) {
       setExpandedUnit(null);
@@ -169,15 +171,17 @@ export default function Stay() {
       {/* Hero */}
       <header className="relative auth-hero-bg text-primary-foreground overflow-hidden">
         <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 text-xs"
-            onClick={() => navigate("/auth")}
+          <a
+            href={staffLoginHref}
+            aria-label="Staff Login"
+            onPointerUp={() => {
+              window.location.href = staffLoginHref;
+            }}
+            className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-xs font-medium text-primary-foreground/70 transition-all duration-200 hover:bg-primary-foreground/10 hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <LogIn className="h-3.5 w-3.5 mr-1" />
+            <LogIn className="h-3.5 w-3.5" />
             Staff Login
-          </Button>
+          </a>
           <LanguageSelector />
         </div>
         <div className="relative z-10 max-w-5xl mx-auto px-4 py-16 sm:py-24 text-center space-y-4">
