@@ -71,8 +71,6 @@ export function useUploadGuestDocument() {
         } as any)
         .select()
         .single();
-        .select()
-        .single();
       if (error) throw error;
 
       // Fire-and-forget: trigger AI verification
