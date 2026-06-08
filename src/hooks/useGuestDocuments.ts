@@ -24,7 +24,10 @@ export interface GuestDocument {
   verification_status: string | null;
   verification_notes: VerificationNotes | null;
   verified_at: string | null;
+  document_type: string;
 }
+
+import type { DocumentType } from "@/lib/requiredDocuments";
 
 export function useGuestDocuments(bookingId: string | null) {
   return useQuery({
