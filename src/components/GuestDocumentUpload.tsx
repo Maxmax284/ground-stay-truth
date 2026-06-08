@@ -274,22 +274,28 @@ export function GuestDocumentUpload({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold flex items-center gap-2">
+      {!hideHeading && (
+        <div className="flex items-center justify-between">
+          <div className="min-w-0">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
+              {hasDocuments ? (
+                <ShieldCheck className="h-4 w-4 text-[hsl(var(--success))]" />
+              ) : (
+                <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+              )}
+              {title ?? t("documents.idDocuments")}
+            </h4>
+            {subtitle && (
+              <p className="text-xs text-muted-foreground mt-0.5 pl-6">{subtitle}</p>
+            )}
+          </div>
           {hasDocuments ? (
-            <ShieldCheck className="h-4 w-4 text-[hsl(var(--success))]" />
+            <Badge className="text-xs bg-success/20 text-[hsl(var(--success))]">On file</Badge>
           ) : (
-            <ShieldAlert className="h-4 w-4 text-destructive" />
+            <Badge variant="outline" className="text-xs text-muted-foreground">Not on file</Badge>
           )}
-          {t("documents.idDocuments")}
-        </h4>
-        {showRequirement && !hasDocuments && (
-          <Badge variant="destructive" className="text-xs">{t("documents.requiredForCheckin")}</Badge>
-        )}
-        {showRequirement && hasDocuments && (
-          <Badge className="text-xs bg-success/20 text-[hsl(var(--success))]">{t("documents.verified")}</Badge>
-        )}
-      </div>
+        </div>
+      )}
       {isLoading ? (
         <p className="text-xs text-muted-foreground">{t("common.loading")}</p>
       ) : documents && documents.length > 0 ? (
