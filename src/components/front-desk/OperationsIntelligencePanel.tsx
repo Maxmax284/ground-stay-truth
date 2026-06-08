@@ -396,14 +396,25 @@ function DrillRow({
         </span>
       );
       break;
-    case "docs":
-      line = <span className="text-warning-foreground">ID document missing</span>;
+    case "docs": {
+      const missing = missingDocTypesFor(booking);
+      line =
+        missing.length > 0 ? (
+          <span className="text-warning-foreground">
+            Missing: {missing.map((t) => DOCUMENT_TYPE_LABELS[t]).join(" · ")}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">All tracked docs on file</span>
+        );
       break;
+    }
     case "issues": {
       const flags: string[] = [];
       if (!booking.depositPaid) flags.push("Deposit unpaid");
       if (booking.outstanding > 0) flags.push(`${formatPrice(booking.outstanding)} owed`);
-      if (booking.docCount === 0) flags.push("Docs missing");
+      const missingDocs = missingDocTypesFor(booking);
+      if (missingDocs.length > 0)
+        flags.push(`${missingDocs.map((t) => DOCUMENT_TYPE_LABELS[t]).join("/")} missing`);
       line = <span className="text-destructive">{flags.join(" · ")}</span>;
       break;
     }
