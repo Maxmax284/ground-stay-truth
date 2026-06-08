@@ -22,6 +22,7 @@ import {
   ShieldAlert,
   Sparkles,
   Plane,
+  CalendarClock,
   ArrowRight,
 } from "lucide-react";
 import type { FrontDeskBooking } from "@/hooks/useFrontDesk";
