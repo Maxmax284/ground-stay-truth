@@ -100,6 +100,7 @@ export default function FrontDesk() {
           sections={sections}
           todaysPickupCount={intelligence?.todaysPickupCount ?? 0}
           turnoverPendingCount={intelligence?.turnoverPendingCount ?? 0}
+          pickupByBooking={pickupByBooking}
         />
 
         {/* Operational Alerts — risk roll-up */}
