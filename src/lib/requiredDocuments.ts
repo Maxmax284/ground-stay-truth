@@ -20,7 +20,7 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   passport: "Passport / ID",
   national_id: "National ID",
   visa: "Visa",
-  tm30: "TM30 (Long-stay)",
+  tm30: "TM30",
   other: "Other",
 };
 
@@ -28,12 +28,12 @@ export const DOCUMENT_TYPE_DESCRIPTIONS: Record<DocumentType, string> = {
   passport: "Photo ID for the guest. Optional — only required for specific guests under specific circumstances.",
   national_id: "Local national ID. Acceptable in place of passport.",
   visa: "Long-stay visa documentation if applicable.",
-  tm30: "Thai immigration TM30 receipt. Filed by the property for foreign guests staying long-term.",
+  tm30: "Thai immigration TM30 receipt. Filed by the property for all foreign guests.",
   other: "Any other supporting document.",
 };
 
-/** Long-stay threshold (nights) that triggers TM30 tracking. */
-export const TM30_LONG_STAY_THRESHOLD_NIGHTS = 30;
+/** Threshold (nights) that triggers TM30 tracking. TM30 applies to all foreign guests (1+ nights). */
+export const TM30_LONG_STAY_THRESHOLD_NIGHTS = 1;
 
 export interface RequiredDoc {
   type: DocumentType;
