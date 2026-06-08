@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Home, Users, Moon, Sparkles, ChevronLeft, ChevronRight, CalendarDays, ArrowRight, MapPin, Clock, Shield, ListChecks, LogIn, Building2 } from "lucide-react";
+import { Home, Users, Moon, Sparkles, ChevronLeft, ChevronRight, CalendarDays, ArrowRight, MapPin, Clock, Shield, ListChecks, Building2 } from "lucide-react";
 import { formatPriceSimple } from "@/lib/currency";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
@@ -174,12 +174,8 @@ export default function Stay() {
           <a
             href={staffLoginHref}
             aria-label="Staff Login"
-            onPointerUp={() => {
-              window.location.href = staffLoginHref;
-            }}
-            className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-xs font-medium text-primary-foreground/70 transition-all duration-200 hover:bg-primary-foreground/10 hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="block rounded-md px-3 py-2 text-xs font-medium text-primary-foreground/70 underline-offset-4 transition-colors hover:text-primary-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <LogIn className="h-3.5 w-3.5" />
             Staff Login
           </a>
           <LanguageSelector />
