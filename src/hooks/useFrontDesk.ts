@@ -40,15 +40,17 @@ export type FrontDeskBooking = {
   docCount: number;
   docTypes: string[];
   nights: number;
+  tm30Filed: boolean;
 };
 
 
 const SELECT_BOOKING = `
   id, guest_id, unit_id, check_in, check_out, num_guests, state, total_price,
-  notes, pre_arrival_status, arrived_at, arrived_by, arrival_note,
+  notes, pre_arrival_status, arrived_at, arrived_by, arrival_note, arrival_details,
   units(name),
   profiles!bookings_guest_id_profiles_fkey(full_name, email, phone)
 `;
+
 
 export function useFrontDeskData() {
   const { activePropertyId } = useProperty();
@@ -166,6 +168,7 @@ export function useFrontDeskData() {
           (new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / 86400000,
         ),
       );
+      const tm30Filed = !!((b.arrival_details as any)?.tm30?.confirmed_at);
       return {
         ...b,
         outstanding,
@@ -176,8 +179,10 @@ export function useFrontDeskData() {
         docCount,
         docTypes,
         nights,
+        tm30Filed,
       };
     });
+
   }, [bookingsQuery.data, paymentsQuery.data, depositsQuery.data, turnoverQuery.data, docsQuery.data]);
 
   // Slice into sections

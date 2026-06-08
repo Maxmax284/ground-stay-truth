@@ -34,8 +34,11 @@ import { getRequiredDocsForBooking, DOCUMENT_TYPE_LABELS, type DocumentType } fr
 function missingDocTypesFor(b: FrontDeskBooking): DocumentType[] {
   const required = getRequiredDocsForBooking({ checkIn: b.check_in, checkOut: b.check_out });
   const have = new Set(b.docTypes ?? []);
+  // TM30 is confirmation-only (no upload); treat as present when staff has marked it filed.
+  if (b.tm30Filed) have.add("tm30");
   return required.filter((d) => !have.has(d.type)).map((d) => d.type);
 }
+
 
 type PickupMap = Map<string, { status: string | null; arrival_datetime: string | null }>;
 
