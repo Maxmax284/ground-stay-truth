@@ -481,7 +481,7 @@ const BLOCKER_LABELS: Record<string, string> = {
   connectivity_readiness: "No connectivity plan — guest may be unreachable after landing",
   confirm_domestic_flight: "Missing Samui flight — pickup timing unavailable",
   tdac_completed: "TDAC not completed — may delay immigration",
-  upload_id: "ID / passport not uploaded — check-in blocked",
+  upload_id: "ID / passport not on file (advisory — check-in not blocked)",
   confirm_arrival_time: "Arrival time not confirmed",
 };
 
