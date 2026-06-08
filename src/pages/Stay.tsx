@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Home, Users, Moon, Sparkles, ChevronLeft, ChevronRight, CalendarDays, ArrowRight, MapPin, Clock, Shield, ListChecks, LogIn, Building2 } from "lucide-react";
+import { Home, Users, Moon, Sparkles, ChevronLeft, ChevronRight, CalendarDays, ArrowRight, MapPin, Clock, Shield, ListChecks, Building2 } from "lucide-react";
 import { formatPriceSimple } from "@/lib/currency";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
@@ -144,6 +144,8 @@ export default function Stay() {
     navigate(`/auth/guest?unit=${unitId}`);
   };
 
+  const staffLoginHref = `/auth${window.location.search}`;
+
   const toggleAvailability = async (unitId: string) => {
     if (expandedUnit === unitId) {
       setExpandedUnit(null);
@@ -168,16 +170,14 @@ export default function Stay() {
       
       {/* Hero */}
       <header className="relative auth-hero-bg text-primary-foreground overflow-hidden">
-        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 text-xs"
-            onClick={() => navigate("/auth")}
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+          <a
+            href={staffLoginHref}
+            aria-label="Staff Login"
+            className="block rounded-md px-3 py-2 text-xs font-medium text-primary-foreground/70 underline-offset-4 transition-colors hover:text-primary-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <LogIn className="h-3.5 w-3.5 mr-1" />
             Staff Login
-          </Button>
+          </a>
           <LanguageSelector />
         </div>
         <div className="relative z-10 max-w-5xl mx-auto px-4 py-16 sm:py-24 text-center space-y-4">
