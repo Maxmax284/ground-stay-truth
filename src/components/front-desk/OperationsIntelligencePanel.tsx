@@ -118,6 +118,16 @@ export function OperationsIntelligencePanel({
       detail: "checkin",
     },
     {
+      key: "upcoming",
+      label: "Upcoming (7 days)",
+      value: sections.upcoming.length,
+      icon: CalendarClock,
+      tone: "info",
+      dot: "📅",
+      bookings: sections.upcoming,
+      detail: "checkin",
+    },
+    {
       key: "outstanding",
       label: "Outstanding Balances",
       value: outstandingList.length,
