@@ -31,6 +31,7 @@ import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTria
 import { RefundDialog } from "@/components/RefundDialog";
 import { PaymentLinkManager } from "@/components/PaymentLinkManager";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
+import { RequiredDocumentsCard } from "@/components/RequiredDocumentsCard";
 import { SecurityDepositSection } from "@/components/SecurityDepositSection";
 import { BookingFinancialSummary } from "@/components/BookingFinancialSummary";
 import { PaymentGuideLink } from "@/components/PaymentGuideLink";
