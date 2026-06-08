@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
         .from("bookings")
         .select("check_in, check_out")
         .eq("unit_id", unitId)
-        .in("state", ["pending_approval", "pending_deposit", "confirmed", "checked_in"])
+        .in("state", ["inquiry", "soft_hold", "pending_approval", "pending_deposit", "confirmed", "checked_in"])
         .gte("check_out", new Date().toISOString().split("T")[0]);
 
       const { data: maintenance } = await supabase
