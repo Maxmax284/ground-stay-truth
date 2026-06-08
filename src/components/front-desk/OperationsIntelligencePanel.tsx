@@ -29,6 +29,13 @@ import type { FrontDeskBooking } from "@/hooks/useFrontDesk";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { formatPrice } from "@/lib/currency";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
+import { getRequiredDocsForBooking, DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/requiredDocuments";
+
+function missingDocTypesFor(b: FrontDeskBooking): DocumentType[] {
+  const required = getRequiredDocsForBooking({ checkIn: b.check_in, checkOut: b.check_out });
+  const have = new Set(b.docTypes ?? []);
+  return required.filter((d) => !have.has(d.type)).map((d) => d.type);
+}
 
 type PickupMap = Map<string, { status: string | null; arrival_datetime: string | null }>;
 
