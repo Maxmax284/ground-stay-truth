@@ -27,9 +27,19 @@ import {
 import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
+import type { DocumentType } from "@/lib/requiredDocuments";
+
 interface GuestDocumentUploadProps {
   bookingId: string;
   showRequirement?: boolean;
+  /** When set, this instance only shows + uploads documents of this type. */
+  documentType?: DocumentType;
+  /** Override the displayed heading. */
+  title?: string;
+  /** Override the descriptive subline below the heading. */
+  subtitle?: string;
+  /** When true, suppress the heading entirely (used inside a wrapper card). */
+  hideHeading?: boolean;
 }
 
 function VerificationBadge({
