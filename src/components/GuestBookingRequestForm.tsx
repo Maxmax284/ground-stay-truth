@@ -139,7 +139,7 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
   }, [pricing.nights]);
 
   const onSubmit = async (data: FormValues) => {
-    if (validationErrors.length > 0 || !user || !assignResult?.unit_id) return;
+    if (validationErrors.length > 0 || !user || !selectedGroupId) return;
 
     const arrivalDetails: Record<string, any> = {};
     if (data.arrival_flight) arrivalDetails.flight_info = data.arrival_flight;
@@ -148,8 +148,30 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
     if (data.airport_pickup) arrivalDetails.airport_pickup = true;
 
     try {
+      // Atomic re-pick at submit time. The advisory `assignResult` read by
+      // useAutoAssignUnit can be stale or shared with another concurrent
+      // guest; calling the RPC again here gives us the freshest row under
+      // FOR UPDATE SKIP LOCKED right before the insert.
+      const { data: assignRows, error: assignErr } = await supabase.rpc(
+        "assign_unit_for_group",
+        { _group_id: selectedGroupId, _check_in: data.check_in, _check_out: data.check_out }
+      );
+      if (assignErr) throw assignErr;
+      const assigned = Array.isArray(assignRows) ? assignRows[0] : assignRows;
+      const assignedUnitId = assigned?.unit_id as string | null | undefined;
+      if (!assignedUnitId) {
+        toast({
+          title: t("common.error"),
+          description: t("bookingForm.noRoomsAvailable", {
+            defaultValue: "Sorry — that room type is no longer available for those dates.",
+          }),
+          variant: "destructive",
+        });
+        return;
+      }
+
       const bookingResult = await createBooking.mutateAsync({
-        unit_id: assignResult.unit_id, // Auto-assigned unit
+        unit_id: assignedUnitId,
         check_in: data.check_in,
         check_out: data.check_out,
         num_guests: Number(data.num_guests),
@@ -186,7 +208,12 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
       reset();
       onOpenChange(false);
     } catch (err: any) {
-      toast({ title: t("common.error"), description: err.message?.includes("overlap") ? t("bookingForm.overlapError") : err.message, variant: "destructive" });
+      const friendly = err.message?.includes("overlap")
+        ? t("bookingForm.overlapError", {
+            defaultValue: "Sorry — that room type was just taken for those dates. Please pick another date or room.",
+          })
+        : err.message;
+      toast({ title: t("common.error"), description: friendly, variant: "destructive" });
     }
   };
 
