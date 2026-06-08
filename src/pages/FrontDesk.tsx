@@ -100,6 +100,7 @@ export default function FrontDesk() {
           sections={sections}
           todaysPickupCount={intelligence?.todaysPickupCount ?? 0}
           turnoverPendingCount={intelligence?.turnoverPendingCount ?? 0}
+          pickupByBooking={pickupByBooking}
         />
 
         {/* Operational Alerts — risk roll-up */}
@@ -126,7 +127,6 @@ export default function FrontDesk() {
         <Tabs defaultValue="arriving" className="w-full">
           <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="arriving">Arriving ({totals.arriving})</TabsTrigger>
-            <TabsTrigger value="waiting">Arrived ({totals.arrivedWaiting})</TabsTrigger>
             <TabsTrigger value="staying">Staying ({totals.staying})</TabsTrigger>
             <TabsTrigger value="departing">Departing ({totals.departing})</TabsTrigger>
             <TabsTrigger value="upcoming">Upcoming ({totals.upcoming})</TabsTrigger>
@@ -141,17 +141,6 @@ export default function FrontDesk() {
               variant="arriving"
               onOpen={setDetailId}
               onMarkArrived={setArrivedDialogFor}
-              pickupByBooking={pickupByBooking}
-              lastMessageByBooking={lastMessageByBooking}
-            />
-          </TabsContent>
-          <TabsContent value="waiting" className="space-y-3 mt-4">
-            <SectionList
-              isLoading={isLoading}
-              bookings={sections.arrivedNotCheckedIn}
-              emptyText="No guests waiting for check-in."
-              variant="waiting"
-              onOpen={setDetailId}
               pickupByBooking={pickupByBooking}
               lastMessageByBooking={lastMessageByBooking}
             />
