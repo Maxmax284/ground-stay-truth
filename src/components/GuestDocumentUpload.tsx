@@ -221,17 +221,25 @@ function DocumentRow({
 export function GuestDocumentUpload({
   bookingId,
   showRequirement,
+  documentType,
+  title,
+  subtitle,
+  hideHeading,
 }: GuestDocumentUploadProps) {
   const { t } = useTranslation();
   const { role } = useAuth();
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
-  const { data: documents, isLoading } = useGuestDocuments(bookingId);
+  const { data: allDocuments, isLoading } = useGuestDocuments(bookingId);
   const upload = useUploadGuestDocument();
   const deleteDoc = useDeleteGuestDocument();
   const canUpload = permissions.canUploadDocuments(role);
   const canDelete = permissions.canManageUnits(role);
   const isStaff = permissions.isStaff(role);
+  // When a documentType filter is active, only show docs matching that type.
+  const documents = documentType
+    ? (allDocuments ?? []).filter((d) => (d.document_type ?? "passport") === documentType)
+    : allDocuments;
   const hasDocuments = (documents?.length ?? 0) > 0;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
