@@ -84,15 +84,18 @@ export function OperationsIntelligencePanel({
   );
 
   const outstandingList = allActive.filter((b) => b.outstanding > 0);
-  const missingDocsList = allActive.filter(
-    (b) =>
-      b.docCount === 0 &&
-      (b.check_in === today ||
-        b.state === "confirmed" ||
-        b.state === "pending_deposit"),
-  );
+  const missingDocsList = allActive.filter((b) => {
+    if (
+      b.check_in !== today &&
+      b.state !== "confirmed" &&
+      b.state !== "pending_deposit" &&
+      b.state !== "checked_in"
+    )
+      return false;
+    return missingDocTypesFor(b).length > 0;
+  });
   const issuesList = sections.arrivingToday.filter(
-    (b) => !b.depositPaid || b.outstanding > 0 || b.docCount === 0,
+    (b) => !b.depositPaid || b.outstanding > 0 || missingDocTypesFor(b).length > 0,
   );
   const turnoverList = [
     ...sections.departingToday,
