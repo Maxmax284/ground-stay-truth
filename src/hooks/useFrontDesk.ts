@@ -125,7 +125,7 @@ export function useFrontDeskData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("guest_documents")
-        .select("booking_id")
+        .select("booking_id, document_type")
         .in("booking_id", bookingIds);
       if (error) throw error;
       return data ?? [];
