@@ -153,8 +153,8 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
       await transition.mutateAsync({
         bookingId,
         fromState: "inquiry",
-        toState: "soft_hold",
-        reason: "Inquiry acknowledged",
+        toState: "pending_deposit",
+        reason: "Inquiry accepted — deposit requested",
       });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success(t("inquiry.held"));
