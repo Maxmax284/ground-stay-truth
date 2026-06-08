@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.assign_unit_for_group(uuid, date, date) FROM anon;
