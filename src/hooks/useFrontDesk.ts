@@ -40,6 +40,8 @@ export type FrontDeskBooking = {
   docCount: number;
   docTypes: string[];
   nights: number;
+};
+
 
 const SELECT_BOOKING = `
   id, guest_id, unit_id, check_in, check_out, num_guests, state, total_price,
