@@ -28,9 +28,10 @@ export const DOCUMENT_TYPE_DESCRIPTIONS: Record<DocumentType, string> = {
   passport: "Photo ID for the guest. Optional — only required for specific guests under specific circumstances.",
   national_id: "Local national ID. Acceptable in place of passport.",
   visa: "Long-stay visa documentation if applicable.",
-  tm30: "Thai immigration TM30 receipt. Filed by the property for all foreign guests.",
+  tm30: "Thai immigration TM30 filing. Staff confirms this was filed — no upload needed.",
   other: "Any other supporting document.",
 };
+
 
 /** Threshold (nights) that triggers TM30 tracking. TM30 applies to all foreign guests (1+ nights). */
 export const TM30_LONG_STAY_THRESHOLD_NIGHTS = 1;
