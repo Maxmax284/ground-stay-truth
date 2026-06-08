@@ -467,11 +467,13 @@ export interface ArrivalReadiness {
   criticalTotal: number;
 }
 
+// NOTE: upload_id is intentionally NOT in CRITICAL_KEYS. ID/passport upload is
+// situational (only required for specific guests under specific circumstances)
+// and must never block check-in. It remains a checklist item but is advisory only.
 const CRITICAL_KEYS = [
   "connectivity_readiness",
   "confirm_domestic_flight",
   "tdac_completed",
-  "upload_id",
   "confirm_arrival_time",
 ] as const;
 
@@ -479,7 +481,7 @@ const BLOCKER_LABELS: Record<string, string> = {
   connectivity_readiness: "No connectivity plan — guest may be unreachable after landing",
   confirm_domestic_flight: "Missing Samui flight — pickup timing unavailable",
   tdac_completed: "TDAC not completed — may delay immigration",
-  upload_id: "ID / passport not uploaded — check-in blocked",
+  upload_id: "ID / passport not on file (advisory — check-in not blocked)",
   confirm_arrival_time: "Arrival time not confirmed",
 };
 
