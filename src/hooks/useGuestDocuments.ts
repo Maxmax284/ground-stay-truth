@@ -48,7 +48,7 @@ export function useGuestDocuments(bookingId: string | null) {
 export function useUploadGuestDocument() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ bookingId, file }: { bookingId: string; file: File }) => {
+    mutationFn: async ({ bookingId, file, documentType = "passport" }: { bookingId: string; file: File; documentType?: DocumentType }) => {
       const { data: { user } } = await supabase.auth.getUser();
       const ext = file.name.split(".").pop();
       const filePath = `${bookingId}/${crypto.randomUUID()}.${ext}`;
