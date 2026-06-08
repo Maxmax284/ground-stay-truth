@@ -68,12 +68,12 @@ const EntrySection = () => (
 
           <Link
             to="/auth"
-            className="group flex items-center gap-4 px-8 py-4 border border-[hsl(36,20%,18%)] hover:border-[hsl(36,20%,30%)] transition-all duration-300 rounded-sm"
+            className="group flex items-center gap-4 px-8 py-4 border border-[hsl(36,20%,35%)] hover:border-[hsl(36,20%,55%)] active:border-[hsl(36,20%,65%)] transition-all duration-300 rounded-sm cursor-pointer"
           >
-            <span className="text-xs font-medium tracking-wide text-[hsl(36,20%,40%)] group-hover:text-[hsl(36,20%,65%)] transition-colors">
-              Manage Property
+            <span className="text-sm font-medium tracking-wide text-[hsl(36,20%,75%)] group-hover:text-[hsl(36,33%,97%)] transition-colors">
+              Staff Login
             </span>
-            <span className="text-[hsl(36,20%,25%)] group-hover:text-[hsl(36,20%,45%)] transition-colors">→</span>
+            <span className="text-[hsl(36,20%,50%)] group-hover:text-[hsl(36,20%,75%)] transition-colors">→</span>
           </Link>
         </div>
       </div>
