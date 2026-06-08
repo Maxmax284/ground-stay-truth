@@ -467,11 +467,13 @@ export interface ArrivalReadiness {
   criticalTotal: number;
 }
 
+// NOTE: upload_id is intentionally NOT in CRITICAL_KEYS. ID/passport upload is
+// situational (only required for specific guests under specific circumstances)
+// and must never block check-in. It remains a checklist item but is advisory only.
 const CRITICAL_KEYS = [
   "connectivity_readiness",
   "confirm_domestic_flight",
   "tdac_completed",
-  "upload_id",
   "confirm_arrival_time",
 ] as const;
 
