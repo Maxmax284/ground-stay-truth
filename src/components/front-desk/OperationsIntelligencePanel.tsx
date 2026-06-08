@@ -48,6 +48,7 @@ interface Props {
 type TileKey =
   | "staying"
   | "arriving"
+  | "upcoming"
   | "outstanding"
   | "missingDocs"
   | "issues"
