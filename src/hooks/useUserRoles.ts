@@ -60,6 +60,14 @@ export function useUserRoles() {
           variables.role,
           "added"
         );
+        supabase.rpc("log_staff_audit_event", {
+          _event_type: "role_changed",
+          _severity: "high",
+          _actor_id: user.id,
+          _target_user_id: variables.user_id,
+          _reason: "role added",
+          _metadata: { role: variables.role, action: "added" } as any,
+        }).then(() => {}, () => {});
       }
     },
     onError: (e: Error) => toast.error(e.message),
@@ -67,12 +75,26 @@ export function useUserRoles() {
 
   const removeRole = useMutation({
     mutationFn: async (id: string) => {
+      // Look up target before delete for audit context
+      const { data: row } = await supabase
+        .from("user_roles").select("user_id, role").eq("id", id).maybeSingle();
       const { error } = await supabase.from("user_roles").delete().eq("id", id);
       if (error) throw error;
+      return row;
     },
-    onSuccess: () => {
+    onSuccess: (row) => {
       qc.invalidateQueries({ queryKey: ["user-roles"] });
       toast.success("Role removed");
+      if (user && row) {
+        supabase.rpc("log_staff_audit_event", {
+          _event_type: "role_changed",
+          _severity: "high",
+          _actor_id: user.id,
+          _target_user_id: row.user_id,
+          _reason: "role removed",
+          _metadata: { role: row.role, action: "removed" } as any,
+        }).then(() => {}, () => {});
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
