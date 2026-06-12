@@ -78,6 +78,20 @@ serve(async (req) => {
         console.error("[refund-payment] manual update failed:", updateErr);
         return jsonResponse(req, { error: "DB update failed" }, 500);
       }
+      await logAudit(admin, {
+        event_type: "refund_issued_manual",
+        severity: "high",
+        actor_id: user.id,
+        reason: reason.trim(),
+        metadata: {
+          payment_id: payment.id,
+          booking_id: payment.booking_id,
+          amount,
+          total_refunded: newTotalRefund,
+          full_refund: isFullRefund,
+          provider: "manual",
+        },
+      });
       return jsonResponse(req, {
         success: true,
         provider: "manual",
@@ -165,6 +179,23 @@ serve(async (req) => {
       processed: true,
     });
 
+    await logAudit(admin, {
+      event_type: "refund_issued_stripe",
+      severity: "high",
+      actor_id: user.id,
+      reason: reason.trim(),
+      metadata: {
+        payment_id: payment.id,
+        booking_id: payment.booking_id,
+        amount,
+        total_refunded: newTotalRefund,
+        full_refund: isFullRefund,
+        provider: "stripe",
+        refund_id: refund.id,
+        refund_status: refund.status,
+      },
+    });
+
     // Notify admins + dispatch outbound messaging
     if (payment.booking_id) {
       const { data: admins } = await admin
@@ -209,3 +240,25 @@ serve(async (req) => {
     return jsonResponse(req, { error: e instanceof Error ? e.message : "Unknown" }, 500);
   }
 });
+
+async function logAudit(admin: any, args: {
+  event_type: string;
+  severity: string;
+  actor_id: string;
+  target_user_id?: string | null;
+  reason?: string | null;
+  metadata?: Record<string, unknown>;
+}) {
+  try {
+    await admin.rpc("log_staff_audit_event", {
+      _event_type: args.event_type,
+      _severity: args.severity,
+      _actor_id: args.actor_id,
+      _target_user_id: args.target_user_id ?? null,
+      _reason: args.reason ?? null,
+      _metadata: args.metadata ?? {},
+    });
+  } catch (e) {
+    console.warn("[refund-payment] audit log failed:", e);
+  }
+}
