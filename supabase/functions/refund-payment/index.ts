@@ -240,3 +240,25 @@ serve(async (req) => {
     return jsonResponse(req, { error: e instanceof Error ? e.message : "Unknown" }, 500);
   }
 });
+
+async function logAudit(admin: any, args: {
+  event_type: string;
+  severity: string;
+  actor_id: string;
+  target_user_id?: string | null;
+  reason?: string | null;
+  metadata?: Record<string, unknown>;
+}) {
+  try {
+    await admin.rpc("log_staff_audit_event", {
+      _event_type: args.event_type,
+      _severity: args.severity,
+      _actor_id: args.actor_id,
+      _target_user_id: args.target_user_id ?? null,
+      _reason: args.reason ?? null,
+      _metadata: args.metadata ?? {},
+    });
+  } catch (e) {
+    console.warn("[refund-payment] audit log failed:", e);
+  }
+}
