@@ -78,6 +78,20 @@ serve(async (req) => {
         console.error("[refund-payment] manual update failed:", updateErr);
         return jsonResponse(req, { error: "DB update failed" }, 500);
       }
+      await logAudit(admin, {
+        event_type: "refund_issued_manual",
+        severity: "high",
+        actor_id: user.id,
+        reason: reason.trim(),
+        metadata: {
+          payment_id: payment.id,
+          booking_id: payment.booking_id,
+          amount,
+          total_refunded: newTotalRefund,
+          full_refund: isFullRefund,
+          provider: "manual",
+        },
+      });
       return jsonResponse(req, {
         success: true,
         provider: "manual",
