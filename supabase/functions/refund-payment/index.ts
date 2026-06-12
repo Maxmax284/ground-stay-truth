@@ -179,6 +179,23 @@ serve(async (req) => {
       processed: true,
     });
 
+    await logAudit(admin, {
+      event_type: "refund_issued_stripe",
+      severity: "high",
+      actor_id: user.id,
+      reason: reason.trim(),
+      metadata: {
+        payment_id: payment.id,
+        booking_id: payment.booking_id,
+        amount,
+        total_refunded: newTotalRefund,
+        full_refund: isFullRefund,
+        provider: "stripe",
+        refund_id: refund.id,
+        refund_status: refund.status,
+      },
+    });
+
     // Notify admins + dispatch outbound messaging
     if (payment.booking_id) {
       const { data: admins } = await admin
