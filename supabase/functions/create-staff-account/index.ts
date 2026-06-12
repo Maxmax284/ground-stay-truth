@@ -165,6 +165,20 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Audit log: staff invited
+    try {
+      await adminClient.rpc("log_staff_audit_event", {
+        _event_type: "staff_invited",
+        _severity: "medium",
+        _actor_id: callerId,
+        _target_user_id: newUser.user.id,
+        _reason: null,
+        _metadata: { email: email.trim().toLowerCase(), role, full_name: full_name.trim() },
+      });
+    } catch (e) {
+      console.warn("[create-staff-account] audit log failed:", e);
+    }
+
     return new Response(
       JSON.stringify({ user_id: newUser.user.id, message: "Account created successfully" }),
       { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
