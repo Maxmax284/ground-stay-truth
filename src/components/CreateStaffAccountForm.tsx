@@ -43,7 +43,11 @@ export default function CreateStaffAccountForm({ createStaffAccount, existingRol
         <CollapsibleContent>
           <CardContent className="space-y-3 pt-0">
             <div className="space-y-1"><Label className="text-xs">{t("staffAccount.fullName")}</Label><Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="John Smith" maxLength={100} /></div>
-            <div className="space-y-1"><Label className="text-xs">{t("staffAccount.email")}</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="john@example.com" maxLength={255} /></div>
+            <div className="space-y-1">
+              <Label className="text-xs">{t("staffAccount.email")}</Label>
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="john@example.com" maxLength={255} />
+              <p className="text-[11px] text-muted-foreground leading-tight">{t("staffAccount.emailHint")}</p>
+            </div>
             <div className="space-y-1">
               <Label className="text-xs">{t("staffAccount.password")}</Label>
               <div className="relative"><Input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t("staffAccount.minPassword")} maxLength={128} className="pr-10" /><button type="button" className="absolute right-2.5 top-2.5 text-muted-foreground" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div>

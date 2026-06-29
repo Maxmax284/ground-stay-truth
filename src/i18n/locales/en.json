@@ -404,6 +404,7 @@
     "title": "Create Staff Account",
     "fullName": "Full Name",
     "email": "Email",
+    "emailHint": "Tip: if this inbox is shared, use plus-addressing (e.g. name+person@domain.com). Each person gets their own login, and mail still lands in the same inbox.",
     "password": "Password",
     "role": "Role",
     "createAccount": "Create Account",
