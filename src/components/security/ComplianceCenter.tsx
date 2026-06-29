@@ -18,7 +18,19 @@ import {
   ExternalLink,
   ShieldCheck,
   Loader2,
+  UserX,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,6 +45,7 @@ export function ComplianceCenter() {
   const [targetEmail, setTargetEmail] = useState("");
   const [exporting, setExporting] = useState(false);
   const [purging, setPurging] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const { data: auditEvents = [] } = useStaffAuditEvents({ limit: 25 });
   const { snapshots, isLoading: snapsLoading } = useRecoverySnapshots();
@@ -178,16 +191,88 @@ export function ComplianceCenter() {
           <div className="space-y-2">
             <p className="text-sm font-medium">Right to be forgotten</p>
             <p className="text-xs text-muted-foreground">
-              Guests delete their own account from{" "}
-              <span className="font-mono">/guest</span> → profile. For staff
-              offboarding, use the staff management screen — never delete via
-              the database.
+              Permanently deletes the account, profile, and revokes auth access.
+              Action is logged. The last remaining admin cannot be deleted.
             </p>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/settings">
-                Open staff management <ExternalLink className="h-3 w-3 ml-1" />
-              </Link>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" disabled={!targetEmail.trim() || deleting}>
+                    {deleting ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <UserX className="h-4 w-4 mr-2" />
+                    )}
+                    Initiate account deletion
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete account for {targetEmail}?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This permanently removes the user's auth record and cascades
+                      profile data. This cannot be undone. Use only for verified
+                      GDPR/PDPA erasure requests.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={async () => {
+                        const email = targetEmail.trim();
+                        if (!email) return;
+                        setDeleting(true);
+                        try {
+                          const targetId = await lookupUserId(email);
+                          if (!targetId) throw new Error("No user found with that email.");
+                          const { data: { session } } = await supabase.auth.getSession();
+                          if (!session) throw new Error("Not authenticated");
+                          const res = await fetch(
+                            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`,
+                            {
+                              method: "POST",
+                              headers: {
+                                Authorization: `Bearer ${session.access_token}`,
+                                "Content-Type": "application/json",
+                                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                              },
+                              body: JSON.stringify({ target_user_id: targetId }),
+                            }
+                          );
+                          const body = await res.json().catch(() => ({}));
+                          if (!res.ok) throw new Error(body.error || "Delete failed");
+                          await supabase.rpc("log_staff_audit_event", {
+                            _event_type: "account_deleted",
+                            _severity: "high",
+                            _actor_id: user?.id,
+                            _target_user_id: targetId,
+                            _reason: "GDPR/PDPA erasure request",
+                            _metadata: { email },
+                          });
+                          toast({ title: "Account deleted", description: email });
+                          setTargetEmail("");
+                        } catch (e: any) {
+                          toast({ title: "Delete failed", description: e.message, variant: "destructive" });
+                        } finally {
+                          setDeleting(false);
+                        }
+                      }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete permanently
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/settings">
+                  Staff management <ExternalLink className="h-3 w-3 ml-1" />
+                </Link>
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Guests can also self-delete from <span className="font-mono">/guest</span> → profile.
+            </p>
           </div>
         </CardContent>
       </Card>
