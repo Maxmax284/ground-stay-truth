@@ -405,6 +405,8 @@
     "fullName": "Full Name",
     "email": "Email",
     "emailHint": "Tip: if this inbox is shared, use plus-addressing (e.g. name+person@domain.com). Each person gets their own login, and mail still lands in the same inbox.",
+    "emailExplainerTitle": "How this works with a shared inbox",
+    "emailExplainerBody": "If multiple staff share one inbox (e.g. train@lamaimuaythai.com), add a plus sign and their name before the @ sign. Each person gets a unique login and their own password, but all email still goes to the same inbox. Example: train+nikki@lamaimuaythai.com.",
     "password": "Password",
     "role": "Role",
     "createAccount": "Create Account",

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { UserPlus, Eye, EyeOff, AlertTriangle } from "lucide-react";
+import { UserPlus, Eye, EyeOff, AlertTriangle, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,13 @@ export default function CreateStaffAccountForm({ createStaffAccount, existingRol
               <Label className="text-xs">{t("staffAccount.email")}</Label>
               <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="john@example.com" maxLength={255} />
               <p className="text-[11px] text-muted-foreground leading-tight">{t("staffAccount.emailHint")}</p>
+              <div className="mt-2 rounded-md bg-accent/40 p-3 space-y-1">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-accent-foreground">
+                  <Info className="h-3.5 w-3.5" />
+                  <span>{t("staffAccount.emailExplainerTitle")}</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">{t("staffAccount.emailExplainerBody")}</p>
+              </div>
             </div>
             <div className="space-y-1">
               <Label className="text-xs">{t("staffAccount.password")}</Label>
