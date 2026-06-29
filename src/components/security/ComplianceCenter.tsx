@@ -45,6 +45,7 @@ export function ComplianceCenter() {
   const [targetEmail, setTargetEmail] = useState("");
   const [exporting, setExporting] = useState(false);
   const [purging, setPurging] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const { data: auditEvents = [] } = useStaffAuditEvents({ limit: 25 });
   const { snapshots, isLoading: snapsLoading } = useRecoverySnapshots();
