@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { useAuth } from "@/hooks/useAuth";
-import { useFrontDesk } from "@/hooks/useFrontDesk";
-import { useAirportPickups } from "@/hooks/useAirportPickups";
+import { useFrontDeskData } from "@/hooks/useFrontDesk";
 import {
   Activity,
   CheckCircle2,
