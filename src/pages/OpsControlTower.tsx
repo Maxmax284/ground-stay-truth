@@ -330,6 +330,7 @@ function TimelineLookupPanel({ onOpenTimeline }: { onOpenTimeline: (id: string) 
 export default function OpsControlTower() {
   const { isAdmin } = useAuth();
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [timelineId, setTimelineId] = useState<string | null>(null);
 
   return (
     <DashboardLayout>
@@ -346,20 +347,32 @@ export default function OpsControlTower() {
         </div>
 
         <Tabs defaultValue="health">
-          <TabsList>
+          <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="health">Systems Health</TabsTrigger>
+            <TabsTrigger value="matrix">Matrix</TabsTrigger>
             <TabsTrigger value="transit">Transit Monitor</TabsTrigger>
             <TabsTrigger value="exceptions">Exceptions</TabsTrigger>
+            <TabsTrigger value="timeline">Timeline</TabsTrigger>
+            <TabsTrigger value="verify">Verification</TabsTrigger>
           </TabsList>
 
           <TabsContent value="health" className="mt-4">
             <SystemsHealthPanel />
           </TabsContent>
+          <TabsContent value="matrix" className="mt-4">
+            <SystemsMatrixPanel />
+          </TabsContent>
           <TabsContent value="transit" className="mt-4">
-            <TransitMonitorPanel onOpenBooking={setDetailId} />
+            <TransitMonitorPanel onOpenBooking={setDetailId} onOpenTimeline={setTimelineId} />
           </TabsContent>
           <TabsContent value="exceptions" className="mt-4">
-            <ExceptionsPanel onOpenBooking={setDetailId} />
+            <ExceptionsPanel onOpenBooking={setDetailId} onOpenTimeline={setTimelineId} />
+          </TabsContent>
+          <TabsContent value="timeline" className="mt-4">
+            <TimelineLookupPanel onOpenTimeline={setTimelineId} />
+          </TabsContent>
+          <TabsContent value="verify" className="mt-4">
+            <VerificationPanel />
           </TabsContent>
         </Tabs>
       </div>
@@ -369,6 +382,12 @@ export default function OpsControlTower() {
         open={!!detailId}
         onOpenChange={(o) => !o && setDetailId(null)}
         isAdmin={isAdmin}
+      />
+
+      <OpsBookingTimelineSheet
+        bookingId={timelineId}
+        open={!!timelineId}
+        onOpenChange={(o) => !o && setTimelineId(null)}
       />
     </DashboardLayout>
   );
