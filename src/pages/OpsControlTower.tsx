@@ -5,8 +5,12 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
+import { OpsBookingTimelineSheet } from "@/components/ops/OpsBookingTimelineSheet";
+import { SystemsMatrixPanel } from "@/components/ops/SystemsMatrixPanel";
+import { VerificationPanel } from "@/components/ops/VerificationPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { useFrontDeskData } from "@/hooks/useFrontDesk";
 import {
@@ -19,6 +23,7 @@ import {
   Clock,
   ExternalLink,
   RefreshCw,
+  History,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 
