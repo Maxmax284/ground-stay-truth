@@ -3101,6 +3101,35 @@ export type Database = {
         Returns: string
       }
       get_integration_secret: { Args: { _key: string }; Returns: string }
+      get_ops_exceptions: {
+        Args: never
+        Returns: {
+          affected_system: string
+          booking_id: string
+          check_in: string
+          detail: Json
+          exception_key: string
+          guest_name: string
+          severity: string
+          suggested_action: string
+          unit_name: string
+          what_failed: string
+          why_matters: string
+        }[]
+      }
+      get_ops_service_health: {
+        Args: never
+        Returns: {
+          detail: Json
+          key: string
+          label: string
+          last_error: string
+          last_failure_at: string
+          last_success_at: string
+          source: string
+          status: string
+        }[]
+      }
       has_property_access: {
         Args: { _property_id: string; _user_id: string }
         Returns: boolean
