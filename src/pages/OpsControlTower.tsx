@@ -134,11 +134,10 @@ function SystemsHealthPanel() {
 }
 
 function TransitMonitorPanel({ onOpenBooking }: { onOpenBooking: (id: string) => void }) {
-  const fd = useFrontDesk();
-  const { pickups } = useAirportPickups();
-  const arriving = fd.arrivingToday ?? [];
-  const upcoming = (fd.upcoming ?? []).slice(0, 25);
-  const pickupByBooking = new Map((pickups ?? []).map((p: any) => [p.booking_id, p]));
+  const fd = useFrontDeskData();
+  const arriving = fd.sections?.arrivingToday ?? [];
+  const upcoming = (fd.sections?.upcoming ?? []).slice(0, 25);
+  const pickupByBooking = fd.pickupByBooking ?? new Map();
 
   const rows = [
     ...arriving.map((b: any) => ({ ...b, _bucket: "Today" })),
