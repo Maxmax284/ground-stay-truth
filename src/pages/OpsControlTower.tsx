@@ -196,7 +196,13 @@ function TransitMonitorPanel({
   );
 }
 
-function ExceptionsPanel({ onOpenBooking }: { onOpenBooking: (id: string) => void }) {
+function ExceptionsPanel({
+  onOpenBooking,
+  onOpenTimeline,
+}: {
+  onOpenBooking: (id: string) => void;
+  onOpenTimeline: (id: string) => void;
+}) {
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["ops-exceptions"],
     queryFn: async (): Promise<OpsException[]> => {
@@ -245,9 +251,14 @@ function ExceptionsPanel({ onOpenBooking }: { onOpenBooking: (id: string) => voi
                     {" · "}{ex.unit_name ?? "—"}
                     {" · "}{format(new Date(ex.check_in), "MMM d")}
                   </p>
-                  <Button size="sm" variant="outline" onClick={() => onOpenBooking(ex.booking_id)}>
-                    Open booking
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="ghost" onClick={() => onOpenTimeline(ex.booking_id)}>
+                      <History className="h-3.5 w-3.5 mr-1" /> Timeline
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => onOpenBooking(ex.booking_id)}>
+                      Open booking
+                    </Button>
+                  </div>
                 </div>
                 <p className="text-[11px] text-muted-foreground italic">→ {ex.suggested_action}</p>
               </CardContent>
@@ -259,6 +270,59 @@ function ExceptionsPanel({ onOpenBooking }: { onOpenBooking: (id: string) => voi
           No exceptions. All deterministic checks are clean.
         </CardContent></Card>
       )}
+    </div>
+  );
+}
+
+function TimelineLookupPanel({ onOpenTimeline }: { onOpenTimeline: (id: string) => void }) {
+  const [value, setValue] = useState("");
+  const { data: recent } = useQuery({
+    queryKey: ["ops-timeline-recent"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("id,check_in,state,unit_id,guest_id,units(name),profiles!bookings_guest_id_fkey(full_name)")
+        .order("updated_at", { ascending: false })
+        .limit(15);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-base">Open a timeline</CardTitle></CardHeader>
+        <CardContent className="space-y-2">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Paste a booking ID…"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+            />
+            <Button onClick={() => value.trim() && onOpenTimeline(value.trim())}>Open</Button>
+          </div>
+          <p className="text-xs text-muted-foreground">Or pick from recently updated bookings below.</p>
+        </CardContent>
+      </Card>
+
+      <div className="rounded-lg border divide-y">
+        {(recent ?? []).map((b: any) => (
+          <div key={b.id} className="flex items-center gap-3 p-3 text-sm hover:bg-muted/30">
+            <div className="flex-1 min-w-0">
+              <p className="font-medium truncate">
+                {b.profiles?.full_name ?? "Unnamed"} · {b.units?.name ?? "—"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {format(new Date(b.check_in), "MMM d")} · {b.state}
+              </p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => onOpenTimeline(b.id)}>
+              <History className="h-3.5 w-3.5 mr-1" /> Timeline
+            </Button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
