@@ -36,6 +36,7 @@ import MediaLibrary from "./pages/MediaLibrary";
 import SecurityCenter from "./pages/SecurityCenter";
 import MonitoringCenter from "./pages/MonitoringCenter";
 import ResetPassword from "./pages/ResetPassword";
+import OpsControlTower from "./pages/OpsControlTower";
 
 // Global React Query defaults — consistent caching across all hooks.
 // Per-hook overrides remain authoritative; this only sets the floor.
@@ -90,6 +91,7 @@ const App = () => (
                 <Route path="/disaster-recovery" element={<ProtectedRoute requiredPath="/disaster-recovery"><DisasterRecovery /></ProtectedRoute>} />
                 <Route path="/security-center" element={<ProtectedRoute requiredPath="/security-center"><SecurityCenter /></ProtectedRoute>} />
                 <Route path="/monitoring" element={<ProtectedRoute requiredPath="/monitoring"><MonitoringCenter /></ProtectedRoute>} />
+                <Route path="/ops-control-tower" element={<ProtectedRoute requiredPath="/ops-control-tower"><OpsControlTower /></ProtectedRoute>} />
                 <Route path="/admin/payment-report" element={<ProtectedRoute><PaymentReport /></ProtectedRoute>} />
 
 
