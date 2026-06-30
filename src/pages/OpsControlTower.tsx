@@ -155,7 +155,7 @@ function TransitMonitorPanel({ onOpenBooking }: { onOpenBooking: (id: string) =>
       </p>
       <div className="rounded-lg border divide-y">
         {rows.map((b: any) => {
-          const pickup = pickupByBooking.get(b.id);
+          const pickup = pickupByBooking.get(b.id) as any;
           return (
             <div key={b.id} className="flex items-center gap-3 p-3 text-sm hover:bg-muted/30">
               <Badge variant="outline" className="text-[10px] shrink-0">{b._bucket}</Badge>
