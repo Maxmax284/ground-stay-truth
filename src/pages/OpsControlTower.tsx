@@ -138,7 +138,13 @@ function SystemsHealthPanel() {
   );
 }
 
-function TransitMonitorPanel({ onOpenBooking }: { onOpenBooking: (id: string) => void }) {
+function TransitMonitorPanel({
+  onOpenBooking,
+  onOpenTimeline,
+}: {
+  onOpenBooking: (id: string) => void;
+  onOpenTimeline: (id: string) => void;
+}) {
   const fd = useFrontDeskData();
   const arriving = fd.sections?.arrivingToday ?? [];
   const upcoming = (fd.sections?.upcoming ?? []).slice(0, 25);
@@ -156,7 +162,7 @@ function TransitMonitorPanel({ onOpenBooking }: { onOpenBooking: (id: string) =>
   return (
     <div className="space-y-2">
       <p className="text-sm text-muted-foreground">
-        Guests arriving today and within 7 days. Read-only view — opens the existing Booking Detail sheet.
+        Guests arriving today and within 7 days. Click Timeline to see every operational event.
       </p>
       <div className="rounded-lg border divide-y">
         {rows.map((b: any) => {
@@ -176,7 +182,10 @@ function TransitMonitorPanel({ onOpenBooking }: { onOpenBooking: (id: string) =>
                   Pickup: {pickup ? (pickup.driver_id ? "Driver set" : "Unassigned") : "None"}
                 </span>
               </div>
-              <Button size="sm" variant="ghost" onClick={() => onOpenBooking(b.id)}>
+              <Button size="sm" variant="ghost" onClick={() => onOpenTimeline(b.id)} title="Operational timeline">
+                <History className="h-3.5 w-3.5" />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => onOpenBooking(b.id)} title="Open booking">
                 <ExternalLink className="h-3.5 w-3.5" />
               </Button>
             </div>
