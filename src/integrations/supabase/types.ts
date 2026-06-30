@@ -3100,6 +3100,17 @@ export type Database = {
         Args: { _kind?: string; _label: string; _notes?: string }
         Returns: string
       }
+      get_booking_operational_timeline: {
+        Args: { _booking_id: string }
+        Returns: {
+          actor: string
+          category: string
+          data: Json
+          detail: string
+          label: string
+          occurred_at: string
+        }[]
+      }
       get_integration_secret: { Args: { _key: string }; Returns: string }
       get_ops_exceptions: {
         Args: never
