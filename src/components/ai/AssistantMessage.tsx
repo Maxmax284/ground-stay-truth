@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Copy, Check, FileText, AlertCircle } from "lucide-react";
+import { Copy, Check, FileText, AlertCircle, MessageCircle, Mail } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAIFocus } from "@/lib/aiFocusStore";
 
 interface ParsedResponse {
   intro?: string;
