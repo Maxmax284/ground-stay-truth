@@ -359,10 +359,27 @@ function AIAssistantPanelInner() {
 
       {/* Focus chip — shows what booking Kru Glitch is grounded to */}
       {focus && role !== "guest" && (
-        <div className="px-3 py-1.5 border-b bg-primary/5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <Focus className="h-3 w-3 text-primary shrink-0" />
-          <span className="shrink-0 font-medium text-foreground">Focused on:</span>
-          <span className="truncate">{focus.label || `Booking ${focus.bookingId.slice(0, 8)}`}</span>
+        <div className="border-b bg-primary/5">
+          <div className="px-3 py-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <Focus className="h-3 w-3 text-primary shrink-0" />
+            <span className="shrink-0 font-medium text-foreground">Focused on:</span>
+            <span className="truncate">{focus.label || `Booking ${focus.bookingId.slice(0, 8)}`}</span>
+          </div>
+          {messages.length > 0 && (
+            <div className="px-3 pb-2 flex gap-1 overflow-x-auto">
+              {FOCUSED_BOOKING_PROMPTS.slice(0, 4).map((qp) => (
+                <button
+                  key={qp.label}
+                  onClick={() => sendMessage(qp.prompt, mode, undefined, langCodeToName(language))}
+                  disabled={isStreaming}
+                  className="flex items-center gap-1 rounded-full bg-background border border-border px-2 py-0.5 text-[10px] whitespace-nowrap hover:bg-accent disabled:opacity-50 transition-colors"
+                >
+                  <span className="text-primary">{qp.icon}</span>
+                  {qp.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
