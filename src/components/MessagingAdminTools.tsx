@@ -37,7 +37,7 @@ export function MessagingAdminTools() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bookings")
-        .select("id, check_in, check_out, state, guest_id, units(name), profiles!bookings_guest_id_profiles_fkey(full_name)")
+        .select("id, check_in, check_out, state, guest_id, units(name), manual_guest_name, manual_guest_email, manual_guest_phone, profiles!bookings_guest_id_profiles_fkey(full_name, email)")
         .in("state", ["confirmed", "pending_deposit", "checked_in"])
         .not("guest_id", "is", null)
         .order("check_in", { ascending: true })

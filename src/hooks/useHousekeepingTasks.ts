@@ -34,7 +34,7 @@ export function useUpdateHousekeepingTask() {
         .from("housekeeping_tasks")
         .update(updates)
         .eq("id", id)
-        .select("*, units(name), booking_in:bookings!housekeeping_tasks_booking_in_id_fkey(id, guest_id, check_in, profiles:profiles!bookings_guest_id_profiles_fkey(full_name))")
+        .select("*, units(name), booking_in:bookings!housekeeping_tasks_booking_in_id_fkey(id, guest_id, check_in, profiles:manual_guest_name, manual_guest_email, manual_guest_phone, profiles!bookings_guest_id_profiles_fkey(full_name, email))")
         .single();
       if (error) throw error;
 

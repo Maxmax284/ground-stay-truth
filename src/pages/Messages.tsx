@@ -47,7 +47,7 @@ function useInboxThreads() {
       const bookingIds = [...new Set(messages.map((m) => m.booking_id))];
       const { data: bookings, error: bErr } = await (supabase
         .from("bookings")
-        .select("id, state, check_in, check_out, units(name), profiles!bookings_guest_id_profiles_fkey(full_name)")
+        .select("id, state, check_in, check_out, units(name), manual_guest_name, manual_guest_email, manual_guest_phone, profiles!bookings_guest_id_profiles_fkey(full_name, email)")
         .in("id", bookingIds) as any);
       if (bErr) throw bErr;
       const bookingMap = new Map<string, any>();
