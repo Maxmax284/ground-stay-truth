@@ -164,8 +164,23 @@ serve(async (req) => {
 
     const body = await req.text();
 
+    // Fast-path: unsigned requests (health probes, curl, scanners) are rejected
+    // silently without polluting webhook_health. Only real Stripe requests
+    // (which always carry stripe-signature) can move health state.
+    if (!req.headers.get("stripe-signature")) {
+      return new Response(
+        JSON.stringify({
+          error: "Missing stripe-signature header",
+          hint: "This endpoint only accepts signed Stripe webhook requests. Internal health checks should not hit it.",
+        }),
+        {
+          status: 401,
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+        },
+      );
+    }
+
     // Verify and normalize via provider adapter
-    // Future: detect provider from request headers/path and route accordingly
     let normalized: NormalizedPaymentEvent;
     try {
       normalized = await verifyAndNormalizeStripe(
@@ -177,6 +192,7 @@ serve(async (req) => {
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       console.error("Webhook verification failed:", err);
+      // Real signature-present-but-invalid failures still count.
       await recordWebhookEvent(adminClient, "stripe", "failure", {
         reason: `Signature verification failed: ${reason}`,
       });
