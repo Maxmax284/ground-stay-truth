@@ -212,6 +212,42 @@ export function useAIAssistant() {
     } finally {
       setIsStreaming(false);
       abortRef.current = null;
+
+      // Per-conversation audit log — metadata only, no message content or guest PII.
+      if (assistantSoFar.trim().length > 0) {
+        try {
+          const focus = getAIFocus();
+          const missingRaw = parseSection(assistantSoFar, "MISSING") || "";
+          const sourcesRaw = parseSection(assistantSoFar, "SOURCES") || "";
+          const missing = missingRaw
+            ? missingRaw.split(",").map((s) => s.trim()).filter(Boolean).slice(0, 12)
+            : [];
+          const sources = sourcesRaw
+            ? sourcesRaw.split(",").map((s) => s.trim()).filter(Boolean).slice(0, 12)
+            : [];
+          const uncertain =
+            missing.length > 0 || UNCERTAINTY_PATTERNS.some((r) => r.test(assistantSoFar));
+
+          const { data: freshSession } = await supabase.auth.getSession();
+          const uid = freshSession?.session?.user?.id;
+          if (uid) {
+            await supabase.from("ai_assistant_audit").insert({
+              user_id: uid,
+              session_id: sessionIdRef.current,
+              assistant_response_at: new Date().toISOString(),
+              mode,
+              focus_kind: focus?.kind ?? null,
+              focus_booking_id: focus?.bookingId ?? null,
+              uncertain,
+              missing,
+              sources,
+              notes: uncertain ? "flagged_uncertain" : null,
+            });
+          }
+        } catch {
+          /* audit best-effort; never surface to user */
+        }
+      }
     }
   }, [session, role, messages, activePropertyId, operationalMode]);
 
@@ -222,7 +258,9 @@ export function useAIAssistant() {
   const clearChat = useCallback(() => {
     setMessages([]);
     setError(null);
+    sessionIdRef.current = newSessionId();
   }, []);
+
 
   return { messages, isStreaming, error, sendMessage, cancel, clearChat };
 }
