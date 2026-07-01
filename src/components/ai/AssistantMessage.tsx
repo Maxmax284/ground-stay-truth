@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+
 import { Copy, Check, FileText, AlertCircle, MessageCircle, Mail, HandHelping } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +26,39 @@ const UNCERTAINTY_PATTERNS = [
 function detectUncertainty(text: string): boolean {
   return UNCERTAINTY_PATTERNS.some((r) => r.test(text));
 }
+
+interface SourceTarget {
+  route: string;
+  label: string;
+}
+
+/**
+ * Map a source chip label to a read-only page in the app.
+ * Returns null when no confident match — chip stays non-interactive.
+ */
+function resolveSourceTarget(source: string): SourceTarget | null {
+  const s = source.toLowerCase();
+  if (/payment|deposit|invoice|refund|stripe|charge|balance/.test(s))
+    return { route: "/admin/payment-report", label: "Open Payments" };
+  if (/pickup|flight|airport|transport|driver|arrival transfer/.test(s))
+    return { route: "/front-desk", label: "Open Front Desk · Pickups" };
+  if (/document|passport|\bid\b|tm30|verification/.test(s))
+    return { route: "/front-desk", label: "Open Front Desk · Documents" };
+  if (/housekeep|cleaning|turnover|laundry|maintenance/.test(s))
+    return { route: "/front-desk", label: "Open Front Desk" };
+  if (/calendar|availability|unit|room|inventory/.test(s))
+    return { route: "/calendar", label: "Open Calendar" };
+  if (/message|whatsapp|line|telegram|inbox|chat/.test(s))
+    return { route: "/messages", label: "Open Messages" };
+  if (/security|audit|compliance|gdpr|pdpa/.test(s))
+    return { route: "/security-center", label: "Open Security Center" };
+  if (/timeline|ops|control tower|narrative/.test(s))
+    return { route: "/ops-control-tower", label: "Open Ops Control Tower" };
+  if (/booking|reservation|guest|focused/.test(s))
+    return { route: "/bookings", label: "Open Bookings" };
+  return null;
+}
+
 
 interface ParsedResponse {
   intro?: string;
@@ -168,6 +203,8 @@ export function AssistantMessage({ content, timestamp, isStreaming }: AssistantM
   const parsed = useMemo(() => parseResponse(content), [content]);
   const hasStructure = !!(parsed.quickAnswer || parsed.whatIFound || parsed.suggestedNextStep || parsed.draftMessage);
   const focus = useAIFocus();
+  const navigate = useNavigate();
+
 
   const timeStr = new Date(timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
@@ -311,20 +348,43 @@ export function AssistantMessage({ content, timestamp, isStreaming }: AssistantM
             ))}
             {sourceChips.map((s) => {
               const isFocused = /focused/i.test(s);
+              const target = resolveSourceTarget(s);
+              const clickable = !!target;
+              const title = clickable
+                ? `${target.label}${isFocused ? " (grounded to open booking)" : ""}`
+                : isFocused
+                  ? "Grounded to the booking you have open"
+                  : `Source: ${s}`;
               return (
                 <Badge
                   key={`s-${s}`}
                   variant={isFocused ? "default" : "secondary"}
+                  onClick={clickable ? () => navigate(target.route) : undefined}
+                  role={clickable ? "button" : undefined}
+                  tabIndex={clickable ? 0 : undefined}
+                  onKeyDown={
+                    clickable
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            navigate(target.route);
+                          }
+                        }
+                      : undefined
+                  }
                   className={cn(
-                    "text-[10px]",
+                    "text-[10px] transition-colors",
+                    clickable && "cursor-pointer hover:ring-1 hover:ring-primary/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
                     isFocused && "bg-primary/15 text-primary hover:bg-primary/20 border border-primary/30"
                   )}
-                  title={isFocused ? "Grounded to the booking you have open" : `Source: ${s}`}
+                  title={title}
                 >
                   {s}
+                  {clickable && <span aria-hidden className="ml-1 opacity-60">↗</span>}
                 </Badge>
               );
             })}
+
           </div>
         )}
 
