@@ -154,7 +154,7 @@ export function useTodaysPickups() {
       const endOfDay = `${today}T23:59:59`;
       let query = (supabase
         .from("airport_pickups" as any)
-        .select("*, drivers(name, whatsapp, vehicle_type, license_plate), bookings!inner(id, check_in, guest_id, units(name), profiles!bookings_guest_id_profiles_fkey(full_name))")
+        .select("*, drivers(name, whatsapp, vehicle_type, license_plate), bookings!inner(id, check_in, guest_id, manual_guest_name, manual_guest_email, manual_guest_phone, units(name), profiles!bookings_guest_id_profiles_fkey(full_name, email))")
         .neq("status", "cancelled")
         .neq("status", "completed")
         .or(`arrival_datetime.gte.${startOfDay},arrival_datetime.lte.${endOfDay},arrival_datetime.is.null`)

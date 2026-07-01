@@ -31,6 +31,10 @@ export type FrontDeskBooking = {
   arrival_note: string | null;
   units: { name: string } | null;
   profiles: { full_name: string | null; email: string | null; phone: string | null } | null;
+  manual_guest_name: string | null;
+  manual_guest_email: string | null;
+  manual_guest_phone: string | null;
+  manual_guest_note: string | null;
   // Derived
   outstanding: number;
   totalPaid: number;
@@ -47,6 +51,7 @@ export type FrontDeskBooking = {
 const SELECT_BOOKING = `
   id, guest_id, unit_id, check_in, check_out, num_guests, state, total_price,
   notes, pre_arrival_status, arrived_at, arrived_by, arrival_note, arrival_details,
+  manual_guest_name, manual_guest_email, manual_guest_phone, manual_guest_note,
   units(name),
   profiles!bookings_guest_id_profiles_fkey(full_name, email, phone)
 `;
