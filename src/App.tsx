@@ -65,6 +65,7 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <ForegroundNotificationBanner />
+              <AIFocusHighlighter />
               <Routes>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/guest" element={<GuestAuth />} />
