@@ -139,7 +139,7 @@ const Bookings = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6" data-ai-focus="bookings">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">{t("bookings.title")}</h1>
