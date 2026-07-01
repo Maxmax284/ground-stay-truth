@@ -76,9 +76,13 @@ export function SecurityCenterOverview() {
   const { data: refunds } = useRecentRefunds();
 
   const allMfaCovered = (mfaCoverage?.withoutMfa ?? 0) === 0;
-  const webhookHealthy = (webhookRows ?? []).every(
-    (w: any) => w.status === "healthy" || w.status === "ok" || !w.last_failure_at
-  );
+  const isUnsignedProbeReason = (r?: string | null) => !!r && /missing stripe-signature/i.test(r);
+  const effectiveStatus = (w: any): "healthy" | "failing" | "awaiting" => {
+    if ((w.status === "healthy" || w.status === "ok") && w.last_success_at) return "healthy";
+    if (w.status === "failing" && !isUnsignedProbeReason(w.last_failure_reason)) return "failing";
+    return "awaiting";
+  };
+  const webhookHealthy = (webhookRows ?? []).every((w: any) => effectiveStatus(w) !== "failing");
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
