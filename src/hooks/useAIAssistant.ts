@@ -8,6 +8,7 @@ export type AIMode = "explain" | "summarize" | "validate" | "draft" | "digest" |
 export interface AIMessage {
   role: "user" | "assistant";
   content: string;
+  createdAt: number;
 }
 
 export function useAIAssistant() {
@@ -56,6 +57,7 @@ export function useAIAssistant() {
     const summaryMessage: AIMessage = {
       role: "user",
       content: `[Earlier conversation summary — ${oldMessages.length} messages condensed]\n${summaryParts.join("\n")}`,
+      createdAt: Date.now(),
     };
 
     return [summaryMessage, ...recentMessages];
@@ -73,7 +75,7 @@ export function useAIAssistant() {
     }
     callTimestamps.current.push(now);
 
-    const userMsg: AIMessage = { role: "user", content: input };
+    const userMsg: AIMessage = { role: "user", content: input, createdAt: Date.now() };
     setMessages((prev) => [...prev, userMsg]);
     setIsStreaming(true);
     setError(null);
@@ -160,7 +162,7 @@ export function useAIAssistant() {
                 if (last?.role === "assistant") {
                   return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
                 }
-                return [...prev, { role: "assistant", content: assistantSoFar }];
+                return [...prev, { role: "assistant", content: assistantSoFar, createdAt: Date.now() }];
               });
             }
           } catch {
