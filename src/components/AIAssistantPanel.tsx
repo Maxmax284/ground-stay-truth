@@ -91,8 +91,10 @@ function AIAssistantPanelInner() {
   const { isAIEnabled, isLoading: settingsLoading } = useAISettings(role);
   const { messages, isStreaming, error, sendMessage, cancel, clearChat } = useAIAssistant();
   const isMobile = useIsMobile();
-  const quickPrompts = getQuickPromptsForRole(role);
   const focus = useAIFocus();
+  const baseQuickPrompts = getQuickPromptsForRole(role);
+  // Phase 5: when the user has a booking sheet open, surface booking-focused prompts.
+  const quickPrompts = focus && role !== "guest" ? FOCUSED_BOOKING_PROMPTS : baseQuickPrompts;
   const [input, setInput] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<AIMode>("explain");
