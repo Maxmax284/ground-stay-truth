@@ -27,7 +27,7 @@ import { getGuestTypesForMode, DEFAULT_GUEST_TYPE } from "@/lib/guestTypes";
 import { AlertTriangle } from "lucide-react";
 
 interface BookingFormDialogProps { open: boolean; onOpenChange: (open: boolean) => void; defaultUnitId?: string; defaultCheckIn?: string; defaultCheckOut?: string; }
-interface FormValues { unit_id: string; check_in: string; check_out: string; num_guests: number; extra_beds: number; notes: string; guest_id: string; guest_type: string; flight_number: string; }
+interface FormValues { unit_id: string; check_in: string; check_out: string; num_guests: number; extra_beds: number; notes: string; guest_id: string; guest_type: string; flight_number: string; manual_guest_name: string; manual_guest_email: string; manual_guest_phone: string; }
 
 export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCheckIn, defaultCheckOut }: BookingFormDialogProps) {
   const { t } = useTranslation();
@@ -54,7 +54,7 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
   });
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
-    defaultValues: { unit_id: defaultUnitId ?? "", check_in: defaultCheckIn ?? "", check_out: defaultCheckOut ?? "", num_guests: 1, extra_beds: 0, notes: "", guest_id: "", guest_type: defaultGuestType, flight_number: "" },
+    defaultValues: { unit_id: defaultUnitId ?? "", check_in: defaultCheckIn ?? "", check_out: defaultCheckOut ?? "", num_guests: 1, extra_beds: 0, notes: "", guest_id: "", guest_type: defaultGuestType, flight_number: "", manual_guest_name: "", manual_guest_email: "", manual_guest_phone: "" },
   });
 
   const selectedUnitId = watch("unit_id");
@@ -136,7 +136,7 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
   const onSubmit = async (data: FormValues) => {
     if (validationErrors.length > 0) return;
     try {
-      await createBooking.mutateAsync({ unit_id: data.unit_id, check_in: data.check_in, check_out: data.check_out, num_guests: Number(data.num_guests), notes: data.notes || null, guest_id: data.guest_id || null, guest_type: data.guest_type || null, flight_number: data.flight_number?.trim() || null, total_price: pricing.total > 0 ? pricing.total : null, state: "inquiry" } as any);
+      await createBooking.mutateAsync({ unit_id: data.unit_id, check_in: data.check_in, check_out: data.check_out, num_guests: Number(data.num_guests), notes: data.notes || null, guest_id: data.guest_id || null, guest_type: data.guest_type || null, flight_number: data.flight_number?.trim() || null, manual_guest_name: data.manual_guest_name?.trim() || null, manual_guest_email: data.manual_guest_email?.trim() || null, manual_guest_phone: data.manual_guest_phone?.trim() || null, total_price: pricing.total > 0 ? pricing.total : null, state: "inquiry" } as any);
       toast({ title: t("bookingForm.bookingCreated"), description: t("bookingForm.bookingCreatedDesc") });
       reset(); onOpenChange(false);
     } catch (err: any) {
@@ -230,6 +230,26 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
               </SelectContent>
             </Select>
             <input type="hidden" {...register("guest_id")} />
+          </div>
+          <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 space-y-3">
+            <div>
+              <p className="text-sm font-medium">Manual guest details (no account needed)</p>
+              <p className="text-xs text-muted-foreground">Use for walk-ins, phone/OTA bookings, or pre-existing reservations. Shows on the booking card and calendar.</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="manual_guest_name">Guest name</Label>
+              <Input id="manual_guest_name" {...register("manual_guest_name")} placeholder="e.g. John Smith" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="manual_guest_email">Email (optional)</Label>
+                <Input id="manual_guest_email" type="email" {...register("manual_guest_email")} placeholder="guest@example.com" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="manual_guest_phone">Phone (optional)</Label>
+                <Input id="manual_guest_phone" {...register("manual_guest_phone")} placeholder="+66..." />
+              </div>
+            </div>
           </div>
           <div className="space-y-2"><Label htmlFor="flight_number">Flight number (optional)</Label><Input id="flight_number" {...register("flight_number")} placeholder="e.g. TG921" /></div>
           <div className="space-y-2"><Label htmlFor="notes">{t("bookingForm.notes")}</Label><Textarea id="notes" {...register("notes")} placeholder={t("bookingForm.notesPlaceholder")} rows={3} /></div>
