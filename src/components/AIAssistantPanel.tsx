@@ -17,7 +17,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AssistantMessage, UserMessage } from "@/components/ai/AssistantMessage";
 import { LoadingIndicator } from "@/components/ai/LoadingIndicator";
-import { getQuickPromptsForRole } from "@/components/ai/QuickPrompts";
+import { getQuickPromptsForRole, FOCUSED_BOOKING_PROMPTS } from "@/components/ai/QuickPrompts";
 import { useAIFocus } from "@/lib/aiFocusStore";
 import { Focus } from "lucide-react";
 import React from "react";
