@@ -1,11 +1,29 @@
 import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Copy, Check, FileText, AlertCircle, MessageCircle, Mail } from "lucide-react";
+import { Copy, Check, FileText, AlertCircle, MessageCircle, Mail, HandHelping } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAIFocus } from "@/lib/aiFocusStore";
+import { toast } from "@/hooks/use-toast";
+
+const UNCERTAINTY_PATTERNS = [
+  /\bi(?:'m| am)? not sure\b/i,
+  /\bi don'?t know\b/i,
+  /\bunclear\b/i,
+  /\bcannot determine\b/i,
+  /\bcan'?t determine\b/i,
+  /\bunable to\b/i,
+  /\bi don'?t have\b/i,
+  /\bneed more (?:info|information|context)\b/i,
+  /\binsufficient (?:info|information|context|data)\b/i,
+  /\bno (?:record|data|info) (?:found|available)\b/i,
+];
+
+function detectUncertainty(text: string): boolean {
+  return UNCERTAINTY_PATTERNS.some((r) => r.test(text));
+}
 
 interface ParsedResponse {
   intro?: string;
