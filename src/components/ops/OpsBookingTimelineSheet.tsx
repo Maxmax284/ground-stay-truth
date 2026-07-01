@@ -94,6 +94,25 @@ export function OpsBookingTimelineSheet({
           </SheetDescription>
         </SheetHeader>
 
+        <div className="mt-3 rounded-md border bg-muted/30 p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-medium">
+              <Wand2 className="h-3.5 w-3.5 text-primary" />
+              AI Narrative Summary
+            </div>
+            <Button size="sm" variant="outline" onClick={runNarrative} disabled={loadingNarrative || !bookingId}>
+              {loadingNarrative ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+              {narrative ? "Regenerate" : "Generate"}
+            </Button>
+          </div>
+          {narrative && (
+            <p className="text-xs text-foreground whitespace-pre-wrap leading-relaxed">{narrative}</p>
+          )}
+          {!narrative && !loadingNarrative && (
+            <p className="text-[11px] text-muted-foreground">Read-only summary. Logged to audit trail. No state changes.</p>
+          )}
+        </div>
+
         <ScrollArea className="flex-1 -mx-6 px-6 mt-4">
           {isLoading ? (
             <p className="text-sm text-muted-foreground">Loading timeline…</p>
