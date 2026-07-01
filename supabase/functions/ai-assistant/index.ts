@@ -1114,6 +1114,118 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
       });
     }
 
+    // ─── FOCUSED CONTEXT (Phase 2 — booking-scoped grounding) ─────────────
+    // When the user has a booking sheet open, ground the response to that
+    // record. Staff roles only; guest role already scopes to own bookings.
+    const STAFF_ROLES = ["admin", "manager", "front_desk_supervisor", "front_desk", "maintenance"];
+    if (
+      focused_context?.kind === "booking" &&
+      typeof focused_context.booking_id === "string" &&
+      STAFF_ROLES.includes(role)
+    ) {
+      const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRe.test(focused_context.booking_id)) {
+        try {
+          let fbQ = adminClient
+            .from("bookings")
+            .select(
+              "id, state, check_in, check_out, num_guests, total_price, guest_type, guest_id, manual_guest_name, manual_guest_email, manual_guest_phone, admin_notes, units(name), profiles!bookings_guest_id_profiles_fkey(full_name, email, phone), property_id"
+            )
+            .eq("id", focused_context.booking_id);
+          if (property_id) fbQ = fbQ.eq("property_id", property_id);
+          const { data: fb } = await fbQ.maybeSingle();
+
+          if (fb) {
+            const [fbPaymentsRes, fbPickupRes, fbDepositRes, fbDocsRes, fbStateLogRes] = await Promise.all([
+              adminClient
+                .from("payments")
+                .select("amount, status, payment_type, method, refund_amount, created_at")
+                .eq("booking_id", fb.id)
+                .order("created_at", { ascending: false })
+                .limit(10),
+              adminClient
+                .from("airport_pickups")
+                .select("status, flight_number, arrival_datetime, passenger_count, drivers(name, phone)")
+                .eq("booking_id", fb.id)
+                .maybeSingle(),
+              adminClient
+                .from("security_deposits")
+                .select("amount_held, amount_deducted, status, deduction_reason")
+                .eq("booking_id", fb.id)
+                .maybeSingle(),
+              adminClient
+                .from("guest_documents")
+                .select("document_type, verification_status")
+                .eq("booking_id", fb.id),
+              adminClient
+                .from("booking_state_log")
+                .select("from_state, to_state, reason, created_at")
+                .eq("booking_id", fb.id)
+                .order("created_at", { ascending: false })
+                .limit(5),
+            ]);
+
+            const guestDisplay =
+              (fb as any).manual_guest_name ||
+              (fb as any).profiles?.full_name ||
+              "Unnamed guest";
+
+            const canSeeAmounts = role !== "front_desk";
+            const payments = fbPaymentsRes.data ?? [];
+            const paid = payments
+              .filter((p: any) => p.status === "recorded" || p.status === "partially_refunded")
+              .reduce((s: number, p: any) => s + Number(p.amount), 0);
+            const refunded = payments
+              .filter((p: any) => p.status === "refunded" || p.status === "partially_refunded")
+              .reduce((s: number, p: any) => s + Number(p.refund_amount ?? 0), 0);
+            const outstanding = Math.max(0, Number((fb as any).total_price ?? 0) - paid + refunded);
+
+            contextData += `\n\nFOCUSED CONTEXT — the user is currently looking at THIS booking. Prefer answering about it unless they ask about something else.`;
+            contextData += `\nBooking: ${fb.id}`;
+            contextData += `\nGuest: ${guestDisplay}`;
+            contextData += `\nUnit: ${(fb as any).units?.name ?? "unassigned"}`;
+            contextData += `\nDates: ${fb.check_in} → ${fb.check_out} (${fb.num_guests ?? 1} guest(s))`;
+            contextData += `\nState: ${fb.state}`;
+            if ((fb as any).guest_type) contextData += `\nGuest type: ${(fb as any).guest_type}`;
+            if (canSeeAmounts) {
+              contextData += `\nTotal: ${currencySymbol}${Number((fb as any).total_price ?? 0).toLocaleString()}. Paid: ${currencySymbol}${paid.toLocaleString()}. Refunded: ${currencySymbol}${refunded.toLocaleString()}. Outstanding: ${currencySymbol}${outstanding.toLocaleString()}.`;
+            } else {
+              contextData += `\nPayments recorded: ${payments.length}. Outstanding balance: ${outstanding > 0 ? "yes" : "none"}.`;
+            }
+            if (fbPickupRes.data) {
+              const p = fbPickupRes.data as any;
+              const driver = p.drivers ? `${p.drivers.name}${p.drivers.phone ? ` (${p.drivers.phone})` : ""}` : "no driver assigned";
+              contextData += `\nAirport pickup: status=${p.status}, flight=${p.flight_number ?? "n/a"}, arrival=${p.arrival_datetime ?? "n/a"}, driver=${driver}.`;
+            }
+            if (fbDepositRes.data) {
+              const d = fbDepositRes.data as any;
+              contextData += `\nSecurity deposit: ${currencySymbol}${d.amount_held} held, status=${d.status}${d.amount_deducted ? `, deducted ${currencySymbol}${d.amount_deducted} (${d.deduction_reason ?? "no reason"})` : ""}.`;
+            }
+            const docs = fbDocsRes.data ?? [];
+            if (docs.length > 0) {
+              const byType = docs.reduce((acc: Record<string, string[]>, d: any) => {
+                const t = d.document_type || "other";
+                (acc[t] ||= []).push(d.verification_status || "pending");
+                return acc;
+              }, {});
+              contextData += `\nDocuments: ${Object.entries(byType).map(([t, s]) => `${t} (${(s as string[]).join(", ")})`).join("; ")}.`;
+            } else {
+              contextData += `\nDocuments: none uploaded.`;
+            }
+            const log = fbStateLogRes.data ?? [];
+            if (log.length > 0) {
+              contextData += `\nRecent state changes: ${log.map((l: any) => `${l.from_state}→${l.to_state}${l.reason ? ` (${l.reason})` : ""}`).join("; ")}.`;
+            }
+            if ((fb as any).admin_notes && role !== "front_desk") {
+              contextData += `\nAdmin notes: ${(fb as any).admin_notes}`;
+            }
+          }
+        } catch (e) {
+          console.error("Focused context fetch failed:", e);
+        }
+      }
+    }
+
     const fullSystemPrompt = buildSystemPrompt(role || "", responseLang, contextData, operational_mode || null);
 
     // Draft mode (Lookout scan) — non-streaming JSON response with dedicated system prompt
