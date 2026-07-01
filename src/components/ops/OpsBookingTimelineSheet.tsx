@@ -60,6 +60,27 @@ export function OpsBookingTimelineSheet({
     },
   });
 
+  const [narrative, setNarrative] = useState<string | null>(null);
+  const [loadingNarrative, setLoadingNarrative] = useState(false);
+
+  const runNarrative = async () => {
+    if (!bookingId) return;
+    setLoadingNarrative(true);
+    setNarrative(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("ops-booking-narrative", {
+        body: { booking_id: bookingId },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setNarrative((data as any)?.narrative ?? "(no narrative)");
+    } catch (e) {
+      toast({ title: "Narrative failed", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setLoadingNarrative(false);
+    }
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-xl overflow-hidden flex flex-col">
