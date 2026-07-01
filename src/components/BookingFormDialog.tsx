@@ -231,6 +231,26 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
             </Select>
             <input type="hidden" {...register("guest_id")} />
           </div>
+          <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 space-y-3">
+            <div>
+              <p className="text-sm font-medium">Manual guest details (no account needed)</p>
+              <p className="text-xs text-muted-foreground">Use for walk-ins, phone/OTA bookings, or pre-existing reservations. Shows on the booking card and calendar.</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="manual_guest_name">Guest name</Label>
+              <Input id="manual_guest_name" {...register("manual_guest_name")} placeholder="e.g. John Smith" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="manual_guest_email">Email (optional)</Label>
+                <Input id="manual_guest_email" type="email" {...register("manual_guest_email")} placeholder="guest@example.com" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="manual_guest_phone">Phone (optional)</Label>
+                <Input id="manual_guest_phone" {...register("manual_guest_phone")} placeholder="+66..." />
+              </div>
+            </div>
+          </div>
           <div className="space-y-2"><Label htmlFor="flight_number">Flight number (optional)</Label><Input id="flight_number" {...register("flight_number")} placeholder="e.g. TG921" /></div>
           <div className="space-y-2"><Label htmlFor="notes">{t("bookingForm.notes")}</Label><Textarea id="notes" {...register("notes")} placeholder={t("bookingForm.notesPlaceholder")} rows={3} /></div>
           <div className="flex justify-end gap-2 pt-2">
