@@ -249,7 +249,7 @@ SUGGESTED NEXT STEP:
 - <1-2 concrete actions the human can take>
 DRAFT MESSAGE: <only include this section if the user asked for guest-facing text; write the draft, then end with "— Draft only, not sent">
 MISSING: <comma-separated list of data you needed but did not have; omit this section entirely if none>
-SOURCES: <comma-separated from: Booking, Payment, Guest Portal, Messages, Flight, Pickup, Housekeeping, Alert, Calendar, Notes, Policy, Weather, Intelligence>
+SOURCES: <comma-separated from: Focused Booking, Booking, Payment, Guest Portal, Messages, Flight, Pickup, Housekeeping, Alert, Calendar, Notes, Policy, Weather, Intelligence>
 
 Short/factual questions (e.g. "what time is check-in?"): skip the sections, answer in 1-2 sentences plain.
 Use standard markdown for bullets and emphasis. No HTML.
