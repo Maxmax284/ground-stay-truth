@@ -18,6 +18,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { AssistantMessage, UserMessage } from "@/components/ai/AssistantMessage";
 import { LoadingIndicator } from "@/components/ai/LoadingIndicator";
 import { getQuickPromptsForRole } from "@/components/ai/QuickPrompts";
+import { useAIFocus } from "@/lib/aiFocusStore";
+import { Focus } from "lucide-react";
 import React from "react";
 
 const MODE_LABELS: Record<AIMode, string> = {
@@ -90,6 +92,7 @@ function AIAssistantPanelInner() {
   const { messages, isStreaming, error, sendMessage, cancel, clearChat } = useAIAssistant();
   const isMobile = useIsMobile();
   const quickPrompts = getQuickPromptsForRole(role);
+  const focus = useAIFocus();
   const [input, setInput] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<AIMode>("explain");
@@ -351,6 +354,15 @@ function AIAssistantPanelInner() {
           </button>
         ))}
       </div>
+
+      {/* Focus chip — shows what booking Kru Glitch is grounded to */}
+      {focus && role !== "guest" && (
+        <div className="px-3 py-1.5 border-b bg-primary/5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <Focus className="h-3 w-3 text-primary shrink-0" />
+          <span className="shrink-0 font-medium text-foreground">Focused on:</span>
+          <span className="truncate">{focus.label || `Booking ${focus.bookingId.slice(0, 8)}`}</span>
+        </div>
+      )}
 
       {/* Messages - fixed scroll */}
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">

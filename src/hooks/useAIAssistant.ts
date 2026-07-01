@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProperty } from "@/hooks/useProperty";
 import { supabase } from "@/integrations/supabase/client";
+import { getAIFocus } from "@/lib/aiFocusStore";
 
 export type AIMode = "explain" | "summarize" | "validate" | "draft" | "digest" | "camp";
 
@@ -110,6 +111,10 @@ export function useAIAssistant() {
             messages: trimmedHistory.map((m) => ({ role: m.role, content: m.content })),
             context,
             language,
+            focused_context: (() => {
+              const f = getAIFocus();
+              return f ? { kind: f.kind, booking_id: f.bookingId } : null;
+            })(),
           }),
           signal: controller.signal,
         }

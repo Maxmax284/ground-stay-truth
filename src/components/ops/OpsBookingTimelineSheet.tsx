@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { setAIFocus, clearAIFocus } from "@/lib/aiFocusStore";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -62,6 +63,13 @@ export function OpsBookingTimelineSheet({
 
   const [narrative, setNarrative] = useState<string | null>(null);
   const [loadingNarrative, setLoadingNarrative] = useState(false);
+
+  // Phase 2: focus Kru Glitch on this booking while the timeline is open.
+  useEffect(() => {
+    if (!bookingId || !open) return;
+    setAIFocus({ kind: "booking", bookingId, label: "Ops Timeline" });
+    return () => clearAIFocus(bookingId);
+  }, [bookingId, open]);
 
   const runNarrative = async () => {
     if (!bookingId) return;
