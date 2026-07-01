@@ -161,6 +161,15 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
 
   const guestName = booking ? resolveGuestDisplayName(booking as any) : undefined;
 
+  // Phase 2: set AI focus so Kru Glitch knows which booking is on-screen.
+  useEffect(() => {
+    if (!bookingId || !open) return;
+    const unitName = (booking as any)?.units?.name;
+    const label = [guestName, unitName].filter(Boolean).join(" · ") || undefined;
+    setAIFocus({ kind: "booking", bookingId, label });
+    return () => clearAIFocus(bookingId);
+  }, [bookingId, open, guestName, (booking as any)?.units?.name]);
+
   const TRAVEL_BADGE_STYLES: Record<string, string> = {
     info: "bg-primary/10 text-primary border-primary/20",
     warning: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
