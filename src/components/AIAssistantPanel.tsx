@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Swords, X, Send, Trash2, Sparkles, AlertTriangle, Globe, GripVertical, Wifi } from "lucide-react";
+import { Swords, X, Send, Trash2, Sparkles, AlertTriangle, Globe, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,10 @@ import { useAIAssistant, type AIMode } from "@/hooks/useAIAssistant";
 import { useAISettings } from "@/hooks/useAISettings";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { AssistantMessage, UserMessage } from "@/components/ai/AssistantMessage";
+import { LoadingIndicator } from "@/components/ai/LoadingIndicator";
+import { getQuickPromptsForRole } from "@/components/ai/QuickPrompts";
 import React from "react";
 
 const MODE_LABELS: Record<AIMode, string> = {
