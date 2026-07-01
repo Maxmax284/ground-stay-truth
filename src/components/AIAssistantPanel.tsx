@@ -88,6 +88,8 @@ function AIAssistantPanelInner() {
   const { profile } = useProfile();
   const { isAIEnabled, isLoading: settingsLoading } = useAISettings(role);
   const { messages, isStreaming, error, sendMessage, cancel, clearChat } = useAIAssistant();
+  const isMobile = useIsMobile();
+  const quickPrompts = getQuickPromptsForRole(role);
   const [input, setInput] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<AIMode>("explain");
