@@ -348,20 +348,43 @@ export function AssistantMessage({ content, timestamp, isStreaming }: AssistantM
             ))}
             {sourceChips.map((s) => {
               const isFocused = /focused/i.test(s);
+              const target = resolveSourceTarget(s);
+              const clickable = !!target;
+              const title = clickable
+                ? `${target.label}${isFocused ? " (grounded to open booking)" : ""}`
+                : isFocused
+                  ? "Grounded to the booking you have open"
+                  : `Source: ${s}`;
               return (
                 <Badge
                   key={`s-${s}`}
                   variant={isFocused ? "default" : "secondary"}
+                  onClick={clickable ? () => navigate(target.route) : undefined}
+                  role={clickable ? "button" : undefined}
+                  tabIndex={clickable ? 0 : undefined}
+                  onKeyDown={
+                    clickable
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            navigate(target.route);
+                          }
+                        }
+                      : undefined
+                  }
                   className={cn(
-                    "text-[10px]",
+                    "text-[10px] transition-colors",
+                    clickable && "cursor-pointer hover:ring-1 hover:ring-primary/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
                     isFocused && "bg-primary/15 text-primary hover:bg-primary/20 border border-primary/30"
                   )}
-                  title={isFocused ? "Grounded to the booking you have open" : `Source: ${s}`}
+                  title={title}
                 >
                   {s}
+                  {clickable && <span aria-hidden className="ml-1 opacity-60">↗</span>}
                 </Badge>
               );
             })}
+
           </div>
         )}
 
