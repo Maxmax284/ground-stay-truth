@@ -92,6 +92,7 @@ function AIAssistantPanelInner() {
   const { messages, isStreaming, error, sendMessage, cancel, clearChat } = useAIAssistant();
   const isMobile = useIsMobile();
   const quickPrompts = getQuickPromptsForRole(role);
+  const focus = useAIFocus();
   const [input, setInput] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<AIMode>("explain");
