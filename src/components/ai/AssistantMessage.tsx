@@ -262,11 +262,22 @@ export function AssistantMessage({ content, timestamp, isStreaming }: AssistantM
                 Missing: {m}
               </Badge>
             ))}
-            {sourceChips.map((s) => (
-              <Badge key={`s-${s}`} variant="secondary" className="text-[10px]">
-                {s}
-              </Badge>
-            ))}
+            {sourceChips.map((s) => {
+              const isFocused = /focused/i.test(s);
+              return (
+                <Badge
+                  key={`s-${s}`}
+                  variant={isFocused ? "default" : "secondary"}
+                  className={cn(
+                    "text-[10px]",
+                    isFocused && "bg-primary/15 text-primary hover:bg-primary/20 border border-primary/30"
+                  )}
+                  title={isFocused ? "Grounded to the booking you have open" : `Source: ${s}`}
+                >
+                  {s}
+                </Badge>
+              );
+            })}
           </div>
         )}
       </div>
