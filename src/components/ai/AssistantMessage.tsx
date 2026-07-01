@@ -149,6 +149,7 @@ interface AssistantMessageProps {
 export function AssistantMessage({ content, timestamp, isStreaming }: AssistantMessageProps) {
   const parsed = useMemo(() => parseResponse(content), [content]);
   const hasStructure = !!(parsed.quickAnswer || parsed.whatIFound || parsed.suggestedNextStep || parsed.draftMessage);
+  const focus = useAIFocus();
 
   const timeStr = new Date(timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
@@ -158,6 +159,19 @@ export function AssistantMessage({ content, timestamp, isStreaming }: AssistantM
   const missingChips = parsed.missing
     ? parsed.missing.split(",").map((s) => s.trim()).filter(Boolean)
     : [];
+
+  const cleanDraft = parsed.draftMessage
+    ? parsed.draftMessage.replace(/—\s*Draft only.*$/i, "").trim()
+    : "";
+  const waPhone = focus?.guestPhone?.replace(/[^\d+]/g, "").replace(/^\+/, "") || "";
+  const waHref = cleanDraft && waPhone
+    ? `https://wa.me/${waPhone}?text=${encodeURIComponent(cleanDraft)}`
+    : cleanDraft
+      ? `https://wa.me/?text=${encodeURIComponent(cleanDraft)}`
+      : null;
+  const mailHref = cleanDraft && focus?.guestEmail
+    ? `mailto:${focus.guestEmail}?body=${encodeURIComponent(cleanDraft)}`
+    : null;
 
   return (
     <div className="group mr-4">
