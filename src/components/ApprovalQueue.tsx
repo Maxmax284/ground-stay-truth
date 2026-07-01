@@ -21,6 +21,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 
 interface ApprovalQueueProps {
   bookings: any[] | undefined;
@@ -168,11 +169,9 @@ export function ApprovalQueue({ bookings, isLoading, readOnly = false }: Approva
                         <span className="font-medium text-sm truncate">
                           {b.units?.name ?? "—"}
                         </span>
-                        {b.profiles?.full_name && (
-                          <span className="text-xs text-muted-foreground truncate">
-                            · {b.profiles.full_name}
-                          </span>
-                        )}
+                        <span className="text-xs text-muted-foreground truncate">
+                          · {resolveGuestDisplayName(b)}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                         <span>

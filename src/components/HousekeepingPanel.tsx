@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useHousekeepingTasks, useUpdateHousekeepingTask } from "@/hooks/useHousekeepingTasks";
 import { Sparkles, ArrowRight, User, Clock } from "lucide-react";
 import { format } from "date-fns";
+import { resolveGuestDisplayName, hasManualGuestIdentity } from "@/lib/guestDisplay";
 
 const STATUS_FLOW = ["pending", "in_progress", "completed", "skipped"];
 const STATUS_COLORS: Record<string, string> = {
@@ -77,8 +78,12 @@ function HousekeepingTaskCard({ task, onStatusChange, isPending }: { task: any; 
   const currentIdx = STATUS_FLOW.indexOf(task.status);
   const nextStatus = currentIdx < STATUS_FLOW.length - 2 ? STATUS_FLOW[currentIdx + 1] : null;
   const unitName = task.units?.name ?? "Unknown Unit";
-  const guestOut = (task.booking_out as any)?.profiles?.full_name;
-  const guestIn = (task.booking_in as any)?.profiles?.full_name;
+  const guestOut = task.booking_out && (task.booking_out.profiles?.full_name || hasManualGuestIdentity(task.booking_out))
+    ? resolveGuestDisplayName(task.booking_out)
+    : undefined;
+  const guestIn = task.booking_in && (task.booking_in.profiles?.full_name || hasManualGuestIdentity(task.booking_in))
+    ? resolveGuestDisplayName(task.booking_in)
+    : undefined;
 
   return (
     <div className="flex items-start gap-3 rounded-lg border p-3">

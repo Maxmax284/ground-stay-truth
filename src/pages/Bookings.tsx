@@ -22,6 +22,7 @@ import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 
 function BookingStatusBadge({ booking }: { booking: any }) {
   const { t } = useTranslation();
@@ -78,7 +79,7 @@ function BookingCard({ booking, onClick }: { booking: any; onClick: () => void }
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="font-medium text-foreground truncate">{booking.units?.name ?? "—"}</p>
-          <p className="text-sm text-muted-foreground truncate">{(booking as any).profiles?.full_name ?? t("bookings.noGuest")}</p>
+          <p className="text-sm text-muted-foreground truncate">{resolveGuestDisplayName(booking as any)}</p>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <BookingStatusBadge booking={booking} />
@@ -202,7 +203,7 @@ const Bookings = () => {
                     onClick={() => setSelectedBookingId(b.id)}
                   >
                     <TableCell className="font-medium">{b.units?.name ?? "—"}</TableCell>
-                    <TableCell className="text-muted-foreground">{(b as any).profiles?.full_name ?? "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{resolveGuestDisplayName(b as any)}</TableCell>
                     <TableCell>{format(new Date(b.check_in), "MMM d, yyyy")}</TableCell>
                     <TableCell>{format(new Date(b.check_out), "MMM d, yyyy")}</TableCell>
                     <TableCell>{b.num_guests}</TableCell>

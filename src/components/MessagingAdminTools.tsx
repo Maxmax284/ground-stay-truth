@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Beaker, Radio, Loader2, FlaskConical } from "lucide-react";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 
 interface BookingOption {
   id: string;
@@ -36,7 +37,7 @@ export function MessagingAdminTools() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bookings")
-        .select("id, check_in, check_out, state, guest_id, units(name), profiles!bookings_guest_id_profiles_fkey(full_name)")
+        .select("id, check_in, check_out, state, guest_id, units(name), manual_guest_name, manual_guest_email, manual_guest_phone, profiles!bookings_guest_id_profiles_fkey(full_name, email)")
         .in("state", ["confirmed", "pending_deposit", "checked_in"])
         .not("guest_id", "is", null)
         .order("check_in", { ascending: true })
@@ -48,7 +49,7 @@ export function MessagingAdminTools() {
         check_out: b.check_out,
         state: b.state,
         guest_id: b.guest_id,
-        guest_name: b.profiles?.full_name ?? null,
+        guest_name: resolveGuestDisplayName(b) || null,
         unit_name: b.units?.name ?? null,
       })) as BookingOption[];
     },

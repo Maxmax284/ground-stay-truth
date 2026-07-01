@@ -28,6 +28,7 @@ import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { formatPrice } from "@/lib/currency";
 import { calculateOutstanding, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_VARIANTS, PAYMENT_TYPE_LABELS, getPaymentProvenance, type PaymentStatus, type PaymentType } from "@/lib/paymentTypes";
 import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText, Info, Wrench, Shirt, Globe, Sparkles, RotateCcw, Paperclip, Image as ImageIcon, File, X, Loader2 } from "lucide-react";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { RefundDialog } from "@/components/RefundDialog";
 import { PaymentLinkManager } from "@/components/PaymentLinkManager";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
@@ -158,7 +159,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
     });
   }, [pickup]);
 
-  const guestName = (booking as any)?.profiles?.full_name;
+  const guestName = booking ? resolveGuestDisplayName(booking as any) : undefined;
 
   const TRAVEL_BADGE_STYLES: Record<string, string> = {
     info: "bg-primary/10 text-primary border-primary/20",

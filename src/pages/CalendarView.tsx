@@ -28,6 +28,7 @@ import { ChevronLeft, ChevronRight, CalendarDays, Wrench, LayoutGrid, Calendar, 
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { toast } from "@/hooks/use-toast";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { ToastAction } from "@/components/ui/toast";
 import type { DragResult } from "@/hooks/useCalendarDragDrop";
 
@@ -403,7 +404,7 @@ const CalendarView = () => {
                     )}
                     {booking && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        {(booking as any).profiles?.full_name ?? t("common.guest")} · {format(new Date(booking.check_in), "MMM d")}–{format(new Date(booking.check_out), "MMM d")}
+                        {resolveGuestDisplayName(booking as any)} · {format(new Date(booking.check_in), "MMM d")}–{format(new Date(booking.check_out), "MMM d")}
                       </p>
                     )}
                   </div>

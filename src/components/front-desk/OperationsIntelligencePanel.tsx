@@ -28,6 +28,7 @@ import {
 import type { FrontDeskBooking } from "@/hooks/useFrontDesk";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { formatPrice } from "@/lib/currency";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { getRequiredDocsForBooking, DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/requiredDocuments";
 
@@ -365,7 +366,7 @@ function DrillRow({
   pickup: { status: string | null; arrival_datetime: string | null } | null;
   onOpen: (id: string) => void;
 }) {
-  const guest = booking.profiles?.full_name ?? "Guest";
+  const guest = resolveGuestDisplayName(booking as any);
   const unit = booking.units?.name ?? "—";
 
   let line: React.ReactNode = null;

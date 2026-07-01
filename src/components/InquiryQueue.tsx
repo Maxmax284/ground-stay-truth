@@ -28,6 +28,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 
 interface InquiryQueueProps {
   bookings: any[] | undefined;
@@ -225,11 +226,9 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
                         <span className="font-medium text-sm truncate">
                           {b.units?.name ?? "—"}
                         </span>
-                        {b.profiles?.full_name && (
-                          <span className="text-xs text-muted-foreground truncate">
-                            · {b.profiles.full_name}
-                          </span>
-                        )}
+                        <span className="text-xs text-muted-foreground truncate">
+                          · {resolveGuestDisplayName(b)}
+                        </span>
                         <AIAdvisoryBadge booking={b} />
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">

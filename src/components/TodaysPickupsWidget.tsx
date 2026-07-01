@@ -11,6 +11,7 @@ import { normalizeArrival, ARRIVAL_TYPE_CONFIG } from "@/lib/arrivalModel";
 import { Plane, MessageSquare, Car, Clock, User, RefreshCw, Loader2, AlertTriangle, Shield, Ship, Bus, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ManualAssistBanner } from "@/components/ManualAssistBanner";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 
 const STATUS_COLORS: Record<string, string> = {
   requested: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
@@ -87,7 +88,7 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
       </CardHeader>
       <CardContent className="space-y-2">
         {pickups.map((p: any) => {
-          const guestName = p.bookings?.profiles?.full_name ?? "Guest";
+          const guestName = resolveGuestDisplayName(p.bookings as any);
           const unitName = p.bookings?.units?.name ?? "";
           const driverName = p.drivers?.name;
           const time = p.arrival_datetime

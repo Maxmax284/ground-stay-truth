@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plane, Clock } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import type { FrontDeskBooking } from "@/hooks/useFrontDesk";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 
 type PickupMap = Map<string, { status: string | null; arrival_datetime: string | null }>;
 
@@ -54,7 +55,7 @@ export function PickupStatusStrip({ bookings, pickupByBooking, onOpen }: Props) 
             >
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <span className="text-sm font-medium text-foreground truncate">
-                  {b.profiles?.full_name ?? "Guest"}
+                  {resolveGuestDisplayName(b as any)}
                 </span>
                 <Badge className={`text-[10px] ${STATUS_TONE[pickup!.status ?? "scheduled"] ?? "bg-muted text-muted-foreground"}`}>
                   {(pickup!.status ?? "scheduled").replace("_", " ")}

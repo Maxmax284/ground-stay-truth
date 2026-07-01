@@ -13,7 +13,7 @@ export function useDashboardStats() {
     queryFn: async () => {
       let query = (supabase
         .from("bookings")
-        .select("id, unit_id, num_guests, state, guest_id, units(name), profiles!bookings_guest_id_profiles_fkey(full_name)") as any)
+        .select("id, unit_id, num_guests, state, guest_id, units(name), manual_guest_name, manual_guest_email, manual_guest_phone, profiles!bookings_guest_id_profiles_fkey(full_name, email)") as any)
         .eq("check_in", today)
         .in("state", ["confirmed", "pending_deposit"]);
       if (activePropertyId) query = query.eq("property_id", activePropertyId);
@@ -28,7 +28,7 @@ export function useDashboardStats() {
     queryFn: async () => {
       let query = (supabase
         .from("bookings")
-        .select("id, unit_id, num_guests, state, guest_id, units(name), profiles!bookings_guest_id_profiles_fkey(full_name)") as any)
+        .select("id, unit_id, num_guests, state, guest_id, units(name), manual_guest_name, manual_guest_email, manual_guest_phone, profiles!bookings_guest_id_profiles_fkey(full_name, email)") as any)
         .eq("check_out", today)
         .eq("state", "checked_in");
       if (activePropertyId) query = query.eq("property_id", activePropertyId);
@@ -114,7 +114,7 @@ export function useDashboardStats() {
     queryFn: async () => {
       let query = (supabase
         .from("bookings")
-        .select("id, unit_id, check_in, check_out, num_guests, state, guest_id, created_at, units(name), profiles!bookings_guest_id_profiles_fkey(full_name)")
+        .select("id, unit_id, check_in, check_out, num_guests, state, guest_id, created_at, units(name), manual_guest_name, manual_guest_email, manual_guest_phone, profiles!bookings_guest_id_profiles_fkey(full_name, email)")
         .eq("state", "pending_approval")
         .order("created_at", { ascending: true })) as any;
       if (activePropertyId) query = query.eq("property_id", activePropertyId);
@@ -129,7 +129,7 @@ export function useDashboardStats() {
     queryFn: async () => {
       let query = (supabase
         .from("bookings")
-        .select("id, unit_id, check_in, check_out, num_guests, state, guest_id, created_at, units(name), profiles!bookings_guest_id_profiles_fkey(full_name)")
+        .select("id, unit_id, check_in, check_out, num_guests, state, guest_id, created_at, units(name), manual_guest_name, manual_guest_email, manual_guest_phone, profiles!bookings_guest_id_profiles_fkey(full_name, email)")
         .eq("state", "inquiry")
         .order("created_at", { ascending: true })) as any;
       if (activePropertyId) query = query.eq("property_id", activePropertyId);

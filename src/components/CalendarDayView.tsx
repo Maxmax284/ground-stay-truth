@@ -8,6 +8,7 @@ import type { Unit } from "@/hooks/useUnits";
 import type { BookingWithJoins } from "@/hooks/useBookings";
 import type { MaintenanceBlock } from "@/hooks/useMaintenanceBlocks";
 import { Building2, UserCheck, LogIn, LogOut, Wrench, CalendarDays } from "lucide-react";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 
 interface CalendarDayViewProps {
   date: Date;
@@ -159,7 +160,7 @@ export function CalendarDayView({
                     <div key={b.id} className="flex items-center gap-1.5">
                       <UserCheck className="h-3 w-3" />
                       <span>
-                        {b.profiles?.full_name ?? t("common.guest")} ·{" "}
+                        {resolveGuestDisplayName(b as any)} ·{" "}
                         {format(new Date(b.check_in), "MMM d")}–
                         {format(new Date(b.check_out), "MMM d")}
                       </span>

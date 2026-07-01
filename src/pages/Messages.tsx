@@ -16,6 +16,7 @@ import { FetchErrorState } from "@/components/FetchErrorState";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { format, formatDistanceToNow } from "date-fns";
 import { MessageSquare, Search, User, CalendarDays, Circle } from "lucide-react";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 
 interface InboxThread {
   booking_id: string;
@@ -46,7 +47,7 @@ function useInboxThreads() {
       const bookingIds = [...new Set(messages.map((m) => m.booking_id))];
       const { data: bookings, error: bErr } = await (supabase
         .from("bookings")
-        .select("id, state, check_in, check_out, units(name), profiles!bookings_guest_id_profiles_fkey(full_name)")
+        .select("id, state, check_in, check_out, units(name), manual_guest_name, manual_guest_email, manual_guest_phone, profiles!bookings_guest_id_profiles_fkey(full_name, email)")
         .in("id", bookingIds) as any);
       if (bErr) throw bErr;
       const bookingMap = new Map<string, any>();
@@ -63,7 +64,7 @@ function useInboxThreads() {
         if (!booking) continue;
         threadMap.set(msg.booking_id, {
           booking_id: msg.booking_id, unit_name: booking.units?.name ?? "Unknown Unit",
-          guest_name: booking.profiles?.full_name ?? null, state: booking.state as BookingState,
+          guest_name: resolveGuestDisplayName(booking as any), state: booking.state as BookingState,
           check_in: booking.check_in, check_out: booking.check_out,
           last_message_at: msg.created_at, last_message_content: msg.content,
           last_message_is_internal: msg.is_internal, total_messages: 1,

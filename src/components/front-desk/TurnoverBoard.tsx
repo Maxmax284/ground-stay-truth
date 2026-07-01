@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, ArrowRight } from "lucide-react";
 import type { FrontDeskBooking } from "@/hooks/useFrontDesk";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 
 const TONE: Record<string, string> = {
   pending: "bg-warning/20 text-warning-foreground border-warning/40",
@@ -65,13 +66,13 @@ export function TurnoverBoard({ departing, arriving, onOpen }: Props) {
                 <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
                   {isDeparting ? (
                     <>
-                      <span>Departing: {b.profiles?.full_name ?? "Guest"}</span>
+                      <span>Departing: {resolveGuestDisplayName(b as any)}</span>
                       <ArrowRight className="h-3 w-3" />
                       <span>Flip needed</span>
                     </>
                   ) : (
                     <>
-                      <span>Arriving: {b.profiles?.full_name ?? "Guest"}</span>
+                      <span>Arriving: {resolveGuestDisplayName(b as any)}</span>
                     </>
                   )}
                 </div>
