@@ -175,6 +175,19 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
 
   const active = links?.find((l) => !l.used_at && !l.revoked_at && new Date(l.expires_at).getTime() > Date.now());
 
+  const buildWhatsAppText = (url: string) => {
+    const fmt = (d?: string) => (d ? format(new Date(d), "MMM d, yyyy") : "");
+    return `Hi ${guestName}, this is Lamai Muay Thai regarding your accommodation booking from ${fmt(contact?.check_in)} to ${fmt(contact?.check_out)}. Here is your secure deposit payment link: ${url} — once paid, your accommodation deposit will be confirmed.`;
+  };
+
+  const handleWhatsAppCopy = async () => {
+    if (!lastUrl) return;
+    await navigator.clipboard.writeText(buildWhatsAppText(lastUrl));
+    setWaCopied(true);
+    toast.success(guestPhone ? `Message ready for ${guestPhone}` : "Message copied — paste into WhatsApp / LINE");
+    setTimeout(() => setWaCopied(false), 2000);
+  };
+
   return (
     <Card className="p-4 space-y-3">
       <div className="flex items-center gap-2">
@@ -185,6 +198,22 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
         Generates a secure Stripe link, emails it to the guest, and pings their portal.
         WhatsApp / LINE stay manual — copy + send if you want to use those.
       </p>
+
+      {contact && (
+        <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground rounded-md border border-border/60 bg-muted/30 px-2 py-1.5">
+          <span className="font-medium text-foreground">{guestName}</span>
+          {guestEmail ? (
+            <span className="inline-flex items-center gap-1"><Mail className="h-3 w-3" />{guestEmail}</span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[hsl(var(--warning))]">
+              <AlertCircle className="h-3 w-3" /> No email — link won't auto-send
+            </span>
+          )}
+          {guestPhone && (
+            <span className="inline-flex items-center gap-1"><MessageCircle className="h-3 w-3" />{guestPhone}</span>
+          )}
+        </div>
+      )}
 
       <div className="space-y-1">
         <Label className="text-xs">What to collect</Label>
@@ -213,12 +242,23 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
                 <Bell className="h-3 w-3" /> In portal
               </Badge>
             )}
+            {!lastResult.email_sent && !guestEmail && (
+              <Badge variant="outline" className="gap-1 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/40">
+                <AlertCircle className="h-3 w-3" /> Manual delivery only
+              </Badge>
+            )}
           </div>
           <div className="text-xs break-all text-foreground font-mono">{lastUrl}</div>
-          <Button size="sm" variant="outline" onClick={handleCopy} className="gap-2">
-            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-            {copied ? "Copied" : "Copy for WhatsApp / LINE"}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={handleCopy} className="gap-2">
+              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              {copied ? "Copied" : "Copy link"}
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleWhatsAppCopy} className="gap-2">
+              {waCopied ? <Check className="h-3.5 w-3.5" /> : <MessageCircle className="h-3.5 w-3.5" />}
+              {waCopied ? "Copied" : `Copy WhatsApp message${guestPhone ? "" : " (no phone on file)"}`}
+            </Button>
+          </div>
         </div>
       )}
 
@@ -226,16 +266,17 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
         {!active && (
           <Button size="sm" onClick={() => createMut.mutate(false)} disabled={createMut.isPending} className="gap-2">
             {createMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LinkIcon className="h-3.5 w-3.5" />}
-            Generate &amp; Send Link
+            {guestEmail ? "Generate & Send Link" : "Generate Link (copy manually)"}
           </Button>
         )}
         {active && (
           <Button size="sm" variant="outline" onClick={() => createMut.mutate(true)} disabled={createMut.isPending} className="gap-2">
             <RefreshCw className="h-3.5 w-3.5" />
-            Regenerate &amp; Resend
+            {guestEmail ? "Regenerate & Resend" : "Regenerate Link"}
           </Button>
         )}
       </div>
+
 
       {isLoading ? null : links && links.length > 0 && (
         <div className="space-y-1.5 pt-2 border-t border-border">
