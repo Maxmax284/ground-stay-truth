@@ -78,6 +78,24 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
   const [lastResult, setLastResult] = useState<Awaited<ReturnType<typeof callCreate>> | null>(null);
   const [copied, setCopied] = useState(false);
   const [collect, setCollect] = useState<CollectKind>("deposit");
+  const [waCopied, setWaCopied] = useState(false);
+
+  const { data: contact } = useQuery({
+    queryKey: ["payment-link-contact", bookingId],
+    queryFn: async (): Promise<BookingContact | null> => {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("check_in, check_out, manual_guest_name, manual_guest_email, manual_guest_phone, profiles:profiles!bookings_guest_id_profiles_fkey(full_name, email)")
+        .eq("id", bookingId)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as BookingContact | null;
+    },
+  });
+
+  const guestEmail = contact?.profiles?.email?.trim() || contact?.manual_guest_email?.trim() || null;
+  const guestPhone = contact?.manual_guest_phone?.trim() || null;
+  const guestName = resolveGuestDisplayName(contact as any);
 
   const { data: links, isLoading } = useQuery({
     queryKey: ["payment-links", bookingId],
