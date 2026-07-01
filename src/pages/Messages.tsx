@@ -118,7 +118,7 @@ const Messages = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-3xl mx-auto space-y-4">
+      <div className="max-w-3xl mx-auto space-y-4" data-ai-focus="messages">
         <div className="flex items-center gap-3">
           <MessageSquare className="h-5 w-5 text-primary" />
           <h1 className="text-2xl font-semibold">{t("messages.title")}</h1>

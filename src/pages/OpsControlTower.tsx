@@ -335,7 +335,7 @@ export default function OpsControlTower() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 p-4 sm:p-6">
+      <div className="space-y-6 p-4 sm:p-6" data-ai-focus="ops">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Activity className="h-6 w-6 text-primary" />

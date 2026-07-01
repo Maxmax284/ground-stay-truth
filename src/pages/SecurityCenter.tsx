@@ -24,7 +24,7 @@ export default function SecurityCenter() {
 
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto">
+      <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto" data-ai-focus="security">
         <header className="flex items-center gap-2">
           <ShieldCheck className="h-5 w-5 text-primary" />
           <h1 className="text-xl font-semibold">Security Center</h1>

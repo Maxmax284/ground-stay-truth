@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import { Copy, Check, FileText, AlertCircle, MessageCircle, Mail, HandHelping } from "lucide-react";
+import { Copy, Check, FileText, AlertCircle, MessageCircle, Mail, HandHelping, Link2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAIFocus } from "@/lib/aiFocusStore";
+import { resolveSourceTarget, buildSourcePath, buildSourceUrl } from "@/lib/aiSourceLinks";
 import { toast } from "@/hooks/use-toast";
 
 const UNCERTAINTY_PATTERNS = [
@@ -27,37 +28,8 @@ function detectUncertainty(text: string): boolean {
   return UNCERTAINTY_PATTERNS.some((r) => r.test(text));
 }
 
-interface SourceTarget {
-  route: string;
-  label: string;
-}
 
-/**
- * Map a source chip label to a read-only page in the app.
- * Returns null when no confident match — chip stays non-interactive.
- */
-function resolveSourceTarget(source: string): SourceTarget | null {
-  const s = source.toLowerCase();
-  if (/payment|deposit|invoice|refund|stripe|charge|balance/.test(s))
-    return { route: "/admin/payment-report", label: "Open Payments" };
-  if (/pickup|flight|airport|transport|driver|arrival transfer/.test(s))
-    return { route: "/front-desk", label: "Open Front Desk · Pickups" };
-  if (/document|passport|\bid\b|tm30|verification/.test(s))
-    return { route: "/front-desk", label: "Open Front Desk · Documents" };
-  if (/housekeep|cleaning|turnover|laundry|maintenance/.test(s))
-    return { route: "/front-desk", label: "Open Front Desk" };
-  if (/calendar|availability|unit|room|inventory/.test(s))
-    return { route: "/calendar", label: "Open Calendar" };
-  if (/message|whatsapp|line|telegram|inbox|chat/.test(s))
-    return { route: "/messages", label: "Open Messages" };
-  if (/security|audit|compliance|gdpr|pdpa/.test(s))
-    return { route: "/security-center", label: "Open Security Center" };
-  if (/timeline|ops|control tower|narrative/.test(s))
-    return { route: "/ops-control-tower", label: "Open Ops Control Tower" };
-  if (/booking|reservation|guest|focused/.test(s))
-    return { route: "/bookings", label: "Open Bookings" };
-  return null;
-}
+
 
 
 interface ParsedResponse {
@@ -350,16 +322,54 @@ export function AssistantMessage({ content, timestamp, isStreaming }: AssistantM
               const isFocused = /focused/i.test(s);
               const target = resolveSourceTarget(s);
               const clickable = !!target;
+              const bookingId = isFocused ? focus?.bookingId ?? null : null;
+              const inAppPath = clickable ? buildSourcePath(target, bookingId) : null;
+              const absoluteUrl = clickable ? buildSourceUrl(target, bookingId) : null;
               const title = clickable
-                ? `${target.label}${isFocused ? " (grounded to open booking)" : ""}`
+                ? `${target.label} — click to open, ⌘/Ctrl-click for new tab${isFocused ? " (grounded to open booking)" : ""}`
                 : isFocused
                   ? "Grounded to the booking you have open"
                   : `Source: ${s}`;
+
+              const openTarget = (newTab: boolean) => {
+                if (!clickable || !inAppPath) return;
+                if (newTab && absoluteUrl) {
+                  window.open(absoluteUrl, "_blank", "noopener,noreferrer");
+                } else {
+                  navigate(inAppPath);
+                }
+              };
+
+              const copyLink = async (e: React.MouseEvent) => {
+                e.stopPropagation();
+                if (!absoluteUrl) return;
+                try {
+                  await navigator.clipboard.writeText(absoluteUrl);
+                  toast({ title: "Link copied", description: target!.label });
+                } catch {
+                  toast({ title: "Couldn't copy link", variant: "destructive" });
+                }
+              };
+
               return (
                 <Badge
                   key={`s-${s}`}
                   variant={isFocused ? "default" : "secondary"}
-                  onClick={clickable ? () => navigate(target.route) : undefined}
+                  onClick={
+                    clickable
+                      ? (e) => openTarget(e.metaKey || e.ctrlKey || e.button === 1)
+                      : undefined
+                  }
+                  onAuxClick={
+                    clickable
+                      ? (e) => {
+                          if (e.button === 1) {
+                            e.preventDefault();
+                            openTarget(true);
+                          }
+                        }
+                      : undefined
+                  }
                   role={clickable ? "button" : undefined}
                   tabIndex={clickable ? 0 : undefined}
                   onKeyDown={
@@ -367,20 +377,33 @@ export function AssistantMessage({ content, timestamp, isStreaming }: AssistantM
                       ? (e) => {
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
-                            navigate(target.route);
+                            openTarget(e.metaKey || e.ctrlKey);
                           }
                         }
                       : undefined
                   }
                   className={cn(
-                    "text-[10px] transition-colors",
+                    "text-[10px] transition-colors inline-flex items-center",
                     clickable && "cursor-pointer hover:ring-1 hover:ring-primary/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
                     isFocused && "bg-primary/15 text-primary hover:bg-primary/20 border border-primary/30"
                   )}
                   title={title}
                 >
                   {s}
-                  {clickable && <span aria-hidden className="ml-1 opacity-60">↗</span>}
+                  {clickable && (
+                    <>
+                      <span aria-hidden className="ml-1 opacity-60">↗</span>
+                      <button
+                        type="button"
+                        onClick={copyLink}
+                        aria-label={`Copy shareable link to ${target!.label}`}
+                        title="Copy shareable link"
+                        className="ml-1 -mr-0.5 p-0.5 rounded hover:bg-foreground/10 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
+                      >
+                        <Link2 className="h-2.5 w-2.5 opacity-70" />
+                      </button>
+                    </>
+                  )}
                 </Badge>
               );
             })}

@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ForegroundNotificationBanner } from "@/components/ForegroundNotificationBanner";
+import { AIFocusHighlighter } from "@/components/ai/AIFocusHighlighter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
@@ -64,6 +65,7 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <ForegroundNotificationBanner />
+              <AIFocusHighlighter />
               <Routes>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/guest" element={<GuestAuth />} />

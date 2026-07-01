@@ -74,7 +74,7 @@ export default function FrontDesk() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-5">
+      <div className="space-y-5" data-ai-focus="front-desk">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
