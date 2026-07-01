@@ -52,6 +52,7 @@ import { useAIAssistant } from "@/hooks/useAIAssistant";
 import { useAISettings } from "@/hooks/useAISettings";
 import { useBookingReview } from "@/hooks/useReviews";
 import { setAIFocus, clearAIFocus } from "@/lib/aiFocusStore";
+import { AIBriefingCard } from "@/components/ai/AIBriefingCard";
 
 interface BookingDetailSheetProps { bookingId: string | null; open: boolean; onOpenChange: (open: boolean) => void; isAdmin: boolean; }
 
@@ -244,6 +245,9 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
             </div>
           )}
         </SheetHeader>
+        <div className="mt-2">
+          <AIBriefingCard bookingId={booking.id} variant="compact" />
+        </div>
         <AirportPickupSection bookingId={booking.id} guestName={guestName} />
         {isAdmin && <AdminOverrideMenu bookingId={booking.id} pickupId={pickup?.id ?? null} />}
         <SecurityDepositSection bookingId={booking.id} bookingState={booking.state} />

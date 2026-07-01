@@ -1,13 +1,12 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { setAIFocus, clearAIFocus } from "@/lib/aiFocusStore";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { AIBriefingCard } from "@/components/ai/AIBriefingCard";
 import {
   GitBranch,
   CreditCard,
@@ -17,8 +16,6 @@ import {
   ShieldCheck,
   Footprints,
   Activity,
-  Wand2,
-  Loader2,
 } from "lucide-react";
 
 interface TimelineEvent {
@@ -61,33 +58,12 @@ export function OpsBookingTimelineSheet({
     },
   });
 
-  const [narrative, setNarrative] = useState<string | null>(null);
-  const [loadingNarrative, setLoadingNarrative] = useState(false);
-
   // Phase 2: focus Kru Glitch on this booking while the timeline is open.
   useEffect(() => {
     if (!bookingId || !open) return;
     setAIFocus({ kind: "booking", bookingId, label: "Ops Timeline" });
     return () => clearAIFocus(bookingId);
   }, [bookingId, open]);
-
-  const runNarrative = async () => {
-    if (!bookingId) return;
-    setLoadingNarrative(true);
-    setNarrative(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("ops-booking-narrative", {
-        body: { booking_id: bookingId },
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      setNarrative((data as any)?.narrative ?? "(no narrative)");
-    } catch (e) {
-      toast({ title: "Narrative failed", description: (e as Error).message, variant: "destructive" });
-    } finally {
-      setLoadingNarrative(false);
-    }
-  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -102,23 +78,8 @@ export function OpsBookingTimelineSheet({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-3 rounded-md border bg-muted/30 p-3 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-xs font-medium">
-              <Wand2 className="h-3.5 w-3.5 text-primary" />
-              AI Narrative Summary
-            </div>
-            <Button size="sm" variant="outline" onClick={runNarrative} disabled={loadingNarrative || !bookingId}>
-              {loadingNarrative ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-              {narrative ? "Regenerate" : "Generate"}
-            </Button>
-          </div>
-          {narrative && (
-            <p className="text-xs text-foreground whitespace-pre-wrap leading-relaxed">{narrative}</p>
-          )}
-          {!narrative && !loadingNarrative && (
-            <p className="text-[11px] text-muted-foreground">Read-only summary. Logged to audit trail. No state changes.</p>
-          )}
+        <div className="mt-3">
+          <AIBriefingCard bookingId={bookingId} />
         </div>
 
         <ScrollArea className="flex-1 -mx-6 px-6 mt-4">
