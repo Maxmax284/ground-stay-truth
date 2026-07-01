@@ -144,7 +144,7 @@ export default function PaymentReport() {
   });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" data-ai-focus="payments">
       {/* Print styles */}
       <style>{`
         @media print {
