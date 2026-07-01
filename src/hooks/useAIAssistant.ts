@@ -12,6 +12,33 @@ export interface AIMessage {
   createdAt: number;
 }
 
+function newSessionId(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `sess_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  }
+}
+
+const UNCERTAINTY_PATTERNS = [
+  /\bi(?:'m| am)? not sure\b/i,
+  /\bi don'?t know\b/i,
+  /\bunclear\b/i,
+  /\bcannot determine\b/i,
+  /\bcan'?t determine\b/i,
+  /\bunable to\b/i,
+  /\bi don'?t have\b/i,
+  /\bneed more (?:info|information|context)\b/i,
+  /\binsufficient (?:info|information|context|data)\b/i,
+  /\bno (?:record|data|info) (?:found|available)\b/i,
+];
+
+function parseSection(text: string, header: string): string | null {
+  const re = new RegExp(`^\\s*${header}\\s*:\\s*([\\s\\S]*?)(?=^\\s*(?:QUICK ANSWER|WHAT I FOUND|SUGGESTED NEXT STEP|DRAFT MESSAGE|MISSING|SOURCES)\\s*:|\\Z)`, "im");
+  const m = text.match(re);
+  return m ? m[1].trim() : null;
+}
+
 export function useAIAssistant() {
   const { session, role } = useAuth();
   const { activePropertyId, operationalMode } = useProperty();
@@ -19,11 +46,13 @@ export function useAIAssistant() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const sessionIdRef = useRef<string>(newSessionId());
 
   // Client-side rate limiting: max 30 calls per 60 minutes
   const callTimestamps = useRef<number[]>([]);
   const RATE_LIMIT = 30;
   const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
 
   // Cap conversation history sent to API to prevent unbounded token growth
   const MAX_HISTORY_MESSAGES = 12;
