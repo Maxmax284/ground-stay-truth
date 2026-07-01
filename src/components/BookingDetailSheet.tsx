@@ -244,6 +244,9 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
             </div>
           )}
         </SheetHeader>
+        <div className="mt-2">
+          <AIBriefingCard bookingId={booking.id} variant="compact" />
+        </div>
         <AirportPickupSection bookingId={booking.id} guestName={guestName} />
         {isAdmin && <AdminOverrideMenu bookingId={booking.id} pickupId={pickup?.id ?? null} />}
         <SecurityDepositSection bookingId={booking.id} bookingState={booking.state} />
