@@ -177,6 +177,35 @@ export function AssistantMessage({ content, timestamp, isStreaming }: AssistantM
   const missingChips = parsed.missing
     ? parsed.missing.split(",").map((s) => s.trim()).filter(Boolean)
     : [];
+  const uncertain = useMemo(
+    () => detectUncertainty(parsed.quickAnswer || parsed.whatIFound || content),
+    [parsed.quickAnswer, parsed.whatIFound, content]
+  );
+  const needsReview = missingChips.length > 0 || uncertain;
+
+  const handleRequestReview = async () => {
+    const lines: string[] = [];
+    lines.push("🙋 Human review requested — Kru Glitch flagged uncertainty.");
+    if (focus?.label) lines.push(`Focus: ${focus.label}`);
+    if (focus?.bookingId) lines.push(`Booking: ${focus.bookingId}`);
+    if (missingChips.length) lines.push(`Missing: ${missingChips.join(", ")}`);
+    if (parsed.quickAnswer) lines.push(`\nAssistant said: ${parsed.quickAnswer.slice(0, 400)}`);
+    lines.push("\nPlease review and take it from here.");
+    const draft = lines.join("\n");
+    try {
+      await navigator.clipboard.writeText(draft);
+      toast({
+        title: "Review request copied",
+        description: "Paste into your staff channel or messaging thread.",
+      });
+    } catch {
+      toast({
+        title: "Couldn't copy automatically",
+        description: "Select the assistant text and share it manually.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const cleanDraft = parsed.draftMessage
     ? parsed.draftMessage.replace(/—\s*Draft only.*$/i, "").trim()
