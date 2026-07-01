@@ -16,6 +16,10 @@ export interface AIFocus {
   bookingId: string;
   /** Human-readable label shown in the panel chip (e.g. guest name + unit). */
   label?: string;
+  /** Optional guest contact — enables draft handoff buttons (WhatsApp, email). */
+  guestName?: string;
+  guestPhone?: string;
+  guestEmail?: string;
 }
 
 let current: AIFocus | null = null;
