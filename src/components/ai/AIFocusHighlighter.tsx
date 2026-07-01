@@ -33,9 +33,18 @@ export function AIFocusHighlighter() {
       "shadow-[0_0_0_4px_hsl(var(--primary)/0.15)]",
     ];
 
+    const ALIASES: Record<string, string[]> = {
+      pickups: ["pickups", "front-desk"],
+      documents: ["documents", "front-desk"],
+    };
+    const candidates = ALIASES[key] ?? [key];
+
     const tryFind = () => {
       if (cancelled) return;
-      el = document.querySelector<HTMLElement>(`[data-ai-focus="${CSS.escape(key)}"]`);
+      for (const c of candidates) {
+        el = document.querySelector<HTMLElement>(`[data-ai-focus="${CSS.escape(c)}"]`);
+        if (el) break;
+      }
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
         el.classList.add(...HIGHLIGHT_CLASSES);
