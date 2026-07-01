@@ -427,6 +427,10 @@ export type Database = {
           guest_tax_id: string | null
           guest_type: string | null
           id: string
+          manual_guest_email: string | null
+          manual_guest_name: string | null
+          manual_guest_note: string | null
+          manual_guest_phone: string | null
           notes: string | null
           num_guests: number
           pre_arrival_status: string
@@ -451,6 +455,10 @@ export type Database = {
           guest_tax_id?: string | null
           guest_type?: string | null
           id?: string
+          manual_guest_email?: string | null
+          manual_guest_name?: string | null
+          manual_guest_note?: string | null
+          manual_guest_phone?: string | null
           notes?: string | null
           num_guests?: number
           pre_arrival_status?: string
@@ -475,6 +483,10 @@ export type Database = {
           guest_tax_id?: string | null
           guest_type?: string | null
           id?: string
+          manual_guest_email?: string | null
+          manual_guest_name?: string | null
+          manual_guest_note?: string | null
+          manual_guest_phone?: string | null
           notes?: string | null
           num_guests?: number
           pre_arrival_status?: string
