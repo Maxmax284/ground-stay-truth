@@ -1,4 +1,4 @@
-import { Wifi, Users, AlertTriangle, Coins, PlaneTakeoff, ClipboardList, HelpCircle } from "lucide-react";
+import { Wifi, Users, AlertTriangle, Coins, PlaneTakeoff, ClipboardList, HelpCircle, FileText, ListChecks, MessageSquare } from "lucide-react";
 
 export interface QuickPrompt {
   icon: React.ReactNode;
@@ -23,6 +23,15 @@ const GUEST_PROMPTS: QuickPrompt[] = [
   { icon: <Wifi className="h-3 w-3" />, label: "Stay essentials", prompt: "Show me my stay essentials — WiFi password, house rules, and emergency contacts." },
   { icon: <ClipboardList className="h-3 w-3" />, label: "My booking status", prompt: "What's the status of my booking and what do I still need to do before arrival?" },
   { icon: <PlaneTakeoff className="h-3 w-3" />, label: "Airport pickup info", prompt: "Do I have an airport pickup arranged? What are the details?" },
+];
+
+/** Phase 5: booking-focused quick prompts shown when a booking sheet is open. */
+export const FOCUSED_BOOKING_PROMPTS: QuickPrompt[] = [
+  { icon: <FileText className="h-3 w-3" />, label: "Summarize this booking", prompt: "Summarize this booking — dates, guest, payment status, and anything that needs attention." },
+  { icon: <ListChecks className="h-3 w-3" />, label: "What's missing here?", prompt: "What's missing on this booking that would block a smooth check-in?" },
+  { icon: <Coins className="h-3 w-3" />, label: "Draft a deposit reminder", prompt: "Draft a friendly deposit reminder message for this guest." },
+  { icon: <MessageSquare className="h-3 w-3" />, label: "Draft an arrival welcome", prompt: "Draft a warm arrival welcome message for this guest with the key info they need." },
+  { icon: <PlaneTakeoff className="h-3 w-3" />, label: "Pickup status", prompt: "What's the airport pickup status for this booking and any gaps?" },
 ];
 
 export function getQuickPromptsForRole(role: string | null | undefined): QuickPrompt[] {
