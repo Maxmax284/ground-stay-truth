@@ -27,7 +27,7 @@ import { getGuestTypesForMode, DEFAULT_GUEST_TYPE } from "@/lib/guestTypes";
 import { AlertTriangle } from "lucide-react";
 
 interface BookingFormDialogProps { open: boolean; onOpenChange: (open: boolean) => void; defaultUnitId?: string; defaultCheckIn?: string; defaultCheckOut?: string; }
-interface FormValues { unit_id: string; check_in: string; check_out: string; num_guests: number; extra_beds: number; notes: string; guest_id: string; guest_type: string; flight_number: string; }
+interface FormValues { unit_id: string; check_in: string; check_out: string; num_guests: number; extra_beds: number; notes: string; guest_id: string; guest_type: string; flight_number: string; manual_guest_name: string; manual_guest_email: string; manual_guest_phone: string; }
 
 export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCheckIn, defaultCheckOut }: BookingFormDialogProps) {
   const { t } = useTranslation();
