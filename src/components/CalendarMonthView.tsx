@@ -7,6 +7,7 @@ import {
 import { CALENDAR_STATE_COLORS } from "@/components/CalendarGrid";
 import type { BookingState } from "@/lib/bookingStateMachine";
 import type { MaintenanceBlock } from "@/hooks/useMaintenanceBlocks";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 
 interface Booking {
   id: string;
@@ -15,7 +16,10 @@ interface Booking {
   check_out: string;
   state: string;
   guest_id?: string | null;
-  profiles?: { full_name: string | null } | null;
+  profiles?: { full_name: string | null; email?: string | null } | null;
+  manual_guest_name?: string | null;
+  manual_guest_email?: string | null;
+  manual_guest_phone?: string | null;
   units?: { name: string } | null;
 }
 
@@ -138,10 +142,10 @@ export function CalendarMonthView({
                       <div
                         key={b.id}
                         className={`${color} rounded-sm px-1 py-px text-[9px] leading-tight font-medium text-foreground truncate`}
-                        title={`${b.units?.name ?? ""} · ${b.profiles?.full_name ?? t("common.guest")}`}
+                        title={`${b.units?.name ?? ""} · ${resolveGuestDisplayName(b as any)}`}
                       >
                         <span className="hidden sm:inline">
-                          {b.units?.name ?? b.profiles?.full_name ?? t(`states.${b.state}`)}
+                          {b.units?.name ?? resolveGuestDisplayName(b as any)}
                         </span>
                         <span className="sm:hidden">&nbsp;</span>
                       </div>

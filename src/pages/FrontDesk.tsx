@@ -38,6 +38,7 @@ import { permissions } from "@/lib/permissions";
 import { STATE_LABELS, STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { formatPrice } from "@/lib/currency";
 import { format, differenceInCalendarDays, parseISO } from "date-fns";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { useTransitionBookingState } from "@/hooks/useBookings";
 import { OperationsIntelligencePanel } from "@/components/front-desk/OperationsIntelligencePanel";
 import { OperationalAlerts } from "@/components/front-desk/OperationalAlerts";
@@ -294,7 +295,7 @@ function BookingRow({
   pickup?: { status: string | null; arrival_datetime: string | null } | null;
   lastMessage?: { content: string; created_at: string; is_read: boolean | null; from_guest: boolean } | null;
 }) {
-  const guestName = booking.profiles?.full_name ?? "Guest";
+  const guestName = resolveGuestDisplayName(booking as any);
   const unitName = booking.units?.name ?? "—";
   const nights = differenceInCalendarDays(
     parseISO(booking.check_out),
@@ -578,7 +579,7 @@ function MarkArrivedDialog({
         <div className="space-y-3 text-sm">
           <p className="text-muted-foreground">
             <span className="font-medium text-foreground">
-              {booking?.profiles?.full_name ?? "Guest"}
+              {resolveGuestDisplayName(booking as any)}
             </span>{" "}
             is physically here. Their booking stays in{" "}
             <Badge className="text-[10px] mx-1">
@@ -630,7 +631,7 @@ function OverridesPanel({ rows }: { rows: any[] }) {
       </CardHeader>
       <CardContent className="space-y-2">
         {rows.map((r) => {
-          const guest = r.bookings?.profiles?.full_name ?? "Guest";
+          const guest = resolveGuestDisplayName(r.bookings as any);
           const unit = r.bookings?.units?.name ?? "—";
           return (
             <div

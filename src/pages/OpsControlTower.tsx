@@ -26,6 +26,7 @@ import {
   History,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 
 type Status = "healthy" | "warning" | "broken" | "unknown" | "not_configured" | "pending";
 
@@ -311,7 +312,7 @@ function TimelineLookupPanel({ onOpenTimeline }: { onOpenTimeline: (id: string) 
           <div key={b.id} className="flex items-center gap-3 p-3 text-sm hover:bg-muted/30">
             <div className="flex-1 min-w-0">
               <p className="font-medium truncate">
-                {b.profiles?.full_name ?? "Unnamed"} · {b.units?.name ?? "—"}
+                {resolveGuestDisplayName(b)} · {b.units?.name ?? "—"}
               </p>
               <p className="text-xs text-muted-foreground">
                 {format(new Date(b.check_in), "MMM d")} · {b.state}

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useProperty } from "@/hooks/useProperty";
 import { notifyViaMessaging } from "@/lib/notifyMessaging";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 
 export function useHousekeepingTasks() {
   const { activePropertyId } = useProperty();
@@ -10,7 +11,7 @@ export function useHousekeepingTasks() {
     queryFn: async () => {
       let query = supabase
         .from("housekeeping_tasks")
-        .select("*, units(name), booking_out:bookings!housekeeping_tasks_booking_out_id_fkey(id, check_out, guest_id, profiles:profiles!bookings_guest_id_profiles_fkey(full_name)), booking_in:bookings!housekeeping_tasks_booking_in_id_fkey(id, check_in, guest_id, profiles:profiles!bookings_guest_id_profiles_fkey(full_name))")
+        .select("*, units(name), booking_out:bookings!housekeeping_tasks_booking_out_id_fkey(id, check_out, guest_id, manual_guest_name, manual_guest_email, manual_guest_phone, profiles:profiles!bookings_guest_id_profiles_fkey(full_name, email)), booking_in:bookings!housekeeping_tasks_booking_in_id_fkey(id, check_in, guest_id, manual_guest_name, manual_guest_email, manual_guest_phone, profiles:profiles!bookings_guest_id_profiles_fkey(full_name, email))")
         .order("created_at", { ascending: false });
       if (activePropertyId) query = query.eq("property_id", activePropertyId);
       const { data, error } = await query;
@@ -49,7 +50,7 @@ export function useUpdateHousekeepingTask() {
           subject_id: id,
           metadata: {
             unit_name: unitName,
-            next_guest_name: nextBooking?.profiles?.full_name ?? "next arrival",
+            next_guest_name: nextBooking ? resolveGuestDisplayName(nextBooking as any) : "next arrival",
           },
         });
 

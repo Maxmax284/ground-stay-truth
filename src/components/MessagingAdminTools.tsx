@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Beaker, Radio, Loader2, FlaskConical } from "lucide-react";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 
 interface BookingOption {
   id: string;
@@ -48,7 +49,7 @@ export function MessagingAdminTools() {
         check_out: b.check_out,
         state: b.state,
         guest_id: b.guest_id,
-        guest_name: b.profiles?.full_name ?? null,
+        guest_name: resolveGuestDisplayName(b) || null,
         unit_name: b.units?.name ?? null,
       })) as BookingOption[];
     },

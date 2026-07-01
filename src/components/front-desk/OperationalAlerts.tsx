@@ -10,6 +10,7 @@ import { AlertTriangle, ChevronRight } from "lucide-react";
 import type { FrontDeskBooking } from "@/hooks/useFrontDesk";
 import { format } from "date-fns";
 import { formatPrice } from "@/lib/currency";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 
 interface AlertItem {
   bookingId: string;
@@ -37,7 +38,7 @@ export function OperationalAlerts({ sections, onOpen }: Props) {
     const push = (b: FrontDeskBooking, severity: AlertItem["severity"], reason: string) => {
       out.push({
         bookingId: b.id,
-        guestName: b.profiles?.full_name ?? "Guest",
+        guestName: resolveGuestDisplayName(b as any),
         unitName: b.units?.name ?? "—",
         severity,
         reason,

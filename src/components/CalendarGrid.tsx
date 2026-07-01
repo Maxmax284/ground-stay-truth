@@ -10,6 +10,7 @@ import type { MaintenanceBlock } from "@/hooks/useMaintenanceBlocks";
 import type { UnitGroup } from "@/hooks/useUnitGroups";
 import { useCalendarDragDrop, type DragResult, type DragMode } from "@/hooks/useCalendarDragDrop";
 import { toast } from "@/hooks/use-toast";
+import { resolveGuestDisplayName, hasManualGuestIdentity } from "@/lib/guestDisplay";
 
 export const CALENDAR_STATE_COLORS: Record<BookingState, string> = {
   inquiry: "bg-muted", soft_hold: "bg-warning/60", pending_approval: "bg-warning/80",
@@ -227,7 +228,11 @@ export function CalendarGrid({
             )}
             <PaymentBadge status={paymentStatus} />
             <span className="text-[11px] font-medium text-foreground truncate">
-              {barWidth > 2 ? (booking.profiles?.full_name ? booking.profiles.full_name.split(" ")[0] : `${format(checkIn, "d")}–${format(checkOut, "d")}`) : ""}
+              {barWidth > 2
+                ? (booking.profiles?.full_name || hasManualGuestIdentity(booking as any)
+                    ? resolveGuestDisplayName(booking as any).split(" ")[0]
+                    : `${format(checkIn, "d")}–${format(checkOut, "d")}`)
+                : ""}
             </span>
             {/* Resize handle */}
             {isDraggable && (
@@ -246,7 +251,9 @@ export function CalendarGrid({
         {!isDragging && (
           <TooltipContent side="top" className="max-w-xs">
             <p className="font-medium">{unit.name}</p>
-            {booking.profiles?.full_name && <p className="text-xs font-medium">{booking.profiles.full_name}</p>}
+            {(booking.profiles?.full_name || hasManualGuestIdentity(booking as any)) && (
+              <p className="text-xs font-medium">{resolveGuestDisplayName(booking as any)}</p>
+            )}
             <p className="text-xs">{format(checkIn, "MMM d")} → {format(checkOut, "MMM d, yyyy")}</p>
             <p className="text-xs">{t(`states.${booking.state}`)} · {t("bookings.guestCount", { count: booking.num_guests })}</p>
             <p className="text-xs mt-0.5">

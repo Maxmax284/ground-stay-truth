@@ -28,6 +28,7 @@ import { ReconcilePaymentsCard } from "@/components/ReconcilePaymentsCard";
 import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
 import { usePendingHousekeepingCount } from "@/hooks/useHousekeepingTasks";
 import { useCountUp } from "@/hooks/useCountUp";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { useDraftMessages, useApproveDraftMessage } from "@/hooks/useBookings";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
@@ -372,9 +373,7 @@ function ArrivalCard({ arrivals, t, onClickBooking }: { arrivals: any[]; t: any;
           >
             <div>
               <span className="font-medium">{b.units?.name ?? "—"}</span>
-              {b.profiles?.full_name && (
-                <span className="text-muted-foreground ml-2">· {b.profiles.full_name}</span>
-              )}
+              <span className="text-muted-foreground ml-2">· {resolveGuestDisplayName(b)}</span>
             </div>
             <Badge variant="outline">{t("bookings.guestCount", { count: b.num_guests })}</Badge>
           </div>
@@ -401,9 +400,7 @@ function DepartureCard({ departures, t, onClickBooking }: { departures: any[]; t
           >
             <div>
               <span className="font-medium">{b.units?.name ?? "—"}</span>
-              {b.profiles?.full_name && (
-                <span className="text-muted-foreground ml-2">· {b.profiles.full_name}</span>
-              )}
+              <span className="text-muted-foreground ml-2">· {resolveGuestDisplayName(b)}</span>
             </div>
             <Badge variant="outline">{t("bookings.guestCount", { count: b.num_guests })}</Badge>
           </div>
