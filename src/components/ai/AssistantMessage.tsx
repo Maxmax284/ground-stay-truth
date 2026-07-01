@@ -208,10 +208,37 @@ export function AssistantMessage({ content, timestamp, isStreaming }: AssistantM
                       Draft only — not sent
                     </Badge>
                   </div>
-                  <CopyButton text={parsed.draftMessage.replace(/—\s*Draft only.*$/i, "").trim()} label="Copy draft" />
+                  <CopyButton text={cleanDraft} label="Copy draft" />
                 </div>
                 <div className="text-sm">
-                  <MD>{parsed.draftMessage.replace(/—\s*Draft only.*$/i, "").trim()}</MD>
+                  <MD>{cleanDraft}</MD>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  {waHref && (
+                    <a
+                      href={waHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 rounded-md border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-2 py-1 text-[11px] font-medium hover:bg-emerald-500/20 transition-colors"
+                    >
+                      <MessageCircle className="h-3 w-3" />
+                      {waPhone ? "Open in WhatsApp" : "WhatsApp (no number)"}
+                    </a>
+                  )}
+                  {mailHref && (
+                    <a
+                      href={mailHref}
+                      className="inline-flex items-center gap-1 rounded-md border border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-400 px-2 py-1 text-[11px] font-medium hover:bg-blue-500/20 transition-colors"
+                    >
+                      <Mail className="h-3 w-3" />
+                      Email
+                    </a>
+                  )}
+                  {focus && !focus.guestPhone && !focus.guestEmail && (
+                    <span className="text-[10px] text-muted-foreground italic">
+                      No guest contact on file — copy the draft and send manually.
+                    </span>
+                  )}
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-2 italic">
                   This is a draft. An admin needs to send it.
