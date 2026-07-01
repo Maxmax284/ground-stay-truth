@@ -280,7 +280,7 @@ const CalendarView = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-4">
+      <div className="space-y-4" data-ai-focus="calendar">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground">{t("calendar.title")}</h1>
