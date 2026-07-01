@@ -6,12 +6,22 @@ import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Link as LinkIcon, Copy, RefreshCw, Check, Clock, Mail, Bell } from "lucide-react";
+import { Loader2, Link as LinkIcon, Copy, RefreshCw, Check, Clock, Mail, Bell, MessageCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
+import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 
 interface PaymentLinkManagerProps {
   bookingId: string;
+}
+
+interface BookingContact {
+  check_in: string;
+  check_out: string;
+  manual_guest_name: string | null;
+  manual_guest_email: string | null;
+  manual_guest_phone: string | null;
+  profiles: { full_name: string | null; email: string | null } | null;
 }
 
 interface LinkRow {
