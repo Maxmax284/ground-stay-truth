@@ -111,6 +111,10 @@ export function useAIAssistant() {
             messages: trimmedHistory.map((m) => ({ role: m.role, content: m.content })),
             context,
             language,
+            focused_context: (() => {
+              const f = getAIFocus();
+              return f ? { kind: f.kind, booking_id: f.bookingId } : null;
+            })(),
           }),
           signal: controller.signal,
         }
