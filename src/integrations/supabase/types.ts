@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_assistant_audit: {
+        Row: {
+          assistant_response_at: string
+          created_at: string
+          focus_booking_id: string | null
+          focus_kind: string | null
+          id: string
+          missing: string[]
+          mode: string | null
+          notes: string | null
+          session_id: string
+          sources: string[]
+          uncertain: boolean
+          user_id: string
+        }
+        Insert: {
+          assistant_response_at: string
+          created_at?: string
+          focus_booking_id?: string | null
+          focus_kind?: string | null
+          id?: string
+          missing?: string[]
+          mode?: string | null
+          notes?: string | null
+          session_id: string
+          sources?: string[]
+          uncertain?: boolean
+          user_id: string
+        }
+        Update: {
+          assistant_response_at?: string
+          created_at?: string
+          focus_booking_id?: string | null
+          focus_kind?: string | null
+          id?: string
+          missing?: string[]
+          mode?: string | null
+          notes?: string | null
+          session_id?: string
+          sources?: string[]
+          uncertain?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_model_costs: {
         Row: {
           input_micro_usd_per_1k: number
