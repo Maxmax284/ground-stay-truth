@@ -163,13 +163,26 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
   const guestName = booking ? resolveGuestDisplayName(booking as any) : undefined;
 
   // Phase 2: set AI focus so Kru Glitch knows which booking is on-screen.
+  // Phase 4: include guest contact so draft handoff buttons work.
   useEffect(() => {
     if (!bookingId || !open) return;
     const unitName = (booking as any)?.units?.name;
     const label = [guestName, unitName].filter(Boolean).join(" · ") || undefined;
-    setAIFocus({ kind: "booking", bookingId, label });
+    const b: any = booking || {};
+    const guestPhone =
+      b.manual_guest_phone || b.profiles?.phone || b.guest?.phone || undefined;
+    const guestEmail =
+      b.manual_guest_email || b.profiles?.email || b.guest?.email || undefined;
+    setAIFocus({
+      kind: "booking",
+      bookingId,
+      label,
+      guestName,
+      guestPhone: guestPhone || undefined,
+      guestEmail: guestEmail || undefined,
+    });
     return () => clearAIFocus(bookingId);
-  }, [bookingId, open, guestName, (booking as any)?.units?.name]);
+  }, [bookingId, open, guestName, (booking as any)?.units?.name, (booking as any)?.manual_guest_phone, (booking as any)?.profiles?.phone, (booking as any)?.manual_guest_email, (booking as any)?.profiles?.email]);
 
   const TRAVEL_BADGE_STYLES: Record<string, string> = {
     info: "bg-primary/10 text-primary border-primary/20",
