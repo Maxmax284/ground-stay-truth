@@ -64,6 +64,13 @@ export function OpsBookingTimelineSheet({
   const [narrative, setNarrative] = useState<string | null>(null);
   const [loadingNarrative, setLoadingNarrative] = useState(false);
 
+  // Phase 2: focus Kru Glitch on this booking while the timeline is open.
+  useEffect(() => {
+    if (!bookingId || !open) return;
+    setAIFocus({ kind: "booking", bookingId, label: "Ops Timeline" });
+    return () => clearAIFocus(bookingId);
+  }, [bookingId, open]);
+
   const runNarrative = async () => {
     if (!bookingId) return;
     setLoadingNarrative(true);
