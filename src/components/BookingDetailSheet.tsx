@@ -51,6 +51,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useAIAssistant } from "@/hooks/useAIAssistant";
 import { useAISettings } from "@/hooks/useAISettings";
 import { useBookingReview } from "@/hooks/useReviews";
+import { setAIFocus, clearAIFocus } from "@/lib/aiFocusStore";
 
 interface BookingDetailSheetProps { bookingId: string | null; open: boolean; onOpenChange: (open: boolean) => void; isAdmin: boolean; }
 
