@@ -20,63 +20,35 @@ export function WebhookHealthCard() {
     refetchInterval: 30_000,
   });
 
-  const status = data?.status ?? "unknown";
+  const reason: string = data?.last_failure_reason ?? "";
+  const isUnsignedProbe = /missing stripe-signature/i.test(reason);
+  const hasSuccess = !!data?.last_success_at;
+  const rawStatus = data?.status ?? "unknown";
+
+  // A failure caused only by an unsigned probe/scanner is not a real Stripe failure.
+  const effectiveStatus =
+    rawStatus === "healthy" && hasSuccess
+      ? "healthy"
+      : rawStatus === "failing" && !isUnsignedProbe
+        ? "failing"
+        : "awaiting";
+
   const badge =
-    status === "healthy" ? { label: "Healthy", icon: CheckCircle2, variant: "default" as const }
-    : status === "failing" ? { label: "Failing", icon: AlertTriangle, variant: "destructive" as const }
-    : { label: "Awaiting first event", icon: Clock, variant: "secondary" as const };
+    effectiveStatus === "healthy"
+      ? { label: "Stripe webhook verified", icon: CheckCircle2, variant: "default" as const }
+      : effectiveStatus === "failing"
+        ? { label: "Signature verification failed", icon: AlertTriangle, variant: "destructive" as const }
+        : { label: "Awaiting first Stripe event", icon: Clock, variant: "secondary" as const };
   const Icon = badge.icon;
 
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Activity className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-base">Stripe Webhook Health</CardTitle>
-              <CardDescription>Live status of incoming payment webhooks</CardDescription>
-            </div>
-          </div>
-          <Badge variant={badge.variant} className="gap-1.5">
-            <Icon className="h-3 w-3" />
-            {badge.label}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div>
-              <p className="text-muted-foreground">Last received</p>
-              <p className="text-foreground font-medium">{data?.last_received_at ? formatDistanceToNow(new Date(data.last_received_at), { addSuffix: true }) : "Never"}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Last success</p>
-              <p className="text-foreground font-medium">{data?.last_success_at ? formatDistanceToNow(new Date(data.last_success_at), { addSuffix: true }) : "Never"}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Last failure</p>
-              <p className="text-foreground font-medium">{data?.last_failure_at ? formatDistanceToNow(new Date(data.last_failure_at), { addSuffix: true }) : "Never"}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Last event id</p>
-              <p className="text-foreground font-medium font-mono truncate">{data?.last_event_id || "—"}</p>
-            </div>
-            {data?.last_failure_reason && (
-              <div className="col-span-2 rounded-md bg-destructive/10 p-2">
-                <p className="text-destructive font-medium">{data.last_failure_reason}</p>
-              </div>
-            )}
-          </div>
-        )}
-        <p className="text-xs text-muted-foreground mt-3">
-          If no events arrive after a test payment, verify the webhook URL and <code>stripe_webhook_secret</code> match the Stripe dashboard. Signature verification failures appear here within seconds.
-        </p>
+  const explainer =
+    effectiveStatus === "healthy"
+      ? "Stripe events are arriving and passing signature verification."
+      : effectiveStatus === "failing"
+        ? "Stripe signature verification failed. Check the webhook secret or Stripe endpoint configuration."
+        : isUnsignedProbe
+          ? "Unsigned request rejected. This is expected for non-Stripe probes and does not mean Stripe is failing."
+          : "Awaiting first Stripe event. Send a test event from the Stripe dashboard or take a live payment to verify.";
       </CardContent>
     </Card>
   );
