@@ -1895,6 +1895,87 @@ export type Database = {
           },
         ]
       }
+      platform_guidance: {
+        Row: {
+          ai_prompt_suggestions: string[]
+          common_tasks: string[]
+          created_at: string
+          detailed_explanation: string | null
+          feature_name: string
+          guest_visible: boolean
+          id: string
+          internal_only: boolean
+          key: string
+          not_used_for: string[]
+          page_help: string | null
+          related_keys: string[]
+          risk_level: Database["public"]["Enums"]["guidance_risk"]
+          roles_allowed: string[]
+          route: string | null
+          section: string | null
+          short_tooltip: string
+          status: Database["public"]["Enums"]["guidance_status"]
+          step_by_step: Json
+          tone: Database["public"]["Enums"]["guidance_tone"]
+          updated_at: string
+          updated_by: string | null
+          used_for: string[]
+          warnings: string[]
+        }
+        Insert: {
+          ai_prompt_suggestions?: string[]
+          common_tasks?: string[]
+          created_at?: string
+          detailed_explanation?: string | null
+          feature_name: string
+          guest_visible?: boolean
+          id?: string
+          internal_only?: boolean
+          key: string
+          not_used_for?: string[]
+          page_help?: string | null
+          related_keys?: string[]
+          risk_level?: Database["public"]["Enums"]["guidance_risk"]
+          roles_allowed?: string[]
+          route?: string | null
+          section?: string | null
+          short_tooltip: string
+          status?: Database["public"]["Enums"]["guidance_status"]
+          step_by_step?: Json
+          tone?: Database["public"]["Enums"]["guidance_tone"]
+          updated_at?: string
+          updated_by?: string | null
+          used_for?: string[]
+          warnings?: string[]
+        }
+        Update: {
+          ai_prompt_suggestions?: string[]
+          common_tasks?: string[]
+          created_at?: string
+          detailed_explanation?: string | null
+          feature_name?: string
+          guest_visible?: boolean
+          id?: string
+          internal_only?: boolean
+          key?: string
+          not_used_for?: string[]
+          page_help?: string | null
+          related_keys?: string[]
+          risk_level?: Database["public"]["Enums"]["guidance_risk"]
+          roles_allowed?: string[]
+          route?: string | null
+          section?: string | null
+          short_tooltip?: string
+          status?: Database["public"]["Enums"]["guidance_status"]
+          step_by_step?: Json
+          tone?: Database["public"]["Enums"]["guidance_tone"]
+          updated_at?: string
+          updated_by?: string | null
+          used_for?: string[]
+          warnings?: string[]
+        }
+        Relationships: []
+      }
       policy_settings: {
         Row: {
           description: string | null
@@ -3253,6 +3334,9 @@ export type Database = {
         | "completed"
         | "cancelled"
         | "no_show"
+      guidance_risk: "low" | "medium" | "high"
+      guidance_status: "draft" | "approved" | "archived"
+      guidance_tone: "neutral" | "friendly" | "dry_humor" | "thai_east_coast"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3400,6 +3484,9 @@ export const Constants = {
         "cancelled",
         "no_show",
       ],
+      guidance_risk: ["low", "medium", "high"],
+      guidance_status: ["draft", "approved", "archived"],
+      guidance_tone: ["neutral", "friendly", "dry_humor", "thai_east_coast"],
     },
   },
 } as const
