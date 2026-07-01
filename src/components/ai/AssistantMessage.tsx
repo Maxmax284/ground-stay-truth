@@ -327,7 +327,29 @@ export function AssistantMessage({ content, timestamp, isStreaming }: AssistantM
             })}
           </div>
         )}
+
+        {needsReview && !isStreaming && (
+          <div className="mt-2.5 flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-2.5 py-1.5">
+            <AlertCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span className="text-[11px] text-amber-700 dark:text-amber-300 flex-1">
+              {missingChips.length > 0
+                ? "Missing info — a human may need to weigh in."
+                : "Kru Glitch isn't fully sure. Loop in a teammate?"}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleRequestReview}
+              className="h-6 px-2 text-[11px] gap-1 border-amber-500/50 hover:bg-amber-500/10"
+            >
+              <HandHelping className="h-3 w-3" />
+              Request human review
+            </Button>
+          </div>
+        )}
       </div>
+
 
       {!isStreaming && (
         <div className="mt-1 flex items-center gap-2 pl-3 opacity-0 group-hover:opacity-100 transition-opacity">
