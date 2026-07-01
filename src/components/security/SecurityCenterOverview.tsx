@@ -76,9 +76,13 @@ export function SecurityCenterOverview() {
   const { data: refunds } = useRecentRefunds();
 
   const allMfaCovered = (mfaCoverage?.withoutMfa ?? 0) === 0;
-  const webhookHealthy = (webhookRows ?? []).every(
-    (w: any) => w.status === "healthy" || w.status === "ok" || !w.last_failure_at
-  );
+  const isUnsignedProbeReason = (r?: string | null) => !!r && /missing stripe-signature/i.test(r);
+  const effectiveStatus = (w: any): "healthy" | "failing" | "awaiting" => {
+    if ((w.status === "healthy" || w.status === "ok") && w.last_success_at) return "healthy";
+    if (w.status === "failing" && !isUnsignedProbeReason(w.last_failure_reason)) return "failing";
+    return "awaiting";
+  };
+  const webhookHealthy = (webhookRows ?? []).every((w: any) => effectiveStatus(w) !== "failing");
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -139,23 +143,28 @@ export function SecurityCenterOverview() {
         </CardHeader>
         <CardContent className="space-y-1.5 text-sm">
           {!webhookRows?.length ? (
-            <p className="text-muted-foreground text-xs">No events recorded yet.</p>
+            <p className="text-muted-foreground text-xs">Awaiting first Stripe event.</p>
           ) : (
-            webhookRows.map((w: any) => (
-              <div key={w.provider ?? w.id} className="flex items-center justify-between text-xs">
-                <span className="capitalize">{w.provider}</span>
-                <Badge
-                  variant="outline"
-                  className={
-                    w.status === "healthy" || !w.last_failure_at
-                      ? "border-primary/40 text-primary"
-                      : "border-destructive/40 text-destructive"
-                  }
-                >
-                  {w.status ?? "unknown"}
-                </Badge>
-              </div>
-            ))
+            webhookRows.map((w: any) => {
+              const es = effectiveStatus(w);
+              const label =
+                es === "healthy" ? "verified" : es === "failing" ? "signature failed" : "awaiting first event";
+              return (
+                <div key={w.provider ?? w.id} className="flex items-center justify-between text-xs">
+                  <span className="capitalize">{w.provider}</span>
+                  <Badge
+                    variant="outline"
+                    className={
+                      es === "failing"
+                        ? "border-destructive/40 text-destructive"
+                        : "border-primary/40 text-primary"
+                    }
+                  >
+                    {label}
+                  </Badge>
+                </div>
+              );
+            })
           )}
         </CardContent>
       </Card>

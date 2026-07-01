@@ -210,21 +210,29 @@ function buildAlerts(d: Awaited<ReturnType<typeof fetchMonitoring>>): Alert[] {
 
   // Webhook health (per-provider)
   for (const w of d.webhooks) {
+    const reason: string = w.last_failure_reason ?? "";
+    // Unsigned probes/scanners hitting the endpoint without a stripe-signature
+    // header are correctly rejected upstream and must NOT surface as a real
+    // Stripe outage in the Operations Monitor.
+    const isUnsignedProbe = /missing stripe-signature/i.test(reason);
     const failedRecently =
       w.last_failure_at &&
       (!w.last_success_at || new Date(w.last_failure_at) > new Date(w.last_success_at));
+    const realFailure = failedRecently && !isUnsignedProbe;
+    const neverSucceeded = !w.last_success_at;
     const stale =
       w.last_received_at &&
+      !neverSucceeded &&
       Date.now() - new Date(w.last_received_at).getTime() > 24 * 3600_000;
-    if (w.status === "down" || failedRecently) {
+    if (w.status === "down" || realFailure) {
       out.push({
         id: `wh-${w.provider}`,
         health: "attention",
         category: "webhook",
-        title: `${w.provider} webhook is failing.`,
-        detail: w.last_failure_reason ?? undefined,
+        title: `${w.provider} signature verification failed.`,
+        detail: reason || "Check webhook secret or Stripe endpoint configuration.",
         when: w.last_failure_at ?? w.updated_at,
-        suggestedAction: "Check provider configuration. Retry from Stripe dashboard if needed.",
+        suggestedAction: "Verify the webhook secret matches the Stripe dashboard and that the endpoint URL is correct.",
         technical: { status: w.status },
       });
     } else if (stale) {
@@ -238,7 +246,10 @@ function buildAlerts(d: Awaited<ReturnType<typeof fetchMonitoring>>): Alert[] {
         suggestedAction: "Verify the integration is still connected.",
       });
     }
+    // neverSucceeded (with or without unsigned-probe noise) intentionally
+    // produces no alert — it's just "awaiting first Stripe event".
   }
+
 
   // Notification failures
   for (const n of d.notifs) {
