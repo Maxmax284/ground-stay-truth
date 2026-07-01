@@ -336,7 +336,7 @@ export function useRecentOverrides(enabled: boolean) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("booking_state_log")
-        .select("id, booking_id, from_state, to_state, changed_by, reason, created_at, bookings(units(name), profiles!bookings_guest_id_profiles_fkey(full_name))")
+        .select("id, booking_id, from_state, to_state, changed_by, reason, created_at, bookings(units(name), manual_guest_name, manual_guest_email, manual_guest_phone, profiles!bookings_guest_id_profiles_fkey(full_name, email))")
         .or(
           "reason.ilike.%[ADMIN OVERRIDE]%,reason.ilike.%[MANAGER DEPOSIT OVERRIDE]%,reason.ilike.%[EARLY CHECK-IN APPROVED]%,reason.ilike.%[ARRIVED]%"
         )
