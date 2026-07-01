@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import {
   GitBranch,
@@ -13,6 +16,8 @@ import {
   ShieldCheck,
   Footprints,
   Activity,
+  Wand2,
+  Loader2,
 } from "lucide-react";
 
 interface TimelineEvent {
