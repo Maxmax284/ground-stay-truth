@@ -122,6 +122,10 @@ Deno.serve(async (req) => {
         booking_id: bookingId,
         surface: "ops_control_tower",
         event_count: events.length,
+        key_event_count: keyEvents.length,
+        key_events: keyEvents.map((e) => ({
+          at: e.occurred_at, category: e.category, label: e.label,
+        })),
         model: "google/gemini-2.5-flash",
         narrative_preview: narrative.slice(0, 240),
       },
