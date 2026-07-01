@@ -44,11 +44,16 @@ export function VerificationPanel() {
           .eq("provider", "stripe")
           .maybeSingle();
         if (error) return { ok: false, detail: error.message };
-        if (!data) return { ok: false, detail: "No stripe webhook events recorded yet." };
-        return {
-          ok: data.status !== "failing",
-          detail: `status=${data.status}, last_success=${data.last_success_at ?? "—"}`,
-        };
+        if (!data) return { ok: true, detail: "Awaiting first Stripe event." };
+        const reason = data.last_failure_reason ?? "";
+        const isUnsignedProbe = /missing stripe-signature/i.test(reason);
+        if (data.status === "healthy" && data.last_success_at) {
+          return { ok: true, detail: `Stripe webhook verified (last success ${data.last_success_at}).` };
+        }
+        if (data.status === "failing" && !isUnsignedProbe) {
+          return { ok: false, detail: `Stripe signature verification failed. Check webhook secret or Stripe endpoint configuration. (${reason})` };
+        }
+        return { ok: true, detail: "Awaiting first Stripe event." };
       },
     },
     {
