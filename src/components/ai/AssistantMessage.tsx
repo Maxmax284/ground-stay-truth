@@ -203,6 +203,8 @@ export function AssistantMessage({ content, timestamp, isStreaming }: AssistantM
   const parsed = useMemo(() => parseResponse(content), [content]);
   const hasStructure = !!(parsed.quickAnswer || parsed.whatIFound || parsed.suggestedNextStep || parsed.draftMessage);
   const focus = useAIFocus();
+  const navigate = useNavigate();
+
 
   const timeStr = new Date(timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
