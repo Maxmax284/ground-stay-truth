@@ -322,16 +322,54 @@ export function AssistantMessage({ content, timestamp, isStreaming }: AssistantM
               const isFocused = /focused/i.test(s);
               const target = resolveSourceTarget(s);
               const clickable = !!target;
+              const bookingId = isFocused ? focus?.bookingId ?? null : null;
+              const inAppPath = clickable ? buildSourcePath(target, bookingId) : null;
+              const absoluteUrl = clickable ? buildSourceUrl(target, bookingId) : null;
               const title = clickable
-                ? `${target.label}${isFocused ? " (grounded to open booking)" : ""}`
+                ? `${target.label} — click to open, ⌘/Ctrl-click for new tab${isFocused ? " (grounded to open booking)" : ""}`
                 : isFocused
                   ? "Grounded to the booking you have open"
                   : `Source: ${s}`;
+
+              const openTarget = (newTab: boolean) => {
+                if (!clickable || !inAppPath) return;
+                if (newTab && absoluteUrl) {
+                  window.open(absoluteUrl, "_blank", "noopener,noreferrer");
+                } else {
+                  navigate(inAppPath);
+                }
+              };
+
+              const copyLink = async (e: React.MouseEvent) => {
+                e.stopPropagation();
+                if (!absoluteUrl) return;
+                try {
+                  await navigator.clipboard.writeText(absoluteUrl);
+                  toast({ title: "Link copied", description: target!.label });
+                } catch {
+                  toast({ title: "Couldn't copy link", variant: "destructive" });
+                }
+              };
+
               return (
                 <Badge
                   key={`s-${s}`}
                   variant={isFocused ? "default" : "secondary"}
-                  onClick={clickable ? () => navigate(target.route) : undefined}
+                  onClick={
+                    clickable
+                      ? (e) => openTarget(e.metaKey || e.ctrlKey || e.button === 1)
+                      : undefined
+                  }
+                  onAuxClick={
+                    clickable
+                      ? (e) => {
+                          if (e.button === 1) {
+                            e.preventDefault();
+                            openTarget(true);
+                          }
+                        }
+                      : undefined
+                  }
                   role={clickable ? "button" : undefined}
                   tabIndex={clickable ? 0 : undefined}
                   onKeyDown={
@@ -339,20 +377,33 @@ export function AssistantMessage({ content, timestamp, isStreaming }: AssistantM
                       ? (e) => {
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
-                            navigate(target.route);
+                            openTarget(e.metaKey || e.ctrlKey);
                           }
                         }
                       : undefined
                   }
                   className={cn(
-                    "text-[10px] transition-colors",
+                    "text-[10px] transition-colors inline-flex items-center",
                     clickable && "cursor-pointer hover:ring-1 hover:ring-primary/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
                     isFocused && "bg-primary/15 text-primary hover:bg-primary/20 border border-primary/30"
                   )}
                   title={title}
                 >
                   {s}
-                  {clickable && <span aria-hidden className="ml-1 opacity-60">↗</span>}
+                  {clickable && (
+                    <>
+                      <span aria-hidden className="ml-1 opacity-60">↗</span>
+                      <button
+                        type="button"
+                        onClick={copyLink}
+                        aria-label={`Copy shareable link to ${target!.label}`}
+                        title="Copy shareable link"
+                        className="ml-1 -mr-0.5 p-0.5 rounded hover:bg-foreground/10 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
+                      >
+                        <Link2 className="h-2.5 w-2.5 opacity-70" />
+                      </button>
+                    </>
+                  )}
                 </Badge>
               );
             })}
