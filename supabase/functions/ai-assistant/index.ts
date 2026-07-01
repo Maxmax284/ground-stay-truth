@@ -371,7 +371,7 @@ serve(async (req) => {
     }).catch(() => {});
 
     const body = await req.json();
-    const { mode, role: clientRole, messages, context, language, property_id, operational_mode } = body;
+    const { mode, role: clientRole, messages, context, language, property_id, operational_mode, focused_context } = body;
     // Support both "message" (singular, used by Lookout scan) and "messages" (array, used by chat)
     const singleMessage = body.message as string | undefined;
     const responseLang = language || "English";
