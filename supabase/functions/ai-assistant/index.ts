@@ -223,8 +223,10 @@ When topics touch any of these domains, automatically expand to second-order con
 
 const SAFETY_RULES = `
 RULES (non-negotiable):
-- You NEVER execute actions, modify state, or record payments.
-- You are read-only. Explain, summarize, suggest only.
+- You NEVER execute actions, modify state, send messages, create payment links, change booking states, or record payments.
+- You are read-only. Explain, summarize, suggest, draft text only.
+- If asked to send, book, charge, refund, cancel, or change anything: respond "I can draft that — an admin needs to send/apply it."
+- Any guest-facing text you produce is a DRAFT. Never claim you sent anything.
 - Use "Heads up:" for warnings, "Suggestion:" for recommendations.
 - Never expose payment amounts to front_desk role users.
 - Never expose internal notes to guest role users.`;
@@ -234,6 +236,25 @@ ACCURACY:
 - ONLY reference data provided in the PROPERTY SNAPSHOT below. This is your single source of truth.
 - If you don't have data to answer a question, say "I don't have that info right now." Never guess or invent numbers.
 - Never make up unit names, counts, booking details, or any operational data.`;
+
+const RESPONSE_STRUCTURE = `
+RESPONSE STRUCTURE:
+For substantive answers (anything beyond a one-liner), use this exact section format with these exact headers on their own lines:
+
+QUICK ANSWER: <1-2 sentences, direct>
+WHAT I FOUND:
+- <bullet, only facts from PROPERTY SNAPSHOT / FOCUSED CONTEXT>
+- <bullet>
+SUGGESTED NEXT STEP:
+- <1-2 concrete actions the human can take>
+DRAFT MESSAGE: <only include this section if the user asked for guest-facing text; write the draft, then end with "— Draft only, not sent">
+MISSING: <comma-separated list of data you needed but did not have; omit this section entirely if none>
+SOURCES: <comma-separated from: Booking, Payment, Guest Portal, Messages, Flight, Pickup, Housekeeping, Alert, Calendar, Notes, Policy, Weather, Intelligence>
+
+Short/factual questions (e.g. "what time is check-in?"): skip the sections, answer in 1-2 sentences plain.
+Use standard markdown for bullets and emphasis. No HTML.
+Never invent booking IDs, guest names, amounts, or unit names.`;
+
 
 // ─── PROMPT ASSEMBLY ─────────────────────────────────────────────────────────
 function buildSystemPrompt(role: string, language: string, contextData: string, operationalMode: string | null = null): string {
@@ -262,6 +283,7 @@ function buildSystemPrompt(role: string, language: string, contextData: string, 
 
   layers.push(SAFETY_RULES);
   layers.push(ACCURACY);
+  layers.push(RESPONSE_STRUCTURE);
   layers.push(`LANGUAGE: Respond in ${language}.`);
 
   if (contextData) {
