@@ -1,11 +1,29 @@
 import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Copy, Check, FileText, AlertCircle, MessageCircle, Mail } from "lucide-react";
+import { Copy, Check, FileText, AlertCircle, MessageCircle, Mail, HandHelping } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAIFocus } from "@/lib/aiFocusStore";
+import { toast } from "@/hooks/use-toast";
+
+const UNCERTAINTY_PATTERNS = [
+  /\bi(?:'m| am)? not sure\b/i,
+  /\bi don'?t know\b/i,
+  /\bunclear\b/i,
+  /\bcannot determine\b/i,
+  /\bcan'?t determine\b/i,
+  /\bunable to\b/i,
+  /\bi don'?t have\b/i,
+  /\bneed more (?:info|information|context)\b/i,
+  /\binsufficient (?:info|information|context|data)\b/i,
+  /\bno (?:record|data|info) (?:found|available)\b/i,
+];
+
+function detectUncertainty(text: string): boolean {
+  return UNCERTAINTY_PATTERNS.some((r) => r.test(text));
+}
 
 interface ParsedResponse {
   intro?: string;
@@ -159,6 +177,35 @@ export function AssistantMessage({ content, timestamp, isStreaming }: AssistantM
   const missingChips = parsed.missing
     ? parsed.missing.split(",").map((s) => s.trim()).filter(Boolean)
     : [];
+  const uncertain = useMemo(
+    () => detectUncertainty(parsed.quickAnswer || parsed.whatIFound || content),
+    [parsed.quickAnswer, parsed.whatIFound, content]
+  );
+  const needsReview = missingChips.length > 0 || uncertain;
+
+  const handleRequestReview = async () => {
+    const lines: string[] = [];
+    lines.push("🙋 Human review requested — Kru Glitch flagged uncertainty.");
+    if (focus?.label) lines.push(`Focus: ${focus.label}`);
+    if (focus?.bookingId) lines.push(`Booking: ${focus.bookingId}`);
+    if (missingChips.length) lines.push(`Missing: ${missingChips.join(", ")}`);
+    if (parsed.quickAnswer) lines.push(`\nAssistant said: ${parsed.quickAnswer.slice(0, 400)}`);
+    lines.push("\nPlease review and take it from here.");
+    const draft = lines.join("\n");
+    try {
+      await navigator.clipboard.writeText(draft);
+      toast({
+        title: "Review request copied",
+        description: "Paste into your staff channel or messaging thread.",
+      });
+    } catch {
+      toast({
+        title: "Couldn't copy automatically",
+        description: "Select the assistant text and share it manually.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const cleanDraft = parsed.draftMessage
     ? parsed.draftMessage.replace(/—\s*Draft only.*$/i, "").trim()
@@ -280,7 +327,29 @@ export function AssistantMessage({ content, timestamp, isStreaming }: AssistantM
             })}
           </div>
         )}
+
+        {needsReview && !isStreaming && (
+          <div className="mt-2.5 flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-2.5 py-1.5">
+            <AlertCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span className="text-[11px] text-amber-700 dark:text-amber-300 flex-1">
+              {missingChips.length > 0
+                ? "Missing info — a human may need to weigh in."
+                : "Kru Glitch isn't fully sure. Loop in a teammate?"}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleRequestReview}
+              className="h-6 px-2 text-[11px] gap-1 border-amber-500/50 hover:bg-amber-500/10"
+            >
+              <HandHelping className="h-3 w-3" />
+              Request human review
+            </Button>
+          </div>
+        )}
       </div>
+
 
       {!isStreaming && (
         <div className="mt-1 flex items-center gap-2 pl-3 opacity-0 group-hover:opacity-100 transition-opacity">
