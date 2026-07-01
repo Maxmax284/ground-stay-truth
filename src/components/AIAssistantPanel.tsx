@@ -269,28 +269,35 @@ function AIAssistantPanelInner() {
     );
   }
 
-  const panelStyle: React.CSSProperties = position
+  // On mobile, ignore drag position and render as bottom sheet
+  const panelStyle: React.CSSProperties = !isMobile && position
     ? { position: "fixed", left: position.x, top: position.y, bottom: "auto", right: "auto", zIndex: 50 }
     : {};
+
+  const mobileClasses = isMobile
+    ? "fixed inset-x-0 bottom-0 z-50 w-full max-w-full rounded-t-2xl rounded-b-none border-b-0 max-h-[85dvh] shadow-2xl"
+    : `${!position ? "fixed bottom-6 right-6 md:bottom-6 bottom-20" : ""} z-50 w-[380px] max-w-[calc(100vw-2rem)] rounded-2xl max-h-[min(32rem,calc(100vh-8rem))] shadow-2xl`;
 
   return (
     <div
       ref={panelRef}
       style={panelStyle}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      className={`${!position ? "fixed bottom-6 right-6 md:bottom-6 bottom-20" : ""} z-50 w-[380px] max-w-[calc(100vw-2rem)] bg-card border border-border rounded-2xl shadow-2xl flex flex-col max-h-[min(32rem,calc(100vh-8rem))] animate-slide-up`}
+      onPointerMove={isMobile ? undefined : handlePointerMove}
+      onPointerUp={isMobile ? undefined : handlePointerUp}
+      className={`${mobileClasses} bg-card border border-border flex flex-col animate-slide-up`}
     >
-      {/* Header with drag handle */}
+      {/* Header with drag handle (desktop only) */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div className="flex items-center gap-2">
-          <div
-            className="cursor-grab active:cursor-grabbing p-2 -ml-2 rounded hover:bg-accent/50"
-            onPointerDown={handlePointerDown}
-            title="Drag to move"
-          >
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
-          </div>
+          {!isMobile && (
+            <div
+              className="cursor-grab active:cursor-grabbing p-2 -ml-2 rounded hover:bg-accent/50"
+              onPointerDown={handlePointerDown}
+              title="Drag to move"
+            >
+              <GripVertical className="h-4 w-4 text-muted-foreground" />
+            </div>
+          )}
           <Swords className="h-4 w-4 text-primary" />
           <span className="text-sm font-semibold">{t("ai.title")}</span>
           <Badge variant="secondary" className="text-[10px]">{t("ai.assistOnly")}</Badge>
@@ -328,7 +335,6 @@ function AIAssistantPanelInner() {
         {(Object.keys(MODE_LABELS) as AIMode[])
           .filter((m) => {
             if (role === "guest") {
-              // Guests only see explain, summarize, camp
               return ["explain", "summarize", "camp"].includes(m);
             }
             return true;
@@ -348,62 +354,66 @@ function AIAssistantPanelInner() {
 
       {/* Messages - fixed scroll */}
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
-        <div className="px-4 py-3 space-y-3">
+        <div className="px-4 py-3 space-y-4">
           {messages.length === 0 && (
-            <div className="text-center py-8 animate-fade-up">
-              <Sparkles className="h-8 w-8 mx-auto text-muted-foreground/40 mb-3" />
-              <p className="text-sm text-muted-foreground">{t("ai.welcomeMessage")}</p>
-              <p className="text-xs text-muted-foreground mt-1">{t("ai.disclaimer")}</p>
-              {isGuest && (
-                <button
-                  onClick={() => {
-                    const q = "Show me my stay essentials — WiFi password, house rules, and emergency contacts.";
-                    setInput("");
-                    sendMessage(q, mode, undefined, langCodeToName(language));
-                  }}
-                  className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
-                >
-                  <Wifi className="h-3 w-3" />
-                  {t("ai.stayEssentials", "Stay Essentials")}
-                </button>
+            <div className="py-4 animate-fade-up">
+              <div className="text-center mb-4">
+                <Sparkles className="h-8 w-8 mx-auto text-muted-foreground/40 mb-3" />
+                <p className="text-sm text-muted-foreground">{t("ai.welcomeMessage")}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("ai.disclaimer")}</p>
+              </div>
+              {quickPrompts.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1">
+                    Try asking
+                  </p>
+                  {quickPrompts.map((qp) => (
+                    <button
+                      key={qp.label}
+                      onClick={() => {
+                        setInput("");
+                        sendMessage(qp.prompt, mode, undefined, langCodeToName(language));
+                      }}
+                      className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/60 hover:bg-accent text-xs text-foreground transition-colors"
+                    >
+                      <span className="text-primary shrink-0">{qp.icon}</span>
+                      <span className="truncate">{qp.label}</span>
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
           )}
           {messages.map((msg, i) => {
-            // Show "Want more detail?" on short assistant responses that are the last message and not streaming
             const isLastAssistant = msg.role === "assistant" && i === messages.length - 1 && !isStreaming;
             const isShortResponse = isLastAssistant && msg.content.length < 400;
             return (
-              <div key={i} className={`text-sm animate-fade-up ${msg.role === "user" ? "ml-8" : "mr-4"}`}>
-                <div className={`rounded-lg px-3 py-2 ${
-                  msg.role === "user"
-                    ? "bg-primary/10 text-foreground"
-                    : "bg-muted text-foreground"
-                }`}>
-                  <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                </div>
-                {isShortResponse && (
-                  <button
-                    onClick={() => sendMessage("Go deeper — give me the full details on that.", mode, undefined, langCodeToName(language))}
-                    className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
-                  >
-                    <Sparkles className="h-3 w-3" />
-                    {t("ai.wantMoreDetail", "Want more detail?")}
-                  </button>
+              <div key={i} className="animate-fade-up">
+                {msg.role === "user" ? (
+                  <UserMessage content={msg.content} timestamp={msg.createdAt} />
+                ) : (
+                  <>
+                    <AssistantMessage
+                      content={msg.content}
+                      timestamp={msg.createdAt}
+                      isStreaming={i === messages.length - 1 && isStreaming}
+                    />
+                    {isShortResponse && (
+                      <button
+                        onClick={() => sendMessage("Go deeper — give me the full details on that.", mode, undefined, langCodeToName(language))}
+                        className="ml-3 mt-1.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
+                      >
+                        <Sparkles className="h-3 w-3" />
+                        {t("ai.wantMoreDetail", "Want more detail?")}
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             );
           })}
           {isStreaming && messages[messages.length - 1]?.role !== "assistant" && (
-            <div className="mr-4">
-              <div className="bg-muted rounded-lg px-3 py-2">
-                <span className="inline-flex gap-1">
-                  <span className="animate-bounce">·</span>
-                  <span className="animate-bounce" style={{ animationDelay: "0.1s" }}>·</span>
-                  <span className="animate-bounce" style={{ animationDelay: "0.2s" }}>·</span>
-                </span>
-              </div>
-            </div>
+            <LoadingIndicator />
           )}
           {error && (
             <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2 animate-shake-subtle">
@@ -415,7 +425,7 @@ function AIAssistantPanelInner() {
       </div>
 
       {/* Input */}
-      <div className="border-t px-3 py-2">
+      <div className="border-t px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <div className="flex gap-2">
           <Textarea
             value={input}
@@ -439,6 +449,7 @@ function AIAssistantPanelInner() {
     </div>
   );
 }
+
 
 export function AIAssistantPanel() {
   return (
