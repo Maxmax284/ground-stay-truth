@@ -27,6 +27,39 @@ function detectUncertainty(text: string): boolean {
   return UNCERTAINTY_PATTERNS.some((r) => r.test(text));
 }
 
+interface SourceTarget {
+  route: string;
+  label: string;
+}
+
+/**
+ * Map a source chip label to a read-only page in the app.
+ * Returns null when no confident match — chip stays non-interactive.
+ */
+function resolveSourceTarget(source: string): SourceTarget | null {
+  const s = source.toLowerCase();
+  if (/payment|deposit|invoice|refund|stripe|charge|balance/.test(s))
+    return { route: "/admin/payment-report", label: "Open Payments" };
+  if (/pickup|flight|airport|transport|driver|arrival transfer/.test(s))
+    return { route: "/front-desk", label: "Open Front Desk · Pickups" };
+  if (/document|passport|\bid\b|tm30|verification/.test(s))
+    return { route: "/front-desk", label: "Open Front Desk · Documents" };
+  if (/housekeep|cleaning|turnover|laundry|maintenance/.test(s))
+    return { route: "/front-desk", label: "Open Front Desk" };
+  if (/calendar|availability|unit|room|inventory/.test(s))
+    return { route: "/calendar", label: "Open Calendar" };
+  if (/message|whatsapp|line|telegram|inbox|chat/.test(s))
+    return { route: "/messages", label: "Open Messages" };
+  if (/security|audit|compliance|gdpr|pdpa/.test(s))
+    return { route: "/security-center", label: "Open Security Center" };
+  if (/timeline|ops|control tower|narrative/.test(s))
+    return { route: "/ops-control-tower", label: "Open Ops Control Tower" };
+  if (/booking|reservation|guest|focused/.test(s))
+    return { route: "/bookings", label: "Open Bookings" };
+  return null;
+}
+
+
 interface ParsedResponse {
   intro?: string;
   quickAnswer?: string;
