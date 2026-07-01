@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import { Copy, Check, FileText, AlertCircle, MessageCircle, Mail, HandHelping } from "lucide-react";
+import { Copy, Check, FileText, AlertCircle, MessageCircle, Mail, HandHelping, Link2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAIFocus } from "@/lib/aiFocusStore";
+import { resolveSourceTarget, buildSourcePath, buildSourceUrl } from "@/lib/aiSourceLinks";
 import { toast } from "@/hooks/use-toast";
 
 const UNCERTAINTY_PATTERNS = [
