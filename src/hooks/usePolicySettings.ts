@@ -2,6 +2,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import type { Json } from "@/integrations/supabase/types";
+import { emitPolicySettingChanged } from "@/lib/fenrir/events";
+import { mapRole } from "@/lib/fenrir/role-map";
+import type { AppRole } from "@/lib/permissions";
 
 export type PolicySetting = Tables<"policy_settings">;
 
@@ -56,6 +59,26 @@ export function useUpdatePolicySetting() {
         .select()
         .single();
       if (error) throw error;
+
+      // Fenrir audit — value itself is not sent (key + scope is enough)
+      if (user && data) {
+        try {
+          const { data: roles } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", user.id)
+            .limit(1);
+          const role = (roles?.[0]?.role as AppRole | undefined) ?? null;
+          emitPolicySettingChanged(
+            { userId: user.id, email: user.email ?? undefined, role },
+            data.key,
+            data.property_id ?? null,
+          );
+        } catch {
+          // never break the update if the audit ping fails
+        }
+      }
+
       return data;
     },
     onSuccess: () => {
