@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,9 @@ import { supabase } from "@/integrations/supabase/client";
 const Auth = () => {
   const { t } = useTranslation();
   const { user, loading, signIn } = useAuth();
+  const [searchParams] = useSearchParams();
+  const rawNext = searchParams.get("next");
+  const nextPath = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -27,7 +30,7 @@ const Auth = () => {
     );
   }
 
-  if (user) return <Navigate to="/index" replace />;
+  if (user) return <Navigate to={nextPath ?? "/index"} replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
