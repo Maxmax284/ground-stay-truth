@@ -279,6 +279,45 @@ serve(async (req) => {
       await recordWebhookEvent(adminClient, normalized.provider, "success", {
         eventId: normalized.providerEventId,
       });
+
+      // Fire-and-forget Fenrir emit. Never blocks payment flow.
+      if (normalized.eventType === "payment.success") {
+        await sendFenrirSecurityEvent(
+          {
+            event_type: "payment_processed",
+            severity: "low",
+            confidence_score: 90,
+            details: {
+              source_platform: "groundstay",
+              actor_id: "stripe_webhook",
+              actor_role: "guest",
+              provider: normalized.provider,
+              booking_id: normalized.bookingId,
+              session_id: normalized.sessionId,
+              amount: normalized.amountPaid,
+            },
+          },
+          { supabase: adminClient, correlationId: normalized.providerEventId },
+        );
+      } else if (normalized.eventType === "payment.failed") {
+        await sendFenrirSecurityEvent(
+          {
+            event_type: "payment_failed",
+            severity: "medium",
+            confidence_score: 85,
+            details: {
+              source_platform: "groundstay",
+              actor_id: "stripe_webhook",
+              actor_role: "guest",
+              provider: normalized.provider,
+              booking_id: normalized.bookingId,
+              session_id: normalized.sessionId,
+              amount: normalized.amountPaid,
+            },
+          },
+          { supabase: adminClient, correlationId: normalized.providerEventId },
+        );
+      }
     } else {
       // Bump retry counter so the watchdog can escalate stuck events
       await adminClient.rpc("increment_payment_event_retry", {
