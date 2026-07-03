@@ -12,15 +12,27 @@
 import { useSyncExternalStore } from "react";
 
 export interface AIFocus {
-  kind: "booking";
-  bookingId: string;
+  kind: "booking" | "route";
+  /** Present when kind === "booking". */
+  bookingId?: string;
   /** Human-readable label shown in the panel chip (e.g. guest name + unit). */
   label?: string;
   /** Optional guest contact — enables draft handoff buttons (WhatsApp, email). */
   guestName?: string;
   guestPhone?: string;
   guestEmail?: string;
+  /** Present for route/page focus (kind === "route" or as ambient hint on booking focus). */
+  route?: string;
+  pageKey?: string;
 }
+
+/**
+ * Route focus (ambient) is tracked separately so it does not override an
+ * explicit booking focus. Booking focus wins whenever set.
+ */
+let currentRoute: AIFocus | null = null;
+export function setAIRouteFocus(f: AIFocus | null) { currentRoute = f; emit(); }
+export function getAIRouteFocus(): AIFocus | null { return currentRoute; }
 
 let current: AIFocus | null = null;
 const listeners = new Set<() => void>();
