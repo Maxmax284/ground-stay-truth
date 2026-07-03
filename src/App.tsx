@@ -40,6 +40,7 @@ import MonitoringCenter from "./pages/MonitoringCenter";
 import ResetPassword from "./pages/ResetPassword";
 import OpsControlTower from "./pages/OpsControlTower";
 import GuidanceLab from "./pages/GuidanceLab";
+import OAuthConsent from "./pages/OAuthConsent";
 
 // Global React Query defaults — consistent caching across all hooks.
 // Per-hook overrides remain authoritative; this only sets the floor.
@@ -73,6 +74,7 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/guest" element={<GuestAuth />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
 
 {/* Public landing page */}
                 <Route path="/" element={<LandingPage />} />
