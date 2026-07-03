@@ -46,6 +46,39 @@ Deno.serve(async (req) => {
     );
   }
 
+  // DOCTRINE: GroundStay → Fenrir is one-way. Inbound command execution is
+  // dormant by default and must be explicitly re-approved via policy.
+  // Check `fenrir_inbound_enabled` before honoring any command.
+  {
+    const supabaseCheck = createClient(supabaseUrl, serviceRoleKey);
+    const { data: flag } = await supabaseCheck
+      .from("policy_settings")
+      .select("value")
+      .eq("key", "fenrir_inbound_enabled")
+      .maybeSingle();
+    const enabled = String(flag?.value ?? "false").replace(/^"|"$/g, "") === "true";
+    if (!enabled) {
+      // Log the attempt for auditability then reject.
+      await supabaseCheck.from("security_events").insert({
+        event_type: "fenrir_inbound_rejected",
+        severity: "medium",
+        actor_role: "fenrir_system",
+        confidence_score: 100,
+        details: {
+          source_platform: "fenrir_lock",
+          reason: "inbound doctrine disabled (fenrir_inbound_enabled=false)",
+        },
+      });
+      return new Response(
+        JSON.stringify({
+          status: "error",
+          message: "Inbound Fenrir commands are disabled by GroundStay doctrine (one-way integration).",
+        }),
+        { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } },
+      );
+    }
+  }
+
   const authHeader = req.headers.get("authorization") || "";
   const providedToken = authHeader.replace(/^Bearer\s+/i, "");
 
