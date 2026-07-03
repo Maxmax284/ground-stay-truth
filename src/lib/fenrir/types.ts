@@ -48,7 +48,10 @@ export type FenrirEventType =
   | "guest_complaint_escalated"
   // System
   | "emergency_freeze"
-  | "emergency_unfreeze";
+  | "emergency_unfreeze"
+  | "ai_kill_switch_engaged"
+  // Admin config audit
+  | "policy_setting_changed";
 
 // ── Event detail fields ──
 export interface FenrirEventDetails {

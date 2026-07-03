@@ -47,6 +47,10 @@ export const FENRIR_EVENT_MAP: Record<string, string> = {
   // system (dormant unless inbound re-approved)
   emergency_freeze: "system.emergency_freeze",
   emergency_unfreeze: "system.emergency_unfreeze",
+  ai_kill_switch_engaged: "system.kill_switch_activated",
+
+  // admin config audit
+  policy_setting_changed: "admin.policy_setting_changed",
 };
 
 /** Fields that must never cross the wire in the clear. */

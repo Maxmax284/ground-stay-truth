@@ -242,3 +242,17 @@ export function emitEmergencyUnfreeze(actor: ActorContext) {
     lifted_by: actor.userId,
   });
 }
+
+// ── Admin Configuration Audit ──
+
+export function emitPolicySettingChanged(
+  actor: ActorContext,
+  settingKey: string,
+  propertyId: string | null,
+) {
+  // Values themselves are intentionally not sent — key + scope is enough for Fenrir.
+  emit("policy_setting_changed", "medium", 90, actor, {
+    setting_key: settingKey,
+    property_scope: propertyId ?? "global",
+  });
+}
