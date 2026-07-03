@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.14.0?target=deno";
 import { getCorsHeaders, corsPreflight } from "../_shared/cors.ts";
 import { recordWebhookEvent } from "../_shared/webhookHealth.ts";
+import { sendFenrirSecurityEvent } from "../_shared/fenrir.ts";
 
 // ── Provider Webhook Verifiers ──
 interface NormalizedPaymentEvent {
