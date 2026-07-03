@@ -10,6 +10,8 @@ export interface SourceTarget {
 
 export function resolveSourceTarget(source: string): SourceTarget | null {
   const s = source.toLowerCase();
+  if (/platform guide|guidance|feature explainer|how do i|help center/.test(s))
+    return { route: "/guidance-lab", focusKey: "guidance", label: "Open Platform Guide" };
   if (/payment|deposit|invoice|refund|stripe|charge|balance/.test(s))
     return { route: "/admin/payment-report", focusKey: "payments", label: "Open Payments" };
   if (/pickup|flight|airport|transport|driver|arrival transfer/.test(s))
