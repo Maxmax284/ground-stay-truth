@@ -64,11 +64,14 @@ export async function sendFenrirSecurityEvent(
       .select("key, value")
       .in("key", ["fenrir_enabled", "fenrir_endpoint"]);
 
-    const policyMap = new Map(
-      (policies ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]),
+    const policyMap = new Map<string, string>(
+      (policies ?? []).map((p: any) => [
+        String(p.key),
+        String(p.value).replace(/^"|"$/g, ""),
+      ]),
     );
     const enabled = policyMap.get("fenrir_enabled") === "true";
-    const endpoint = policyMap.get("fenrir_endpoint") || "";
+    const endpoint = policyMap.get("fenrir_endpoint") ?? "";
 
     const safeDetails = await scrubDetails(event.details ?? {});
     const envelope = {
