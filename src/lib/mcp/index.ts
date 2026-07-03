@@ -2,6 +2,8 @@ import { auth, defineMcp } from "@lovable.dev/mcp-js";
 import whoamiTool from "./tools/whoami";
 import listBookingsTool from "./tools/list-bookings";
 import listUnitsTool from "./tools/list-units";
+import getExceptionsTool from "./tools/get-exceptions";
+import searchGuestsTool from "./tools/search-guests";
 
 // The OAuth issuer MUST be the direct Supabase host, not the Lovable Cloud proxy.
 // Build it from the project ref that Vite inlines at build time so this module
@@ -12,12 +14,12 @@ const projectRef =
 export default defineMcp({
   name: "ground-stay-mcp",
   title: "Ground Stay",
-  version: "0.1.0",
+  version: "0.2.0",
   instructions:
-    "Read-only operational access to Ground Stay: inspect the signed-in user's identity/roles, list bookings, and list units. Uses the caller's Supabase session, so RLS applies.",
+    "Read-only operational access to Ground Stay. Inspect the signed-in user's identity/roles, list bookings and units, search guests (PII-masked), and pull the current operational exceptions (admin-only). Uses the caller's Supabase session, so RLS applies.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
   }),
-  tools: [whoamiTool, listBookingsTool, listUnitsTool],
+  tools: [whoamiTool, listBookingsTool, listUnitsTool, getExceptionsTool, searchGuestsTool],
 });

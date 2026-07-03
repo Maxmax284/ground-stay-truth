@@ -12,7 +12,7 @@
   "mcp": {
     "server": {
       "name": "ground-stay-mcp",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "title": "Ground Stay"
     },
     "tools": [
@@ -35,7 +35,7 @@
       {
         "name": "list_bookings",
         "title": "List bookings",
-        "description": "List bookings the signed-in user can see (RLS-scoped). Supports optional status filter and limit.",
+        "description": "List bookings the signed-in user can see (RLS-scoped). Supports optional state filter and limit.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -44,9 +44,9 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "status": {
+            "state": {
               "type": "string",
-              "description": "Optional booking status filter, e.g. 'confirmed', 'pending'."
+              "description": "Optional booking state filter, e.g. 'confirmed', 'checked_in', 'pending_deposit'."
             },
             "limit": {
               "type": "integer",
@@ -73,6 +73,55 @@
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_exceptions",
+        "title": "Get operational exceptions",
+        "description": "Return the current operational exceptions (missing drivers, unpaid deposits near arrival, TM30 gaps, etc). Admin-only — the underlying RPC rejects non-admin callers.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "search_guests",
+        "title": "Search guests",
+        "description": "Search guest profiles by name or email (case-insensitive). RLS-scoped — returns only what the signed-in user is permitted to see. Contact numbers are masked.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 80,
+              "description": "At least 2 characters. Matches name or email substring."
+            },
+            "limit": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 25,
+              "description": "Max rows (default 10)."
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
       }
