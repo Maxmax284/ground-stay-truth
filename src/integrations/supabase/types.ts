@@ -1290,6 +1290,48 @@ export type Database = {
           },
         ]
       }
+      mcp_activity: {
+        Row: {
+          client_id: string | null
+          client_name: string | null
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          input_summary: Json | null
+          row_count: number | null
+          success: boolean
+          tool_name: string
+          user_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          input_summary?: Json | null
+          row_count?: number | null
+          success?: boolean
+          tool_name: string
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          input_summary?: Json | null
+          row_count?: number | null
+          success?: boolean
+          tool_name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       media_library_assets: {
         Row: {
           alt_text: string | null

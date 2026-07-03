@@ -11,6 +11,7 @@ import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { OpsBookingTimelineSheet } from "@/components/ops/OpsBookingTimelineSheet";
 import { SystemsMatrixPanel } from "@/components/ops/SystemsMatrixPanel";
 import { VerificationPanel } from "@/components/ops/VerificationPanel";
+import { AgentActivityPanel } from "@/components/ops/AgentActivityPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { useFrontDeskData } from "@/hooks/useFrontDesk";
 import {
@@ -413,6 +414,7 @@ export default function OpsControlTower() {
             <TabsTrigger value="transit">Transit Monitor</TabsTrigger>
             <TabsTrigger value="exceptions">Exceptions</TabsTrigger>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
+            <TabsTrigger value="agents">Agent Activity</TabsTrigger>
             <TabsTrigger value="verify">Verification</TabsTrigger>
           </TabsList>
 
@@ -430,6 +432,9 @@ export default function OpsControlTower() {
           </TabsContent>
           <TabsContent value="timeline" className="mt-4">
             <TimelineLookupPanel onOpenTimeline={setTimelineId} />
+          </TabsContent>
+          <TabsContent value="agents" className="mt-4">
+            <AgentActivityPanel />
           </TabsContent>
           <TabsContent value="verify" className="mt-4">
             <VerificationPanel />

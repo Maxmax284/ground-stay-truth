@@ -7,6 +7,34 @@ import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.20.0";
 
 // src/lib/mcp/tools/whoami.ts
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.20.0";
+
+// src/lib/mcp/log.ts
+async function logMcpActivity(params) {
+  try {
+    const { createClient } = await import("npm:@supabase/supabase-js@^2.95.3");
+    const admin = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { persistSession: false, autoRefreshToken: false } }
+    );
+    const claims = params.ctx.getClaims?.() ?? {};
+    const clientName = claims?.client_name ?? claims?.name ?? null;
+    await admin.from("mcp_activity").insert({
+      user_id: params.ctx.getUserId?.() ?? null,
+      tool_name: params.toolName,
+      client_name: clientName,
+      client_id: params.ctx.getClientId?.() ?? null,
+      success: params.success,
+      error_message: params.errorMessage ?? null,
+      row_count: params.rowCount ?? null,
+      duration_ms: Math.max(0, Date.now() - params.startedAt),
+      input_summary: params.inputSummary ?? {}
+    });
+  } catch {
+  }
+}
+
+// src/lib/mcp/tools/whoami.ts
 var whoami_default = defineTool({
   name: "whoami",
   title: "Who am I",
@@ -14,7 +42,9 @@ var whoami_default = defineTool({
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (_input, ctx) => {
+    const startedAt = Date.now();
     if (!ctx.isAuthenticated()) {
+      await logMcpActivity({ ctx, toolName: "whoami", startedAt, success: false, errorMessage: "not_authenticated" });
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
     const { createClient } = await import("npm:@supabase/supabase-js@^2.95.3");
@@ -27,12 +57,17 @@ var whoami_default = defineTool({
       }
     );
     const userId = ctx.getUserId();
-    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+    const { data: roles, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+    if (error) {
+      await logMcpActivity({ ctx, toolName: "whoami", startedAt, success: false, errorMessage: error.message });
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    }
     const info = {
       user_id: userId,
       email: ctx.getUserEmail(),
       roles: (roles ?? []).map((r) => r.role)
     };
+    await logMcpActivity({ ctx, toolName: "whoami", startedAt, success: true, rowCount: roles?.length ?? 0 });
     return {
       content: [{ type: "text", text: JSON.stringify(info) }],
       structuredContent: info
@@ -46,14 +81,16 @@ import { z } from "npm:zod@^3.25.76";
 var list_bookings_default = defineTool2({
   name: "list_bookings",
   title: "List bookings",
-  description: "List bookings the signed-in user can see (RLS-scoped). Supports optional status filter and limit.",
+  description: "List bookings the signed-in user can see (RLS-scoped). Supports optional state filter and limit.",
   inputSchema: {
-    status: z.string().optional().describe("Optional booking status filter, e.g. 'confirmed', 'pending'."),
+    state: z.string().optional().describe("Optional booking state filter, e.g. 'confirmed', 'checked_in', 'pending_deposit'."),
     limit: z.number().int().positive().max(50).optional().describe("Max rows (default 20).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ status, limit }, ctx) => {
+  handler: async ({ state, limit }, ctx) => {
+    const startedAt = Date.now();
     if (!ctx.isAuthenticated()) {
+      await logMcpActivity({ ctx, toolName: "list_bookings", startedAt, success: false, errorMessage: "not_authenticated" });
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
     const { createClient } = await import("npm:@supabase/supabase-js@^2.95.3");
@@ -66,13 +103,15 @@ var list_bookings_default = defineTool2({
       }
     );
     let q = supabase.from("bookings").select(
-      "id, guest_name, check_in, check_out, status, total_amount, unit_id, created_at"
+      "id, check_in, check_out, state, total_price, num_guests, unit_id, guest_id, created_at"
     ).order("check_in", { ascending: false }).limit(limit ?? 20);
-    if (status) q = q.eq("status", status);
+    if (state) q = q.eq("state", state);
     const { data, error } = await q;
     if (error) {
+      await logMcpActivity({ ctx, toolName: "list_bookings", startedAt, success: false, errorMessage: error.message, inputSummary: { state, limit } });
       return { content: [{ type: "text", text: error.message }], isError: true };
     }
+    await logMcpActivity({ ctx, toolName: "list_bookings", startedAt, success: true, rowCount: data?.length ?? 0, inputSummary: { state, limit } });
     return {
       content: [{ type: "text", text: JSON.stringify(data ?? []) }],
       structuredContent: { bookings: data ?? [] }
@@ -89,7 +128,9 @@ var list_units_default = defineTool3({
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (_input, ctx) => {
+    const startedAt = Date.now();
     if (!ctx.isAuthenticated()) {
+      await logMcpActivity({ ctx, toolName: "list_units", startedAt, success: false, errorMessage: "not_authenticated" });
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
     const { createClient } = await import("npm:@supabase/supabase-js@^2.95.3");
@@ -101,13 +142,107 @@ var list_units_default = defineTool3({
         auth: { persistSession: false, autoRefreshToken: false }
       }
     );
-    const { data, error } = await supabase.from("units").select("id, name, unit_type, capacity, base_price, active").order("name", { ascending: true });
+    const { data, error } = await supabase.from("units").select("id, name, unit_type, capacity, base_price, is_active").order("name", { ascending: true });
     if (error) {
+      await logMcpActivity({ ctx, toolName: "list_units", startedAt, success: false, errorMessage: error.message });
       return { content: [{ type: "text", text: error.message }], isError: true };
     }
+    await logMcpActivity({ ctx, toolName: "list_units", startedAt, success: true, rowCount: data?.length ?? 0 });
     return {
       content: [{ type: "text", text: JSON.stringify(data ?? []) }],
       structuredContent: { units: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-exceptions.ts
+import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.20.0";
+var get_exceptions_default = defineTool4({
+  name: "get_exceptions",
+  title: "Get operational exceptions",
+  description: "Return the current operational exceptions (missing drivers, unpaid deposits near arrival, TM30 gaps, etc). Admin-only \u2014 the underlying RPC rejects non-admin callers.",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (_input, ctx) => {
+    const startedAt = Date.now();
+    if (!ctx.isAuthenticated()) {
+      await logMcpActivity({ ctx, toolName: "get_exceptions", startedAt, success: false, errorMessage: "not_authenticated" });
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const { createClient } = await import("npm:@supabase/supabase-js@^2.95.3");
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_PUBLISHABLE_KEY,
+      {
+        global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+        auth: { persistSession: false, autoRefreshToken: false }
+      }
+    );
+    const { data, error } = await supabase.rpc("get_ops_exceptions");
+    if (error) {
+      await logMcpActivity({ ctx, toolName: "get_exceptions", startedAt, success: false, errorMessage: error.message });
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    }
+    await logMcpActivity({ ctx, toolName: "get_exceptions", startedAt, success: true, rowCount: data?.length ?? 0 });
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { exceptions: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/search-guests.ts
+import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z2 } from "npm:zod@^3.25.76";
+var search_guests_default = defineTool5({
+  name: "search_guests",
+  title: "Search guests",
+  description: "Search guest profiles by name or email (case-insensitive). RLS-scoped \u2014 returns only what the signed-in user is permitted to see. Contact numbers are masked.",
+  inputSchema: {
+    query: z2.string().min(2).max(80).describe("At least 2 characters. Matches name or email substring."),
+    limit: z2.number().int().positive().max(25).optional().describe("Max rows (default 10).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ query, limit }, ctx) => {
+    const startedAt = Date.now();
+    if (!ctx.isAuthenticated()) {
+      await logMcpActivity({ ctx, toolName: "search_guests", startedAt, success: false, errorMessage: "not_authenticated" });
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const { createClient } = await import("npm:@supabase/supabase-js@^2.95.3");
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_PUBLISHABLE_KEY,
+      {
+        global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+        auth: { persistSession: false, autoRefreshToken: false }
+      }
+    );
+    const safe = query.replace(/[%,]/g, "").trim();
+    const pattern = `%${safe}%`;
+    const { data, error } = await supabase.from("profiles").select("user_id, full_name, email, phone, preferred_language, created_at").or(`full_name.ilike.${pattern},email.ilike.${pattern}`).order("created_at", { ascending: false }).limit(limit ?? 10);
+    if (error) {
+      await logMcpActivity({ ctx, toolName: "search_guests", startedAt, success: false, errorMessage: error.message, inputSummary: { query_len: query.length } });
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    }
+    const maskPhone = (p) => {
+      if (!p) return null;
+      const digits = p.replace(/\D/g, "");
+      if (digits.length < 4) return "***";
+      return `***${digits.slice(-4)}`;
+    };
+    const safeRows = (data ?? []).map((r) => ({
+      user_id: r.user_id,
+      full_name: r.full_name,
+      email: r.email,
+      phone_last4: maskPhone(r.phone),
+      preferred_language: r.preferred_language,
+      created_at: r.created_at
+    }));
+    await logMcpActivity({ ctx, toolName: "search_guests", startedAt, success: true, rowCount: safeRows.length, inputSummary: { query_len: query.length } });
+    return {
+      content: [{ type: "text", text: JSON.stringify(safeRows) }],
+      structuredContent: { guests: safeRows }
     };
   }
 });
@@ -117,13 +252,13 @@ var projectRef = "eglgvhnkwhozjnenwjxd";
 var mcp_default = defineMcp({
   name: "ground-stay-mcp",
   title: "Ground Stay",
-  version: "0.1.0",
-  instructions: "Read-only operational access to Ground Stay: inspect the signed-in user's identity/roles, list bookings, and list units. Uses the caller's Supabase session, so RLS applies.",
+  version: "0.2.0",
+  instructions: "Read-only operational access to Ground Stay. Inspect the signed-in user's identity/roles, list bookings and units, search guests (PII-masked), and pull the current operational exceptions (admin-only). Uses the caller's Supabase session, so RLS applies.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"
   }),
-  tools: [whoami_default, list_bookings_default, list_units_default]
+  tools: [whoami_default, list_bookings_default, list_units_default, get_exceptions_default, search_guests_default]
 });
 
 // lovable-mcp-supabase-entry.ts
