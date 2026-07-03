@@ -5,6 +5,7 @@
 // 4) Honors a manual ai_pause_until timestamp (auto-restores after pause expires)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
+import { sendFenrirSecurityEvent } from "../_shared/fenrir.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -76,6 +77,23 @@ Deno.serve(async (req) => {
           severity: "critical",
           metadata: { spent_micro_usd: spent, budget_micro_usd: budget, month: monthMarker },
         });
+        // Fenrir Phase 3 — surface the kill switch as a system.kill_switch_activated event.
+        await sendFenrirSecurityEvent(
+          {
+            event_type: "ai_kill_switch_engaged",
+            severity: "critical",
+            confidence_score: 100,
+            details: {
+              source_platform: "groundstay",
+              actor_role: "admin",
+              actor_id: "system",
+              trigger: "ai_budget_100pct",
+              spent_bucket: spent >= 10_000_000 ? "10M+" : String(spent),
+              month: monthMarker,
+            },
+          },
+          { supabase: sb, environment: "production" },
+        );
         fired.push("100");
       }
     }
