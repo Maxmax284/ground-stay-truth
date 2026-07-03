@@ -97,6 +97,7 @@ function AIAssistantPanelInner() {
   const quickPrompts = focus && role !== "guest" ? FOCUSED_BOOKING_PROMPTS : baseQuickPrompts;
   const [input, setInput] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [showPrompts, setShowPrompts] = useState(true);
   const [mode, setMode] = useState<AIMode>("explain");
   const [language, setLanguage] = useState<string>("en");
   const scrollRef = useRef<HTMLDivElement>(null);
