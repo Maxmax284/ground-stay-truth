@@ -104,6 +104,8 @@ Deno.serve(async (req) => {
         logged: auditRows.length,
         forwarded,
         forward_errors: forwardErrors,
+        rejected,
+        environment,
         fenrir_enabled: enabled,
       }),
       { headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
