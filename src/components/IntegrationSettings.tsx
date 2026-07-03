@@ -12,7 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { usePolicySettings, useUpdatePolicySetting } from "@/hooks/usePolicySettings";
 import { useSecretStatuses, useSetSecret, useDeleteSecret } from "@/hooks/useIntegrationSecrets";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CreditCard, Mail, Eye, EyeOff, Save, CheckCircle2, XCircle, ShieldCheck, Plane, Trash2 } from "lucide-react";
+import { CreditCard, Mail, Eye, EyeOff, Save, CheckCircle2, XCircle, ShieldCheck, Plane, Trash2, Zap, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { MessagingBridgeSettings } from "@/components/MessagingBridgeSettings";
 import { WebhookHealthCard } from "@/components/WebhookHealthCard";
 
@@ -28,6 +29,35 @@ export function IntegrationSettings() {
   const { toast } = useToast();
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
+  const [pinging, setPinging] = useState(false);
+  const [pingResult, setPingResult] = useState<null | {
+    ok: boolean; status?: number; duration_ms?: number; within_sla?: boolean;
+    correlation_id?: string; network_error?: string | null; response_preview?: string;
+    missing?: string[]; message?: string; error?: string;
+  }>(null);
+
+  const handleFenrirPing = async () => {
+    setPinging(true);
+    setPingResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("fenrir-test-ping", { body: {} });
+      if (error) throw error;
+      setPingResult(data);
+      toast({
+        title: data?.ok ? "Fenrir ping successful" : "Fenrir ping failed",
+        description: data?.ok
+          ? `Round-trip ${data.duration_ms}ms · HTTP ${data.status}`
+          : data?.network_error || data?.message || `HTTP ${data?.status ?? "?"}`,
+        variant: data?.ok ? "default" : "destructive",
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Ping failed";
+      setPingResult({ ok: false, error: msg });
+      toast({ title: "Fenrir ping failed", description: msg, variant: "destructive" });
+    } finally {
+      setPinging(false);
+    }
+  };
 
   const isLoading = policiesLoading || secretsLoading;
   if (isLoading) return <div className="space-y-4">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}</div>;
@@ -302,6 +332,40 @@ export function IntegrationSettings() {
             </div>
             {renderSecretField("fenrir_api_key", "Outbound API Key", "flk_...")}
             {renderSecretField("fenrir_receive_token", "Inbound Webhook Token", "frt_...")}
+            <Separator />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <Label className="text-sm font-medium">Live connection test</Label>
+                  <p className="text-xs text-muted-foreground">Sends a signed <code className="text-[10px]">system.integration_test</code> event and reports round-trip status.</p>
+                </div>
+                <Button size="sm" onClick={handleFenrirPing} disabled={pinging}>
+                  {pinging ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Zap className="h-4 w-4 mr-1.5" />}
+                  Send Test Ping
+                </Button>
+              </div>
+              {pingResult && (
+                <div className={`rounded-md border p-3 text-xs space-y-1 ${pingResult.ok ? "border-green-500/40 bg-green-500/5" : "border-destructive/40 bg-destructive/5"}`}>
+                  <div className="flex items-center gap-2 font-medium text-foreground">
+                    {pingResult.ok ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <XCircle className="h-4 w-4 text-destructive" />}
+                    {pingResult.ok
+                      ? `Delivered · HTTP ${pingResult.status} · ${pingResult.duration_ms}ms${pingResult.within_sla ? " (within 10s SLA)" : ""}`
+                      : "Ping failed"}
+                  </div>
+                  {pingResult.correlation_id && (
+                    <p className="font-mono text-[10px] text-muted-foreground">correlation_id: {pingResult.correlation_id}</p>
+                  )}
+                  {pingResult.missing?.length ? (
+                    <p className="text-muted-foreground">Missing config: {pingResult.missing.join(", ")}</p>
+                  ) : null}
+                  {pingResult.network_error && <p className="text-muted-foreground">Network: {pingResult.network_error}</p>}
+                  {pingResult.error && <p className="text-muted-foreground">{pingResult.error}</p>}
+                  {pingResult.response_preview && (
+                    <pre className="mt-1 max-h-24 overflow-auto rounded bg-background/60 p-2 font-mono text-[10px]">{pingResult.response_preview}</pre>
+                  )}
+                </div>
+              )}
+            </div>
             <Separator />
             <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1.5">
               <p className="font-medium text-foreground">What this does</p>
