@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.14.0?target=deno";
 import { getCorsHeaders, corsPreflight } from "../_shared/cors.ts";
 import { recordWebhookEvent } from "../_shared/webhookHealth.ts";
+import { sendFenrirSecurityEvent } from "../_shared/fenrir.ts";
 
 // ── Provider Webhook Verifiers ──
 interface NormalizedPaymentEvent {
@@ -191,11 +192,31 @@ serve(async (req) => {
       );
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
+      const hadSignature = !!req.headers.get("stripe-signature");
       console.error("Webhook verification failed:", err);
       // Real signature-present-but-invalid failures still count.
       await recordWebhookEvent(adminClient, "stripe", "failure", {
         reason: `Signature verification failed: ${reason}`,
       });
+      // Only emit Fenrir event for genuine rejections (signature was present but invalid),
+      // not for missing-signature probes.
+      if (hadSignature) {
+        await sendFenrirSecurityEvent(
+          {
+            event_type: "webhook_rejected",
+            severity: "high",
+            confidence_score: 90,
+            details: {
+              source_platform: "groundstay",
+              provider: "stripe",
+              rejection_reason: "invalid_signature",
+              actor_id: "stripe_webhook",
+              actor_role: "guest",
+            },
+          },
+          { supabase: adminClient },
+        );
+      }
       return new Response(JSON.stringify({ error: "Invalid signature" }), {
         status: 400,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
@@ -258,6 +279,45 @@ serve(async (req) => {
       await recordWebhookEvent(adminClient, normalized.provider, "success", {
         eventId: normalized.providerEventId,
       });
+
+      // Fire-and-forget Fenrir emit. Never blocks payment flow.
+      if (normalized.eventType === "payment.success") {
+        await sendFenrirSecurityEvent(
+          {
+            event_type: "payment_processed",
+            severity: "low",
+            confidence_score: 90,
+            details: {
+              source_platform: "groundstay",
+              actor_id: "stripe_webhook",
+              actor_role: "guest",
+              provider: normalized.provider,
+              booking_id: normalized.bookingId,
+              session_id: normalized.sessionId,
+              amount: normalized.amountPaid,
+            },
+          },
+          { supabase: adminClient, correlationId: normalized.providerEventId },
+        );
+      } else if (normalized.eventType === "payment.failed") {
+        await sendFenrirSecurityEvent(
+          {
+            event_type: "payment_failed",
+            severity: "medium",
+            confidence_score: 85,
+            details: {
+              source_platform: "groundstay",
+              actor_id: "stripe_webhook",
+              actor_role: "guest",
+              provider: normalized.provider,
+              booking_id: normalized.bookingId,
+              session_id: normalized.sessionId,
+              amount: normalized.amountPaid,
+            },
+          },
+          { supabase: adminClient, correlationId: normalized.providerEventId },
+        );
+      }
     } else {
       // Bump retry counter so the watchdog can escalate stuck events
       await adminClient.rpc("increment_payment_event_retry", {

@@ -64,7 +64,7 @@ export function emitStaffLoginFailed(email: string, attemptCount = 1) {
   });
 }
 
-// ── Privilege Escalation ──
+// ── Privilege Escalation / Role Changes ──
 
 export function emitPrivilegeEscalation(
   actor: ActorContext,
@@ -76,6 +76,32 @@ export function emitPrivilegeEscalation(
     target_user_id: targetUserId,
     target_role: targetRole,
     action,
+  });
+}
+
+export function emitRoleChanged(
+  actor: ActorContext,
+  targetUserId: string,
+  targetRole: string,
+  action: "added" | "removed"
+) {
+  emit("role_changed", "medium", 90, actor, {
+    target_user_id: targetUserId,
+    target_role: targetRole,
+    action,
+  });
+}
+
+// ── Staff Lifecycle ──
+
+export function emitStaffCreated(
+  actor: ActorContext,
+  targetUserId: string,
+  targetRole: string
+) {
+  emit("staff_created", "high", 95, actor, {
+    target_user_id: targetUserId,
+    target_role: targetRole,
   });
 }
 

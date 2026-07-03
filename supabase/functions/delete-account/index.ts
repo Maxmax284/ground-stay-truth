@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendFenrirSecurityEvent } from "../_shared/fenrir.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
@@ -113,6 +114,24 @@ Deno.serve(async (req) => {
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
+
+    // Fenrir: GDPR delete request (server-side, no PII).
+    await sendFenrirSecurityEvent(
+      {
+        event_type: "gdpr_request_received",
+        severity: "high",
+        confidence_score: 95,
+        details: {
+          source_platform: "groundstay",
+          actor_id: user.id,
+          actor_role: "guest",
+          target_user_id: deleteUserId,
+          request_type: "delete",
+          self_service: deleteUserId === user.id,
+        },
+      },
+      { supabase: adminClient },
+    );
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

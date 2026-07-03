@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendFenrirSecurityEvent } from "../_shared/fenrir.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
@@ -178,6 +179,23 @@ Deno.serve(async (req) => {
     } catch (e) {
       console.warn("[create-staff-account] audit log failed:", e);
     }
+
+    // Fenrir: staff account created (server-side, fire-and-forget)
+    await sendFenrirSecurityEvent(
+      {
+        event_type: "staff_created",
+        severity: "high",
+        confidence_score: 95,
+        details: {
+          source_platform: "groundstay",
+          actor_id: callerId,
+          actor_role: "admin",
+          target_user_id: newUser.user.id,
+          target_role: role,
+        },
+      },
+      { supabase: adminClient },
+    );
 
     return new Response(
       JSON.stringify({ user_id: newUser.user.id, message: "Account created successfully" }),

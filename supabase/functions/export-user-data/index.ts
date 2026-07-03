@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendFenrirSecurityEvent } from "../_shared/fenrir.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
@@ -137,6 +138,31 @@ Deno.serve(async (req) => {
       actor_email: user.email,
       details: { tables_exported: Object.keys(exportData).length },
     });
+
+    // Fenrir: bulk guest export (server-side, PII-scrubbed).
+    // We deliberately pass counts + booleans, never the raw payload.
+    await sendFenrirSecurityEvent(
+      {
+        event_type: "bulk_guest_export",
+        severity: "high",
+        confidence_score: 95,
+        details: {
+          source_platform: "groundstay",
+          actor_id: userId,
+          actor_role: "guest",
+          actor_email: user.email, // will be hashed to actor_email_hash
+          record_count: (bookingsRes.data ?? []).length + bookingPayments.length,
+          booking_count: (bookingsRes.data ?? []).length,
+          payment_count: bookingPayments.length,
+          message_count: (messagesRes.data ?? []).length,
+          document_count: (documentsRes.data ?? []).length,
+          export_format: "json",
+          includes_pii: true,
+          self_service: true,
+        },
+      },
+      { supabase: adminClient },
+    );
 
     return new Response(JSON.stringify(exportData, null, 2), {
       headers: {
