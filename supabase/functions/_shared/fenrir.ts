@@ -116,7 +116,7 @@ export async function sendFenrirSecurityEvent(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": apiKey,
+          "X-Connector-Key": apiKey,
           "x-groundstay-environment": environment,
         },
         body: JSON.stringify(envelope),
