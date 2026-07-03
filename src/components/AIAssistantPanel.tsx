@@ -456,8 +456,41 @@ function AIAssistantPanelInner() {
         </div>
       </div>
 
+      {/* Persistent quick actions — collapsible strip above composer */}
+      {quickPrompts.length > 0 && messages.length > 0 && (
+        <div className="border-t bg-muted/30">
+          <button
+            onClick={() => setShowPrompts((v) => !v)}
+            className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+            aria-expanded={showPrompts}
+          >
+            <span className="flex items-center gap-1.5">
+              <Lightbulb className="h-3 w-3 text-primary" />
+              Quick actions & help
+            </span>
+            {showPrompts ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+          </button>
+          {showPrompts && (
+            <div className="px-2 pb-2 flex gap-1 overflow-x-auto scrollbar-thin">
+              {quickPrompts.map((qp) => (
+                <button
+                  key={qp.label}
+                  onClick={() => sendMessage(qp.prompt, mode, undefined, langCodeToName(language))}
+                  disabled={isStreaming}
+                  className="flex items-center gap-1 rounded-full bg-background border border-border px-2.5 py-1 text-[11px] whitespace-nowrap hover:bg-accent hover:border-primary/40 disabled:opacity-50 transition-colors shrink-0"
+                >
+                  <span className="text-primary">{qp.icon}</span>
+                  {qp.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Input */}
       <div className="border-t px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+
         <div className="flex gap-2">
           <Textarea
             value={input}
