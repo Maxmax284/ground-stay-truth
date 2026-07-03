@@ -995,6 +995,70 @@ Honest budget-route answer: "DMK is usually the cheaper Bangkok airport. From th
       console.error("Intelligence fetch failed:", e);
     }
 
+    // ─── PLATFORM GUIDANCE LAYER (approved feature/tooltip knowledge) ─────
+    // Grounds Kru Glitch answers in the app's own registered guidance so
+    // "how do I…", "what is this page…", "why is X saying Y" questions
+    // pull from approved copy instead of hallucination. Read-only; strictly
+    // filtered by role, guest_visible, and status.
+    try {
+      const focusedRoute: string | undefined = focused_context?.route;
+      const focusedPageKey: string | undefined = focused_context?.page_key;
+      const lastUserMsg = (messages ?? []).slice().reverse().find((m: any) => m.role === "user")?.content || singleMessage || "";
+      const userText = String(lastUserMsg).toLowerCase();
+
+      let gQuery = adminClient
+        .from("platform_guidance")
+        .select("key, feature_name, short_tooltip, page_help, warnings, step_by_step, related_keys, risk_level, roles_allowed, guest_visible, route, section")
+        .eq("status", "approved")
+        .limit(60);
+
+      const { data: gAll } = await gQuery;
+      const guidance = (gAll ?? []).filter((g: any) => {
+        // Role gate — server-side defense in depth (RLS already narrows for signed-in reads).
+        if (Array.isArray(g.roles_allowed) && g.roles_allowed.length > 0 && !g.roles_allowed.includes(role)) return false;
+        // Guests only see guest_visible entries.
+        if (role === "guest" && g.guest_visible !== true) return false;
+        return true;
+      });
+
+      // Score by relevance: route match, page_key match, keyword in text.
+      const scored = guidance.map((g: any) => {
+        let score = 0;
+        if (focusedRoute && g.route && focusedRoute.startsWith(g.route)) score += 5;
+        if (focusedPageKey && g.key === focusedPageKey) score += 6;
+        if (userText) {
+          const hay = `${g.key} ${g.feature_name} ${g.short_tooltip ?? ""}`.toLowerCase();
+          const terms = userText.split(/[^a-z0-9]+/).filter((t: string) => t.length >= 4);
+          for (const t of terms) if (hay.includes(t)) score += 2;
+        }
+        return { g, score };
+      }).filter((x) => x.score > 0);
+
+      // Always seed a few high-signal entries even if nothing matched, so the
+      // model has a floor of approved knowledge.
+      const topMatches = scored.sort((a, b) => b.score - a.score).slice(0, 8).map((x) => x.g);
+      const usedKeys = topMatches.map((g: any) => g.key);
+
+      if (topMatches.length > 0) {
+        contextData += `\n\nAPPROVED PLATFORM GUIDANCE (whitelisted, safe to cite as "Platform Guide"; do not paraphrase beyond meaning):`;
+        for (const g of topMatches as any[]) {
+          contextData += `\n- [${g.key}] ${g.feature_name}: ${g.short_tooltip}`;
+          if (g.page_help) contextData += ` — ${String(g.page_help).slice(0, 240)}`;
+          if (Array.isArray(g.warnings) && g.warnings.length > 0) {
+            contextData += ` (warnings: ${g.warnings.slice(0, 3).join("; ")})`;
+          }
+          if (Array.isArray(g.step_by_step) && g.step_by_step.length > 0) {
+            const steps = g.step_by_step.slice(0, 4).map((s: any) => s?.step ?? s).filter(Boolean);
+            if (steps.length) contextData += ` [steps: ${steps.join(" → ")}]`;
+          }
+        }
+        contextData += `\nUsage rules: If the user is asking "what is", "how do I", "where do I", "why is this saying", or troubleshooting a feature named above, ground the answer in these entries and add "Platform Guide" to SOURCES. Do NOT invent steps, warnings, or feature behavior that is not listed here. If they ask about a feature that is not in this list, say you don't have approved guidance for it yet.`;
+        console.log(JSON.stringify({ level: "INFO", function: "ai-assistant", guidance_keys_used: usedKeys, focused_page: focusedPageKey || null, focused_route: focusedRoute || null }));
+      }
+    } catch (e) {
+      console.error("Platform guidance fetch failed:", e);
+    }
+
     // ─── MODE-SPECIFIC EXPANSIONS ───────────────────────────────────────────
     if (mode === "digest" || mode === "summarize") {
       const [detBookingsRes, detMaintenanceRes, detLaundryRes] = await Promise.all([
