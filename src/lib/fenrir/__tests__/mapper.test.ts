@@ -268,37 +268,30 @@ describe("sendFenrirSecurityEvent", () => {
 
 // ── 4. API key never leaks into the client bundle ──
 describe("API key surface check", () => {
-  it("no source file under src/ references FENRIR_API_KEY", () => {
+  const SKIP = /\.(test|spec)\.(ts|tsx|js|jsx)$/;
+
+  function collectSrc(needle: string): string[] {
     const hits: string[] = [];
     function walk(dir: string) {
       for (const entry of readdirSync(dir)) {
         const full = join(dir, entry);
         const st = statSync(full);
         if (st.isDirectory()) walk(full);
-        else if (/\.(ts|tsx|js|jsx)$/.test(entry)) {
+        else if (/\.(ts|tsx|js|jsx)$/.test(entry) && !SKIP.test(entry)) {
           const src = readFileSync(full, "utf8");
-          if (src.includes("FENRIR_API_KEY")) hits.push(full);
+          if (src.includes(needle)) hits.push(full);
         }
       }
     }
     walk("src");
-    expect(hits).toEqual([]);
+    return hits;
+  }
+
+  it("no source file under src/ references FENRIR_API_KEY", () => {
+    expect(collectSrc("FENRIR_API_KEY")).toEqual([]);
   });
 
-  it("does not expose sendFenrirSecurityEvent from any src/ module", () => {
-    const hits: string[] = [];
-    function walk(dir: string) {
-      for (const entry of readdirSync(dir)) {
-        const full = join(dir, entry);
-        const st = statSync(full);
-        if (st.isDirectory()) walk(full);
-        else if (/\.(ts|tsx)$/.test(entry)) {
-          const src = readFileSync(full, "utf8");
-          if (src.includes("sendFenrirSecurityEvent")) hits.push(full);
-        }
-      }
-    }
-    walk("src");
-    expect(hits).toEqual([]);
+  it("does not import sendFenrirSecurityEvent from any src/ module", () => {
+    expect(collectSrc("sendFenrirSecurityEvent")).toEqual([]);
   });
 });
