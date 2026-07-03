@@ -110,3 +110,7 @@ verify_jwt = false
 
 [functions.vanta-lookup]
 verify_jwt = false
+
+[functions.ops-tower-narrative]
+verify_jwt = false
+
