@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { FENRIR_EVENT_MAP, sendFenrirSecurityEvent } from "../_shared/fenrir.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
@@ -67,44 +68,34 @@ Deno.serve(async (req) => {
 
     await supabase.from("security_events").insert(auditRows);
 
-    // Forward to Fenrir Lock if enabled
+    // Forward to Fenrir Lock through the mapper (dotted namespace + PII strip).
+    // Unknown internal event names are rejected at the helper.
     let forwarded = 0;
     let forwardErrors = 0;
+    let rejected = 0;
+    const environment = (Deno.env.get("FENRIR_ENVIRONMENT") as "staging" | "production") || "staging";
 
     if (enabled && endpoint) {
-      // Read API key from integration_secrets (secure) with env fallback
-      const { data: fenrirSecretRow } = await supabase
-        .from("integration_secrets")
-        .select("encrypted_value")
-        .eq("secret_key", "fenrir_api_key")
-        .maybeSingle();
-      const fenrirApiKey = fenrirSecretRow?.encrypted_value || Deno.env.get("FENRIR_API_KEY") || "";
-
       for (const event of events) {
-        try {
-          const resp = await fetch(endpoint, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-api-key": fenrirApiKey,
-            },
-            body: JSON.stringify(event),
-          });
-
-          if (resp.ok) {
-            forwarded++;
-          } else if (resp.status === 429) {
-            // Rate limited — stop sending, remaining stay in local audit
-            console.warn("[fenrir-dispatch] Rate limited by Fenrir Lock");
-            break;
-          } else {
-            forwardErrors++;
-            console.error(`[fenrir-dispatch] HTTP ${resp.status}: ${await resp.text()}`);
-          }
-        } catch (err) {
-          forwardErrors++;
-          console.error("[fenrir-dispatch] Network error:", err);
+        if (!FENRIR_EVENT_MAP[event.event_type]) {
+          rejected++;
+          continue;
         }
+        const result = await sendFenrirSecurityEvent(
+          {
+            event_type: event.event_type,
+            severity: event.severity,
+            confidence_score: event.confidence_score,
+            user_email: event.user_email,
+            details: event.details ?? {},
+            source_ip: event.source_ip,
+            timestamp: event.timestamp,
+          },
+          { supabase, environment },
+        );
+        if (result.status === "sent") forwarded++;
+        else if (result.status === "rejected") rejected++;
+        else forwardErrors++;
       }
     }
 
@@ -113,6 +104,8 @@ Deno.serve(async (req) => {
         logged: auditRows.length,
         forwarded,
         forward_errors: forwardErrors,
+        rejected,
+        environment,
         fenrir_enabled: enabled,
       }),
       { headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
