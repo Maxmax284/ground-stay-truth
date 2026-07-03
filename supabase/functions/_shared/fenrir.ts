@@ -32,10 +32,12 @@ export interface InternalFenrirEvent {
  * Unknown internal names are rejected by the helper.
  */
 export const FENRIR_EVENT_MAP: Record<string, string> = {
-  // auth
+  // auth / admin
   staff_login: "auth.login_success",
   staff_login_failed: "auth.login_failed",
   privilege_escalation: "admin.privilege_escalation",
+  role_changed: "admin.role_changed",
+  staff_created: "admin.staff_created",
 
   // guest data
   guest_data_access: "guest.data_access",
@@ -52,6 +54,7 @@ export const FENRIR_EVENT_MAP: Record<string, string> = {
   refund_issued: "payment.refund_issued",
   rate_override: "payment.rate_override",
   unauthorized_discount: "payment.unauthorized_discount",
+  webhook_rejected: "payment.webhook_rejected",
 
   // access & security
   cross_property_access: "access.cross_property",
