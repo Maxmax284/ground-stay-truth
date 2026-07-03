@@ -15,6 +15,10 @@
 
 // deno-lint-ignore-file no-explicit-any
 
+// Ambient declaration so this file also type-checks under Node/Vitest
+// (it runs in Deno inside edge functions).
+declare const Deno: { env: { get(k: string): string | undefined } };
+
 import {
   FENRIR_EVENT_MAP,
   scrubDetails,
