@@ -192,11 +192,31 @@ serve(async (req) => {
       );
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
+      const hadSignature = !!req.headers.get("stripe-signature");
       console.error("Webhook verification failed:", err);
       // Real signature-present-but-invalid failures still count.
       await recordWebhookEvent(adminClient, "stripe", "failure", {
         reason: `Signature verification failed: ${reason}`,
       });
+      // Only emit Fenrir event for genuine rejections (signature was present but invalid),
+      // not for missing-signature probes.
+      if (hadSignature) {
+        await sendFenrirSecurityEvent(
+          {
+            event_type: "webhook_rejected",
+            severity: "high",
+            confidence_score: 90,
+            details: {
+              source_platform: "groundstay",
+              provider: "stripe",
+              rejection_reason: "invalid_signature",
+              actor_id: "stripe_webhook",
+              actor_role: "guest",
+            },
+          },
+          { supabase: adminClient },
+        );
+      }
       return new Response(JSON.stringify({ error: "Invalid signature" }), {
         status: 400,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
