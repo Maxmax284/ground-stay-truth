@@ -86,6 +86,12 @@ export function useUserRoles() {
       qc.invalidateQueries({ queryKey: ["user-roles"] });
       toast.success("Role removed");
       if (user && row) {
+        emitRoleChanged(
+          { userId: user.id, email: user.email, role: currentRole },
+          row.user_id,
+          row.role,
+          "removed"
+        );
         supabase.rpc("log_staff_audit_event", {
           _event_type: "role_changed",
           _severity: "high",
