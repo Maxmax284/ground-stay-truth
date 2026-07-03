@@ -368,12 +368,8 @@ function AIAssistantPanelInner() {
           </div>
         </div>
       )}
-      {/* placeholder removed — quick prompts now live in the persistent strip above the composer */}
-      {false && (
-        <div />
 
-        </div>
-      )}
+
 
       {/* Messages - fixed scroll */}
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
