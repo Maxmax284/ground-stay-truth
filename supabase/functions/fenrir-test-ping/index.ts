@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": apiKey,
+          "X-Connector-Key": apiKey,
           "x-groundstay-environment": environment,
           "x-groundstay-correlation-id": correlation_id,
         },
