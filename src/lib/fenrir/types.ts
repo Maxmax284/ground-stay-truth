@@ -22,6 +22,8 @@ export type FenrirEventType =
   | "staff_login"
   | "staff_login_failed"
   | "privilege_escalation"
+  | "role_changed"
+  | "staff_created"
   // Guest Data
   | "guest_data_access"
   | "guest_data_modified"
@@ -36,6 +38,7 @@ export type FenrirEventType =
   | "refund_issued"
   | "rate_override"
   | "unauthorized_discount"
+  | "webhook_rejected"
   // Access & Security
   | "cross_property_access"
   | "after_hours_access"
