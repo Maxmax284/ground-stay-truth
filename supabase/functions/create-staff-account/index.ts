@@ -180,6 +180,23 @@ Deno.serve(async (req) => {
       console.warn("[create-staff-account] audit log failed:", e);
     }
 
+    // Fenrir: staff account created (server-side, fire-and-forget)
+    await sendFenrirSecurityEvent(
+      {
+        event_type: "staff_created",
+        severity: "high",
+        confidence_score: 95,
+        details: {
+          source_platform: "groundstay",
+          actor_id: callerId,
+          actor_role: "admin",
+          target_user_id: newUser.user.id,
+          target_role: role,
+        },
+      },
+      { supabase: adminClient },
+    );
+
     return new Response(
       JSON.stringify({ user_id: newUser.user.id, message: "Account created successfully" }),
       { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
