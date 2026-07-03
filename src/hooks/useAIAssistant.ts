@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProperty } from "@/hooks/useProperty";
 import { supabase } from "@/integrations/supabase/client";
-import { getAIFocus } from "@/lib/aiFocusStore";
+import { getAIFocus, getAIRouteFocus } from "@/lib/aiFocusStore";
 
 export type AIMode = "explain" | "summarize" | "validate" | "draft" | "digest" | "camp";
 
@@ -142,7 +142,12 @@ export function useAIAssistant() {
             language,
             focused_context: (() => {
               const f = getAIFocus();
-              return f ? { kind: f.kind, booking_id: f.bookingId } : null;
+              const r = getAIRouteFocus();
+              if (f) {
+                return { kind: f.kind, booking_id: f.bookingId, route: r?.route, page_key: r?.pageKey };
+              }
+              if (r) return { kind: "route", route: r.route, page_key: r.pageKey };
+              return null;
             })(),
           }),
           signal: controller.signal,
