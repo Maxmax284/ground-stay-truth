@@ -366,23 +366,10 @@ function AIAssistantPanelInner() {
             <span className="shrink-0 font-medium text-foreground">Focused on:</span>
             <span className="truncate">{focus.label || `Booking ${focus.bookingId.slice(0, 8)}`}</span>
           </div>
-          {messages.length > 0 && (
-            <div className="px-3 pb-2 flex gap-1 overflow-x-auto">
-              {FOCUSED_BOOKING_PROMPTS.slice(0, 4).map((qp) => (
-                <button
-                  key={qp.label}
-                  onClick={() => sendMessage(qp.prompt, mode, undefined, langCodeToName(language))}
-                  disabled={isStreaming}
-                  className="flex items-center gap-1 rounded-full bg-background border border-border px-2 py-0.5 text-[10px] whitespace-nowrap hover:bg-accent disabled:opacity-50 transition-colors"
-                >
-                  <span className="text-primary">{qp.icon}</span>
-                  {qp.label}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       )}
+
+
 
       {/* Messages - fixed scroll */}
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
@@ -456,28 +443,35 @@ function AIAssistantPanelInner() {
         </div>
       </div>
 
-      {/* Persistent quick actions — collapsible strip above composer */}
-      {quickPrompts.length > 0 && messages.length > 0 && (
-        <div className="border-t bg-muted/30">
+      {/* Persistent quick actions — sticky, always visible, thumb-friendly */}
+      {quickPrompts.length > 0 && (
+        <div className="border-t bg-muted/40 sticky bottom-0 z-10 shadow-[0_-2px_8px_-4px_rgba(0,0,0,0.08)]">
           <button
             onClick={() => setShowPrompts((v) => !v)}
-            className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+            className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors min-h-[36px]"
             aria-expanded={showPrompts}
+            aria-controls="ai-quick-prompts"
           >
             <span className="flex items-center gap-1.5">
-              <Lightbulb className="h-3 w-3 text-primary" />
-              Quick actions & help
+              <Lightbulb className="h-3.5 w-3.5 text-primary" />
+              {focus && role !== "guest" ? "Booking actions & help" : "Quick actions & help"}
+              <span className="ml-1 rounded-full bg-primary/10 text-primary px-1.5 py-0.5 text-[9px] normal-case tracking-normal">
+                {quickPrompts.length}
+              </span>
             </span>
-            {showPrompts ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+            {showPrompts ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
           </button>
           {showPrompts && (
-            <div className="px-2 pb-2 flex gap-1 overflow-x-auto scrollbar-thin">
+            <div
+              id="ai-quick-prompts"
+              className="px-2 pb-2 flex gap-1.5 overflow-x-auto scrollbar-thin snap-x"
+            >
               {quickPrompts.map((qp) => (
                 <button
                   key={qp.label}
                   onClick={() => sendMessage(qp.prompt, mode, undefined, langCodeToName(language))}
                   disabled={isStreaming}
-                  className="flex items-center gap-1 rounded-full bg-background border border-border px-2.5 py-1 text-[11px] whitespace-nowrap hover:bg-accent hover:border-primary/40 disabled:opacity-50 transition-colors shrink-0"
+                  className="flex items-center gap-1.5 rounded-full bg-background border border-border px-3 py-2 text-[12px] font-medium whitespace-nowrap hover:bg-accent hover:border-primary/40 active:scale-95 disabled:opacity-50 transition-all shrink-0 snap-start min-h-[36px]"
                 >
                   <span className="text-primary">{qp.icon}</span>
                   {qp.label}
@@ -487,6 +481,7 @@ function AIAssistantPanelInner() {
           )}
         </div>
       )}
+
 
       {/* Input */}
       <div className="border-t px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
