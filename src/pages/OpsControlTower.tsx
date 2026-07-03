@@ -24,6 +24,7 @@ import {
   ExternalLink,
   RefreshCw,
   History,
+  Sparkles,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
@@ -328,6 +329,62 @@ function TimelineLookupPanel({ onOpenTimeline }: { onOpenTimeline: (id: string) 
   );
 }
 
+function NarrativeSummaryCard() {
+  const { data, isLoading, isFetching, refetch } = useQuery({
+    queryKey: ["ops-tower-narrative"],
+    queryFn: async (): Promise<{ summary: string; source: string }> => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not signed in");
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ops-tower-narrative`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            "Content-Type": "application/json",
+          },
+          body: "{}",
+        },
+      );
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      return resp.json();
+    },
+    refetchInterval: 120_000,
+    staleTime: 60_000,
+  });
+
+  return (
+    <Card className="border-primary/30 bg-primary/5">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            What's actually happening right now
+          </CardTitle>
+          <Button size="sm" variant="ghost" onClick={() => refetch()} disabled={isFetching}>
+            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Reading systems…</p>
+        ) : (
+          <p className="text-sm leading-relaxed">
+            {data?.summary ?? "No narrative available."}
+            {data?.source === "deterministic" && (
+              <span className="ml-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+                · deterministic fallback
+              </span>
+            )}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function OpsControlTower() {
   const { isAdmin } = useAuth();
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -346,6 +403,8 @@ export default function OpsControlTower() {
             this answers “is the machine behind the scenes actually working?”
           </p>
         </div>
+
+        <NarrativeSummaryCard />
 
         <Tabs defaultValue="health">
           <TabsList className="flex-wrap h-auto">
