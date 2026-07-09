@@ -17,9 +17,10 @@ const EntrySection = () => (
           className="h-10 w-10 rounded-full object-cover border border-[hsl(36,20%,25%)]"
           loading="lazy"
         />
-        <span className="text-xs tracking-[0.2em] uppercase text-[hsl(36,20%,50%)] font-medium">
+        <span className="font-stat text-xs tracking-[0.2em] uppercase text-[hsl(36,20%,50%)] font-bold">
           LMT CampStay
         </span>
+
       </div>
       <a
         href="#built-from-inside"
