@@ -44,10 +44,11 @@ const FinalCTASection = () => (
           <Link
             to="/auth"
             aria-label="Team access"
-            className="text-[10px] tracking-[0.15em] uppercase text-[hsl(36,20%,20%)] hover:text-[hsl(36,20%,45%)] transition-colors"
+            className="text-[10px] tracking-[0.15em] uppercase text-[hsl(36,20%,28%)] hover:text-[hsl(36,20%,55%)] transition-colors"
           >
-            ·
+            Team
           </Link>
+
         </div>
       </div>
 
