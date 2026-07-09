@@ -176,32 +176,26 @@ export default function Stay() {
       {/* Hero */}
       <header className="relative auth-hero-bg text-primary-foreground overflow-hidden">
         <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-          <a
-            href={staffLoginHref}
-            aria-label="Staff Login"
-            className="block rounded-md px-3 py-2 text-xs font-medium text-primary-foreground/70 underline-offset-4 transition-colors hover:text-primary-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            Staff Login
-          </a>
           <LanguageSelector />
         </div>
         <div className="relative z-10 max-w-5xl mx-auto px-4 py-16 sm:py-24 text-center space-y-4">
-          <h1 className="font-serif text-4xl sm:text-5xl font-bold tracking-tight">
+          <h1 className="font-stat text-5xl sm:text-6xl font-bold tracking-tight uppercase">
             LMT CampStay
           </h1>
           <p className="font-stat text-sm tracking-[0.2em] uppercase text-primary-foreground/60">
             Accommodation · Koh Samui
           </p>
-          <p className="text-xs text-primary-foreground/40 tracking-wide flex items-center gap-1.5">
-            <img src={lamaiLogo} alt="Lamai Muay Thai" className="h-4 w-4 opacity-40" loading="lazy" width={512} height={512} />
-            Powered by{" "}
-            <a href="https://lamaimuaythai.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary-foreground/70 underline underline-offset-2 transition-colors">
+          <p className="font-stat text-xs tracking-[0.2em] uppercase text-primary-foreground/50 flex items-center justify-center gap-1.5">
+            <span>Powered by</span>
+            <img src={lamaiLogo} alt="" className="h-4 w-4 opacity-60" loading="lazy" width={512} height={512} />
+            <a href="https://lamaimuaythai.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary-foreground/80 transition-colors">
               Lamai Muay Thai
             </a>
           </p>
           <p className="text-lg text-primary-foreground/80 max-w-xl mx-auto">
             Purpose-built accommodation for fighters, travelers, and long-term guests across our Koh Samui properties.
           </p>
+
           <div className="flex flex-wrap justify-center gap-4 pt-4">
             <div className="flex items-center gap-2 text-sm text-primary-foreground/70">
               <Shield className="h-4 w-4" /> Direct booking — no commissions
