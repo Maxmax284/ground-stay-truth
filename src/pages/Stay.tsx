@@ -381,7 +381,7 @@ export default function Stay() {
       </main>
 
       <footer className="border-t py-6 text-center text-xs text-muted-foreground">
-        <p>© {new Date().getFullYear()} LMT CampStay · Koh Samui</p>
+        <p>© {new Date().getFullYear()} <span className="font-stat uppercase tracking-tight">LMT CampStay</span> · Koh Samui</p>
         <a href="/legal" className="text-primary hover:underline">Terms & Privacy</a>
       </footer>
 

@@ -89,7 +89,7 @@ export default function OAuthConsent() {
     <main className="flex min-h-screen items-center justify-center p-6">
       <Card className="max-w-md w-full">
         <CardHeader>
-          <CardTitle>Connect {clientName} to LMT CampStay</CardTitle>
+          <CardTitle>Connect {clientName} to <span className="font-stat uppercase tracking-tight">LMT CampStay</span></CardTitle>
           <CardDescription>
             This will let {clientName} act on your behalf using your LMT CampStay
             permissions. Row-level security still applies.
