@@ -14,7 +14,7 @@ const FinalCTASection = () => (
         Now landing doesn't have to feel like a boss fight anymore 😏
       </p>
 
-      <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+      <div className="flex justify-center mb-16">
         <Link
           to="/stay"
           className="group flex items-center justify-center gap-3 px-8 py-4 border border-[hsl(36,20%,25%)] hover:border-[hsl(36,20%,40%)] transition-all duration-300 rounded-sm"
@@ -23,16 +23,6 @@ const FinalCTASection = () => (
             Enter Your Stay
           </span>
           <span className="text-[hsl(36,20%,35%)] group-hover:text-[hsl(36,20%,60%)] transition-colors">→</span>
-        </Link>
-
-        <Link
-          to="/auth"
-          className="group flex items-center justify-center gap-3 px-8 py-4 border border-[hsl(36,20%,30%)] hover:border-[hsl(36,20%,50%)] active:border-[hsl(36,20%,60%)] transition-all duration-300 rounded-sm cursor-pointer"
-        >
-          <span className="text-sm font-medium tracking-wide text-[hsl(36,20%,75%)] group-hover:text-[hsl(36,20%,95%)] transition-colors">
-            Staff Login
-          </span>
-          <span className="text-[hsl(36,20%,45%)] group-hover:text-[hsl(36,20%,65%)] transition-colors">→</span>
         </Link>
       </div>
 
@@ -44,13 +34,23 @@ const FinalCTASection = () => (
             Powered by Lamai Muay Thai
           </span>
         </div>
-        <a
-          href="#built-from-inside"
-          className="text-[10px] tracking-[0.15em] uppercase text-[hsl(36,20%,28%)] hover:text-[hsl(36,20%,55%)] transition-colors"
-        >
-          Built From Inside ↑
-        </a>
+        <div className="flex items-center gap-4">
+          <a
+            href="#built-from-inside"
+            className="text-[10px] tracking-[0.15em] uppercase text-[hsl(36,20%,28%)] hover:text-[hsl(36,20%,55%)] transition-colors"
+          >
+            Built From Inside ↑
+          </a>
+          <Link
+            to="/auth"
+            aria-label="Team access"
+            className="text-[10px] tracking-[0.15em] uppercase text-[hsl(36,20%,20%)] hover:text-[hsl(36,20%,45%)] transition-colors"
+          >
+            ·
+          </Link>
+        </div>
       </div>
+
     </div>
   </section>
 );
