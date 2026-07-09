@@ -64,8 +64,9 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <Smartphone className="h-5 w-5 text-primary" />
-                    Install LMT CampStay
+                    Install <span className="font-stat uppercase tracking-tight">LMT CampStay</span>
                   </DialogTitle>
+
                 </DialogHeader>
                 <div className="space-y-3 text-sm text-muted-foreground">
                   {isIOS ? (
