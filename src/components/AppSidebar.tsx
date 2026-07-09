@@ -334,7 +334,7 @@ export function AppSidebar() {
           </DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">
-          Install LMT CampStay on your phone for faster access — it only takes a few seconds.
+          Install <span className="font-stat uppercase tracking-tight">LMT CampStay</span> on your phone for faster access — it only takes a few seconds.
         </p>
 
         {isIOS ? (
