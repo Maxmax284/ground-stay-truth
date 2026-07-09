@@ -69,10 +69,11 @@ const Auth = () => {
       <div className="w-full max-w-md space-y-6 relative z-10">
         <div className="text-center">
           <h1
-            className="font-serif text-3xl font-bold text-primary-foreground animate-title-in"
+            className="font-stat text-4xl sm:text-5xl font-bold uppercase tracking-tight text-primary-foreground animate-title-in"
           >
             {t("auth.groundStay")}
           </h1>
+
           <p className="mt-1 text-sm text-primary-foreground/60 font-stat tracking-wider uppercase animate-fade-up animate-stagger-2">
             Train. Stay. Compete.
           </p>
