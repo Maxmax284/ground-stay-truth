@@ -13,6 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useCreateUnit, useUpdateUnit, type Unit, type UnitInsert } from "@/hooks/useUnits";
 import { useUnitGroups } from "@/hooks/useUnitGroups";
 import { UnitPhotoUpload } from "@/components/UnitPhotoUpload";
+import { supabase } from "@/integrations/supabase/client";
+
 
 interface UnitFormDialogProps { open: boolean; onOpenChange: (open: boolean) => void; unit?: Unit | null; }
 
