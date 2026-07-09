@@ -146,7 +146,7 @@ export default function Stay() {
 
   const staffLoginHref = `/auth${window.location.search}`;
 
-  const toggleAvailability = async (unitId: string) => {
+  const toggleAvailability = async (unitId: string, groupId?: string | null) => {
     if (expandedUnit === unitId) {
       setExpandedUnit(null);
       return;
@@ -154,7 +154,12 @@ export default function Stay() {
     setExpandedUnit(unitId);
     if (!blockedByUnit[unitId]) {
       try {
-        const resp = await fetch(`${SUPABASE_URL}/functions/v1/get-availability?unit_id=${unitId}`, {
+        // When the card represents a group of sibling units, ask for the
+        // group's intersected availability (a night is only blocked when
+        // every sibling is unavailable). Otherwise fall back to the single
+        // unit's own calendar.
+        const query = groupId ? `?group_id=${groupId}` : `?unit_id=${unitId}`;
+        const resp = await fetch(`${SUPABASE_URL}/functions/v1/get-availability${query}`, {
           headers: { apikey: SUPABASE_KEY },
         });
         const data = await resp.json();
