@@ -289,7 +289,7 @@ function GridOverview({ cfg, contactUrl }: { cfg: StyleConfig; contactUrl: strin
   if (error) return <div style={containerStyle(cfg)}><p style={{ color: "#dc2626" }}>{error}</p></div>;
   if (roomTypes.length === 0) return <div style={containerStyle(cfg)}><p style={{ color: mutedColor(cfg.dark) }}>No rooms available</p></div>;
 
-  const defaultCtaLabel = contactUrl.includes("/stay") ? "View Listings" : contactUrl.includes("/auth/guest") ? "Book Now" : "Check Availability";
+  const defaultCtaLabel = contactUrl.includes("/stay") ? "View Listings" : contactUrl.includes("/auth/guest") ? "Reserve Your Camp Stay" : "Check Availability";
 
   return (
     <div style={{
@@ -383,7 +383,7 @@ function CTAButton({ cfg, contactUrl, fallbackLabel }: { cfg: StyleConfig; conta
 // ── Full Listing ──
 function FullListing({ unit, blocked, cfg, contactUrl, cs }: { unit: UnitData; blocked: BlockedRange[]; cfg: StyleConfig; contactUrl: string; cs: string }) {
   const h = cfg.hidden;
-  const defaultCtaLabel = contactUrl.includes("/stay") ? "View Listings" : contactUrl.includes("/auth/guest") ? "Book Now" : "Check Availability";
+  const defaultCtaLabel = contactUrl.includes("/stay") ? "View Listings" : contactUrl.includes("/auth/guest") ? "Reserve Your Camp Stay" : "Check Availability";
   return (
     <div style={containerStyle(cfg)}>
       {!h.has("photo") && unit.photos && unit.photos.length > 0 && (
@@ -441,7 +441,7 @@ function FullListing({ unit, blocked, cfg, contactUrl, cs }: { unit: UnitData; b
 // ── Compact Card ──
 function CompactCard({ unit, cfg, contactUrl, cs }: { unit: UnitData; blocked: BlockedRange[]; cfg: StyleConfig; contactUrl: string; cs: string }) {
   const h = cfg.hidden;
-  const defaultCtaLabel = contactUrl.includes("/stay") ? "View Listings" : contactUrl.includes("/auth/guest") ? "Book Now" : "Check Availability";
+  const defaultCtaLabel = contactUrl.includes("/stay") ? "View Listings" : contactUrl.includes("/auth/guest") ? "Reserve Your Camp Stay" : "Check Availability";
   return (
     <div style={{ ...containerStyle(cfg), padding: 0, overflow: "hidden", maxWidth: Math.min(cfg.maxWidth, 320) }}>
       {!h.has("photo") && unit.photos && unit.photos.length > 0 && (
@@ -475,7 +475,7 @@ function CompactCard({ unit, cfg, contactUrl, cs }: { unit: UnitData; blocked: B
 
 // ── Calendar Only ──
 function CalendarOnly({ unit, blocked, cfg, contactUrl }: { unit: UnitData; blocked: BlockedRange[]; cfg: StyleConfig; contactUrl: string; cs: string }) {
-  const defaultCtaLabel = contactUrl.includes("/stay") ? "View Listings" : contactUrl.includes("/auth/guest") ? "Book Now" : "Check Availability";
+  const defaultCtaLabel = contactUrl.includes("/stay") ? "View Listings" : contactUrl.includes("/auth/guest") ? "Reserve Your Camp Stay" : "Check Availability";
   return (
     <div style={{ ...containerStyle(cfg), maxWidth: Math.min(cfg.maxWidth, 340) }}>
       <h3 style={{ fontSize: getFontSize(cfg.font) - 1, fontWeight: 600, margin: "0 0 12px" }}>
@@ -501,7 +501,7 @@ function CalendarOnly({ unit, blocked, cfg, contactUrl }: { unit: UnitData; bloc
 
 // ── CTA Only ──
 function CTAOnly({ unit, cfg, contactUrl, cs }: { unit: UnitData; blocked: BlockedRange[]; cfg: StyleConfig; contactUrl: string; cs: string }) {
-  const defaultCtaLabel = contactUrl.includes("/stay") ? "View Listings" : contactUrl.includes("/auth/guest") ? "Book Now" : "Check Availability";
+  const defaultCtaLabel = contactUrl.includes("/stay") ? "View Listings" : contactUrl.includes("/auth/guest") ? "Reserve Your Camp Stay" : "Check Availability";
   return (
     <div style={{ ...containerStyle(cfg), maxWidth: Math.min(cfg.maxWidth, 280), padding: 16, textAlign: "center" }}>
       <h3 style={{ fontSize: getFontSize(cfg.font) + 1, fontWeight: 600, margin: "0 0 4px" }}>{unit.name}</h3>

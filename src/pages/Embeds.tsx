@@ -281,7 +281,7 @@ export default function Embeds() {
                 <div className="space-y-1.5">
                   <Label className="text-xs">{t("embedBuilder.ctaLabelOverride")}</Label>
                   <Input
-                    placeholder="Book Now"
+                    placeholder="Reserve Your Camp Stay"
                     value={ctaLabel}
                     onChange={(e) => setCtaLabel(e.target.value)}
                     className="h-8 text-xs"
