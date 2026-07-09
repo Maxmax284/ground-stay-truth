@@ -1,143 +1,161 @@
-## Audit Summary (what already exists)
+# LMT CampStay → Lamai Hospitality Platform
 
-**Admin surfaces** (all admin-gated via `canAccessRoute`/`permissions`):
-- `/monitoring` (`MonitoringCenter.tsx`) — plain-English alerts feed (payments, email, webhooks, notifications). Closest existing analog to what you're asking for.
-- `/security-center` (`SecurityCenter.tsx`) — Compliance/GDPR/audit.
-- `/disaster-recovery` — Snapshots/restore.
-- `/front-desk` — staff workflow (do NOT duplicate).
-- `/dashboard` (`Index.tsx`) — Command Center root.
+## 1. What's already here (plain English)
 
-**Booking + state** — `bookings`, `booking_state_log`, `bookingStateMachine.ts`, `BookingDetailSheet`, `travelState.ts`, `operationalStatus.ts`. Authoritative — reuse, don't touch.
+**Bookings & inventory.** The platform has a full booking engine. Rooms live in a `units` table with photos, amenities, capacity, price, weekly/monthly rates, min-nights, WiFi, house rules, emergency contacts. Units can be grouped (`unit_groups`) and tied to a `property`. Bookings run through a 9-state machine (inquiry → soft hold → pending approval → pending deposit → confirmed → checked in → completed, plus cancel/no-show paths). Overlaps, occupancy caps, and turnovers are enforced by database triggers.
 
-**Payments** — `payments` (with `payment_type`, `status`), `payment_events`, `payment_links`, `payment_link_events`, `payment_reconciliation_log`, `webhook_health` table (already tracks `last_received_at` / `last_success_at` / `last_failure_at` / `status` per provider). `payment-webhook`, `reconcile-stripe-payments`, `payment-webhook-watchdog` edge fns.
+**Payments & deposits.** Deposits, booking fees, and security deposits are auto-created as pending obligations. Payment links, Stripe webhooks, refund flow, tax invoices, and reconciliation are all wired. Nothing here should be touched.
 
-**Travel/pickup/flight** — `airport_pickups`, `flight_tracking`, `airport_traffic`, `guest_arrival_stage_log`, `poll-flights`, `check-flight-status`, `useAirportPickups`, `useFlightTracking`, `usePickupFlightsFallback`.
+**Guest side.**
 
-**Messaging** — `messages`, `messaging_inbound_log`, `messaging_notification_log`, `messaging_chat_bindings`, plus LINE/Telegram/WhatsApp/Twilio webhooks. Delivery outcomes already land in `messaging_notification_log`.
+- `/` — public landing (LMT CampStay marketing).
+- `/stay` — public catalog (browse rooms, request booking).
+- `/auth/guest` — guest sign-in.
+- `/guest` — the guest portal: booking details, arrival journey, WiFi/rules (via `get_unit_essentials`), messaging, maintenance/laundry requests, payments, documents, arrival guide, airport pickup info, environmental strip, corner talk, Kru Glitch AI concierge.
 
-**Email** — `email_send_log` (deduped by `message_id`), plus legacy `email_log`. `send-transactional-email` is the single sender.
+**Staff/admin side.** 7-tier role hierarchy (admin → viewer). Full ops surface: `/dashboard`, `/units`, `/bookings`, `/front-desk`, `/calendar`, `/pricing`, `/reports`, `/messages`, `/settings`, `/media-library`, `/monitoring`, `/ops-tower`, `/security-center`, `/disaster-recovery`, `/simulation`, `/guidance-lab`, `/embeds`.
 
-**Notifications/portal** — `notifications`, `push_subscriptions`, `pre_arrival_checklist`, `guest_arrival_stage_log`, `useNotifications`.
+**Embed system.** `/embed/:type/:unitId` iframes (grid, listing, compact, calendar, CTA). Auto-updates from live availability. Used on WordPress and external sites.
 
-**Housekeeping** — `housekeeping_tasks` (auto-created by `auto_create_housekeeping_task` trigger on completed booking).
+**Supporting systems.** Multi-property isolation via RLS; multi-language (9 locales); PWA + push notifications; airport pickup + flight tracking; housekeeping turnover; intelligence entries (heads-up / playbooks by location + category); Fenrir lock integration; Vanta signal bridge; MCP server for AI assistants; disaster recovery snapshots.
 
-**Audit/events** — `staff_audit_events` + `log_staff_audit_event()` RPC, `recovery_audit_log`, `booking_state_log`, `payment_events`, `payment_link_events`, `guest_arrival_stage_log`, `vanta_event_log`. No unified `operation_id`, but timestamps + booking_id are enough.
+**What "GroundStay" means today.** Zero visible "GroundStay" strings remain — the brand label everywhere uses `t("auth.groundStay")` which returns "LMT CampStay" in all 9 locales. Only internal identifiers (`groundStay` translation key, `ground-truth-hub` project slug, some code comments) still reference the old name. Safe to leave those alone.
 
-**Cron/health** — 13 pg_cron jobs, `webhook_health` table, edge fns `payment-webhook-watchdog`, `payment-reconciliation`, `ai-budget-watchdog`.
+## 2. Recommended approach — expand, don't rebuild
 
-**Gaps (no data source yet)**:
-- No unified "service health" table — only `webhook_health` exists. Other services have to be derived from log freshness.
-- No cron job heartbeat table — pg_cron run results live in `cron.job_run_details` (queryable but admin-only).
-- No "guest opened portal" event.
-- No "driver acknowledged pickup" field beyond `airport_pickups.driver_id` assignment.
+Everything below is additive. The booking flow, payment flow, guest portal, admin tools, and embed widgets keep working exactly as they do today. New capabilities layer on top through:
 
-**Do NOT touch**: state machine, Front Desk, booking mutation paths, payment webhook, RLS on `bookings`/`payments`.
+- **Two new columns on** `units` — a listing category (on_site / premium_villa / luxury_villa / long_stay) and a display region (e.g. "hub_area"). Existing rows default to `on_site` so nothing changes for current inventory.
+- **One new table** `local_recommendations` — curated nearby services/venues. Staff-only writes, public read for featured entries. No public submission form, ever.
+- **Guest portal gets tabs**, not a rewrite — "Your Stay" (current content), "Explore Lamai" (recommendations), "Nearby Services" (utilities like scooter/laundry/clinic), plus an existing "Train" surface for Muay Thai content that stays optional.
+- `/stay` **grows a category filter** — the current grid stays, but guests can flip between On-site / Premium Villas / Luxury Villas / Long Stay.
+- **Design tokens shift to red / blue / black / white** while keeping the existing `font-stat` uppercase brand treatment. No component rewrites — only token values in `index.css`.
 
----
+## 3. Staged implementation
 
-## Proposed Location
+### Stage 1 — Foundation (this turn)
 
-New admin-only route: **`/ops-control-tower`** — added to sidebar under the existing Admin section, label **"Ops Control Tower"**, icon `Radar` or `Activity`. Permission: `admin` only (extend `NAV_ACCESS` in `permissions.ts`).
+1. Migration: add `listing_category` and `region` to `units`; create `local_recommendations` table (name, category, photos, description, address, maps_url, phone, whatsapp, website, opening_hours, distance_note, staff_notes, badges[], featured, is_active, sort_order, property_id) with GRANTs + RLS (staff write, anon read where `featured = true AND is_active = true`).
+2. Shift design tokens in `index.css` and `tailwind.config.ts`:
+  - `--primary` → LMT red (action / booking CTAs / active states)
+  - `--info` / new `--trust` → LMT blue (support / links / confirmations)
+  - Base surfaces → white + near-black
+  - Keep `--fight-gold` around for the landing page's existing hero, but remove it from primary flows.
+3. Verify no visible "GroundStay" string regresses.
 
-Keep `/monitoring` as-is (alerts feed). Ops Control Tower is the deeper systems view.
+### Stage 2 — Listings expansion
 
----
+1. `/stay` gets category tabs (On-site · Premium Villas · Luxury Villas · Long Stay). Category filter reads `listing_category`.
+2. `/units` admin form adds a `listing_category` + `region` dropdown. No existing field is removed.
+3. Embed widgets stay unchanged; add one new `browse` variant filtered by category (optional, no breaking change).
 
-## UI Layout
+### Stage 3 — Curated recommendations
 
-Single page, tabbed:
+1. New admin page `/recommendations` — CRUD for `local_recommendations` (staff/admin/manager). Photo upload uses existing media library.
+2. Badge chips: "Lamai Recommended", "Staff Favorite", plus category chip.
+3. Featured toggle + sort order.
 
+### Stage 4 — Guest concierge surfacing
+
+1. Guest portal (`/guest`) grows tabbed layout: **Your Stay** (existing content untouched), **Explore Lamai** (recommendations grid filtered to "food / cafés / beaches / nightlife / attractions"), **Nearby Services** (scooter / laundry / massage / recovery / clinic / pharmacy / grocery / ATM), **Train** (existing training packages, collapsed by default for non-fighters).
+2. Each recommendation card: photo, name, distance, badge, tap-to-call, tap-to-WhatsApp, open-in-Maps, website link.
+3. Public `/stay` gains a light "Explore Lamai" preview below the room grid to help pre-booking guests picture the destination.
+
+### Stage 5 — Polish
+
+1. Mobile pass on all new surfaces (already the primary viewport).
+2. Embed audit — confirm nothing new leaks into iframe pages.
+3. Copy pass so training never dominates a vacation guest's screen.
+
+## 4. Technical notes
+
+**Schema additions**
+
+```sql
+ALTER TABLE public.units
+  ADD COLUMN listing_category text NOT NULL DEFAULT 'on_site',
+  ADD COLUMN region text;
+
+CREATE TABLE public.local_recommendations (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  category text not null,          -- food, cafe, scooter, laundry, massage, ...
+  description text,
+  photos text[] default '{}',
+  address text,
+  maps_url text,
+  phone text,
+  whatsapp text,
+  website text,
+  opening_hours text,
+  distance_note text,              -- "5 min walk", "800 m"
+  staff_notes text,                -- internal-only
+  badges text[] default '{}',      -- 'lamai_recommended', 'staff_favorite'
+  featured boolean not null default false,
+  is_active boolean not null default true,
+  sort_order int not null default 0,
+  property_id uuid references public.properties(id),
+  created_by uuid,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+GRANT SELECT ON public.local_recommendations TO anon;              -- policy narrows to featured+active
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.local_recommendations TO authenticated;
+GRANT ALL ON public.local_recommendations TO service_role;
+ALTER TABLE public.local_recommendations ENABLE ROW LEVEL SECURITY;
+-- policies: anon/guests read only featured+active; managers+admin full write; staff_notes hidden from guests via a view or SELECT column policy.
 ```
-┌─ Ops Control Tower ──────────────────────────────────┐
-│ [Systems Health] [Transit Monitor] [Exceptions]      │
-│ [Systems Matrix] [Transit Board] [Verification]      │
-└──────────────────────────────────────────────────────┘
-```
 
-Each tab is its own lazy panel. Per-booking timeline opens as a side sheet (reuses `BookingDetailSheet` pattern) from any row.
+**Design tokens** shift `--primary`, `--primary-foreground`, `--accent`, and add `--trust` in `index.css`. No component-level color changes.
 
----
+**Guest portal tabs** reuse existing shadcn `Tabs`. Existing hooks (`useGuestHistory`, `useStayEssentials`, `useArrival...`) stay wired to "Your Stay".
 
-## Status Model (deterministic only)
+## 5. What stays untouched
 
-```ts
-type ServiceStatus = "healthy" | "warning" | "broken" | "unknown" | "not_configured" | "pending";
+Booking state machine, payments/deposits/refunds, RLS on existing tables, embed iframe API surface, i18n keys, MCP server, Vanta/Fenrir bridges, disaster recovery, notifications, and the existing brand memory around Terracotta/Gold on the landing page (only primary action colors shift to red/blue on operational surfaces).
 
-interface ServiceProbe {
-  key: string;              // 'stripe_webhook', 'email', 'flight_api', ...
-  label: string;
-  status: ServiceStatus;
-  lastSuccessAt: string | null;
-  lastFailureAt: string | null;
-  lastError: string | null;
-  source: string;           // which table/edge fn this came from
-  retryable: boolean;
-}
-```
+## 6. Open question before I start
 
-Rules: `healthy` if last success < threshold AND no failure since. `warning` if no activity in threshold window. `broken` if last event is a failure. `not_configured` if integration secret missing. **Never AI-derived.**
+The existing brand memory records **Terracotta + Gold** as the "Camp Ready" accents; you're now asking for **red / blue / black / white**. I'll treat red/blue/black/white as the new source of truth and update the memory accordingly — unless you want the landing page's gold hero preserved as-is (recommended, since it's the "Built From Inside" brand moment). Confirm on approval and I'll start Stage 1.
 
-Service → source mapping (already-available):
-| Service | Source |
-|---|---|
-| Stripe webhook | `webhook_health` where provider='stripe' |
-| Payment link gen | `payment_links` recent + `payment_link_events` errors |
-| Email delivery | `email_send_log` dedup latest by `message_id` |
-| WhatsApp/LINE/Telegram | `messaging_notification_log` |
-| Flight API | `flight_tracking.last_checked_at` + error fields |
-| Booking state machine | `booking_state_log` write freshness |
-| Payment obligations | `payments` pending older than X with no link |
-| Housekeeping turnover | `housekeeping_tasks` created vs `bookings` completed |
-| Notifications | `notifications` insert freshness |
-| Audit log writes | `staff_audit_events` freshness |
-| Cron | `cron.job_run_details` (admin RPC) |
-| Storage | `guest_documents` write freshness + bucket probe |
-| AI drafts | `ai_usage_events` freshness |
+&nbsp;
 
-For anything with no source: show **"Not configured"** + a one-liner saying what table/event would need to exist.
+Approved for Stage 1.
 
----
+&nbsp;
 
-## Phased Plan
+Treat red / blue / black / white as the new official LMT CampStay operational identity going forward, especially for booking flows, guest portal, staff/admin tools, embeds, CTAs, alerts, support/info states, and daily platform usage.
 
-**Phase 1** (this round if you approve):
-1. Add `/ops-control-tower` route + admin-only nav entry.
-2. New SQL function `public.get_ops_service_health()` (SECURITY DEFINER, admin-only) that returns the `ServiceProbe[]` derived from the tables above. No new tables.
-3. `OpsControlTower.tsx` page with three working tabs:
-   - **Systems Health**: cards from `get_ops_service_health()`.
-   - **Transit Monitor**: reuses `useAirportPickups` + `useFrontDesk` for arrivals ±72h; read-only rows with "Open Booking" → existing `BookingDetailSheet`.
-   - **Exceptions**: deterministic queue from a `get_ops_exceptions()` SQL fn (deposit-paid-but-state-mismatch, pickup-no-driver, missing-docs-before-arrival, link-without-portal-notification, etc.).
-4. No state mutations. No new guest-facing messages.
+&nbsp;
 
-**Phase 2**:
-- Per-booking Operational Timeline side-sheet — unions `booking_state_log`, `payment_events`, `payment_link_events`, `messaging_notification_log`, `email_send_log`, `guest_arrival_stage_log`, `staff_audit_events`, `housekeeping_tasks`, `flight_tracking` by `booking_id` and orders by `created_at`. Filter chips by category.
-- Systems Matrix view (bookings × services grid using same probes).
-- Transit Board (airport-style table).
+Keep the existing gold/terracotta landing page hero if it already works visually, especially for the “Built From Inside” brand/storytelling moment. No need to destroy something that already has character unless it clashes badly.
 
-**Phase 3**:
-- Safe verification center: dry-run buttons that only call existing health/echo edge fns. Stripe = read-only `webhook_health` ping. Email = enqueue to admin's own address only. Messaging tests = `messaging-system-ping` (already exists). All test calls logged to `staff_audit_events`.
+&nbsp;
 
-**Phase 4** (optional):
-- AI narrative on top of deterministic probes — labeled "Summary, not source of truth". Reuses existing AI gateway.
+Main priority: expand what already exists without breaking the booking flow, payments, guest portal, admin tools, embeds, RLS, or integrations.
 
----
+&nbsp;
 
-## Save for Tomorrow
-- Email migration (Resend → Lovable Email) — you flagged this.
-- Phase 3 verification center (after Phase 1+2 land).
-- Phase 4 AI narrative.
-- New event types for "guest opened portal" and "driver acknowledged pickup" — Phase 2 will surface these as `not_configured` until added.
+Proceed with Stage 1 foundation:
 
----
+&nbsp;
 
-## Risks / Do-Not-Touch
-- Booking state machine, Front Desk, payment webhook, RLS — read-only access only.
-- New SQL functions: SECURITY DEFINER + `has_role(auth.uid(),'admin')` gate inside the function body. No new GRANT on tables.
-- No destructive tests. Phase 3 dry-runs only.
-- Honest "not_configured" rather than fabricated greens.
+- Add listing_category and region to units
 
----
+- Create local_recommendations with proper RLS
 
-## Tonight's ask
+- Staff/admin write access only
 
-Approve **Phase 1** scope above and I'll build it: route + nav + 2 SQL functions + page with 3 read-only tabs. Everything else queues for tomorrow.
+- Public/guest read only for featured + active entries
+
+- Keep staff_notes internal-only
+
+- Update design tokens carefully
+
+- Make sure no visible GroundStay branding returns
+
+- Do not touch payment/deposit/refund logic
+
+&nbsp;
+
+After Stage 1, show what changed in plain English and flag anything risky before moving to Stage 2.
