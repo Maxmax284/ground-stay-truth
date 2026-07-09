@@ -146,7 +146,7 @@ export default function Stay() {
 
   const staffLoginHref = `/auth${window.location.search}`;
 
-  const toggleAvailability = async (unitId: string) => {
+  const toggleAvailability = async (unitId: string, groupId?: string | null) => {
     if (expandedUnit === unitId) {
       setExpandedUnit(null);
       return;
@@ -154,7 +154,12 @@ export default function Stay() {
     setExpandedUnit(unitId);
     if (!blockedByUnit[unitId]) {
       try {
-        const resp = await fetch(`${SUPABASE_URL}/functions/v1/get-availability?unit_id=${unitId}`, {
+        // When the card represents a group of sibling units, ask for the
+        // group's intersected availability (a night is only blocked when
+        // every sibling is unavailable). Otherwise fall back to the single
+        // unit's own calendar.
+        const query = groupId ? `?group_id=${groupId}` : `?unit_id=${unitId}`;
+        const resp = await fetch(`${SUPABASE_URL}/functions/v1/get-availability${query}`, {
           headers: { apikey: SUPABASE_KEY },
         });
         const data = await resp.json();
@@ -400,7 +405,7 @@ function UnitCard({ unit, displayName, availableCount, currencySymbol, expandedU
   currencySymbol: string;
   expandedUnit: string | null;
   blockedByUnit: Record<string, BlockedRange[]>;
-  onToggleAvailability: (id: string) => void;
+  onToggleAvailability: (id: string, groupId?: string | null) => void;
   onRequestBooking: (id: string) => void;
 }) {
   const title = displayName ?? unit.name;
@@ -442,7 +447,7 @@ function UnitCard({ unit, displayName, availableCount, currencySymbol, expandedU
           <p className="text-xs text-muted-foreground">+ {formatPriceSimple(unit.cleaning_fee, currencySymbol)} cleaning fee</p>
         )}
         <div className="flex gap-2 pt-1">
-          <Button size="sm" variant="outline" className="flex-1" onClick={() => onToggleAvailability(unit.id)}>
+          <Button size="sm" variant="outline" className="flex-1" onClick={() => onToggleAvailability(unit.id, count > 1 ? unit.group_id : null)}>
             <CalendarDays className="h-4 w-4 mr-1" />
             {expandedUnit === unit.id ? "Hide" : "Availability"}
           </Button>
