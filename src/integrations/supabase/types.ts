@@ -3468,6 +3468,15 @@ export type Database = {
           wifi_password: string
         }[]
       }
+      get_unit_private_fields: {
+        Args: { _unit_id: string }
+        Returns: {
+          emergency_contact_name: string
+          emergency_contact_phone: string
+          wifi_network: string
+          wifi_password: string
+        }[]
+      }
       has_property_access: {
         Args: { _property_id: string; _user_id: string }
         Returns: boolean
