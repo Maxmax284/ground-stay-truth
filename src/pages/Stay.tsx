@@ -405,7 +405,7 @@ function UnitCard({ unit, displayName, availableCount, currencySymbol, expandedU
   currencySymbol: string;
   expandedUnit: string | null;
   blockedByUnit: Record<string, BlockedRange[]>;
-  onToggleAvailability: (id: string) => void;
+  onToggleAvailability: (id: string, groupId?: string | null) => void;
   onRequestBooking: (id: string) => void;
 }) {
   const title = displayName ?? unit.name;
