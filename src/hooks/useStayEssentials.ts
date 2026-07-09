@@ -19,13 +19,10 @@ export function useStayEssentials(unitId?: string) {
     enabled: !!unitId,
     staleTime: 5 * 60 * 1000,
     queryFn: async (): Promise<StayEssentials> => {
-      // Fetch unit-specific + global in parallel
-      const [unitRes, policiesRes] = await Promise.all([
-        supabase
-          .from("units")
-          .select("wifi_network, wifi_password, house_rules_detail, emergency_contact_name, emergency_contact_phone")
-          .eq("id", unitId!)
-          .single(),
+      // Fetch unit essentials via secure RPC (booked guest or staff only)
+      // and global policy defaults in parallel.
+      const [essRes, policiesRes] = await Promise.all([
+        supabase.rpc("get_unit_essentials", { _unit_id: unitId! }),
         supabase
           .from("policy_settings")
           .select("key, value")
@@ -35,7 +32,7 @@ export function useStayEssentials(unitId?: string) {
           ]),
       ]);
 
-      const unit = unitRes.data as any;
+      const unit = (essRes.data as any)?.[0] ?? null;
       const pMap = new Map(
         (policiesRes.data ?? []).map((p: any) => [
           p.key,
@@ -50,6 +47,7 @@ export function useStayEssentials(unitId?: string) {
         emergency_name: unit?.emergency_contact_name || pMap.get("emergency_contact_name") || "Front Desk",
         emergency_phone: unit?.emergency_contact_phone || pMap.get("emergency_contact_phone") || "",
       };
+
     },
   });
 }
