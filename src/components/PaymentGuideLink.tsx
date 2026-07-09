@@ -42,7 +42,7 @@ export function PaymentGuideLink({ variant = "default", className }: Props) {
           <a href={PDF_URL} target="_blank" rel="noopener noreferrer">Preview</a>
         </Button>
         <Button asChild size="sm" variant="ghost" className="h-8 text-xs gap-1">
-          <a href={PDF_URL} download="Ground-Stay-Guest-Payment-Instructions.pdf">
+          <a href={PDF_URL} download="LMT-CampStay-Guest-Payment-Instructions.pdf">
             <Download className="h-3.5 w-3.5" />
             PDF
           </a>
