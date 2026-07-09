@@ -1200,6 +1200,86 @@ export type Database = {
           },
         ]
       }
+      local_recommendations: {
+        Row: {
+          address: string | null
+          badges: string[]
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          distance_note: string | null
+          featured: boolean
+          id: string
+          is_active: boolean
+          maps_url: string | null
+          name: string
+          opening_hours: string | null
+          phone: string | null
+          photos: string[]
+          property_id: string | null
+          sort_order: number
+          staff_notes: string | null
+          updated_at: string
+          website: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          address?: string | null
+          badges?: string[]
+          category: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          distance_note?: string | null
+          featured?: boolean
+          id?: string
+          is_active?: boolean
+          maps_url?: string | null
+          name: string
+          opening_hours?: string | null
+          phone?: string | null
+          photos?: string[]
+          property_id?: string | null
+          sort_order?: number
+          staff_notes?: string | null
+          updated_at?: string
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          address?: string | null
+          badges?: string[]
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          distance_note?: string | null
+          featured?: boolean
+          id?: string
+          is_active?: boolean
+          maps_url?: string | null
+          name?: string
+          opening_hours?: string | null
+          phone?: string | null
+          photos?: string[]
+          property_id?: string | null
+          sort_order?: number
+          staff_notes?: string | null
+          updated_at?: string
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "local_recommendations_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_blocks: {
         Row: {
           created_at: string
@@ -2897,6 +2977,7 @@ export type Database = {
           house_rules_detail: string | null
           id: string
           is_active: boolean
+          listing_category: string
           max_extra_beds: number
           min_nights: number
           monthly_rate: number | null
@@ -2904,6 +2985,7 @@ export type Database = {
           photos: string[] | null
           pricing_type: string
           property_id: string | null
+          region: string | null
           reviews_enabled: boolean
           rules: string | null
           sort_order: number
@@ -2928,6 +3010,7 @@ export type Database = {
           house_rules_detail?: string | null
           id?: string
           is_active?: boolean
+          listing_category?: string
           max_extra_beds?: number
           min_nights?: number
           monthly_rate?: number | null
@@ -2935,6 +3018,7 @@ export type Database = {
           photos?: string[] | null
           pricing_type?: string
           property_id?: string | null
+          region?: string | null
           reviews_enabled?: boolean
           rules?: string | null
           sort_order?: number
@@ -2959,6 +3043,7 @@ export type Database = {
           house_rules_detail?: string | null
           id?: string
           is_active?: boolean
+          listing_category?: string
           max_extra_beds?: number
           min_nights?: number
           monthly_rate?: number | null
@@ -2966,6 +3051,7 @@ export type Database = {
           photos?: string[] | null
           pricing_type?: string
           property_id?: string | null
+          region?: string | null
           reviews_enabled?: boolean
           rules?: string | null
           sort_order?: number
