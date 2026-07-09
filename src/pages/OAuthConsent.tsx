@@ -91,7 +91,7 @@ export default function OAuthConsent() {
         <CardHeader>
           <CardTitle>Connect {clientName} to <span className="font-stat uppercase tracking-tight">LMT CampStay</span></CardTitle>
           <CardDescription>
-            This will let {clientName} act on your behalf using your LMT CampStay
+            This will let {clientName} act on your behalf using your <span className="font-stat uppercase tracking-tight">LMT CampStay</span>
             permissions. Row-level security still applies.
           </CardDescription>
         </CardHeader>

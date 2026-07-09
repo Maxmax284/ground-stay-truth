@@ -8,7 +8,7 @@ const FinalCTASection = () => (
         Most platforms help you book.
       </p>
       <p className="text-[hsl(36,33%,97%)] text-lg sm:text-xl font-medium mb-2">
-        LMT CampStay makes sure you actually arrive — and things work when you do.
+        <span className="font-stat uppercase tracking-tight">LMT CampStay</span> makes sure you actually arrive — and things work when you do.
       </p>
       <p className="text-[hsl(36,20%,45%)] text-sm mb-12">
         Now landing doesn't have to feel like a boss fight anymore 😏
