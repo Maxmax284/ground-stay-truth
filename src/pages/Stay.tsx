@@ -187,7 +187,7 @@ export default function Stay() {
         </div>
         <div className="relative z-10 max-w-5xl mx-auto px-4 py-16 sm:py-24 text-center space-y-4">
           <h1 className="font-serif text-4xl sm:text-5xl font-bold tracking-tight">
-            Ground Stay
+            LMT CampStay
           </h1>
           <p className="font-stat text-sm tracking-[0.2em] uppercase text-primary-foreground/60">
             Accommodation · Koh Samui
@@ -387,7 +387,7 @@ export default function Stay() {
       </main>
 
       <footer className="border-t py-6 text-center text-xs text-muted-foreground">
-        <p>© {new Date().getFullYear()} Ground Stay · Koh Samui</p>
+        <p>© {new Date().getFullYear()} LMT CampStay · Koh Samui</p>
         <a href="/legal" className="text-primary hover:underline">Terms & Privacy</a>
       </footer>
 

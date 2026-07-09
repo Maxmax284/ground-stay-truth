@@ -13,10 +13,10 @@ const projectRef =
 
 export default defineMcp({
   name: "ground-stay-mcp",
-  title: "Ground Stay",
+  title: "LMT CampStay",
   version: "0.2.0",
   instructions:
-    "Read-only operational access to Ground Stay. Inspect the signed-in user's identity/roles, list bookings and units, search guests (PII-masked), and pull the current operational exceptions (admin-only). Uses the caller's Supabase session, so RLS applies.",
+    "Read-only operational access to LMT CampStay. Inspect the signed-in user's identity/roles, list bookings and units, search guests (PII-masked), and pull the current operational exceptions (admin-only). Uses the caller's Supabase session, so RLS applies.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",

@@ -334,7 +334,7 @@ export function AppSidebar() {
           </DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">
-          Install Ground Stay on your phone for faster access — it only takes a few seconds.
+          Install LMT CampStay on your phone for faster access — it only takes a few seconds.
         </p>
 
         {isIOS ? (

@@ -229,7 +229,7 @@ export default function ProfileEditor() {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = `groundstay-data-export-${new Date().toISOString().slice(0, 10)}.json`;
+                a.download = `lmt-campstay-data-export-${new Date().toISOString().slice(0, 10)}.json`;
                 a.click();
                 URL.revokeObjectURL(url);
                 toast.success("Data export downloaded");

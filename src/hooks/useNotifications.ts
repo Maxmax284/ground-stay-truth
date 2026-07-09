@@ -59,7 +59,7 @@ export function useNotifications() {
               stay_essentials: "🏠 Stay Info",
             };
             showForegroundNotification({
-              title: `Ground Stay — ${typeLabels[n.type] || "Notification"}`,
+              title: `LMT CampStay — ${typeLabels[n.type] || "Notification"}`,
               body: n.message,
               type: n.type,
               referenceId: n.reference_id,

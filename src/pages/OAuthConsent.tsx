@@ -89,9 +89,9 @@ export default function OAuthConsent() {
     <main className="flex min-h-screen items-center justify-center p-6">
       <Card className="max-w-md w-full">
         <CardHeader>
-          <CardTitle>Connect {clientName} to Ground Stay</CardTitle>
+          <CardTitle>Connect {clientName} to LMT CampStay</CardTitle>
           <CardDescription>
-            This will let {clientName} act on your behalf using your Ground Stay
+            This will let {clientName} act on your behalf using your LMT CampStay
             permissions. Row-level security still applies.
           </CardDescription>
         </CardHeader>

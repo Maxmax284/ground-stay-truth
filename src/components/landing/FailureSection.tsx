@@ -11,7 +11,7 @@ const FailureSection = () => (
 
       <div className="space-y-4 text-[hsl(36,20%,65%)] leading-relaxed">
         <p>
-          Most systems either break silently or keep running on bad data. Ground Stay does neither.
+          Most systems either break silently or keep running on bad data. LMT CampStay does neither.
         </p>
         <p>
           When something doesn't add up, the system slows down. It flags the issue. It surfaces what's actually known and what isn't. Then it hands control to real staff — people who can make a judgment call, not an algorithm guessing.

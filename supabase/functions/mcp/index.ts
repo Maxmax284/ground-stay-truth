@@ -38,7 +38,7 @@ async function logMcpActivity(params) {
 var whoami_default = defineTool({
   name: "whoami",
   title: "Who am I",
-  description: "Return the signed-in Ground Stay user's id, email, and roles.",
+  description: "Return the signed-in LMT CampStay user's id, email, and roles.",
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (_input, ctx) => {
@@ -251,9 +251,9 @@ var search_guests_default = defineTool5({
 var projectRef = "eglgvhnkwhozjnenwjxd";
 var mcp_default = defineMcp({
   name: "ground-stay-mcp",
-  title: "Ground Stay",
+  title: "LMT CampStay",
   version: "0.2.0",
-  instructions: "Read-only operational access to Ground Stay. Inspect the signed-in user's identity/roles, list bookings and units, search guests (PII-masked), and pull the current operational exceptions (admin-only). Uses the caller's Supabase session, so RLS applies.",
+  instructions: "Read-only operational access to LMT CampStay. Inspect the signed-in user's identity/roles, list bookings and units, search guests (PII-masked), and pull the current operational exceptions (admin-only). Uses the caller's Supabase session, so RLS applies.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"

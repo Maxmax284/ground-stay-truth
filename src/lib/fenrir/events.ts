@@ -2,7 +2,7 @@
  * Fenrir Lock Event Integration Layer
  *
  * Provides wrapper functions that emit security events
- * when called alongside existing GroundStay operations.
+ * when called alongside existing LMT CampStay operations.
  * Use these in components/hooks to avoid scattering fenrir imports.
  */
 import { fenrirDispatcher } from "@/lib/fenrir/dispatcher";

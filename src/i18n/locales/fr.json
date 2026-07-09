@@ -77,7 +77,7 @@
     "yourName": "Votre nom",
     "emailPlaceholder": "vous@exemple.com",
     "passwordPlaceholder": "••••••••",
-    "groundStay": "Ground Stay"
+    "groundStay": "LMT CampStay"
   },
   "staffAuth": {
     "subtitle": "Portail du personnel",
@@ -95,7 +95,7 @@
     "staffSignIn": "Connexion personnel"
   },
   "dashboard": {
-    "welcome": "Bienvenue sur Ground Stay",
+    "welcome": "Bienvenue sur LMT CampStay",
     "overview": "Voici un aperçu de votre propriété aujourd'hui.",
     "todaysArrivals": "Arrivées du jour",
     "todaysDepartures": "Départs du jour",
@@ -557,7 +557,7 @@
   "embed": {
     "title": "Widgets intégrables",
     "description": "Générez des codes d'intégration pour afficher les listings, calendriers et CTA sur votre site WordPress ou externe.",
-    "note": "Les widgets affichent les disponibilités de Ground Stay mais n'acceptent pas les réservations directement.",
+    "note": "Les widgets affichent les disponibilités de LMT CampStay mais n'acceptent pas les réservations directement.",
     "unit": "Logement",
     "widgetType": "Type de widget",
     "contactUrl": "URL de contact / réservation",
@@ -900,7 +900,7 @@
     "responseNotificationSent": "L'invité a été notifié de votre réponse"
   },
   "tutorial": {
-    "welcome": "Bienvenue sur Ground Stay !",
+    "welcome": "Bienvenue sur LMT CampStay !",
     "letsGetStarted": "Laissez-nous vous faire visiter. Nous parcourrons chaque section pour que vous sachiez où tout se trouve.",
     "next": "Suivant",
     "back": "Retour",

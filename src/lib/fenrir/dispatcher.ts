@@ -3,7 +3,7 @@
  *
  * Queues security events client-side and batch-sends them to the
  * fenrir-dispatch Edge Function. Fire-and-forget — failures never
- * break GroundStay's core functionality.
+ * break LMT CampStay's core functionality.
  */
 import type { FenrirEvent } from "./types";
 import type { FenrirConfig } from "./config";

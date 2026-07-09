@@ -77,7 +77,7 @@
     "yourName": "Ваше имя",
     "emailPlaceholder": "вы@пример.com",
     "passwordPlaceholder": "••••••••",
-    "groundStay": "Ground Stay"
+    "groundStay": "LMT CampStay"
   },
   "staffAuth": {
     "subtitle": "Портал персонала",
@@ -95,7 +95,7 @@
     "staffSignIn": "Вход для персонала"
   },
   "dashboard": {
-    "welcome": "Добро пожаловать в Ground Stay",
+    "welcome": "Добро пожаловать в LMT CampStay",
     "overview": "Обзор вашей недвижимости на сегодня.",
     "todaysArrivals": "Заезды сегодня",
     "todaysDepartures": "Выезды сегодня",
@@ -562,7 +562,7 @@
   "embed": {
     "title": "Встраиваемые виджеты",
     "description": "Генерируйте коды встраивания для отображения листингов, календарей и CTA на вашем сайте.",
-    "note": "Виджеты отображают доступность из Ground Stay, но не принимают бронирования напрямую.",
+    "note": "Виджеты отображают доступность из LMT CampStay, но не принимают бронирования напрямую.",
     "unit": "Номер",
     "widgetType": "Тип виджета",
     "contactUrl": "URL для контакта / бронирования",
@@ -905,7 +905,7 @@
     "responseNotificationSent": "Гость уведомлён о вашем ответе"
   },
   "tutorial": {
-    "welcome": "Добро пожаловать в Ground Stay!",
+    "welcome": "Добро пожаловать в LMT CampStay!",
     "letsGetStarted": "Давайте покажем вам всё. Мы пройдём по каждому разделу.",
     "next": "Далее",
     "back": "Назад",

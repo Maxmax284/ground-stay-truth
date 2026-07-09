@@ -13,13 +13,13 @@
     "server": {
       "name": "ground-stay-mcp",
       "version": "0.2.0",
-      "title": "Ground Stay"
+      "title": "LMT CampStay"
     },
     "tools": [
       {
         "name": "whoami",
         "title": "Who am I",
-        "description": "Return the signed-in Ground Stay user's id, email, and roles.",
+        "description": "Return the signed-in LMT CampStay user's id, email, and roles.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,

@@ -77,7 +77,7 @@
     "yourName": "お名前",
     "emailPlaceholder": "you@example.com",
     "passwordPlaceholder": "••••••••",
-    "groundStay": "Ground Stay"
+    "groundStay": "LMT CampStay"
   },
   "staffAuth": {
     "subtitle": "スタッフポータル",
@@ -95,7 +95,7 @@
     "staffSignIn": "スタッフログイン"
   },
   "dashboard": {
-    "welcome": "Ground Stay へようこそ",
+    "welcome": "LMT CampStay へようこそ",
     "overview": "本日の物件概要です。",
     "todaysArrivals": "本日のチェックイン",
     "todaysDepartures": "本日のチェックアウト",
@@ -562,7 +562,7 @@
   "embed": {
     "title": "埋め込みウィジェット",
     "description": "リスティング、カレンダー、CTAをウェブサイトに表示するための埋め込みコードを生成します。",
-    "note": "ウィジェットはGround Stayの空き状況を表示しますが、直接予約は受け付けません。",
+    "note": "ウィジェットはLMT CampStayの空き状況を表示しますが、直接予約は受け付けません。",
     "unit": "客室",
     "widgetType": "ウィジェットタイプ",
     "contactUrl": "連絡先/予約URL",
@@ -905,7 +905,7 @@
     "responseNotificationSent": "ゲストに回答が通知されました"
   },
   "tutorial": {
-    "welcome": "Ground Stay へようこそ！",
+    "welcome": "LMT CampStay へようこそ！",
     "letsGetStarted": "各セクションをご案内します。",
     "next": "次へ",
     "back": "戻る",

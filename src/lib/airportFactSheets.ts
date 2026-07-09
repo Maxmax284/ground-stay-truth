@@ -319,7 +319,7 @@ export const AIRPORT_FACTS: Record<string, AirportFacts> = {
     transport: {
       toCamp: [
         {
-          name: "Ground Stay pickup (arranged)",
+          name: "LMT CampStay pickup (arranged)",
           cost: "Included or arranged via booking",
           duration: "20–30 minutes",
           notes: "Our driver meets you at arrivals with a name sign. Most reliable option.",
@@ -663,7 +663,7 @@ export const PIER_FACTS: Record<string, PierFacts> = {
     transport: {
       toCamp: [
         {
-          name: "Ground Stay pickup (arranged)",
+          name: "LMT CampStay pickup (arranged)",
           cost: "Included or arranged via booking",
           duration: "30–40 minutes",
           notes: "Our driver meets you at the pier exit. Most reliable option.",
@@ -755,7 +755,7 @@ export const PIER_FACTS: Record<string, PierFacts> = {
     transport: {
       toCamp: [
         {
-          name: "Ground Stay pickup (arranged)",
+          name: "LMT CampStay pickup (arranged)",
           cost: "Included or arranged via booking",
           duration: "25–35 minutes",
           notes: "Our driver meets you at the pier exit.",
@@ -837,7 +837,7 @@ export const BUS_FACTS: BusFacts = {
   transport: {
     toCamp: [
       {
-        name: "Ground Stay pickup (arranged)",
+        name: "LMT CampStay pickup (arranged)",
         cost: "Included or arranged via booking",
         duration: "30–40 minutes from Nathon",
         notes: "We'll coordinate timing based on your estimated arrival. Flexible with delays.",

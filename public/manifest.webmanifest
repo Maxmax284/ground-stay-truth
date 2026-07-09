@@ -1,22 +1,14 @@
 {
-  "name": "Ground Stay — Lamai Muay Thai",
-  "short_name": "Ground Stay",
-  "description": "Your stay at Lamai Muay Thai, Koh Samui",
+  "name": "LMT CampStay — Lamai Muay Thai",
+  "short_name": "LMT CampStay",
+  "description": "Official Lamai Muay Thai accommodation and camp stay booking",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#1a1a2e",
-  "theme_color": "#1a1a2e",
+  "background_color": "#0a0a0a",
+  "theme_color": "#dc2626",
   "icons": [
-    {
-      "src": "/pwa-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/pwa-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
+    { "src": "/pwa-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/pwa-512x512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }

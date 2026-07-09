@@ -3,7 +3,7 @@ import type { Database } from "@/integrations/supabase/types";
 export type BookingState = Database["public"]["Enums"]["booking_state"];
 
 /**
- * Canonical state transition map for Ground Stay.
+ * Canonical state transition map for LMT CampStay.
  * Only transitions listed here are valid without an admin override.
  */
 export const STATE_TRANSITIONS: Record<BookingState, BookingState[]> = {

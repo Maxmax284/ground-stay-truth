@@ -4,121 +4,115 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Ground Stay Design System — Camp Ready
-   Warm hospitality base + Muay Thai fight accents. All colors HSL. */
+/* LMT CampStay Design System — Official Lamai Muay Thai
+   Black & white base. Red = action/energy. Blue = trust/info. All HSL. */
 
 @layer base {
   :root {
-    /* Warm cream background */
-    --background: 36 33% 97%;
-    --foreground: 24 10% 15%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 8%;
 
-    /* Cards: warm white */
-    --card: 36 25% 99%;
-    --card-foreground: 24 10% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 8%;
 
-    --popover: 36 25% 99%;
-    --popover-foreground: 24 10% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 8%;
 
-    /* Primary: warm terracotta */
-    --primary: 16 60% 42%;
-    --primary-foreground: 36 33% 97%;
+    --primary: 0 78% 46%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Secondary: sage green */
-    --secondary: 150 15% 90%;
-    --secondary-foreground: 150 20% 25%;
+    --secondary: 217 91% 96%;
+    --secondary-foreground: 217 85% 22%;
 
-    /* Muted: warm gray */
-    --muted: 30 15% 93%;
-    --muted-foreground: 24 8% 50%;
+    --muted: 210 15% 96%;
+    --muted-foreground: 215 12% 42%;
 
-    /* Accent: golden warmth */
-    --accent: 38 55% 90%;
-    --accent-foreground: 30 30% 20%;
+    --accent: 213 100% 96%;
+    --accent-foreground: 217 85% 22%;
 
-    --destructive: 0 65% 50%;
+    --destructive: 0 78% 46%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 30 15% 88%;
-    --input: 30 15% 88%;
-    --ring: 16 60% 42%;
+    --border: 220 13% 90%;
+    --input: 220 13% 90%;
+    --ring: 0 78% 46%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    /* Sidebar: deep warm */
-    --sidebar-background: 24 15% 12%;
-    --sidebar-foreground: 36 20% 85%;
-    --sidebar-primary: 16 60% 50%;
-    --sidebar-primary-foreground: 36 33% 97%;
-    --sidebar-accent: 24 12% 18%;
-    --sidebar-accent-foreground: 36 20% 90%;
-    --sidebar-border: 24 10% 20%;
-    --sidebar-ring: 16 60% 50%;
+    --sidebar-background: 0 0% 6%;
+    --sidebar-foreground: 0 0% 92%;
+    --sidebar-primary: 0 78% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 0 0% 16%;
+    --sidebar-ring: 0 78% 52%;
 
-    /* Custom tokens */
-    --success: 150 45% 40%;
+    --success: 152 55% 38%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 90% 50%;
-    --warning-foreground: 30 30% 15%;
-    --info: 210 50% 50%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 10%;
+    --info: 217 91% 50%;
     --info-foreground: 0 0% 100%;
 
-    /* Fight accent tokens */
-    --fight-red: 0 72% 40%;
+    --fight-red: 0 78% 46%;
+    --fight-blue: 217 91% 45%;
     --fight-gold: 42 90% 55%;
-    --fight-dark: 24 15% 8%;
+    --fight-dark: 0 0% 6%;
   }
 
   .dark {
-    --background: 24 15% 10%;
-    --foreground: 36 20% 90%;
+    --background: 0 0% 6%;
+    --foreground: 0 0% 94%;
 
-    --card: 24 12% 14%;
-    --card-foreground: 36 20% 90%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 94%;
 
-    --popover: 24 12% 14%;
-    --popover-foreground: 36 20% 90%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 94%;
 
-    --primary: 16 55% 50%;
-    --primary-foreground: 36 33% 97%;
+    --primary: 0 78% 52%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 150 10% 18%;
-    --secondary-foreground: 150 15% 80%;
+    --secondary: 217 40% 18%;
+    --secondary-foreground: 213 100% 92%;
 
-    --muted: 24 10% 18%;
-    --muted-foreground: 24 8% 55%;
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 38 30% 18%;
-    --accent-foreground: 38 40% 80%;
+    --accent: 217 40% 16%;
+    --accent-foreground: 213 100% 92%;
 
-    --destructive: 0 55% 40%;
+    --destructive: 0 72% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 24 10% 20%;
-    --input: 24 10% 20%;
-    --ring: 16 55% 50%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 0 78% 52%;
 
-    --sidebar-background: 24 15% 8%;
-    --sidebar-foreground: 36 20% 80%;
-    --sidebar-primary: 16 55% 50%;
-    --sidebar-primary-foreground: 36 33% 97%;
-    --sidebar-accent: 24 12% 14%;
-    --sidebar-accent-foreground: 36 20% 85%;
-    --sidebar-border: 24 10% 15%;
-    --sidebar-ring: 16 55% 50%;
+    --sidebar-background: 0 0% 4%;
+    --sidebar-foreground: 0 0% 88%;
+    --sidebar-primary: 0 78% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 94%;
+    --sidebar-border: 0 0% 14%;
+    --sidebar-ring: 0 78% 55%;
 
-    --success: 150 40% 35%;
+    --success: 152 50% 42%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 80% 45%;
-    --warning-foreground: 0 0% 100%;
-    --info: 210 45% 45%;
+    --warning: 38 88% 52%;
+    --warning-foreground: 0 0% 8%;
+    --info: 217 91% 58%;
     --info-foreground: 0 0% 100%;
 
-    --fight-red: 0 65% 45%;
-    --fight-gold: 42 85% 50%;
-    --fight-dark: 24 15% 5%;
+    --fight-red: 0 78% 52%;
+    --fight-blue: 217 91% 55%;
+    --fight-gold: 42 85% 55%;
+    --fight-dark: 0 0% 3%;
   }
 }
+
 
 @layer base {
   * {
