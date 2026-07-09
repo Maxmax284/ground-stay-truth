@@ -564,6 +564,13 @@ export type Database = {
             referencedRelation: "units"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "bookings_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       driver_property_assignments: {
@@ -1002,6 +1009,13 @@ export type Database = {
             referencedRelation: "units"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "housekeeping_tasks_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       integration_secrets: {
@@ -1177,6 +1191,13 @@ export type Database = {
             referencedRelation: "units"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "laundry_requests_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       maintenance_blocks: {
@@ -1213,6 +1234,13 @@ export type Database = {
             columns: ["unit_id"]
             isOneToOne: false
             referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_blocks_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1286,6 +1314,13 @@ export type Database = {
             columns: ["unit_id"]
             isOneToOne: false
             referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_requests_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2176,6 +2211,13 @@ export type Database = {
             columns: ["unit_id"]
             isOneToOne: false
             referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pricing_rules_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3263,7 +3305,102 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      units_public: {
+        Row: {
+          amenities: string[] | null
+          base_price: number | null
+          capacity: number | null
+          cleaning_fee: number | null
+          created_at: string | null
+          description: string | null
+          extra_bed_fee: number | null
+          group_id: string | null
+          house_rules_detail: string | null
+          id: string | null
+          is_active: boolean | null
+          max_extra_beds: number | null
+          min_nights: number | null
+          monthly_rate: number | null
+          name: string | null
+          photos: string[] | null
+          pricing_type: string | null
+          property_id: string | null
+          reviews_enabled: boolean | null
+          rules: string | null
+          sort_order: number | null
+          updated_at: string | null
+          weekend_price: number | null
+          weekly_rate: number | null
+        }
+        Insert: {
+          amenities?: string[] | null
+          base_price?: number | null
+          capacity?: number | null
+          cleaning_fee?: number | null
+          created_at?: string | null
+          description?: string | null
+          extra_bed_fee?: number | null
+          group_id?: string | null
+          house_rules_detail?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          max_extra_beds?: number | null
+          min_nights?: number | null
+          monthly_rate?: number | null
+          name?: string | null
+          photos?: string[] | null
+          pricing_type?: string | null
+          property_id?: string | null
+          reviews_enabled?: boolean | null
+          rules?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+          weekend_price?: number | null
+          weekly_rate?: number | null
+        }
+        Update: {
+          amenities?: string[] | null
+          base_price?: number | null
+          capacity?: number | null
+          cleaning_fee?: number | null
+          created_at?: string | null
+          description?: string | null
+          extra_bed_fee?: number | null
+          group_id?: string | null
+          house_rules_detail?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          max_extra_beds?: number | null
+          min_nights?: number | null
+          monthly_rate?: number | null
+          name?: string | null
+          photos?: string[] | null
+          pricing_type?: string | null
+          property_id?: string | null
+          reviews_enabled?: boolean | null
+          rules?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+          weekend_price?: number | null
+          weekly_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "units_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "unit_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "units_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       assign_unit_for_group: {
@@ -3319,6 +3456,16 @@ export type Database = {
           last_success_at: string
           source: string
           status: string
+        }[]
+      }
+      get_unit_essentials: {
+        Args: { _unit_id: string }
+        Returns: {
+          emergency_contact_name: string
+          emergency_contact_phone: string
+          house_rules_detail: string
+          wifi_network: string
+          wifi_password: string
         }[]
       }
       has_property_access: {
