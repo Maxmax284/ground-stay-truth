@@ -13,6 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useCreateUnit, useUpdateUnit, type Unit, type UnitInsert } from "@/hooks/useUnits";
 import { useUnitGroups } from "@/hooks/useUnitGroups";
 import { UnitPhotoUpload } from "@/components/UnitPhotoUpload";
+import { supabase } from "@/integrations/supabase/client";
+
 
 interface UnitFormDialogProps { open: boolean; onOpenChange: (open: boolean) => void; unit?: Unit | null; }
 
@@ -36,14 +38,33 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
   const [reviewsEnabled, setReviewsEnabled] = useState((unit as any)?.reviews_enabled ?? true);
   const [pricingType, setPricingType] = useState<string>((unit as any)?.pricing_type ?? "per_room");
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
-    defaultValues: { name: unit?.name ?? "", description: unit?.description ?? "", capacity: unit?.capacity ?? 2, min_nights: unit?.min_nights ?? 1, base_price: unit?.base_price ?? 0, weekend_price: unit?.weekend_price ?? undefined, cleaning_fee: unit?.cleaning_fee ?? 0, weekly_rate: (unit as any)?.weekly_rate ?? undefined, monthly_rate: (unit as any)?.monthly_rate ?? undefined, sort_order: (unit as any)?.sort_order ?? 0, max_extra_beds: (unit as any)?.max_extra_beds ?? 0, extra_bed_fee: (unit as any)?.extra_bed_fee ?? 0, rules: unit?.rules ?? "", wifi_network: (unit as any)?.wifi_network ?? "", wifi_password: (unit as any)?.wifi_password ?? "", house_rules_detail: (unit as any)?.house_rules_detail ?? "", emergency_contact_name: (unit as any)?.emergency_contact_name ?? "", emergency_contact_phone: (unit as any)?.emergency_contact_phone ?? "" },
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
+    defaultValues: { name: unit?.name ?? "", description: unit?.description ?? "", capacity: unit?.capacity ?? 2, min_nights: unit?.min_nights ?? 1, base_price: unit?.base_price ?? 0, weekend_price: unit?.weekend_price ?? undefined, cleaning_fee: unit?.cleaning_fee ?? 0, weekly_rate: (unit as any)?.weekly_rate ?? undefined, monthly_rate: (unit as any)?.monthly_rate ?? undefined, sort_order: (unit as any)?.sort_order ?? 0, max_extra_beds: (unit as any)?.max_extra_beds ?? 0, extra_bed_fee: (unit as any)?.extra_bed_fee ?? 0, rules: unit?.rules ?? "", wifi_network: "", wifi_password: "", house_rules_detail: (unit as any)?.house_rules_detail ?? "", emergency_contact_name: "", emergency_contact_phone: "" },
   });
 
   useEffect(() => {
     setSelectedAmenities(unit?.amenities ?? []); setCustomAmenity(""); setSelectedGroupId(unit?.group_id ?? "none"); setPhotos(unit?.photos ?? []); setSavedUnitId(unit?.id); setIsEditingAfterCreate(false); setIsActive(unit?.is_active ?? true); setReviewsEnabled((unit as any)?.reviews_enabled ?? true); setPricingType((unit as any)?.pricing_type ?? "per_room");
-    reset({ name: unit?.name ?? "", description: unit?.description ?? "", capacity: unit?.capacity ?? 2, min_nights: unit?.min_nights ?? 1, base_price: unit?.base_price ?? 0, weekend_price: unit?.weekend_price ?? undefined, cleaning_fee: unit?.cleaning_fee ?? 0, weekly_rate: (unit as any)?.weekly_rate ?? undefined, monthly_rate: (unit as any)?.monthly_rate ?? undefined, sort_order: (unit as any)?.sort_order ?? 0, max_extra_beds: (unit as any)?.max_extra_beds ?? 0, extra_bed_fee: (unit as any)?.extra_bed_fee ?? 0, rules: unit?.rules ?? "", wifi_network: (unit as any)?.wifi_network ?? "", wifi_password: (unit as any)?.wifi_password ?? "", house_rules_detail: (unit as any)?.house_rules_detail ?? "", emergency_contact_name: (unit as any)?.emergency_contact_name ?? "", emergency_contact_phone: (unit as any)?.emergency_contact_phone ?? "" });
+    reset({ name: unit?.name ?? "", description: unit?.description ?? "", capacity: unit?.capacity ?? 2, min_nights: unit?.min_nights ?? 1, base_price: unit?.base_price ?? 0, weekend_price: unit?.weekend_price ?? undefined, cleaning_fee: unit?.cleaning_fee ?? 0, weekly_rate: (unit as any)?.weekly_rate ?? undefined, monthly_rate: (unit as any)?.monthly_rate ?? undefined, sort_order: (unit as any)?.sort_order ?? 0, max_extra_beds: (unit as any)?.max_extra_beds ?? 0, extra_bed_fee: (unit as any)?.extra_bed_fee ?? 0, rules: unit?.rules ?? "", wifi_network: "", wifi_password: "", house_rules_detail: (unit as any)?.house_rules_detail ?? "", emergency_contact_name: "", emergency_contact_phone: "" });
   }, [unit, reset]);
+
+  // Sensitive fields (wifi + emergency) are not returned by the public units
+  // query; fetch them via admin-only RPC when editing an existing unit.
+  useEffect(() => {
+    const id = unit?.id ?? savedUnitId;
+    if (!open || !id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.rpc("get_unit_private_fields", { _unit_id: id });
+      const row = (data as any)?.[0];
+      if (cancelled || !row) return;
+      setValue("wifi_network", row.wifi_network ?? "");
+      setValue("wifi_password", row.wifi_password ?? "");
+      setValue("emergency_contact_name", row.emergency_contact_name ?? "");
+      setValue("emergency_contact_phone", row.emergency_contact_phone ?? "");
+    })();
+    return () => { cancelled = true; };
+  }, [open, unit?.id, savedUnitId, setValue]);
+
 
   const allAmenityOptions = useMemo(() => {
     const extras = selectedAmenities.filter((a) => !AMENITY_OPTIONS.includes(a));
