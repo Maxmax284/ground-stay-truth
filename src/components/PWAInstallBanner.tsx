@@ -71,8 +71,9 @@ export function PWAInstallBanner() {
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-sm text-foreground">
-              Install LMT CampStay
+              Install <span className="font-stat uppercase tracking-tight">LMT CampStay</span>
             </h3>
+
             <p className="text-xs text-muted-foreground mt-0.5">
               Add to your home screen for quick access to your stay info, even offline.
             </p>
