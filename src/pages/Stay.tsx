@@ -255,7 +255,7 @@ export default function Stay() {
                 return (
                   <section key={propId ?? "unassigned"} className="space-y-6">
                     <div className="space-y-1">
-                      <h2 className="font-serif text-2xl font-bold text-foreground flex items-center gap-2">
+                      <h2 className="font-stat text-2xl font-bold uppercase tracking-tight text-foreground flex items-center gap-2">
                         {meta?.icon ? <meta.icon className="h-5 w-5 text-primary" /> : <Home className="h-5 w-5 text-primary" />}
                         {prop?.name ?? "Available Rooms"}
                       </h2>
@@ -310,7 +310,7 @@ export default function Stay() {
         {/* Camp Info Summary */}
         {campSummary && (
           <section className="space-y-4">
-            <h2 className="font-serif text-2xl font-bold text-foreground">About the Camp</h2>
+            <h2 className="font-stat text-2xl font-bold uppercase tracking-tight text-foreground">About the Camp</h2>
             {(() => {
               // Try to parse structured JSON
               let parsed: Record<string, string> | null = null;
@@ -369,7 +369,7 @@ export default function Stay() {
 
         {/* Footer CTA */}
         <section className="text-center py-8 space-y-4">
-          <h2 className="font-serif text-2xl font-bold text-foreground">Ready to Book?</h2>
+          <h2 className="font-stat text-2xl font-bold uppercase tracking-tight text-foreground">Ready to Book?</h2>
           <p className="text-muted-foreground max-w-md mx-auto">
             Create a free account to request a booking, upload documents, and manage your stay across any of our properties.
           </p>
