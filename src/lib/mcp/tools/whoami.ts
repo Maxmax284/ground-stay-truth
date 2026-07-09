@@ -4,7 +4,7 @@ import { logMcpActivity } from "../log";
 export default defineTool({
   name: "whoami",
   title: "Who am I",
-  description: "Return the signed-in Ground Stay user's id, email, and roles.",
+  description: "Return the signed-in LMT CampStay user's id, email, and roles.",
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (_input: unknown, ctx: ToolContext) => {

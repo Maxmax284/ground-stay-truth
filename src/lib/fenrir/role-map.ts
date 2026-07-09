@@ -1,5 +1,5 @@
 /**
- * Maps GroundStay internal roles to Fenrir Lock role identifiers.
+ * Maps LMT CampStay internal roles to Fenrir Lock role identifiers.
  */
 import type { AppRole } from "@/lib/permissions";
 import type { FenrirRole } from "./types";

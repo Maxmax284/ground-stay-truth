@@ -6,7 +6,7 @@
 // ── Severity levels ──
 export type FenrirSeverity = "low" | "medium" | "high" | "critical";
 
-// ── Fenrir role values (mapped from GroundStay roles) ──
+// ── Fenrir role values (mapped from LMT CampStay roles) ──
 export type FenrirRole =
   | "owner"
   | "admin"

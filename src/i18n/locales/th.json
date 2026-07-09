@@ -77,7 +77,7 @@
     "yourName": "ชื่อของคุณ",
     "emailPlaceholder": "you@example.com",
     "passwordPlaceholder": "••••••••",
-    "groundStay": "Ground Stay"
+    "groundStay": "LMT CampStay"
   },
   "staffAuth": {
     "subtitle": "พอร์ทัลพนักงาน",
@@ -95,7 +95,7 @@
     "staffSignIn": "เข้าสู่ระบบพนักงาน"
   },
   "dashboard": {
-    "welcome": "ยินดีต้อนรับสู่ Ground Stay",
+    "welcome": "ยินดีต้อนรับสู่ LMT CampStay",
     "overview": "ภาพรวมของที่พักวันนี้",
     "todaysArrivals": "ผู้เข้าพักวันนี้",
     "todaysDepartures": "ผู้ออกวันนี้",
@@ -556,8 +556,8 @@
   },
   "embed": {
     "title": "วิดเจ็ตฝังตัว",
-    "description": "สร้างโค้ดฝังตัวเพื่อแสดงรายการ ปฏิทิน และ CTA บนเว็บไซต์ WordPress หรือเว็บไซต์ภายนอก วิดเจ็ตอัปเดตอัตโนมัติจากข้อมูล Ground Stay",
-    "note": "วิดเจ็ตแสดงห้องว่างจาก Ground Stay แต่ไม่รับการจองโดยตรง การจองทั้งหมดจัดการผ่าน Ground Stay",
+    "description": "สร้างโค้ดฝังตัวเพื่อแสดงรายการ ปฏิทิน และ CTA บนเว็บไซต์ WordPress หรือเว็บไซต์ภายนอก วิดเจ็ตอัปเดตอัตโนมัติจากข้อมูล LMT CampStay",
+    "note": "วิดเจ็ตแสดงห้องว่างจาก LMT CampStay แต่ไม่รับการจองโดยตรง การจองทั้งหมดจัดการผ่าน LMT CampStay",
     "unit": "ห้องพัก",
     "widgetType": "ประเภทวิดเจ็ต",
     "contactUrl": "URL สำหรับติดต่อ/จอง",
@@ -900,7 +900,7 @@
     "responseNotificationSent": "แจ้งเตือนผู้เข้าพักเรื่องการตอบกลับแล้ว"
   },
   "tutorial": {
-    "welcome": "ยินดีต้อนรับสู่ Ground Stay!",
+    "welcome": "ยินดีต้อนรับสู่ LMT CampStay!",
     "letsGetStarted": "ให้เราพาคุณชมรอบ เราจะแนะนำแต่ละส่วนเพื่อให้คุณรู้ว่าทุกอย่างอยู่ตรงไหน",
     "next": "ถัดไป",
     "back": "ย้อนกลับ",

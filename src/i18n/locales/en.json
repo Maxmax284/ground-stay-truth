@@ -80,7 +80,7 @@
     "yourName": "Your name",
     "emailPlaceholder": "you@example.com",
     "passwordPlaceholder": "••••••••",
-    "groundStay": "Ground Stay"
+    "groundStay": "LMT CampStay"
   },
   "staffAuth": {
     "subtitle": "Staff Portal",
@@ -98,7 +98,7 @@
     "staffSignIn": "Staff sign-in"
   },
   "dashboard": {
-    "welcome": "Welcome to Ground Stay",
+    "welcome": "Welcome to LMT CampStay",
     "overview": "Here's an overview of your property today.",
     "todaysArrivals": "Today's Arrivals",
     "todaysDepartures": "Today's Departures",
@@ -600,8 +600,8 @@
   },
   "embed": {
     "title": "Embeddable Widgets",
-    "description": "Generate embed codes to display listings, calendars, and CTAs on your WordPress or external site. Widgets auto-update from Ground Stay data.",
-    "note": "Embeds display availability from Ground Stay but do not accept bookings directly. All reservations are managed through Ground Stay.",
+    "description": "Generate embed codes to display listings, calendars, and CTAs on your WordPress or external site. Widgets auto-update from LMT CampStay data.",
+    "note": "Embeds display availability from LMT CampStay but do not accept bookings directly. All reservations are managed through LMT CampStay.",
     "unit": "Unit",
     "widgetType": "Widget Type",
     "contactUrl": "Contact / Booking URL",
@@ -969,7 +969,7 @@
     "responseNotificationSent": "Guest notified of your response"
   },
   "tutorial": {
-    "welcome": "Welcome to Ground Stay!",
+    "welcome": "Welcome to LMT CampStay!",
     "welcomeSubtitle": "Your sovereign property management operating system",
     "letsGetStarted": "Let us show you around. We'll walk through each section so you know where everything is.",
     "next": "Next",

@@ -17,7 +17,7 @@ export function PushNotificationToggle() {
     try {
       // Show via the unified foreground notification system
       showForegroundNotification({
-        title: "Ground Stay — Test 🔔",
+        title: "LMT CampStay — Test 🔔",
         body: "This is a test notification. If you're seeing this, push notifications are working on your device!",
         type: "test",
         route: "/settings",
@@ -56,7 +56,7 @@ export function PushNotificationToggle() {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Push notifications require the installed PWA version of Ground Stay. Install the app to your home screen first, then enable notifications from within the app.
+            Push notifications require the installed PWA version of LMT CampStay. Install the app to your home screen first, then enable notifications from within the app.
           </p>
           <div className="flex items-center gap-2 rounded-lg bg-muted/50 p-3">
             <Smartphone className="h-4 w-4 text-primary flex-shrink-0" />
@@ -92,7 +92,7 @@ export function PushNotificationToggle() {
           <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
             <p className="font-medium">Notifications blocked</p>
             <p className="mt-1 text-xs">
-              You've blocked notifications for this site. To enable them, open your browser settings and allow notifications for Ground Stay.
+              You've blocked notifications for this site. To enable them, open your browser settings and allow notifications for LMT CampStay.
             </p>
           </div>
         )}
@@ -120,7 +120,7 @@ export function PushNotificationToggle() {
               if (success) {
                 // Fire welcome notification through unified foreground system
                 showForegroundNotification({
-                  title: "Welcome to Ground Stay Alerts 🔔",
+                  title: "Welcome to LMT CampStay Alerts 🔔",
                   body: "You're all set! You'll now receive real-time alerts for bookings, messages, maintenance updates, and more — even when the app is closed.",
                   type: "welcome",
                   route: "/",
@@ -139,7 +139,7 @@ export function PushNotificationToggle() {
           <div className="flex items-center gap-2 rounded-lg bg-muted/50 p-3">
             <Smartphone className="h-4 w-4 text-primary flex-shrink-0" />
             <p className="text-xs text-muted-foreground">
-              For the best experience, install Ground Stay to your home screen first, then enable notifications.
+              For the best experience, install LMT CampStay to your home screen first, then enable notifications.
             </p>
           </div>
         )}

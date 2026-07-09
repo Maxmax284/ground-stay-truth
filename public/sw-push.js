@@ -1,4 +1,4 @@
-// Custom push event handler for Ground Stay PWA
+// Custom push event handler for LMT CampStay PWA
 // This file is imported by the Workbox-generated service worker
 
 self.addEventListener("push", (event) => {
@@ -7,13 +7,13 @@ self.addEventListener("push", (event) => {
     data = event.data ? event.data.json() : {};
   } catch (e) {
     try {
-      data = { title: "Ground Stay", body: event.data?.text() || "New notification" };
+      data = { title: "LMT CampStay", body: event.data?.text() || "New notification" };
     } catch (_) {
-      data = { title: "Ground Stay", body: "New notification" };
+      data = { title: "LMT CampStay", body: "New notification" };
     }
   }
 
-  const title = data.title || "Ground Stay";
+  const title = data.title || "LMT CampStay";
   const body = data.body || "";
   const type = data.type || data.tag || "";
   const referenceId = data.reference_id || data.referenceId || "";

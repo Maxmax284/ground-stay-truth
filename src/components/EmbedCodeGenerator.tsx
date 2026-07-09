@@ -38,7 +38,7 @@ export function EmbedCodeGenerator() {
   const embedPath = needsUnit ? `/embed/${selectedType}/${selectedUnit}` : `/embed/${selectedType}`;
   const embedUrl = `${baseUrl}${embedPath}${contactParam ? `?${contactParam}` : ""}`;
   const canGenerate = needsUnit ? !!selectedUnit : true;
-  const iframeCode = canGenerate ? `<iframe src="${embedUrl}" width="100%" height="${widget.height}" style="border:none;border-radius:12px;overflow:hidden;display:block;" title="Ground Stay - ${widget.label}" referrerpolicy="no-referrer-when-downgrade" allow="clipboard-write"></iframe>` : "";
+  const iframeCode = canGenerate ? `<iframe src="${embedUrl}" width="100%" height="${widget.height}" style="border:none;border-radius:12px;overflow:hidden;display:block;" title="LMT CampStay - ${widget.label}" referrerpolicy="no-referrer-when-downgrade" allow="clipboard-write"></iframe>` : "";
 
   const copyCode = () => { navigator.clipboard.writeText(iframeCode); toast({ title: t("common.copied"), description: t("embed.copiedToClipboard") }); };
 

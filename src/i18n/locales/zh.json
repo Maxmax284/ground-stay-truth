@@ -77,7 +77,7 @@
     "yourName": "您的姓名",
     "emailPlaceholder": "you@example.com",
     "passwordPlaceholder": "••••••••",
-    "groundStay": "Ground Stay"
+    "groundStay": "LMT CampStay"
   },
   "staffAuth": {
     "subtitle": "员工门户",
@@ -95,7 +95,7 @@
     "staffSignIn": "员工登录"
   },
   "dashboard": {
-    "welcome": "欢迎来到 Ground Stay",
+    "welcome": "欢迎来到 LMT CampStay",
     "overview": "这是您物业的今日概览。",
     "todaysArrivals": "今日入住",
     "todaysDepartures": "今日退房",
@@ -562,7 +562,7 @@
   "embed": {
     "title": "可嵌入小部件",
     "description": "生成嵌入代码以在您的网站上显示列表、日历和 CTA。",
-    "note": "小部件显示 Ground Stay 的可用性，但不直接接受预订。",
+    "note": "小部件显示 LMT CampStay 的可用性，但不直接接受预订。",
     "unit": "房间",
     "widgetType": "小部件类型",
     "contactUrl": "联系/预订 URL",
@@ -905,7 +905,7 @@
     "responseNotificationSent": "已通知客人您的回复"
   },
   "tutorial": {
-    "welcome": "欢迎来到 Ground Stay！",
+    "welcome": "欢迎来到 LMT CampStay！",
     "letsGetStarted": "让我们带您了解每个部分。",
     "next": "下一步",
     "back": "返回",

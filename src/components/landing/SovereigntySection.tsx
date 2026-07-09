@@ -11,7 +11,7 @@ const SovereigntySection = () => (
 
       <div className="space-y-4 text-muted-foreground leading-relaxed">
         <p>
-          Ground Stay gives operators full control over the guest relationship — from first inquiry through checkout. No commission layers. No external platforms dictating how you communicate with your own guests.
+          LMT CampStay gives operators full control over the guest relationship — from first inquiry through checkout. No commission layers. No external platforms dictating how you communicate with your own guests.
         </p>
         <p>
           Booking flow, messaging, payment tracking, arrival coordination, and operational workflows all live in one system that the operator owns and controls.

@@ -10,7 +10,7 @@ interface Props {
 }
 
 /**
- * Link to the static, branded "Ground Stay Guest Payment Instructions" PDF.
+ * Link to the static, branded "LMT CampStay Guest Payment Instructions" PDF.
  * Opens a new tab for preview; download attribute hints the browser to save.
  */
 export function PaymentGuideLink({ variant = "default", className }: Props) {

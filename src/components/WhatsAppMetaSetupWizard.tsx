@@ -170,7 +170,7 @@ export function WhatsAppMetaSetupWizard() {
             "Content-Type": "application/json",
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ channel: "whatsapp", chat_id: to, text: "👋 Test from Ground Stay — your Meta WhatsApp bridge is live." }),
+          body: JSON.stringify({ channel: "whatsapp", chat_id: to, text: "👋 Test from LMT CampStay — your Meta WhatsApp bridge is live." }),
         },
       );
       if (!resp.ok) {
@@ -323,7 +323,7 @@ export function WhatsAppMetaSetupWizard() {
                   <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="text-primary underline inline-flex items-center gap-1">
                     My Apps <ExternalLink className="h-3 w-3" />
                   </a>{" "}
-                  click <em>Create App</em>. Choose the <strong>Business</strong> app type — this is the only type that supports WhatsApp. Name it something you'll recognize (e.g. "Ground Stay Messaging").
+                  click <em>Create App</em>. Choose the <strong>Business</strong> app type — this is the only type that supports WhatsApp. Name it something you'll recognize (e.g. "LMT CampStay Messaging").
                 </div>
               </li>
               <li className="flex gap-3">
@@ -432,7 +432,7 @@ export function WhatsAppMetaSetupWizard() {
               <li className="flex gap-3">
                 <span className="font-bold text-primary">2.</span>
                 <div className="flex-1">
-                  Click <em>Add</em> to create a new system user. Give it a name (e.g. "Ground Stay Messaging") and set role to <strong>Admin</strong>.
+                  Click <em>Add</em> to create a new system user. Give it a name (e.g. "LMT CampStay Messaging") and set role to <strong>Admin</strong>.
                 </div>
               </li>
               <li className="flex gap-3">

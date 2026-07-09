@@ -77,7 +77,7 @@
     "yourName": "이름",
     "emailPlaceholder": "you@example.com",
     "passwordPlaceholder": "••••••••",
-    "groundStay": "Ground Stay"
+    "groundStay": "LMT CampStay"
   },
   "staffAuth": {
     "subtitle": "직원 포털",
@@ -95,7 +95,7 @@
     "staffSignIn": "직원 로그인"
   },
   "dashboard": {
-    "welcome": "Ground Stay에 오신 것을 환영합니다",
+    "welcome": "LMT CampStay에 오신 것을 환영합니다",
     "overview": "오늘의 숙소 현황입니다.",
     "todaysArrivals": "오늘 도착",
     "todaysDepartures": "오늘 출발",
@@ -556,8 +556,8 @@
   },
   "embed": {
     "title": "임베드 위젯",
-    "description": "워드프레스 또는 외부 사이트에 목록, 캘린더 및 CTA를 표시할 임베드 코드를 생성합니다. 위젯은 Ground Stay 데이터에서 자동 업데이트됩니다.",
-    "note": "임베드는 Ground Stay의 가용성을 표시하지만 직접 예약을 받지 않습니다. 모든 예약은 Ground Stay를 통해 관리됩니다.",
+    "description": "워드프레스 또는 외부 사이트에 목록, 캘린더 및 CTA를 표시할 임베드 코드를 생성합니다. 위젯은 LMT CampStay 데이터에서 자동 업데이트됩니다.",
+    "note": "임베드는 LMT CampStay의 가용성을 표시하지만 직접 예약을 받지 않습니다. 모든 예약은 LMT CampStay를 통해 관리됩니다.",
     "unit": "객실",
     "widgetType": "위젯 유형",
     "contactUrl": "문의 / 예약 URL",
@@ -900,7 +900,7 @@
     "responseNotificationSent": "게스트에게 답변이 알림되었습니다"
   },
   "tutorial": {
-    "welcome": "Ground Stay에 오신 것을 환영합니다!",
+    "welcome": "LMT CampStay에 오신 것을 환영합니다!",
     "letsGetStarted": "각 섹션을 안내해 드리겠습니다.",
     "next": "다음",
     "back": "이전",

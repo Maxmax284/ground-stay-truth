@@ -18,7 +18,7 @@ const EntrySection = () => (
           loading="lazy"
         />
         <span className="text-xs tracking-[0.2em] uppercase text-[hsl(36,20%,50%)] font-medium">
-          Ground Stay
+          LMT CampStay
         </span>
       </div>
       <a

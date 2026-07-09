@@ -400,7 +400,7 @@ export default function OpsControlTower() {
             Ops Control Tower
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Admin-only systems health for the GroundStay guest journey. Not a Front Desk replacement —
+            Admin-only systems health for the LMT CampStay guest journey. Not a Front Desk replacement —
             this answers “is the machine behind the scenes actually working?”
           </p>
         </div>

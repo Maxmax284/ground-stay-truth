@@ -93,7 +93,7 @@ export default function Embeds() {
   }, [selectedUnit, selectedType, resolvedContactUrl, accentColor, hidden, borderRadius, fontSize, darkMode, shadow, maxWidth, ctaLabel, baseUrl]);
 
   const iframeCode = selectedUnit
-    ? `<iframe src="${embedUrl}" width="100%" height="${widget.height}" style="border:none;border-radius:${borderRadius}px;overflow:hidden;" loading="lazy" title="Ground Stay Widget"></iframe>`
+    ? `<iframe src="${embedUrl}" width="100%" height="${widget.height}" style="border:none;border-radius:${borderRadius}px;overflow:hidden;" loading="lazy" title="LMT CampStay Widget"></iframe>`
     : "";
 
   const toggleHidden = (key: string) => {
