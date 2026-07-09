@@ -447,7 +447,7 @@ function UnitCard({ unit, displayName, availableCount, currencySymbol, expandedU
           <p className="text-xs text-muted-foreground">+ {formatPriceSimple(unit.cleaning_fee, currencySymbol)} cleaning fee</p>
         )}
         <div className="flex gap-2 pt-1">
-          <Button size="sm" variant="outline" className="flex-1" onClick={() => onToggleAvailability(unit.id)}>
+          <Button size="sm" variant="outline" className="flex-1" onClick={() => onToggleAvailability(unit.id, count > 1 ? unit.group_id : null)}>
             <CalendarDays className="h-4 w-4 mr-1" />
             {expandedUnit === unit.id ? "Hide" : "Availability"}
           </Button>
