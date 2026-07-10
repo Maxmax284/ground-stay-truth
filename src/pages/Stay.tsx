@@ -73,6 +73,7 @@ export default function Stay() {
   const [currencySymbol, setCurrencySymbol] = useState("฿");
   const [blockedByUnit, setBlockedByUnit] = useState<Record<string, BlockedRange[]>>({});
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
+  const [category, setCategory] = useState<CategoryKey>("all");
 
   // Fetch camp_info for summary
   const [campSummary, setCampSummary] = useState<any>(null);
