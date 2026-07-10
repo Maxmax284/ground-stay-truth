@@ -35,7 +35,18 @@ interface UnitData {
   photos: string[] | null;
   property_id: string | null;
   group_id: string | null;
+  listing_category?: string | null;
+  region?: string | null;
 }
+
+type CategoryKey = "all" | "on_site" | "premium_villa" | "luxury_villa" | "long_stay";
+const CATEGORY_TABS: { key: CategoryKey; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "on_site", label: "On-site" },
+  { key: "premium_villa", label: "Premium Villa" },
+  { key: "luxury_villa", label: "Luxury Villa" },
+  { key: "long_stay", label: "Long Stay" },
+];
 
 interface PropertyData {
   id: string;
