@@ -264,7 +264,7 @@ Deno.serve(async (req) => {
     // appearance of duplicate listings).
     const { data: units, error } = await supabase
       .from("units")
-      .select("id, name, description, capacity, base_price, weekend_price, cleaning_fee, min_nights, amenities, photos, property_id, group_id, sort_order")
+      .select("id, name, description, capacity, base_price, weekend_price, cleaning_fee, min_nights, amenities, photos, property_id, group_id, sort_order, listing_category, region")
       .eq("is_active", true)
       .order("sort_order", { ascending: true, nullsFirst: false })
       .order("base_price", { ascending: true });

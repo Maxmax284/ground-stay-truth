@@ -35,7 +35,18 @@ interface UnitData {
   photos: string[] | null;
   property_id: string | null;
   group_id: string | null;
+  listing_category?: string | null;
+  region?: string | null;
 }
+
+type CategoryKey = "all" | "on_site" | "premium_villa" | "luxury_villa" | "long_stay";
+const CATEGORY_TABS: { key: CategoryKey; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "on_site", label: "On-site" },
+  { key: "premium_villa", label: "Premium Villa" },
+  { key: "luxury_villa", label: "Luxury Villa" },
+  { key: "long_stay", label: "Long Stay" },
+];
 
 interface PropertyData {
   id: string;
@@ -62,6 +73,7 @@ export default function Stay() {
   const [currencySymbol, setCurrencySymbol] = useState("฿");
   const [blockedByUnit, setBlockedByUnit] = useState<Record<string, BlockedRange[]>>({});
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
+  const [category, setCategory] = useState<CategoryKey>("all");
 
   // Fetch camp_info for summary
   const [campSummary, setCampSummary] = useState<any>(null);
@@ -226,6 +238,30 @@ export default function Stay() {
           <p className="text-muted-foreground text-center py-16">No rooms available at this time. Please check back later.</p>
         ) : (
           <>
+            {/* Category tabs */}
+            <div className="flex flex-wrap gap-2 justify-center border-b pb-4">
+              {CATEGORY_TABS.map((tab) => {
+                const count = tab.key === "all"
+                  ? units.length
+                  : units.filter((u) => (u.listing_category ?? "on_site") === tab.key).length;
+                const active = category === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setCategory(tab.key)}
+                    className={`font-stat uppercase tracking-tight text-xs sm:text-sm px-4 py-2 rounded-full border transition-colors ${
+                      active
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background text-muted-foreground border-border hover:text-foreground hover:border-foreground/40"
+                    }`}
+                  >
+                    {tab.label} <span className="opacity-60">({count})</span>
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Group units by property */}
             {(() => {
               const PROPERTY_META: Record<string, { tagline: string; icon: typeof Home }> = {
@@ -233,13 +269,26 @@ export default function Stay() {
                 "koh-shanti-guesthouse": { tagline: "Peaceful long-stay living on Koh Samui", icon: Building2 },
               };
 
+              const visibleUnits = category === "all"
+                ? units
+                : units.filter((u) => (u.listing_category ?? "on_site") === category);
+
+              if (visibleUnits.length === 0) {
+                return (
+                  <p className="text-muted-foreground text-center py-16">
+                    No listings in this category yet. Check back soon.
+                  </p>
+                );
+              }
+
               // Build sections: known properties first, then any unassigned units
               const grouped = new Map<string | null, UnitData[]>();
-              for (const u of units) {
+              for (const u of visibleUnits) {
                 const key = u.property_id;
                 if (!grouped.has(key)) grouped.set(key, []);
                 grouped.get(key)!.push(u);
               }
+
 
               // Order: properties in order, then null
               const orderedKeys: (string | null)[] = [
