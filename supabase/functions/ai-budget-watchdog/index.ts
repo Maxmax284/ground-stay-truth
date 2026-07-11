@@ -124,6 +124,6 @@ async function logEvent(sb: any, type: string, severity: string, ctx: Record<str
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
-    status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status, headers: { "Content-Type": "application/json" },
   });
 }
