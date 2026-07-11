@@ -1,3 +1,9 @@
+// export-user-data
+// -----------------------------------------------------------------------------
+// GDPR / PDPA data export. User requests everything we have on them; we
+// bundle profile, bookings, payments, messages, documents, consents into a
+// downloadable JSON. Audit + Fenrir event on every export.
+// -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendFenrirSecurityEvent } from "../_shared/fenrir.ts";
 

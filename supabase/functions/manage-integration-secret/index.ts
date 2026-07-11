@@ -1,3 +1,16 @@
+// manage-integration-secret
+// -----------------------------------------------------------------------------
+// SECURITY-CRITICAL. Admin-only CRUD over `integration_secrets`.
+//
+// This is how tenants configure Stripe keys, LINE tokens, Telegram bot
+// tokens, WhatsApp creds, Fenrir API key, Vanta token, etc. — without ever
+// putting them in code or env vars visible to the client.
+//
+// Rules:
+//   - Read returns `is_configured` boolean + last-4, never the actual value.
+//   - Write is admin-only, logged to `staff_audit_events`, Fenrir-fired.
+//   - The raw value never leaves this function or `get_integration_secret()`.
+// -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

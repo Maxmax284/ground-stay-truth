@@ -1,3 +1,9 @@
+// send-transactional-email
+// -----------------------------------------------------------------------------
+// Resend wrapper. All outbound transactional email funnels through here so
+// we have one place for templates, i18n, deliverability, and `email_log`
+// dedupe. Templates are per-language (9 locales) with English fallback.
+// -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

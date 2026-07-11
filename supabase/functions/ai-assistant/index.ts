@@ -1,3 +1,13 @@
+// ai-assistant  (aka "Kru Glitch")
+// -----------------------------------------------------------------------------
+// In-app AI assistant backend. Role-aware, brevity-first, guardrailed.
+// Guests get a tightly scoped concierge; staff get a fuller ops helper; admins
+// get everything short of running arbitrary code.
+//
+// Guarded by `_shared/aiGuard.ts` for budget + rate limit. Uses the Lovable
+// AI Gateway (Gemini/GPT via LOVABLE_API_KEY). Never executes commands — it
+// can only READ + suggest. Any "action" is a draft the human confirms.
+// -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { logAiUsage as logAiUsageEvent } from "../_shared/aiGuard.ts";

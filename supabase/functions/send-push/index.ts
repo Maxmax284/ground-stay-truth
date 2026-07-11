@@ -1,3 +1,10 @@
+// send-push
+// -----------------------------------------------------------------------------
+// Web Push (VAPID). Delivers OS-level notifications to guests and staff who
+// have subscribed via the PWA. Bad subscriptions (410 / 404) get pruned from
+// `push_subscriptions` automatically so the sender stays clean.
+// Env: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY.
+// -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const ALLOWED_ORIGINS = [

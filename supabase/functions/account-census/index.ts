@@ -1,3 +1,9 @@
+// account-census
+// -----------------------------------------------------------------------------
+// Daily observational snapshot of user + role counts. Purely for admin
+// visibility ("how many active staff, how many guests, who signed up this
+// week"). NEVER used for marketing — we don't do that here.
+// -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [
