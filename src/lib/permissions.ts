@@ -1,3 +1,19 @@
+/**
+ * Role hierarchy + capability matrix.
+ *
+ * SECURITY-CRITICAL. This is the client-side mirror of what the DB enforces
+ * via `has_role()` and RLS. The DB is always the real authority — this file
+ * exists so the UI can hide buttons the user can't push anyway. Never rely
+ * on it for actual access control.
+ *
+ * Hierarchy (ascending authority):
+ *   guest → viewer → maintenance → front_desk → front_desk_supervisor
+ *         → manager → admin
+ *
+ * Admin is the only role allowed to do irreversible stuff (deletes, refunds
+ * without cap, role assignments, secret management). Managers can
+ * "recommend" — admins approve.
+ */
 import type { Database } from "@/integrations/supabase/types";
 
 export type AppRole = Database["public"]["Enums"]["app_role"];

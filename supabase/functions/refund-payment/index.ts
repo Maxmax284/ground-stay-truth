@@ -1,3 +1,16 @@
+// refund-payment
+// -----------------------------------------------------------------------------
+// PAYMENT-CRITICAL. Admin/manager only. Handles both Stripe refunds and
+// offline refund records.
+//
+// The MATH — how much gets refunded — lives in `src/lib/refundCalculator.ts`
+// (tiered cancellation policy). This function trusts the calculator's number,
+// pushes it to Stripe if applicable, and writes a NEGATIVE `payments` row
+// that references the original payment. Never mutate the original row.
+//
+// Audit trail: every refund gets logged to `staff_audit_events` with actor +
+// reason. Do not skip that.
+// -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.14.0?target=deno";

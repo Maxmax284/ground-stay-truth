@@ -1,3 +1,29 @@
+// payment-webhook
+// -----------------------------------------------------------------------------
+// PAYMENT-CRITICAL. This is where Stripe tells us the money is real.
+//
+// What it does:
+//   Receives Stripe webhook events, verifies the signature, records the
+//   payment on our side, and pushes the booking from `pending_deposit` to
+//   `confirmed`. Also fires the confirmation email + guest notification.
+//
+// Depends on:
+//   - Stripe secret + webhook secret (from `integration_secrets`)
+//   - `payments`, `bookings`, `booking_state_log`, `notifications` tables
+//   - `send-booking-confirmation` edge fn
+//
+// Rules that must not be casually changed:
+//   1. Signature verification is mandatory. Never bypass it.
+//   2. Writes are idempotent — keyed on `provider_transaction_id` and
+//      `provider_session_id`. Stripe WILL retry. Removing the uniqueness
+//      breaks that guarantee and you'll double-advance bookings.
+//   3. Booking state only advances `pending_deposit → confirmed` here.
+//      Anything else, use the state machine.
+//   4. Every raw event is logged to `payment_events` before processing so the
+//      watchdog can replay if we crash mid-handler.
+//
+// If the webhook stalls: `reconcile-stripe-payments` is the break-glass sweep.
+// -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.14.0?target=deno";

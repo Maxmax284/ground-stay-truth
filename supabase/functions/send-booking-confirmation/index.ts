@@ -1,3 +1,13 @@
+// send-booking-confirmation
+// -----------------------------------------------------------------------------
+// Fires when a booking hits `confirmed` (via webhook, offline payment, or
+// admin override). Sends the multi-language confirmation email through
+// Resend, writes an in-app notification, and drops a `staff_audit_events`
+// row for the paper trail.
+//
+// Idempotent — safe to call twice. Uses `email_log` to dedupe by
+// (booking_id, template).
+// -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [

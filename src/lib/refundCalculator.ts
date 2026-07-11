@@ -1,3 +1,18 @@
+/**
+ * Refund calculator — tiered cancellation policy math.
+ *
+ * PAYMENT-CRITICAL. This is the number that gets pushed to Stripe. The
+ * refund-payment edge function trusts whatever comes out of here — so if the
+ * math is wrong here, real money goes wrong in the world.
+ *
+ * Tiers come from `policy_settings` (property-scoped override allowed).
+ * Default shape: 100% refund if > N days out, sliding scale, 0% inside the
+ * penalty window. Non-refundable line items (booking fee, sometimes security
+ * deposit) are excluded per policy.
+ *
+ * Pure function. Always returns a breakdown so the UI can show the guest
+ * exactly why they're getting what they're getting.
+ */
 import { differenceInCalendarDays } from "date-fns";
 import type { PolicySetting } from "@/hooks/usePolicySettings";
 

@@ -1,3 +1,13 @@
+// expire-stale-bookings
+// -----------------------------------------------------------------------------
+// Cron janitor. Runs hourly. Cancels bookings that have been sitting in
+// `soft_hold` or `pending_deposit` past their TTL so the calendar frees up
+// again. Also revokes any unused payment links on those bookings.
+//
+// Business rule: TTL comes from `policy_settings` (property-scoped override
+// allowed). If a booking has movement inside the TTL window — payment link
+// opened, message from guest, etc. — leave it alone.
+// -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [
