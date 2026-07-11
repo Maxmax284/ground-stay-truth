@@ -1,3 +1,11 @@
+// translate-message
+// -----------------------------------------------------------------------------
+// Guest ↔ staff translation via the AI Gateway. Used inline in the inbox and
+// guest portal so nobody's copy-pasting into Google Translate at 2am.
+//
+// Guarded by `_shared/aiGuard.ts` (budget + rate limits per user + role).
+// Language auto-detect; target language pulled from the receiver's profile.
+// -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkAiGuard, logAiUsage, hashIp, resolveRoleAndProperty } from "../_shared/aiGuard.ts";
 

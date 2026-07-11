@@ -1,3 +1,13 @@
+// verify-document
+// -----------------------------------------------------------------------------
+// AI-assisted ID / passport verification. ADVISORY ONLY — the output is a
+// suggestion for the human reviewer, never a hard block. If the AI says
+// "looks fake" we surface a warning; staff still make the call.
+//
+// SECURITY: reads from the private `guest-documents` storage bucket. Guarded
+// by `_shared/aiGuard.ts` for budget and rate limits. Never log the actual
+// document contents — only the verdict + confidence.
+// -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkAiGuard, logAiUsage, hashIp, resolveRoleAndProperty } from "../_shared/aiGuard.ts";

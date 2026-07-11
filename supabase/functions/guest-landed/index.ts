@@ -1,3 +1,12 @@
+// guest-landed
+// -----------------------------------------------------------------------------
+// Marks a booking's arrival journey as "landed" (stage 3). Called either
+// manually by staff or automatically by the flight-tracking pipeline when a
+// tracked flight status flips to arrived.
+//
+// Writes to `guest_arrival_stage_log` (idempotent per (booking_id, stage))
+// and fanned out via `notify-via-messaging` so the right people get pinged.
+// -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [
