@@ -1,3 +1,10 @@
+// cleanup-storage
+// -----------------------------------------------------------------------------
+// Daily janitor for orphaned storage files — the ones whose DB row got
+// deleted but the object was left behind. Walks each bucket, cross-checks
+// against the referencing table, and removes what nobody owns anymore.
+// Never touches files younger than 24h (grace period for in-flight writes).
+// -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [

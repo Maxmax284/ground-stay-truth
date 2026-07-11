@@ -1,3 +1,13 @@
+// delete-account
+// -----------------------------------------------------------------------------
+// SECURITY-CRITICAL. Two callers:
+//   - Guest deleting their own account (self-service, GDPR right-to-erasure)
+//   - Admin nuking a staff/guest account
+//
+// Preserves booking / payment records (financial + legal retention) but
+// scrubs PII on `profiles` and cascades to messaging bindings, push subs,
+// consent records. Fires Fenrir event with actor + target. Full audit row.
+// -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendFenrirSecurityEvent } from "../_shared/fenrir.ts";
 

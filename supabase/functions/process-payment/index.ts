@@ -1,3 +1,16 @@
+// process-payment
+// -----------------------------------------------------------------------------
+// PAYMENT-CRITICAL. Server-side payment recorder for the non-Stripe stuff —
+// cash, bank transfer, offline card, anything staff enters by hand.
+//
+// What it does:
+//   Staff hits "record payment" in the UI, this endpoint writes the row and
+//   advances booking state the same way payment-webhook does for Stripe. Same
+//   rules — same idempotency story so nobody accidentally double-books the
+//   ledger.
+//
+// Permission: staff only (front_desk_supervisor and up, checked server-side).
+// -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.14.0?target=deno";

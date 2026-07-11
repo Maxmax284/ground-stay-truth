@@ -1,3 +1,10 @@
+// create-notification
+// -----------------------------------------------------------------------------
+// Server-side notification writer with fan-out. Given a user (or a role +
+// property scope), inserts `notifications` rows and — if the recipient has
+// push subs — calls `send-push`. Preferred over client-side inserts so
+// permissions and fan-out logic stay in one place.
+// -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [

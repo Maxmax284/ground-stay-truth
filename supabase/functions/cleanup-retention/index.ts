@@ -1,3 +1,9 @@
+// cleanup-retention
+// -----------------------------------------------------------------------------
+// Daily PII purge per PDPA/GDPR. Default 90 days. Retention windows come from
+// `policy_settings` so a tenant can dial them up/down without a code change.
+// Purges are logged to `staff_audit_events` for the compliance paper trail.
+// -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [

@@ -1,3 +1,15 @@
+// get-availability
+// -----------------------------------------------------------------------------
+// Public endpoint feeding the /stay page + booking form + embed widget.
+// Anonymous. Returns unit inventory + which dates are held.
+//
+// "Held" = any booking in `BLOCKING_STATES` OR a maintenance block that
+// overlaps the requested window. Same list the DB overlap trigger uses —
+// keep them in sync or the calendar lies to guests.
+//
+// Selects `listing_category` and `region` so the Stay page can tab between
+// On-site / Premium Villa / Luxury Villa / Long Stay.
+// -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [

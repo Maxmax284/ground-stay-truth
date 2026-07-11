@@ -1,3 +1,10 @@
+// fraud-detection
+// -----------------------------------------------------------------------------
+// Heuristic pass on new bookings. Not AI, not magic — just rules that catch
+// the obvious stuff (mismatched country + card, brand-new account booking
+// premium villa, back-to-back cancels from same email, etc.). Flags for
+// manual review; never auto-cancels. Human always makes the call.
+// -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [

@@ -1,3 +1,21 @@
+/**
+ * Pricing calculator — the deterministic waterfall that turns a booking
+ * request into a total.
+ *
+ * BUSINESS-CRITICAL. Same input must always produce the same output.
+ * If you change the order of operations here, prices drift and staff lose trust.
+ *
+ * Order of operations (do not shuffle):
+ *   1. Base rate per unit per night (weekday/weekend split)
+ *   2. Pricing rules overlay (seasonal, promo, per-property overrides)
+ *   3. Extra beds / extra guests
+ *   4. Long-stay discount tiers (7 / 14 / 30 nights)
+ *   5. Loyalty discount (repeat guest)
+ *   6. VAT applied per `tax_included` policy
+ *
+ * Reads: `units`, `pricing_rules`, `policy_settings`.
+ * Pure function — no I/O. All lookups are passed in.
+ */
 import { eachDayOfInterval, parseISO, isWeekend, format, differenceInCalendarDays } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
 import type { PolicySetting } from "@/hooks/usePolicySettings";

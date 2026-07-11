@@ -1,3 +1,9 @@
+// notify-review-response
+// -----------------------------------------------------------------------------
+// When staff replies to a guest review, this pings the guest via their
+// preferred channel (email + push + messaging bridge if bound). Logs to
+// `review_audit_log` for moderation history.
+// -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [

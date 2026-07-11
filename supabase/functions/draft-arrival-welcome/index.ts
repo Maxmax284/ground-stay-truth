@@ -1,3 +1,12 @@
+// draft-arrival-welcome
+// -----------------------------------------------------------------------------
+// AI-drafted, location-aware welcome message for an incoming guest.
+// Staff-facing DRAFT only — nothing gets sent from here. A human reviews and
+// hits send inside the platform. That's the "capture, don't control" rule.
+//
+// Uses the Lovable AI Gateway behind `_shared/aiGuard.ts` (budget + rate
+// limit). Falls back gracefully if AI is unavailable.
+// -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

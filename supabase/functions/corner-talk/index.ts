@@ -1,3 +1,11 @@
+// corner-talk
+// -----------------------------------------------------------------------------
+// Generates the short, tactical alert line that sits at the top of Command
+// Center. Role-aware: front desk sees today's arrivals + checkouts, manager
+// sees exceptions + revenue pulse, admin sees whatever's on fire.
+//
+// Cheap + fast (small AI call, cached briefly). Guarded by aiGuard.
+// -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

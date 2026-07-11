@@ -1,3 +1,12 @@
+// poll-flights
+// -----------------------------------------------------------------------------
+// Cron. Every 15 min. Walks upcoming arrivals in the next window, batches
+// AviationStack lookups, refreshes `flight_tracking`, and — when a flight
+// flips to landed — kicks off `guest-landed` so the arrival journey advances.
+//
+// Batched + quota-aware. If AviationStack is down, this fails quiet; manual
+// flight entry always overrides the API anyway.
+// -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

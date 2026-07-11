@@ -1,3 +1,12 @@
+// fenrir-webhook
+// -----------------------------------------------------------------------------
+// SECURITY-CRITICAL. Fenrir Lock → us. Handles freeze/threat-level updates.
+//
+// Doctrine reminder: Fenrir is ONE-WAY. It can raise the alarm and set a
+// threat level in our `policy_settings`, but it cannot force actions on the
+// platform. Every incoming signal is verified (HMAC) and logged before we
+// touch anything. If verification fails, drop it on the floor.
+// -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [

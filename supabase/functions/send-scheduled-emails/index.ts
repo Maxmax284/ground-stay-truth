@@ -1,3 +1,9 @@
+// send-scheduled-emails
+// -----------------------------------------------------------------------------
+// Hourly cron. The drip — pre-arrival reminders, welcome-day nudges,
+// mid-stay check-ins, post-checkout review requests. Idempotent per
+// (booking_id, template) via `email_log`. Skips if guest opted out.
+// -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [

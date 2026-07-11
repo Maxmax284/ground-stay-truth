@@ -1,3 +1,13 @@
+// check-flight-status
+// -----------------------------------------------------------------------------
+// On-demand flight lookup via AviationStack (env: AVIATIONSTACK_API_KEY).
+// Called from the booking detail screen when staff want a fresh read on an
+// inbound flight. `poll-flights` is the cron version that pre-warms this for
+// every upcoming arrival.
+//
+// Quota-sensitive — AviationStack free tier is stingy. Cache results into
+// `flight_tracking` so the UI doesn't hammer the API.
+// -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

@@ -1,3 +1,15 @@
+// auto-assign-unit
+// -----------------------------------------------------------------------------
+// BUSINESS-CRITICAL. When someone books a "room type" instead of a specific
+// unit, this picks which physical unit inside the group they actually get.
+//
+// The real assignment is done by the DB function `assign_unit_for_group()`
+// which uses `FOR UPDATE SKIP LOCKED` so two concurrent bookings can't grab
+// the same unit. That lock is the whole point — don't reimplement in JS.
+//
+// Availability filter must match `BLOCKING_STATES` from `bookingStateMachine.ts`
+// or the calendar and the assigner will disagree.
+// -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [

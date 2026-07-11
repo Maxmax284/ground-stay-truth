@@ -1,3 +1,20 @@
+/**
+ * Deposit policy resolver.
+ *
+ * Bookings have TWO independent money buckets that people conflate all the
+ * time — keep them straight:
+ *
+ *   - Deposit           = portion of stay total (default 20%). Applied to the
+ *                         balance. Required to confirm a booking.
+ *   - Security deposit  = separate refundable hold against damages. Optional,
+ *                         controlled by `security_deposit_required` policy.
+ *   - Booking fee       = platform/processing fee. Optional, `booking_fee_*`
+ *                         policies. Non-refundable by default.
+ *
+ * All three are created as `pending` `payments` rows by DB triggers when a
+ * booking enters a hold state. This module just resolves "what does the
+ * policy say" for the UI.
+ */
 import type { PolicySetting } from "@/hooks/usePolicySettings";
 
 export type DepositMode = "manual_only" | "online_optional" | "online_required";

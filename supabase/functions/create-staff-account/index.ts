@@ -1,3 +1,16 @@
+// create-staff-account
+// -----------------------------------------------------------------------------
+// SECURITY-CRITICAL. Admin only. Atomic creation of a staff user:
+//   1. auth.users row (via service role)
+//   2. profiles row
+//   3. user_roles row (role scoped to what admin selected — cannot grant
+//      higher-than-self except for admins creating admins, which is logged
+//      and Fenrir-fired)
+//   4. user_property_assignments row(s)
+//
+// All-or-nothing. If any step fails, roll it all back — orphaned auth users
+// are a nightmare to clean up. Fires a Fenrir event on every creation.
+// -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendFenrirSecurityEvent } from "../_shared/fenrir.ts";
 
