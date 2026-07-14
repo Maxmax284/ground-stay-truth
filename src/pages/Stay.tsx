@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Home, Users, Moon, Sparkles, ChevronLeft, ChevronRight, CalendarDays, ArrowRight, MapPin, Clock, Shield, ListChecks, Building2 } from "lucide-react";
+import { Home, Users, Moon, Sparkles, ChevronLeft, ChevronRight, CalendarDays, ArrowRight, MapPin, Clock, Shield, ListChecks, Building2, Plus, Minus } from "lucide-react";
 import { formatPriceSimple } from "@/lib/currency";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
@@ -441,6 +441,49 @@ export default function Stay() {
 
 /* Mini Calendar for availability preview */
 /* Unit Card extracted for use in property sections */
+
+/* Expandable room description — truncates to ~2 lines, reveals full text on click */
+function ExpandableDescription({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const [overflowing, setOverflowing] = useState(false);
+  const ref = useCallback((node: HTMLParagraphElement | null) => {
+    if (!node) return;
+    // Measure whether the clamped text is actually being cut off
+    const check = () => setOverflowing(node.scrollHeight > node.clientHeight + 1);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(node);
+    // Store cleanup on the node itself so re-renders don't leak
+    (node as any).__ro?.disconnect?.();
+    (node as any).__ro = ro;
+  }, []);
+
+  return (
+    <div className="space-y-1">
+      <p
+        ref={expanded ? undefined : ref}
+        className={`text-sm text-muted-foreground transition-all duration-200 ${expanded ? "" : "line-clamp-2"}`}
+      >
+        {text}
+      </p>
+      {(overflowing || expanded) && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline focus:outline-none focus-visible:underline"
+          aria-expanded={expanded}
+        >
+          {expanded ? (
+            <><Minus className="h-3 w-3" /> Show Less</>
+          ) : (
+            <><Plus className="h-3 w-3" /> Read More</>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function UnitCard({ unit, displayName, availableCount, currencySymbol, expandedUnit, blockedByUnit, onToggleAvailability, onRequestBooking }: {
   unit: UnitData;
   displayName?: string;
@@ -470,7 +513,7 @@ function UnitCard({ unit, displayName, availableCount, currencySymbol, expandedU
         )}
       </CardHeader>
       <CardContent className="space-y-3">
-        {unit.description && <p className="text-sm text-muted-foreground line-clamp-2">{unit.description}</p>}
+        {unit.description && <ExpandableDescription text={unit.description} />}
         <div className="flex flex-wrap gap-2">
           <Badge variant="outline" className="text-xs"><Users className="h-3 w-3 mr-1" /> Up to {unit.capacity}</Badge>
           <Badge variant="outline" className="text-xs"><Moon className="h-3 w-3 mr-1" /> Min {unit.min_nights} night{unit.min_nights > 1 ? "s" : ""}</Badge>
