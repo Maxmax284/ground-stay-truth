@@ -47,6 +47,7 @@ serve(async (req) => {
     const today = new Date().toISOString().split("T")[0];
     const results: Array<{ airport: string; direction: string; count: number; success: boolean }> = [];
     let apiCallsMade = 0;
+    let rateLimited = false;
 
     // Check rate limit: count how many calls we've made today
     const { data: todayRecords } = await serviceClient
