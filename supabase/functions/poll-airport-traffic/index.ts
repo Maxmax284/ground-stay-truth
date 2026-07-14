@@ -57,7 +57,9 @@ serve(async (req) => {
 
     // Fetch arrivals and departures for each airport
     for (const airport of MONITORED_AIRPORTS) {
+      if (rateLimited) break;
       for (const direction of ["arrival", "departure"] as const) {
+        if (rateLimited) break;
         if (apiCallsMade >= MAX_API_CALLS_PER_RUN) {
           console.log("Rate limit reached, stopping API calls");
           break;
@@ -71,6 +73,14 @@ serve(async (req) => {
           apiCallsMade++;
 
           if (!apiResp.ok) {
+            // 429 = provider quota exhausted or per-minute cap hit.
+            // No point burning the rest of this run's budget — bail out and let the next scheduled run try again.
+            if (apiResp.status === 429) {
+              console.warn(`AviationStack rate limit hit (429) on ${airport} ${direction}. Aborting remaining calls this run. Check monthly quota / plan tier.`);
+              rateLimited = true;
+              results.push({ airport, direction, count: 0, success: false });
+              break;
+            }
             console.error(`API error for ${airport} ${direction}:`, apiResp.status);
             results.push({ airport, direction, count: 0, success: false });
             continue;
