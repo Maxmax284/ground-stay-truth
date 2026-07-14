@@ -55,6 +55,31 @@ serve(async (req) => {
       .select("id", { count: "exact", head: true })
       .eq("flight_date", today);
 
+    // Short-circuit: if nobody's actually flying in today with a known flight number,
+    // don't burn AviationStack quota scanning the whole airport. Guests self-update
+    // their travel status in the platform anyway.
+    const startOfDay = `${today}T00:00:00`;
+    const endOfDay = `${today}T23:59:59`;
+    const { data: relevantPickups } = await serviceClient
+      .from("airport_pickups")
+      .select("id, flight_number, arrival_datetime, status")
+      .not("flight_number", "is", null)
+      .neq("status", "cancelled")
+      .gte("arrival_datetime", startOfDay)
+      .lte("arrival_datetime", endOfDay);
+
+    if (!relevantPickups || relevantPickups.length === 0) {
+      console.log("No pickups today with flight numbers — skipping AviationStack scan to preserve quota.");
+      return new Response(JSON.stringify({
+        message: "No flights to track today. Skipped provider scan.",
+        api_calls_made: 0,
+        results: [],
+      }), {
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+
+
     // Fetch arrivals and departures for each airport
     for (const airport of MONITORED_AIRPORTS) {
       if (rateLimited) break;
