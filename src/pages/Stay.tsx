@@ -470,7 +470,7 @@ function UnitCard({ unit, displayName, availableCount, currencySymbol, expandedU
         )}
       </CardHeader>
       <CardContent className="space-y-3">
-        {unit.description && <p className="text-sm text-muted-foreground line-clamp-2">{unit.description}</p>}
+        {unit.description && <ExpandableDescription text={unit.description} />}
         <div className="flex flex-wrap gap-2">
           <Badge variant="outline" className="text-xs"><Users className="h-3 w-3 mr-1" /> Up to {unit.capacity}</Badge>
           <Badge variant="outline" className="text-xs"><Moon className="h-3 w-3 mr-1" /> Min {unit.min_nights} night{unit.min_nights > 1 ? "s" : ""}</Badge>
