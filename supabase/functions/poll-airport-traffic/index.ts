@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const AVIATIONSTACK_BASE = "http://api.aviationstack.com/v1";
+const AVIATIONSTACK_BASE = "https://api.aviationstack.com/v1";
 const MONITORED_AIRPORTS = ["BKK", "USM"]; // Suvarnabhumi & Samui
 const MAX_API_CALLS_PER_RUN = 4; // Rate limit: 4 calls per 30-min run
 
