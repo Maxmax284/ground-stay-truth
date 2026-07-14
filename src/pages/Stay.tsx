@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Home, Users, Moon, Sparkles, ChevronLeft, ChevronRight, CalendarDays, ArrowRight, MapPin, Clock, Shield, ListChecks, Building2 } from "lucide-react";
+import { Home, Users, Moon, Sparkles, ChevronLeft, ChevronRight, CalendarDays, ArrowRight, MapPin, Clock, Shield, ListChecks, Building2, Plus, Minus } from "lucide-react";
 import { formatPriceSimple } from "@/lib/currency";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
