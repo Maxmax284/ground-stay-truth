@@ -484,7 +484,7 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
             <Button
               type="submit"
-              disabled={createBooking.isPending || validationErrors.length > 0 || !assignResult?.available || assignLoading}
+              disabled={createBooking.isPending || validationErrors.length > 0 || !isAvailable || assignLoading || assignFetching}
             >
               {createBooking.isPending ? t("common.sending") : t("guestBooking.submitRequest")}
             </Button>
