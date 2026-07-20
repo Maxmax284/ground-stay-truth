@@ -305,33 +305,51 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
             </div>
           </div>
 
-          {/* Availability indicator */}
+          {/* Availability indicator — one message per classified status. */}
           {selectedGroupId && checkIn && checkOut && (
-            <div className={`flex items-center gap-2 text-sm rounded-md border p-2 ${
-              assignLoading ? "border-border bg-muted/30 text-muted-foreground" :
-              assignError ? "border-destructive/50 bg-destructive/5 text-destructive" :
-              assignResult?.available ? "border-success/50 bg-success/5 text-success" :
-              "border-destructive/50 bg-destructive/5 text-destructive"
-            }`}>
-              {assignLoading ? (
-                <span>{t("common.checking", { defaultValue: "Checking availability..." })}</span>
-              ) : assignError ? (
-                <>
-                  <AlertTriangle className="h-4 w-4" />
-                  <span>{t("bookingForm.availabilityCheckFailed", { defaultValue: "Availability could not be confirmed. Please refresh and try again." })}</span>
-                </>
-              ) : assignResult?.available ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span>{assignResult.available_count} of {assignResult.total_count} {t("bookingForm.roomsAvailable", { defaultValue: "rooms available" })}</span>
-                </>
-              ) : (
-                <>
-                  <XCircle className="h-4 w-4" />
-                  <span>{t("bookingForm.noRoomsAvailable", { defaultValue: "No rooms available for these dates" })}</span>
-                </>
+            <>
+              <div className={`flex items-center gap-2 text-sm rounded-md border p-2 ${
+                assignLoading || assignFetching ? "border-border bg-muted/30 text-muted-foreground" :
+                availabilityStatus === "available" ? "border-success/50 bg-success/5 text-success" :
+                availabilityStatus === "unavailable" ? "border-destructive/50 bg-destructive/5 text-destructive" :
+                canRetryAvailability ? "border-amber-500/50 bg-amber-500/5 text-amber-700 dark:text-amber-400" :
+                "border-destructive/50 bg-destructive/5 text-destructive"
+              }`}>
+                {assignLoading || assignFetching ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>{t("common.checking", { defaultValue: "Checking availability..." })}</span>
+                  </>
+                ) : availabilityStatus === "available" ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>{assignResult?.available_count} of {assignResult?.total_count} {t("bookingForm.roomsAvailable", { defaultValue: "rooms available" })}</span>
+                  </>
+                ) : availabilityStatus === "unavailable" ? (
+                  <>
+                    <XCircle className="h-4 w-4" />
+                    <span>{GUEST_MESSAGES.unavailable}</span>
+                  </>
+                ) : availabilityStatus ? (
+                  <>
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span className="flex-1">{GUEST_MESSAGES[availabilityStatus]}</span>
+                  </>
+                ) : null}
+              </div>
+              {canRetryAvailability && !assignLoading && !assignFetching && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => refetchAssign()}
+                >
+                  <RefreshCw className="h-4 w-4 mr-1.5" />
+                  {t("common.tryAgain", { defaultValue: "Try Again" })}
+                </Button>
               )}
-            </div>
+            </>
           )}
 
           <div className="space-y-2">
