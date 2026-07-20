@@ -82,7 +82,7 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
     if (matchingGroup) setValue("group_id", matchingGroup.id);
   }, [defaultUnitId, selectedGroupId, unitGroups, setValue]);
 
-  const queryClient = useQueryClient();
+
 
   // Auto-assign: find available unit for group + dates.
   // Hook never throws — status lives on data.status. See src/lib/availability/types.ts.
