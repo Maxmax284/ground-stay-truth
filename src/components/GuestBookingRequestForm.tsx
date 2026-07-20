@@ -22,7 +22,9 @@ import { useUnitGroups, useAutoAssignUnit } from "@/hooks/useAutoAssignUnit";
 import { supabase } from "@/integrations/supabase/client";
 import { calculatePricing, type PricingSummary } from "@/lib/pricingCalculator";
 import { formatPrice } from "@/lib/currency";
-import { AlertTriangle, CalendarPlus, Plane, CheckCircle2, XCircle } from "lucide-react";
+import { GUEST_MESSAGES, RETRYABLE_STATUSES } from "@/lib/availability/types";
+import { useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, CalendarPlus, Plane, CheckCircle2, XCircle, RefreshCw, Loader2 } from "lucide-react";
 
 interface GuestBookingRequestFormProps {
   open: boolean;
@@ -81,18 +83,24 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
     if (matchingGroup) setValue("group_id", matchingGroup.id);
   }, [defaultUnitId, selectedGroupId, unitGroups, setValue]);
 
-  // Auto-assign: find available unit for group + dates
-  const { data: assignResult, isLoading: assignLoading, isError: assignError } = useAutoAssignUnit(
+  const queryClient = useQueryClient();
+
+  // Auto-assign: find available unit for group + dates.
+  // Hook never throws — status lives on data.status. See src/lib/availability/types.ts.
+  const { data: assignResult, isLoading: assignLoading, refetch: refetchAssign, isFetching: assignFetching } = useAutoAssignUnit(
     selectedGroupId || undefined,
     checkIn,
     checkOut
   );
 
-  // Fire-and-forget consistency check: cross-compare the calendar sweep
-  // against the authoritative assign_unit_for_group RPC. Any drift is
-  // logged to staff_audit_events for admin review — never surfaced to guest.
+  const availabilityStatus = assignResult?.status;
+  const isAvailable = availabilityStatus === "available";
+  const canRetryAvailability = !!availabilityStatus && RETRYABLE_STATUSES.includes(availabilityStatus);
+
+  // Fire-and-forget consistency check — only on successful confirmed checks.
   useEffect(() => {
     if (!selectedGroupId || !checkIn || !checkOut || !assignResult) return;
+    if (assignResult.status !== "available" && assignResult.status !== "unavailable") return;
     supabase.functions
       .invoke("availability-consistency-check", {
         body: {
@@ -125,6 +133,20 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
     };
   }, [selectedGroup]);
 
+  const pricing: PricingSummary = useMemo(() => {
+    if (!pricingUnit || !checkIn || !checkOut) return { nights: [], subtotal: 0, cleaningFee: 0, extraBedTotal: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
+    return calculatePricing(pricingUnit as any, checkIn, checkOut, allPricingRules ?? [], undefined, policies);
+  }, [pricingUnit, checkIn, checkOut, allPricingRules, policies]);
+
+  // Pricing is unavailable if we have nights to price but total is zero
+  // (no seasonal rule covers the range AND base_price is 0/missing).
+  const pricingUnavailable = useMemo(() => {
+    if (!pricingUnit || !checkIn || !checkOut) return false;
+    const nights = differenceInCalendarDays(new Date(checkOut), new Date(checkIn));
+    if (nights <= 0) return false;
+    return pricing.nights.length > 0 && pricing.subtotal <= 0;
+  }, [pricingUnit, checkIn, checkOut, pricing]);
+
   const validationErrors = useMemo(() => {
     const errs: string[] = [];
     if (!selectedGroup || !checkIn || !checkOut) return errs;
@@ -132,19 +154,22 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
     if (nights <= 0) errs.push(t("bookingForm.checkoutAfterCheckin"));
     else if (nights < selectedGroup.min_nights) errs.push(t("bookingForm.minStay", { count: selectedGroup.min_nights }));
     if (Number(numGuests) > selectedGroup.capacity) errs.push(t("bookingForm.maxCapacity", { count: selectedGroup.capacity }));
-    // Check availability result
-    if (assignResult && !assignResult.available) {
-      errs.push(t("bookingForm.noAvailability", { defaultValue: "No rooms of this type are available for the selected dates" }));
-    } else if (assignError) {
-      errs.push(t("bookingForm.availabilityCheckFailed", { defaultValue: "Availability could not be confirmed. Please refresh and try again." }));
+
+    // Availability — only surface as an error once the check completes.
+    // Transient failures do NOT get an inventory-flavored message.
+    if (availabilityStatus === "unavailable") {
+      errs.push(GUEST_MESSAGES.unavailable);
+    } else if (availabilityStatus === "configuration_error") {
+      errs.push(GUEST_MESSAGES.configuration_error);
+    }
+    // network/server/unknown errors are surfaced separately with a Try Again
+    // button — not stuffed into the validation-errors list.
+
+    if (pricingUnavailable) {
+      errs.push(GUEST_MESSAGES.pricing_unavailable);
     }
     return errs;
-  }, [selectedGroup, checkIn, checkOut, numGuests, assignResult, assignError, t]);
-
-  const pricing: PricingSummary = useMemo(() => {
-    if (!pricingUnit || !checkIn || !checkOut || validationErrors.length > 0) return { nights: [], subtotal: 0, cleaningFee: 0, extraBedTotal: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
-    return calculatePricing(pricingUnit as any, checkIn, checkOut, allPricingRules ?? [], undefined, policies);
-  }, [pricingUnit, checkIn, checkOut, allPricingRules, validationErrors, policies]);
+  }, [selectedGroup, checkIn, checkOut, numGuests, availabilityStatus, pricingUnavailable, t]);
 
   const pricingSources = useMemo(() => {
     const sources = new Map<string, number>();
