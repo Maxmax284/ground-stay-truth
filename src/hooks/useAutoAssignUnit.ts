@@ -15,13 +15,35 @@ export function useAutoAssignUnit(groupId: string | undefined, checkIn: string, 
     queryKey: ["auto-assign-unit", groupId, checkIn, checkOut],
     enabled: !!groupId && !!checkIn && !!checkOut,
     queryFn: async () => {
+      const payload = { group_id: groupId, check_in: checkIn, check_out: checkOut };
+
       const { data, error } = await supabase.functions.invoke("auto-assign-unit", {
-        body: { group_id: groupId, check_in: checkIn, check_out: checkOut },
+        body: payload,
       });
-      if (error) throw error;
-      return data as AutoAssignResult;
+      if (!error && data) return data as AutoAssignResult;
+
+      // Same authoritative picker used at submit time. This is not a bypass:
+      // it calls the SECURITY DEFINER `assign_unit_for_group` RPC that enforces
+      // active units, blocking booking states, and maintenance overlap checks.
+      const { data: rpcRows, error: rpcError } = await (supabase as any).rpc(
+        "assign_unit_for_group",
+        { _group_id: groupId, _check_in: checkIn, _check_out: checkOut }
+      );
+      if (rpcError) throw error ?? rpcError;
+
+      const row = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
+      const picked = row?.unit_id ?? null;
+      return {
+        available: !!picked,
+        unit_id: picked ?? undefined,
+        unit_name: row?.unit_name,
+        available_count: row?.available_count ?? 0,
+        total_count: row?.total_count ?? 0,
+        error: picked ? undefined : "No rooms available for the selected dates",
+      } satisfies AutoAssignResult;
     },
     staleTime: 10_000,
+    retry: 1,
   });
 }
 
