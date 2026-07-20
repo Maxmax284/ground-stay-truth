@@ -17,6 +17,8 @@ import { PricingRuleForm } from "@/components/PricingRuleForm";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
 import { PolicySettingsForm } from "@/components/PolicySettingsForm";
+import { CloneYearDialog } from "@/components/pricing/CloneYearDialog";
+import { PricingCoverageBanner } from "@/components/pricing/PricingCoverageBanner";
 import type { PricingRule } from "@/hooks/usePricingRules";
 
 const Pricing = () => {
@@ -80,6 +82,8 @@ const Pricing = () => {
           </TabsList>
 
           <TabsContent value="pricing" className="space-y-6 mt-4">
+            <PricingCoverageBanner />
+
             <div>
               <h2 className="text-lg font-semibold mb-3">{t("pricing.unitPricingSummary")}</h2>
               {unitsLoading ? (
@@ -151,11 +155,14 @@ const Pricing = () => {
             <Separator />
 
             <div>
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
                 <h2 className="text-lg font-semibold">{t("pricing.seasonalRules")}</h2>
-                <Button size="sm" onClick={() => { setEditingRule(null); setShowRuleForm(true); }}>
-                  <Plus className="h-4 w-4 mr-1" /> {t("pricing.addRule")}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <CloneYearDialog />
+                  <Button size="sm" onClick={() => { setEditingRule(null); setShowRuleForm(true); }}>
+                    <Plus className="h-4 w-4 mr-1" /> {t("pricing.addRule")}
+                  </Button>
+                </div>
               </div>
 
               {rulesLoading ? (
