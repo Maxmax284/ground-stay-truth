@@ -17,6 +17,7 @@ import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { FetchErrorState } from "@/components/FetchErrorState";
 import { logClientError } from "@/lib/errorLogging";
+import { getStayCacheVersion, subscribeToStayCacheBust } from "@/lib/stayCacheBust";
 import lamaiLogo from "@/assets/lamai-logo.png";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
