@@ -88,6 +88,24 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
     checkOut
   );
 
+  // Fire-and-forget consistency check: cross-compare the calendar sweep
+  // against the authoritative assign_unit_for_group RPC. Any drift is
+  // logged to staff_audit_events for admin review — never surfaced to guest.
+  useEffect(() => {
+    if (!selectedGroupId || !checkIn || !checkOut || !assignResult) return;
+    supabase.functions
+      .invoke("availability-consistency-check", {
+        body: {
+          group_id: selectedGroupId,
+          check_in: checkIn,
+          check_out: checkOut,
+          source: "guest_booking_form",
+        },
+      })
+      .catch(() => {/* silent — this is diagnostic only */});
+  }, [selectedGroupId, checkIn, checkOut, assignResult]);
+
+
   // Build a "fake" unit object for pricing calculation from the group representative
   const pricingUnit = useMemo(() => {
     if (!selectedGroup) return null;
