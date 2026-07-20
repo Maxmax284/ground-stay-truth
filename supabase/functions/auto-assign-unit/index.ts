@@ -13,7 +13,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [
-  Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
+  Deno.env.get("SITE_URL") || "https://www.lmtcampstay.com",
+  "https://www.lmtcampstay.com",
+  "https://lmtcampstay.com",
   "https://ground-stay-truth.lovable.app",
   "http://localhost:5173",
   "http://localhost:8080",

@@ -82,7 +82,7 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
   }, [defaultUnitId, selectedGroupId, unitGroups, setValue]);
 
   // Auto-assign: find available unit for group + dates
-  const { data: assignResult, isLoading: assignLoading } = useAutoAssignUnit(
+  const { data: assignResult, isLoading: assignLoading, isError: assignError } = useAutoAssignUnit(
     selectedGroupId || undefined,
     checkIn,
     checkOut
@@ -135,9 +135,11 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
     // Check availability result
     if (assignResult && !assignResult.available) {
       errs.push(t("bookingForm.noAvailability", { defaultValue: "No rooms of this type are available for the selected dates" }));
+    } else if (assignError) {
+      errs.push(t("bookingForm.availabilityCheckFailed", { defaultValue: "Availability could not be confirmed. Please refresh and try again." }));
     }
     return errs;
-  }, [selectedGroup, checkIn, checkOut, numGuests, assignResult, t]);
+  }, [selectedGroup, checkIn, checkOut, numGuests, assignResult, assignError, t]);
 
   const pricing: PricingSummary = useMemo(() => {
     if (!pricingUnit || !checkIn || !checkOut || validationErrors.length > 0) return { nights: [], subtotal: 0, cleaningFee: 0, extraBedTotal: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
@@ -282,11 +284,17 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
           {selectedGroupId && checkIn && checkOut && (
             <div className={`flex items-center gap-2 text-sm rounded-md border p-2 ${
               assignLoading ? "border-border bg-muted/30 text-muted-foreground" :
+              assignError ? "border-destructive/50 bg-destructive/5 text-destructive" :
               assignResult?.available ? "border-success/50 bg-success/5 text-success" :
               "border-destructive/50 bg-destructive/5 text-destructive"
             }`}>
               {assignLoading ? (
                 <span>{t("common.checking", { defaultValue: "Checking availability..." })}</span>
+              ) : assignError ? (
+                <>
+                  <AlertTriangle className="h-4 w-4" />
+                  <span>{t("bookingForm.availabilityCheckFailed", { defaultValue: "Availability could not be confirmed. Please refresh and try again." })}</span>
+                </>
               ) : assignResult?.available ? (
                 <>
                   <CheckCircle2 className="h-4 w-4" />
