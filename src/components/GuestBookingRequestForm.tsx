@@ -23,7 +23,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { calculatePricing, type PricingSummary } from "@/lib/pricingCalculator";
 import { formatPrice } from "@/lib/currency";
 import { GUEST_MESSAGES, RETRYABLE_STATUSES } from "@/lib/availability/types";
-import { useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, CalendarPlus, Plane, CheckCircle2, XCircle, RefreshCw, Loader2 } from "lucide-react";
 
 interface GuestBookingRequestFormProps {
