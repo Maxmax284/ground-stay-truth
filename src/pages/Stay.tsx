@@ -17,6 +17,7 @@ import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { FetchErrorState } from "@/components/FetchErrorState";
 import { logClientError } from "@/lib/errorLogging";
+import { getStayCacheVersion, subscribeToStayCacheBust } from "@/lib/stayCacheBust";
 import lamaiLogo from "@/assets/lamai-logo.png";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -74,6 +75,16 @@ export default function Stay() {
   const [blockedByUnit, setBlockedByUnit] = useState<Record<string, BlockedRange[]>>({});
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
   const [category, setCategory] = useState<CategoryKey>("all");
+  const [cacheV, setCacheV] = useState<string>(() => getStayCacheVersion());
+
+  // Listen for staff-triggered cache busts (pricing/policy edits) in any tab.
+  // When we hear one, wipe per-unit calendar caches and re-run the fetch effect.
+  useEffect(() => {
+    return subscribeToStayCacheBust((v) => {
+      setCacheV(v);
+      setBlockedByUnit({});
+    });
+  }, []);
 
   // Fetch camp_info for summary
   const [campSummary, setCampSummary] = useState<any>(null);
@@ -81,7 +92,7 @@ export default function Stay() {
   useEffect(() => {
     (async () => {
       try {
-        const resp = await fetch(`${SUPABASE_URL}/functions/v1/get-availability`, {
+        const resp = await fetch(`${SUPABASE_URL}/functions/v1/get-availability?v=${cacheV}`, {
           headers: { apikey: SUPABASE_KEY },
         });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -129,7 +140,7 @@ export default function Stay() {
       }
       setLoading(false);
     })();
-  }, []);
+  }, [cacheV]);
 
   // Fetch camp info from policy_settings (public read)
   useEffect(() => {
@@ -170,7 +181,7 @@ export default function Stay() {
         // group's intersected availability (a night is only blocked when
         // every sibling is unavailable). Otherwise fall back to the single
         // unit's own calendar.
-        const query = groupId ? `?group_id=${groupId}` : `?unit_id=${unitId}`;
+        const query = groupId ? `?group_id=${groupId}&v=${cacheV}` : `?unit_id=${unitId}&v=${cacheV}`;
         const resp = await fetch(`${SUPABASE_URL}/functions/v1/get-availability${query}`, {
           headers: { apikey: SUPABASE_KEY },
         });

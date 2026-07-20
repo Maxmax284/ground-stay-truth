@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { bumpStayCacheVersion } from "@/lib/stayCacheBust";
 
 export type PricingRule = Tables<"pricing_rules">;
 export type PricingRuleInsert = TablesInsert<"pricing_rules">;
@@ -40,7 +41,10 @@ export function useCreatePricingRule() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["pricing_rules"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pricing_rules"] });
+      bumpStayCacheVersion("pricing_rule_created");
+    },
   });
 }
 
@@ -65,7 +69,10 @@ export function useUpdatePricingRule() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["pricing_rules"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pricing_rules"] });
+      bumpStayCacheVersion("pricing_rule_updated");
+    },
   });
 }
 
@@ -76,6 +83,9 @@ export function useDeletePricingRule() {
       const { error } = await supabase.from("pricing_rules").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["pricing_rules"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pricing_rules"] });
+      bumpStayCacheVersion("pricing_rule_deleted");
+    },
   });
 }
