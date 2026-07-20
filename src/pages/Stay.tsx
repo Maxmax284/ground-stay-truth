@@ -140,7 +140,7 @@ export default function Stay() {
       }
       setLoading(false);
     })();
-  }, []);
+  }, [cacheV]);
 
   // Fetch camp info from policy_settings (public read)
   useEffect(() => {
@@ -181,7 +181,7 @@ export default function Stay() {
         // group's intersected availability (a night is only blocked when
         // every sibling is unavailable). Otherwise fall back to the single
         // unit's own calendar.
-        const query = groupId ? `?group_id=${groupId}` : `?unit_id=${unitId}`;
+        const query = groupId ? `?group_id=${groupId}&v=${cacheV}` : `?unit_id=${unitId}&v=${cacheV}`;
         const resp = await fetch(`${SUPABASE_URL}/functions/v1/get-availability${query}`, {
           headers: { apikey: SUPABASE_KEY },
         });
