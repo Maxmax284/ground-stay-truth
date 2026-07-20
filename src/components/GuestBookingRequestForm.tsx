@@ -22,7 +22,8 @@ import { useUnitGroups, useAutoAssignUnit } from "@/hooks/useAutoAssignUnit";
 import { supabase } from "@/integrations/supabase/client";
 import { calculatePricing, type PricingSummary } from "@/lib/pricingCalculator";
 import { formatPrice } from "@/lib/currency";
-import { AlertTriangle, CalendarPlus, Plane, CheckCircle2, XCircle } from "lucide-react";
+import { GUEST_MESSAGES, RETRYABLE_STATUSES } from "@/lib/availability/types";
+import { AlertTriangle, CalendarPlus, Plane, CheckCircle2, XCircle, RefreshCw, Loader2 } from "lucide-react";
 
 interface GuestBookingRequestFormProps {
   open: boolean;
@@ -81,18 +82,24 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
     if (matchingGroup) setValue("group_id", matchingGroup.id);
   }, [defaultUnitId, selectedGroupId, unitGroups, setValue]);
 
-  // Auto-assign: find available unit for group + dates
-  const { data: assignResult, isLoading: assignLoading, isError: assignError } = useAutoAssignUnit(
+
+
+  // Auto-assign: find available unit for group + dates.
+  // Hook never throws — status lives on data.status. See src/lib/availability/types.ts.
+  const { data: assignResult, isLoading: assignLoading, refetch: refetchAssign, isFetching: assignFetching } = useAutoAssignUnit(
     selectedGroupId || undefined,
     checkIn,
     checkOut
   );
 
-  // Fire-and-forget consistency check: cross-compare the calendar sweep
-  // against the authoritative assign_unit_for_group RPC. Any drift is
-  // logged to staff_audit_events for admin review — never surfaced to guest.
+  const availabilityStatus = assignResult?.status;
+  const isAvailable = availabilityStatus === "available";
+  const canRetryAvailability = !!availabilityStatus && RETRYABLE_STATUSES.includes(availabilityStatus);
+
+  // Fire-and-forget consistency check — only on successful confirmed checks.
   useEffect(() => {
     if (!selectedGroupId || !checkIn || !checkOut || !assignResult) return;
+    if (assignResult.status !== "available" && assignResult.status !== "unavailable") return;
     supabase.functions
       .invoke("availability-consistency-check", {
         body: {
@@ -125,6 +132,20 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
     };
   }, [selectedGroup]);
 
+  const pricing: PricingSummary = useMemo(() => {
+    if (!pricingUnit || !checkIn || !checkOut) return { nights: [], subtotal: 0, cleaningFee: 0, extraBedTotal: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
+    return calculatePricing(pricingUnit as any, checkIn, checkOut, allPricingRules ?? [], undefined, policies);
+  }, [pricingUnit, checkIn, checkOut, allPricingRules, policies]);
+
+  // Pricing is unavailable if we have nights to price but total is zero
+  // (no seasonal rule covers the range AND base_price is 0/missing).
+  const pricingUnavailable = useMemo(() => {
+    if (!pricingUnit || !checkIn || !checkOut) return false;
+    const nights = differenceInCalendarDays(new Date(checkOut), new Date(checkIn));
+    if (nights <= 0) return false;
+    return pricing.nights.length > 0 && pricing.subtotal <= 0;
+  }, [pricingUnit, checkIn, checkOut, pricing]);
+
   const validationErrors = useMemo(() => {
     const errs: string[] = [];
     if (!selectedGroup || !checkIn || !checkOut) return errs;
@@ -132,19 +153,22 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
     if (nights <= 0) errs.push(t("bookingForm.checkoutAfterCheckin"));
     else if (nights < selectedGroup.min_nights) errs.push(t("bookingForm.minStay", { count: selectedGroup.min_nights }));
     if (Number(numGuests) > selectedGroup.capacity) errs.push(t("bookingForm.maxCapacity", { count: selectedGroup.capacity }));
-    // Check availability result
-    if (assignResult && !assignResult.available) {
-      errs.push(t("bookingForm.noAvailability", { defaultValue: "No rooms of this type are available for the selected dates" }));
-    } else if (assignError) {
-      errs.push(t("bookingForm.availabilityCheckFailed", { defaultValue: "Availability could not be confirmed. Please refresh and try again." }));
+
+    // Availability — only surface as an error once the check completes.
+    // Transient failures do NOT get an inventory-flavored message.
+    if (availabilityStatus === "unavailable") {
+      errs.push(GUEST_MESSAGES.unavailable);
+    } else if (availabilityStatus === "configuration_error") {
+      errs.push(GUEST_MESSAGES.configuration_error);
+    }
+    // network/server/unknown errors are surfaced separately with a Try Again
+    // button — not stuffed into the validation-errors list.
+
+    if (pricingUnavailable) {
+      errs.push(GUEST_MESSAGES.pricing_unavailable);
     }
     return errs;
-  }, [selectedGroup, checkIn, checkOut, numGuests, assignResult, assignError, t]);
-
-  const pricing: PricingSummary = useMemo(() => {
-    if (!pricingUnit || !checkIn || !checkOut || validationErrors.length > 0) return { nights: [], subtotal: 0, cleaningFee: 0, extraBedTotal: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
-    return calculatePricing(pricingUnit as any, checkIn, checkOut, allPricingRules ?? [], undefined, policies);
-  }, [pricingUnit, checkIn, checkOut, allPricingRules, validationErrors, policies]);
+  }, [selectedGroup, checkIn, checkOut, numGuests, availabilityStatus, pricingUnavailable, t]);
 
   const pricingSources = useMemo(() => {
     const sources = new Map<string, number>();
@@ -280,33 +304,51 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
             </div>
           </div>
 
-          {/* Availability indicator */}
+          {/* Availability indicator — one message per classified status. */}
           {selectedGroupId && checkIn && checkOut && (
-            <div className={`flex items-center gap-2 text-sm rounded-md border p-2 ${
-              assignLoading ? "border-border bg-muted/30 text-muted-foreground" :
-              assignError ? "border-destructive/50 bg-destructive/5 text-destructive" :
-              assignResult?.available ? "border-success/50 bg-success/5 text-success" :
-              "border-destructive/50 bg-destructive/5 text-destructive"
-            }`}>
-              {assignLoading ? (
-                <span>{t("common.checking", { defaultValue: "Checking availability..." })}</span>
-              ) : assignError ? (
-                <>
-                  <AlertTriangle className="h-4 w-4" />
-                  <span>{t("bookingForm.availabilityCheckFailed", { defaultValue: "Availability could not be confirmed. Please refresh and try again." })}</span>
-                </>
-              ) : assignResult?.available ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span>{assignResult.available_count} of {assignResult.total_count} {t("bookingForm.roomsAvailable", { defaultValue: "rooms available" })}</span>
-                </>
-              ) : (
-                <>
-                  <XCircle className="h-4 w-4" />
-                  <span>{t("bookingForm.noRoomsAvailable", { defaultValue: "No rooms available for these dates" })}</span>
-                </>
+            <>
+              <div className={`flex items-center gap-2 text-sm rounded-md border p-2 ${
+                assignLoading || assignFetching ? "border-border bg-muted/30 text-muted-foreground" :
+                availabilityStatus === "available" ? "border-success/50 bg-success/5 text-success" :
+                availabilityStatus === "unavailable" ? "border-destructive/50 bg-destructive/5 text-destructive" :
+                canRetryAvailability ? "border-amber-500/50 bg-amber-500/5 text-amber-700 dark:text-amber-400" :
+                "border-destructive/50 bg-destructive/5 text-destructive"
+              }`}>
+                {assignLoading || assignFetching ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>{t("common.checking", { defaultValue: "Checking availability..." })}</span>
+                  </>
+                ) : availabilityStatus === "available" ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>{assignResult?.available_count} of {assignResult?.total_count} {t("bookingForm.roomsAvailable", { defaultValue: "rooms available" })}</span>
+                  </>
+                ) : availabilityStatus === "unavailable" ? (
+                  <>
+                    <XCircle className="h-4 w-4" />
+                    <span>{GUEST_MESSAGES.unavailable}</span>
+                  </>
+                ) : availabilityStatus ? (
+                  <>
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span className="flex-1">{GUEST_MESSAGES[availabilityStatus]}</span>
+                  </>
+                ) : null}
+              </div>
+              {canRetryAvailability && !assignLoading && !assignFetching && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => refetchAssign()}
+                >
+                  <RefreshCw className="h-4 w-4 mr-1.5" />
+                  {t("common.tryAgain", { defaultValue: "Try Again" })}
+                </Button>
               )}
-            </div>
+            </>
           )}
 
           <div className="space-y-2">
@@ -441,7 +483,7 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
             <Button
               type="submit"
-              disabled={createBooking.isPending || validationErrors.length > 0 || !assignResult?.available || assignLoading}
+              disabled={createBooking.isPending || validationErrors.length > 0 || !isAvailable || assignLoading || assignFetching}
             >
               {createBooking.isPending ? t("common.sending") : t("guestBooking.submitRequest")}
             </Button>
