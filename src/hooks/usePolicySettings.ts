@@ -5,6 +5,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { emitPolicySettingChanged } from "@/lib/fenrir/events";
 import { mapRole } from "@/lib/fenrir/role-map";
 import type { AppRole } from "@/lib/permissions";
+import { bumpStayCacheVersion } from "@/lib/stayCacheBust";
 
 export type PolicySetting = Tables<"policy_settings">;
 
@@ -81,9 +82,12 @@ export function useUpdatePolicySetting() {
 
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["policy_settings"] });
       qc.invalidateQueries({ queryKey: ["stay-essentials"] });
+      // Any policy edit can influence the public /stay page (currency,
+      // deposit, booking fee, etc.). Cheap to bust — always bump.
+      bumpStayCacheVersion(`policy_setting:${data?.key ?? "unknown"}`);
     },
   });
 }
