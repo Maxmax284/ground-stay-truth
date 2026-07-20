@@ -75,6 +75,16 @@ export default function Stay() {
   const [blockedByUnit, setBlockedByUnit] = useState<Record<string, BlockedRange[]>>({});
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
   const [category, setCategory] = useState<CategoryKey>("all");
+  const [cacheV, setCacheV] = useState<string>(() => getStayCacheVersion());
+
+  // Listen for staff-triggered cache busts (pricing/policy edits) in any tab.
+  // When we hear one, wipe per-unit calendar caches and re-run the fetch effect.
+  useEffect(() => {
+    return subscribeToStayCacheBust((v) => {
+      setCacheV(v);
+      setBlockedByUnit({});
+    });
+  }, []);
 
   // Fetch camp_info for summary
   const [campSummary, setCampSummary] = useState<any>(null);
@@ -82,7 +92,7 @@ export default function Stay() {
   useEffect(() => {
     (async () => {
       try {
-        const resp = await fetch(`${SUPABASE_URL}/functions/v1/get-availability`, {
+        const resp = await fetch(`${SUPABASE_URL}/functions/v1/get-availability?v=${cacheV}`, {
           headers: { apikey: SUPABASE_KEY },
         });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
