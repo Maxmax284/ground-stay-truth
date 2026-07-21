@@ -411,8 +411,17 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
                 <span>{t("common.total")}</span>
                 <span>{formatPrice(pricing.total, policies)}</span>
               </div>
+              {pricing.billableGuests != null && pricing.actualGuests != null && pricing.billableGuests > pricing.actualGuests && (
+                <p className="text-xs text-muted-foreground italic">
+                  {t("pricing.minBillableNote", {
+                    count: pricing.billableGuests,
+                    defaultValue: `Pricing is based on a ${pricing.billableGuests}-person minimum charge.`,
+                  })}
+                </p>
+              )}
             </div>
           )}
+
 
           <GuestTypeSelect value={watch("guest_type")} onChange={(v) => setValue("guest_type", v)} />
 
