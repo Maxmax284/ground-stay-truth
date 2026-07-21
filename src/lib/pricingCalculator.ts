@@ -300,5 +300,13 @@ export function calculatePricing(
     longStayDiscount: appliedLongStay,
     loyaltyDiscount: appliedLoyalty,
     total: subtotal - discountAmount + cleaningFee + extraBedTotal,
+    billableGuests,
+    actualGuests,
+    minBillableGuests: minBillable,
+  };
+}
+
+    loyaltyDiscount: appliedLoyalty,
+    total: subtotal - discountAmount + cleaningFee + extraBedTotal,
   };
 }
