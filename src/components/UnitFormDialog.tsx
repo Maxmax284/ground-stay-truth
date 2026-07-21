@@ -132,6 +132,12 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
             <div className="space-y-2"><Label htmlFor="max_extra_beds">Max Extra Beds</Label><Input id="max_extra_beds" type="number" min={0} max={5} {...register("max_extra_beds")} /><p className="text-xs text-muted-foreground">0 = no extra beds available</p></div>
             <div className="space-y-2"><Label htmlFor="extra_bed_fee">Extra Bed Fee / Night</Label><Input id="extra_bed_fee" type="number" step="0.01" min={0} {...register("extra_bed_fee")} placeholder="0" /></div>
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="min_billable_guests">Minimum billable guests</Label>
+            <Input id="min_billable_guests" type="number" min={1} max={20} {...register("min_billable_guests")} placeholder="Leave blank for standard" />
+            <p className="text-xs text-muted-foreground">Charge as if at least this many guests are booked, even if fewer are selected. Use this for twin rooms or any room that must be sold at a minimum occupancy.</p>
+          </div>
+
           <div className="space-y-2"><Label>{t("units.amenities")}</Label><div className="flex flex-wrap gap-2">{allAmenityOptions.map((amenity) => <button key={amenity} type="button" onClick={() => toggleAmenity(amenity)} className={`px-3 py-1 rounded-full text-sm border transition-colors ${selectedAmenities.includes(amenity) ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:border-primary/50"}`}>{amenity}</button>)}</div><div className="flex gap-2 mt-2"><Input placeholder={t("units.customAmenityPlaceholder", { defaultValue: "Add custom amenity…" })} value={customAmenity} onChange={(e) => setCustomAmenity(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomAmenity(); } }} className="flex-1" /><Button type="button" size="sm" variant="outline" onClick={addCustomAmenity} disabled={!customAmenity.trim()}><Plus className="h-4 w-4" /></Button></div></div>
           <div className="space-y-2"><Label>{t("units.photos")}</Label>{savedUnitId ? <UnitPhotoUpload unitId={savedUnitId} photos={photos} onChange={setPhotos} /> : <p className="text-xs text-muted-foreground">{t("units.saveFirst")}</p>}</div>
           <div className="space-y-2"><Label htmlFor="rules">{t("units.houseRules")}</Label><Textarea id="rules" {...register("rules")} placeholder="No smoking, quiet hours after 10pm…" rows={2} /></div>
