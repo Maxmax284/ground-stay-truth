@@ -306,7 +306,3 @@ export function calculatePricing(
   };
 }
 
-    loyaltyDiscount: appliedLoyalty,
-    total: subtotal - discountAmount + cleaningFee + extraBedTotal,
-  };
-}
