@@ -1,0 +1,2 @@
+ALTER TABLE public.units ADD COLUMN min_billable_guests integer NULL;
+COMMENT ON COLUMN public.units.min_billable_guests IS 'Minimum guest count used for pricing. If set, billableGuests = max(num_guests, min_billable_guests). NULL = no floor (behaves as 1).';
