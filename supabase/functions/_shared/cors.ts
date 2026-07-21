@@ -99,7 +99,7 @@ export function validateRedirectUrl(rawUrl: string | undefined | null): string |
  * (payment links sent to guests, redirect fallbacks, etc.).
  */
 export function getCanonicalSiteUrl(): string {
-  return SITE_URL_CONFIGURED ? SITE_URL : "https://ground-stay-truth.lovable.app";
+  return SITE_URL_CONFIGURED ? SITE_URL : "https://lmtcampstay.com";
 }
 
 /**
