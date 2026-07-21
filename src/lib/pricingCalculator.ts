@@ -50,7 +50,11 @@ export interface PricingSummary {
   longStayDiscount: LongStayDiscount | null;
   loyaltyDiscount: LoyaltyDiscount | null;
   total: number;
+  billableGuests?: number;
+  actualGuests?: number;
+  minBillableGuests?: number;
 }
+
 
 /**
  * Get the best applicable long-stay discount tier.
@@ -144,7 +148,8 @@ export function calculatePricing(
   priceOverride?: number | null,
   policies?: PolicySetting[] | null,
   completedStays?: number,
-  extraBeds?: number
+  extraBeds?: number,
+  numGuests?: number
 ): PricingSummary {
   if (!checkIn || !checkOut) {
     return { nights: [], subtotal: 0, cleaningFee: 0, extraBedTotal: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
@@ -160,10 +165,18 @@ export function calculatePricing(
   const nightDates = eachDayOfInterval({ start: startDate, end: new Date(endDate.getTime() - 86400000) });
   const nightCount = nightDates.length;
 
-  // Per-person pricing: multiply all per-night prices by the unit capacity
+  // Occupancy pricing:
+  //   billableGuests = max(numGuests, unit.min_billable_guests ?? 1)
+  // per_person multiplier now uses billableGuests (not capacity), so a
+  // Twin room with min_billable_guests=2 always bills for at least 2,
+  // whether the guest selects 1 or 2 people.
   const pricingType = (unit as any).pricing_type as string | undefined;
   const isPerPerson = pricingType === "per_person";
-  const guestMultiplier = isPerPerson ? (unit.capacity || 2) : 1;
+  const minBillable = Math.max(1, Number((unit as any).min_billable_guests ?? 0) || 1);
+  const actualGuests = Math.max(1, Number(numGuests ?? 0) || 1);
+  const billableGuests = Math.max(actualGuests, minBillable);
+  const guestMultiplier = isPerPerson ? billableGuests : 1;
+
 
   // Check if weekly or monthly flat rate applies
   const weeklyRate = unit.weekly_rate != null ? Number(unit.weekly_rate) : null;
@@ -287,5 +300,9 @@ export function calculatePricing(
     longStayDiscount: appliedLongStay,
     loyaltyDiscount: appliedLoyalty,
     total: subtotal - discountAmount + cleaningFee + extraBedTotal,
+    billableGuests,
+    actualGuests,
+    minBillableGuests: minBillable,
   };
 }
+

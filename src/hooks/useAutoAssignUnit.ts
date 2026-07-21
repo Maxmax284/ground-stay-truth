@@ -242,7 +242,7 @@ export function useUnitGroups() {
       const { data: units, error: uErr } = await supabase
         .from("units")
         .select(
-          "id, group_id, base_price, capacity, min_nights, amenities, photos, cleaning_fee, weekend_price",
+          "id, group_id, base_price, capacity, min_nights, amenities, photos, cleaning_fee, weekend_price, pricing_type, min_billable_guests",
         )
         .eq("is_active", true)
         .order("sort_order");
@@ -262,9 +262,12 @@ export function useUnitGroups() {
           photos: rep?.photos ?? [],
           cleaning_fee: rep?.cleaning_fee ?? 0,
           weekend_price: rep?.weekend_price ?? null,
+          pricing_type: (rep as any)?.pricing_type ?? "per_room",
+          min_billable_guests: (rep as any)?.min_billable_guests ?? null,
           representativeUnitId: rep?.id,
         };
       });
+
     },
   });
 }

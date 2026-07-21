@@ -2979,6 +2979,7 @@ export type Database = {
           is_active: boolean
           listing_category: string
           max_extra_beds: number
+          min_billable_guests: number | null
           min_nights: number
           monthly_rate: number | null
           name: string
@@ -3012,6 +3013,7 @@ export type Database = {
           is_active?: boolean
           listing_category?: string
           max_extra_beds?: number
+          min_billable_guests?: number | null
           min_nights?: number
           monthly_rate?: number | null
           name: string
@@ -3045,6 +3047,7 @@ export type Database = {
           is_active?: boolean
           listing_category?: string
           max_extra_beds?: number
+          min_billable_guests?: number | null
           min_nights?: number
           monthly_rate?: number | null
           name?: string

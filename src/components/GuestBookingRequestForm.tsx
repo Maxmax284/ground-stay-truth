@@ -124,7 +124,8 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
       min_nights: selectedGroup.min_nights,
       cleaning_fee: selectedGroup.cleaning_fee,
       weekend_price: selectedGroup.weekend_price,
-      pricing_type: "per_room" as const,
+      pricing_type: (selectedGroup as any).pricing_type ?? "per_room",
+      min_billable_guests: (selectedGroup as any).min_billable_guests ?? null,
       weekly_rate: null,
       monthly_rate: null,
       max_extra_beds: 0,
@@ -134,8 +135,9 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
 
   const pricing: PricingSummary = useMemo(() => {
     if (!pricingUnit || !checkIn || !checkOut) return { nights: [], subtotal: 0, cleaningFee: 0, extraBedTotal: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
-    return calculatePricing(pricingUnit as any, checkIn, checkOut, allPricingRules ?? [], undefined, policies);
-  }, [pricingUnit, checkIn, checkOut, allPricingRules, policies]);
+    return calculatePricing(pricingUnit as any, checkIn, checkOut, allPricingRules ?? [], undefined, policies, undefined, 0, Number(numGuests) || 1);
+  }, [pricingUnit, checkIn, checkOut, allPricingRules, policies, numGuests]);
+
 
   // Pricing is unavailable if we have nights to price but total is zero
   // (no seasonal rule covers the range AND base_price is 0/missing).
@@ -409,8 +411,17 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
                 <span>{t("common.total")}</span>
                 <span>{formatPrice(pricing.total, policies)}</span>
               </div>
+              {pricing.billableGuests != null && pricing.actualGuests != null && pricing.billableGuests > pricing.actualGuests && (
+                <p className="text-xs text-muted-foreground italic">
+                  {t("pricing.minBillableNote", {
+                    count: pricing.billableGuests,
+                    defaultValue: `Pricing is based on a ${pricing.billableGuests}-person minimum charge.`,
+                  })}
+                </p>
+              )}
             </div>
           )}
+
 
           <GuestTypeSelect value={watch("guest_type")} onChange={(v) => setValue("guest_type", v)} />
 
