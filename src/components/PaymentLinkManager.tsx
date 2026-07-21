@@ -39,20 +39,31 @@ type CollectKind = "deposit" | "balance" | "full" | "security_deposit";
 async function callCreate(bookingId: string, regenerate: boolean, collect: CollectKind) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error("Not signed in");
-  const resp = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment-link`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        "Content-Type": "application/json",
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  let resp: Response;
+  try {
+    resp = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment-link`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ booking_id: bookingId, regenerate, collect }),
       },
-      body: JSON.stringify({ booking_id: bookingId, regenerate, collect }),
-    },
-  );
-  const data = await resp.json();
-  if (!resp.ok) throw new Error(data.error || "Failed");
+    );
+  } catch {
+    // Network/CORS failure — browser never got a response
+    throw new Error("Payment link service could not be reached. Check your connection or try again in a moment.");
+  }
+  let data: any = {};
+  try { data = await resp.json(); } catch { /* non-JSON */ }
+  if (!resp.ok) {
+    if (resp.status === 401) throw new Error("Session expired — please sign in again.");
+    if (resp.status === 403) throw new Error("Manager or admin access required to send payment links.");
+    throw new Error(data.error || `Payment link could not be created (HTTP ${resp.status}).`);
+  }
   return data as {
     url: string;
     expires_at: string;
