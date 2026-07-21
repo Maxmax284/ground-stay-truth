@@ -15,6 +15,8 @@ export const SITE_URL_CONFIGURED = SITE_URL.length > 0;
 // Production fallbacks. SITE_URL takes precedence when set.
 const STATIC_ORIGINS = new Set<string>([
   "https://ground-stay-truth.lovable.app",
+  "https://lmtcampstay.com",
+  "https://www.lmtcampstay.com",
   "http://localhost:5173",
   "http://localhost:8080",
   "http://localhost:3000",
