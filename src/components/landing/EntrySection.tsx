@@ -56,17 +56,26 @@ const EntrySection = () => (
         </div>
 
         {/* Right — Entry Points */}
-        <div className="flex flex-col gap-4 lg:pt-12">
+        <div className="flex flex-col gap-3 lg:pt-12 w-full lg:w-auto">
           <Link
             to="/stay"
-            className="group flex items-center gap-4 px-8 py-4 border border-[hsl(36,20%,25%)] hover:border-[hsl(36,20%,40%)] transition-all duration-300 rounded-sm"
+            className="group flex items-center justify-between gap-4 px-8 py-4 bg-[hsl(36,33%,97%)] hover:bg-[hsl(36,33%,92%)] transition-all duration-300 rounded-sm min-h-[52px]"
+          >
+            <span className="text-sm font-medium tracking-wide text-[hsl(var(--fight-dark))]">
+              Enter Your Stay
+            </span>
+            <span className="text-[hsl(var(--fight-dark))]">→</span>
+          </Link>
+
+          <Link
+            to="/auth/guest"
+            className="group flex items-center justify-between gap-4 px-8 py-4 border border-[hsl(36,20%,25%)] hover:border-[hsl(36,20%,40%)] transition-all duration-300 rounded-sm min-h-[52px]"
           >
             <span className="text-sm font-medium tracking-wide text-[hsl(36,20%,80%)] group-hover:text-[hsl(36,33%,97%)] transition-colors">
-              Enter Your Stay
+              Already Booked? Log In
             </span>
             <span className="text-[hsl(36,20%,35%)] group-hover:text-[hsl(36,20%,60%)] transition-colors">→</span>
           </Link>
-
         </div>
       </div>
     </div>
