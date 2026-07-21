@@ -116,7 +116,7 @@ export function UnitFormDialog({ open, onOpenChange, unit }: UnitFormDialogProps
                 <SelectItem value="per_person">Per Person</SelectItem>
               </SelectContent>
             </Select>
-            {pricingType === "per_person" && <p className="text-xs text-muted-foreground">Prices below are per person. Total will be calculated × capacity automatically.</p>}
+            {pricingType === "per_person" && <p className="text-xs text-muted-foreground">Prices below are per person. Nightly total = per-person price × billable guests (max of selected guests and Minimum billable guests, capped by capacity).</p>}
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2"><Label htmlFor="base_price">{pricingType === "per_person" ? "Base Price / Person" : t("units.basePrice")}</Label><Input id="base_price" type="number" step="0.01" min={0} {...register("base_price")} /></div>
