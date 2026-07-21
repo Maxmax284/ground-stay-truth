@@ -50,7 +50,11 @@ export interface PricingSummary {
   longStayDiscount: LongStayDiscount | null;
   loyaltyDiscount: LoyaltyDiscount | null;
   total: number;
+  billableGuests?: number;
+  actualGuests?: number;
+  minBillableGuests?: number;
 }
+
 
 /**
  * Get the best applicable long-stay discount tier.
