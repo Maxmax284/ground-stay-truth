@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Activity, AlertTriangle, CheckCircle2, RefreshCw, XCircle } from "lucide-react";
+import { Loader2, Activity, AlertTriangle, CheckCircle2, RefreshCw, XCircle, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
 
 interface Diagnostics {
   stripe_mode: "test" | "live" | "unknown" | "not_configured";
