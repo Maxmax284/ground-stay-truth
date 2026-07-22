@@ -16,6 +16,7 @@ import ProfileEditor from "@/components/ProfileEditor";
 import { CalendarMonthView } from "@/components/CalendarMonthView";
 import { GuestBookingRequestForm } from "@/components/GuestBookingRequestForm";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
+import { BookingConfirmationDocument } from "@/components/BookingConfirmationDocument";
 import { calculateRefund } from "@/lib/refundCalculator";
 import { formatPrice } from "@/lib/currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -914,6 +915,8 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
             ))}
           </div>
         )}
+
+        <BookingConfirmationDocument bookingId={booking.id} bookingState={state} variant="compact" />
 
         {showDocUpload && (
           <div className="border rounded-md p-3">
