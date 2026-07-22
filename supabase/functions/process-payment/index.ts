@@ -149,6 +149,43 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
+    // Live-safety gate: refuse to open a Stripe checkout unless the platform
+    // has a live key, a webhook secret, and evidence the webhook works.
+    {
+      const { data: secretRows } = await adminClient
+        .from("integration_secrets")
+        .select("secret_key, encrypted_value")
+        .in("secret_key", ["stripe_secret_key", "stripe_webhook_secret"]);
+      const secrets = new Map<string, string>();
+      for (const r of secretRows ?? []) secrets.set((r as any).secret_key, String((r as any).encrypted_value ?? ""));
+      const sk = secrets.get("stripe_secret_key") ?? "";
+      const whsec = secrets.get("stripe_webhook_secret") ?? "";
+      const { data: health } = await adminClient
+        .from("webhook_health")
+        .select("last_success_at")
+        .eq("provider", "stripe")
+        .maybeSingle();
+      const { data: flagRow } = await adminClient
+        .from("policy_settings")
+        .select("value")
+        .eq("key", "stripe_live_smoke_test_passed")
+        .is("property_id", null)
+        .maybeSingle();
+      const smokeOk = flagRow && String(flagRow.value).replace(/^"|"$/g, "").toLowerCase() === "true";
+      let reason: string | null = null;
+      if (!sk || sk.length < 10) reason = "Stripe secret key is not configured.";
+      else if (sk.startsWith("sk_test_")) reason = "Stripe is still in TEST mode.";
+      else if (!sk.startsWith("sk_live_")) reason = "Stripe secret key is not a live key.";
+      else if (!whsec || whsec.length < 8) reason = "Stripe webhook signing secret is not configured.";
+      else if (!health?.last_success_at && !smokeOk) reason = "Live Stripe webhook has not been verified yet.";
+      if (reason) {
+        return new Response(JSON.stringify({ error: "stripe_not_live_safe", message: reason }), {
+          status: 503,
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const { booking_id, success_url, cancel_url } = await req.json();
     if (!booking_id) {
       return new Response(JSON.stringify({ error: "booking_id required" }), {
@@ -156,6 +193,7 @@ serve(async (req) => {
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
+
 
     // Fetch booking — verify the caller owns it
     const { data: booking, error: bookingErr } = await adminClient
