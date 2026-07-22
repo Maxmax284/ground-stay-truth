@@ -363,7 +363,7 @@ serve(async (req) => {
       .select("key, value")
       .in("key", ["resend_from_email"]);
     const fromPolicyMap = new Map((fromPolicies ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]));
-    const fromEmail = fromPolicyMap.get("resend_from_email") || "noreply@groundstay.app";
+    const fromEmail = fromPolicyMap.get("resend_from_email") || "noreply@lmtcampstay.com";
 
     if (!resendApiKey || resendApiKey.length < 5) {
       console.log("Resend API key not configured, logging email as pending");
