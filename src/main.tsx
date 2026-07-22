@@ -2,6 +2,8 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import "./i18n";
+import ErrorBoundary from "./components/ErrorBoundary";
+
 
 // Guard: prevent service worker registration in iframes/preview
 const isInIframe = (() => {
@@ -61,4 +63,9 @@ if (isPasswordRecoveryLink && window.location.pathname !== "/reset-password") {
   );
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>
+);
+

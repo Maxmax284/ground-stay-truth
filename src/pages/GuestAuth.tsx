@@ -16,7 +16,7 @@ const GuestAuth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const unitParam = searchParams.get("unit");
-  const [isLogin, setIsLogin] = useState(false);
+  const [isLogin, setIsLogin] = useState(searchParams.get("mode") !== "signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
