@@ -64,6 +64,38 @@ export function StripeDiagnosticsCard() {
 
   useEffect(() => { load(); }, []);
 
+  const runSelfTest = async () => {
+    setTesting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not signed in");
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-webhook-selftest`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            "Content-Type": "application/json",
+          },
+          body: "{}",
+        },
+      );
+      const body = await resp.json();
+      if (!resp.ok || !body.ok) {
+        toast.error(body.hint || body.error || `Self-test failed (stage: ${body.stage || "unknown"})`);
+      } else {
+        toast.success("Signing chain verified. Payment links unblocked.");
+        await load();
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Self-test failed");
+    } finally {
+      setTesting(false);
+    }
+  };
+
+
   const modeVariant = data?.stripe_mode === "live"
     ? "default"
     : data?.stripe_mode === "test"
