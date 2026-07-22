@@ -55,7 +55,11 @@ async function verifyAndNormalizeStripe(
   const signature = req.headers.get("stripe-signature");
   if (!signature) throw new Error("Missing stripe-signature header");
 
-  const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+  // Deno edge runtime uses WebCrypto, so Stripe webhook verification must be
+  // async. The synchronous helper throws `SubtleCryptoProvider cannot be used
+  // in a synchronous context`, which looked like an invalid signature even when
+  // the whsec_ value was correct.
+  const event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
 
   // Normalize based on event type
   if (event.type === "checkout.session.completed") {
