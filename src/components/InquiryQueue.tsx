@@ -218,11 +218,11 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
                 return (
                   <div
                     key={b.id}
-                    className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 cursor-pointer hover:bg-primary/10 transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 cursor-pointer hover:bg-primary/10 transition-colors"
                     onClick={() => setDetailBookingId(b.id)}
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium text-sm truncate">
                           {b.units?.name ?? "—"}
                         </span>
@@ -231,7 +231,7 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
                         </span>
                         <AIAdvisoryBadge booking={b} />
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 flex-wrap">
                         <span>
                           {format(new Date(b.check_in), "MMM d")} – {format(new Date(b.check_out), "MMM d")}
                         </span>
@@ -247,7 +247,7 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
                       )}
                     </div>
                     {!readOnly && (
-                      <div className="flex gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex gap-1.5 flex-wrap sm:flex-nowrap sm:shrink-0 w-full sm:w-auto" onClick={(e) => e.stopPropagation()}>
                         <Button
                           size="sm"
                           variant="ghost"
@@ -260,7 +260,7 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
                           <Button
                             size="sm"
                             variant="default"
-                            className="h-8 px-3"
+                            className="h-8 px-3 flex-1 sm:flex-none"
                             onClick={() => handleHold(b.id)}
                             disabled={transition.isPending}
                           >
@@ -271,7 +271,7 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
                           <Button
                             size="sm"
                             variant="destructive"
-                            className="h-8 px-3"
+                            className="h-8 px-3 flex-1 sm:flex-none"
                             onClick={() => setDismissId(b.id)}
                             disabled={transition.isPending}
                           >
@@ -281,6 +281,7 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
                       </div>
                     )}
                   </div>
+
                 );
               })}
             </div>
