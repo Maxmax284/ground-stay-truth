@@ -278,7 +278,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
             )}
           </TabsList>
           <TabsContent value="history"><StateHistoryTab logs={stateLog ?? []} /></TabsContent>
-          <TabsContent value="payments"><PaymentsTab payments={payments ?? []} bookingId={booking.id} canSeeAmounts={canSeeAmounts} canRecord={canRecordPay} policies={policies} totalPrice={booking.total_price} /></TabsContent>
+          <TabsContent value="payments"><PaymentsTab payments={payments ?? []} bookingId={booking.id} bookingState={booking.state as string} canSeeAmounts={canSeeAmounts} canRecord={canRecordPay} policies={policies} totalPrice={booking.total_price} /></TabsContent>
           <TabsContent value="messages"><MessagesTab messages={messages ?? []} bookingId={booking.id} /></TabsContent>
           <TabsContent value="documents"><div className="py-3"><RequiredDocumentsCard bookingId={booking.id} checkIn={booking.check_in} checkOut={booking.check_out} /></div></TabsContent>
           {isCheckedIn && (
