@@ -184,10 +184,34 @@ serve(async (req) => {
       return jsonResponse(req, { status: "already_paid", summary }, 409);
     }
     if (used) {
-      // Link was used but webhook hasn't completed payment yet. Surface this
-      // as already_used so the guest doesn't pay twice.
+      // `used_at` is now set ONLY after a verified paid webhook / verify call.
+      // So this branch means the payment truly succeeded — surface as
+      // already_paid, not already_used.
       await logEvent(adminClient, link.id, link.booking_id, "already_paid_attempt", req, { reason: "used_at_set", action });
-      return jsonResponse(req, { status: "already_used", summary }, 409);
+      return jsonResponse(req, { status: "already_paid", summary }, 409);
+    }
+
+    // NEW: cheap polling endpoint the success page uses to tell truth from
+    // the redirect. Returns whether the payment linked to this token has
+    // been recorded yet. Never exposes the raw token.
+    if (action === "status") {
+      const sessionId = (link as any).checkout_session_id || (link as any).used_session_id;
+      let paymentStatus: "recorded" | "pending" | "none" = "none";
+      if (sessionId) {
+        const { data: pay } = await adminClient
+          .from("payments")
+          .select("status")
+          .eq("provider_session_id", sessionId)
+          .maybeSingle();
+        if (pay?.status === "recorded") paymentStatus = "recorded";
+        else if (pay?.status === "pending") paymentStatus = "pending";
+      }
+      return jsonResponse(req, {
+        status: "ok",
+        payment_status: paymentStatus,
+        checkout_started: !!(link as any).checkout_started_at,
+        summary,
+      });
     }
 
     if (action === "lookup") {
@@ -254,6 +278,13 @@ serve(async (req) => {
           idempotency_key: `stripe_${sessionId}`,
         });
       }
+
+      // Now that Stripe has confirmed payment, mark the link as truly used.
+      await adminClient
+        .from("payment_links")
+        .update({ used_at: new Date().toISOString(), used_session_id: sessionId })
+        .eq("id", link.id)
+        .is("used_at", null);
 
       if (booking.state === "pending_deposit") {
         const { error: transErr } = await adminClient
@@ -357,19 +388,26 @@ serve(async (req) => {
       { idempotencyKey },
     );
 
-    // Mark link as used (locks it from a second checkout attempt).
+    // Record a SOFT checkout-started marker. This does NOT lock the link.
+    // `used_at` is only set after webhook-verified payment success (or the
+    // `verify` action's Stripe retrieve confirms `payment_status === paid`).
+    // If the guest bounces off Stripe without paying, they can retry.
     await adminClient
       .from("payment_links")
-      .update({ used_at: new Date().toISOString(), used_session_id: session.id })
+      .update({
+        checkout_started_at: new Date().toISOString(),
+        checkout_session_id: session.id,
+        used_session_id: session.id, // legacy readers (reconcile sweep, verify)
+      })
       .eq("id", link.id);
 
-    // Insert pending payment so the existing webhook handler can transition it.
+    // Insert pending payment so the webhook handler can transition it.
     await adminClient.from("payments").insert({
       booking_id: link.booking_id,
       amount: Number(link.amount),
       method: "card",
       status: "pending",
-      payment_type: "deposit",
+      payment_type: linkPaymentType,
       description: `Deposit — payment link`,
       source_channel: "online",
       provider: "stripe",

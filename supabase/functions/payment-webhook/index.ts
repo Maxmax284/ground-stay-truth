@@ -464,7 +464,17 @@ async function handlePaymentSuccess(
           .eq("provider_event_id", event.providerEventId);
       }
     }
+
+    // Mark the payment_link as truly used, now that payment is confirmed.
+    // Match on either the new `checkout_session_id` (post-fix) or the legacy
+    // `used_session_id` (pre-fix). `is("used_at", null)` keeps this idempotent.
+    await adminClient
+      .from("payment_links")
+      .update({ used_at: new Date().toISOString(), used_session_id: event.sessionId })
+      .or(`checkout_session_id.eq.${event.sessionId},used_session_id.eq.${event.sessionId}`)
+      .is("used_at", null);
   }
+
 
   // Only transition if booking is in pending_deposit
   if (booking.state !== "pending_deposit") {

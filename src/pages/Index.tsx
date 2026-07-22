@@ -25,6 +25,7 @@ import { CornerTalkPanel } from "@/components/CornerTalkPanel";
 import { StaffIntelStrip } from "@/components/StaffIntelStrip";
 import { StaffQuickActionsWidget } from "@/components/StaffQuickActionsWidget";
 import { ReconcilePaymentsCard } from "@/components/ReconcilePaymentsCard";
+import { StripeDiagnosticsCard } from "@/components/StripeDiagnosticsCard";
 import { useOpenMaintenanceCount } from "@/hooks/useMaintenanceRequests";
 import { usePendingHousekeepingCount } from "@/hooks/useHousekeepingTasks";
 import { useCountUp } from "@/hooks/useCountUp";
@@ -226,6 +227,7 @@ const Index = () => {
             )}
 
             {/* Admin-only payment reconciliation sweep */}
+            {isAdmin && <StripeDiagnosticsCard />}
             {isAdmin && <ReconcilePaymentsCard />}
           </>
         )}
