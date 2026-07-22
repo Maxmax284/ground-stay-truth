@@ -29,8 +29,10 @@ interface Diagnostics {
 
 export function StripeDiagnosticsCard() {
   const [loading, setLoading] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [data, setData] = useState<Diagnostics | null>(null);
   const [error, setError] = useState<string | null>(null);
+
 
   const load = async () => {
     setLoading(true);
