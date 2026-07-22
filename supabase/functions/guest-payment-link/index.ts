@@ -184,10 +184,34 @@ serve(async (req) => {
       return jsonResponse(req, { status: "already_paid", summary }, 409);
     }
     if (used) {
-      // Link was used but webhook hasn't completed payment yet. Surface this
-      // as already_used so the guest doesn't pay twice.
+      // `used_at` is now set ONLY after a verified paid webhook / verify call.
+      // So this branch means the payment truly succeeded — surface as
+      // already_paid, not already_used.
       await logEvent(adminClient, link.id, link.booking_id, "already_paid_attempt", req, { reason: "used_at_set", action });
-      return jsonResponse(req, { status: "already_used", summary }, 409);
+      return jsonResponse(req, { status: "already_paid", summary }, 409);
+    }
+
+    // NEW: cheap polling endpoint the success page uses to tell truth from
+    // the redirect. Returns whether the payment linked to this token has
+    // been recorded yet. Never exposes the raw token.
+    if (action === "status") {
+      const sessionId = (link as any).checkout_session_id || (link as any).used_session_id;
+      let paymentStatus: "recorded" | "pending" | "none" = "none";
+      if (sessionId) {
+        const { data: pay } = await adminClient
+          .from("payments")
+          .select("status")
+          .eq("provider_session_id", sessionId)
+          .maybeSingle();
+        if (pay?.status === "recorded") paymentStatus = "recorded";
+        else if (pay?.status === "pending") paymentStatus = "pending";
+      }
+      return jsonResponse(req, {
+        status: "ok",
+        payment_status: paymentStatus,
+        checkout_started: !!(link as any).checkout_started_at,
+        summary,
+      });
     }
 
     if (action === "lookup") {
