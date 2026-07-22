@@ -89,8 +89,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </Button>
             </div>
           </header>
-          <main className="flex-1 p-4 sm:p-6 overflow-auto ring-rope-pattern">
-            <div key={location.pathname} className="animate-page-entry">
+          <main className="flex-1 p-4 sm:p-6 overflow-y-auto overflow-x-hidden ring-rope-pattern min-w-0">
+            <div key={location.pathname} className="animate-page-entry min-w-0 max-w-full">
               {children}
             </div>
           </main>
