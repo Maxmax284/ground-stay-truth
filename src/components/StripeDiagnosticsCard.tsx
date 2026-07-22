@@ -109,10 +109,12 @@ export function StripeDiagnosticsCard() {
           <Activity className="h-4 w-4 text-muted-foreground" />
           Stripe & Webhook Health
         </CardTitle>
-        <Button size="sm" variant="ghost" onClick={load} disabled={loading} className="gap-1">
-          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-          Refresh
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant="ghost" onClick={load} disabled={loading} className="gap-1">
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            Refresh
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         {error && <p className="text-xs text-destructive">{error}</p>}
@@ -128,13 +130,25 @@ export function StripeDiagnosticsCard() {
               ) : (
                 <XCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
               )}
-              <div className="text-xs">
+              <div className="text-xs flex-1">
                 <div className="font-semibold text-foreground">
                   {data.live_safe ? "GO — Live Stripe ready" : "NO-GO — Online payment links are blocked"}
                 </div>
                 <div className="text-muted-foreground mt-0.5">{data.next_action}</div>
+                {!data.live_safe && data.stripe_mode === "live" && data.webhook_secret_configured && (
+                  <Button
+                    size="sm"
+                    onClick={runSelfTest}
+                    disabled={testing}
+                    className="gap-1 mt-2 h-7 text-xs"
+                  >
+                    {testing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3" />}
+                    Run signing self-test
+                  </Button>
+                )}
               </div>
             </div>
+
 
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <Badge variant={modeVariant as any}>
