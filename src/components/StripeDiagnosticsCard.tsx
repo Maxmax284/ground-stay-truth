@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Activity, AlertTriangle, CheckCircle2, RefreshCw, XCircle } from "lucide-react";
+import { Loader2, Activity, AlertTriangle, CheckCircle2, RefreshCw, XCircle, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
 
 interface Diagnostics {
   stripe_mode: "test" | "live" | "unknown" | "not_configured";
@@ -27,8 +29,10 @@ interface Diagnostics {
 
 export function StripeDiagnosticsCard() {
   const [loading, setLoading] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [data, setData] = useState<Diagnostics | null>(null);
   const [error, setError] = useState<string | null>(null);
+
 
   const load = async () => {
     setLoading(true);
@@ -60,6 +64,38 @@ export function StripeDiagnosticsCard() {
 
   useEffect(() => { load(); }, []);
 
+  const runSelfTest = async () => {
+    setTesting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not signed in");
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-webhook-selftest`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            "Content-Type": "application/json",
+          },
+          body: "{}",
+        },
+      );
+      const body = await resp.json();
+      if (!resp.ok || !body.ok) {
+        toast.error(body.hint || body.error || `Self-test failed (stage: ${body.stage || "unknown"})`);
+      } else {
+        toast.success("Signing chain verified. Payment links unblocked.");
+        await load();
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Self-test failed");
+    } finally {
+      setTesting(false);
+    }
+  };
+
+
   const modeVariant = data?.stripe_mode === "live"
     ? "default"
     : data?.stripe_mode === "test"
@@ -73,10 +109,12 @@ export function StripeDiagnosticsCard() {
           <Activity className="h-4 w-4 text-muted-foreground" />
           Stripe & Webhook Health
         </CardTitle>
-        <Button size="sm" variant="ghost" onClick={load} disabled={loading} className="gap-1">
-          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-          Refresh
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant="ghost" onClick={load} disabled={loading} className="gap-1">
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            Refresh
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         {error && <p className="text-xs text-destructive">{error}</p>}
@@ -92,13 +130,25 @@ export function StripeDiagnosticsCard() {
               ) : (
                 <XCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
               )}
-              <div className="text-xs">
+              <div className="text-xs flex-1">
                 <div className="font-semibold text-foreground">
                   {data.live_safe ? "GO — Live Stripe ready" : "NO-GO — Online payment links are blocked"}
                 </div>
                 <div className="text-muted-foreground mt-0.5">{data.next_action}</div>
+                {!data.live_safe && data.stripe_mode === "live" && data.webhook_secret_configured && (
+                  <Button
+                    size="sm"
+                    onClick={runSelfTest}
+                    disabled={testing}
+                    className="gap-1 mt-2 h-7 text-xs"
+                  >
+                    {testing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3" />}
+                    Run signing self-test
+                  </Button>
+                )}
               </div>
             </div>
+
 
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <Badge variant={modeVariant as any}>
