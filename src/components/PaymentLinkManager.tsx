@@ -301,20 +301,36 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
         </div>
       )}
 
+      {blocked && (
+        <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2.5">
+          <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+          <div className="text-xs">
+            <div className="font-semibold text-foreground">Online Stripe payments are not live yet.</div>
+            <div className="text-muted-foreground mt-0.5">
+              {readiness?.next_action || "Live key and webhook smoke test are required before sending payment links."}
+            </div>
+            <div className="text-muted-foreground mt-0.5 italic">
+              Don't send guests into the payment lane until the cash register is actually connected.
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-2">
         {!active && (
-          <Button size="sm" onClick={() => createMut.mutate(false)} disabled={createMut.isPending} className="gap-2">
+          <Button size="sm" onClick={() => createMut.mutate(false)} disabled={createMut.isPending || !!blocked} className="gap-2">
             {createMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LinkIcon className="h-3.5 w-3.5" />}
             {guestEmail ? "Generate & Send Link" : "Generate Link (copy manually)"}
           </Button>
         )}
         {active && (
-          <Button size="sm" variant="outline" onClick={() => createMut.mutate(true)} disabled={createMut.isPending} className="gap-2">
+          <Button size="sm" variant="outline" onClick={() => createMut.mutate(true)} disabled={createMut.isPending || !!blocked} className="gap-2">
             <RefreshCw className="h-3.5 w-3.5" />
             {guestEmail ? "Regenerate & Resend" : "Regenerate Link"}
           </Button>
         )}
       </div>
+
 
 
       {isLoading ? null : links && links.length > 0 && (
