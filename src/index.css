@@ -119,6 +119,11 @@
     @apply border-border;
   }
 
+  html, body, #root {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: 'Source Sans 3', system-ui, sans-serif;
