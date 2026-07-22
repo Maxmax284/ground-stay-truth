@@ -1,161 +1,107 @@
-# LMT CampStay → Lamai Hospitality Platform
 
-## 1. What's already here (plain English)
+# Booking Confirmation PDF — Audit & Phase 1 Plan
 
-**Bookings & inventory.** The platform has a full booking engine. Rooms live in a `units` table with photos, amenities, capacity, price, weekly/monthly rates, min-nights, WiFi, house rules, emergency contacts. Units can be grouped (`unit_groups`) and tied to a `property`. Bookings run through a 9-state machine (inquiry → soft hold → pending approval → pending deposit → confirmed → checked in → completed, plus cancel/no-show paths). Overlaps, occupancy caps, and turnovers are enforced by database triggers.
+Audit-first. No Stripe, webhook, reconciliation, totals, deposit %, or state machine changes.
 
-**Payments & deposits.** Deposits, booking fees, and security deposits are auto-created as pending obligations. Payment links, Stripe webhooks, refund flow, tax invoices, and reconciliation are all wired. Nothing here should be touched.
+## A. Current post-payment flow
 
-**Guest side.**
+1. Guest pays via Stripe checkout link (`create-payment-link`).
+2. `payment-webhook` verifies signature, records payment row.
+3. Booking state transitions `pending_deposit → confirmed`.
+4. `send-booking-confirmation` fires: sends a transactional email via Resend (template `booking_confirmed`) and writes an in-app notification.
+5. Guest portal (`/guest`) shows the booking as Confirmed.
 
-- `/` — public landing (LMT CampStay marketing).
-- `/stay` — public catalog (browse rooms, request booking).
-- `/auth/guest` — guest sign-in.
-- `/guest` — the guest portal: booking details, arrival journey, WiFi/rules (via `get_unit_essentials`), messaging, maintenance/laundry requests, payments, documents, arrival guide, airport pickup info, environmental strip, corner talk, Kru Glitch AI concierge.
+**Emails guests actually receive today:** Stripe receipt (payment proof) + our short "booking confirmed" transactional email. Neither is a formal accommodation confirmation document. No downloadable PDF exists for bookings.
 
-**Staff/admin side.** 7-tier role hierarchy (admin → viewer). Full ops surface: `/dashboard`, `/units`, `/bookings`, `/front-desk`, `/calendar`, `/pricing`, `/reports`, `/messages`, `/settings`, `/media-library`, `/monitoring`, `/ops-tower`, `/security-center`, `/disaster-recovery`, `/simulation`, `/guidance-lab`, `/embeds`.
+## B. Reusable building blocks (good news)
 
-**Embed system.** `/embed/:type/:unitId` iframes (grid, listing, compact, calendar, CTA). Auto-updates from live availability. Used on WordPress and external sites.
+- `supabase/functions/generate-tax-invoice/index.ts` already uses **pdf-lib** on the edge, uploads to a private storage bucket, returns a signed URL. Same pattern applies cleanly to a booking confirmation PDF.
+- Private storage bucket `tax-invoices` exists — we'll add a sibling `booking-confirmations`.
+- `send-transactional-email` supports templated Resend emails and can carry a signed link.
+- `bookings`, `units`, `properties`, `profiles`, `airport_pickups`, `payments`, `policy_settings` already carry every field the PDF needs.
+- Guest portal + BookingDetailSheet are the natural mount points for the buttons.
 
-**Supporting systems.** Multi-property isolation via RLS; multi-language (9 locales); PWA + push notifications; airport pickup + flight tracking; housekeeping turnover; intelligence entries (heads-up / playbooks by location + category); Fenrir lock integration; Vanta signal bridge; MCP server for AI assistants; disaster recovery snapshots.
+## C. Gaps
 
-**What "GroundStay" means today.** Zero visible "GroundStay" strings remain — the brand label everywhere uses `t("auth.groundStay")` which returns "LMT CampStay" in all 9 locales. Only internal identifiers (`groundStay` translation key, `ground-truth-hub` project slug, some code comments) still reference the old name. Safe to leave those alone.
+- No confirmation PDF generator.
+- No storage bucket for confirmations.
+- No stable human-readable reference number (only UUID). Recommend derived, not new column: `LMT-CS-{YYYY}-{first6upper of id}` — no schema change needed for Phase 1.
+- No "Download confirmation" surface on guest portal or admin booking sheet.
 
-## 2. Recommended approach — expand, don't rebuild
+## D. Phase 1 build (recommended, minimal, safe)
 
-Everything below is additive. The booking flow, payment flow, guest portal, admin tools, and embed widgets keep working exactly as they do today. New capabilities layer on top through:
+**Server**
+- New edge function `generate-booking-confirmation` (mirrors `generate-tax-invoice`):
+  - Auth: guest owning the booking **or** staff (admin/manager/front_desk/front_desk_supervisor) with property access.
+  - Guard: only generates when `bookings.state = 'confirmed'` AND a recorded deposit exists (`payments.status='recorded'` for that booking). Any other state → 409 with plain message. This is the single hard gate; no state-machine changes.
+  - Renders A4 PDF via pdf-lib with the content spec below.
+  - Uploads to new private bucket `booking-confirmations` at `{year}/{booking_id}.pdf`, `upsert: true`.
+  - Returns a short-lived signed URL (1 hour).
+- New storage bucket `booking-confirmations` (private) with RLS: staff roles + guest-owns-booking read via signed URL only.
 
-- **Two new columns on** `units` — a listing category (on_site / premium_villa / luxury_villa / long_stay) and a display region (e.g. "hub_area"). Existing rows default to `on_site` so nothing changes for current inventory.
-- **One new table** `local_recommendations` — curated nearby services/venues. Staff-only writes, public read for featured entries. No public submission form, ever.
-- **Guest portal gets tabs**, not a rewrite — "Your Stay" (current content), "Explore Lamai" (recommendations), "Nearby Services" (utilities like scooter/laundry/clinic), plus an existing "Train" surface for Muay Thai content that stays optional.
-- `/stay` **grows a category filter** — the current grid stays, but guests can flip between On-site / Premium Villas / Luxury Villas / Long Stay.
-- **Design tokens shift to red / blue / black / white** while keeping the existing `font-stat` uppercase brand treatment. No component rewrites — only token values in `index.css`.
+**Client**
+- Guest portal booking card: "Download Booking Confirmation" button — visible only when booking is confirmed. Otherwise disabled with subtitle "Available once your deposit is recorded."
+- `BookingDetailSheet` (staff): "Download", "Copy link", "Email to guest" trio under a new "Confirmation Document" section — enabled only when the same guard passes.
+- "Email to guest" calls existing `send-transactional-email` with a new template `booking_confirmation_document` containing the signed URL (no attachment in Phase 1 — link only, safer and smaller).
 
-## 3. Staged implementation
+**No changes** to Stripe, webhook, ledger, totals, or state machine.
 
-### Stage 1 — Foundation (this turn)
+## E. PDF content spec
 
-1. Migration: add `listing_category` and `region` to `units`; create `local_recommendations` table (name, category, photos, description, address, maps_url, phone, whatsapp, website, opening_hours, distance_note, staff_notes, badges[], featured, is_active, sort_order, property_id) with GRANTs + RLS (staff write, anon read where `featured = true AND is_active = true`).
-2. Shift design tokens in `index.css` and `tailwind.config.ts`:
-  - `--primary` → LMT red (action / booking CTAs / active states)
-  - `--info` / new `--trust` → LMT blue (support / links / confirmations)
-  - Base surfaces → white + near-black
-  - Keep `--fight-gold` around for the landing page's existing hero, but remove it from primary flows.
-3. Verify no visible "GroundStay" string regresses.
+Header: LMT CampStay + Lamai Muay Thai Camp, logo, "Booking Confirmation", reference `LMT-CS-YYYY-XXXXXX`, issue date.
+Guest: name, email, phone, guest count.
+Stay: unit name, group, check-in, check-out, nights, pickup (yes/no + flight + fee).
+Status: **Confirmed**, deposit paid amount + method + date, remaining balance, currency THB, "Not a tax invoice" footnote.
+Property: Lamai Muay Thai Camp, address, phone, email, website, Google Maps link if stored.
+Notes: standard immigration-friendly wording ("This document confirms accommodation for the guest above").
 
-### Stage 2 — Listings expansion
+Excluded: card data, Stripe internal IDs, staff notes, audit logs, other guests' data.
 
-1. `/stay` gets category tabs (On-site · Premium Villas · Luxury Villas · Long Stay). Category filter reads `listing_category`.
-2. `/units` admin form adds a `listing_category` + `region` dropdown. No existing field is removed.
-3. Embed widgets stay unchanged; add one new `browse` variant filtered by category (optional, no breaking change).
+## F. Security/access
 
-### Stage 3 — Curated recommendations
+- Edge function does its own authorization; no reliance on client claims.
+- Guest path: JWT → confirms `booking.guest_id = auth.uid()`.
+- Staff path: `has_role` + `has_property_access` on the booking's property.
+- Signed URLs expire in 1 hour. No unauthenticated download route in Phase 1.
+- Cancelled bookings return 410 and do not regenerate — staff historical access can come later if needed.
 
-1. New admin page `/recommendations` — CRUD for `local_recommendations` (staff/admin/manager). Photo upload uses existing media library.
-2. Badge chips: "Lamai Recommended", "Staff Favorite", plus category chip.
-3. Featured toggle + sort order.
+## G. Data model
 
-### Stage 4 — Guest concierge surfacing
+No new columns required for Phase 1. If Nikki later wants persistent tracking, add nullable `confirmation_first_generated_at`, `confirmation_last_sent_at` on `bookings` — deferred.
 
-1. Guest portal (`/guest`) grows tabbed layout: **Your Stay** (existing content untouched), **Explore Lamai** (recommendations grid filtered to "food / cafés / beaches / nightlife / attractions"), **Nearby Services** (scooter / laundry / massage / recovery / clinic / pharmacy / grocery / ATM), **Train** (existing training packages, collapsed by default for non-fighters).
-2. Each recommendation card: photo, name, distance, badge, tap-to-call, tap-to-WhatsApp, open-in-Maps, website link.
-3. Public `/stay` gains a light "Explore Lamai" preview below the room grid to help pre-booking guests picture the destination.
+## H. Long-term (not now)
 
-### Stage 5 — Polish
+- PDF attachment on the auto-fire `send-booking-confirmation` email once size/deliverability is validated.
+- Optional pending-booking summary PDF, clearly stamped "PENDING — NOT CONFIRMED".
+- Persistent confirmation numbers + regeneration audit log.
+- Multi-language body (reuse `preferred_language`).
 
-1. Mobile pass on all new surfaces (already the primary viewport).
-2. Embed audit — confirm nothing new leaks into iframe pages.
-3. Copy pass so training never dominates a vacation guest's screen.
+## I. Test plan
 
-## 4. Technical notes
+1. Confirmed Stripe-paid booking (Arvid) → guest + staff can download; PDF fields correct.
+2. Confirmed manual/offline-paid booking → same result.
+3. `pending_deposit` booking → button disabled; direct API call returns 409.
+4. `inquiry`, `soft_hold`, `cancelled`, `no_show` → 409/410.
+5. Guest A cannot fetch guest B's confirmation (403).
+6. Staff without property access → 403.
+7. Signed URL expires after 1 hour.
+8. Mobile Safari/Chrome + WhatsApp in-app browser: link opens PDF viewer cleanly.
+9. Print layout on A4 renders on one page for a typical stay.
 
-**Schema additions**
+## J. Risks
 
-```sql
-ALTER TABLE public.units
-  ADD COLUMN listing_category text NOT NULL DEFAULT 'on_site',
-  ADD COLUMN region text;
+- pdf-lib font limits (no Thai glyphs by default) — Phase 1 keeps PDF in English; Thai property name shown transliterated. Flagged for later.
+- Storage bucket RLS misconfig — mitigated by using signed URLs only, bucket stays private.
+- Guest confusion if they pay and click download before webhook lands — button stays disabled with clear copy; matches existing "we're confirming" pattern.
 
-CREATE TABLE public.local_recommendations (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  category text not null,          -- food, cafe, scooter, laundry, massage, ...
-  description text,
-  photos text[] default '{}',
-  address text,
-  maps_url text,
-  phone text,
-  whatsapp text,
-  website text,
-  opening_hours text,
-  distance_note text,              -- "5 min walk", "800 m"
-  staff_notes text,                -- internal-only
-  badges text[] default '{}',      -- 'lamai_recommended', 'staff_favorite'
-  featured boolean not null default false,
-  is_active boolean not null default true,
-  sort_order int not null default 0,
-  property_id uuid references public.properties(id),
-  created_by uuid,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-GRANT SELECT ON public.local_recommendations TO anon;              -- policy narrows to featured+active
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.local_recommendations TO authenticated;
-GRANT ALL ON public.local_recommendations TO service_role;
-ALTER TABLE public.local_recommendations ENABLE ROW LEVEL SECURITY;
--- policies: anon/guests read only featured+active; managers+admin full write; staff_notes hidden from guests via a view or SELECT column policy.
-```
+## K. Do-not-touch confirmation
 
-**Design tokens** shift `--primary`, `--primary-foreground`, `--accent`, and add `--trust` in `index.css`. No component-level color changes.
+No changes to: `payment-webhook`, `create-payment-link`, `process-payment`, `reconcile-stripe-payments`, pricing calculator, deposit policy, `bookingStateMachine.ts`, existing `send-booking-confirmation` email trigger.
 
-**Guest portal tabs** reuse existing shadcn `Tabs`. Existing hooks (`useGuestHistory`, `useStayEssentials`, `useArrival...`) stay wired to "Your Stay".
+## L. Plain-English note for Nikki
 
-## 5. What stays untouched
+Good call. The Stripe email proves the guest paid; it's not the same as an accommodation confirmation. We'll add a proper downloadable Booking Confirmation — guest name, dates, room, Lamai contact details, reference number, confirmed status — that you and the guest can download or email from the booking. It only appears once the deposit is actually recorded and the booking is confirmed, so we never hand out official-looking proof for a booking that hasn't been paid. Phase 1 is a secure download link (works on phones and prints cleanly); attaching the PDF directly to emails can come later once we know it's reliable.
 
-Booking state machine, payments/deposits/refunds, RLS on existing tables, embed iframe API surface, i18n keys, MCP server, Vanta/Fenrir bridges, disaster recovery, notifications, and the existing brand memory around Terracotta/Gold on the landing page (only primary action colors shift to red/blue on operational surfaces).
+---
 
-## 6. Open question before I start
-
-The existing brand memory records **Terracotta + Gold** as the "Camp Ready" accents; you're now asking for **red / blue / black / white**. I'll treat red/blue/black/white as the new source of truth and update the memory accordingly — unless you want the landing page's gold hero preserved as-is (recommended, since it's the "Built From Inside" brand moment). Confirm on approval and I'll start Stage 1.
-
-&nbsp;
-
-Approved for Stage 1.
-
-&nbsp;
-
-Treat red / blue / black / white as the new official LMT CampStay operational identity going forward, especially for booking flows, guest portal, staff/admin tools, embeds, CTAs, alerts, support/info states, and daily platform usage.
-
-&nbsp;
-
-Keep the existing gold/terracotta landing page hero if it already works visually, especially for the “Built From Inside” brand/storytelling moment. No need to destroy something that already has character unless it clashes badly.
-
-&nbsp;
-
-Main priority: expand what already exists without breaking the booking flow, payments, guest portal, admin tools, embeds, RLS, or integrations.
-
-&nbsp;
-
-Proceed with Stage 1 foundation:
-
-&nbsp;
-
-- Add listing_category and region to units
-
-- Create local_recommendations with proper RLS
-
-- Staff/admin write access only
-
-- Public/guest read only for featured + active entries
-
-- Keep staff_notes internal-only
-
-- Update design tokens carefully
-
-- Make sure no visible GroundStay branding returns
-
-- Do not touch payment/deposit/refund logic
-
-&nbsp;
-
-After Stage 1, show what changed in plain English and flag anything risky before moving to Stage 2.
+**Approve this plan and I'll build Phase 1: new `generate-booking-confirmation` edge function + `booking-confirmations` private bucket + Download/Send/Copy buttons on guest portal and staff booking sheet + email template. No payment or state-machine code touched.**
