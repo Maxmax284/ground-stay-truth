@@ -1872,6 +1872,8 @@ export type Database = {
           amount: number
           attempt_count: number
           booking_id: string
+          checkout_session_id: string | null
+          checkout_started_at: string | null
           created_at: string
           created_by: string
           currency: string
@@ -1891,6 +1893,8 @@ export type Database = {
           amount: number
           attempt_count?: number
           booking_id: string
+          checkout_session_id?: string | null
+          checkout_started_at?: string | null
           created_at?: string
           created_by: string
           currency?: string
@@ -1910,6 +1914,8 @@ export type Database = {
           amount?: number
           attempt_count?: number
           booking_id?: string
+          checkout_session_id?: string | null
+          checkout_started_at?: string | null
           created_at?: string
           created_by?: string
           currency?: string
