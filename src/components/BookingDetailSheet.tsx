@@ -460,6 +460,7 @@ function PaymentsTab({ payments, bookingId, canSeeAmounts, canRecord, policies, 
           <Separator />
           <PaymentLinkManager bookingId={bookingId} />
           <PaymentGuideLink />
+          <BookingConfirmationDocument bookingId={bookingId} bookingState={(payments as any)?.[0]?.booking?.state ?? ""} variant="full" />
         </>
       )}
 
