@@ -153,17 +153,29 @@ serve(async (req) => {
   }
 
   // ── Flip the smoke-test flag so diagnostics returns GO ──
-  await admin
+  // policy_settings has a functional unique index on (key, COALESCE(property_id, '00..0')),
+  // so plain upsert can't target it. Do an update-then-insert dance.
+  const { data: existing } = await admin
     .from("policy_settings")
-    .upsert(
-      {
+    .select("id")
+    .eq("key", "stripe_live_smoke_test_passed")
+    .is("property_id", null)
+    .maybeSingle();
+  if (existing?.id) {
+    await admin
+      .from("policy_settings")
+      .update({ value: "true", updated_by: userData.user.id })
+      .eq("id", existing.id);
+  } else {
+    await admin
+      .from("policy_settings")
+      .insert({
         key: "stripe_live_smoke_test_passed",
         value: "true",
         property_id: null,
         updated_by: userData.user.id,
-      },
-      { onConflict: "key,property_id" },
-    );
+      });
+  }
 
   return jsonResponse(req, {
     ok: true,
