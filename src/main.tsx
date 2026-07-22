@@ -63,4 +63,9 @@ if (isPasswordRecoveryLink && window.location.pathname !== "/reset-password") {
   );
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>
+);
+
