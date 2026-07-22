@@ -381,19 +381,26 @@ serve(async (req) => {
       { idempotencyKey },
     );
 
-    // Mark link as used (locks it from a second checkout attempt).
+    // Record a SOFT checkout-started marker. This does NOT lock the link.
+    // `used_at` is only set after webhook-verified payment success (or the
+    // `verify` action's Stripe retrieve confirms `payment_status === paid`).
+    // If the guest bounces off Stripe without paying, they can retry.
     await adminClient
       .from("payment_links")
-      .update({ used_at: new Date().toISOString(), used_session_id: session.id })
+      .update({
+        checkout_started_at: new Date().toISOString(),
+        checkout_session_id: session.id,
+        used_session_id: session.id, // legacy readers (reconcile sweep, verify)
+      })
       .eq("id", link.id);
 
-    // Insert pending payment so the existing webhook handler can transition it.
+    // Insert pending payment so the webhook handler can transition it.
     await adminClient.from("payments").insert({
       booking_id: link.booking_id,
       amount: Number(link.amount),
       method: "card",
       status: "pending",
-      payment_type: "deposit",
+      payment_type: linkPaymentType,
       description: `Deposit — payment link`,
       source_channel: "online",
       provider: "stripe",
