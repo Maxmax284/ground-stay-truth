@@ -91,6 +91,34 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
   const [collect, setCollect] = useState<CollectKind>("deposit");
   const [waCopied, setWaCopied] = useState(false);
 
+  // Live-safety readiness — mirrors the backend guard so the button reflects
+  // reality before staff even try to click it.
+  const { data: readiness } = useQuery({
+    queryKey: ["stripe-live-safety"],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payment-diagnostics`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            "Content-Type": "application/json",
+          },
+          body: "{}",
+        },
+      );
+      if (!resp.ok) return null;
+      return resp.json() as Promise<{ live_safe: boolean; next_action: string; warnings: string[] }>;
+    },
+    staleTime: 30_000,
+  });
+  const liveSafe = readiness?.live_safe !== false; // treat unknown as unsafe? No — only block on explicit false
+  const blocked = readiness && readiness.live_safe === false;
+
+
   const { data: contact } = useQuery({
     queryKey: ["payment-link-contact", bookingId],
     queryFn: async (): Promise<BookingContact | null> => {
