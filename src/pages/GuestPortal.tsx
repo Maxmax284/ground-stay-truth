@@ -916,6 +916,8 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
           </div>
         )}
 
+        <BookingConfirmationDocument bookingId={booking.id} bookingState={state} variant="compact" />
+
         {showDocUpload && (
           <div className="border rounded-md p-3">
             <GuestDocumentUpload bookingId={booking.id} showRequirement />
