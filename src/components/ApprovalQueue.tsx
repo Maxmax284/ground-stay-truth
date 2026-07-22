@@ -162,10 +162,10 @@ export function ApprovalQueue({ bookings, isLoading, readOnly = false }: Approva
                 return (
                   <div
                     key={b.id}
-                    className="flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 p-3"
+                    className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 p-3"
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium text-sm truncate">
                           {b.units?.name ?? "—"}
                         </span>
@@ -173,7 +173,7 @@ export function ApprovalQueue({ bookings, isLoading, readOnly = false }: Approva
                           · {resolveGuestDisplayName(b)}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 flex-wrap">
                         <span>
                           {format(new Date(b.check_in), "MMM d")} – {format(new Date(b.check_out), "MMM d")}
                         </span>
@@ -184,11 +184,11 @@ export function ApprovalQueue({ bookings, isLoading, readOnly = false }: Approva
                       </div>
                     </div>
                     {!readOnly && isAdmin && (
-                      <div className="flex gap-1.5 shrink-0">
+                      <div className="flex gap-1.5 flex-wrap sm:flex-nowrap sm:shrink-0 w-full sm:w-auto">
                         <Button
                           size="sm"
                           variant="default"
-                          className="h-8 px-3"
+                          className="h-8 px-3 flex-1 sm:flex-none"
                           onClick={() => handleApprove(b.id)}
                           disabled={transition.isPending}
                         >
@@ -197,7 +197,7 @@ export function ApprovalQueue({ bookings, isLoading, readOnly = false }: Approva
                         <Button
                           size="sm"
                           variant="destructive"
-                          className="h-8 px-3"
+                          className="h-8 px-3 flex-1 sm:flex-none"
                           onClick={() => setRejectId(b.id)}
                           disabled={transition.isPending}
                         >
@@ -206,11 +206,11 @@ export function ApprovalQueue({ bookings, isLoading, readOnly = false }: Approva
                       </div>
                     )}
                     {!readOnly && canRecommend && (
-                      <div className="flex gap-1.5 shrink-0">
+                      <div className="flex gap-1.5 flex-wrap sm:flex-nowrap sm:shrink-0 w-full sm:w-auto">
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-8 px-3"
+                          className="h-8 px-3 flex-1 sm:flex-none"
                           onClick={() => { setRecommendId(b.id); setRecommendType("approve"); }}
                         >
                           <ThumbsUp className="h-3.5 w-3.5 mr-1" /> {t("approval.recommend")}
@@ -218,7 +218,7 @@ export function ApprovalQueue({ bookings, isLoading, readOnly = false }: Approva
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-8 px-3 text-destructive border-destructive/30"
+                          className="h-8 px-3 text-destructive border-destructive/30 flex-1 sm:flex-none"
                           onClick={() => { setRecommendId(b.id); setRecommendType("reject"); }}
                         >
                           <ThumbsDown className="h-3.5 w-3.5 mr-1" /> {t("approval.recommendReject")}
@@ -226,6 +226,7 @@ export function ApprovalQueue({ bookings, isLoading, readOnly = false }: Approva
                       </div>
                     )}
                   </div>
+
                 );
               })}
             </div>
