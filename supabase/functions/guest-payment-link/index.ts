@@ -279,6 +279,13 @@ serve(async (req) => {
         });
       }
 
+      // Now that Stripe has confirmed payment, mark the link as truly used.
+      await adminClient
+        .from("payment_links")
+        .update({ used_at: new Date().toISOString(), used_session_id: sessionId })
+        .eq("id", link.id)
+        .is("used_at", null);
+
       if (booking.state === "pending_deposit") {
         const { error: transErr } = await adminClient
           .from("bookings")
