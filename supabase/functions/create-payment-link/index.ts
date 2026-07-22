@@ -39,6 +39,47 @@ async function hashToken(raw: string): Promise<string> {
     .join("");
 }
 
+// ── Live-mode guardrail ──
+// Blocks link creation unless Stripe is on a live key, the webhook signing
+// secret is present, AND we have evidence the webhook actually works
+// (either webhook_health.last_success_at exists, or the admin has flipped
+// the `stripe_live_smoke_test_passed` policy flag after running a smoke test).
+async function assertStripeLiveSafe(adminClient: any): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const { data: secretRows } = await adminClient
+    .from("integration_secrets")
+    .select("secret_key, encrypted_value")
+    .in("secret_key", ["stripe_secret_key", "stripe_webhook_secret"]);
+  const secrets = new Map<string, string>();
+  for (const r of secretRows ?? []) secrets.set((r as any).secret_key, String((r as any).encrypted_value ?? ""));
+
+  const sk = secrets.get("stripe_secret_key") ?? "";
+  if (!sk || sk.length < 10) return { ok: false, reason: "Stripe secret key is not configured." };
+  if (sk.startsWith("sk_test_")) return { ok: false, reason: "Stripe is still in TEST mode. Install the live sk_live_… key before sending guests a payment link." };
+  if (!sk.startsWith("sk_live_")) return { ok: false, reason: "Stripe secret key format not recognized as live." };
+
+  const whsec = secrets.get("stripe_webhook_secret") ?? "";
+  if (!whsec || whsec.length < 8) return { ok: false, reason: "Stripe webhook signing secret is not configured." };
+
+  const { data: health } = await adminClient
+    .from("webhook_health")
+    .select("last_success_at")
+    .eq("provider", "stripe")
+    .maybeSingle();
+
+  const { data: flagRow } = await adminClient
+    .from("policy_settings")
+    .select("value")
+    .eq("key", "stripe_live_smoke_test_passed")
+    .is("property_id", null)
+    .maybeSingle();
+  const smokeOk = flagRow && String(flagRow.value).replace(/^"|"$/g, "").toLowerCase() === "true";
+
+  if (!health?.last_success_at && !smokeOk) {
+    return { ok: false, reason: "Live Stripe webhook has never verified a real payment. Run the smoke test before sending guest payment links." };
+  }
+  return { ok: true };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return corsPreflight(req);
 
@@ -69,6 +110,17 @@ serve(async (req) => {
     const allowedRoles = ["admin", "manager", "front_desk_supervisor", "front_desk"];
     const callerRole = allowedRoles.find((r) => roleSet.has(r));
     if (!callerRole) return jsonResponse(req, { error: "Forbidden" }, 403);
+
+    // Payment safety: refuse to mint a link unless Stripe is live-ready.
+    const gate = await assertStripeLiveSafe(adminClient);
+    if (!gate.ok) {
+      return jsonResponse(req, {
+        error: "stripe_not_live_safe",
+        message: gate.reason,
+        hint: "Settings → Integrations → Stripe. Fix the key/webhook, run the smoke test, then try again.",
+      }, 503);
+    }
+
 
     const body = await req.json().catch(() => ({}));
     const bookingId = String(body.booking_id || "").trim();

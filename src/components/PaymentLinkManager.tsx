@@ -91,6 +91,34 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
   const [collect, setCollect] = useState<CollectKind>("deposit");
   const [waCopied, setWaCopied] = useState(false);
 
+  // Live-safety readiness — mirrors the backend guard so the button reflects
+  // reality before staff even try to click it.
+  const { data: readiness } = useQuery({
+    queryKey: ["stripe-live-safety"],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payment-diagnostics`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            "Content-Type": "application/json",
+          },
+          body: "{}",
+        },
+      );
+      if (!resp.ok) return null;
+      return resp.json() as Promise<{ live_safe: boolean; next_action: string; warnings: string[] }>;
+    },
+    staleTime: 30_000,
+  });
+  const liveSafe = readiness?.live_safe !== false; // treat unknown as unsafe? No — only block on explicit false
+  const blocked = readiness && readiness.live_safe === false;
+
+
   const { data: contact } = useQuery({
     queryKey: ["payment-link-contact", bookingId],
     queryFn: async (): Promise<BookingContact | null> => {
@@ -273,20 +301,36 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
         </div>
       )}
 
+      {blocked && (
+        <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2.5">
+          <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+          <div className="text-xs">
+            <div className="font-semibold text-foreground">Online Stripe payments are not live yet.</div>
+            <div className="text-muted-foreground mt-0.5">
+              {readiness?.next_action || "Live key and webhook smoke test are required before sending payment links."}
+            </div>
+            <div className="text-muted-foreground mt-0.5 italic">
+              Don't send guests into the payment lane until the cash register is actually connected.
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-2">
         {!active && (
-          <Button size="sm" onClick={() => createMut.mutate(false)} disabled={createMut.isPending} className="gap-2">
+          <Button size="sm" onClick={() => createMut.mutate(false)} disabled={createMut.isPending || !!blocked} className="gap-2">
             {createMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LinkIcon className="h-3.5 w-3.5" />}
             {guestEmail ? "Generate & Send Link" : "Generate Link (copy manually)"}
           </Button>
         )}
         {active && (
-          <Button size="sm" variant="outline" onClick={() => createMut.mutate(true)} disabled={createMut.isPending} className="gap-2">
+          <Button size="sm" variant="outline" onClick={() => createMut.mutate(true)} disabled={createMut.isPending || !!blocked} className="gap-2">
             <RefreshCw className="h-3.5 w-3.5" />
             {guestEmail ? "Regenerate & Resend" : "Regenerate Link"}
           </Button>
         )}
       </div>
+
 
 
       {isLoading ? null : links && links.length > 0 && (

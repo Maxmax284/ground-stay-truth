@@ -73,6 +73,33 @@ serve(async (req) => {
   const originHint = req.headers.get("origin") || req.headers.get("referer") || "";
   const isProductionOrigin = productionDomains.some((d) => originHint.includes(d));
 
+  // Smoke-test override flag (admin can flip after a verified live payment)
+  const { data: flagRow } = await admin
+    .from("policy_settings")
+    .select("value")
+    .eq("key", "stripe_live_smoke_test_passed")
+    .is("property_id", null)
+    .maybeSingle();
+  const smokeOk = !!flagRow && String(flagRow.value).replace(/^"|"$/g, "").toLowerCase() === "true";
+
+  const reasons: string[] = [];
+  if (stripeMode === "not_configured") reasons.push("Stripe secret key is not configured.");
+  else if (stripeMode === "test") reasons.push("Stripe is still in TEST mode — install the sk_live_… key.");
+  else if (stripeMode === "unknown") reasons.push("Stripe secret key format is not recognized as live or test.");
+  if (!webhookSecretConfigured) reasons.push("Stripe webhook signing secret (whsec_…) is not configured.");
+  if (!health?.last_success_at && !smokeOk) reasons.push("Live Stripe webhook has never verified a real payment — run the smoke test.");
+  if (stripeMode === "test" && isProductionOrigin) reasons.push("Test mode is active on a production domain — real cards will NOT be captured.");
+
+  const live_safe = reasons.length === 0;
+  const status: "GO" | "NO_GO" = live_safe ? "GO" : "NO_GO";
+  const next_action = live_safe
+    ? "Ready to send payment links."
+    : stripeMode !== "live"
+      ? "Install a live sk_live_… key in Settings → Integrations → Stripe."
+      : !webhookSecretConfigured
+        ? "Register the live webhook in Stripe and paste the whsec_… into Settings → Integrations."
+        : "Run a low-value live smoke-test payment to prove the webhook fires end-to-end.";
+
   return jsonResponse(req, {
     stripe_mode: stripeMode,
     webhook_secret_configured: webhookSecretConfigured,
@@ -80,19 +107,12 @@ serve(async (req) => {
     payment_events_count: eventCount ?? 0,
     recorded_stripe_payments: recordedPayments ?? 0,
     production_origin: isProductionOrigin,
-    warnings: [
-      ...(stripeMode === "test" && isProductionOrigin
-        ? ["Stripe is in TEST mode but the request originated from a production domain — real card payments will NOT be captured."]
-        : []),
-      ...(!webhookSecretConfigured
-        ? ["Stripe webhook signing secret (whsec_...) is not configured. Webhook events will be rejected."]
-        : []),
-      ...((eventCount ?? 0) === 0
-        ? ["No Stripe webhook events have ever been processed. Verify the endpoint is registered in the Stripe dashboard and pointed at /functions/v1/payment-webhook."]
-        : []),
-      ...(!health?.last_success_at
-        ? ["webhook_health has no successful delivery on record."]
-        : []),
-    ],
+    smoke_test_passed: smokeOk,
+    live_safe,
+    status,
+    payment_links_blocked: !live_safe,
+    next_action,
+    warnings: reasons,
   });
 });
+
