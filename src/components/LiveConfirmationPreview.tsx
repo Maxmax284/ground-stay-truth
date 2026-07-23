@@ -30,13 +30,24 @@ export function LiveConfirmationPreview() {
       const { data: res, error } = await supabase.functions.invoke("preview-confirmation-samples", {
         body: {},
       });
-      if (error) throw error;
+      // supabase-js hides the response body on non-2xx; try to read it.
+      if (error) {
+        let details = error.message;
+        try {
+          // @ts-ignore — context exists on FunctionsHttpError
+          const ctx = (error as any).context;
+          if (ctx?.text) details = await ctx.text();
+        } catch { /* ignore */ }
+        throw new Error(details);
+      }
       if ((res as any)?.error) throw new Error((res as any).error);
       setData(res as PreviewResult);
     } catch (e: any) {
+      const msg = e?.message || "Could not generate preview";
+      console.error("[LiveConfirmationPreview]", msg);
       toast({
-        title: "Preview failed",
-        description: e?.message || "Could not generate preview",
+        title: "Preview could not be generated",
+        description: `${msg.slice(0, 240)} — nothing was booked, charged, or emailed.`,
         variant: "destructive",
       });
     } finally {
