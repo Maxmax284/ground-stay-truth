@@ -4,17 +4,20 @@
 // immigration, airlines, or their employer. This is NOT a Stripe receipt and
 // NOT a Thai tax invoice — it proves the accommodation is booked.
 //
-// - Gated on `bookings.state = 'confirmed'` (with any recorded payment) OR
-//   admin/manager/front_desk role for staff-side reprints.
-// - Stored in the private `booking-confirmations` bucket, path
-//   `<year>/<booking_id>.pdf`.
-// - Idempotent: regenerates on demand (overwrites) so a re-issue always
-//   reflects the current booking data.
-// - Returns a short-lived signed URL.
+// Phase 3 upgrades:
+//   • Persistent human-readable confirmation number `LMT-CS-YYYY-XXXXXX`,
+//     stored on `bookings.confirmation_number` on first generation.
+//   • Every generation logged to `booking_confirmation_log` for audit.
+//   • Multi-language header/label strings (en, th, fr, de, es, ru, zh, ja, ko).
+//   • Optional `mode: "pending"` renders a pre-confirmation summary PDF
+//     watermarked "PENDING — NOT CONFIRMED" for staff or the guest to preview.
+//   • Optional `return_base64: true` returns the raw PDF bytes so internal
+//     callers (e.g. send-booking-confirmation) can attach it to email.
+//   • Internal calls signed with the service-role bearer skip user checks.
 // -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1";
+import { PDFDocument, StandardFonts, rgb, degrees } from "https://esm.sh/pdf-lib@1.17.1";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://lmtcampstay.com",
@@ -63,6 +66,46 @@ function fmtMoney(n: number) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// Minimal per-language label pack. pdf-lib uses WinAnsi so Thai/Chinese/etc
+// glyphs won't render — for those we fall back to English labels but keep
+// the locale on record. English remains the canonical legal document.
+type Labels = {
+  title: string; sub: string; ref: string; issued: string;
+  guest: string; host: string; accommodation: string;
+  checkin: string; checkout: string; from: string; by: string;
+  nights: string; guests: string; total: string; paid: string; balance: string;
+  status: string; footer1: string; footer2: string; pending: string;
+};
+const LABELS_EN: Labels = {
+  title: "BOOKING CONFIRMATION",
+  sub: "Accommodation reservation — LMT CampStay",
+  ref: "Ref", issued: "Issued",
+  guest: "Guest", host: "Host", accommodation: "Accommodation",
+  checkin: "Check-in", checkout: "Check-out", from: "from", by: "by",
+  nights: "Nights", guests: "Guests",
+  total: "Total accommodation cost", paid: "Paid to date", balance: "Balance due",
+  status: "Status",
+  footer1: "This document confirms an accommodation booking. It is not a payment receipt.",
+  footer2: "For a Thai tax invoice (VAT) please request one from the host.",
+  pending: "PENDING — NOT CONFIRMED",
+};
+const LABEL_PACK: Record<string, Partial<Labels>> = {
+  fr: { guest: "Client", host: "Hôte", accommodation: "Hébergement", checkin: "Arrivée", checkout: "Départ", nights: "Nuits", guests: "Personnes", total: "Coût total de l’hébergement", paid: "Payé à ce jour", balance: "Solde dû", status: "Statut", sub: "Réservation d’hébergement — LMT CampStay" },
+  de: { guest: "Gast", host: "Gastgeber", accommodation: "Unterkunft", checkin: "Anreise", checkout: "Abreise", nights: "Nächte", guests: "Gäste", total: "Gesamtkosten Unterkunft", paid: "Bisher bezahlt", balance: "Restbetrag", status: "Status", sub: "Unterkunftsreservierung — LMT CampStay" },
+  es: { guest: "Huésped", host: "Anfitrión", accommodation: "Alojamiento", checkin: "Entrada", checkout: "Salida", nights: "Noches", guests: "Huéspedes", total: "Coste total del alojamiento", paid: "Pagado hasta la fecha", balance: "Saldo pendiente", status: "Estado", sub: "Reserva de alojamiento — LMT CampStay" },
+  ru: { sub: "Бронирование размещения — LMT CampStay" }, // labels stay EN (Cyrillic not in WinAnsi)
+};
+
+function labelsFor(lang: string): Labels {
+  return { ...LABELS_EN, ...(LABEL_PACK[lang] || {}) };
+}
+
+function makeConfirmationNumber(bookingId: string, createdAt: string | null): string {
+  const year = createdAt ? new Date(createdAt).getFullYear() : new Date().getFullYear();
+  const suffix = bookingId.replace(/-/g, "").slice(0, 6).toUpperCase();
+  return `LMT-CS-${year}-${suffix}`;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders(req) });
 
@@ -74,18 +117,36 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !user) return json(req, { error: "Unauthorized" }, 401);
+    const bearer = authHeader.slice(7);
+    const isInternal = bearer === serviceRoleKey;
+
+    let userId: string | null = null;
+    let userEmail: string | null = null;
+    if (!isInternal) {
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user }, error: userErr } = await userClient.auth.getUser();
+      if (userErr || !user) return json(req, { error: "Unauthorized" }, 401);
+      userId = user.id;
+      userEmail = user.email ?? null;
+    }
 
     const admin = createClient(supabaseUrl, serviceRoleKey);
 
-    const { booking_id } = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
+    const {
+      booking_id,
+      language = "en",
+      mode = "confirmed",
+      channel = "download",
+      return_base64 = false,
+    } = body ?? {};
     if (!booking_id || typeof booking_id !== "string") {
       return json(req, { error: "booking_id required" }, 400);
     }
+    const lang = String(language || "en").toLowerCase().slice(0, 5);
+    const pendingMode = mode === "pending";
 
     // Load booking with unit + guest profile
     const { data: booking, error: bErr } = await admin
@@ -95,29 +156,58 @@ serve(async (req) => {
       .maybeSingle();
     if (bErr || !booking) return json(req, { error: "Booking not found" }, 404);
 
-    // Authorization: guest owns booking OR staff role
-    const isOwner = booking.guest_id === user.id;
-    let isStaff = false;
-    if (!isOwner) {
-      const { data: roleRows } = await admin
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-      isStaff = (roleRows ?? []).some((r: any) =>
-        ["admin", "manager", "front_desk_supervisor", "front_desk"].includes(r.role));
-    }
-    if (!isOwner && !isStaff) return json(req, { error: "Forbidden" }, 403);
+    // Authorization
+    let actorRole = "internal";
+    if (!isInternal) {
+      const isOwner = booking.guest_id === userId;
+      let isStaff = false;
+      if (!isOwner) {
+        const { data: roleRows } = await admin
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId!);
+        isStaff = (roleRows ?? []).some((r: any) =>
+          ["admin", "manager", "front_desk_supervisor", "front_desk"].includes(r.role));
+      }
+      if (!isOwner && !isStaff) return json(req, { error: "Forbidden" }, 403);
+      actorRole = isStaff ? "staff" : "guest";
 
-    // Gate: booking must be confirmed (or later). Guests can only download
-    // once the state machine has cleared the deposit.
-    const okStates = ["confirmed", "checked_in", "completed"];
-    if (!okStates.includes(booking.state)) {
-      return json(req, {
-        error: "Booking not confirmed yet",
-        state: booking.state,
-      }, 409);
+      // Pending-mode is staff-only from the outside
+      if (pendingMode && !isStaff) {
+        return json(req, { error: "Pending summary is staff-only" }, 403);
+      }
     }
 
+    // Gate: confirmed mode requires state >= confirmed. Pending mode allows
+    // any pre-confirmation state; blocks cancelled/no_show/completed.
+    const confirmedOk = ["confirmed", "checked_in", "completed"];
+    const pendingOk = ["inquiry", "soft_hold", "pending_approval", "pending_deposit"];
+    if (pendingMode) {
+      if (!pendingOk.includes(booking.state)) {
+        return json(req, { error: "Booking is not in a pre-confirmation state", state: booking.state }, 409);
+      }
+    } else {
+      if (!confirmedOk.includes(booking.state)) {
+        return json(req, { error: "Booking not confirmed yet", state: booking.state }, 409);
+      }
+    }
+    if (["cancelled", "no_show"].includes(booking.state)) {
+      return json(req, { error: "Booking is closed", state: booking.state }, 410);
+    }
+
+    // Persistent confirmation number
+    let confirmationNumber: string | null = (booking as any).confirmation_number ?? null;
+    if (!confirmationNumber && !pendingMode) {
+      confirmationNumber = makeConfirmationNumber(booking.id, booking.created_at);
+      await admin.from("bookings").update({
+        confirmation_number: confirmationNumber,
+        confirmation_first_generated_at: new Date().toISOString(),
+      }).eq("id", booking.id).is("confirmation_number", null);
+    }
+    // For pending mode, show a preview ref without persisting
+    const displayRef = confirmationNumber || makeConfirmationNumber(booking.id, booking.created_at) + "-P";
+
+    const L = labelsFor(lang);
     const guestName = (booking as any).profiles?.full_name || "Guest";
     const guestEmail = (booking as any).profiles?.email || "";
     const unitName = (booking as any).units?.name || "Accommodation";
@@ -130,7 +220,6 @@ serve(async (req) => {
     const companyAddress = await getPolicy(admin, "company_address", "Koh Samui, Thailand");
     const companyPhone = await getPolicy(admin, "company_phone", "");
 
-    // Payment total recorded so far (informational)
     const { data: pays } = await admin
       .from("payments")
       .select("amount, status")
@@ -144,23 +233,34 @@ serve(async (req) => {
     const page = pdf.addPage([595, 842]); // A4
     const font = await pdf.embedFont(StandardFonts.Helvetica);
     const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
-    const { width } = page.getSize();
+    const { width, height } = page.getSize();
     const ink = rgb(0.07, 0.07, 0.07);
     const muted = rgb(0.4, 0.4, 0.4);
     const accent = rgb(0.72, 0.11, 0.11);
 
+    // Pending watermark, drawn behind content
+    if (pendingMode) {
+      page.drawText(L.pending, {
+        x: 60, y: height / 2,
+        size: 56, font: bold,
+        color: rgb(0.95, 0.55, 0.15),
+        opacity: 0.18,
+        rotate: degrees(30),
+      });
+    }
+
     let y = 800;
-    page.drawText("BOOKING CONFIRMATION", { x: 50, y, size: 20, font: bold, color: ink });
-    page.drawText("Accommodation reservation — LMT CampStay", { x: 50, y: y - 20, size: 10, font, color: muted });
-    page.drawText(`Ref: ${booking_id.slice(0, 8).toUpperCase()}`, { x: width - 180, y, size: 11, font: bold, color: accent });
-    page.drawText(`Issued: ${new Date().toISOString().slice(0, 10)}`, { x: width - 180, y: y - 16, size: 9, font, color: muted });
+    page.drawText(pendingMode ? `${L.title} (PREVIEW)` : L.title, { x: 50, y, size: 20, font: bold, color: ink });
+    page.drawText(L.sub, { x: 50, y: y - 20, size: 10, font, color: muted });
+    page.drawText(`${L.ref}: ${displayRef}`, { x: width - 220, y, size: 11, font: bold, color: accent });
+    page.drawText(`${L.issued}: ${new Date().toISOString().slice(0, 10)}`, { x: width - 220, y: y - 16, size: 9, font, color: muted });
 
     y -= 70;
-    page.drawText("Guest", { x: 50, y, size: 10, font: bold, color: ink });
+    page.drawText(L.guest, { x: 50, y, size: 10, font: bold, color: ink });
     page.drawText(guestName, { x: 50, y: y - 14, size: 11, font, color: ink });
     if (guestEmail) page.drawText(guestEmail, { x: 50, y: y - 28, size: 9, font, color: muted });
 
-    page.drawText("Host", { x: 320, y, size: 10, font: bold, color: ink });
+    page.drawText(L.host, { x: 320, y, size: 10, font: bold, color: ink });
     page.drawText(companyName, { x: 320, y: y - 14, size: 11, font, color: ink });
     if (companyAddress) page.drawText(companyAddress, { x: 320, y: y - 28, size: 9, font, color: muted });
     if (companyPhone) page.drawText(companyPhone, { x: 320, y: y - 40, size: 9, font, color: muted });
@@ -169,61 +269,65 @@ serve(async (req) => {
     page.drawLine({ start: { x: 50, y }, end: { x: width - 50, y }, thickness: 0.5, color: muted });
 
     y -= 26;
-    page.drawText("Accommodation", { x: 50, y, size: 10, font: bold, color: ink });
+    page.drawText(L.accommodation, { x: 50, y, size: 10, font: bold, color: ink });
     page.drawText(unitName, { x: 50, y: y - 16, size: 14, font: bold, color: ink });
 
     y -= 46;
     const cellW = (width - 100) / 2;
-    page.drawText("Check-in", { x: 50, y, size: 9, font, color: muted });
+    page.drawText(L.checkin, { x: 50, y, size: 9, font, color: muted });
     page.drawText(`${booking.check_in}`, { x: 50, y: y - 14, size: 12, font: bold, color: ink });
-    page.drawText(`from ${checkinTime}`, { x: 50, y: y - 30, size: 9, font, color: muted });
+    page.drawText(`${L.from} ${checkinTime}`, { x: 50, y: y - 30, size: 9, font, color: muted });
 
-    page.drawText("Check-out", { x: 50 + cellW, y, size: 9, font, color: muted });
+    page.drawText(L.checkout, { x: 50 + cellW, y, size: 9, font, color: muted });
     page.drawText(`${booking.check_out}`, { x: 50 + cellW, y: y - 14, size: 12, font: bold, color: ink });
-    page.drawText(`by ${checkoutTime}`, { x: 50 + cellW, y: y - 30, size: 9, font, color: muted });
+    page.drawText(`${L.by} ${checkoutTime}`, { x: 50 + cellW, y: y - 30, size: 9, font, color: muted });
 
     y -= 60;
     const nights = Math.round(
       (new Date(booking.check_out).getTime() - new Date(booking.check_in).getTime()) / 86400000
     );
-    page.drawText("Nights", { x: 50, y, size: 9, font, color: muted });
+    page.drawText(L.nights, { x: 50, y, size: 9, font, color: muted });
     page.drawText(String(nights), { x: 50, y: y - 14, size: 12, font: bold, color: ink });
 
-    page.drawText("Guests", { x: 50 + cellW, y, size: 9, font, color: muted });
+    page.drawText(L.guests, { x: 50 + cellW, y, size: 9, font, color: muted });
     page.drawText(String(booking.num_guests), { x: 50 + cellW, y: y - 14, size: 12, font: bold, color: ink });
 
     y -= 50;
     page.drawLine({ start: { x: 50, y }, end: { x: width - 50, y }, thickness: 0.5, color: muted });
     y -= 24;
-    page.drawText("Total accommodation cost", { x: 50, y, size: 10, font, color: ink });
+    page.drawText(L.total, { x: 50, y, size: 10, font, color: ink });
     page.drawText(`${symbol}${fmtMoney(Number(booking.total_price || 0))} ${currency}`,
       { x: width - 200, y, size: 11, font: bold, color: ink });
     y -= 16;
-    page.drawText("Paid to date", { x: 50, y, size: 10, font, color: muted });
+    page.drawText(L.paid, { x: 50, y, size: 10, font, color: muted });
     page.drawText(`${symbol}${fmtMoney(paid)} ${currency}`,
       { x: width - 200, y, size: 10, font, color: muted });
     y -= 16;
     const balance = Math.max(0, Number(booking.total_price || 0) - paid);
-    page.drawText("Balance due", { x: 50, y, size: 10, font, color: muted });
+    page.drawText(L.balance, { x: 50, y, size: 10, font, color: muted });
     page.drawText(`${symbol}${fmtMoney(balance)} ${currency}`,
       { x: width - 200, y, size: 10, font, color: muted });
 
     y -= 50;
-    page.drawText("Status", { x: 50, y, size: 10, font, color: muted });
-    page.drawText(String(booking.state).replace("_", " ").toUpperCase(),
-      { x: 120, y, size: 10, font: bold, color: accent });
+    page.drawText(L.status, { x: 50, y, size: 10, font, color: muted });
+    const statusText = pendingMode
+      ? "PENDING (NOT YET CONFIRMED)"
+      : String(booking.state).replace(/_/g, " ").toUpperCase();
+    page.drawText(statusText, { x: 120, y, size: 10, font: bold, color: accent });
 
-    // Footer / disclaimers
-    page.drawText("This document confirms an accommodation booking. It is not a payment receipt.",
-      { x: 50, y: 90, size: 8, font, color: muted });
-    page.drawText("For a Thai tax invoice (ใบกำกับภาษี) please request one from the host.",
-      { x: 50, y: 78, size: 8, font, color: muted });
-    page.drawText(`Generated ${new Date().toISOString()} — verify at ${companyName}.`,
+    page.drawText(L.footer1, { x: 50, y: 90, size: 8, font, color: muted });
+    page.drawText(L.footer2, { x: 50, y: 78, size: 8, font, color: muted });
+    page.drawText(`Generated ${new Date().toISOString()} — ${companyName}.`,
       { x: 50, y: 66, size: 7, font, color: muted });
+    if (pendingMode) {
+      page.drawText("Not a confirmation. Booking is not yet finalised.",
+        { x: 50, y: 54, size: 8, font: bold, color: accent });
+    }
 
     const bytes = await pdf.save();
     const year = new Date().getFullYear();
-    const path = `${year}/${booking_id}.pdf`;
+    const subdir = pendingMode ? "pending" : String(year);
+    const path = `${subdir}/${booking_id}.pdf`;
 
     const { error: upErr } = await admin.storage
       .from("booking-confirmations")
@@ -234,24 +338,59 @@ serve(async (req) => {
       .from("booking-confirmations")
       .createSignedUrl(path, 60 * 60);
 
-    // Best-effort audit trail
+    // Track regen + audit
+    if (!pendingMode) {
+      await admin.rpc("noop_touch", {}).catch(() => {});
+      await admin
+        .from("bookings")
+        .update({
+          confirmation_regeneration_count: ((booking as any).confirmation_regeneration_count ?? 0) + 1,
+          ...(channel === "email" ? { confirmation_last_sent_at: new Date().toISOString() } : {}),
+        })
+        .eq("id", booking.id);
+    }
+
+    await admin.from("booking_confirmation_log").insert({
+      booking_id: booking.id,
+      confirmation_number: pendingMode ? null : confirmationNumber,
+      mode: pendingMode ? "pending" : "confirmed",
+      language: lang,
+      actor_id: userId,
+      actor_role: actorRole,
+      channel,
+      path,
+    });
+
     try {
       await admin.from("staff_audit_events").insert({
         event_type: "booking_confirmation_generated",
         severity: "info",
-        actor_id: user.id,
-        actor_email: user.email ?? null,
-        metadata: { booking_id, path, requested_by: isStaff ? "staff" : "guest" },
+        actor_id: userId,
+        actor_email: userEmail,
+        metadata: { booking_id, path, mode: pendingMode ? "pending" : "confirmed", language: lang, channel, confirmation_number: confirmationNumber },
       });
     } catch (_) { /* non-critical */ }
 
-    return json(req, {
+    const responseBody: Record<string, unknown> = {
       success: true,
       signed_url: signed?.signedUrl ?? null,
       path,
       booking_id,
+      confirmation_number: pendingMode ? null : confirmationNumber,
+      mode: pendingMode ? "pending" : "confirmed",
+      language: lang,
       expires_in_seconds: 3600,
-    });
+    };
+    if (return_base64 && isInternal) {
+      // btoa on Deno handles up to a few MB — confirmation PDFs are <100KB
+      let binary = "";
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+      }
+      responseBody.pdf_base64 = btoa(binary);
+    }
+    return json(req, responseBody);
   } catch (e: any) {
     console.error("[generate-booking-confirmation] error", e);
     return json(req, { error: e?.message ?? "Internal error" }, 500);
