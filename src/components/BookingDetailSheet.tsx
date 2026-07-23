@@ -87,6 +87,21 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
 
   const canSeeAmounts = permissions.canViewPaymentAmounts(role);
   const canRecordPay = permissions.canRecordPayment(role);
+  const canApplyDiscount = role === "admin" || role === "manager";
+  const [discountOpen, setDiscountOpen] = useState(false);
+
+  // Any recorded (non-refunded) payment blocks discount application.
+  const hasRecordedPayment = useMemo(() => {
+    return (payments ?? []).some((p: any) =>
+      ["recorded", "succeeded", "captured", "completed"].includes(String(p.status))
+    );
+  }, [payments]);
+  const hasUnpaidLink = false; // link visibility lives in PaymentLinkManager; edge fn revokes if present
+  const discountBlockedReason = hasRecordedPayment
+    ? "Payment already recorded — use refund workflow"
+    : (booking && ["cancelled", "completed", "no_show"].includes(booking.state as string))
+      ? `Cannot adjust ${booking.state} booking`
+      : null;
 
   const softHoldInfo = useMemo(() => {
     if (!booking || (booking.state as BookingState) !== "soft_hold") return null;
