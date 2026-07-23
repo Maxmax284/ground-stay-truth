@@ -76,6 +76,7 @@ type Labels = {
   checkin: string; checkout: string; from: string; by: string;
   nights: string; guests: string; total: string; paid: string; balance: string;
   status: string; footer1: string; footer2: string; pending: string;
+  vat_request: string; scan_qr: string;
 };
 const LABELS_EN: Labels = {
   title: "BOOKING CONFIRMATION",
