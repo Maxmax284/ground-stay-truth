@@ -1,7 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { Download, Copy, Loader2, FileText, Check, FileWarning } from "lucide-react";
+import { Download, Copy, Loader2, FileText, Check, FileWarning, Languages } from "lucide-react";
 import { toast } from "sonner";
 
 interface BookingConfirmationDocumentProps {
@@ -11,7 +18,20 @@ interface BookingConfirmationDocumentProps {
   variant?: "compact" | "full";
   /** Allow staff to preview a pending-summary PDF before the booking is confirmed. */
   allowPending?: boolean;
+  /** Preferred language for PDF labels (e.g. from the guest's profile). Defaults to "en". */
+  preferredLanguage?: string | null;
 }
+
+/** PDF label languages the generator actually renders. Others fall back to English labels. */
+const PDF_LANGUAGES: { code: string; label: string }[] = [
+  { code: "en", label: "English" },
+  { code: "fr", label: "Français" },
+  { code: "de", label: "Deutsch" },
+  { code: "es", label: "Español" },
+  { code: "ru", label: "Русский (EN labels)" },
+];
+const SUPPORTED_CODES = new Set(PDF_LANGUAGES.map((l) => l.code));
+
 
 /**
  * Downloadable Booking Confirmation PDF.
