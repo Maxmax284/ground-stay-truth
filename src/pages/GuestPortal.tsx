@@ -916,7 +916,13 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
           </div>
         )}
 
-        <BookingConfirmationDocument bookingId={booking.id} bookingState={state} variant="compact" />
+        <BookingConfirmationDocument
+          bookingId={booking.id}
+          bookingState={state}
+          variant="compact"
+          preferredLanguage={profileQuery.data?.preferred_language ?? null}
+        />
+
 
         {showDocUpload && (
           <div className="border rounded-md p-3">
