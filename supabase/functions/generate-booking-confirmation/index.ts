@@ -338,9 +338,8 @@ serve(async (req) => {
       .from("booking-confirmations")
       .createSignedUrl(path, 60 * 60);
 
-    // Track regen + audit
+    // Track regen counter + last-sent timestamp on the booking itself.
     if (!pendingMode) {
-      await admin.rpc("noop_touch", {}).catch(() => {});
       await admin
         .from("bookings")
         .update({
@@ -349,6 +348,7 @@ serve(async (req) => {
         })
         .eq("id", booking.id);
     }
+
 
     await admin.from("booking_confirmation_log").insert({
       booking_id: booking.id,
