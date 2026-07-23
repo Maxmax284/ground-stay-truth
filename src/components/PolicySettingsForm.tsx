@@ -19,6 +19,7 @@ import { Slider } from "@/components/ui/slider";
 import { playGroundSound, SOUND_NAMES, type SoundName } from "@/lib/groundSounds";
 import { StayEssentialsEditor } from "@/components/StayEssentialsEditor";
 import { LiveConfirmationPreview } from "@/components/LiveConfirmationPreview";
+import { SendTestEmailButton } from "@/components/SendTestEmailButton";
 
 /* ── Setting Groups ────────────────────────────────────────── */
 
@@ -467,7 +468,12 @@ export function PolicySettingsForm() {
           )}
 
           {/* Live preview of what guests will actually receive */}
-          {group.id === "property_contact" && <LiveConfirmationPreview />}
+          {group.id === "property_contact" && (
+            <>
+              <SendTestEmailButton />
+              <LiveConfirmationPreview />
+            </>
+          )}
 
           {/* Sound picker for Ground Sounds tab */}
           {group.id === "ground_sounds" && (
