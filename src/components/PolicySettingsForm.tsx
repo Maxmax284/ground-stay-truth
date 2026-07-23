@@ -18,6 +18,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { playGroundSound, SOUND_NAMES, type SoundName } from "@/lib/groundSounds";
 import { StayEssentialsEditor } from "@/components/StayEssentialsEditor";
+import { LiveConfirmationPreview } from "@/components/LiveConfirmationPreview";
 
 /* ── Setting Groups ────────────────────────────────────────── */
 
