@@ -48,10 +48,17 @@ export function BookingConfirmationDocument({
   bookingState,
   variant = "compact",
   allowPending = false,
+  preferredLanguage = null,
 }: BookingConfirmationDocumentProps) {
   const [loading, setLoading] = useState<false | "confirmed" | "pending">(false);
   const [lastUrl, setLastUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const defaultLang = useMemo(() => {
+    const raw = (preferredLanguage || "en").toLowerCase().slice(0, 2);
+    return SUPPORTED_CODES.has(raw) ? raw : "en";
+  }, [preferredLanguage]);
+  const [language, setLanguage] = useState<string>(defaultLang);
 
   const confirmed = ["confirmed", "checked_in", "completed"].includes(bookingState);
   const pendingOk = ["inquiry", "soft_hold", "pending_approval", "pending_deposit"].includes(bookingState);
@@ -64,7 +71,7 @@ export function BookingConfirmationDocument({
     try {
       const { data, error } = await supabase.functions.invoke(
         "generate-booking-confirmation",
-        { body: { booking_id: bookingId, mode } }
+        { body: { booking_id: bookingId, mode, language } }
       );
       if (error) throw error;
       const url = (data as any)?.signed_url as string | null;
@@ -81,9 +88,11 @@ export function BookingConfirmationDocument({
   };
 
   const handleDownload = async () => {
-    const url = lastUrl || (await generate("confirmed"));
+    // A fresh language selection invalidates the cached URL — regenerate.
+    const url = await generate("confirmed");
     if (url) window.open(url, "_blank", "noopener");
   };
+
 
   const handlePreviewPending = async () => {
     const url = await generate("pending");
