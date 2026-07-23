@@ -56,7 +56,6 @@ import { AIBriefingCard } from "@/components/ai/AIBriefingCard";
 import { BookingConfirmationDocument } from "@/components/BookingConfirmationDocument";
 import { ApplyDiscountDialog } from "@/components/ApplyDiscountDialog";
 import { BookingAdjustmentsCard } from "@/components/BookingAdjustmentsCard";
-import { Tag } from "lucide-react";
 
 interface BookingDetailSheetProps { bookingId: string | null; open: boolean; onOpenChange: (open: boolean) => void; isAdmin: boolean; }
 
