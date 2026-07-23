@@ -321,8 +321,45 @@ serve(async (req) => {
       : String(booking.state).replace(/_/g, " ").toUpperCase();
     page.drawText(statusText, { x: 120, y, size: 10, font: bold, color: accent });
 
-    page.drawText(L.footer1, { x: 50, y: 90, size: 8, font, color: muted });
-    page.drawText(L.footer2, { x: 50, y: 78, size: 8, font, color: muted });
+    // QR code (bottom-right) — deep link to guest booking view
+    const qrTarget = `${siteUrl.replace(/\/$/, "")}/guest?ref=${encodeURIComponent(displayRef)}`;
+    try {
+      const qrDataUrl: string = await QRCode.toDataURL(qrTarget, {
+        margin: 1, width: 240, color: { dark: "#111111", light: "#ffffff" },
+      });
+      const qrPngBytes = Uint8Array.from(atob(qrDataUrl.split(",")[1]), (c) => c.charCodeAt(0));
+      const qrImg = await pdf.embedPng(qrPngBytes);
+      const qrSize = 96;
+      const qrX = width - 50 - qrSize;
+      const qrY = 50;
+      page.drawImage(qrImg, { x: qrX, y: qrY, width: qrSize, height: qrSize });
+      page.drawText(L.scan_qr, { x: qrX, y: qrY - 10, size: 7, font, color: muted });
+    } catch (e) {
+      console.warn("QR generation failed:", e);
+    }
+
+    // VAT invoice request — plain-text mailto so it survives copy/paste and printing
+    const vatSubject = `VAT invoice request — ${displayRef}`;
+    const vatMailto = `mailto:${contactEmail}?subject=${encodeURIComponent(vatSubject)}`;
+    page.drawText(L.footer1, { x: 50, y: 110, size: 8, font, color: muted });
+    page.drawText(`${L.vat_request}: ${contactEmail}`, { x: 50, y: 96, size: 9, font: bold, color: accent });
+    // Clickable link annotation over the VAT line
+    try {
+      const linkAnnot = pdf.context.register(
+        pdf.context.obj({
+          Type: "Annot",
+          Subtype: "Link",
+          Rect: [50, 92, 320, 106],
+          Border: [0, 0, 0],
+          A: { Type: "Action", S: "URI", URI: vatMailto },
+        }),
+      );
+      const existing = page.node.Annots();
+      if (existing) existing.push(linkAnnot);
+      else page.node.set(pdf.context.obj("Annots"), pdf.context.obj([linkAnnot]));
+    } catch (e) {
+      console.warn("VAT link annotation failed:", e);
+    }
     page.drawText(`Generated ${new Date().toISOString()} — ${companyName}.`,
       { x: 50, y: 66, size: 7, font, color: muted });
     if (pendingMode) {
