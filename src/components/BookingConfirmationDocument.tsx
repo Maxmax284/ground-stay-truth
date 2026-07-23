@@ -1,7 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { Download, Copy, Loader2, FileText, Check, FileWarning } from "lucide-react";
+import { Download, Copy, Loader2, FileText, Check, FileWarning, Languages } from "lucide-react";
 import { toast } from "sonner";
 
 interface BookingConfirmationDocumentProps {
@@ -11,7 +18,20 @@ interface BookingConfirmationDocumentProps {
   variant?: "compact" | "full";
   /** Allow staff to preview a pending-summary PDF before the booking is confirmed. */
   allowPending?: boolean;
+  /** Preferred language for PDF labels (e.g. from the guest's profile). Defaults to "en". */
+  preferredLanguage?: string | null;
 }
+
+/** PDF label languages the generator actually renders. Others fall back to English labels. */
+const PDF_LANGUAGES: { code: string; label: string }[] = [
+  { code: "en", label: "English" },
+  { code: "fr", label: "Français" },
+  { code: "de", label: "Deutsch" },
+  { code: "es", label: "Español" },
+  { code: "ru", label: "Русский (EN labels)" },
+];
+const SUPPORTED_CODES = new Set(PDF_LANGUAGES.map((l) => l.code));
+
 
 /**
  * Downloadable Booking Confirmation PDF.
@@ -28,10 +48,17 @@ export function BookingConfirmationDocument({
   bookingState,
   variant = "compact",
   allowPending = false,
+  preferredLanguage = null,
 }: BookingConfirmationDocumentProps) {
   const [loading, setLoading] = useState<false | "confirmed" | "pending">(false);
   const [lastUrl, setLastUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const defaultLang = useMemo(() => {
+    const raw = (preferredLanguage || "en").toLowerCase().slice(0, 2);
+    return SUPPORTED_CODES.has(raw) ? raw : "en";
+  }, [preferredLanguage]);
+  const [language, setLanguage] = useState<string>(defaultLang);
 
   const confirmed = ["confirmed", "checked_in", "completed"].includes(bookingState);
   const pendingOk = ["inquiry", "soft_hold", "pending_approval", "pending_deposit"].includes(bookingState);
@@ -44,7 +71,7 @@ export function BookingConfirmationDocument({
     try {
       const { data, error } = await supabase.functions.invoke(
         "generate-booking-confirmation",
-        { body: { booking_id: bookingId, mode } }
+        { body: { booking_id: bookingId, mode, language } }
       );
       if (error) throw error;
       const url = (data as any)?.signed_url as string | null;
@@ -61,9 +88,11 @@ export function BookingConfirmationDocument({
   };
 
   const handleDownload = async () => {
-    const url = lastUrl || (await generate("confirmed"));
+    // A fresh language selection invalidates the cached URL — regenerate.
+    const url = await generate("confirmed");
     if (url) window.open(url, "_blank", "noopener");
   };
+
 
   const handlePreviewPending = async () => {
     const url = await generate("pending");
@@ -83,25 +112,49 @@ export function BookingConfirmationDocument({
     }
   };
 
+  const LanguageSelect = (
+    <Select value={language} onValueChange={setLanguage} disabled={!!loading}>
+      <SelectTrigger
+        className="h-8 w-auto gap-1.5 px-2 text-xs"
+        aria-label="PDF language"
+      >
+
+        <Languages className="h-3.5 w-3.5 text-muted-foreground" />
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent align="end">
+        {PDF_LANGUAGES.map((l) => (
+          <SelectItem key={l.code} value={l.code} className="text-xs">
+            {l.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
   if (variant === "compact") {
     if (!confirmed) return null;
     return (
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleDownload}
-        disabled={!!loading}
-        className="gap-1.5"
-      >
-        {loading === "confirmed" ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <FileText className="h-3.5 w-3.5" />
-        )}
-        Download Booking Confirmation
-      </Button>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleDownload}
+          disabled={!!loading}
+          className="gap-1.5"
+        >
+          {loading === "confirmed" ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <FileText className="h-3.5 w-3.5" />
+          )}
+          Download Booking Confirmation
+        </Button>
+        {LanguageSelect}
+      </div>
     );
   }
+
 
   return (
     <div className="rounded-md border p-3 space-y-2">
@@ -132,7 +185,9 @@ export function BookingConfirmationDocument({
             Preview pending summary
           </Button>
         )}
+        {LanguageSelect}
       </div>
+
       {canPending && !confirmed && (
         <p className="text-[10px] text-amber-700">
           Pending preview is clearly watermarked "NOT CONFIRMED". Do not send to the guest as a real confirmation.
