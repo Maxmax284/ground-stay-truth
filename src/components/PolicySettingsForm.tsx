@@ -31,6 +31,19 @@ interface SettingGroup {
 
 const GROUPS: SettingGroup[] = [
   {
+    id: "property_contact",
+    label: "Property & Contact",
+    icon: <Building2 className="h-4 w-4" />,
+    keys: [
+      "company_legal_name", "company_phone", "contact_email", "company_address",
+      "earliest_checkin_time", "checkout_time",
+    ],
+    summary: (g) => {
+      const phone = g("company_phone");
+      return `Check-in ${g("earliest_checkin_time") || "—"} • Check-out ${g("checkout_time") || "—"}${phone ? ` • ${phone}` : " • Phone not set"}`;
+    },
+  },
+  {
     id: "deposits",
     label: "Deposits & Payments",
     icon: <Banknote className="h-4 w-4" />,
