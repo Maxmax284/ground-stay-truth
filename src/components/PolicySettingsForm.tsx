@@ -190,7 +190,7 @@ const GROUPS: SettingGroup[] = [
 /* Keys handled by cancellation editor or technical/sensitive */
 const HIDDEN_KEYS = new Set([
   "free_cancellation_days", "partial_refund_days", "partial_refund_percentage",
-  "no_refund_hours", "earliest_checkin_time", "checkout_time",
+  "no_refund_hours",
   "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
   "resend_api_key", "resend_from_email", "camp_info",
 ]);
