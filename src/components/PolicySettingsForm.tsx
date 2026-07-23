@@ -287,6 +287,12 @@ const SETTING_ICONS: Record<string, React.ReactNode> = {
   emergency_contact_phone: <Phone className="h-3.5 w-3.5 text-muted-foreground" />,
   sound_effects_enabled: <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />,
   sound_effects_volume: <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />,
+  company_legal_name: <Building2 className="h-3.5 w-3.5 text-muted-foreground" />,
+  company_phone: <Phone className="h-3.5 w-3.5 text-muted-foreground" />,
+  contact_email: <MailIcon className="h-3.5 w-3.5 text-muted-foreground" />,
+  company_address: <MapPin className="h-3.5 w-3.5 text-muted-foreground" />,
+  earliest_checkin_time: <Clock className="h-3.5 w-3.5 text-muted-foreground" />,
+  checkout_time: <Clock className="h-3.5 w-3.5 text-muted-foreground" />,
 };
 
 /* ── Component ─────────────────────────────────────────────── */
