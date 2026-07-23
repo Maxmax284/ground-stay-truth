@@ -18,6 +18,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { playGroundSound, SOUND_NAMES, type SoundName } from "@/lib/groundSounds";
 import { StayEssentialsEditor } from "@/components/StayEssentialsEditor";
+import { LiveConfirmationPreview } from "@/components/LiveConfirmationPreview";
 
 /* ── Setting Groups ────────────────────────────────────────── */
 
@@ -464,6 +465,9 @@ export function PolicySettingsForm() {
               {group.keys.map((key) => renderSetting(key))}
             </div>
           )}
+
+          {/* Live preview of what guests will actually receive */}
+          {group.id === "property_contact" && <LiveConfirmationPreview />}
 
           {/* Sound picker for Ground Sounds tab */}
           {group.id === "ground_sounds" && (
