@@ -922,7 +922,7 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
           bookingId={booking.id}
           bookingState={state}
           variant="compact"
-          preferredLanguage={profileQuery.data?.preferred_language ?? null}
+          preferredLanguage={cardProfile.data?.preferred_language ?? null}
         />
 
 
