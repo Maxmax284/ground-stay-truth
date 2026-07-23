@@ -112,25 +112,49 @@ export function BookingConfirmationDocument({
     }
   };
 
+  const LanguageSelect = (
+    <Select value={language} onValueChange={setLanguage} disabled={!!loading}>
+      <SelectTrigger
+        size="sm"
+        className="h-8 w-auto gap-1.5 px-2 text-xs"
+        aria-label="PDF language"
+      >
+        <Languages className="h-3.5 w-3.5 text-muted-foreground" />
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent align="end">
+        {PDF_LANGUAGES.map((l) => (
+          <SelectItem key={l.code} value={l.code} className="text-xs">
+            {l.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
   if (variant === "compact") {
     if (!confirmed) return null;
     return (
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleDownload}
-        disabled={!!loading}
-        className="gap-1.5"
-      >
-        {loading === "confirmed" ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <FileText className="h-3.5 w-3.5" />
-        )}
-        Download Booking Confirmation
-      </Button>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleDownload}
+          disabled={!!loading}
+          className="gap-1.5"
+        >
+          {loading === "confirmed" ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <FileText className="h-3.5 w-3.5" />
+          )}
+          Download Booking Confirmation
+        </Button>
+        {LanguageSelect}
+      </div>
     );
   }
+
 
   return (
     <div className="rounded-md border p-3 space-y-2">
