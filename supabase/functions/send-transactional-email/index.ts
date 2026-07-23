@@ -37,7 +37,11 @@ const templates: Record<string, Record<string, { subject: string; html: (data: a
   booking_confirmed: {
     en: {
       subject: "Booking Confirmed ✅ — LMT CampStay",
-      html: (d) => `
+      html: (d) => {
+        const qrTarget = d.qr_target || `https://lmtcampstay.com/guest${d.confirmation_number ? `?ref=${encodeURIComponent(d.confirmation_number)}` : ""}`;
+        const qrImg = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=${encodeURIComponent(qrTarget)}`;
+        const vatMailto = `mailto:${d.contact_email || "info@lmtcampstay.com"}?subject=${encodeURIComponent(`VAT invoice request — ${d.confirmation_number || "booking"}`)}`;
+        return `
         <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
           <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">Booking Confirmed</h1>
           <p style="color:#666;margin-bottom:24px">Sawadee ${d.guest_name}! Your stay is confirmed.</p>
@@ -56,13 +60,25 @@ const templates: Record<string, Record<string, { subject: string; html: (data: a
             <a href="${d.confirmation_pdf_url}" style="background:#b81c1c;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600;display:inline-block">Download Booking Confirmation (PDF)</a>
           </p>
           <p style="color:#888;font-size:12px;text-align:center;margin-top:-8px">The PDF is also attached. Show it to immigration, airlines, or your employer.</p>` : ""}
+          <div style="text-align:center;margin:24px 0;padding:16px;background:#fafafa;border-radius:12px">
+            <img src="${qrImg}" alt="Booking QR code" width="140" height="140" style="display:block;margin:0 auto 8px auto;border-radius:6px" />
+            <p style="margin:0;color:#666;font-size:12px">Scan to open your booking or share your reference</p>
+          </div>
+          <p style="text-align:center;margin:20px 0 8px 0;color:#666;font-size:13px">
+            Need a Thai VAT invoice? <a href="${vatMailto}" style="color:#b81c1c;font-weight:600;text-decoration:none">Request Thai VAT invoice</a>
+          </p>
           <p style="color:#666;font-size:14px;margin-top:24px">Upload your ID document through the Guest Portal before check-in.</p>
           <p style="color:#999;font-size:12px;margin-top:24px">LMT CampStay — Lamai Muay Thai Fight Camp</p>
-        </div>`,
+        </div>`;
+      },
     },
     th: {
       subject: "ยืนยันการจอง ✅ — LMT CampStay",
-      html: (d) => `
+      html: (d) => {
+        const qrTarget = d.qr_target || `https://lmtcampstay.com/guest${d.confirmation_number ? `?ref=${encodeURIComponent(d.confirmation_number)}` : ""}`;
+        const qrImg = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=${encodeURIComponent(qrTarget)}`;
+        const vatMailto = `mailto:${d.contact_email || "info@lmtcampstay.com"}?subject=${encodeURIComponent(`VAT invoice request — ${d.confirmation_number || "booking"}`)}`;
+        return `
         <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
           <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">ยืนยันการจองแล้ว</h1>
           <p style="color:#666;margin-bottom:24px">สวัสดีครับ/ค่ะ ${d.guest_name}! การเข้าพักของคุณได้รับการยืนยันแล้ว</p>
@@ -80,9 +96,17 @@ const templates: Record<string, Record<string, { subject: string; html: (data: a
           <p style="text-align:center;margin:24px 0">
             <a href="${d.confirmation_pdf_url}" style="background:#b81c1c;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600;display:inline-block">ดาวน์โหลดใบยืนยันการจอง (PDF)</a>
           </p>` : ""}
+          <div style="text-align:center;margin:24px 0;padding:16px;background:#fafafa;border-radius:12px">
+            <img src="${qrImg}" alt="Booking QR code" width="140" height="140" style="display:block;margin:0 auto 8px auto;border-radius:6px" />
+            <p style="margin:0;color:#666;font-size:12px">สแกนเพื่อเปิดการจองของคุณ</p>
+          </div>
+          <p style="text-align:center;margin:20px 0 8px 0;color:#666;font-size:13px">
+            ต้องการใบกำกับภาษี? <a href="${vatMailto}" style="color:#b81c1c;font-weight:600;text-decoration:none">ขอใบกำกับภาษี (VAT)</a>
+          </p>
           <p style="color:#666;font-size:14px">กรุณาอัพโหลดเอกสารประจำตัวผ่าน Guest Portal ก่อนเช็คอิน</p>
           <p style="color:#999;font-size:12px;margin-top:24px">LMT CampStay — Lamai Muay Thai Fight Camp</p>
-        </div>`,
+        </div>`;
+      },
     },
   },
 
