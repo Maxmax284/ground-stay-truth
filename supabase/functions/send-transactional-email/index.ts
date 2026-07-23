@@ -285,7 +285,7 @@ const templates: Record<string, Record<string, { subject: string; html: (data: a
             <h2 style="font-size:16px;margin:0 0 12px 0;color:#1a1a1a">⏰ Check-in / Check-out</h2>
             <table style="width:100%;border-collapse:collapse">
               <tr><td style="padding:4px 0;color:#666;width:40%">Check-in from</td><td style="padding:4px 0;font-weight:600">${d.checkin_time}</td></tr>
-              <tr><td style="padding:4px 0;color:#666">Check-out by</td><td style="padding:4px 0;font-weight:600">${d.checkout_time || "11:00"}</td></tr>
+              <tr><td style="padding:4px 0;color:#666">Check-out by</td><td style="padding:4px 0;font-weight:600">${d.checkout_time || "12:00"}</td></tr>
               <tr><td style="padding:4px 0;color:#666">Your dates</td><td style="padding:4px 0;font-weight:600">${d.check_in} → ${d.check_out}</td></tr>
             </table>
           </div>
@@ -323,7 +323,7 @@ const templates: Record<string, Record<string, { subject: string; html: (data: a
             <h2 style="font-size:16px;margin:0 0 12px 0;color:#1a1a1a">⏰ เช็คอิน / เช็คเอาท์</h2>
             <table style="width:100%;border-collapse:collapse">
               <tr><td style="padding:4px 0;color:#666;width:40%">เช็คอินตั้งแต่</td><td style="padding:4px 0;font-weight:600">${d.checkin_time}</td></tr>
-              <tr><td style="padding:4px 0;color:#666">เช็คเอาท์ภายใน</td><td style="padding:4px 0;font-weight:600">${d.checkout_time || "11:00"}</td></tr>
+              <tr><td style="padding:4px 0;color:#666">เช็คเอาท์ภายใน</td><td style="padding:4px 0;font-weight:600">${d.checkout_time || "12:00"}</td></tr>
               <tr><td style="padding:4px 0;color:#666">วันที่</td><td style="padding:4px 0;font-weight:600">${d.check_in} → ${d.check_out}</td></tr>
             </table>
           </div>

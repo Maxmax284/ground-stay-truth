@@ -94,8 +94,8 @@ Deno.serve(async (req) => {
       .in("key", ["earliest_checkin_time", "checkout_time", "currency_symbol", "contact_email", "site_url"]);
 
     const policyMap = new Map((policies ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]));
-    const checkinTime = policyMap.get("earliest_checkin_time") || "16:00";
-    const checkoutTime = policyMap.get("checkout_time") || "11:00";
+    const checkinTime = policyMap.get("earliest_checkin_time") || "14:00";
+    const checkoutTime = policyMap.get("checkout_time") || "12:00";
     const currencySymbol = policyMap.get("currency_symbol") || "฿";
     const contactEmail = policyMap.get("contact_email") || "info@lmtcampstay.com";
     const siteUrl = (policyMap.get("site_url") || "https://lmtcampstay.com").replace(/\/$/, "");

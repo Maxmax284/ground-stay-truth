@@ -218,8 +218,8 @@ serve(async (req) => {
 
     const currency = await getPolicy(admin, "currency_code", "THB");
     const symbol = await getPolicy(admin, "currency_symbol", "฿");
-    const checkinTime = await getPolicy(admin, "earliest_checkin_time", "16:00");
-    const checkoutTime = await getPolicy(admin, "checkout_time", "11:00");
+    const checkinTime = await getPolicy(admin, "earliest_checkin_time", "14:00");
+    const checkoutTime = await getPolicy(admin, "checkout_time", "12:00");
     const companyName = await getPolicy(admin, "company_legal_name", "Lamai Muay Thai Fight Camp");
     const companyAddress = await getPolicy(admin, "company_address", "Koh Samui, Thailand");
     const companyPhone = await getPolicy(admin, "company_phone", "");
