@@ -660,8 +660,8 @@ const GuestPortal = () => {
                   <div className="space-y-2">
                     <h4 className="font-semibold text-foreground">{t("guestPortal.checkInOut")}</h4>
                     <ul className="space-y-1.5 text-muted-foreground list-disc pl-5">
-                      <li>{t("guestPortal.checkInFrom")} <span className="font-medium text-foreground">{String(policies?.find((p) => p.key === "earliest_checkin_time")?.value ?? "16:00").replace(/^"|"$/g, "")}</span></li>
-                      <li>{t("guestPortal.checkOutBy")} <span className="font-medium text-foreground">{String(policies?.find((p) => p.key === "checkout_time")?.value ?? "11:00").replace(/^"|"$/g, "")}</span></li>
+                      <li>{t("guestPortal.checkInFrom")} <span className="font-medium text-foreground">{String(policies?.find((p) => p.key === "earliest_checkin_time")?.value ?? "14:00").replace(/^"|"$/g, "")}</span></li>
+                      <li>{t("guestPortal.checkOutBy")} <span className="font-medium text-foreground">{String(policies?.find((p) => p.key === "checkout_time")?.value ?? "12:00").replace(/^"|"$/g, "")}</span></li>
                     </ul>
                   </div>
                 </CardContent>
@@ -697,8 +697,8 @@ const GuestPortal = () => {
                 <div className="space-y-2">
                   <h4 className="font-semibold text-foreground">{t("guestPortal.checkInOut")}</h4>
                   <ul className="space-y-1.5 text-muted-foreground list-disc pl-5">
-                    <li>{t("guestPortal.checkInFrom")} <span className="font-medium text-foreground">{policies?.find((p) => p.key === "earliest_checkin_time")?.value as string ?? "4:00 PM"}</span></li>
-                    <li>{t("guestPortal.checkOutBy")} <span className="font-medium text-foreground">{policies?.find((p) => p.key === "checkout_time")?.value as string ?? "11:00 AM"}</span></li>
+                    <li>{t("guestPortal.checkInFrom")} <span className="font-medium text-foreground">{policies?.find((p) => p.key === "earliest_checkin_time")?.value as string ?? "2:00 PM"}</span></li>
+                    <li>{t("guestPortal.checkOutBy")} <span className="font-medium text-foreground">{policies?.find((p) => p.key === "checkout_time")?.value as string ?? "12:00 PM"}</span></li>
                   </ul>
                 </div>
               </CardContent>

@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Save, Banknote, Percent, Heart, Bot, Wrench, Mail, Receipt,
   Clock, Shield, CreditCard, ToggleLeft, CalendarClock, Sparkles, Plane, Wifi, Phone, ScrollText,
-  Volume2,
+  Volume2, Building2, Mail as MailIcon, MapPin,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { playGroundSound, SOUND_NAMES, type SoundName } from "@/lib/groundSounds";
@@ -30,6 +30,19 @@ interface SettingGroup {
 }
 
 const GROUPS: SettingGroup[] = [
+  {
+    id: "property_contact",
+    label: "Property & Contact",
+    icon: <Building2 className="h-4 w-4" />,
+    keys: [
+      "company_legal_name", "company_phone", "contact_email", "company_address",
+      "earliest_checkin_time", "checkout_time",
+    ],
+    summary: (g) => {
+      const phone = g("company_phone");
+      return `Check-in ${g("earliest_checkin_time") || "—"} • Check-out ${g("checkout_time") || "—"}${phone ? ` • ${phone}` : " • Phone not set"}`;
+    },
+  },
   {
     id: "deposits",
     label: "Deposits & Payments",
@@ -177,7 +190,7 @@ const GROUPS: SettingGroup[] = [
 /* Keys handled by cancellation editor or technical/sensitive */
 const HIDDEN_KEYS = new Set([
   "free_cancellation_days", "partial_refund_days", "partial_refund_percentage",
-  "no_refund_hours", "earliest_checkin_time", "checkout_time",
+  "no_refund_hours",
   "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
   "resend_api_key", "resend_from_email", "camp_info",
 ]);
@@ -253,6 +266,12 @@ const FRIENDLY_LABELS: Record<string, string> = {
   booking_fee_mode: "Display Mode (included / separate / hidden)",
   booking_fee_percentage: "Fee Percentage (%)",
   booking_fee_fixed: "Fee Fixed Amount (฿)",
+  company_legal_name: "Business Name",
+  company_phone: "Contact Phone",
+  contact_email: "Contact Email",
+  company_address: "Address",
+  earliest_checkin_time: "Standard Check-In Time",
+  checkout_time: "Standard Check-Out Time",
 };
 
 const SETTING_ICONS: Record<string, React.ReactNode> = {
@@ -268,6 +287,12 @@ const SETTING_ICONS: Record<string, React.ReactNode> = {
   emergency_contact_phone: <Phone className="h-3.5 w-3.5 text-muted-foreground" />,
   sound_effects_enabled: <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />,
   sound_effects_volume: <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />,
+  company_legal_name: <Building2 className="h-3.5 w-3.5 text-muted-foreground" />,
+  company_phone: <Phone className="h-3.5 w-3.5 text-muted-foreground" />,
+  contact_email: <MailIcon className="h-3.5 w-3.5 text-muted-foreground" />,
+  company_address: <MapPin className="h-3.5 w-3.5 text-muted-foreground" />,
+  earliest_checkin_time: <Clock className="h-3.5 w-3.5 text-muted-foreground" />,
+  checkout_time: <Clock className="h-3.5 w-3.5 text-muted-foreground" />,
 };
 
 /* ── Component ─────────────────────────────────────────────── */
