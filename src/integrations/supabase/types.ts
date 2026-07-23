@@ -371,6 +371,71 @@ export type Database = {
           },
         ]
       }
+      booking_adjustments: {
+        Row: {
+          adjustment_type: string
+          amount_calculated: number
+          applied_at: string
+          applied_by: string | null
+          applies_to: string
+          booking_id: string
+          created_at: string
+          id: string
+          internal_note: string | null
+          label: string
+          status: string
+          value: number
+          value_type: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+        }
+        Insert: {
+          adjustment_type?: string
+          amount_calculated: number
+          applied_at?: string
+          applied_by?: string | null
+          applies_to?: string
+          booking_id: string
+          created_at?: string
+          id?: string
+          internal_note?: string | null
+          label: string
+          status?: string
+          value: number
+          value_type: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Update: {
+          adjustment_type?: string
+          amount_calculated?: number
+          applied_at?: string
+          applied_by?: string | null
+          applies_to?: string
+          booking_id?: string
+          created_at?: string
+          id?: string
+          internal_note?: string | null
+          label?: string
+          status?: string
+          value?: number
+          value_type?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_adjustments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_confirmation_log: {
         Row: {
           actor_id: string | null
@@ -529,6 +594,7 @@ export type Database = {
           manual_guest_phone: string | null
           notes: string | null
           num_guests: number
+          original_total: number | null
           pre_arrival_status: string
           price_override: number | null
           property_id: string | null
@@ -561,6 +627,7 @@ export type Database = {
           manual_guest_phone?: string | null
           notes?: string | null
           num_guests?: number
+          original_total?: number | null
           pre_arrival_status?: string
           price_override?: number | null
           property_id?: string | null
@@ -593,6 +660,7 @@ export type Database = {
           manual_guest_phone?: string | null
           notes?: string | null
           num_guests?: number
+          original_total?: number | null
           pre_arrival_status?: string
           price_override?: number | null
           property_id?: string | null

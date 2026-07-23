@@ -54,6 +54,8 @@ import { useBookingReview } from "@/hooks/useReviews";
 import { setAIFocus, clearAIFocus } from "@/lib/aiFocusStore";
 import { AIBriefingCard } from "@/components/ai/AIBriefingCard";
 import { BookingConfirmationDocument } from "@/components/BookingConfirmationDocument";
+import { ApplyDiscountDialog } from "@/components/ApplyDiscountDialog";
+import { BookingAdjustmentsCard } from "@/components/BookingAdjustmentsCard";
 
 interface BookingDetailSheetProps { bookingId: string | null; open: boolean; onOpenChange: (open: boolean) => void; isAdmin: boolean; }
 
@@ -85,6 +87,21 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
 
   const canSeeAmounts = permissions.canViewPaymentAmounts(role);
   const canRecordPay = permissions.canRecordPayment(role);
+  const canApplyDiscount = role === "admin" || role === "manager";
+  const [discountOpen, setDiscountOpen] = useState(false);
+
+  // Any recorded (non-refunded) payment blocks discount application.
+  const hasRecordedPayment = useMemo(() => {
+    return (payments ?? []).some((p: any) =>
+      ["recorded", "succeeded", "captured", "completed"].includes(String(p.status))
+    );
+  }, [payments]);
+  const hasUnpaidLink = false; // link visibility lives in PaymentLinkManager; edge fn revokes if present
+  const discountBlockedReason = hasRecordedPayment
+    ? "Payment already recorded — use refund workflow"
+    : (booking && ["cancelled", "completed", "no_show"].includes(booking.state as string))
+      ? `Cannot adjust ${booking.state} booking`
+      : null;
 
   const softHoldInfo = useMemo(() => {
     if (!booking || (booking.state as BookingState) !== "soft_hold") return null;
@@ -253,14 +270,46 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
         {isAdmin && <AdminOverrideMenu bookingId={booking.id} pickupId={pickup?.id ?? null} />}
         <SecurityDepositSection bookingId={booking.id} bookingState={booking.state} />
         <BookingTrainingSection bookingId={booking.id} />
-        <div className="pt-3">
+        <div className="pt-3 space-y-2">
           <BookingFinancialSummary
             bookingId={booking.id}
             totalPrice={booking.total_price}
             propertyId={(booking as any).property_id ?? null}
             canSeeAmounts={canSeeAmounts}
           />
+          {canSeeAmounts && (
+            <BookingAdjustmentsCard
+              bookingId={booking.id}
+              canManage={canApplyDiscount && !hasRecordedPayment}
+              policies={policies}
+            />
+          )}
+          {canApplyDiscount && (
+            <div className="flex items-center justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDiscountOpen(true)}
+                disabled={!!discountBlockedReason}
+                title={discountBlockedReason ?? "Apply a discretionary discount before payment"}
+              >
+                Apply discount
+              </Button>
+            </div>
+          )}
+          {canApplyDiscount && discountBlockedReason && (
+            <p className="text-[10px] text-muted-foreground text-right italic">{discountBlockedReason}</p>
+          )}
         </div>
+        <ApplyDiscountDialog
+          open={discountOpen}
+          onOpenChange={setDiscountOpen}
+          bookingId={booking.id}
+          currentTotal={Number(booking.total_price ?? 0)}
+          originalTotal={(booking as any).original_total ?? null}
+          hasUnpaidLink={hasUnpaidLink}
+          policies={policies}
+        />
         <Separator />
         <div className="py-4"><BookingStateTransition bookingId={booking.id} currentState={booking.state as BookingState} isAdmin={isAdmin} checkInDate={booking.check_in} totalPrice={booking.total_price} unitId={booking.unit_id} /></div>
         <Tabs defaultValue="history" className="mt-2" onValueChange={(val) => {
