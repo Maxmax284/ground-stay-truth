@@ -162,6 +162,8 @@ Deno.serve(async (req) => {
           total_formatted: totalFormatted,
           confirmation_number: confirmationNumber,
           confirmation_pdf_url: confirmationPdfUrl,
+          contact_email: contactEmail,
+          qr_target: `${siteUrl}/guest${confirmationNumber ? `?ref=${encodeURIComponent(confirmationNumber)}` : ""}`,
         },
       }),
     });
