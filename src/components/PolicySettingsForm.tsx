@@ -466,6 +466,9 @@ export function PolicySettingsForm() {
             </div>
           )}
 
+          {/* Live preview of what guests will actually receive */}
+          {group.id === "property_contact" && <LiveConfirmationPreview />}
+
           {/* Sound picker for Ground Sounds tab */}
           {group.id === "ground_sounds" && (
             <Card>
