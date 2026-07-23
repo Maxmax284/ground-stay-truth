@@ -91,12 +91,14 @@ Deno.serve(async (req) => {
     const { data: policies } = await adminClient
       .from("policy_settings")
       .select("key, value")
-      .in("key", ["earliest_checkin_time", "checkout_time", "currency_symbol"]);
+      .in("key", ["earliest_checkin_time", "checkout_time", "currency_symbol", "contact_email", "site_url"]);
 
     const policyMap = new Map((policies ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]));
     const checkinTime = policyMap.get("earliest_checkin_time") || "16:00";
     const checkoutTime = policyMap.get("checkout_time") || "11:00";
     const currencySymbol = policyMap.get("currency_symbol") || "฿";
+    const contactEmail = policyMap.get("contact_email") || "info@lmtcampstay.com";
+    const siteUrl = (policyMap.get("site_url") || "https://lmtcampstay.com").replace(/\/$/, "");
     const totalFormatted = booking.total_price ? `${currencySymbol}${Number(booking.total_price).toFixed(2)}` : "TBD";
 
     // Phase 2: pre-generate the Booking Confirmation PDF so we can include a
