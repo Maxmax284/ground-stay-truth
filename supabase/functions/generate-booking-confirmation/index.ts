@@ -89,6 +89,8 @@ const LABELS_EN: Labels = {
   footer1: "This document confirms an accommodation booking. It is not a payment receipt.",
   footer2: "For a Thai tax invoice (VAT) please request one from the host.",
   pending: "PENDING — NOT CONFIRMED",
+  vat_request: "Request Thai VAT invoice",
+  scan_qr: "Scan to open your booking",
 };
 const LABEL_PACK: Record<string, Partial<Labels>> = {
   fr: { guest: "Client", host: "Hôte", accommodation: "Hébergement", checkin: "Arrivée", checkout: "Départ", nights: "Nuits", guests: "Personnes", total: "Coût total de l’hébergement", paid: "Payé à ce jour", balance: "Solde dû", status: "Statut", sub: "Réservation d’hébergement — LMT CampStay" },
