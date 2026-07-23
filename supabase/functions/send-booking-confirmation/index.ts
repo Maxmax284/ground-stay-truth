@@ -99,6 +99,38 @@ Deno.serve(async (req) => {
     const currencySymbol = policyMap.get("currency_symbol") || "฿";
     const totalFormatted = booking.total_price ? `${currencySymbol}${Number(booking.total_price).toFixed(2)}` : "TBD";
 
+    // Phase 2: pre-generate the Booking Confirmation PDF so we can include a
+    // signed download link AND attach the PDF to the email. This is a
+    // best-effort call — email still sends if PDF generation fails.
+    let confirmationPdfUrl: string | null = null;
+    let confirmationNumber: string | null = null;
+    let pdfBase64: string | null = null;
+    try {
+      const pdfResp = await fetch(`${supabaseUrl}/functions/v1/generate-booking-confirmation`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${serviceRoleKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          booking_id,
+          language: guestLang,
+          channel: "email",
+          return_base64: true,
+        }),
+      });
+      if (pdfResp.ok) {
+        const pdfJson = await pdfResp.json();
+        confirmationPdfUrl = pdfJson?.signed_url ?? null;
+        confirmationNumber = pdfJson?.confirmation_number ?? null;
+        pdfBase64 = pdfJson?.pdf_base64 ?? null;
+      } else {
+        console.warn("generate-booking-confirmation returned non-ok:", pdfResp.status);
+      }
+    } catch (e) {
+      console.error("PDF pre-generation failed (email will still send):", e);
+    }
+
     // Send via send-transactional-email
     const emailResp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
       method: "POST",
@@ -111,6 +143,12 @@ Deno.serve(async (req) => {
         recipient_email: guestEmail,
         booking_id: booking_id,
         language: guestLang,
+        attachments: pdfBase64
+          ? [{
+              filename: `booking-confirmation-${confirmationNumber || booking_id.slice(0, 8)}.pdf`,
+              content: pdfBase64,
+            }]
+          : undefined,
         data: {
           guest_name: guestName,
           unit_name: unitName,
@@ -120,9 +158,12 @@ Deno.serve(async (req) => {
           checkout_time: checkoutTime,
           num_guests: booking.num_guests,
           total_formatted: totalFormatted,
+          confirmation_number: confirmationNumber,
+          confirmation_pdf_url: confirmationPdfUrl,
         },
       }),
     });
+
 
     const emailResult = await emailResp.json();
 

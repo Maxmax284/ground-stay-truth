@@ -371,6 +371,53 @@ export type Database = {
           },
         ]
       }
+      booking_confirmation_log: {
+        Row: {
+          actor_id: string | null
+          actor_role: string | null
+          booking_id: string
+          channel: string
+          confirmation_number: string | null
+          created_at: string
+          id: string
+          language: string
+          mode: string
+          path: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_role?: string | null
+          booking_id: string
+          channel?: string
+          confirmation_number?: string | null
+          created_at?: string
+          id?: string
+          language?: string
+          mode?: string
+          path?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_role?: string | null
+          booking_id?: string
+          channel?: string
+          confirmation_number?: string | null
+          created_at?: string
+          id?: string
+          language?: string
+          mode?: string
+          path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_confirmation_log_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_state_log: {
         Row: {
           booking_id: string
@@ -465,6 +512,10 @@ export type Database = {
           arrived_by: string | null
           check_in: string
           check_out: string
+          confirmation_first_generated_at: string | null
+          confirmation_last_sent_at: string | null
+          confirmation_number: string | null
+          confirmation_regeneration_count: number
           created_at: string
           created_by: string | null
           flight_number: string | null
@@ -493,6 +544,10 @@ export type Database = {
           arrived_by?: string | null
           check_in: string
           check_out: string
+          confirmation_first_generated_at?: string | null
+          confirmation_last_sent_at?: string | null
+          confirmation_number?: string | null
+          confirmation_regeneration_count?: number
           created_at?: string
           created_by?: string | null
           flight_number?: string | null
@@ -521,6 +576,10 @@ export type Database = {
           arrived_by?: string | null
           check_in?: string
           check_out?: string
+          confirmation_first_generated_at?: string | null
+          confirmation_last_sent_at?: string | null
+          confirmation_number?: string | null
+          confirmation_regeneration_count?: number
           created_at?: string
           created_by?: string | null
           flight_number?: string | null

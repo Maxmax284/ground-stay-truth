@@ -36,11 +36,12 @@ function getCorsHeaders(req: Request) {
 const templates: Record<string, Record<string, { subject: string; html: (data: any) => string }>> = {
   booking_confirmed: {
     en: {
-      subject: "Booking Confirmed ✅",
+      subject: "Booking Confirmed ✅ — LMT CampStay",
       html: (d) => `
         <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
           <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">Booking Confirmed</h1>
           <p style="color:#666;margin-bottom:24px">Sawadee ${d.guest_name}! Your stay is confirmed.</p>
+          ${d.confirmation_number ? `<p style="color:#333;font-size:13px;margin:-12px 0 20px 0"><strong>Confirmation #</strong> ${d.confirmation_number}</p>` : ""}
           <div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:20px">
             <h2 style="font-size:18px;margin:0 0 16px 0">${d.unit_name}</h2>
             <table style="width:100%;border-collapse:collapse">
@@ -50,16 +51,22 @@ const templates: Record<string, Record<string, { subject: string; html: (data: a
               <tr><td style="padding:8px 0;color:#666">Total</td><td style="padding:8px 0;font-weight:600">${d.total_formatted}</td></tr>
             </table>
           </div>
-          <p style="color:#666;font-size:14px">Upload your ID document through the Guest Portal before check-in.</p>
-          <p style="color:#999;font-size:12px;margin-top:24px">Ground Stay — Lamai Muay Thai Fight Camp</p>
+          ${d.confirmation_pdf_url ? `
+          <p style="text-align:center;margin:24px 0">
+            <a href="${d.confirmation_pdf_url}" style="background:#b81c1c;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600;display:inline-block">Download Booking Confirmation (PDF)</a>
+          </p>
+          <p style="color:#888;font-size:12px;text-align:center;margin-top:-8px">The PDF is also attached. Show it to immigration, airlines, or your employer.</p>` : ""}
+          <p style="color:#666;font-size:14px;margin-top:24px">Upload your ID document through the Guest Portal before check-in.</p>
+          <p style="color:#999;font-size:12px;margin-top:24px">LMT CampStay — Lamai Muay Thai Fight Camp</p>
         </div>`,
     },
     th: {
-      subject: "ยืนยันการจอง ✅",
+      subject: "ยืนยันการจอง ✅ — LMT CampStay",
       html: (d) => `
         <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
           <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">ยืนยันการจองแล้ว</h1>
           <p style="color:#666;margin-bottom:24px">สวัสดีครับ/ค่ะ ${d.guest_name}! การเข้าพักของคุณได้รับการยืนยันแล้ว</p>
+          ${d.confirmation_number ? `<p style="color:#333;font-size:13px;margin:-12px 0 20px 0"><strong>เลขที่ยืนยัน</strong> ${d.confirmation_number}</p>` : ""}
           <div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:20px">
             <h2 style="font-size:18px;margin:0 0 16px 0">${d.unit_name}</h2>
             <table style="width:100%;border-collapse:collapse">
@@ -69,11 +76,16 @@ const templates: Record<string, Record<string, { subject: string; html: (data: a
               <tr><td style="padding:8px 0;color:#666">ราคารวม</td><td style="padding:8px 0;font-weight:600">${d.total_formatted}</td></tr>
             </table>
           </div>
+          ${d.confirmation_pdf_url ? `
+          <p style="text-align:center;margin:24px 0">
+            <a href="${d.confirmation_pdf_url}" style="background:#b81c1c;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600;display:inline-block">ดาวน์โหลดใบยืนยันการจอง (PDF)</a>
+          </p>` : ""}
           <p style="color:#666;font-size:14px">กรุณาอัพโหลดเอกสารประจำตัวผ่าน Guest Portal ก่อนเช็คอิน</p>
-          <p style="color:#999;font-size:12px;margin-top:24px">Ground Stay — Lamai Muay Thai Fight Camp</p>
+          <p style="color:#999;font-size:12px;margin-top:24px">LMT CampStay — Lamai Muay Thai Fight Camp</p>
         </div>`,
     },
   },
+
   deposit_reminder: {
     en: {
       subject: "Deposit Reminder — Complete Your Booking",
@@ -324,7 +336,7 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const { template_key, recipient_email, data, booking_id, language } = await req.json();
+    const { template_key, recipient_email, data, booking_id, language, attachments } = await req.json();
 
     if (!template_key || !recipient_email) {
       return new Response(JSON.stringify({ error: "template_key and recipient_email required" }), {
@@ -392,20 +404,26 @@ serve(async (req) => {
     }
     const template = templateSet[lang] || templateSet.en;
 
-    // Send via Resend
+    // Send via Resend — optional attachments passed straight through
+    // (Resend accepts base64 content on the `attachments` field).
+    const resendPayload: Record<string, unknown> = {
+      from: fromEmail,
+      to: [recipient_email],
+      subject: template.subject,
+      html: template.html(data || {}),
+    };
+    if (Array.isArray(attachments) && attachments.length > 0) {
+      resendPayload.attachments = attachments;
+    }
     const resendResp = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${resendApiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: [recipient_email],
-        subject: template.subject,
-        html: template.html(data || {}),
-      }),
+      body: JSON.stringify(resendPayload),
     });
+
 
     const resendData = await resendResp.json();
 
