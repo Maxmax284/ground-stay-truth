@@ -185,7 +185,9 @@ export function BookingConfirmationDocument({
             Preview pending summary
           </Button>
         )}
+        {LanguageSelect}
       </div>
+
       {canPending && !confirmed && (
         <p className="text-[10px] text-amber-700">
           Pending preview is clearly watermarked "NOT CONFIRMED". Do not send to the guest as a real confirmation.
