@@ -266,6 +266,12 @@ const FRIENDLY_LABELS: Record<string, string> = {
   booking_fee_mode: "Display Mode (included / separate / hidden)",
   booking_fee_percentage: "Fee Percentage (%)",
   booking_fee_fixed: "Fee Fixed Amount (฿)",
+  company_legal_name: "Business Name",
+  company_phone: "Contact Phone",
+  contact_email: "Contact Email",
+  company_address: "Address",
+  earliest_checkin_time: "Standard Check-In Time",
+  checkout_time: "Standard Check-Out Time",
 };
 
 const SETTING_ICONS: Record<string, React.ReactNode> = {
