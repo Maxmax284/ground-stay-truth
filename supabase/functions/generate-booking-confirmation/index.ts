@@ -18,6 +18,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { PDFDocument, StandardFonts, rgb, degrees } from "https://esm.sh/pdf-lib@1.17.1";
+import QRCode from "https://esm.sh/qrcode@1.5.3";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://lmtcampstay.com",
@@ -75,6 +76,7 @@ type Labels = {
   checkin: string; checkout: string; from: string; by: string;
   nights: string; guests: string; total: string; paid: string; balance: string;
   status: string; footer1: string; footer2: string; pending: string;
+  vat_request: string; scan_qr: string;
 };
 const LABELS_EN: Labels = {
   title: "BOOKING CONFIRMATION",
@@ -88,6 +90,8 @@ const LABELS_EN: Labels = {
   footer1: "This document confirms an accommodation booking. It is not a payment receipt.",
   footer2: "For a Thai tax invoice (VAT) please request one from the host.",
   pending: "PENDING — NOT CONFIRMED",
+  vat_request: "Request Thai VAT invoice",
+  scan_qr: "Scan to open your booking",
 };
 const LABEL_PACK: Record<string, Partial<Labels>> = {
   fr: { guest: "Client", host: "Hôte", accommodation: "Hébergement", checkin: "Arrivée", checkout: "Départ", nights: "Nuits", guests: "Personnes", total: "Coût total de l’hébergement", paid: "Payé à ce jour", balance: "Solde dû", status: "Statut", sub: "Réservation d’hébergement — LMT CampStay" },
@@ -219,6 +223,8 @@ serve(async (req) => {
     const companyName = await getPolicy(admin, "company_legal_name", "Lamai Muay Thai Fight Camp");
     const companyAddress = await getPolicy(admin, "company_address", "Koh Samui, Thailand");
     const companyPhone = await getPolicy(admin, "company_phone", "");
+    const contactEmail = await getPolicy(admin, "contact_email", "info@lmtcampstay.com");
+    const siteUrl = await getPolicy(admin, "site_url", "https://lmtcampstay.com");
 
     const { data: pays } = await admin
       .from("payments")
@@ -315,8 +321,28 @@ serve(async (req) => {
       : String(booking.state).replace(/_/g, " ").toUpperCase();
     page.drawText(statusText, { x: 120, y, size: 10, font: bold, color: accent });
 
-    page.drawText(L.footer1, { x: 50, y: 90, size: 8, font, color: muted });
-    page.drawText(L.footer2, { x: 50, y: 78, size: 8, font, color: muted });
+    // QR code (bottom-right) — deep link to guest booking view
+    const qrTarget = `${siteUrl.replace(/\/$/, "")}/guest?ref=${encodeURIComponent(displayRef)}`;
+    try {
+      const qrDataUrl: string = await QRCode.toDataURL(qrTarget, {
+        margin: 1, width: 240, color: { dark: "#111111", light: "#ffffff" },
+      });
+      const qrPngBytes = Uint8Array.from(atob(qrDataUrl.split(",")[1]), (c) => c.charCodeAt(0));
+      const qrImg = await pdf.embedPng(qrPngBytes);
+      const qrSize = 96;
+      const qrX = width - 50 - qrSize;
+      const qrY = 50;
+      page.drawImage(qrImg, { x: qrX, y: qrY, width: qrSize, height: qrSize });
+      page.drawText(L.scan_qr, { x: qrX, y: qrY - 10, size: 7, font, color: muted });
+    } catch (e) {
+      console.warn("QR generation failed:", e);
+    }
+
+    // VAT invoice request — email address in the footer for copy/tap
+    page.drawText(L.footer1, { x: 50, y: 110, size: 8, font, color: muted });
+    page.drawText(`${L.vat_request}: ${contactEmail}`, { x: 50, y: 96, size: 9, font: bold, color: accent });
+    page.drawText(`Include reference ${displayRef} in your email.`,
+      { x: 50, y: 82, size: 8, font, color: muted });
     page.drawText(`Generated ${new Date().toISOString()} — ${companyName}.`,
       { x: 50, y: 66, size: 7, font, color: muted });
     if (pendingMode) {
