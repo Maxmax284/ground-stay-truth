@@ -744,9 +744,11 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function GuestBookingCard({ booking, messages, userId, policies, guestReviews, guestName }: { booking: any; messages: any[]; userId?: string; policies?: any[]; guestReviews?: any[]; guestName?: string | null }) {
   const { t } = useTranslation();
+  const { profile: cardProfile } = useProfile();
   const [showMessages, setShowMessages] = useState(false);
   const [reply, setReply] = useState("");
   const [reviewOpen, setReviewOpen] = useState(false);
+
 
   // Training association check
   const { data: bookingTrainingLinks } = useQuery({
