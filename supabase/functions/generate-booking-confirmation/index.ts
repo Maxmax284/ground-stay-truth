@@ -338,28 +338,11 @@ serve(async (req) => {
       console.warn("QR generation failed:", e);
     }
 
-    // VAT invoice request — plain-text mailto so it survives copy/paste and printing
-    const vatSubject = `VAT invoice request — ${displayRef}`;
-    const vatMailto = `mailto:${contactEmail}?subject=${encodeURIComponent(vatSubject)}`;
+    // VAT invoice request — email address in the footer for copy/tap
     page.drawText(L.footer1, { x: 50, y: 110, size: 8, font, color: muted });
     page.drawText(`${L.vat_request}: ${contactEmail}`, { x: 50, y: 96, size: 9, font: bold, color: accent });
-    // Clickable link annotation over the VAT line
-    try {
-      const linkAnnot = pdf.context.register(
-        pdf.context.obj({
-          Type: "Annot",
-          Subtype: "Link",
-          Rect: [50, 92, 320, 106],
-          Border: [0, 0, 0],
-          A: { Type: "Action", S: "URI", URI: vatMailto },
-        }),
-      );
-      const existing = page.node.Annots();
-      if (existing) existing.push(linkAnnot);
-      else page.node.set(pdf.context.obj("Annots"), pdf.context.obj([linkAnnot]));
-    } catch (e) {
-      console.warn("VAT link annotation failed:", e);
-    }
+    page.drawText(`Include reference ${displayRef} in your email.`,
+      { x: 50, y: 82, size: 8, font, color: muted });
     page.drawText(`Generated ${new Date().toISOString()} — ${companyName}.`,
       { x: 50, y: 66, size: 7, font, color: muted });
     if (pendingMode) {
