@@ -223,6 +223,8 @@ serve(async (req) => {
     const companyName = await getPolicy(admin, "company_legal_name", "Lamai Muay Thai Fight Camp");
     const companyAddress = await getPolicy(admin, "company_address", "Koh Samui, Thailand");
     const companyPhone = await getPolicy(admin, "company_phone", "");
+    const contactEmail = await getPolicy(admin, "contact_email", "info@lmtcampstay.com");
+    const siteUrl = await getPolicy(admin, "site_url", "https://lmtcampstay.com");
 
     const { data: pays } = await admin
       .from("payments")
