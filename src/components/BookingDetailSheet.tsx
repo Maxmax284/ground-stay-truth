@@ -460,7 +460,7 @@ function PaymentsTab({ payments, bookingId, bookingState, canSeeAmounts, canReco
           <Separator />
           <PaymentLinkManager bookingId={bookingId} />
           <PaymentGuideLink />
-          <BookingConfirmationDocument bookingId={bookingId} bookingState={bookingState} variant="full" />
+          <BookingConfirmationDocument bookingId={bookingId} bookingState={bookingState} variant="full" allowPending />
         </>
       )}
 
