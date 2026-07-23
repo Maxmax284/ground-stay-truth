@@ -256,6 +256,11 @@ serve(async (req) => {
       },
     });
   } catch (e: any) {
-    return j(req, { error: e?.message || "preview failed" }, 500);
+    console.error("preview-confirmation-samples failed:", e?.stack || e);
+    return j(req, {
+      error: e?.message || "preview failed",
+      hint: "Preview could not be generated. Nothing was booked, charged, or emailed.",
+      where: e?.name || "unknown",
+    }, 500);
   }
 });
