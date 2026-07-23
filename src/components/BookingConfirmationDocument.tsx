@@ -115,10 +115,10 @@ export function BookingConfirmationDocument({
   const LanguageSelect = (
     <Select value={language} onValueChange={setLanguage} disabled={!!loading}>
       <SelectTrigger
-        size="sm"
         className="h-8 w-auto gap-1.5 px-2 text-xs"
         aria-label="PDF language"
       >
+
         <Languages className="h-3.5 w-3.5 text-muted-foreground" />
         <SelectValue />
       </SelectTrigger>
