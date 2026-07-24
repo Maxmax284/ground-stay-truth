@@ -261,6 +261,17 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
                         >
                           <Eye className="h-3.5 w-3.5" />
                         </Button>
+                        {isAdmin && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 px-2"
+                            title="Apply discount before deposit"
+                            onClick={() => setDiscountBooking(b)}
+                          >
+                            <Percent className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                         {canHold && (
                           <Button
                             size="sm"
