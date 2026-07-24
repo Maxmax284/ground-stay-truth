@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { NotificationBell } from "@/components/NotificationBell";
 import { AIAssistantPanel } from "@/components/AIAssistantPanel";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
+import { ReinstallPrompt } from "@/components/ReinstallPrompt";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TutorialOverlay } from "@/components/TutorialOverlay";
 import { useRolePreview } from "@/hooks/useRolePreview";
@@ -100,7 +101,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       </div>
       <AIAssistantPanel />
       <TutorialOverlay variant="staff" />
-      <PWAInstallBanner />
+      <PWAInstallBanner variant="admin" />
+      <ReinstallPrompt />
     </SidebarProvider>
   );
 };

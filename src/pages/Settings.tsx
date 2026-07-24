@@ -15,6 +15,7 @@ import { IntelligenceEditor } from "@/components/IntelligenceEditor";
 import PropertyManagementPanel from "@/components/PropertyManagementPanel";
 import { VantaIntegrationPanel } from "@/components/VantaIntegrationPanel";
 import NotificationSettings from "@/components/settings/NotificationSettings";
+import { AppStatusPanel } from "@/components/settings/AppStatusPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 
@@ -54,6 +55,7 @@ const Settings = () => {
             {isAdmin && <TabsTrigger value="intelligence" className="text-xs sm:text-sm">Intel</TabsTrigger>}
             {isAdmin && <TabsTrigger value="vanta" className="text-xs sm:text-sm">Vanta</TabsTrigger>}
             {canSeeNotifications && <TabsTrigger value="notifications" className="text-xs sm:text-sm">Notifications</TabsTrigger>}
+            <TabsTrigger value="app" className="text-xs sm:text-sm">App</TabsTrigger>
           </TabsList>
 
 
@@ -71,6 +73,7 @@ const Settings = () => {
           {isAdmin && <TabsContent value="intelligence"><IntelligenceEditor /></TabsContent>}
           {isAdmin && <TabsContent value="vanta"><VantaIntegrationPanel /></TabsContent>}
           {canSeeNotifications && <TabsContent value="notifications"><NotificationSettings /></TabsContent>}
+          <TabsContent value="app"><AppStatusPanel /></TabsContent>
         </Tabs>
 
       </div>

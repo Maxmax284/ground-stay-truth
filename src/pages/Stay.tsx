@@ -445,7 +445,7 @@ export default function Stay() {
         <a href="/legal" className="text-primary hover:underline">Terms & Privacy</a>
       </footer>
 
-      <PWAInstallBanner />
+      <PWAInstallBanner variant="guest" />
     </div>
   );
 }
