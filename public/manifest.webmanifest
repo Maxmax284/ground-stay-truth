@@ -1,14 +1,18 @@
 {
   "name": "LMT CampStay — Lamai Muay Thai",
-  "short_name": "LMT CampStay",
-  "description": "Official Lamai Muay Thai accommodation and camp stay booking",
-  "start_url": "/",
+  "short_name": "CampStay",
+  "description": "Official Lamai Muay Thai accommodation and camp stay operations app",
+  "id": "/index",
+  "start_url": "/index",
   "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#0a0a0a",
   "theme_color": "#dc2626",
   "icons": [
-    { "src": "/pwa-192x192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/pwa-512x512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/pwa-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/pwa-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/pwa-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/pwa-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
