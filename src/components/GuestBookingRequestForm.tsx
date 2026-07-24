@@ -312,12 +312,13 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="guest_check_in">{t("bookingForm.checkIn")} *</Label>
-              <Input id="guest_check_in" type="date" {...register("check_in", { required: true })} />
+              <Input id="guest_check_in" type="date" min={todayBkk} {...register("check_in", { required: true })} />
               {errors.check_in && <p className="text-sm text-destructive">{t("common.required")}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="guest_check_out">{t("bookingForm.checkOut")} *</Label>
-              <Input id="guest_check_out" type="date" {...register("check_out", { required: true })} />
+              <Input id="guest_check_out" type="date" min={todayBkk} {...register("check_out", { required: true })} />
+
               {errors.check_out && <p className="text-sm text-destructive">{t("common.required")}</p>}
             </div>
           </div>
