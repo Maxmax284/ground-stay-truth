@@ -276,6 +276,18 @@ const Bookings = () => {
         isAdmin={isAdmin}
       />
 
+      {discountBooking && (
+        <ApplyDiscountDialog
+          open={!!discountBooking}
+          onOpenChange={(o) => !o && setDiscountBooking(null)}
+          bookingId={discountBooking.id}
+          currentTotal={Number(discountBooking.total_price ?? 0)}
+          originalTotal={(discountBooking as any).original_total ?? null}
+          hasUnpaidLink={false}
+          policies={policies}
+        />
+      )}
+
       {/* Reject dialog */}
       {rejectId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80">
