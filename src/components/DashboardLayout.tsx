@@ -25,6 +25,7 @@ const routeTitleKeys: Record<string, string> = {
   "/settings": "nav.settings",
   "/messages": "nav.messages",
   "/notifications": "nav.notifications",
+  "/adjustments": "nav.adjustments",
 };
 
 interface DashboardLayoutProps {
