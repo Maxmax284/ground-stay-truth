@@ -7,7 +7,10 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, AlertTriangle, ChevronRight, Check, X } from "lucide-react";
+import { Plus, AlertTriangle, ChevronRight, Check, X, Percent, Lock } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { getDiscountEligibility, DISCOUNT_TOOLTIP_HELP } from "@/lib/discountEligibility";
+import { ApplyDiscountDialog } from "@/components/ApplyDiscountDialog";
 import { FetchErrorState } from "@/components/FetchErrorState";
 import { toast } from "sonner";
 import { format, differenceInHours } from "date-fns";
@@ -119,6 +122,8 @@ const Bookings = () => {
 
   const [showCreate, setShowCreate] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [discountBooking, setDiscountBooking] = useState<any | null>(null);
+  const { data: policies } = usePolicySettings();
 
   const handleQuickApprove = async (e: React.MouseEvent, bookingId: string) => {
     e.stopPropagation();
@@ -215,16 +220,44 @@ const Bookings = () => {
                     </TableCell>
                     {canApprove && (
                       <TableCell>
-                        {b.state === "pending_approval" && (
-                          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                            <Button size="sm" variant="default" className="h-7 px-2 text-xs" onClick={(e) => handleQuickApprove(e, b.id)} disabled={transition.isPending}>
-                              <Check className="h-3 w-3 mr-1" /> {t("approval.approve")}
-                            </Button>
-                            <Button size="sm" variant="destructive" className="h-7 px-2 text-xs" onClick={(e) => { e.stopPropagation(); setRejectId(b.id); }} disabled={transition.isPending}>
-                              <X className="h-3 w-3 mr-1" /> {t("approval.reject")}
-                            </Button>
-                          </div>
-                        )}
+                        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                          {b.state === "pending_approval" && (
+                            <>
+                              <Button size="sm" variant="default" className="h-7 px-2 text-xs" onClick={(e) => handleQuickApprove(e, b.id)} disabled={transition.isPending}>
+                                <Check className="h-3 w-3 mr-1" /> {t("approval.approve")}
+                              </Button>
+                              <Button size="sm" variant="destructive" className="h-7 px-2 text-xs" onClick={(e) => { e.stopPropagation(); setRejectId(b.id); }} disabled={transition.isPending}>
+                                <X className="h-3 w-3 mr-1" /> {t("approval.reject")}
+                              </Button>
+                            </>
+                          )}
+                          {(role === "admin" || role === "manager") && (() => {
+                            const elig = getDiscountEligibility(b.state, (b as any).payments);
+                            return (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-7 w-7 p-0"
+                                        aria-label="Apply discount"
+                                        disabled={!elig.allowed}
+                                        onClick={() => setDiscountBooking(b)}
+                                      >
+                                        {elig.allowed ? <Percent className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="left" className="max-w-[240px]">
+                                    <p className="text-xs">{elig.reason ?? DISCOUNT_TOOLTIP_HELP}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            );
+                          })()}
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>
@@ -242,6 +275,18 @@ const Bookings = () => {
         onOpenChange={(open) => !open && setSelectedBookingId(null)}
         isAdmin={isAdmin}
       />
+
+      {discountBooking && (
+        <ApplyDiscountDialog
+          open={!!discountBooking}
+          onOpenChange={(o) => !o && setDiscountBooking(null)}
+          bookingId={discountBooking.id}
+          currentTotal={Number(discountBooking.total_price ?? 0)}
+          originalTotal={(discountBooking as any).original_total ?? null}
+          hasUnpaidLink={false}
+          policies={policies}
+        />
+      )}
 
       {/* Reject dialog */}
       {rejectId && (

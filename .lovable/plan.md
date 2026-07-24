@@ -1,107 +1,77 @@
+# Discount / Adjustment UX Overhaul
 
-# Booking Confirmation PDF — Audit & Phase 1 Plan
-
-Audit-first. No Stripe, webhook, reconciliation, totals, deposit %, or state machine changes.
-
-## A. Current post-payment flow
-
-1. Guest pays via Stripe checkout link (`create-payment-link`).
-2. `payment-webhook` verifies signature, records payment row.
-3. Booking state transitions `pending_deposit → confirmed`.
-4. `send-booking-confirmation` fires: sends a transactional email via Resend (template `booking_confirmed`) and writes an in-app notification.
-5. Guest portal (`/guest`) shows the booking as Confirmed.
-
-**Emails guests actually receive today:** Stripe receipt (payment proof) + our short "booking confirmed" transactional email. Neither is a formal accommodation confirmation document. No downloadable PDF exists for bookings.
-
-## B. Reusable building blocks (good news)
-
-- `supabase/functions/generate-tax-invoice/index.ts` already uses **pdf-lib** on the edge, uploads to a private storage bucket, returns a signed URL. Same pattern applies cleanly to a booking confirmation PDF.
-- Private storage bucket `tax-invoices` exists — we'll add a sibling `booking-confirmations`.
-- `send-transactional-email` supports templated Resend emails and can carry a signed link.
-- `bookings`, `units`, `properties`, `profiles`, `airport_pickups`, `payments`, `policy_settings` already carry every field the PDF needs.
-- Guest portal + BookingDetailSheet are the natural mount points for the buttons.
-
-## C. Gaps
-
-- No confirmation PDF generator.
-- No storage bucket for confirmations.
-- No stable human-readable reference number (only UUID). Recommend derived, not new column: `LMT-CS-{YYYY}-{first6upper of id}` — no schema change needed for Phase 1.
-- No "Download confirmation" surface on guest portal or admin booking sheet.
-
-## D. Phase 1 build (recommended, minimal, safe)
-
-**Server**
-- New edge function `generate-booking-confirmation` (mirrors `generate-tax-invoice`):
-  - Auth: guest owning the booking **or** staff (admin/manager/front_desk/front_desk_supervisor) with property access.
-  - Guard: only generates when `bookings.state = 'confirmed'` AND a recorded deposit exists (`payments.status='recorded'` for that booking). Any other state → 409 with plain message. This is the single hard gate; no state-machine changes.
-  - Renders A4 PDF via pdf-lib with the content spec below.
-  - Uploads to new private bucket `booking-confirmations` at `{year}/{booking_id}.pdf`, `upsert: true`.
-  - Returns a short-lived signed URL (1 hour).
-- New storage bucket `booking-confirmations` (private) with RLS: staff roles + guest-owns-booking read via signed URL only.
-
-**Client**
-- Guest portal booking card: "Download Booking Confirmation" button — visible only when booking is confirmed. Otherwise disabled with subtitle "Available once your deposit is recorded."
-- `BookingDetailSheet` (staff): "Download", "Copy link", "Email to guest" trio under a new "Confirmation Document" section — enabled only when the same guard passes.
-- "Email to guest" calls existing `send-transactional-email` with a new template `booking_confirmation_document` containing the signed URL (no attachment in Phase 1 — link only, safer and smaller).
-
-**No changes** to Stripe, webhook, ledger, totals, or state machine.
-
-## E. PDF content spec
-
-Header: LMT CampStay + Lamai Muay Thai Camp, logo, "Booking Confirmation", reference `LMT-CS-YYYY-XXXXXX`, issue date.
-Guest: name, email, phone, guest count.
-Stay: unit name, group, check-in, check-out, nights, pickup (yes/no + flight + fee).
-Status: **Confirmed**, deposit paid amount + method + date, remaining balance, currency THB, "Not a tax invoice" footnote.
-Property: Lamai Muay Thai Camp, address, phone, email, website, Google Maps link if stored.
-Notes: standard immigration-friendly wording ("This document confirms accommodation for the guest above").
-
-Excluded: card data, Stripe internal IDs, staff notes, audit logs, other guests' data.
-
-## F. Security/access
-
-- Edge function does its own authorization; no reliance on client claims.
-- Guest path: JWT → confirms `booking.guest_id = auth.uid()`.
-- Staff path: `has_role` + `has_property_access` on the booking's property.
-- Signed URLs expire in 1 hour. No unauthenticated download route in Phase 1.
-- Cancelled bookings return 410 and do not regenerate — staff historical access can come later if needed.
-
-## G. Data model
-
-No new columns required for Phase 1. If Nikki later wants persistent tracking, add nullable `confirmation_first_generated_at`, `confirmation_last_sent_at` on `bookings` — deferred.
-
-## H. Long-term (not now)
-
-- PDF attachment on the auto-fire `send-booking-confirmation` email once size/deliverability is validated.
-- Optional pending-booking summary PDF, clearly stamped "PENDING — NOT CONFIRMED".
-- Persistent confirmation numbers + regeneration audit log.
-- Multi-language body (reuse `preferred_language`).
-
-## I. Test plan
-
-1. Confirmed Stripe-paid booking (Arvid) → guest + staff can download; PDF fields correct.
-2. Confirmed manual/offline-paid booking → same result.
-3. `pending_deposit` booking → button disabled; direct API call returns 409.
-4. `inquiry`, `soft_hold`, `cancelled`, `no_show` → 409/410.
-5. Guest A cannot fetch guest B's confirmation (403).
-6. Staff without property access → 403.
-7. Signed URL expires after 1 hour.
-8. Mobile Safari/Chrome + WhatsApp in-app browser: link opens PDF viewer cleanly.
-9. Print layout on A4 renders on one page for a typical stay.
-
-## J. Risks
-
-- pdf-lib font limits (no Thai glyphs by default) — Phase 1 keeps PDF in English; Thai property name shown transliterated. Flagged for later.
-- Storage bucket RLS misconfig — mitigated by using signed URLs only, bucket stays private.
-- Guest confusion if they pay and click download before webhook lands — button stays disabled with clear copy; matches existing "we're confirming" pattern.
-
-## K. Do-not-touch confirmation
-
-No changes to: `payment-webhook`, `create-payment-link`, `process-payment`, `reconcile-stripe-payments`, pricing calculator, deposit policy, `bookingStateMachine.ts`, existing `send-booking-confirmation` email trigger.
-
-## L. Plain-English note for Nikki
-
-Good call. The Stripe email proves the guest paid; it's not the same as an accommodation confirmation. We'll add a proper downloadable Booking Confirmation — guest name, dates, room, Lamai contact details, reference number, confirmed status — that you and the guest can download or email from the booking. It only appears once the deposit is actually recorded and the booking is confirmed, so we never hand out official-looking proof for a booking that hasn't been paid. Phase 1 is a secure download link (works on phones and prints cleanly); attaching the PDF directly to emails can come later once we know it's reliable.
+Four scoped, additive changes. No changes to `apply-booking-adjustment` edge function, Stripe, or pricing math. All existing gating rules stay intact (lock after any recorded payment).
 
 ---
 
-**Approve this plan and I'll build Phase 1: new `generate-booking-confirmation` edge function + `booking-confirmations` private bucket + Download/Send/Copy buttons on guest portal and staff booking sheet + email template. No payment or state-machine code touched.**
+## 1. Clearer labels + tooltips (BookingDetailSheet, InquiryQueue, BookingAdjustmentsCard)
+
+- Wrap the "Apply discount" button in a `Tooltip`:
+  - Enabled state: "Applies a discretionary discount before payment. Recomputes total, deposit, and voids any unpaid link."
+  - Locked state: shows the exact `discountBlockedReason` (e.g. "Locked — a payment has been recorded. Use a refund instead.").
+- Add a small helper caption under the button ("Admins & managers only · Before deposit is paid").
+- Add a `Lock` icon + muted styling when locked so the reason is visually obvious, not just on hover.
+- Same treatment for the new `%` quick-button on Inquiry rows / Calendar hover / Bookings table.
+
+## 2. New admin page: `/adjustments`
+
+New route + sidebar link (admin + manager only, gated via `permissions`).
+
+Route wiring:
+- `src/pages/AdjustmentsCenter.tsx` — new page
+- `src/App.tsx` — register `/adjustments`
+- `src/lib/permissions.ts` — add to `NAV_ACCESS` (`admin`, `manager`)
+- `src/components/AppSidebar.tsx` — add "Adjustments" nav item (Percent icon)
+- `src/components/DashboardLayout.tsx` — breadcrumb mapping
+- `src/i18n/locales/en.json` — `nav.adjustments`, `adjustments.*` keys
+
+Page layout:
+```text
+┌──────────────────────────────────────────────────────┐
+│ Adjustments Center            [Search booking/guest] │
+├──────────────────────────────────────────────────────┤
+│ Filters:  [Status ▾] [Type ▾] [Applied by ▾] [Range] │
+├──────────────────────────────────────────────────────┤
+│ When    Booking   Guest   Unit   Value  Label  Actor │
+│ ...one row per adjustment...                         │
+│                                                      │
+│ Row actions: [View booking] [Void] (admin only)      │
+└──────────────────────────────────────────────────────┘
+```
+
+Data:
+- New hook `src/hooks/useAdjustments.ts` — `useAllAdjustments(filters)` joins `booking_adjustments` → `bookings` → `units` → `profiles` (via existing RLS, no new policies).
+- Reuses `apply-booking-adjustment` edge function with `action: "void"` for the void action.
+- Reuses `ApplyDiscountDialog` for the "Apply to a booking" flow (opened from a "Apply to booking…" button in the page header — asks for a booking id/search first).
+
+## 3. Quick `%` "Apply discount" button on Calendar + Bookings table
+
+- **Calendar hover-card**: `src/components/CalendarBookingChip.tsx` (or wherever the hover Popover lives — locate first). Add a compact `%` icon-button next to the existing quick actions. Admin/manager only. Opens `ApplyDiscountDialog` inline. If any payment recorded → button shown but disabled with tooltip explaining lock.
+- **Bookings table** (`src/pages/Bookings.tsx`): add a `%` icon-button in the row action column, same rules.
+- Both reuse the same lock-detection logic already in `BookingDetailSheet`: check for any `payments` row with `status = 'recorded'`.
+
+Extract the lock check into a small helper `src/lib/discountEligibility.ts` (`getDiscountLockReason(booking, payments)`) so all four surfaces (sheet, inquiry, calendar, bookings) apply identical rules — single source of truth.
+
+## 4. Audit trail view from booking sheet
+
+- Extend `BookingAdjustmentsCard` with an expandable "History" section that lists every adjustment (active + voided) for the booking:
+  - `applied_at`, `applied_by` (resolved to email/name), `value_type + value`, `amount_calculated`, `label`, `internal_note`
+  - If voided: show `voided_by`, `voided_at`, `void_reason` inline
+- Add a "View full audit" link that opens a modal with the same data + associated `booking_state_log` entries around the adjustment time (read-only).
+- The `voided`/`active` state chip and actor email are already available via RLS — no new server work.
+
+## Technical Notes (for dev)
+
+- No schema changes required. `booking_adjustments` already stores full actor + timestamps + void metadata.
+- Reuse existing edge function; the only new capability is *listing across bookings*, which is a plain read (RLS lets admin/manager see all).
+- No touching of Stripe, webhooks, refunds, or payment totals logic.
+- Sidebar entry only shows for `admin` + `manager` (front desk sees discounts on the booking sheet, not the global page).
+
+## Out of Scope
+
+- Bulk apply / bulk void
+- Discount templates or presets
+- Email notification when a discount is voided
+- Exporting adjustments to CSV (can be a Phase 2 add if you want it)
+
+Approve and I'll ship all four in one pass.

@@ -262,15 +262,26 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
                           <Eye className="h-3.5 w-3.5" />
                         </Button>
                         {isAdmin && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 px-2"
-                            title="Apply discount before deposit"
-                            onClick={() => setDiscountBooking(b)}
-                          >
-                            <Percent className="h-3.5 w-3.5" />
-                          </Button>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 px-2"
+                                  aria-label="Apply discount before deposit"
+                                  onClick={() => setDiscountBooking(b)}
+                                >
+                                  <Percent className="h-3.5 w-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-[240px]">
+                                <p className="text-xs">
+                                  Apply a discretionary discount before the guest pays their deposit. Locks automatically once payment is recorded.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         )}
                         {canHold && (
                           <Button

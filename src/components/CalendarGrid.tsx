@@ -2,7 +2,7 @@ import { useMemo, useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { format, addDays, differenceInDays, isSameDay, startOfDay } from "date-fns";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CircleDollarSign, CircleCheck, Circle, GripVertical } from "lucide-react";
+import { CircleDollarSign, CircleCheck, Circle, GripVertical, Percent } from "lucide-react";
 import type { BookingState } from "@/lib/bookingStateMachine";
 import type { Unit } from "@/hooks/useUnits";
 import type { BookingWithJoins } from "@/hooks/useBookings";
@@ -33,6 +33,7 @@ interface CalendarGridProps {
   paymentSummaries?: PaymentSummary[];
   canDragDrop?: boolean;
   onBookingDragEnd?: (result: DragResult) => void;
+  onApplyDiscount?: (booking: BookingWithJoins) => void;
 }
 
 function getPaymentStatus(booking: BookingWithJoins, totalPaid: number): "unpaid" | "deposit" | "fully_paid" {
@@ -60,7 +61,7 @@ const NON_DRAGGABLE_STATES: string[] = ["completed", "cancelled", "no_show"];
 export function CalendarGrid({
   units, bookings, maintenanceBlocks = [], startDate, days, cleaningBufferHours,
   onCellClick, onBookingClick, unitGroups = [], paymentSummaries = [],
-  canDragDrop = false, onBookingDragEnd,
+  canDragDrop = false, onBookingDragEnd, onApplyDiscount,
 }: CalendarGridProps) {
   const { t } = useTranslation();
   const dates = useMemo(() => Array.from({ length: days }, (_, i) => addDays(startDate, i)), [startDate, days]);
@@ -189,7 +190,7 @@ export function CalendarGrid({
       <Tooltip key={booking.id}>
         <TooltipTrigger asChild>
           <div
-            className={`absolute rounded-md ${color} flex items-center gap-1 px-1.5 overflow-hidden transition-shadow select-none ${
+            className={`group/booking absolute rounded-md ${color} flex items-center gap-1 px-1.5 overflow-hidden transition-shadow select-none ${
               isDragging
                 ? `z-30 shadow-lg ring-2 ${previewStyle?.isValid ? "ring-primary" : "ring-destructive"} opacity-90`
                 : isDraggable
@@ -234,6 +235,20 @@ export function CalendarGrid({
                     : `${format(checkIn, "d")}–${format(checkOut, "d")}`)
                 : ""}
             </span>
+            {/* Quick discount overlay — only for unpaid non-terminal bookings when handler is wired */}
+            {onApplyDiscount && paymentStatus === "unpaid"
+              && !["cancelled", "completed", "no_show"].includes(booking.state as string) && (
+              <button
+                type="button"
+                aria-label="Apply discount"
+                title="Apply discount"
+                className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-background border border-border shadow-sm flex items-center justify-center opacity-0 group-hover/booking:opacity-100 hover:bg-primary hover:text-primary-foreground transition-opacity z-10"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onApplyDiscount(booking); }}
+              >
+                <Percent className="h-2.5 w-2.5" />
+              </button>
+            )}
             {/* Resize handle */}
             {isDraggable && (
               <div

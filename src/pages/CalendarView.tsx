@@ -12,6 +12,7 @@ import { CalendarDayView } from "@/components/CalendarDayView";
 import { CalendarLegend } from "@/components/CalendarLegend";
 import { BookingFormDialog } from "@/components/BookingFormDialog";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
+import { ApplyDiscountDialog } from "@/components/ApplyDiscountDialog";
 import { MaintenanceBlockDialog } from "@/components/MaintenanceBlockDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUnits } from "@/hooks/useUnits";
@@ -219,7 +220,9 @@ const CalendarView = () => {
   const [newBookingDate, setNewBookingDate] = useState<string | undefined>();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [discountBooking, setDiscountBooking] = useState<any | null>(null);
   const [showMaintenanceDialog, setShowMaintenanceDialog] = useState(false);
+  const canApplyDiscount = role === "admin" || role === "manager";
 
   const handleCellClick = (unitId: string, date: string) => {
     setNewBookingUnit(unitId);
@@ -425,6 +428,7 @@ const CalendarView = () => {
               paymentSummaries={paymentSummaries ?? []}
               canDragDrop={canDragDrop}
               onBookingDragEnd={handleBookingDragEnd}
+              onApplyDiscount={canApplyDiscount ? (b) => setDiscountBooking(b) : undefined}
             />
           )
         )}
@@ -465,6 +469,18 @@ const CalendarView = () => {
         onOpenChange={(open) => !open && setSelectedBookingId(null)}
         isAdmin={isAdmin}
       />
+
+      {discountBooking && (
+        <ApplyDiscountDialog
+          open={!!discountBooking}
+          onOpenChange={(o) => !o && setDiscountBooking(null)}
+          bookingId={discountBooking.id}
+          currentTotal={Number(discountBooking.total_price ?? 0)}
+          originalTotal={(discountBooking as any).original_total ?? null}
+          hasUnpaidLink={false}
+          policies={policies ?? []}
+        />
+      )}
 
       <MaintenanceBlockDialog
         open={showMaintenanceDialog}

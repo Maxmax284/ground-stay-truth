@@ -56,6 +56,9 @@ import { AIBriefingCard } from "@/components/ai/AIBriefingCard";
 import { BookingConfirmationDocument } from "@/components/BookingConfirmationDocument";
 import { ApplyDiscountDialog } from "@/components/ApplyDiscountDialog";
 import { BookingAdjustmentsCard } from "@/components/BookingAdjustmentsCard";
+import { getDiscountEligibility, DISCOUNT_TOOLTIP_HELP } from "@/lib/discountEligibility";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Lock, Percent as PercentIcon } from "lucide-react";
 
 interface BookingDetailSheetProps { bookingId: string | null; open: boolean; onOpenChange: (open: boolean) => void; isAdmin: boolean; }
 
@@ -90,18 +93,13 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
   const canApplyDiscount = role === "admin" || role === "manager";
   const [discountOpen, setDiscountOpen] = useState(false);
 
-  // Any recorded (non-refunded) payment blocks discount application.
-  const hasRecordedPayment = useMemo(() => {
-    return (payments ?? []).some((p: any) =>
-      ["recorded", "succeeded", "captured", "completed"].includes(String(p.status))
-    );
-  }, [payments]);
+  // Central eligibility helper — same rule everywhere discounts are offered.
+  const eligibility = useMemo(
+    () => getDiscountEligibility(booking?.state, payments as any),
+    [booking?.state, payments],
+  );
   const hasUnpaidLink = false; // link visibility lives in PaymentLinkManager; edge fn revokes if present
-  const discountBlockedReason = hasRecordedPayment
-    ? "Payment already recorded — use refund workflow"
-    : (booking && ["cancelled", "completed", "no_show"].includes(booking.state as string))
-      ? `Cannot adjust ${booking.state} booking`
-      : null;
+  const discountBlockedReason = eligibility.allowed ? null : eligibility.reason;
 
   const softHoldInfo = useMemo(() => {
     if (!booking || (booking.state as BookingState) !== "soft_hold") return null;
@@ -280,25 +278,43 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
           {canSeeAmounts && (
             <BookingAdjustmentsCard
               bookingId={booking.id}
-              canManage={canApplyDiscount && !hasRecordedPayment}
+              canManage={eligibility.allowed && (role === "admin" || role === "manager")}
               policies={policies}
             />
           )}
           {canApplyDiscount && (
-            <div className="flex items-center justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDiscountOpen(true)}
-                disabled={!!discountBlockedReason}
-                title={discountBlockedReason ?? "Apply a discretionary discount before payment"}
-              >
-                Apply discount
-              </Button>
+            <div className="flex flex-col items-end gap-1">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDiscountOpen(true)}
+                        disabled={!!discountBlockedReason}
+                        aria-label="Apply discount"
+                      >
+                        {discountBlockedReason ? (
+                          <Lock className="h-3.5 w-3.5 mr-1.5" />
+                        ) : (
+                          <PercentIcon className="h-3.5 w-3.5 mr-1.5" />
+                        )}
+                        Apply discount
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="max-w-[240px]">
+                    <p className="text-xs">
+                      {discountBlockedReason ?? DISCOUNT_TOOLTIP_HELP}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              {discountBlockedReason && (
+                <p className="text-[10px] text-muted-foreground italic">{discountBlockedReason}</p>
+              )}
             </div>
-          )}
-          {canApplyDiscount && discountBlockedReason && (
-            <p className="text-[10px] text-muted-foreground text-right italic">{discountBlockedReason}</p>
           )}
         </div>
         <ApplyDiscountDialog
