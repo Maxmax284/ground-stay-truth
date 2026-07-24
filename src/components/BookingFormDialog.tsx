@@ -134,16 +134,31 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
   }, [selectedUnit, checkIn, checkOut, allPricingRules, validationErrors, policies, extraBeds, numGuests]);
 
 
+  const todayBkk = useMemo(
+    () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date()),
+    []
+  );
+  const isBackdated = !!checkIn && checkIn < todayBkk;
+  const [backdateReason, setBackdateReason] = useState("");
+
   const onSubmit = async (data: FormValues) => {
     if (validationErrors.length > 0) return;
+    if (isBackdated && !backdateReason.trim()) {
+      toast({ title: t("common.error"), description: "Backdated bookings require a reason (walk-in, cleanup, or historical record).", variant: "destructive" });
+      return;
+    }
+    const composedNotes = isBackdated
+      ? `[BACKDATED — ${backdateReason.trim()}]${data.notes ? `\n${data.notes}` : ""}`
+      : (data.notes || null);
     try {
-      await createBooking.mutateAsync({ unit_id: data.unit_id, check_in: data.check_in, check_out: data.check_out, num_guests: Number(data.num_guests), notes: data.notes || null, guest_id: data.guest_id || null, guest_type: data.guest_type || null, flight_number: data.flight_number?.trim() || null, manual_guest_name: data.manual_guest_name?.trim() || null, manual_guest_email: data.manual_guest_email?.trim() || null, manual_guest_phone: data.manual_guest_phone?.trim() || null, total_price: pricing.total > 0 ? pricing.total : null, state: "inquiry" } as any);
+      await createBooking.mutateAsync({ unit_id: data.unit_id, check_in: data.check_in, check_out: data.check_out, num_guests: Number(data.num_guests), notes: composedNotes, guest_id: data.guest_id || null, guest_type: data.guest_type || null, flight_number: data.flight_number?.trim() || null, manual_guest_name: data.manual_guest_name?.trim() || null, manual_guest_email: data.manual_guest_email?.trim() || null, manual_guest_phone: data.manual_guest_phone?.trim() || null, total_price: pricing.total > 0 ? pricing.total : null, state: "inquiry" } as any);
       toast({ title: t("bookingForm.bookingCreated"), description: t("bookingForm.bookingCreatedDesc") });
-      reset(); onOpenChange(false);
+      reset(); setBackdateReason(""); onOpenChange(false);
     } catch (err: any) {
       toast({ title: t("common.error"), description: err.message?.includes("overlap") ? t("bookingForm.overlapError") : err.message, variant: "destructive" });
     }
   };
+
 
   const pricingSources = useMemo(() => {
     const sources = new Map<string, number>();
