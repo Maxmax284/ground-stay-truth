@@ -184,8 +184,24 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
     });
   }, [pricing.nights]);
 
+  const todayBkk = useMemo(
+    () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date()),
+    []
+  );
+
   const onSubmit = async (data: FormValues) => {
     if (validationErrors.length > 0 || !user || !selectedGroupId) return;
+
+    // Guard: guests cannot request past dates (Asia/Bangkok).
+    if (data.check_in && data.check_in < todayBkk) {
+      toast({
+        title: t("common.error"),
+        description: "Check-in date cannot be in the past. Please choose today or a future date.",
+        variant: "destructive",
+      });
+      return;
+    }
+
 
     const arrivalDetails: Record<string, any> = {};
     if (data.arrival_flight) arrivalDetails.flight_info = data.arrival_flight;
@@ -296,12 +312,13 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="guest_check_in">{t("bookingForm.checkIn")} *</Label>
-              <Input id="guest_check_in" type="date" {...register("check_in", { required: true })} />
+              <Input id="guest_check_in" type="date" min={todayBkk} {...register("check_in", { required: true })} />
               {errors.check_in && <p className="text-sm text-destructive">{t("common.required")}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="guest_check_out">{t("bookingForm.checkOut")} *</Label>
-              <Input id="guest_check_out" type="date" {...register("check_out", { required: true })} />
+              <Input id="guest_check_out" type="date" min={todayBkk} {...register("check_out", { required: true })} />
+
               {errors.check_out && <p className="text-sm text-destructive">{t("common.required")}</p>}
             </div>
           </div>

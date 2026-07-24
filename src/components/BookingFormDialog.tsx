@@ -134,16 +134,31 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
   }, [selectedUnit, checkIn, checkOut, allPricingRules, validationErrors, policies, extraBeds, numGuests]);
 
 
+  const todayBkk = useMemo(
+    () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date()),
+    []
+  );
+  const isBackdated = !!checkIn && checkIn < todayBkk;
+  const [backdateReason, setBackdateReason] = useState("");
+
   const onSubmit = async (data: FormValues) => {
     if (validationErrors.length > 0) return;
+    if (isBackdated && !backdateReason.trim()) {
+      toast({ title: t("common.error"), description: "Backdated bookings require a reason (walk-in, cleanup, or historical record).", variant: "destructive" });
+      return;
+    }
+    const composedNotes = isBackdated
+      ? `[BACKDATED — ${backdateReason.trim()}]${data.notes ? `\n${data.notes}` : ""}`
+      : (data.notes || null);
     try {
-      await createBooking.mutateAsync({ unit_id: data.unit_id, check_in: data.check_in, check_out: data.check_out, num_guests: Number(data.num_guests), notes: data.notes || null, guest_id: data.guest_id || null, guest_type: data.guest_type || null, flight_number: data.flight_number?.trim() || null, manual_guest_name: data.manual_guest_name?.trim() || null, manual_guest_email: data.manual_guest_email?.trim() || null, manual_guest_phone: data.manual_guest_phone?.trim() || null, total_price: pricing.total > 0 ? pricing.total : null, state: "inquiry" } as any);
+      await createBooking.mutateAsync({ unit_id: data.unit_id, check_in: data.check_in, check_out: data.check_out, num_guests: Number(data.num_guests), notes: composedNotes, guest_id: data.guest_id || null, guest_type: data.guest_type || null, flight_number: data.flight_number?.trim() || null, manual_guest_name: data.manual_guest_name?.trim() || null, manual_guest_email: data.manual_guest_email?.trim() || null, manual_guest_phone: data.manual_guest_phone?.trim() || null, total_price: pricing.total > 0 ? pricing.total : null, state: "inquiry" } as any);
       toast({ title: t("bookingForm.bookingCreated"), description: t("bookingForm.bookingCreatedDesc") });
-      reset(); onOpenChange(false);
+      reset(); setBackdateReason(""); onOpenChange(false);
     } catch (err: any) {
       toast({ title: t("common.error"), description: err.message?.includes("overlap") ? t("bookingForm.overlapError") : err.message, variant: "destructive" });
     }
   };
+
 
   const pricingSources = useMemo(() => {
     const sources = new Map<string, number>();
@@ -190,6 +205,19 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
               </div>
             )}
           </div>
+          {isBackdated && (
+            <div className="rounded-md border border-warning/60 bg-warning/10 p-3 space-y-2">
+              <div className="flex items-start gap-2 text-sm">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-warning-foreground" />
+                <span className="text-warning-foreground">This booking starts in the past. Only continue for cleanup, historical records, or walk-ins recorded after the fact. A reason is required and will be logged.</span>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="backdate_reason" className="text-xs">Backdate reason *</Label>
+                <Input id="backdate_reason" value={backdateReason} onChange={(e) => setBackdateReason(e.target.value)} placeholder="e.g. Walk-in recorded after checkout / historical cleanup" />
+              </div>
+            </div>
+          )}
+
           {validationErrors.length > 0 && (
             <div className="rounded-md border border-destructive/50 bg-destructive/5 p-3 space-y-1">{validationErrors.map((err, i) => <div key={i} className="flex items-center gap-2 text-sm text-destructive"><AlertTriangle className="h-4 w-4 shrink-0" /><span>{err}</span></div>)}</div>
           )}
