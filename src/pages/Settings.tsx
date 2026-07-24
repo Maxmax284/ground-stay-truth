@@ -53,7 +53,9 @@ const Settings = () => {
             {isAdmin && <TabsTrigger value="security" className="text-xs sm:text-sm">Security</TabsTrigger>}
             {isAdmin && <TabsTrigger value="intelligence" className="text-xs sm:text-sm">Intel</TabsTrigger>}
             {isAdmin && <TabsTrigger value="vanta" className="text-xs sm:text-sm">Vanta</TabsTrigger>}
+            {canSeeNotifications && <TabsTrigger value="notifications" className="text-xs sm:text-sm">Notifications</TabsTrigger>}
           </TabsList>
+
 
           <TabsContent value="profile"><ProfileEditor /></TabsContent>
           {canManageRoles && <TabsContent value="users"><UserRoleManager /></TabsContent>}
