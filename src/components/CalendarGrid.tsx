@@ -235,6 +235,20 @@ export function CalendarGrid({
                     : `${format(checkIn, "d")}–${format(checkOut, "d")}`)
                 : ""}
             </span>
+            {/* Quick discount overlay — only for unpaid non-terminal bookings when handler is wired */}
+            {onApplyDiscount && paymentStatus === "unpaid"
+              && !["cancelled", "completed", "no_show"].includes(booking.state as string) && (
+              <button
+                type="button"
+                aria-label="Apply discount"
+                title="Apply discount"
+                className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-background border border-border shadow-sm flex items-center justify-center opacity-0 group-hover/booking:opacity-100 hover:bg-primary hover:text-primary-foreground transition-opacity z-10"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onApplyDiscount(booking); }}
+              >
+                <Percent className="h-2.5 w-2.5" />
+              </button>
+            )}
             {/* Resize handle */}
             {isDraggable && (
               <div
