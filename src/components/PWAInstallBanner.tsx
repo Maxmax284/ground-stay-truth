@@ -7,7 +7,9 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-export function PWAInstallBanner() {
+type Variant = "admin" | "guest";
+
+export function PWAInstallBanner({ variant = "admin" }: { variant?: Variant } = {}) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -71,12 +73,17 @@ export function PWAInstallBanner() {
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-sm text-foreground">
-              Install <span className="font-stat uppercase tracking-tight">LMT CampStay</span>
+              Install{" "}
+              <span className="font-stat uppercase tracking-tight">
+                {variant === "guest" ? "CampStay Guest" : "CampStay Admin"}
+              </span>
             </h3>
 
             <p className="text-xs text-muted-foreground mt-0.5">
-              Add to your home screen so the app opens straight into your dashboard — not the public site.
-              If you previously installed GroundStay, delete that old icon first, then reinstall from here.
+              {variant === "guest"
+                ? "Add CampStay to your home screen for quick access to your booking, payments, and arrival info."
+                : "Add CampStay Admin to your home screen so the app opens straight into your dashboard — not the public site."}
+              {" "}If you previously installed GroundStay, delete that old icon first, then reinstall from here.
             </p>
           </div>
           <button
