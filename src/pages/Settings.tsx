@@ -70,7 +70,9 @@ const Settings = () => {
           {isAdmin && <TabsContent value="security"><SecurityEventLog /></TabsContent>}
           {isAdmin && <TabsContent value="intelligence"><IntelligenceEditor /></TabsContent>}
           {isAdmin && <TabsContent value="vanta"><VantaIntegrationPanel /></TabsContent>}
+          {canSeeNotifications && <TabsContent value="notifications"><NotificationSettings /></TabsContent>}
         </Tabs>
+
       </div>
     </DashboardLayout>
   );
