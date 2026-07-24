@@ -205,6 +205,19 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
               </div>
             )}
           </div>
+          {isBackdated && (
+            <div className="rounded-md border border-warning/60 bg-warning/10 p-3 space-y-2">
+              <div className="flex items-start gap-2 text-sm">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-warning-foreground" />
+                <span className="text-warning-foreground">This booking starts in the past. Only continue for cleanup, historical records, or walk-ins recorded after the fact. A reason is required and will be logged.</span>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="backdate_reason" className="text-xs">Backdate reason *</Label>
+                <Input id="backdate_reason" value={backdateReason} onChange={(e) => setBackdateReason(e.target.value)} placeholder="e.g. Walk-in recorded after checkout / historical cleanup" />
+              </div>
+            </div>
+          )}
+
           {validationErrors.length > 0 && (
             <div className="rounded-md border border-destructive/50 bg-destructive/5 p-3 space-y-1">{validationErrors.map((err, i) => <div key={i} className="flex items-center gap-2 text-sm text-destructive"><AlertTriangle className="h-4 w-4 shrink-0" /><span>{err}</span></div>)}</div>
           )}
