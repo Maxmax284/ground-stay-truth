@@ -28,6 +28,7 @@ import {
   type RichLang,
   type Role,
 } from "../_shared/richMessages.ts";
+import { sendWithRetry, type SendResult } from "../_shared/messagingRetry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
