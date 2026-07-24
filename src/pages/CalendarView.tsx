@@ -12,6 +12,7 @@ import { CalendarDayView } from "@/components/CalendarDayView";
 import { CalendarLegend } from "@/components/CalendarLegend";
 import { BookingFormDialog } from "@/components/BookingFormDialog";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
+import { ApplyDiscountDialog } from "@/components/ApplyDiscountDialog";
 import { MaintenanceBlockDialog } from "@/components/MaintenanceBlockDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUnits } from "@/hooks/useUnits";
@@ -477,7 +478,7 @@ const CalendarView = () => {
           currentTotal={Number(discountBooking.total_price ?? 0)}
           originalTotal={(discountBooking as any).original_total ?? null}
           hasUnpaidLink={false}
-          policies={policySettings ?? []}
+          policies={policies ?? []}
         />
       )}
 
