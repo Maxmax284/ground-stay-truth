@@ -828,27 +828,48 @@ export type Database = {
       email_log: {
         Row: {
           booking_id: string | null
+          correlation_id: string | null
+          error_message: string | null
+          failure_category: string | null
+          failure_reason: string | null
           id: string
+          last_retry_at: string | null
           provider_message_id: string | null
+          provider_response: Json | null
           recipient_email: string
+          retry_count: number
           sent_at: string
           status: string
           template_key: string
         }
         Insert: {
           booking_id?: string | null
+          correlation_id?: string | null
+          error_message?: string | null
+          failure_category?: string | null
+          failure_reason?: string | null
           id?: string
+          last_retry_at?: string | null
           provider_message_id?: string | null
+          provider_response?: Json | null
           recipient_email: string
+          retry_count?: number
           sent_at?: string
           status?: string
           template_key: string
         }
         Update: {
           booking_id?: string | null
+          correlation_id?: string | null
+          error_message?: string | null
+          failure_category?: string | null
+          failure_reason?: string | null
           id?: string
+          last_retry_at?: string | null
           provider_message_id?: string | null
+          provider_response?: Json | null
           recipient_email?: string
+          retry_count?: number
           sent_at?: string
           status?: string
           template_key?: string
@@ -3527,6 +3548,22 @@ export type Database = {
       }
     }
     Views: {
+      email_failure_groups: {
+        Row: {
+          booking_id: string | null
+          correlation_id: string | null
+          failure_category: string | null
+          first_failed_at: string | null
+          last_failed_at: string | null
+          latest_id: string | null
+          max_retries: number | null
+          occurrence_count: number | null
+          reason: string | null
+          recipient_email: string | null
+          template_key: string | null
+        }
+        Relationships: []
+      }
       units_public: {
         Row: {
           amenities: string[] | null
