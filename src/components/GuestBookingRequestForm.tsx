@@ -184,8 +184,24 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
     });
   }, [pricing.nights]);
 
+  const todayBkk = useMemo(
+    () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date()),
+    []
+  );
+
   const onSubmit = async (data: FormValues) => {
     if (validationErrors.length > 0 || !user || !selectedGroupId) return;
+
+    // Guard: guests cannot request past dates (Asia/Bangkok).
+    if (data.check_in && data.check_in < todayBkk) {
+      toast({
+        title: t("common.error"),
+        description: "Check-in date cannot be in the past. Please choose today or a future date.",
+        variant: "destructive",
+      });
+      return;
+    }
+
 
     const arrivalDetails: Record<string, any> = {};
     if (data.arrival_flight) arrivalDetails.flight_info = data.arrival_flight;
