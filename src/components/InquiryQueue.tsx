@@ -4,7 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { HandMetal, X, MessageSquare, AlertTriangle, Bot, Loader2, Eye } from "lucide-react";
+import { HandMetal, X, MessageSquare, AlertTriangle, Bot, Loader2, Eye, Percent } from "lucide-react";
+import { ApplyDiscountDialog } from "@/components/ApplyDiscountDialog";
+import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { format, formatDistanceToNow } from "date-fns";
 import { useTransitionBookingState } from "@/hooks/useBookings";
 import { useQueryClient } from "@tanstack/react-query";
@@ -144,10 +146,13 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
   const [dismissId, setDismissId] = useState<string | null>(null);
   const [dismissReason, setDismissReason] = useState("");
   const [detailBookingId, setDetailBookingId] = useState<string | null>(null);
+  const [discountBooking, setDiscountBooking] = useState<any | null>(null);
+  const { data: policies } = usePolicySettings();
 
   const canDismiss = permissions.canDismissInquiry(role);
   const canHold = permissions.canHoldInquiry(role);
   const isAdmin = permissions.canApproveBooking(role);
+
 
   const handleHold = async (bookingId: string) => {
     try {
@@ -256,6 +261,17 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
                         >
                           <Eye className="h-3.5 w-3.5" />
                         </Button>
+                        {isAdmin && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 px-2"
+                            title="Apply discount before deposit"
+                            onClick={() => setDiscountBooking(b)}
+                          >
+                            <Percent className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                         {canHold && (
                           <Button
                             size="sm"
@@ -296,6 +312,19 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
         onOpenChange={(open) => !open && setDetailBookingId(null)}
         isAdmin={isAdmin}
       />
+
+      {discountBooking && (
+        <ApplyDiscountDialog
+          open={!!discountBooking}
+          onOpenChange={(o) => !o && setDiscountBooking(null)}
+          bookingId={discountBooking.id}
+          currentTotal={Number(discountBooking.total_price ?? 0)}
+          originalTotal={discountBooking.original_total ?? null}
+          hasUnpaidLink={false}
+          policies={policies}
+        />
+      )}
+
 
       <Dialog open={!!dismissId} onOpenChange={(o) => !o && setDismissId(null)}>
         <DialogContent>
