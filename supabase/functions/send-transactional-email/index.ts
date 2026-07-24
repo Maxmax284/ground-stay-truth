@@ -500,9 +500,9 @@ serve(async (req) => {
 
     if (!resendResp.ok) {
       console.error("Resend API error:", resendData);
-      if (booking_id) {
+      if (booking_id || isAdminAlert) {
         await adminClient.from("email_log").insert({
-          booking_id,
+          booking_id: booking_id ?? null,
           template_key,
           recipient_email,
           status: "failed",
@@ -514,16 +514,17 @@ serve(async (req) => {
       });
     }
 
-    // Log successful send
-    if (booking_id) {
+    // Log successful send (admin alerts log with null booking_id).
+    if (booking_id || isAdminAlert) {
       await adminClient.from("email_log").insert({
-        booking_id,
+        booking_id: booking_id ?? null,
         template_key,
         recipient_email,
         provider_message_id: resendData.id || null,
         status: "sent",
       });
     }
+
 
     return new Response(JSON.stringify({ sent: true, message_id: resendData.id }), {
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
