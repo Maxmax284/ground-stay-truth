@@ -2,7 +2,7 @@ import { useMemo, useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { format, addDays, differenceInDays, isSameDay, startOfDay } from "date-fns";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CircleDollarSign, CircleCheck, Circle, GripVertical } from "lucide-react";
+import { CircleDollarSign, CircleCheck, Circle, GripVertical, Percent } from "lucide-react";
 import type { BookingState } from "@/lib/bookingStateMachine";
 import type { Unit } from "@/hooks/useUnits";
 import type { BookingWithJoins } from "@/hooks/useBookings";
@@ -33,6 +33,7 @@ interface CalendarGridProps {
   paymentSummaries?: PaymentSummary[];
   canDragDrop?: boolean;
   onBookingDragEnd?: (result: DragResult) => void;
+  onApplyDiscount?: (booking: BookingWithJoins) => void;
 }
 
 function getPaymentStatus(booking: BookingWithJoins, totalPaid: number): "unpaid" | "deposit" | "fully_paid" {
@@ -60,7 +61,7 @@ const NON_DRAGGABLE_STATES: string[] = ["completed", "cancelled", "no_show"];
 export function CalendarGrid({
   units, bookings, maintenanceBlocks = [], startDate, days, cleaningBufferHours,
   onCellClick, onBookingClick, unitGroups = [], paymentSummaries = [],
-  canDragDrop = false, onBookingDragEnd,
+  canDragDrop = false, onBookingDragEnd, onApplyDiscount,
 }: CalendarGridProps) {
   const { t } = useTranslation();
   const dates = useMemo(() => Array.from({ length: days }, (_, i) => addDays(startDate, i)), [startDate, days]);
