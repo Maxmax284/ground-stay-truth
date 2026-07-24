@@ -413,14 +413,17 @@ serve(async (req) => {
       });
     }
 
-    // Check idempotency via email_log
-    if (booking_id) {
+    const isAdminAlert = String(template_key || "").startsWith("admin_alert_");
+
+    // Check idempotency via email_log (skip for admin alerts — one per recipient, no booking dedupe).
+    if (booking_id && !isAdminAlert) {
       const { data: existing } = await adminClient
         .from("email_log")
         .select("id")
         .eq("booking_id", booking_id)
         .eq("template_key", template_key)
         .maybeSingle();
+
 
       if (existing) {
         return new Response(JSON.stringify({ skipped: true, reason: "Already sent" }), {
