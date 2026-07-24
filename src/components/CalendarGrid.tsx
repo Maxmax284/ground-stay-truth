@@ -190,7 +190,7 @@ export function CalendarGrid({
       <Tooltip key={booking.id}>
         <TooltipTrigger asChild>
           <div
-            className={`absolute rounded-md ${color} flex items-center gap-1 px-1.5 overflow-hidden transition-shadow select-none ${
+            className={`group/booking absolute rounded-md ${color} flex items-center gap-1 px-1.5 overflow-hidden transition-shadow select-none ${
               isDragging
                 ? `z-30 shadow-lg ring-2 ${previewStyle?.isValid ? "ring-primary" : "ring-destructive"} opacity-90`
                 : isDraggable
