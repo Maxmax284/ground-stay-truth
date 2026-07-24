@@ -14,8 +14,10 @@ import { SecurityEventLog } from "@/components/SecurityEventLog";
 import { IntelligenceEditor } from "@/components/IntelligenceEditor";
 import PropertyManagementPanel from "@/components/PropertyManagementPanel";
 import { VantaIntegrationPanel } from "@/components/VantaIntegrationPanel";
+import NotificationSettings from "@/components/settings/NotificationSettings";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
+
 
 const Settings = () => {
   const { t } = useTranslation();
