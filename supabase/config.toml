@@ -114,3 +114,7 @@ verify_jwt = false
 [functions.ops-tower-narrative]
 verify_jwt = false
 
+[functions.emit-admin-alert]
+verify_jwt = false
+
+
