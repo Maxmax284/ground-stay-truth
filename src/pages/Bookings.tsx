@@ -7,7 +7,10 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, AlertTriangle, ChevronRight, Check, X } from "lucide-react";
+import { Plus, AlertTriangle, ChevronRight, Check, X, Percent, Lock } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { getDiscountEligibility, DISCOUNT_TOOLTIP_HELP } from "@/lib/discountEligibility";
+import { ApplyDiscountDialog } from "@/components/ApplyDiscountDialog";
 import { FetchErrorState } from "@/components/FetchErrorState";
 import { toast } from "sonner";
 import { format, differenceInHours } from "date-fns";
