@@ -23,6 +23,7 @@ import {
   PlusSquare,
   MoreVertical,
   UserCheck,
+  Bell,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -67,6 +68,7 @@ const navItems = [
   { titleKey: "nav.pricing", url: "/pricing", icon: DollarSign },
   { titleKey: "nav.reports", url: "/reports", icon: BarChart3 },
   { titleKey: "nav.messages", url: "/messages", icon: MessageSquare },
+  { titleKey: "nav.notifications", url: "/notifications", icon: Bell },
   { titleKey: "nav.embeds", url: "/embeds", icon: Code2 },
   { titleKey: "nav.settings", url: "/settings", icon: Settings },
 ];

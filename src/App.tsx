@@ -41,6 +41,7 @@ import ResetPassword from "./pages/ResetPassword";
 import OpsControlTower from "./pages/OpsControlTower";
 import GuidanceLab from "./pages/GuidanceLab";
 import OAuthConsent from "./pages/OAuthConsent";
+import NotificationCenter from "./pages/NotificationCenter";
 
 // Global React Query defaults — consistent caching across all hooks.
 // Per-hook overrides remain authoritative; this only sets the floor.
@@ -93,6 +94,7 @@ const App = () => (
                 <Route path="/reports" element={<ProtectedRoute requiredPath="/reports"><Reports /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute requiredPath="/settings"><Settings /></ProtectedRoute>} />
                 <Route path="/messages" element={<ProtectedRoute requiredPath="/messages"><Messages /></ProtectedRoute>} />
+                <Route path="/notifications" element={<ProtectedRoute requiredPath="/notifications"><NotificationCenter /></ProtectedRoute>} />
                 <Route path="/embeds" element={<ProtectedRoute requiredPath="/embeds"><Embeds /></ProtectedRoute>} />
                 <Route path="/simulation" element={<ProtectedRoute requiredPath="/simulation"><Simulation /></ProtectedRoute>} />
                 <Route path="/disaster-recovery" element={<ProtectedRoute requiredPath="/disaster-recovery"><DisasterRecovery /></ProtectedRoute>} />
