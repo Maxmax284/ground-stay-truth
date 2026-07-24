@@ -27,6 +27,8 @@ const Settings = () => {
   const canManagePolicies = permissions.canManagePolicies(role);
   const canManageReviews = permissions.canManageReviews(role);
   const isAdmin = role === "admin";
+  const canSeeNotifications = isAdmin || role === "manager";
+
 
   return (
     <DashboardLayout>
