@@ -75,7 +75,8 @@ export function PWAInstallBanner() {
             </h3>
 
             <p className="text-xs text-muted-foreground mt-0.5">
-              Add to your home screen for quick access to your stay info, even offline.
+              Add to your home screen so the app opens straight into your dashboard — not the public site.
+              If you previously installed GroundStay, delete that old icon first, then reinstall from here.
             </p>
           </div>
           <button
