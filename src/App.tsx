@@ -41,6 +41,7 @@ import ResetPassword from "./pages/ResetPassword";
 import OpsControlTower from "./pages/OpsControlTower";
 import GuidanceLab from "./pages/GuidanceLab";
 import OAuthConsent from "./pages/OAuthConsent";
+import NotificationCenter from "./pages/NotificationCenter";
 
 // Global React Query defaults — consistent caching across all hooks.
 // Per-hook overrides remain authoritative; this only sets the floor.
