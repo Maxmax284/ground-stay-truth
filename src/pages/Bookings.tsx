@@ -122,6 +122,8 @@ const Bookings = () => {
 
   const [showCreate, setShowCreate] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [discountBooking, setDiscountBooking] = useState<any | null>(null);
+  const { data: policies } = usePolicySettings();
 
   const handleQuickApprove = async (e: React.MouseEvent, bookingId: string) => {
     e.stopPropagation();
