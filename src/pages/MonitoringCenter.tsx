@@ -137,22 +137,67 @@ async function fetchMonitoring(rangeHours: number) {
 function buildAlerts(d: Awaited<ReturnType<typeof fetchMonitoring>>): Alert[] {
   const out: Alert[] = [];
 
-  // Email failures
+  // Email failures — grouped by (template, recipient, failure category, reason)
+  // so the monitor doesn't spam identical failures. Task 4.
+  const categoryToMessage: Record<string, { title: string; action: string; severity: Health }> = {
+    auth: { title: "Email provider rejected our API key.", action: "Update the Resend API key in Settings → Integrations, then resend from the booking.", severity: "attention" },
+    sender_domain: { title: "Provider rejected the sender domain.", action: "Verify lmtcampstay.com in Resend (SPF + DKIM), then resend.", severity: "attention" },
+    invalid_recipient: { title: "Guest email address was rejected as invalid.", action: "Correct the guest's email on the booking and resend.", severity: "warning" },
+    rate_limited: { title: "Email provider is rate-limiting us.", action: "Wait a few minutes — the pipeline auto-retries with backoff.", severity: "warning" },
+    provider_outage: { title: "Temporary email provider outage.", action: "Auto-retried up to 3× — will heal on its own if provider recovers.", severity: "warning" },
+    timeout: { title: "Email provider timed out.", action: "Auto-retried — resend manually if it keeps failing.", severity: "warning" },
+    network: { title: "Network error reaching the email provider.", action: "Usually transient — check again in a few minutes.", severity: "warning" },
+    validation: { title: "Email payload was rejected by the provider.", action: "Check template configuration.", severity: "attention" },
+    configuration: { title: "Email provider is not configured.", action: "Add the Resend API key in Settings → Integrations.", severity: "attention" },
+    unknown: { title: "Guest email failed to send.", action: "Open the booking and resend. Check the correlation ID in logs if it repeats.", severity: "warning" },
+  };
+  const groups = new Map<string, { latest: any; count: number }>();
   for (const e of d.emails) {
-    if (["dlq", "failed", "bounced"].includes(e.status)) {
-      out.push({
-        id: `email-${e.id}`,
-        health: "attention",
-        category: "email",
-        title: `Guest email failed to send (${e.template_key}).`,
-        detail: `Recipient: ${e.recipient_email}`,
-        bookingId: e.booking_id,
-        when: e.sent_at,
-        suggestedAction: "Check whether the guest email address is correct, then resend from the booking.",
-        technical: { status: e.status, template: e.template_key },
-        retryable: false,
-      });
-    } else if (e.status === "suppressed") {
+    if (!["dlq", "failed", "bounced", "no_provider"].includes(e.status)) continue;
+    const cat = (e.failure_category || "unknown") as string;
+    const key = `${e.template_key}|${e.recipient_email}|${cat}|${e.failure_reason || e.error_message || ""}`;
+    const existing = groups.get(key);
+    if (!existing || new Date(e.sent_at) > new Date(existing.latest.sent_at)) {
+      groups.set(key, { latest: e, count: (existing?.count ?? 0) + 1 });
+    } else {
+      existing.count += 1;
+    }
+  }
+  for (const { latest: e, count } of groups.values()) {
+    const cat = (e.failure_category || "unknown") as string;
+    const meta = categoryToMessage[cat] || categoryToMessage.unknown;
+    const suffix = count > 1 ? ` (${count} identical failures)` : "";
+    out.push({
+      id: `email-${e.id}`,
+      health: meta.severity,
+      category: "email",
+      title: `${meta.title}${suffix}`,
+      detail: [
+        `Template: ${e.template_key}`,
+        `Recipient: ${e.recipient_email}`,
+        e.failure_reason ? `Reason: ${e.failure_reason}` : null,
+        e.retry_count ? `Retries: ${e.retry_count}` : null,
+        e.correlation_id ? `Correlation: ${e.correlation_id.slice(0, 8)}` : null,
+      ].filter(Boolean).join(" · "),
+      bookingId: e.booking_id,
+      when: e.sent_at,
+      suggestedAction: meta.action,
+      technical: {
+        status: e.status,
+        template: e.template_key,
+        failure_category: cat,
+        error_message: e.error_message,
+        retry_count: e.retry_count,
+        correlation_id: e.correlation_id,
+        last_retry_at: e.last_retry_at,
+        grouped_count: count,
+      },
+      retryable: false,
+    });
+  }
+  // Suppressed emails (unchanged behavior)
+  for (const e of d.emails) {
+    if (e.status === "suppressed") {
       out.push({
         id: `email-${e.id}`,
         health: "warning",
