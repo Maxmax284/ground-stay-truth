@@ -44,6 +44,7 @@ const NAV_ACCESS: Record<string, AppRole[]> = {
   "/reports":   ["manager", "admin", "viewer"],
   "/settings":  ["front_desk", "front_desk_supervisor", "manager", "admin"],
   "/messages":  ["front_desk", "front_desk_supervisor", "manager", "admin"],
+  "/notifications": ["front_desk", "front_desk_supervisor", "manager", "admin", "viewer", "maintenance"],
   "/embeds":    ["manager", "admin"],
   "/simulation": ["admin", "manager", "front_desk_supervisor", "front_desk", "maintenance", "viewer", "guest"],
   "/disaster-recovery": ["admin"],
