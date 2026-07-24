@@ -1797,33 +1797,54 @@ export type Database = {
         Row: {
           channel: string
           chat_id: string
+          correlation_id: string | null
           created_at: string
           error: string | null
+          error_category: string | null
+          error_code: string | null
           id: string
+          last_retry_at: string | null
           notification_type: string
           outcome: string
+          provider_response: Json | null
+          retry_count: number
+          severity: string | null
           subject_id: string | null
           user_id: string
         }
         Insert: {
           channel: string
           chat_id: string
+          correlation_id?: string | null
           created_at?: string
           error?: string | null
+          error_category?: string | null
+          error_code?: string | null
           id?: string
+          last_retry_at?: string | null
           notification_type: string
           outcome: string
+          provider_response?: Json | null
+          retry_count?: number
+          severity?: string | null
           subject_id?: string | null
           user_id: string
         }
         Update: {
           channel?: string
           chat_id?: string
+          correlation_id?: string | null
           created_at?: string
           error?: string | null
+          error_category?: string | null
+          error_code?: string | null
           id?: string
+          last_retry_at?: string | null
           notification_type?: string
           outcome?: string
+          provider_response?: Json | null
+          retry_count?: number
+          severity?: string | null
           subject_id?: string | null
           user_id?: string
         }
