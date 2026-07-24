@@ -146,10 +146,13 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
   const [dismissId, setDismissId] = useState<string | null>(null);
   const [dismissReason, setDismissReason] = useState("");
   const [detailBookingId, setDetailBookingId] = useState<string | null>(null);
+  const [discountBooking, setDiscountBooking] = useState<any | null>(null);
+  const { data: policies } = usePolicySettings();
 
   const canDismiss = permissions.canDismissInquiry(role);
   const canHold = permissions.canHoldInquiry(role);
   const isAdmin = permissions.canApproveBooking(role);
+
 
   const handleHold = async (bookingId: string) => {
     try {
