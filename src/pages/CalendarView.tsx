@@ -427,6 +427,7 @@ const CalendarView = () => {
               paymentSummaries={paymentSummaries ?? []}
               canDragDrop={canDragDrop}
               onBookingDragEnd={handleBookingDragEnd}
+              onApplyDiscount={canApplyDiscount ? (b) => setDiscountBooking(b) : undefined}
             />
           )
         )}
@@ -467,6 +468,18 @@ const CalendarView = () => {
         onOpenChange={(open) => !open && setSelectedBookingId(null)}
         isAdmin={isAdmin}
       />
+
+      {discountBooking && (
+        <ApplyDiscountDialog
+          open={!!discountBooking}
+          onOpenChange={(o) => !o && setDiscountBooking(null)}
+          bookingId={discountBooking.id}
+          currentTotal={Number(discountBooking.total_price ?? 0)}
+          originalTotal={(discountBooking as any).original_total ?? null}
+          hasUnpaidLink={false}
+          policies={policySettings ?? []}
+        />
+      )}
 
       <MaintenanceBlockDialog
         open={showMaintenanceDialog}
