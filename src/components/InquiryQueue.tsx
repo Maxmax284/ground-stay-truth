@@ -313,6 +313,19 @@ export function InquiryQueue({ bookings, isLoading, readOnly = false }: InquiryQ
         isAdmin={isAdmin}
       />
 
+      {discountBooking && (
+        <ApplyDiscountDialog
+          open={!!discountBooking}
+          onOpenChange={(o) => !o && setDiscountBooking(null)}
+          bookingId={discountBooking.id}
+          currentTotal={Number(discountBooking.total_price ?? 0)}
+          originalTotal={discountBooking.original_total ?? null}
+          hasUnpaidLink={false}
+          policies={policies}
+        />
+      )}
+
+
       <Dialog open={!!dismissId} onOpenChange={(o) => !o && setDismissId(null)}>
         <DialogContent>
           <DialogHeader>
