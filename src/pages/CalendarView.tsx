@@ -219,7 +219,9 @@ const CalendarView = () => {
   const [newBookingDate, setNewBookingDate] = useState<string | undefined>();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [discountBooking, setDiscountBooking] = useState<any | null>(null);
   const [showMaintenanceDialog, setShowMaintenanceDialog] = useState(false);
+  const canApplyDiscount = role === "admin" || role === "manager";
 
   const handleCellClick = (unitId: string, date: string) => {
     setNewBookingUnit(unitId);
