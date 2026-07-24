@@ -455,7 +455,7 @@ serve(async (req) => {
     }
 
 
-    return new Response(JSON.stringify({ ok: true, dispatched: dispatched.length, total: bindings?.length ?? 0 }), {
+    return new Response(JSON.stringify({ ok: true, dispatched: dispatched.length, total: bindings?.length ?? 0, correlation_id: correlationId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
