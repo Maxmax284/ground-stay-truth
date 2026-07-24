@@ -404,7 +404,7 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const { template_key, recipient_email, data, booking_id, language, attachments } = await req.json();
+    const { template_key, recipient_email, data, booking_id, language, attachments, correlation_id: incomingCorrelationId } = await req.json();
 
     if (!template_key || !recipient_email) {
       return new Response(JSON.stringify({ error: "template_key and recipient_email required" }), {
@@ -413,20 +413,20 @@ serve(async (req) => {
       });
     }
 
+    const correlationId = incomingCorrelationId || crypto.randomUUID();
     const isAdminAlert = String(template_key || "").startsWith("admin_alert_");
 
-    // Check idempotency via email_log (skip for admin alerts — one per recipient, no booking dedupe).
+    // Idempotency: only for booking-scoped, non-admin, successful sends.
     if (booking_id && !isAdminAlert) {
       const { data: existing } = await adminClient
         .from("email_log")
-        .select("id")
+        .select("id, status")
         .eq("booking_id", booking_id)
         .eq("template_key", template_key)
+        .eq("status", "sent")
         .maybeSingle();
-
-
       if (existing) {
-        return new Response(JSON.stringify({ skipped: true, reason: "Already sent" }), {
+        return new Response(JSON.stringify({ skipped: true, reason: "Already sent", correlation_id: correlationId }), {
           headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
       }
@@ -440,7 +440,6 @@ serve(async (req) => {
       .maybeSingle();
     const resendApiKey = resendSecretRow?.encrypted_value;
 
-    // Get from email from policy_settings (non-secret)
     const { data: fromPolicies } = await adminClient
       .from("policy_settings")
       .select("key, value")
@@ -449,84 +448,173 @@ serve(async (req) => {
     const fromEmail = fromPolicyMap.get("resend_from_email") || "noreply@lmtcampstay.com";
 
     if (!resendApiKey || resendApiKey.length < 5) {
-      console.log("Resend API key not configured, logging email as pending");
-      // Still log it but mark as pending
-      if (booking_id) {
-        await adminClient.from("email_log").insert({
-          booking_id,
-          template_key,
-          recipient_email,
-          status: "no_provider",
-        });
-      }
-      return new Response(JSON.stringify({ sent: false, reason: "Email provider not configured" }), {
+      console.log("[send-transactional-email] Resend API key not configured", { correlationId });
+      await adminClient.from("email_log").insert({
+        booking_id: booking_id ?? null,
+        template_key,
+        recipient_email,
+        status: "no_provider",
+        correlation_id: correlationId,
+        failure_category: "configuration",
+        failure_reason: "Resend API key not configured",
+        error_message: "resend_api_key missing from integration_secrets",
+      });
+      return new Response(JSON.stringify({ sent: false, reason: "Email provider not configured", correlation_id: correlationId }), {
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
-    // Select template + language
     const lang = language || "en";
     const templateSet = templates[template_key];
     if (!templateSet) {
-      return new Response(JSON.stringify({ error: `Unknown template: ${template_key}` }), {
+      return new Response(JSON.stringify({ error: `Unknown template: ${template_key}`, correlation_id: correlationId }), {
         status: 400,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
     const template = templateSet[lang] || templateSet.en;
 
-    // Send via Resend — optional attachments passed straight through
-    // (Resend accepts base64 content on the `attachments` field).
     const resendPayload: Record<string, unknown> = {
       from: fromEmail,
       to: [recipient_email],
       subject: template.subject,
       html: template.html(data || {}),
+      headers: { "X-Correlation-Id": correlationId },
     };
     if (Array.isArray(attachments) && attachments.length > 0) {
       resendPayload.attachments = attachments;
     }
-    const resendResp = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(resendPayload),
-    });
 
-
-    const resendData = await resendResp.json();
-
-    if (!resendResp.ok) {
-      console.error("Resend API error:", resendData);
-      if (booking_id || isAdminAlert) {
-        await adminClient.from("email_log").insert({
-          booking_id: booking_id ?? null,
-          template_key,
-          recipient_email,
-          status: "failed",
-        });
+    // Classify Resend errors so we know whether to retry.
+    // Permanent 4xx (auth, invalid recipient, invalid sender, validation) => do NOT retry.
+    // Network / 5xx / 429 / timeout => retry with exponential backoff.
+    const classify = (status: number, body: any): { category: string; reason: string; retryable: boolean } => {
+      const msg = String(body?.message || body?.error || "").toLowerCase();
+      const name = String(body?.name || "").toLowerCase();
+      if (status === 401 || status === 403 || name.includes("api_key") || msg.includes("api key")) {
+        return { category: "auth", reason: "API authentication failed — check Resend API key", retryable: false };
       }
-      return new Response(JSON.stringify({ sent: false, error: resendData }), {
+      if (status === 422 && (msg.includes("from") || msg.includes("domain") || msg.includes("verify"))) {
+        return { category: "sender_domain", reason: "Provider rejected sender domain — verify domain in Resend", retryable: false };
+      }
+      if (status === 422 && (msg.includes("to") || msg.includes("recipient") || msg.includes("email"))) {
+        return { category: "invalid_recipient", reason: "Invalid recipient address", retryable: false };
+      }
+      if (status === 429) return { category: "rate_limited", reason: "Rate limited by provider", retryable: true };
+      if (status >= 500) return { category: "provider_outage", reason: "Temporary provider outage", retryable: true };
+      if (status === 400) return { category: "validation", reason: `Validation error: ${body?.message || "bad request"}`, retryable: false };
+      if (status === 408) return { category: "timeout", reason: "Provider timeout", retryable: true };
+      return { category: "unknown", reason: `Provider returned ${status}`, retryable: false };
+    };
+
+    const MAX_ATTEMPTS = 3;
+    let lastStatus = 0;
+    let lastBody: any = null;
+    let lastCategory = "unknown";
+    let lastReason = "";
+    let attempts = 0;
+    let resendData: any = null;
+
+    for (attempts = 1; attempts <= MAX_ATTEMPTS; attempts++) {
+      let networkFail: unknown = null;
+      let resp: Response | null = null;
+      const controller = new AbortController();
+      const timeoutHandle = setTimeout(() => controller.abort(), 15_000);
+      try {
+        resp = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            "Content-Type": "application/json",
+            "Idempotency-Key": `${correlationId}-${attempts}`,
+          },
+          body: JSON.stringify(resendPayload),
+          signal: controller.signal,
+        });
+      } catch (err) {
+        networkFail = err;
+      } finally {
+        clearTimeout(timeoutHandle);
+      }
+
+      if (!resp) {
+        lastStatus = 0;
+        lastBody = { message: networkFail instanceof Error ? networkFail.message : String(networkFail) };
+        lastCategory = "network";
+        lastReason = `Network error: ${lastBody.message}`;
+        console.warn("[send-transactional-email] network error", { correlationId, attempt: attempts, err: lastBody.message });
+      } else {
+        lastStatus = resp.status;
+        try {
+          lastBody = await resp.json();
+        } catch {
+          lastBody = { message: await resp.text().catch(() => "") };
+        }
+        if (resp.ok) {
+          resendData = lastBody;
+          break;
+        }
+        const cls = classify(resp.status, lastBody);
+        lastCategory = cls.category;
+        lastReason = cls.reason;
+        console.warn("[send-transactional-email] provider error", { correlationId, attempt: attempts, status: resp.status, category: cls.category, retryable: cls.retryable });
+        if (!cls.retryable) break; // stop early on permanent failures
+      }
+
+      if (attempts < MAX_ATTEMPTS) {
+        // Exponential backoff: 500ms, 2s
+        const backoff = 500 * Math.pow(4, attempts - 1);
+        await new Promise((r) => setTimeout(r, backoff));
+      }
+    }
+
+    if (!resendData) {
+      const cls = lastStatus > 0 ? classify(lastStatus, lastBody) : { category: lastCategory, reason: lastReason, retryable: false };
+      console.error("[send-transactional-email] final failure", { correlationId, status: lastStatus, category: cls.category });
+      await adminClient.from("email_log").insert({
+        booking_id: booking_id ?? null,
+        template_key,
+        recipient_email,
+        status: "failed",
+        correlation_id: correlationId,
+        retry_count: Math.max(0, attempts - 1),
+        last_retry_at: attempts > 1 ? new Date().toISOString() : null,
+        failure_category: cls.category,
+        failure_reason: cls.reason,
+        error_message: typeof lastBody?.message === "string" ? lastBody.message : JSON.stringify(lastBody).slice(0, 800),
+        provider_response: lastBody ?? null,
+      });
+      return new Response(JSON.stringify({
+        sent: false,
+        error: lastBody,
+        failure_category: cls.category,
+        failure_reason: cls.reason,
+        retry_count: Math.max(0, attempts - 1),
+        correlation_id: correlationId,
+      }), {
         status: 502,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
-    // Log successful send (admin alerts log with null booking_id).
-    if (booking_id || isAdminAlert) {
-      await adminClient.from("email_log").insert({
-        booking_id: booking_id ?? null,
-        template_key,
-        recipient_email,
-        provider_message_id: resendData.id || null,
-        status: "sent",
-      });
-    }
+    await adminClient.from("email_log").insert({
+      booking_id: booking_id ?? null,
+      template_key,
+      recipient_email,
+      provider_message_id: resendData.id || null,
+      status: "sent",
+      correlation_id: correlationId,
+      retry_count: Math.max(0, attempts - 1),
+      last_retry_at: attempts > 1 ? new Date().toISOString() : null,
+      provider_response: resendData ?? null,
+    });
 
-
-    return new Response(JSON.stringify({ sent: true, message_id: resendData.id }), {
+    return new Response(JSON.stringify({
+      sent: true,
+      message_id: resendData.id,
+      correlation_id: correlationId,
+      retry_count: Math.max(0, attempts - 1),
+    }), {
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   } catch (e) {
