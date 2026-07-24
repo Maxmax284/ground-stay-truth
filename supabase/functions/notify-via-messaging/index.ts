@@ -390,6 +390,7 @@ serve(async (req) => {
     });
 
     const text = buildMessage(event_type, metadata);
+    const correlationId = crypto.randomUUID();
     const dispatched: any[] = [];
     const logRows: any[] = [];
 
@@ -403,7 +404,7 @@ serve(async (req) => {
       const lang = (langByUser.get(b.user_id) ?? "en") as RichLang;
       const role = roleByUser.get(b.user_id) ?? "guest";
 
-      let result: { ok: boolean; error?: string };
+      let result: SendResult;
       if (b.channel === "telegram") {
         const tgRich = buildTelegramForEvent(event_type, metadata as Record<string, any>, lang, role);
         result = await sendTelegram(admin, b.chat_id, text, tgRich);
@@ -413,11 +414,10 @@ serve(async (req) => {
       } else if (b.channel === "sms") {
         result = await sendTwilioSms(admin, b.chat_id, text);
       } else if (b.channel === "line") {
-        // Presentation upgrade only — text fallback unchanged.
         const flex = buildFlexForEvent(event_type, metadata as Record<string, any>, lang as LineLang);
         result = await sendLine(admin, b.chat_id, text, flex);
       } else {
-        result = { ok: false, error: `unknown channel: ${b.channel}` };
+        result = { ok: false, error: `unknown channel: ${b.channel}`, category: "unknown", severity: "warning", retry_count: 0 };
       }
 
       logRows.push({
@@ -428,13 +428,32 @@ serve(async (req) => {
         subject_id: subject_id ?? null,
         outcome: result.ok ? "sent" : "failed",
         error: result.error ?? null,
+        error_category: result.category ?? null,
+        error_code: result.code ?? null,
+        retry_count: result.retry_count ?? 0,
+        last_retry_at: (result.retry_count ?? 0) > 0 ? new Date().toISOString() : null,
+        correlation_id: correlationId,
+        provider_response: result.provider_response
+          ? (typeof result.provider_response === "string"
+              ? { raw: result.provider_response }
+              : result.provider_response)
+          : null,
+        severity: result.severity ?? (result.ok ? "info" : "warning"),
       });
       if (result.ok) dispatched.push({ user_id: b.user_id, channel: b.channel });
+      else console.error(`[notify-via-messaging] ${b.channel} failed`, {
+        correlation_id: correlationId,
+        user_id: b.user_id,
+        category: result.category,
+        code: result.code,
+        error: result.error,
+      });
     }
 
     if (logRows.length) {
       await admin.from("messaging_notification_log").insert(logRows);
     }
+
 
     return new Response(JSON.stringify({ ok: true, dispatched: dispatched.length, total: bindings?.length ?? 0 }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
