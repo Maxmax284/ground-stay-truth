@@ -24,6 +24,7 @@ import {
   MoreVertical,
   UserCheck,
   Bell,
+  Percent,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -69,6 +70,7 @@ const navItems = [
   { titleKey: "nav.reports", url: "/reports", icon: BarChart3 },
   { titleKey: "nav.messages", url: "/messages", icon: MessageSquare },
   { titleKey: "nav.notifications", url: "/notifications", icon: Bell },
+  { titleKey: "nav.adjustments", url: "/adjustments", icon: Percent },
   { titleKey: "nav.embeds", url: "/embeds", icon: Code2 },
   { titleKey: "nav.settings", url: "/settings", icon: Settings },
 ];
