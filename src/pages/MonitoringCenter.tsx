@@ -89,7 +89,7 @@ async function fetchMonitoring(rangeHours: number) {
   const [emails, payEvents, recon, webhooks, notifs, securityEvts] = await Promise.all([
     supabase
       .from("email_log")
-      .select("id, template_key, recipient_email, status, sent_at, booking_id")
+      .select("id, template_key, recipient_email, status, sent_at, booking_id, failure_category, failure_reason, error_message, retry_count, correlation_id, last_retry_at")
       .gte("sent_at", since)
       .order("sent_at", { ascending: false })
       .limit(200),
