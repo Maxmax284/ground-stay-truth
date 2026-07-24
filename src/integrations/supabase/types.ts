@@ -3639,6 +3639,16 @@ export type Database = {
         Args: { _kind?: string; _label: string; _notes?: string }
         Returns: string
       }
+      emit_admin_alert: {
+        Args: {
+          _context?: Json
+          _deep_link: string
+          _event_type: string
+          _message: string
+          _reference_id: string
+        }
+        Returns: undefined
+      }
       get_booking_operational_timeline: {
         Args: { _booking_id: string }
         Returns: {

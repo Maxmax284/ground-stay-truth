@@ -14,8 +14,10 @@ import { SecurityEventLog } from "@/components/SecurityEventLog";
 import { IntelligenceEditor } from "@/components/IntelligenceEditor";
 import PropertyManagementPanel from "@/components/PropertyManagementPanel";
 import { VantaIntegrationPanel } from "@/components/VantaIntegrationPanel";
+import NotificationSettings from "@/components/settings/NotificationSettings";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
+
 
 const Settings = () => {
   const { t } = useTranslation();
@@ -25,6 +27,8 @@ const Settings = () => {
   const canManagePolicies = permissions.canManagePolicies(role);
   const canManageReviews = permissions.canManageReviews(role);
   const isAdmin = role === "admin";
+  const canSeeNotifications = isAdmin || role === "manager";
+
 
   return (
     <DashboardLayout>
@@ -49,7 +53,9 @@ const Settings = () => {
             {isAdmin && <TabsTrigger value="security" className="text-xs sm:text-sm">Security</TabsTrigger>}
             {isAdmin && <TabsTrigger value="intelligence" className="text-xs sm:text-sm">Intel</TabsTrigger>}
             {isAdmin && <TabsTrigger value="vanta" className="text-xs sm:text-sm">Vanta</TabsTrigger>}
+            {canSeeNotifications && <TabsTrigger value="notifications" className="text-xs sm:text-sm">Notifications</TabsTrigger>}
           </TabsList>
+
 
           <TabsContent value="profile"><ProfileEditor /></TabsContent>
           {canManageRoles && <TabsContent value="users"><UserRoleManager /></TabsContent>}
@@ -64,7 +70,9 @@ const Settings = () => {
           {isAdmin && <TabsContent value="security"><SecurityEventLog /></TabsContent>}
           {isAdmin && <TabsContent value="intelligence"><IntelligenceEditor /></TabsContent>}
           {isAdmin && <TabsContent value="vanta"><VantaIntegrationPanel /></TabsContent>}
+          {canSeeNotifications && <TabsContent value="notifications"><NotificationSettings /></TabsContent>}
         </Tabs>
+
       </div>
     </DashboardLayout>
   );

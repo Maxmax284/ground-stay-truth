@@ -338,7 +338,51 @@ const templates: Record<string, Record<string, { subject: string; html: (data: a
         </div>`,
     },
   },
+  admin_alert_generic: {
+    en: {
+      subject: "LMT CampStay — Admin alert",
+      html: (d) => {
+        const ctxRows = (() => {
+          const ctx = d.context && typeof d.context === "object" ? d.context as Record<string, unknown> : {};
+          const keys = Object.keys(ctx).slice(0, 8);
+          if (keys.length === 0) return "";
+          return `<table style="width:100%;border-collapse:collapse;margin-top:8px">${keys
+            .map((k) => {
+              const v = ctx[k];
+              const display = v === null || v === undefined ? "—" : typeof v === "object" ? JSON.stringify(v) : String(v);
+              const safeK = String(k).replace(/[<>&"']/g, "");
+              const safeV = display.replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;" }[c]!));
+              return `<tr><td style="padding:4px 8px 4px 0;color:#666;font-size:13px;width:35%">${safeK}</td><td style="padding:4px 0;font-size:13px;color:#1a1a1a">${safeV}</td></tr>`;
+            })
+            .join("")}</table>`;
+        })();
+        const safeSummary = String(d.summary || "").replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;" }[c]!));
+        const safeHeadline = String(d.headline || d.event_label || "Admin alert").replace(/[<>&"']/g, "");
+        const safeRecipient = String(d.recipient_name || "Team").replace(/[<>&"']/g, "");
+        const link = String(d.deep_link || "https://lmtcampstay.com/");
+        return `
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#ffffff">
+          <p style="color:#666;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 6px 0">LMT CampStay · Admin alert</p>
+          <h1 style="color:#1a1a1a;font-size:20px;margin:0 0 12px 0">${safeHeadline}</h1>
+          <p style="color:#333;margin:0 0 16px 0">Hey ${safeRecipient}, heads up:</p>
+          <div style="background:#f8f8f8;border-left:3px solid #b81c1c;border-radius:6px;padding:14px 16px;margin-bottom:16px">
+            <p style="margin:0;color:#1a1a1a;font-size:14px;line-height:1.5">${safeSummary}</p>
+            ${ctxRows}
+          </div>
+          <p style="text-align:center;margin:24px 0">
+            <a href="${link}" style="background:#1a1a1a;color:#fff;text-decoration:none;padding:10px 22px;border-radius:8px;font-weight:600;display:inline-block">Open in CampStay</a>
+          </p>
+          <p style="color:#999;font-size:11px;margin-top:24px;border-top:1px solid #eee;padding-top:12px;line-height:1.5">
+            You're receiving this because you're an admin/manager on LMT CampStay.
+            Adjust which alerts you get in <a href="https://lmtcampstay.com/settings" style="color:#b81c1c">Settings → Notifications</a>.
+            This alert is a heads-up — the booking, payment, and message records in the app remain the source of truth.
+          </p>
+        </div>`;
+      },
+    },
+  },
 };
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -369,14 +413,17 @@ serve(async (req) => {
       });
     }
 
-    // Check idempotency via email_log
-    if (booking_id) {
+    const isAdminAlert = String(template_key || "").startsWith("admin_alert_");
+
+    // Check idempotency via email_log (skip for admin alerts — one per recipient, no booking dedupe).
+    if (booking_id && !isAdminAlert) {
       const { data: existing } = await adminClient
         .from("email_log")
         .select("id")
         .eq("booking_id", booking_id)
         .eq("template_key", template_key)
         .maybeSingle();
+
 
       if (existing) {
         return new Response(JSON.stringify({ skipped: true, reason: "Already sent" }), {
@@ -453,9 +500,9 @@ serve(async (req) => {
 
     if (!resendResp.ok) {
       console.error("Resend API error:", resendData);
-      if (booking_id) {
+      if (booking_id || isAdminAlert) {
         await adminClient.from("email_log").insert({
-          booking_id,
+          booking_id: booking_id ?? null,
           template_key,
           recipient_email,
           status: "failed",
@@ -467,16 +514,17 @@ serve(async (req) => {
       });
     }
 
-    // Log successful send
-    if (booking_id) {
+    // Log successful send (admin alerts log with null booking_id).
+    if (booking_id || isAdminAlert) {
       await adminClient.from("email_log").insert({
-        booking_id,
+        booking_id: booking_id ?? null,
         template_key,
         recipient_email,
         provider_message_id: resendData.id || null,
         status: "sent",
       });
     }
+
 
     return new Response(JSON.stringify({ sent: true, message_id: resendData.id }), {
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
