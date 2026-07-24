@@ -93,43 +93,42 @@ async function sendTelegram(
   chatId: string,
   text: string,
   rich?: { text: string; parse_mode: "MarkdownV2"; reply_markup?: any; plainText: string } | null,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<SendResult> {
   const { data: tokenRow } = await admin
     .from("integration_secrets")
     .select("encrypted_value")
     .eq("secret_key", "telegram_bot_token")
     .maybeSingle();
-  if (!tokenRow?.encrypted_value) return { ok: false, error: "telegram_bot_token not configured" };
-
+  if (!tokenRow?.encrypted_value) {
+    return { ok: false, error: "telegram_bot_token not configured", category: "not_configured", severity: "attention", retry_count: 0 };
+  }
   const url = `https://api.telegram.org/bot${tokenRow.encrypted_value}/sendMessage`;
 
-  // Try rich (MarkdownV2 + inline_keyboard) first if provided.
-  if (rich) {
-    const r = await fetch(url, {
+  return await sendWithRetry("telegram", async () => {
+    if (rich) {
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: rich.text,
+          parse_mode: rich.parse_mode,
+          disable_web_page_preview: true,
+          reply_markup: rich.reply_markup,
+        }),
+      });
+      if (r.ok) return { ok: true, status: r.status };
+      // Fall through to plain-text — MarkdownV2 is fussy.
+    }
+    const resp = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: rich.text,
-        parse_mode: rich.parse_mode,
-        disable_web_page_preview: true,
-        reply_markup: rich.reply_markup,
-      }),
+      body: JSON.stringify({ chat_id: chatId, text: rich?.plainText ?? text, disable_web_page_preview: true }),
     });
-    if (r.ok) return { ok: true };
-    // Telegram MarkdownV2 is strict — on parse failure, fall through to plain.
-  }
-
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text: rich?.plainText ?? text, disable_web_page_preview: true }),
-  });
-  if (!resp.ok) {
+    if (resp.ok) return { ok: true, status: resp.status };
     const body = await resp.text();
-    return { ok: false, error: `telegram ${resp.status}: ${body.slice(0, 200)}` };
-  }
-  return { ok: true };
+    return { ok: false, status: resp.status, body };
+  });
 }
 
 async function sendLine(
@@ -137,131 +136,113 @@ async function sendLine(
   chatId: string,
   text: string,
   flexMessage: any | null,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<SendResult> {
   const { data: tokenRow } = await admin
     .from("integration_secrets")
     .select("encrypted_value")
     .eq("secret_key", "line_channel_access_token")
     .maybeSingle();
-  if (!tokenRow?.encrypted_value) return { ok: false, error: "line_channel_access_token not configured" };
+  if (!tokenRow?.encrypted_value) {
+    return { ok: false, error: "line_channel_access_token not configured", category: "not_configured", severity: "attention", retry_count: 0 };
+  }
+  const token = tokenRow.encrypted_value;
 
-  // Prefer rich Flex when available; LINE auto-falls-back to altText on
-  // unsupported clients / push notification previews.
-  const messages = flexMessage
-    ? [flexMessage]
-    : [{ type: "text", text: text.slice(0, 5000) }];
-
-  // LINE push message — counts against the channel's monthly free quota.
-  const resp = await fetch("https://api.line.me/v2/bot/message/push", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenRow.encrypted_value}`,
-    },
-    body: JSON.stringify({ to: chatId, messages }),
-  });
-  if (!resp.ok) {
+  return await sendWithRetry("line", async () => {
+    const messages = flexMessage ? [flexMessage] : [{ type: "text", text: text.slice(0, 5000) }];
+    const resp = await fetch("https://api.line.me/v2/bot/message/push", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ to: chatId, messages }),
+    });
+    if (resp.ok) return { ok: true, status: resp.status };
     const body = await resp.text();
-    // If Flex was rejected (rare schema issue), fall back to plain text once.
+    // One-time plain-text fallback if Flex rejected.
     if (flexMessage) {
       const retry = await fetch("https://api.line.me/v2/bot/message/push", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${tokenRow.encrypted_value}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ to: chatId, messages: [{ type: "text", text: text.slice(0, 5000) }] }),
       });
-      if (retry.ok) return { ok: true };
+      if (retry.ok) return { ok: true, status: retry.status };
     }
-    return { ok: false, error: `line ${resp.status}: ${body.slice(0, 200)}` };
-  }
-  return { ok: true };
+    return { ok: false, status: resp.status, body };
+  });
 }
 
 async function sendTwilioSms(
   admin: any,
   toNumber: string,
   text: string,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<SendResult> {
   const [{ data: sidRow }, { data: tokenRow }, { data: smsFromRow }] = await Promise.all([
     admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "twilio_account_sid").maybeSingle(),
     admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "twilio_auth_token").maybeSingle(),
     admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "twilio_sms_from").maybeSingle(),
   ]);
-  if (!sidRow?.encrypted_value || !tokenRow?.encrypted_value) return { ok: false, error: "twilio not configured" };
+  if (!sidRow?.encrypted_value || !tokenRow?.encrypted_value) {
+    return { ok: false, error: "twilio not configured", category: "not_configured", severity: "attention", retry_count: 0 };
+  }
   const sid = sidRow.encrypted_value;
   const from = smsFromRow?.encrypted_value;
-  if (!from) return { ok: false, error: "twilio_sms_from not configured" };
-
+  if (!from) {
+    return { ok: false, error: "twilio_sms_from not configured", category: "not_configured", severity: "attention", retry_count: 0 };
+  }
   const auth = btoa(`${sid}:${tokenRow.encrypted_value}`);
   const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
 
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ To: toNumber, From: from, Body: text }),
-  });
-  if (!resp.ok) {
+  return await sendWithRetry("sms", async () => {
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ To: toNumber, From: from, Body: text }),
+    });
+    if (resp.ok) return { ok: true, status: resp.status };
     const body = await resp.text();
-    return { ok: false, error: `twilio ${resp.status}: ${body.slice(0, 200)}` };
-  }
-  return { ok: true };
+    return { ok: false, status: resp.status, body };
+  });
 }
 
-// WhatsApp via Meta Cloud API (direct, no Twilio).
-// Sends a free-form text message inside the 24h customer service window.
-// For proactive sends outside the window, an approved template is required —
-// not implemented here (caller should use email/SMS for proactive in that case).
+// WhatsApp via Meta Cloud API.
 async function sendWhatsAppMeta(
   admin: any,
   toNumber: string,
   text: string,
   waIntent?: import("../_shared/richMessages.ts").WhatsAppIntent | null,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<SendResult> {
   const [{ data: tokenRow }, { data: phoneIdRow }] = await Promise.all([
     admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "whatsapp_meta_access_token").maybeSingle(),
     admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "whatsapp_meta_phone_number_id").maybeSingle(),
   ]);
   if (!tokenRow?.encrypted_value || !phoneIdRow?.encrypted_value) {
-    return { ok: false, error: "whatsapp_meta not configured" };
+    return { ok: false, error: "whatsapp_meta not configured", category: "not_configured", severity: "attention", retry_count: 0 };
   }
   const accessToken = tokenRow.encrypted_value;
   const phoneId = phoneIdRow.encrypted_value;
 
-  // Meta expects E.164 without leading "+" allowed either way; strip whatsapp: prefix.
   const to = toNumber.replace(/^whatsapp:/i, "").replace(/^\+/, "");
-
-  // Build body — use rich-intent fallback to numbered text if provided.
   let body = text;
   if (waIntent) {
-    if (waIntent.kind === "media") {
-      body = waIntent.caption;
-    } else {
-      body = whatsAppIntentToText(waIntent);
-    }
+    body = waIntent.kind === "media" ? waIntent.caption : whatsAppIntentToText(waIntent);
   }
-
   const url = `https://graph.facebook.com/v21.0/${phoneId}/messages`;
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to,
-      type: "text",
-      text: { body: body.slice(0, 4096) },
-    }),
-  });
-  if (!resp.ok) {
+
+  return await sendWithRetry("whatsapp", async () => {
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to,
+        type: "text",
+        text: { body: body.slice(0, 4096) },
+      }),
+    });
+    if (resp.ok) return { ok: true, status: resp.status };
     const errBody = await resp.text();
-    return { ok: false, error: `whatsapp_meta ${resp.status}: ${errBody.slice(0, 200)}` };
-  }
-  return { ok: true };
+    return { ok: false, status: resp.status, body: errBody };
+  });
 }
+
 
 // ── Message text builder ──
 function buildMessage(eventType: string, metadata: Record<string, unknown>): string {
