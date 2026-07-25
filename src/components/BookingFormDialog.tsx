@@ -139,10 +139,15 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
     []
   );
   const isBackdated = !!checkIn && checkIn < todayBkk;
+  const canBackdate = role === "admin" || role === "manager" || role === "front_desk_supervisor";
   const [backdateReason, setBackdateReason] = useState("");
 
   const onSubmit = async (data: FormValues) => {
     if (validationErrors.length > 0) return;
+    if (isBackdated && !canBackdate) {
+      toast({ title: t("common.error"), description: "Only a manager or front-desk supervisor can record a backdated booking. Ask a supervisor to create it, or set check-in to today or later.", variant: "destructive" });
+      return;
+    }
     if (isBackdated && !backdateReason.trim()) {
       toast({ title: t("common.error"), description: "Backdated bookings require a reason (walk-in, cleanup, or historical record).", variant: "destructive" });
       return;
@@ -209,12 +214,18 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
             <div className="rounded-md border border-warning/60 bg-warning/10 p-3 space-y-2">
               <div className="flex items-start gap-2 text-sm">
                 <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-warning-foreground" />
-                <span className="text-warning-foreground">This booking starts in the past. Only continue for cleanup, historical records, or walk-ins recorded after the fact. A reason is required and will be logged.</span>
+                <span className="text-warning-foreground">
+                  {canBackdate
+                    ? "This booking starts in the past. Only continue for cleanup, historical records, or walk-ins recorded after the fact. A reason is required and will be logged."
+                    : "This check-in date is in the past. Only a manager or front-desk supervisor can record a backdated booking — please have a supervisor create it, or set the check-in date to today or later."}
+                </span>
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="backdate_reason" className="text-xs">Backdate reason *</Label>
-                <Input id="backdate_reason" value={backdateReason} onChange={(e) => setBackdateReason(e.target.value)} placeholder="e.g. Walk-in recorded after checkout / historical cleanup" />
-              </div>
+              {canBackdate && (
+                <div className="space-y-1">
+                  <Label htmlFor="backdate_reason" className="text-xs">Backdate reason *</Label>
+                  <Input id="backdate_reason" value={backdateReason} onChange={(e) => setBackdateReason(e.target.value)} placeholder="e.g. Walk-in recorded after checkout / historical cleanup" />
+                </div>
+              )}
             </div>
           )}
 
@@ -284,7 +295,7 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
           <div className="space-y-2"><Label htmlFor="notes">{t("bookingForm.notes")}</Label><Textarea id="notes" {...register("notes")} placeholder={t("bookingForm.notesPlaceholder")} rows={3} /></div>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
-            <Button type="submit" disabled={createBooking.isPending || validationErrors.length > 0}>{createBooking.isPending ? t("common.creating") : t("bookingForm.createInquiry")}</Button>
+            <Button type="submit" disabled={createBooking.isPending || validationErrors.length > 0 || (isBackdated && !canBackdate)}>{createBooking.isPending ? t("common.creating") : t("bookingForm.createInquiry")}</Button>
           </div>
         </form>
       </DialogContent>
