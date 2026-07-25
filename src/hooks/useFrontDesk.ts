@@ -273,7 +273,7 @@ export function useFrontDeskData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("messages")
-        .select("booking_id, content, sender_id, created_at, is_read")
+        .select("booking_id, content, sender_id, created_at, read_at")
         .in("booking_id", bookingIds)
         .order("created_at", { ascending: false })
         .limit(200);
@@ -296,7 +296,7 @@ export function useFrontDeskData() {
         content: m.content ?? "",
         sender_id: m.sender_id,
         created_at: m.created_at,
-        is_read: m.is_read,
+        is_read: m.read_at != null,
         from_guest: fromGuest,
       });
     });
