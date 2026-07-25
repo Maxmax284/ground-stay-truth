@@ -9,9 +9,11 @@ import ProofSection from "@/components/landing/ProofSection";
 import SovereigntySection from "@/components/landing/SovereigntySection";
 import ComplianceSection from "@/components/landing/ComplianceSection";
 import FinalCTASection from "@/components/landing/FinalCTASection";
+import { ReinstallPrompt } from "@/components/ReinstallPrompt";
 
 const LandingPage = () => (
   <main className="min-h-screen">
+    <ReinstallPrompt />
     <EntrySection />
     <ContextSection />
     <SystemFlowSection />
