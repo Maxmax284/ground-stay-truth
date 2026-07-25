@@ -30,15 +30,27 @@ export function ReinstallPrompt() {
       (navigator as any).standalone === true;
 
     if (!isStandalone) return;
+    if (sessionStorage.getItem(DISMISS_KEY)) return;
 
     const existing = localStorage.getItem(INSTALL_STAMP_KEY);
+    const landedAtLegacyRoot =
+      window.location.pathname === "/" || window.location.pathname === "";
+
+    // If the standalone shell launched at "/" (the old cached start_url),
+    // the installed icon is still pointing at the pre-update target — prompt
+    // regardless of whether a stamp was ever written.
+    if (landedAtLegacyRoot) {
+      setOpen(true);
+      return;
+    }
+
     if (!existing) {
-      // First launch on this build — record the current expected identity.
+      // First launch on this build from the new start_url — record identity.
       localStorage.setItem(INSTALL_STAMP_KEY, EXPECTED_START_URL);
       return;
     }
 
-    if (existing !== EXPECTED_START_URL && !sessionStorage.getItem(DISMISS_KEY)) {
+    if (existing !== EXPECTED_START_URL) {
       setOpen(true);
     }
   }, []);
