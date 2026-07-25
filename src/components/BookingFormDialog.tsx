@@ -139,10 +139,15 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
     []
   );
   const isBackdated = !!checkIn && checkIn < todayBkk;
+  const canBackdate = role === "admin" || role === "manager" || role === "front_desk_supervisor";
   const [backdateReason, setBackdateReason] = useState("");
 
   const onSubmit = async (data: FormValues) => {
     if (validationErrors.length > 0) return;
+    if (isBackdated && !canBackdate) {
+      toast({ title: t("common.error"), description: "Only a manager or front-desk supervisor can record a backdated booking. Ask a supervisor to create it, or set check-in to today or later.", variant: "destructive" });
+      return;
+    }
     if (isBackdated && !backdateReason.trim()) {
       toast({ title: t("common.error"), description: "Backdated bookings require a reason (walk-in, cleanup, or historical record).", variant: "destructive" });
       return;
