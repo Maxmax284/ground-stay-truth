@@ -1,0 +1,1 @@
+UPDATE public.policy_settings SET value = '"noreply@lmtcampstay.com"'::jsonb WHERE key = 'resend_from_email';
