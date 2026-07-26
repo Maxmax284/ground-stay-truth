@@ -117,7 +117,10 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
         <div className="grid grid-cols-3 gap-2 pt-1">
           <div>
             <div className="text-[10px] uppercase text-muted-foreground">Booking total</div>
-            <div className="text-base font-semibold tabular-nums">{fmt(fin.total)}</div>
+            <div className="text-base font-semibold tabular-nums">{fmt(fin.grandTotal)}</div>
+            {fin.addonRequired > 0 && (
+              <div className="text-[10px] text-muted-foreground">incl. {fmt(fin.addonRequired)} add-ons</div>
+            )}
           </div>
           <div>
             <div className="text-[10px] uppercase text-muted-foreground">Collected</div>
@@ -130,6 +133,7 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
             </div>
           </div>
         </div>
+
 
         {/* Breakdown rows */}
         <div className="space-y-1.5 pt-2 border-t border-border/50 text-sm">
