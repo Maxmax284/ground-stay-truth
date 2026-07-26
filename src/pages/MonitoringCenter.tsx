@@ -390,7 +390,7 @@ export default function MonitoringCenter() {
 
   const alerts = useMemo(() => (data ? buildAlerts(data) : []), [data]);
   const activity = useMemo(() => (data ? buildActivity(data) : []), [data]);
-  const overall = overallHealth(alerts);
+  
 
   // Split stale historical incidents into an "auto-resolved" bucket so a fix
   // that landed hours ago stops lighting up the monitor red.
