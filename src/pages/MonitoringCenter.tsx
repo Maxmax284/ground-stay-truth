@@ -506,6 +506,34 @@ export default function MonitoringCenter() {
           </CardContent>
         </Card>
 
+        {/* Auto-resolved (stale historical incidents) */}
+        {resolvedAlerts.length > 0 && (
+          <Card>
+            <Collapsible>
+              <CollapsibleTrigger className="w-full text-left">
+                <CardHeader className="flex-row items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    Recently auto-resolved
+                    <Badge variant="outline" className="ml-1">{resolvedAlerts.length}</Badge>
+                  </CardTitle>
+                  <span className="text-xs text-muted-foreground">
+                    No recurrence in {AUTO_RESOLVE_HOURS}h — hidden from active alerts.
+                  </span>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-3">
+                  {resolvedAlerts.map((a) => (
+                    <AlertRow key={a.id} alert={{ ...a, health: "healthy" }} />
+                  ))}
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+        )}
+
+
         {/* Recent activity */}
         <Card>
           <CardHeader>
