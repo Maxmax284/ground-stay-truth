@@ -188,21 +188,30 @@ export function calculateBookingFinancials(
   const balancePaid = sumReceived(payments, "balance");
   const securityPaid = sumReceived(payments, "security_deposit");
   const feePaid = sumReceived(payments, "booking_fee");
+  const addonPaid = sumReceived(payments, "addon");
 
   const depositPending = sumPending(payments, "deposit");
   const balancePending = sumPending(payments, "balance");
   const securityPending = sumPending(payments, "security_deposit");
   const feePending = sumPending(payments, "booking_fee");
+  const addonPending = sumPending(payments, "addon");
+
+  // Add-ons (airport pickup, transfers, extras) are real obligations created as
+  // payment rows — the required amount is whatever is pending plus what's paid.
+  const addonRequired = Math.round((addonPaid + addonPending) * 100) / 100;
 
   const totalRefunded = payments
     .filter((p) => p.status === "refunded" || p.status === "partially_refunded")
     .reduce((s, p) => s + Number(p.refund_amount ?? 0), 0);
 
-  const bookingCollected = depositPaid + balancePaid;
+  const bookingCollected = depositPaid + balancePaid + addonPaid;
   const totalCollected = bookingCollected + securityPaid + feePaid;
-  const outstanding = Math.max(0, total - bookingCollected);
+  const grandTotal = Math.round((total + addonRequired) * 100) / 100;
+  const outstanding = Math.max(0, grandTotal - bookingCollected);
   const securityOutstanding = Math.max(0, secAmount - securityPaid);
   const feeOutstanding = Math.max(0, feeRequired - feePaid);
+  const addonOutstanding = Math.max(0, addonRequired - addonPaid);
+
 
   const depositStatus: "paid" | "partial" | "pending" | "not_required" =
     depositRequired <= 0 ? "not_required"
@@ -223,11 +232,17 @@ export function calculateBookingFinancials(
       : feePaid >= feeRequired ? "paid"
       : feePaid > 0 ? "partial" : "pending";
 
+  const addonStatus: "paid" | "partial" | "pending" | "not_required" =
+    addonRequired <= 0 ? "not_required"
+      : addonPaid >= addonRequired ? "paid"
+      : addonPaid > 0 ? "partial" : "pending";
+
   const overallStatus: "paid_in_full" | "deposit_received" | "awaiting_payment" | "refunded" =
     totalRefunded >= bookingCollected && bookingCollected > 0 ? "refunded"
-      : outstanding <= 0 && total > 0 ? "paid_in_full"
+      : outstanding <= 0 && grandTotal > 0 ? "paid_in_full"
       : depositPaid >= depositRequired && depositRequired > 0 ? "deposit_received"
       : "awaiting_payment";
+
 
   const hasVerified = payments.some(
     (p) => isPaymentReceived(p.status) && p.provider === "stripe"
@@ -243,7 +258,14 @@ export function calculateBookingFinancials(
 
   return {
     total,
+    grandTotal,
+    addonRequired,
+    addonPaid,
+    addonPending,
+    addonStatus,
+    addonOutstanding,
     depositRequired,
+
     depositPaid,
     depositPending,
     depositStatus,

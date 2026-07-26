@@ -192,6 +192,20 @@ serve(async (req) => {
     const total = Number(booking.total_price || 0);
     const depositAmount = Math.round((total * depositPercentage) / 100);
 
+    // Add-on obligations (airport pickup, extras) are billed on top of the room
+    // total. They live as `addon` payment rows, not inside bookings.total_price.
+    const { data: addonRows } = await adminClient
+      .from("payments")
+      .select("amount, status")
+      .eq("booking_id", bookingId)
+      .eq("payment_type", "addon")
+      .in("status", ["pending", "recorded"]);
+    const addonRequired = (addonRows ?? []).reduce(
+      (s: number, p: any) => s + Number(p.amount || 0),
+      0,
+    );
+    const grandTotal = total + addonRequired;
+
     // Compute what we're actually collecting
     let amount = 0;
     let paymentTypeForRecord: string = "deposit";
@@ -206,7 +220,7 @@ serve(async (req) => {
                      collect === "balance" ? "Remaining balance" :
                      collect === "full" ? "Full payment" : "Deposit";
     } else if (collect === "balance") {
-      // total - already-paid online deposits
+      // (room total + add-ons) - already-paid amounts
       const { data: paidRows } = await adminClient
         .from("payments")
         .select("amount, payment_type, status, provider")
@@ -215,13 +229,13 @@ serve(async (req) => {
       const paidSum = (paidRows ?? [])
         .filter((p: any) => p.payment_type !== "security_deposit")
         .reduce((s: number, p: any) => s + Number(p.amount), 0);
-      amount = Math.max(0, Math.round(total - paidSum));
+      amount = Math.max(0, Math.round(grandTotal - paidSum));
       paymentTypeForRecord = "balance";
-      collectLabel = "Remaining balance";
+      collectLabel = addonRequired > 0 ? "Remaining balance (incl. add-ons)" : "Remaining balance";
     } else if (collect === "full") {
-      amount = Math.round(total);
+      amount = Math.round(grandTotal);
       paymentTypeForRecord = "balance";
-      collectLabel = "Full payment";
+      collectLabel = addonRequired > 0 ? "Full payment (incl. add-ons)" : "Full payment";
     } else if (collect === "security_deposit") {
       amount = Math.round(Number(policyMap.get("security_deposit_amount") || "0"));
       paymentTypeForRecord = "security_deposit";
@@ -231,6 +245,7 @@ serve(async (req) => {
       paymentTypeForRecord = "deposit";
       collectLabel = `Deposit (${depositPercentage}%)`;
     }
+
 
     if (amount <= 0) {
       return jsonResponse(req, { error: "Invalid amount for this collection type" }, 400);
