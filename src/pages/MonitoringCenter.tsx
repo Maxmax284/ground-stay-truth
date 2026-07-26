@@ -392,16 +392,33 @@ export default function MonitoringCenter() {
   const activity = useMemo(() => (data ? buildActivity(data) : []), [data]);
   const overall = overallHealth(alerts);
 
+  // Split stale historical incidents into an "auto-resolved" bucket so a fix
+  // that landed hours ago stops lighting up the monitor red.
+  const { activeAlerts, resolvedAlerts } = useMemo(() => {
+    const active: Alert[] = [];
+    const resolved: Alert[] = [];
+    for (const a of alerts) {
+      if (AUTO_RESOLVE_CATEGORIES.includes(a.category) && isStale(a.when)) {
+        resolved.push(a);
+      } else {
+        active.push(a);
+      }
+    }
+    return { activeAlerts: active, resolvedAlerts: resolved };
+  }, [alerts]);
+
+  const activeOverall = overallHealth(activeAlerts);
+
   const filtered = useMemo(() => {
-    if (filter === "all") return alerts;
-    if (filter === "critical") return alerts.filter((a) => a.health === "attention");
-    return alerts.filter((a) => a.category === filter);
-  }, [alerts, filter]);
+    if (filter === "all") return activeAlerts;
+    if (filter === "critical") return activeAlerts.filter((a) => a.health === "attention");
+    return activeAlerts.filter((a) => a.category === filter);
+  }, [activeAlerts, filter]);
 
   const counts = {
-    attention: alerts.filter((a) => a.health === "attention").length,
-    warning: alerts.filter((a) => a.health === "warning").length,
-    healthy: alerts.length === 0,
+    attention: activeAlerts.filter((a) => a.health === "attention").length,
+    warning: activeAlerts.filter((a) => a.health === "warning").length,
+    healthy: activeAlerts.length === 0,
   };
 
   return (
