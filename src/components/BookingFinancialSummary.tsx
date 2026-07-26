@@ -161,6 +161,16 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
               hint="Held separately — refundable"
             />
           )}
+          {fin.addonStatus !== "not_required" && (
+            <Row
+              label="Add-ons (airport pickup, extras)"
+              required={fin.addonRequired}
+              paid={fin.addonPaid}
+              status={fin.addonStatus}
+              fmt={fmt}
+              hint="Billed on top of the room total"
+            />
+          )}
           {fin.feeStatus !== "not_required" && (
             <Row
               label="Booking fee"
@@ -171,6 +181,7 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
               hint={fin.feeMode === "hidden" ? "Internal only" : undefined}
             />
           )}
+
           {fin.totalRefunded > 0 && (
             <div className="flex items-center justify-between text-xs text-[hsl(var(--info))] pt-1">
               <span>↩ Refunded</span>
