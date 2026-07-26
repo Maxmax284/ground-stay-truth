@@ -258,7 +258,14 @@ export function calculateBookingFinancials(
 
   return {
     total,
+    grandTotal,
+    addonRequired,
+    addonPaid,
+    addonPending,
+    addonStatus,
+    addonOutstanding,
     depositRequired,
+
     depositPaid,
     depositPending,
     depositStatus,
