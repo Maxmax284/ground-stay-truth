@@ -54,6 +54,13 @@ interface ActivityItem {
 // ---------- helpers ----------
 const sinceHours = (h: number) => new Date(Date.now() - h * 3600_000).toISOString();
 
+// Any historical incident older than this with no fresh recurrence is treated
+// as auto-resolved so it stops nagging admins after the underlying fix lands.
+const AUTO_RESOLVE_HOURS = 24;
+const AUTO_RESOLVE_CATEGORIES: ReadonlyArray<Category> = ["email", "webhook", "notification"];
+const isStale = (whenIso: string) =>
+  Date.now() - new Date(whenIso).getTime() > AUTO_RESOLVE_HOURS * 3600_000;
+
 const healthStyles: Record<Health, { dot: string; label: string; pill: string }> = {
   healthy: {
     dot: "bg-emerald-500",
@@ -383,18 +390,35 @@ export default function MonitoringCenter() {
 
   const alerts = useMemo(() => (data ? buildAlerts(data) : []), [data]);
   const activity = useMemo(() => (data ? buildActivity(data) : []), [data]);
-  const overall = overallHealth(alerts);
+  
+
+  // Split stale historical incidents into an "auto-resolved" bucket so a fix
+  // that landed hours ago stops lighting up the monitor red.
+  const { activeAlerts, resolvedAlerts } = useMemo(() => {
+    const active: Alert[] = [];
+    const resolved: Alert[] = [];
+    for (const a of alerts) {
+      if (AUTO_RESOLVE_CATEGORIES.includes(a.category) && isStale(a.when)) {
+        resolved.push(a);
+      } else {
+        active.push(a);
+      }
+    }
+    return { activeAlerts: active, resolvedAlerts: resolved };
+  }, [alerts]);
+
+  const activeOverall = overallHealth(activeAlerts);
 
   const filtered = useMemo(() => {
-    if (filter === "all") return alerts;
-    if (filter === "critical") return alerts.filter((a) => a.health === "attention");
-    return alerts.filter((a) => a.category === filter);
-  }, [alerts, filter]);
+    if (filter === "all") return activeAlerts;
+    if (filter === "critical") return activeAlerts.filter((a) => a.health === "attention");
+    return activeAlerts.filter((a) => a.category === filter);
+  }, [activeAlerts, filter]);
 
   const counts = {
-    attention: alerts.filter((a) => a.health === "attention").length,
-    warning: alerts.filter((a) => a.health === "warning").length,
-    healthy: alerts.length === 0,
+    attention: activeAlerts.filter((a) => a.health === "attention").length,
+    warning: activeAlerts.filter((a) => a.health === "warning").length,
+    healthy: activeAlerts.length === 0,
   };
 
   return (
@@ -425,13 +449,13 @@ export default function MonitoringCenter() {
         {/* Overall status */}
         <Card>
           <CardContent className="pt-6 flex items-center gap-4">
-            <span className={`h-3 w-3 rounded-full ${healthStyles[overall].dot}`} />
+            <span className={`h-3 w-3 rounded-full ${healthStyles[activeOverall].dot}`} />
             <div className="flex-1">
               <div className="text-sm text-muted-foreground">Overall system status</div>
               <div className="text-xl font-semibold">
-                {overall === "healthy"
+                {activeOverall === "healthy"
                   ? "Everything looks good."
-                  : overall === "warning"
+                  : activeOverall === "warning"
                   ? "A few things need attention soon."
                   : "Something needs action right now."}
               </div>
@@ -481,6 +505,34 @@ export default function MonitoringCenter() {
             )}
           </CardContent>
         </Card>
+
+        {/* Auto-resolved (stale historical incidents) */}
+        {resolvedAlerts.length > 0 && (
+          <Card>
+            <Collapsible>
+              <CollapsibleTrigger className="w-full text-left">
+                <CardHeader className="flex-row items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    Recently auto-resolved
+                    <Badge variant="outline" className="ml-1">{resolvedAlerts.length}</Badge>
+                  </CardTitle>
+                  <span className="text-xs text-muted-foreground">
+                    No recurrence in {AUTO_RESOLVE_HOURS}h — hidden from active alerts.
+                  </span>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-3">
+                  {resolvedAlerts.map((a) => (
+                    <AlertRow key={a.id} alert={{ ...a, health: "healthy" }} />
+                  ))}
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+        )}
+
 
         {/* Recent activity */}
         <Card>
