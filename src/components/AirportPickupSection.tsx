@@ -458,9 +458,10 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
 
         <Separator />
 
-        {/* Fee */}
+        {/* Fee — billed as an add-on obligation on the booking */}
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Fee</span>
+          <span className="text-muted-foreground">Fee <span className="text-[10px]">(billed to booking)</span></span>
+
           <div className="flex items-center gap-2">
             <span className="font-medium">{formatPrice(pickup.fee, policies)}</span>
             {pickup.fee_override && (
