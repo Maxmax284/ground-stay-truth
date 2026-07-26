@@ -54,6 +54,13 @@ interface ActivityItem {
 // ---------- helpers ----------
 const sinceHours = (h: number) => new Date(Date.now() - h * 3600_000).toISOString();
 
+// Any historical incident older than this with no fresh recurrence is treated
+// as auto-resolved so it stops nagging admins after the underlying fix lands.
+const AUTO_RESOLVE_HOURS = 24;
+const AUTO_RESOLVE_CATEGORIES: ReadonlyArray<Category> = ["email", "webhook", "notification"];
+const isStale = (whenIso: string) =>
+  Date.now() - new Date(whenIso).getTime() > AUTO_RESOLVE_HOURS * 3600_000;
+
 const healthStyles: Record<Health, { dot: string; label: string; pill: string }> = {
   healthy: {
     dot: "bg-emerald-500",
