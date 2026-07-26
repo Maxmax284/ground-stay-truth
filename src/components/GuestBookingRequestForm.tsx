@@ -467,6 +467,8 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
                 <div>
                   <Label htmlFor="airport_pickup" className="text-sm font-medium">{t("guestBooking.airportPickup", { defaultValue: "Arrange Airport Pickup" })}</Label>
                   <p className="text-xs text-muted-foreground">{t("guestBooking.airportPickupDesc", { defaultValue: "We'll arrange a pickup from the airport for you" })}</p>
+                  <p className="text-xs text-muted-foreground">{t("guestBooking.airportPickupFeeNote", { defaultValue: "A transfer fee is added to your booking total." })}</p>
+
                 </div>
               </div>
               <Switch id="airport_pickup" checked={airportPickup} onCheckedChange={(v) => setValue("airport_pickup", v)} />
