@@ -449,13 +449,13 @@ export default function MonitoringCenter() {
         {/* Overall status */}
         <Card>
           <CardContent className="pt-6 flex items-center gap-4">
-            <span className={`h-3 w-3 rounded-full ${healthStyles[overall].dot}`} />
+            <span className={`h-3 w-3 rounded-full ${healthStyles[activeOverall].dot}`} />
             <div className="flex-1">
               <div className="text-sm text-muted-foreground">Overall system status</div>
               <div className="text-xl font-semibold">
-                {overall === "healthy"
+                {activeOverall === "healthy"
                   ? "Everything looks good."
-                  : overall === "warning"
+                  : activeOverall === "warning"
                   ? "A few things need attention soon."
                   : "Something needs action right now."}
               </div>
