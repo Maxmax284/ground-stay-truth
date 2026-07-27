@@ -89,6 +89,18 @@ const PLAIN_ENGLISH: Record<string, string> = {
   guest_login_failed: "Login failed",
 };
 
+/** Minutes we allow between "tapped pay" and "reached Stripe" before alerting. */
+const STALL_MINUTES = 10;
+
+/** Any of these, logged after the click, means the guest was not left hanging. */
+const RESOLVING_TYPES = new Set([
+  "checkout_redirect_started",
+  "checkout_create_success",
+  "checkout_create_failed",
+  "checkout_timeout",
+  "checkout_redirect_stalled",
+]);
+
 function statusTone(r: Row) {
   if (FAILURE_TYPES.has(r.event_type) || r.severity === "error") return "text-rose-600 dark:text-rose-400";
   if (r.severity === "warning") return "text-amber-600 dark:text-amber-400";
@@ -146,6 +158,38 @@ export function GuestPortalHealth() {
     };
   }, [rows]);
 
+  /**
+   * Alert: guest tapped Pay Deposit but never reached Stripe.
+   *
+   * A checkout click is "stalled" when, for the same session, no
+   * checkout_redirect_started / success and no failure event was recorded
+   * after the click, and the click is older than STALL_MINUTES. That is the
+   * exact shape of "the button did nothing" complaints.
+   */
+  const stalledCheckouts = useMemo(() => {
+    const cutoff = Date.now() - STALL_MINUTES * 60_000;
+    const clicks = rows.filter(
+      (r) => r.event_type === "checkout_button_clicked" || r.event_type === "deposit_button_clicked",
+    );
+    const resolvers = rows.filter((r) => RESOLVING_TYPES.has(r.event_type));
+
+    const bySession = new Map<string, Row>();
+    for (const c of clicks) {
+      const t = new Date(c.created_at).getTime();
+      if (t > cutoff) continue; // still inside the grace window
+      const key = c.session_id ?? c.guest_id ?? c.id;
+      const resolved = resolvers.some(
+        (r) => (r.session_id ?? r.guest_id) === (c.session_id ?? c.guest_id) && new Date(r.created_at).getTime() >= t,
+      );
+      if (resolved) continue;
+      const prev = bySession.get(key);
+      if (!prev || new Date(prev.created_at).getTime() < t) bySession.set(key, c);
+    }
+    return Array.from(bySession.values()).sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+  }, [rows]);
+
   const stuck = useMemo(
     () => rows.filter((r) => FAILURE_TYPES.has(r.event_type) || r.event_type === "guest_booking_missing").slice(0, 12),
     [rows],
@@ -201,6 +245,47 @@ export function GuestPortalHealth() {
                 tone={stats.errors > 0 ? "bad" : "ok"}
               />
             </div>
+
+            {/* ALERT — tapped pay, never reached Stripe */}
+            {stalledCheckouts.length > 0 && (
+              <div className="rounded-md border border-rose-500/40 bg-rose-50/60 dark:bg-rose-950/20 p-3">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-rose-600" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-rose-700 dark:text-rose-400">
+                      {stalledCheckouts.length} guest{stalledCheckouts.length === 1 ? "" : "s"} tapped Pay Deposit but
+                      never reached Stripe
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      No redirect, no error — nothing happened for over {STALL_MINUTES} minutes after the tap. Send them
+                      a direct payment link.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-2 space-y-1.5">
+                  {stalledCheckouts.slice(0, 8).map((r) => (
+                    <div key={r.id} className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="text-muted-foreground">
+                        {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
+                      </span>
+                      <Badge variant="outline" className="text-[10px]">
+                        {r.device_type ?? "?"} · {r.browser_name ?? "?"}
+                      </Badge>
+                      {r.is_in_app_browser && (
+                        <Badge variant="outline" className="text-[10px] text-amber-600">
+                          in-app browser
+                        </Badge>
+                      )}
+                      {r.booking_id && (
+                        <span className="font-mono text-[10px] text-muted-foreground">
+                          booking {r.booking_id.slice(0, 8)}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Deposit funnel */}
             <div>
