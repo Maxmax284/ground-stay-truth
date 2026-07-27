@@ -11,6 +11,9 @@ import { useGuestHistory } from "@/hooks/useGuestHistory";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { getDepositPolicy } from "@/lib/depositPolicy";
 import { logGuestPortalEvent, detectInAppBrowser } from "@/lib/guestPortalTelemetry";
+import { GuestInAppBrowserBanner } from "@/components/GuestInAppBrowserBanner";
+import { GuestEmailFallbackNotice } from "@/components/GuestEmailFallbackNotice";
+
 
 import { useSearchParams } from "react-router-dom";
 import GuestLayout from "@/components/GuestLayout";
