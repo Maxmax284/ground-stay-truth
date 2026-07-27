@@ -309,7 +309,7 @@ serve(async (req) => {
     // Resolve the provider adapter
     let adapter: ProviderAdapter;
     try {
-      adapter = await resolveProvider(providerName, adminClient);
+      adapter = await resolveProvider(providerName, adminClient, preloadedStripeKey);
     } catch (e: any) {
       return new Response(
         JSON.stringify({
