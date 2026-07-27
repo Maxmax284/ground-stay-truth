@@ -83,10 +83,22 @@ const ProtectedRoute = ({ children, requiredPath, guestOnly = false }: Protected
         <div className="text-center space-y-3 max-w-md px-6">
           <h2 className="text-xl font-semibold text-foreground">{t("protectedRoute.pendingAccess")}</h2>
           <p className="text-muted-foreground">{t("protectedRoute.pendingDesc")}</p>
+          <div className="flex items-center justify-center gap-4 pt-1">
+            <button
+              onClick={() => window.location.reload()}
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Refresh
+            </button>
+            <a href="/auth/guest" className="text-sm font-medium text-primary hover:underline">
+              Sign in again
+            </a>
+          </div>
         </div>
       </div>
     );
   }
+
 
   if (requiredPath && !canAccessRoute(role, requiredPath)) {
     return (
