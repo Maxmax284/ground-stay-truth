@@ -18,6 +18,8 @@ import NotificationSettings from "@/components/settings/NotificationSettings";
 import { AppStatusPanel } from "@/components/settings/AppStatusPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
+import ErrorBoundary from "@/components/ErrorBoundary";
+
 
 
 const Settings = () => {
