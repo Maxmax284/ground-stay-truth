@@ -28,7 +28,9 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
   const handlePay = useCallback(async (trigger: "button" | "auto" = "button") => {
     if (loadingRef.current) return;
     loadingRef.current = true;
+    setRecovery(null);
     setLoading(true);
+
     logGuestPortalEvent({
       event: "checkout_button_clicked",
       bookingId,
