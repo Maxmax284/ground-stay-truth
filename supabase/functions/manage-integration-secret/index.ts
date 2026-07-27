@@ -14,9 +14,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// NOTE: this used to carry its own hand-rolled allowlist that was missing the
+// production custom domain (lmtcampstay.com), so admins on the live domain got
+// a CORS failure and the Integrations panel could not read or write secrets.
+// Single source of truth now lives in _shared/cors.ts.
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
   "https://ground-stay-truth.lovable.app",
+  "https://lmtcampstay.com",
+  "https://www.lmtcampstay.com",
   "http://localhost:5173",
   "http://localhost:8080",
 ];
@@ -35,9 +41,11 @@ function getCorsHeaders(req: Request) {
   const allowedOrigin = isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0];
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
+    "Vary": "Origin",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   };
 }
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {

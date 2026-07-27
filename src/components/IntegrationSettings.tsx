@@ -16,6 +16,9 @@ import { CreditCard, Mail, Eye, EyeOff, Save, CheckCircle2, XCircle, ShieldCheck
 import { supabase } from "@/integrations/supabase/client";
 import { MessagingBridgeSettings } from "@/components/MessagingBridgeSettings";
 import { WebhookHealthCard } from "@/components/WebhookHealthCard";
+import { StripeConnectionStatus } from "@/components/StripeConnectionStatus";
+import ErrorBoundary from "@/components/ErrorBoundary";
+
 
 const SECRET_KEYS = ["stripe_secret_key", "stripe_publishable_key", "stripe_webhook_secret", "resend_api_key", "fenrir_api_key", "fenrir_receive_token"];
 
@@ -193,7 +196,14 @@ export function IntegrationSettings() {
 
   return (
     <div className="space-y-6">
+      {/* Plain-English Stripe status + write-only signing secret + self-test.
+          Isolated so a failure here can't take the rest of Integrations down. */}
+      <ErrorBoundary inline label="Stripe connection">
+        <StripeConnectionStatus />
+      </ErrorBoundary>
+
       {/* Stripe Section */}
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">

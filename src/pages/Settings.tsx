@@ -18,6 +18,8 @@ import NotificationSettings from "@/components/settings/NotificationSettings";
 import { AppStatusPanel } from "@/components/settings/AppStatusPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
+import ErrorBoundary from "@/components/ErrorBoundary";
+
 
 
 const Settings = () => {
@@ -59,21 +61,23 @@ const Settings = () => {
           </TabsList>
 
 
-          <TabsContent value="profile"><ProfileEditor /></TabsContent>
-          {canManageRoles && <TabsContent value="users"><UserRoleManager /></TabsContent>}
-          {canManagePolicies && <TabsContent value="cancellation"><CancellationPolicyEditor /></TabsContent>}
-          {canManagePolicies && <TabsContent value="policies"><PolicySettingsForm /></TabsContent>}
-          {isAdmin && <TabsContent value="drivers"><DriverManager /></TabsContent>}
-          {isAdmin && <TabsContent value="properties"><PropertyManagementPanel /></TabsContent>}
-          {isAdmin && <TabsContent value="training"><TrainingPackagesManager /></TabsContent>}
-          {isAdmin && <TabsContent value="arrival"><ArrivalWelcomeEditor /></TabsContent>}
-          {isAdmin && <TabsContent value="integrations"><IntegrationSettings /></TabsContent>}
-          {canManageReviews && <TabsContent value="reviews"><ReviewsManager /></TabsContent>}
-          {isAdmin && <TabsContent value="security"><SecurityEventLog /></TabsContent>}
-          {isAdmin && <TabsContent value="intelligence"><IntelligenceEditor /></TabsContent>}
-          {isAdmin && <TabsContent value="vanta"><VantaIntegrationPanel /></TabsContent>}
-          {canSeeNotifications && <TabsContent value="notifications"><NotificationSettings /></TabsContent>}
-          <TabsContent value="app"><AppStatusPanel /></TabsContent>
+          {/* Every panel is isolated: one crashing section must never blank the page. */}
+          <TabsContent value="profile"><ErrorBoundary inline label="Profile"><ProfileEditor /></ErrorBoundary></TabsContent>
+          {canManageRoles && <TabsContent value="users"><ErrorBoundary inline label="Users"><UserRoleManager /></ErrorBoundary></TabsContent>}
+          {canManagePolicies && <TabsContent value="cancellation"><ErrorBoundary inline label="Cancellation policy"><CancellationPolicyEditor /></ErrorBoundary></TabsContent>}
+          {canManagePolicies && <TabsContent value="policies"><ErrorBoundary inline label="Policies"><PolicySettingsForm /></ErrorBoundary></TabsContent>}
+          {isAdmin && <TabsContent value="drivers"><ErrorBoundary inline label="Drivers"><DriverManager /></ErrorBoundary></TabsContent>}
+          {isAdmin && <TabsContent value="properties"><ErrorBoundary inline label="Properties"><PropertyManagementPanel /></ErrorBoundary></TabsContent>}
+          {isAdmin && <TabsContent value="training"><ErrorBoundary inline label="Training"><TrainingPackagesManager /></ErrorBoundary></TabsContent>}
+          {isAdmin && <TabsContent value="arrival"><ErrorBoundary inline label="Arrival"><ArrivalWelcomeEditor /></ErrorBoundary></TabsContent>}
+          {isAdmin && <TabsContent value="integrations"><ErrorBoundary inline label="Integrations"><IntegrationSettings /></ErrorBoundary></TabsContent>}
+          {canManageReviews && <TabsContent value="reviews"><ErrorBoundary inline label="Reviews"><ReviewsManager /></ErrorBoundary></TabsContent>}
+          {isAdmin && <TabsContent value="security"><ErrorBoundary inline label="Security"><SecurityEventLog /></ErrorBoundary></TabsContent>}
+          {isAdmin && <TabsContent value="intelligence"><ErrorBoundary inline label="Intel"><IntelligenceEditor /></ErrorBoundary></TabsContent>}
+          {isAdmin && <TabsContent value="vanta"><ErrorBoundary inline label="Vanta"><VantaIntegrationPanel /></ErrorBoundary></TabsContent>}
+          {canSeeNotifications && <TabsContent value="notifications"><ErrorBoundary inline label="Notifications"><NotificationSettings /></ErrorBoundary></TabsContent>}
+          <TabsContent value="app"><ErrorBoundary inline label="App status"><AppStatusPanel /></ErrorBoundary></TabsContent>
+
         </Tabs>
 
       </div>
