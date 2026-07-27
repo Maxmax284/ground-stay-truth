@@ -193,7 +193,14 @@ export function IntegrationSettings() {
 
   return (
     <div className="space-y-6">
+      {/* Plain-English Stripe status + write-only signing secret + self-test.
+          Isolated so a failure here can't take the rest of Integrations down. */}
+      <ErrorBoundary inline label="Stripe connection">
+        <StripeConnectionStatus />
+      </ErrorBoundary>
+
       {/* Stripe Section */}
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
