@@ -206,8 +206,61 @@ const GuestPortal = () => {
     },
   });
 
+  // ── Portal health telemetry ──────────────────────────────────────────────
+  // Staff read these in Operations Monitor → Guest Portal Health. This is the
+  // only way we can tell "the guest paid easily" from "the guest got stuck".
+  useEffect(() => {
+    const inApp = detectInAppBrowser();
+    logGuestPortalEvent({
+      event: "guest_portal_loaded",
+      status: "ok",
+      component: "GuestPortal",
+      metadata: { in_app: inApp.isInApp },
+    });
+    if (inApp.isInApp) {
+      logGuestPortalEvent({
+        event: "guest_in_app_browser_detected",
+        status: "warn",
+        severity: "warning",
+        component: "GuestPortal",
+        message: `Portal opened inside ${inApp.label}`,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (bookingsError) {
+      logGuestPortalEvent({
+        event: "guest_portal_load_failed",
+        component: "GuestPortal",
+        errorCode: "bookings_query_failed",
+        errorMessage: String((bookingsError as any)?.message ?? "Bookings query failed"),
+      });
+      return;
+    }
+    if (!bookings) return;
+    if (bookings.length === 0) {
+      logGuestPortalEvent({
+        event: "guest_booking_missing",
+        status: "warn",
+        severity: "warning",
+        component: "GuestPortal",
+        message: "Signed-in guest has no bookings linked to their account",
+      });
+      return;
+    }
+    logGuestPortalEvent({
+      event: "guest_booking_loaded",
+      status: "ok",
+      component: "GuestPortal",
+      bookingId: bookings[0]?.id ?? null,
+      metadata: { booking_count: bookings.length, states: bookings.map((b: any) => b.state) },
+    });
+  }, [isLoading, bookingsError, bookings]);
 
   const bookingIds = bookings?.map((b) => b.id) ?? [];
+
 
   // Check if any of the guest's bookings have training links
   const { data: guestTrainingLinks } = useQuery({
