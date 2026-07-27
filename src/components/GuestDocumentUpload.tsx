@@ -320,6 +320,8 @@ export function GuestDocumentUpload({
       component: "GuestDocumentUpload",
       metadata: { file_type: file.type, file_size: file.size, document_type: documentType ?? null },
     });
+    setStalled(null);
+    lastFileRef.current = file;
     try {
       await upload.mutateAsync({ bookingId, file, documentType });
       logGuestPortalEvent({
@@ -329,6 +331,28 @@ export function GuestDocumentUpload({
         component: "GuestDocumentUpload",
       });
       toast({ title: t("documents.documentUploaded") });
+      // The list refreshes from the server. If the document still isn't there
+      // shortly after, tell the guest instead of showing an empty section that
+      // looks like the upload silently vanished.
+      setTimeout(async () => {
+        const { data } = await refetch();
+        const found = (data ?? []).some((d) => d.file_name === file.name);
+        if (!found) {
+          logGuestPortalEvent({
+            event: "id_upload_stalled",
+            bookingId,
+            component: "GuestDocumentUpload",
+            errorCode: "document_not_visible",
+            errorMessage: "Uploaded document did not appear in the list",
+          });
+          setStalled(
+            t(
+              "documents.uploadNotVisible",
+              "We saved your upload but it hasn't appeared yet. Refresh to check again — if it still isn't listed, upload it once more or contact the front desk.",
+            ),
+          );
+        }
+      }, 8000);
     } catch (err: any) {
       logGuestPortalEvent({
         event: "id_upload_failed",
@@ -338,9 +362,14 @@ export function GuestDocumentUpload({
         errorMessage: String(err?.message ?? "Upload failed"),
       });
       toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+      setStalled(
+        String(err?.message ?? "") ||
+          t("documents.uploadFailedRecovery", "Your ID upload didn't go through. Try again, or contact the front desk."),
+      );
     }
     if (fileRef.current) fileRef.current.value = "";
   };
+
 
 
   const handleDelete = async (doc: GuestDocument) => {
