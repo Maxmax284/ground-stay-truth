@@ -443,7 +443,6 @@ async function handlePaymentSuccess(
           .update({
             status: "waived",
             provider_status: "collected_with_balance",
-            description: "Add-on collected with balance payment",
           })
           .eq("booking_id", bookingId)
           .eq("payment_type", "addon")
