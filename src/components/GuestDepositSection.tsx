@@ -67,7 +67,11 @@ export function GuestDepositSection({ policies, depositAmount, bookingId }: Gues
   const defaultTab = hasOnline ? "online" : "bank";
 
   return (
-    <div className="rounded-md border border-primary/20 bg-primary/5 p-3 space-y-2.5">
+    <div
+      id={`deposit-${bookingId}`}
+      data-deposit-section=""
+      className="rounded-md border border-primary/20 bg-primary/5 p-3 space-y-2.5 scroll-mt-24"
+    >
       <div className="flex items-center gap-2 text-sm font-medium text-primary">
         <Info className="h-4 w-4 shrink-0" />
         {t("deposit.guestTitle")}

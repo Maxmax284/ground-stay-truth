@@ -322,9 +322,27 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
 
   const handleAction = (type: ActionType, bookingId: string) => {
     switch (type) {
-      case "pay_deposit":
-        window.dispatchEvent(new CustomEvent("guest-portal-action", { detail: { tab: "bookings" } }));
+      case "pay_deposit": {
+        // Switch to the bookings tab, then scroll the guest straight to the
+        // deposit block for THIS booking (they shouldn't have to hunt for it).
+        window.dispatchEvent(
+          new CustomEvent("guest-portal-action", { detail: { tab: "bookings", section: "deposit" } }),
+        );
+        const scrollToDeposit = (attempt = 0) => {
+          const el =
+            document.getElementById(`deposit-${bookingId}`) ??
+            document.querySelector("[data-deposit-section]");
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            el.classList.add("ring-2", "ring-primary", "rounded-md");
+            setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 2000);
+          } else if (attempt < 10) {
+            setTimeout(() => scrollToDeposit(attempt + 1), 80);
+          }
+        };
+        setTimeout(() => scrollToDeposit(), 60);
         break;
+      }
       case "upload_id":
         window.dispatchEvent(new CustomEvent("guest-portal-action", { detail: { tab: "pre-arrival" } }));
         break;

@@ -280,17 +280,37 @@ serve(async (req) => {
         String(p.value).replace(/^"|"$/g, ""),
       ])
     );
-    const providerName = policyMap.get("payment_provider") || "manual";
+    // Provider resolution.
+    //
+    // Historically this read `payment_provider` from policy_settings and
+    // defaulted to "manual", which made the guest self-serve deposit button
+    // fail with "Online payments not configured" even on properties running
+    // live Stripe. Staff-side payment links (create-payment-link) never used
+    // this policy — they read the Stripe secret directly — so staff links
+    // worked while the guest portal claimed online payments were unavailable.
+    //
+    // We now fall back to Stripe when the policy is unset/"manual" but a
+    // live-safe Stripe setup exists. The live-safety gate above has already
+    // proven: live secret key + webhook signing secret + verified webhook.
+    const configuredProvider = policyMap.get("payment_provider") || "";
+    const providerName =
+      configuredProvider && configuredProvider !== "manual" ? configuredProvider : "stripe";
 
     // Resolve the provider adapter
     let adapter: ProviderAdapter;
     try {
       adapter = await resolveProvider(providerName, adminClient);
     } catch (e: any) {
-      return new Response(JSON.stringify({ error: e.message }), {
-        status: 400,
-        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          error: "online_payments_unavailable",
+          message: e.message || "Online payments are not configured.",
+        }),
+        {
+          status: 400,
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+        },
+      );
     }
 
     const depositPercentage = Number(
