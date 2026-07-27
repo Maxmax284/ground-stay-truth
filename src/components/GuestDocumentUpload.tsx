@@ -442,8 +442,21 @@ export function GuestDocumentUpload({
             <Upload className="h-4 w-4 mr-2" />
             {upload.isPending ? t("common.uploading") : t("documents.uploadDocument")}
           </Button>
+          {stalled && (
+            <GuestRecoveryNotice
+              message={stalled}
+              onRetry={() => {
+                setStalled(null);
+                void refetch();
+                fileRef.current?.click();
+              }}
+              retryLabel={t("documents.retryUpload", "Refresh & try again")}
+              onDismiss={() => setStalled(null)}
+            />
+          )}
         </>
       )}
+
     </div>
   );
 }
