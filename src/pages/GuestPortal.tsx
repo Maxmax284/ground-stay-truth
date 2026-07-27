@@ -198,13 +198,14 @@ const GuestPortal = () => {
     markRead.mutate(bookingId);
   };
 
-  const { data: bookings, isLoading } = useQuery({
+  const { data: bookings, isLoading, error: bookingsError, refetch: refetchBookings } = useQuery({
     queryKey: ["guest-bookings", effectiveGuestId], enabled: !!effectiveGuestId,
     queryFn: async () => {
       const { data, error } = await supabase.from("bookings").select("*, units(name, photos, amenities, rules, capacity, reviews_enabled)").eq("guest_id", effectiveGuestId!).order("check_in", { ascending: false });
       if (error) throw error; return data;
     },
   });
+
 
   const bookingIds = bookings?.map((b) => b.id) ?? [];
 
