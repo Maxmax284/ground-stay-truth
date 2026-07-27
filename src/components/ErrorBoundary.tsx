@@ -5,7 +5,16 @@ interface State {
   error?: Error;
 }
 
-export class ErrorBoundary extends React.Component<{ children: React.ReactNode }, State> {
+interface Props {
+  children: React.ReactNode;
+  /** Render a contained panel instead of a full-screen takeover. */
+  inline?: boolean;
+  /** Human name of the section, shown in the inline fallback. */
+  label?: string;
+}
+
+export class ErrorBoundary extends React.Component<Props, State> {
+
   state: State = { hasError: false };
 
   static getDerivedStateFromError(error: Error): State {
