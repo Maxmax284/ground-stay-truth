@@ -220,7 +220,7 @@ export function calculateBookingFinancials(
   const outstanding = Math.max(0, grandTotal - bookingCollected);
   const securityOutstanding = Math.max(0, secAmount - securityPaid);
   const feeOutstanding = Math.max(0, feeRequired - feePaid);
-  const addonOutstanding = Math.max(0, addonRequired - addonPaid);
+  const addonOutstanding = Math.max(0, addonRequired - addonCovered);
 
 
   const depositStatus: "paid" | "partial" | "pending" | "not_required" =
@@ -244,8 +244,8 @@ export function calculateBookingFinancials(
 
   const addonStatus: "paid" | "partial" | "pending" | "not_required" =
     addonRequired <= 0 ? "not_required"
-      : addonPaid >= addonRequired ? "paid"
-      : addonPaid > 0 ? "partial" : "pending";
+      : addonCovered >= addonRequired ? "paid"
+      : addonCovered > 0 ? "partial" : "pending";
 
   const overallStatus: "paid_in_full" | "deposit_received" | "awaiting_payment" | "refunded" =
     totalRefunded >= bookingCollected && bookingCollected > 0 ? "refunded"
@@ -272,6 +272,8 @@ export function calculateBookingFinancials(
     addonRequired,
     addonPaid,
     addonPending,
+    addonWaived,
+    addonCovered,
     addonStatus,
     addonOutstanding,
     depositRequired,
