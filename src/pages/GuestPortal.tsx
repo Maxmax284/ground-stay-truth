@@ -1086,7 +1086,7 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
         {showDocUpload && (
           <div
             id={`documents-${booking.id}`}
-            data-documents-section=""
+            data-documents-section={booking.id}
             className="border rounded-md p-3 scroll-mt-24"
           >
             <GuestDocumentUpload bookingId={booking.id} showRequirement />

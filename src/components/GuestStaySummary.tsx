@@ -362,7 +362,7 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
         );
         focusBookingBlock(
           `deposit-${bookingId}`,
-          "[data-deposit-section]",
+          `[data-deposit-section="${bookingId}"]`,
           t(
             "guestStay.actions.depositNotFound",
             "We couldn't find a deposit due on this booking. Please contact the front desk.",
@@ -394,7 +394,7 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
         );
         focusBookingBlock(
           `documents-${bookingId}`,
-          "[data-documents-section]",
+          `[data-documents-section="${bookingId}"]`,
           t(
             "guestStay.actions.uploadNotAvailable",
             "ID upload isn't available for this booking yet. Please contact the front desk.",
