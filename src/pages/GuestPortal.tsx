@@ -929,10 +929,15 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
 
 
         {showDocUpload && (
-          <div className="border rounded-md p-3">
+          <div
+            id={`documents-${booking.id}`}
+            data-documents-section=""
+            className="border rounded-md p-3 scroll-mt-24"
+          >
             <GuestDocumentUpload bookingId={booking.id} showRequirement />
           </div>
         )}
+
 
         {/* Cancel booking */}
         {canCancel && (
