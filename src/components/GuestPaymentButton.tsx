@@ -5,6 +5,7 @@ import { CreditCard, Loader2, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logGuestPortalEvent } from "@/lib/guestPortalTelemetry";
+import { GuestRecoveryNotice } from "@/components/GuestRecoveryNotice";
 
 interface GuestPaymentButtonProps {
   bookingId: string;
@@ -12,10 +13,17 @@ interface GuestPaymentButtonProps {
   currencySymbol?: string;
 }
 
+/** If the browser hasn't left the page this long after we set location, the
+ *  redirect was blocked (in-app browsers do this) — surface a manual link. */
+const REDIRECT_STALL_MS = 6000;
+
 export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = "฿" }: GuestPaymentButtonProps) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const [recovery, setRecovery] = useState<{ message: string; url?: string | null } | null>(null);
   const loadingRef = useRef(false);
+  const stallTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
 
   const handlePay = useCallback(async (trigger: "button" | "auto" = "button") => {
     if (loadingRef.current) return;
