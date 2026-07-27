@@ -196,9 +196,19 @@ export function calculateBookingFinancials(
   const feePending = sumPending(payments, "booking_fee");
   const addonPending = sumPending(payments, "addon");
 
+  // Add-ons bundled into a balance/full payment link are settled by marking the
+  // standalone obligation as `waived` (the money already came in under
+  // payment_type='balance'). Count them as covered for display, but never add
+  // them to collected totals — that would double-count the same baht.
+  const addonWaived = payments
+    .filter((p) => (p.payment_type ?? "deposit") === "addon" && p.status === "waived")
+    .reduce((s, p) => s + Number(p.amount), 0);
+
   // Add-ons (airport pickup, transfers, extras) are real obligations created as
   // payment rows — the required amount is whatever is pending plus what's paid.
-  const addonRequired = Math.round((addonPaid + addonPending) * 100) / 100;
+  const addonRequired = Math.round((addonPaid + addonPending + addonWaived) * 100) / 100;
+  const addonCovered = Math.round((addonPaid + addonWaived) * 100) / 100;
+
 
   const totalRefunded = payments
     .filter((p) => p.status === "refunded" || p.status === "partially_refunded")
