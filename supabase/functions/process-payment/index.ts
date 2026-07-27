@@ -151,26 +151,33 @@ serve(async (req) => {
 
     // Live-safety gate: refuse to open a Stripe checkout unless the platform
     // has a live key, a webhook secret, and evidence the webhook works.
+    // These three lookups are independent — run them together so the guest
+    // isn't waiting on three serial round-trips before Stripe is even called.
+    let preloadedStripeKey = "";
     {
-      const { data: secretRows } = await adminClient
-        .from("integration_secrets")
-        .select("secret_key, encrypted_value")
-        .in("secret_key", ["stripe_secret_key", "stripe_webhook_secret"]);
+      const [secretsRes, healthRes, flagRes] = await Promise.all([
+        adminClient
+          .from("integration_secrets")
+          .select("secret_key, encrypted_value")
+          .in("secret_key", ["stripe_secret_key", "stripe_webhook_secret"]),
+        adminClient
+          .from("webhook_health")
+          .select("last_success_at")
+          .eq("provider", "stripe")
+          .maybeSingle(),
+        adminClient
+          .from("policy_settings")
+          .select("value")
+          .eq("key", "stripe_live_smoke_test_passed")
+          .is("property_id", null)
+          .maybeSingle(),
+      ]);
       const secrets = new Map<string, string>();
-      for (const r of secretRows ?? []) secrets.set((r as any).secret_key, String((r as any).encrypted_value ?? ""));
+      for (const r of secretsRes.data ?? []) secrets.set((r as any).secret_key, String((r as any).encrypted_value ?? ""));
       const sk = secrets.get("stripe_secret_key") ?? "";
       const whsec = secrets.get("stripe_webhook_secret") ?? "";
-      const { data: health } = await adminClient
-        .from("webhook_health")
-        .select("last_success_at")
-        .eq("provider", "stripe")
-        .maybeSingle();
-      const { data: flagRow } = await adminClient
-        .from("policy_settings")
-        .select("value")
-        .eq("key", "stripe_live_smoke_test_passed")
-        .is("property_id", null)
-        .maybeSingle();
+      const health = healthRes.data;
+      const flagRow = flagRes.data;
       const smokeOk = flagRow && String(flagRow.value).replace(/^"|"$/g, "").toLowerCase() === "true";
       let reason: string | null = null;
       if (!sk || sk.length < 10) reason = "Stripe secret key is not configured.";
@@ -184,7 +191,9 @@ serve(async (req) => {
           headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
       }
+      preloadedStripeKey = sk;
     }
+
 
     const { booking_id, success_url, cancel_url } = await req.json();
     if (!booking_id) {
