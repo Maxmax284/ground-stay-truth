@@ -101,28 +101,31 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
         // Distinct, honest messaging. Never say "online payments unavailable"
         // when the real problem is stale booking state or a setup issue the
         // front desk can resolve with a payment link.
+        let message: string;
         if (data.error === "stripe_not_live_safe") {
-          toast.error(
-            t(
-              "deposit.tempUnavailable",
-              "Card payment is temporarily unavailable. Please contact the front desk and we'll send you a payment link.",
-            ),
+          message = t(
+            "deposit.tempUnavailable",
+            "Card payment is temporarily unavailable. Please contact the front desk and we'll send you a payment link.",
           );
         } else if (
           data.error === "online_payments_unavailable" ||
           data.error === "Online payments not configured" ||
           data.error === "Stripe not configured"
         ) {
-          toast.error(t("deposit.onlineNotConfigured", "Online payments are not available yet. Please contact the front desk."));
+          message = t("deposit.onlineNotConfigured", "Online payments are not available yet. Please contact the front desk.");
         } else if (data.error === "Booking is not awaiting deposit") {
-          toast.error(t("deposit.sessionExpired", "This booking session has expired or the status has changed. Please refresh and try again."));
+          message = t("deposit.sessionExpired", "This booking session has expired or the status has changed. Please refresh and try again.");
         } else if (data.error === "Payment already recorded") {
-          toast.error(t("deposit.alreadyPaid", "A payment has already been recorded for this booking."));
+          message = t("deposit.alreadyPaid", "A payment has already been recorded for this booking.");
         } else {
-          toast.error(data.message || data.error || "Payment failed");
+          message = data.message || data.error || "Payment failed";
         }
+        toast.error(message);
+        // Keep the reason on screen after the toast fades, with a retry.
+        setRecovery({ message });
         return;
       }
+
 
       if (data.url) {
         logGuestPortalEvent({
