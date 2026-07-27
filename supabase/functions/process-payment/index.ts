@@ -238,12 +238,25 @@ serve(async (req) => {
       );
     }
 
-    // Check for existing successful payment
-    const { data: existingPayments } = await adminClient
-      .from("payments")
-      .select("id, status")
-      .eq("booking_id", booking_id)
-      .eq("status", "recorded");
+    // Existing payments + policy settings are independent reads — batch them.
+    const [existingRes, pendingRes, policiesRes] = await Promise.all([
+      adminClient
+        .from("payments")
+        .select("id, status")
+        .eq("booking_id", booking_id)
+        .eq("status", "recorded"),
+      adminClient
+        .from("payments")
+        .select("id, provider_session_id, expires_at")
+        .eq("booking_id", booking_id)
+        .eq("status", "pending"),
+      adminClient
+        .from("policy_settings")
+        .select("key, value")
+        .in("key", ["payment_provider", "deposit_percentage", "currency_code"]),
+    ]);
+
+    const existingPayments = existingRes.data;
     if (existingPayments && existingPayments.length > 0) {
       return new Response(
         JSON.stringify({ error: "Payment already recorded" }),
@@ -254,41 +267,23 @@ serve(async (req) => {
       );
     }
 
-    // Check for existing pending session (don't create duplicate checkout sessions)
-    const { data: pendingPayments } = await adminClient
-      .from("payments")
-      .select("id, provider_session_id, expires_at")
-      .eq("booking_id", booking_id)
-      .eq("status", "pending");
-
+    // Retire stale pending sessions in one statement instead of one-by-one.
+    const pendingPayments = pendingRes.data;
     if (pendingPayments && pendingPayments.length > 0) {
-      const pending = pendingPayments[0];
-      // If not expired, reuse the existing session — but we don't have the URL stored
-      // Mark old pending as cancelled and create fresh
-      for (const p of pendingPayments) {
-        await adminClient
-          .from("payments")
-          .update({ status: "cancelled" })
-          .eq("id", p.id);
-      }
+      await adminClient
+        .from("payments")
+        .update({ status: "cancelled" })
+        .in("id", pendingPayments.map((p: any) => p.id));
     }
 
-    // Get non-secret policy settings
-    const { data: policies } = await adminClient
-      .from("policy_settings")
-      .select("key, value")
-      .in("key", [
-        "payment_provider",
-        "deposit_percentage",
-        "currency_code",
-      ]);
-
+    const policies = policiesRes.data;
     const policyMap = new Map(
       (policies ?? []).map((p: any) => [
         p.key,
         String(p.value).replace(/^"|"$/g, ""),
       ])
     );
+
     // Provider resolution.
     //
     // Historically this read `payment_provider` from policy_settings and
