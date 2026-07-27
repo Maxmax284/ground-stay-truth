@@ -343,11 +343,14 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
     }
   };
 
-  if (!bookings?.length) return null;
-
-  // Find first checked-in booking's unit ID for essentials
+  // Find first checked-in booking's unit ID for essentials.
+  // NOTE: this hook must run on every render — keep it ABOVE any early return,
+  // otherwise React throws "Rendered more hooks than during the previous render".
   const checkedInBooking = bookings?.find((b) => b.state === "checked_in") ?? bookings?.find((b) => b.state === "confirmed");
   const { data: essentials } = useStayEssentials(checkedInBooking?.unit_id);
+
+  if (!bookings?.length) return null;
+
 
   return (
     <div className="space-y-2 sm:space-y-3">
