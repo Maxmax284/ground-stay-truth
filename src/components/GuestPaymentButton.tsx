@@ -17,6 +17,14 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
 
   const handlePay = async () => {
     setLoading(true);
+    // Stripe session creation can take a few seconds (cold start + Stripe API).
+    // Tell the guest something is happening instead of leaving a silent spinner,
+    // and hard-stop after 25s so the button can never hang forever.
+    const pendingToast = toast.loading(
+      t("deposit.openingCheckout", "Opening secure checkout — this can take a few seconds..."),
+    );
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25_000);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -28,6 +36,7 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-payment`,
         {
           method: "POST",
+          signal: controller.signal,
           headers: {
             Authorization: `Bearer ${session.access_token}`,
             "Content-Type": "application/json",
@@ -40,6 +49,7 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
           }),
         }
       );
+
 
       const data = await resp.json();
 
