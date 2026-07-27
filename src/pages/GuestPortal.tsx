@@ -10,6 +10,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useGuestHistory } from "@/hooks/useGuestHistory";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { getDepositPolicy } from "@/lib/depositPolicy";
+import { logGuestPortalEvent, detectInAppBrowser } from "@/lib/guestPortalTelemetry";
+
 import { useSearchParams } from "react-router-dom";
 import GuestLayout from "@/components/GuestLayout";
 import ProfileEditor from "@/components/ProfileEditor";
