@@ -143,6 +143,28 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
         });
         // Keep the spinner up through the redirect — resetting it makes the
         // page look idle while the browser is already navigating to Stripe.
+        // If we're still here after REDIRECT_STALL_MS the navigation was
+        // blocked (common in Instagram/Facebook in-app browsers): surface the
+        // checkout URL so the guest can open or copy it manually.
+        if (stallTimerRef.current) clearTimeout(stallTimerRef.current);
+        stallTimerRef.current = setTimeout(() => {
+          loadingRef.current = false;
+          setLoading(false);
+          logGuestPortalEvent({
+            event: "checkout_redirect_stalled",
+            bookingId,
+            component: "GuestPaymentButton",
+            errorCode: "redirect_blocked",
+            errorMessage: "Browser did not navigate to checkout",
+          });
+          setRecovery({
+            message: t(
+              "deposit.redirectBlocked",
+              "Your browser didn't open the secure checkout automatically. Tap the button below to open it, or copy the link into Safari or Chrome.",
+            ),
+            url: data.url,
+          });
+        }, REDIRECT_STALL_MS);
         window.location.href = data.url;
         return;
       }
@@ -154,6 +176,7 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
         errorMessage: "Provider returned no checkout URL",
       });
       toast.error(t("deposit.noCheckoutUrl", "Checkout could not be opened. Please contact the front desk."));
+      setRecovery({ message: t("deposit.noCheckoutUrl", "Checkout could not be opened. Please contact the front desk.") });
     } catch (err: any) {
       if (err?.name === "AbortError") {
         logGuestPortalEvent({
@@ -164,12 +187,12 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
           errorMessage: "Checkout creation exceeded 25s",
           metadata: { elapsed_ms: Date.now() - startedAt },
         });
-        toast.error(
-          t(
-            "deposit.checkoutTimeout",
-            "Checkout is taking longer than usual. Please check your connection and try again, or contact the front desk for a payment link.",
-          ),
+        const message = t(
+          "deposit.checkoutTimeout",
+          "Checkout is taking longer than usual. Please check your connection and try again, or contact the front desk for a payment link.",
         );
+        toast.error(message);
+        setRecovery({ message });
       } else {
         logGuestPortalEvent({
           event: "guest_network_error",
@@ -178,9 +201,12 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
           errorCode: "network",
           errorMessage: String(err?.message ?? "Network error"),
         });
-        toast.error(err.message || "Payment failed");
+        const message = err?.message || "Payment failed";
+        toast.error(message);
+        setRecovery({ message });
       }
     } finally {
+
       clearTimeout(timeoutId);
       toast.dismiss(pendingToast);
       loadingRef.current = false;
