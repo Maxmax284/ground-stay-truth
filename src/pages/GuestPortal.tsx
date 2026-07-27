@@ -444,6 +444,12 @@ const GuestPortal = () => {
           </div>
         </div>
 
+        {/* In-app browsers (Instagram/Facebook/LINE) break Stripe redirects —
+            warn loudly and give a one-tap way into Safari/Chrome. */}
+        <GuestInAppBrowserBanner />
+
+
+
         {/* First-visit messaging onboarding — auto-hides once connected or skipped */}
         <GuestMessagingOnboarding />
 
