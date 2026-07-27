@@ -43,6 +43,8 @@ import GuidanceLab from "./pages/GuidanceLab";
 import OAuthConsent from "./pages/OAuthConsent";
 import NotificationCenter from "./pages/NotificationCenter";
 import AdjustmentsCenter from "./pages/AdjustmentsCenter";
+import StripeSetup from "./pages/StripeSetup";
+
 
 // Global React Query defaults — consistent caching across all hooks.
 // Per-hook overrides remain authoritative; this only sets the floor.
