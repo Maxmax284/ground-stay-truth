@@ -198,13 +198,14 @@ const GuestPortal = () => {
     markRead.mutate(bookingId);
   };
 
-  const { data: bookings, isLoading } = useQuery({
+  const { data: bookings, isLoading, error: bookingsError, refetch: refetchBookings } = useQuery({
     queryKey: ["guest-bookings", effectiveGuestId], enabled: !!effectiveGuestId,
     queryFn: async () => {
       const { data, error } = await supabase.from("bookings").select("*, units(name, photos, amenities, rules, capacity, reviews_enabled)").eq("guest_id", effectiveGuestId!).order("check_in", { ascending: false });
       if (error) throw error; return data;
     },
   });
+
 
   const bookingIds = bookings?.map((b) => b.id) ?? [];
 
@@ -474,17 +475,54 @@ const GuestPortal = () => {
               {activeBookings.length > 0 && <Section title={t("guestPortal.currentlyCheckedIn")}>{activeBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} guestReviews={guestReviews} guestName={guestName} />)}</Section>}
               {upcomingBookings.length > 0 && <Section title={t("guestPortal.upcoming")}>{upcomingBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} guestReviews={guestReviews} guestName={guestName} />)}</Section>}
               {pastBookings.length > 0 && <Section title={t("guestPortal.pastStays")}>{pastBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} guestReviews={guestReviews} guestName={guestName} />)}</Section>}
-              {!isLoading && !bookings?.length && (
+              {/* Loud, bounded loading state — never a silent blank screen */}
+              {isLoading && !bookingsError && (
+                <div className="space-y-3">
+                  {[0, 1].map((i) => (
+                    <div key={i} className="rounded-md border border-border p-4 space-y-3">
+                      <div className="h-4 w-1/3 rounded bg-muted animate-pulse" />
+                      <div className="h-3 w-1/2 rounded bg-muted animate-pulse" />
+                      <div className="h-3 w-2/3 rounded bg-muted animate-pulse" />
+                    </div>
+                  ))}
+                  <p className="text-center text-xs text-muted-foreground">
+                    Loading your bookings…
+                  </p>
+                </div>
+              )}
+
+              {/* Failure is visible and recoverable, not a permanent shimmer */}
+              {!!bookingsError && (
+                <div className="text-center py-12 space-y-3">
+                  <p className="text-sm font-medium text-foreground">
+                    We couldn't load your bookings.
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    This is usually a connection hiccup. Try again — if it keeps happening, message
+                    the front desk and we'll sort it out manually.
+                  </p>
+                  <Button variant="outline" size="sm" onClick={() => refetchBookings()}>
+                    Try again
+                  </Button>
+                </div>
+              )}
+
+              {!isLoading && !bookingsError && !bookings?.length && (
                 <div className="text-center py-16">
                   <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
                   <p className="text-muted-foreground">{t("guestPortal.noBookings")}</p>
                   <p className="text-sm text-muted-foreground mt-1">{t("guestPortal.browseListings")}</p>
+                  <p className="text-xs text-muted-foreground mt-3 max-w-sm mx-auto">
+                    Already booked with us but nothing shows here? Your booking may be under a
+                    different email — message the front desk and we'll link it to this account.
+                  </p>
                   <Button onClick={() => openBookingForm()} variant="outline" className="mt-4">
                     <CalendarPlus className="h-4 w-4 mr-1.5" />
                     {t("guestBooking.requestBooking")}
                   </Button>
                 </div>
               )}
+
             </div>
           </TabsContent>
 
@@ -734,6 +772,61 @@ function DepositBanner({ policies, depositAmount, bookingId }: { policies?: any[
   );
 }
 
+/**
+ * Guest-facing "what's happening / what's next" strip.
+ *
+ * Guests should never have to rely on an email to understand their booking.
+ * Purely presentational — reads the booking state, changes nothing.
+ */
+function BookingNextStep({ state, bookingId }: { state: BookingState; bookingId: string }) {
+  const copy: Record<string, { status: string; next: string }> = {
+    inquiry: {
+      status: "Booking request received.",
+      next: "Our team is reviewing your dates. We'll confirm availability shortly.",
+    },
+    soft_hold: {
+      status: "Dates held for you.",
+      next: "We're holding these dates while your request is reviewed.",
+    },
+    pending_approval: {
+      status: "Awaiting staff confirmation.",
+      next: "Nothing to do right now — we'll let you know as soon as it's approved.",
+    },
+    pending_deposit: {
+      status: "Deposit required to confirm your booking.",
+      next: "Use the payment section below. If you didn't get an email, you can still pay right here.",
+    },
+    confirmed: {
+      status: "Booking confirmed.",
+      next: "Add your ID document below and check your arrival details before you travel.",
+    },
+    checked_in: {
+      status: "You're checked in.",
+      next: "Need anything? Use Stay Support or message the front desk.",
+    },
+    completed: { status: "Stay completed.", next: "Thanks for staying with us." },
+    cancelled: { status: "Booking cancelled.", next: "Contact the front desk if this looks wrong." },
+    no_show: { status: "Marked as no-show.", next: "Contact the front desk if this looks wrong." },
+  };
+
+  const entry = copy[state];
+  if (!entry) return null;
+
+  return (
+    <div
+      id={`status-${bookingId}`}
+      className="rounded-md border border-border bg-muted/40 p-3 space-y-1"
+    >
+      <p className="text-sm font-medium text-foreground">{entry.status}</p>
+      <p className="text-xs text-muted-foreground">{entry.next}</p>
+      <p className="text-xs text-muted-foreground">
+        Haven't received an email from us? Everything you need is on this page — and you can always
+        message the front desk here.
+      </p>
+    </div>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-3">
@@ -742,6 +835,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     </div>
   );
 }
+
 
 function GuestBookingCard({ booking, messages, userId, policies, guestReviews, guestName }: { booking: any; messages: any[]; userId?: string; policies?: any[]; guestReviews?: any[]; guestName?: string | null }) {
   const { t } = useTranslation();
@@ -877,6 +971,12 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
         </div>
         {booking.notes && <p className="text-sm text-muted-foreground italic">"{booking.notes}"</p>}
 
+        {/* Plain-English "where you stand / what's next" strip. Email delivery
+            can lag, so the portal must always answer this without an inbox. */}
+        <BookingNextStep state={state} bookingId={booking.id} />
+
+
+
         {/* Deposit info banner for pending_deposit */}
         {state === "pending_deposit" && (
           <DepositBanner policies={policies} depositAmount={depositAmount} bookingId={booking.id} />
@@ -929,10 +1029,15 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
 
 
         {showDocUpload && (
-          <div className="border rounded-md p-3">
+          <div
+            id={`documents-${booking.id}`}
+            data-documents-section=""
+            className="border rounded-md p-3 scroll-mt-24"
+          >
             <GuestDocumentUpload bookingId={booking.id} showRequirement />
           </div>
         )}
+
 
         {/* Cancel booking */}
         {canCancel && (

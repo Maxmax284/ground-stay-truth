@@ -320,6 +320,28 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
     }
   }, [focusSection, bookings, pickups]);
 
+  // Scroll the guest to a specific block inside their booking card and flash it.
+  // Falls back to a toast so a tap can never look like "nothing happened".
+  const focusBookingBlock = (
+    elementId: string,
+    fallbackSelector: string,
+    missingMessage: string,
+  ) => {
+    const attempt = (n = 0) => {
+      const el = document.getElementById(elementId) ?? document.querySelector(fallbackSelector);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("ring-2", "ring-primary", "rounded-md");
+        setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 2000);
+      } else if (n < 12) {
+        setTimeout(() => attempt(n + 1), 100);
+      } else {
+        toast.info(missingMessage);
+      }
+    };
+    setTimeout(() => attempt(), 60);
+  };
+
   const handleAction = (type: ActionType, bookingId: string) => {
     switch (type) {
       case "pay_deposit": {
@@ -328,24 +350,32 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
         window.dispatchEvent(
           new CustomEvent("guest-portal-action", { detail: { tab: "bookings", section: "deposit" } }),
         );
-        const scrollToDeposit = (attempt = 0) => {
-          const el =
-            document.getElementById(`deposit-${bookingId}`) ??
-            document.querySelector("[data-deposit-section]");
-          if (el) {
-            el.scrollIntoView({ behavior: "smooth", block: "center" });
-            el.classList.add("ring-2", "ring-primary", "rounded-md");
-            setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 2000);
-          } else if (attempt < 10) {
-            setTimeout(() => scrollToDeposit(attempt + 1), 80);
-          }
-        };
-        setTimeout(() => scrollToDeposit(), 60);
+        focusBookingBlock(
+          `deposit-${bookingId}`,
+          "[data-deposit-section]",
+          t(
+            "guestStay.actions.depositNotFound",
+            "We couldn't find a deposit due on this booking. Please contact the front desk.",
+          ),
+        );
         break;
       }
       case "upload_id":
-        window.dispatchEvent(new CustomEvent("guest-portal-action", { detail: { tab: "pre-arrival" } }));
+        // The ID upload lives inside the booking card on the Bookings tab —
+        // NOT the Pre-Arrival tab (which only exists for confirmed bookings).
+        window.dispatchEvent(
+          new CustomEvent("guest-portal-action", { detail: { tab: "bookings", section: "documents" } }),
+        );
+        focusBookingBlock(
+          `documents-${bookingId}`,
+          "[data-documents-section]",
+          t(
+            "guestStay.actions.uploadNotAvailable",
+            "ID upload isn't available for this booking yet. Please contact the front desk.",
+          ),
+        );
         break;
+
       case "landed":
         openLandedDialog(bookingId);
         break;
