@@ -22,21 +22,39 @@ Deno.serve(async (req) => {
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const sb = createClient(supabaseUrl, serviceRoleKey);
 
-  // ── Admin auth ──
-  const jwt = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "").trim();
-  if (!jwt) return jsonResponse(req, { ok: false, error: "unauthorized" }, 401);
-  const userClient = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: `Bearer ${jwt}` } },
-  });
-  const { data: userData, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userData.user) return jsonResponse(req, { ok: false, error: "unauthorized" }, 401);
-  const { data: roleRow } = await sb
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userData.user.id)
-    .eq("role", "admin")
-    .maybeSingle();
-  if (!roleRow) return jsonResponse(req, { ok: false, error: "forbidden_admin_only" }, 403);
+  // ── Auth: admin JWT, OR the internal service token stored in the DB ──
+  // The internal-token path exists so operators/tooling can run the break-glass
+  // sync without an interactive admin session. Compared constant-length-ish.
+  const providedInternal = (req.headers.get("x-internal-token") || "").trim();
+  let authorized = false;
+
+  if (providedInternal.length >= 32) {
+    const { data: tokRow } = await sb
+      .from("integration_secrets")
+      .select("encrypted_value")
+      .eq("secret_key", "stripe_sync_internal_token")
+      .maybeSingle();
+    const expected = String(tokRow?.encrypted_value ?? "");
+    authorized = expected.length >= 32 && expected === providedInternal;
+  }
+
+  if (!authorized) {
+    const jwt = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "").trim();
+    if (!jwt) return jsonResponse(req, { ok: false, error: "unauthorized" }, 401);
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: `Bearer ${jwt}` } },
+    });
+    const { data: userData, error: userErr } = await userClient.auth.getUser();
+    if (userErr || !userData.user) return jsonResponse(req, { ok: false, error: "unauthorized" }, 401);
+    const { data: roleRow } = await sb
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userData.user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!roleRow) return jsonResponse(req, { ok: false, error: "forbidden_admin_only" }, 403);
+  }
+
 
   const whsec = (Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "").trim();
   if (!whsec.startsWith("whsec_")) {
