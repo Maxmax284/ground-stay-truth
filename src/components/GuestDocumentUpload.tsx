@@ -242,26 +242,77 @@ export function GuestDocumentUpload({
     : allDocuments;
   const hasDocuments = (documents?.length ?? 0) > 0;
 
+  // Guests can be sent straight here from the "Upload ID" shortcut on the stay
+  // summary — open the picker so the tap does something visible.
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { bookingId?: string } | undefined;
+      if (detail?.bookingId && detail.bookingId !== bookingId) return;
+      if (!canUpload) return;
+      fileRef.current?.click();
+    };
+    window.addEventListener("guest-open-id-picker", onOpen as EventListener);
+    return () => window.removeEventListener("guest-open-id-picker", onOpen as EventListener);
+  }, [bookingId, canUpload]);
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
     if (!allowedTypes.includes(file.type)) {
+      logGuestPortalEvent({
+        event: "id_upload_validation_failed",
+        bookingId,
+        status: "warn",
+        severity: "warning",
+        component: "GuestDocumentUpload",
+        errorCode: "invalid_file_type",
+        metadata: { file_type: file.type },
+      });
       toast({ title: t("documents.invalidFileType"), description: t("documents.invalidFileTypeDesc"), variant: "destructive" });
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
+      logGuestPortalEvent({
+        event: "id_upload_validation_failed",
+        bookingId,
+        status: "warn",
+        severity: "warning",
+        component: "GuestDocumentUpload",
+        errorCode: "file_too_large",
+        metadata: { file_size: file.size },
+      });
       toast({ title: t("documents.fileTooLarge"), description: t("documents.fileTooLargeDesc"), variant: "destructive" });
       return;
     }
+    logGuestPortalEvent({
+      event: "id_upload_started",
+      bookingId,
+      component: "GuestDocumentUpload",
+      metadata: { file_type: file.type, file_size: file.size, document_type: documentType ?? null },
+    });
     try {
       await upload.mutateAsync({ bookingId, file, documentType });
+      logGuestPortalEvent({
+        event: "id_upload_success",
+        bookingId,
+        status: "ok",
+        component: "GuestDocumentUpload",
+      });
       toast({ title: t("documents.documentUploaded") });
     } catch (err: any) {
+      logGuestPortalEvent({
+        event: "id_upload_failed",
+        bookingId,
+        component: "GuestDocumentUpload",
+        errorCode: "upload_failed",
+        errorMessage: String(err?.message ?? "Upload failed"),
+      });
       toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     }
     if (fileRef.current) fileRef.current.value = "";
   };
+
 
   const handleDelete = async (doc: GuestDocument) => {
     try {
