@@ -877,6 +877,12 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
         </div>
         {booking.notes && <p className="text-sm text-muted-foreground italic">"{booking.notes}"</p>}
 
+        {/* Plain-English "where you stand / what's next" strip. Email delivery
+            can lag, so the portal must always answer this without an inbox. */}
+        <BookingNextStep state={state} bookingId={booking.id} />
+
+
+
         {/* Deposit info banner for pending_deposit */}
         {state === "pending_deposit" && (
           <DepositBanner policies={policies} depositAmount={depositAmount} bookingId={booking.id} />
