@@ -196,9 +196,19 @@ export function calculateBookingFinancials(
   const feePending = sumPending(payments, "booking_fee");
   const addonPending = sumPending(payments, "addon");
 
+  // Add-ons bundled into a balance/full payment link are settled by marking the
+  // standalone obligation as `waived` (the money already came in under
+  // payment_type='balance'). Count them as covered for display, but never add
+  // them to collected totals — that would double-count the same baht.
+  const addonWaived = payments
+    .filter((p) => (p.payment_type ?? "deposit") === "addon" && p.status === "waived")
+    .reduce((s, p) => s + Number(p.amount), 0);
+
   // Add-ons (airport pickup, transfers, extras) are real obligations created as
   // payment rows — the required amount is whatever is pending plus what's paid.
-  const addonRequired = Math.round((addonPaid + addonPending) * 100) / 100;
+  const addonRequired = Math.round((addonPaid + addonPending + addonWaived) * 100) / 100;
+  const addonCovered = Math.round((addonPaid + addonWaived) * 100) / 100;
+
 
   const totalRefunded = payments
     .filter((p) => p.status === "refunded" || p.status === "partially_refunded")
@@ -210,7 +220,7 @@ export function calculateBookingFinancials(
   const outstanding = Math.max(0, grandTotal - bookingCollected);
   const securityOutstanding = Math.max(0, secAmount - securityPaid);
   const feeOutstanding = Math.max(0, feeRequired - feePaid);
-  const addonOutstanding = Math.max(0, addonRequired - addonPaid);
+  const addonOutstanding = Math.max(0, addonRequired - addonCovered);
 
 
   const depositStatus: "paid" | "partial" | "pending" | "not_required" =
@@ -234,8 +244,8 @@ export function calculateBookingFinancials(
 
   const addonStatus: "paid" | "partial" | "pending" | "not_required" =
     addonRequired <= 0 ? "not_required"
-      : addonPaid >= addonRequired ? "paid"
-      : addonPaid > 0 ? "partial" : "pending";
+      : addonCovered >= addonRequired ? "paid"
+      : addonCovered > 0 ? "partial" : "pending";
 
   const overallStatus: "paid_in_full" | "deposit_received" | "awaiting_payment" | "refunded" =
     totalRefunded >= bookingCollected && bookingCollected > 0 ? "refunded"
@@ -262,6 +272,8 @@ export function calculateBookingFinancials(
     addonRequired,
     addonPaid,
     addonPending,
+    addonWaived,
+    addonCovered,
     addonStatus,
     addonOutstanding,
     depositRequired,

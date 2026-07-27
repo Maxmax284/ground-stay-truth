@@ -417,7 +417,7 @@ async function handlePaymentSuccess(
   if (event.sessionId) {
     const { data: pendingPayment } = await adminClient
       .from("payments")
-      .select("id")
+      .select("id, payment_type")
       .eq("provider_session_id", event.sessionId)
       .eq("status", "pending")
       .maybeSingle();
@@ -433,11 +433,28 @@ async function handlePaymentSuccess(
         })
         .eq("id", pendingPayment.id);
 
+      // PAYMENT-CRITICAL: balance/full links bundle outstanding add-on fees
+      // (e.g. airport pickup) into a single charge recorded as `balance`.
+      // Settle the standalone pending `addon` obligations so they don't sit
+      // there looking uncollected — which would invite a duplicate charge.
+      if (pendingPayment.payment_type === "balance") {
+        await adminClient
+          .from("payments")
+          .update({
+            status: "waived",
+            provider_status: "collected_with_balance",
+          })
+          .eq("booking_id", bookingId)
+          .eq("payment_type", "addon")
+          .eq("status", "pending");
+      }
+
       // Link payment to event
       await adminClient
         .from("payment_events")
         .update({ payment_id: pendingPayment.id })
         .eq("provider_event_id", event.providerEventId);
+
     } else {
       // No pending payment found — insert a recorded one (backward compat / race condition)
       const { data: newPayment } = await adminClient

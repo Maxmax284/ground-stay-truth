@@ -165,10 +165,10 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
             <Row
               label="Add-ons (airport pickup, extras)"
               required={fin.addonRequired}
-              paid={fin.addonPaid}
+              paid={fin.addonCovered}
               status={fin.addonStatus}
               fmt={fmt}
-              hint="Billed on top of the room total"
+              hint={fin.addonWaived > 0 ? "Collected with the balance payment" : "Billed on top of the room total"}
             />
           )}
           {fin.feeStatus !== "not_required" && (
