@@ -27,9 +27,10 @@ import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { formatPrice } from "@/lib/currency";
 import { calculateOutstanding, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_VARIANTS, PAYMENT_TYPE_LABELS, getPaymentProvenance, type PaymentStatus, type PaymentType } from "@/lib/paymentTypes";
-import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText, Info, Wrench, Shirt, Globe, Sparkles, RotateCcw, Paperclip, Image as ImageIcon, File, X, Loader2 } from "lucide-react";
+import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText, Info, Wrench, Shirt, Globe, Sparkles, RotateCcw, Paperclip, Image as ImageIcon, File, X, Loader2, Activity } from "lucide-react";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { RefundDialog } from "@/components/RefundDialog";
+import { GuestPortalActivityTimeline } from "@/components/GuestPortalActivityTimeline";
 import { PaymentLinkManager } from "@/components/PaymentLinkManager";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { RequiredDocumentsCard } from "@/components/RequiredDocumentsCard";
@@ -91,6 +92,8 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
   const canSeeAmounts = permissions.canViewPaymentAmounts(role);
   const canRecordPay = permissions.canRecordPayment(role);
   const canApplyDiscount = role === "admin" || role === "manager";
+  // Portal activity is staff-only telemetry; RLS limits reads to admin/manager.
+  const canSeePortalActivity = role === "admin" || role === "manager";
   const [discountOpen, setDiscountOpen] = useState(false);
 
   // Central eligibility helper — same rule everywhere discounts are offered.
@@ -338,10 +341,17 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
             <TabsTrigger value="payments" className="flex-1"><CreditCard className="h-4 w-4 mr-1" /> {t("bookingDetail.paymentsTab")}</TabsTrigger>
             <TabsTrigger value="messages" className="flex-1"><MessageSquare className="h-4 w-4 mr-1" /> {t("bookingDetail.notesTab")}</TabsTrigger>
             <TabsTrigger value="documents" className="flex-1"><FileText className="h-4 w-4 mr-1" /> {t("bookingDetail.documentsTab")}</TabsTrigger>
+            {canSeePortalActivity && (
+              <TabsTrigger value="portal" className="flex-1"><Activity className="h-4 w-4 mr-1" /> Portal</TabsTrigger>
+            )}
             {isCheckedIn && (
               <TabsTrigger value="support" className="flex-1"><Wrench className="h-4 w-4 mr-1" /> {t("staySupport.tabLabel")}</TabsTrigger>
             )}
           </TabsList>
+          {canSeePortalActivity && (
+            <TabsContent value="portal"><GuestPortalActivityTimeline bookingId={booking.id} /></TabsContent>
+          )}
+
           <TabsContent value="history"><StateHistoryTab logs={stateLog ?? []} /></TabsContent>
           <TabsContent value="payments"><PaymentsTab payments={payments ?? []} bookingId={booking.id} bookingState={booking.state as string} canSeeAmounts={canSeeAmounts} canRecord={canRecordPay} policies={policies} totalPrice={booking.total_price} /></TabsContent>
           <TabsContent value="messages"><MessagesTab messages={messages ?? []} bookingId={booking.id} /></TabsContent>

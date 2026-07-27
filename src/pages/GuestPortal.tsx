@@ -11,6 +11,9 @@ import { useGuestHistory } from "@/hooks/useGuestHistory";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { getDepositPolicy } from "@/lib/depositPolicy";
 import { logGuestPortalEvent, detectInAppBrowser } from "@/lib/guestPortalTelemetry";
+import { GuestInAppBrowserBanner } from "@/components/GuestInAppBrowserBanner";
+import { GuestEmailFallbackNotice } from "@/components/GuestEmailFallbackNotice";
+
 
 import { useSearchParams } from "react-router-dom";
 import GuestLayout from "@/components/GuestLayout";
@@ -441,6 +444,12 @@ const GuestPortal = () => {
           </div>
         </div>
 
+        {/* In-app browsers (Instagram/Facebook/LINE) break Stripe redirects —
+            warn loudly and give a one-tap way into Safari/Chrome. */}
+        <GuestInAppBrowserBanner />
+
+
+
         {/* First-visit messaging onboarding — auto-hides once connected or skipped */}
         <GuestMessagingOnboarding />
 
@@ -471,6 +480,16 @@ const GuestPortal = () => {
 
         {/* Passive Layer: Your Stay Summary */}
         <GuestStaySummary focusSection={focusSection} onSectionFocused={() => setFocusSection(null)} />
+
+        {/* Email is not the source of truth — the portal is. Tell them how to
+            pay and upload ID here if nothing ever landed in their inbox. */}
+        {(upcomingBookings.length > 0 || activeBookings.length > 0) && (
+          <GuestEmailFallbackNotice
+            bookingId={(upcomingBookings[0] ?? activeBookings[0])?.id ?? null}
+            depositDue={upcomingBookings.some((b: any) => b.state === "pending_deposit")}
+          />
+        )}
+
 
         {/* Heads Up — contextual, journey-aware intelligence carousel */}
         <GuestHeadsUpStrip
