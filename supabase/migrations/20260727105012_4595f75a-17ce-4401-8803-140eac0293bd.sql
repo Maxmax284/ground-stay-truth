@@ -1,0 +1,1 @@
+DELETE FROM public.integration_secrets WHERE secret_key = 'stripe_sync_internal_token';
