@@ -338,10 +338,17 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
             <TabsTrigger value="payments" className="flex-1"><CreditCard className="h-4 w-4 mr-1" /> {t("bookingDetail.paymentsTab")}</TabsTrigger>
             <TabsTrigger value="messages" className="flex-1"><MessageSquare className="h-4 w-4 mr-1" /> {t("bookingDetail.notesTab")}</TabsTrigger>
             <TabsTrigger value="documents" className="flex-1"><FileText className="h-4 w-4 mr-1" /> {t("bookingDetail.documentsTab")}</TabsTrigger>
+            {canSeePortalActivity && (
+              <TabsTrigger value="portal" className="flex-1"><Activity className="h-4 w-4 mr-1" /> Portal</TabsTrigger>
+            )}
             {isCheckedIn && (
               <TabsTrigger value="support" className="flex-1"><Wrench className="h-4 w-4 mr-1" /> {t("staySupport.tabLabel")}</TabsTrigger>
             )}
           </TabsList>
+          {canSeePortalActivity && (
+            <TabsContent value="portal"><GuestPortalActivityTimeline bookingId={booking.id} /></TabsContent>
+          )}
+
           <TabsContent value="history"><StateHistoryTab logs={stateLog ?? []} /></TabsContent>
           <TabsContent value="payments"><PaymentsTab payments={payments ?? []} bookingId={booking.id} bookingState={booking.state as string} canSeeAmounts={canSeeAmounts} canRecord={canRecordPay} policies={policies} totalPrice={booking.total_price} /></TabsContent>
           <TabsContent value="messages"><MessagesTab messages={messages ?? []} bookingId={booking.id} /></TabsContent>
