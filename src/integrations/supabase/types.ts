@@ -1085,6 +1085,89 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_portal_activity: {
+        Row: {
+          action: string | null
+          booking_id: string | null
+          browser_name: string | null
+          component: string | null
+          correlation_id: string | null
+          created_at: string
+          device_type: string | null
+          error_code: string | null
+          error_message: string | null
+          event_status: string
+          event_type: string
+          guest_id: string | null
+          id: string
+          is_in_app_browser: boolean
+          message: string | null
+          metadata: Json
+          os_name: string | null
+          route: string | null
+          session_id: string | null
+          severity: string
+          source: string
+          user_agent: string | null
+        }
+        Insert: {
+          action?: string | null
+          booking_id?: string | null
+          browser_name?: string | null
+          component?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          device_type?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          event_status?: string
+          event_type: string
+          guest_id?: string | null
+          id?: string
+          is_in_app_browser?: boolean
+          message?: string | null
+          metadata?: Json
+          os_name?: string | null
+          route?: string | null
+          session_id?: string | null
+          severity?: string
+          source?: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string | null
+          booking_id?: string | null
+          browser_name?: string | null
+          component?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          device_type?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          event_status?: string
+          event_type?: string
+          guest_id?: string | null
+          id?: string
+          is_in_app_browser?: boolean
+          message?: string | null
+          metadata?: Json
+          os_name?: string | null
+          route?: string | null
+          session_id?: string | null
+          severity?: string
+          source?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_portal_activity_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       housekeeping_tasks: {
         Row: {
           assigned_to: string | null

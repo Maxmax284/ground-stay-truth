@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { logGuestPortalEvent } from "@/lib/guestPortalTelemetry";
+
 import { useAuth } from "@/hooks/useAuth";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { useStayEssentials } from "@/hooks/useStayEssentials";
@@ -326,6 +328,7 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
     elementId: string,
     fallbackSelector: string,
     missingMessage: string,
+    onFound?: () => void,
   ) => {
     const attempt = (n = 0) => {
       const el = document.getElementById(elementId) ?? document.querySelector(fallbackSelector);
@@ -333,6 +336,7 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
         el.scrollIntoView({ behavior: "smooth", block: "center" });
         el.classList.add("ring-2", "ring-primary", "rounded-md");
         setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 2000);
+        onFound?.();
       } else if (n < 12) {
         setTimeout(() => attempt(n + 1), 100);
       } else {
@@ -345,8 +349,14 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
   const handleAction = (type: ActionType, bookingId: string) => {
     switch (type) {
       case "pay_deposit": {
-        // Switch to the bookings tab, then scroll the guest straight to the
-        // deposit block for THIS booking (they shouldn't have to hunt for it).
+        // Switch to the bookings tab, scroll the guest straight to the deposit
+        // block for THIS booking, then actually start checkout — a tap on
+        // "Pay Deposit" should pay, not just move the page.
+        logGuestPortalEvent({
+          event: "deposit_button_clicked",
+          bookingId,
+          component: "GuestStaySummary",
+        });
         window.dispatchEvent(
           new CustomEvent("guest-portal-action", { detail: { tab: "bookings", section: "deposit" } }),
         );
@@ -357,12 +367,28 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
             "guestStay.actions.depositNotFound",
             "We couldn't find a deposit due on this booking. Please contact the front desk.",
           ),
+          () => {
+            logGuestPortalEvent({
+              event: "deposit_section_scrolled",
+              bookingId,
+              status: "ok",
+              component: "GuestStaySummary",
+            });
+            window.dispatchEvent(
+              new CustomEvent("guest-start-deposit-checkout", { detail: { bookingId } }),
+            );
+          },
         );
         break;
       }
       case "upload_id":
         // The ID upload lives inside the booking card on the Bookings tab —
         // NOT the Pre-Arrival tab (which only exists for confirmed bookings).
+        logGuestPortalEvent({
+          event: "id_upload_button_clicked",
+          bookingId,
+          component: "GuestStaySummary",
+        });
         window.dispatchEvent(
           new CustomEvent("guest-portal-action", { detail: { tab: "bookings", section: "documents" } }),
         );
@@ -373,8 +399,20 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
             "guestStay.actions.uploadNotAvailable",
             "ID upload isn't available for this booking yet. Please contact the front desk.",
           ),
+          () => {
+            logGuestPortalEvent({
+              event: "id_upload_section_scrolled",
+              bookingId,
+              status: "ok",
+              component: "GuestStaySummary",
+            });
+            window.dispatchEvent(
+              new CustomEvent("guest-open-id-picker", { detail: { bookingId } }),
+            );
+          },
         );
         break;
+
 
       case "landed":
         openLandedDialog(bookingId);

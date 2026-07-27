@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { CreditCard, Loader2, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logGuestPortalEvent } from "@/lib/guestPortalTelemetry";
 
 interface GuestPaymentButtonProps {
   bookingId: string;
@@ -14,9 +15,19 @@ interface GuestPaymentButtonProps {
 export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = "฿" }: GuestPaymentButtonProps) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(false);
 
-  const handlePay = async () => {
+  const handlePay = useCallback(async (trigger: "button" | "auto" = "button") => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
+    logGuestPortalEvent({
+      event: "checkout_button_clicked",
+      bookingId,
+      component: "GuestPaymentButton",
+      action: trigger,
+      metadata: { deposit_amount: depositAmount },
+    });
     // Stripe session creation can take a few seconds (cold start + Stripe API).
     // Tell the guest something is happening instead of leaving a silent spinner,
     // and hard-stop after 25s so the button can never hang forever.
@@ -25,12 +36,27 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
     );
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 25_000);
+    const startedAt = Date.now();
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         toast.error("Please log in to continue");
+        logGuestPortalEvent({
+          event: "checkout_create_failed",
+          bookingId,
+          component: "GuestPaymentButton",
+          errorCode: "no_session",
+          errorMessage: "No active auth session",
+        });
         return;
       }
+
+      logGuestPortalEvent({
+        event: "checkout_create_started",
+        bookingId,
+        component: "GuestPaymentButton",
+      });
+
 
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-payment`,
@@ -54,6 +80,14 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
       const data = await resp.json();
 
       if (!resp.ok) {
+        logGuestPortalEvent({
+          event: "checkout_create_failed",
+          bookingId,
+          component: "GuestPaymentButton",
+          errorCode: String(data.error ?? resp.status),
+          errorMessage: String(data.message ?? data.error ?? `HTTP ${resp.status}`),
+          metadata: { http_status: resp.status, elapsed_ms: Date.now() - startedAt },
+        });
         // Distinct, honest messaging. Never say "online payments unavailable"
         // when the real problem is stale booking state or a setup issue the
         // front desk can resolve with a payment link.
@@ -81,14 +115,42 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
       }
 
       if (data.url) {
+        logGuestPortalEvent({
+          event: "checkout_create_success",
+          bookingId,
+          status: "ok",
+          component: "GuestPaymentButton",
+          metadata: { elapsed_ms: Date.now() - startedAt },
+        });
+        logGuestPortalEvent({
+          event: "checkout_redirect_started",
+          bookingId,
+          status: "ok",
+          component: "GuestPaymentButton",
+        });
         // Keep the spinner up through the redirect — resetting it makes the
         // page look idle while the browser is already navigating to Stripe.
         window.location.href = data.url;
         return;
       }
+      logGuestPortalEvent({
+        event: "checkout_create_failed",
+        bookingId,
+        component: "GuestPaymentButton",
+        errorCode: "no_checkout_url",
+        errorMessage: "Provider returned no checkout URL",
+      });
       toast.error(t("deposit.noCheckoutUrl", "Checkout could not be opened. Please contact the front desk."));
     } catch (err: any) {
       if (err?.name === "AbortError") {
+        logGuestPortalEvent({
+          event: "checkout_timeout",
+          bookingId,
+          component: "GuestPaymentButton",
+          errorCode: "timeout",
+          errorMessage: "Checkout creation exceeded 25s",
+          metadata: { elapsed_ms: Date.now() - startedAt },
+        });
         toast.error(
           t(
             "deposit.checkoutTimeout",
@@ -96,19 +158,41 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
           ),
         );
       } else {
+        logGuestPortalEvent({
+          event: "guest_network_error",
+          bookingId,
+          component: "GuestPaymentButton",
+          errorCode: "network",
+          errorMessage: String(err?.message ?? "Network error"),
+        });
         toast.error(err.message || "Payment failed");
       }
     } finally {
       clearTimeout(timeoutId);
       toast.dismiss(pendingToast);
+      loadingRef.current = false;
       setLoading(false);
     }
-  };
+  }, [bookingId, depositAmount, t]);
+
+  // The summary card's "Pay Deposit" shortcut fires this event after scrolling
+  // to the deposit block, so one tap actually starts checkout instead of just
+  // moving the page. Only the matching booking's button responds.
+  useEffect(() => {
+    const onAuto = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { bookingId?: string } | undefined;
+      if (detail?.bookingId && detail.bookingId !== bookingId) return;
+      void handlePay("auto");
+    };
+    window.addEventListener("guest-start-deposit-checkout", onAuto as EventListener);
+    return () => window.removeEventListener("guest-start-deposit-checkout", onAuto as EventListener);
+  }, [bookingId, handlePay]);
 
 
   return (
     <Button
-      onClick={handlePay}
+      onClick={() => handlePay("button")}
+
       disabled={loading}
       className="w-full gap-2"
       size="sm"
