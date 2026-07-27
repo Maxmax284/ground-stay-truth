@@ -227,28 +227,45 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
     return () => window.removeEventListener("guest-start-deposit-checkout", onAuto as EventListener);
   }, [bookingId, handlePay]);
 
+  // Never leave a stall timer running after unmount.
+  useEffect(() => () => {
+    if (stallTimerRef.current) clearTimeout(stallTimerRef.current);
+  }, []);
 
   return (
-    <Button
-      onClick={() => handlePay("button")}
+    <div className="space-y-2">
+      <Button
+        onClick={() => handlePay("button")}
+        disabled={loading}
+        className="w-full gap-2"
+        size="sm"
+      >
+        {loading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <CreditCard className="h-4 w-4" />
+        )}
+        {loading
+          ? t("common.pleaseWait", "Please wait...")
+          : t("deposit.payOnline", "Pay Deposit Online")}
+        {depositAmount != null && !loading && (
+          <span className="font-semibold ml-1">
+            {currencySymbol}{depositAmount.toFixed(0)}
+          </span>
+        )}
+      </Button>
 
-      disabled={loading}
-      className="w-full gap-2"
-      size="sm"
-    >
-      {loading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <CreditCard className="h-4 w-4" />
+      {recovery && (
+        <GuestRecoveryNotice
+          message={recovery.message}
+          link={recovery.url}
+          linkLabel={t("deposit.openCheckoutManually", "Open secure checkout")}
+          onRetry={recovery.url ? undefined : () => handlePay("button")}
+          retryLabel={t("common.tryAgain", "Try again")}
+          onDismiss={() => setRecovery(null)}
+        />
       )}
-      {loading
-        ? t("common.pleaseWait", "Please wait...")
-        : t("deposit.payOnline", "Pay Deposit Online")}
-      {depositAmount != null && !loading && (
-        <span className="font-semibold ml-1">
-          {currencySymbol}{depositAmount.toFixed(0)}
-        </span>
-      )}
-    </Button>
+    </div>
   );
 }
+
