@@ -34,7 +34,10 @@ export type GuestPortalEvent =
   | "checkout_create_success"
   | "checkout_create_failed"
   | "checkout_redirect_started"
+  | "checkout_redirect_stalled"
   | "checkout_timeout"
+  | "id_upload_stalled"
+
   // id upload
   | "id_upload_button_clicked"
   | "id_upload_section_scrolled"

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Loader2, ExternalLink } from "lucide-react";
+import { CreditCard, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logGuestPortalEvent } from "@/lib/guestPortalTelemetry";
+import { GuestRecoveryNotice } from "@/components/GuestRecoveryNotice";
 
 interface GuestPaymentButtonProps {
   bookingId: string;
@@ -12,15 +13,24 @@ interface GuestPaymentButtonProps {
   currencySymbol?: string;
 }
 
+/** If the browser hasn't left the page this long after we set location, the
+ *  redirect was blocked (in-app browsers do this) — surface a manual link. */
+const REDIRECT_STALL_MS = 6000;
+
 export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = "฿" }: GuestPaymentButtonProps) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const [recovery, setRecovery] = useState<{ message: string; url?: string | null } | null>(null);
   const loadingRef = useRef(false);
+  const stallTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
 
   const handlePay = useCallback(async (trigger: "button" | "auto" = "button") => {
     if (loadingRef.current) return;
     loadingRef.current = true;
+    setRecovery(null);
     setLoading(true);
+
     logGuestPortalEvent({
       event: "checkout_button_clicked",
       bookingId,
@@ -91,28 +101,31 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
         // Distinct, honest messaging. Never say "online payments unavailable"
         // when the real problem is stale booking state or a setup issue the
         // front desk can resolve with a payment link.
+        let message: string;
         if (data.error === "stripe_not_live_safe") {
-          toast.error(
-            t(
-              "deposit.tempUnavailable",
-              "Card payment is temporarily unavailable. Please contact the front desk and we'll send you a payment link.",
-            ),
+          message = t(
+            "deposit.tempUnavailable",
+            "Card payment is temporarily unavailable. Please contact the front desk and we'll send you a payment link.",
           );
         } else if (
           data.error === "online_payments_unavailable" ||
           data.error === "Online payments not configured" ||
           data.error === "Stripe not configured"
         ) {
-          toast.error(t("deposit.onlineNotConfigured", "Online payments are not available yet. Please contact the front desk."));
+          message = t("deposit.onlineNotConfigured", "Online payments are not available yet. Please contact the front desk.");
         } else if (data.error === "Booking is not awaiting deposit") {
-          toast.error(t("deposit.sessionExpired", "This booking session has expired or the status has changed. Please refresh and try again."));
+          message = t("deposit.sessionExpired", "This booking session has expired or the status has changed. Please refresh and try again.");
         } else if (data.error === "Payment already recorded") {
-          toast.error(t("deposit.alreadyPaid", "A payment has already been recorded for this booking."));
+          message = t("deposit.alreadyPaid", "A payment has already been recorded for this booking.");
         } else {
-          toast.error(data.message || data.error || "Payment failed");
+          message = data.message || data.error || "Payment failed";
         }
+        toast.error(message);
+        // Keep the reason on screen after the toast fades, with a retry.
+        setRecovery({ message });
         return;
       }
+
 
       if (data.url) {
         logGuestPortalEvent({
@@ -130,6 +143,28 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
         });
         // Keep the spinner up through the redirect — resetting it makes the
         // page look idle while the browser is already navigating to Stripe.
+        // If we're still here after REDIRECT_STALL_MS the navigation was
+        // blocked (common in Instagram/Facebook in-app browsers): surface the
+        // checkout URL so the guest can open or copy it manually.
+        if (stallTimerRef.current) clearTimeout(stallTimerRef.current);
+        stallTimerRef.current = setTimeout(() => {
+          loadingRef.current = false;
+          setLoading(false);
+          logGuestPortalEvent({
+            event: "checkout_redirect_stalled",
+            bookingId,
+            component: "GuestPaymentButton",
+            errorCode: "redirect_blocked",
+            errorMessage: "Browser did not navigate to checkout",
+          });
+          setRecovery({
+            message: t(
+              "deposit.redirectBlocked",
+              "Your browser didn't open the secure checkout automatically. Tap the button below to open it, or copy the link into Safari or Chrome.",
+            ),
+            url: data.url,
+          });
+        }, REDIRECT_STALL_MS);
         window.location.href = data.url;
         return;
       }
@@ -141,6 +176,7 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
         errorMessage: "Provider returned no checkout URL",
       });
       toast.error(t("deposit.noCheckoutUrl", "Checkout could not be opened. Please contact the front desk."));
+      setRecovery({ message: t("deposit.noCheckoutUrl", "Checkout could not be opened. Please contact the front desk.") });
     } catch (err: any) {
       if (err?.name === "AbortError") {
         logGuestPortalEvent({
@@ -151,12 +187,12 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
           errorMessage: "Checkout creation exceeded 25s",
           metadata: { elapsed_ms: Date.now() - startedAt },
         });
-        toast.error(
-          t(
-            "deposit.checkoutTimeout",
-            "Checkout is taking longer than usual. Please check your connection and try again, or contact the front desk for a payment link.",
-          ),
+        const message = t(
+          "deposit.checkoutTimeout",
+          "Checkout is taking longer than usual. Please check your connection and try again, or contact the front desk for a payment link.",
         );
+        toast.error(message);
+        setRecovery({ message });
       } else {
         logGuestPortalEvent({
           event: "guest_network_error",
@@ -165,9 +201,12 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
           errorCode: "network",
           errorMessage: String(err?.message ?? "Network error"),
         });
-        toast.error(err.message || "Payment failed");
+        const message = err?.message || "Payment failed";
+        toast.error(message);
+        setRecovery({ message });
       }
     } finally {
+
       clearTimeout(timeoutId);
       toast.dismiss(pendingToast);
       loadingRef.current = false;
@@ -188,28 +227,45 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
     return () => window.removeEventListener("guest-start-deposit-checkout", onAuto as EventListener);
   }, [bookingId, handlePay]);
 
+  // Never leave a stall timer running after unmount.
+  useEffect(() => () => {
+    if (stallTimerRef.current) clearTimeout(stallTimerRef.current);
+  }, []);
 
   return (
-    <Button
-      onClick={() => handlePay("button")}
+    <div className="space-y-2">
+      <Button
+        onClick={() => handlePay("button")}
+        disabled={loading}
+        className="w-full gap-2"
+        size="sm"
+      >
+        {loading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <CreditCard className="h-4 w-4" />
+        )}
+        {loading
+          ? t("common.pleaseWait", "Please wait...")
+          : t("deposit.payOnline", "Pay Deposit Online")}
+        {depositAmount != null && !loading && (
+          <span className="font-semibold ml-1">
+            {currencySymbol}{depositAmount.toFixed(0)}
+          </span>
+        )}
+      </Button>
 
-      disabled={loading}
-      className="w-full gap-2"
-      size="sm"
-    >
-      {loading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <CreditCard className="h-4 w-4" />
+      {recovery && (
+        <GuestRecoveryNotice
+          message={recovery.message}
+          link={recovery.url}
+          linkLabel={t("deposit.openCheckoutManually", "Open secure checkout")}
+          onRetry={recovery.url ? undefined : () => handlePay("button")}
+          retryLabel={t("common.tryAgain", "Try again")}
+          onDismiss={() => setRecovery(null)}
+        />
       )}
-      {loading
-        ? t("common.pleaseWait", "Please wait...")
-        : t("deposit.payOnline", "Pay Deposit Online")}
-      {depositAmount != null && !loading && (
-        <span className="font-semibold ml-1">
-          {currencySymbol}{depositAmount.toFixed(0)}
-        </span>
-      )}
-    </Button>
+    </div>
   );
 }
+

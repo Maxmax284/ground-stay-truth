@@ -4,7 +4,9 @@ import { logGuestPortalEvent } from "@/lib/guestPortalTelemetry";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { GuestRecoveryNotice } from "@/components/GuestRecoveryNotice";
 import { useToast } from "@/hooks/use-toast";
+
 import {
   useGuestDocuments,
   useUploadGuestDocument,
@@ -232,17 +234,42 @@ export function GuestDocumentUpload({
   const { role } = useAuth();
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
-  const { data: allDocuments, isLoading } = useGuestDocuments(bookingId);
+  const { data: allDocuments, isLoading, refetch } = useGuestDocuments(bookingId);
   const upload = useUploadGuestDocument();
   const deleteDoc = useDeleteGuestDocument();
   const canUpload = permissions.canUploadDocuments(role);
   const canDelete = permissions.canManageUnits(role);
   const isStaff = permissions.isStaff(role);
+  const [stalled, setStalled] = useState<string | null>(null);
+  const lastFileRef = useRef<File | null>(null);
   // When a documentType filter is active, only show docs matching that type.
   const documents = documentType
     ? (allDocuments ?? []).filter((d) => (d.document_type ?? "passport") === documentType)
     : allDocuments;
   const hasDocuments = (documents?.length ?? 0) > 0;
+
+  // If an upload never resolves (flaky mobile data, in-app browsers), give the
+  // guest a visible way out instead of a spinner that runs forever.
+  useEffect(() => {
+    if (!upload.isPending) return;
+    const timer = setTimeout(() => {
+      logGuestPortalEvent({
+        event: "id_upload_stalled",
+        bookingId,
+        component: "GuestDocumentUpload",
+        errorCode: "upload_stalled",
+        errorMessage: "Upload exceeded 25s without completing",
+      });
+      setStalled(
+        t(
+          "documents.uploadStalled",
+          "Your ID upload is taking longer than expected. Check your connection and try again — if it keeps failing, contact the front desk and we can take it another way.",
+        ),
+      );
+    }, 25_000);
+    return () => clearTimeout(timer);
+  }, [upload.isPending, bookingId, t]);
+
 
   // Guests can be sent straight here from the "Upload ID" shortcut on the stay
   // summary — open the picker so the tap does something visible.
@@ -293,6 +320,8 @@ export function GuestDocumentUpload({
       component: "GuestDocumentUpload",
       metadata: { file_type: file.type, file_size: file.size, document_type: documentType ?? null },
     });
+    setStalled(null);
+    lastFileRef.current = file;
     try {
       await upload.mutateAsync({ bookingId, file, documentType });
       logGuestPortalEvent({
@@ -302,6 +331,28 @@ export function GuestDocumentUpload({
         component: "GuestDocumentUpload",
       });
       toast({ title: t("documents.documentUploaded") });
+      // The list refreshes from the server. If the document still isn't there
+      // shortly after, tell the guest instead of showing an empty section that
+      // looks like the upload silently vanished.
+      setTimeout(async () => {
+        const { data } = await refetch();
+        const found = (data ?? []).some((d) => d.file_name === file.name);
+        if (!found) {
+          logGuestPortalEvent({
+            event: "id_upload_stalled",
+            bookingId,
+            component: "GuestDocumentUpload",
+            errorCode: "document_not_visible",
+            errorMessage: "Uploaded document did not appear in the list",
+          });
+          setStalled(
+            t(
+              "documents.uploadNotVisible",
+              "We saved your upload but it hasn't appeared yet. Refresh to check again — if it still isn't listed, upload it once more or contact the front desk.",
+            ),
+          );
+        }
+      }, 8000);
     } catch (err: any) {
       logGuestPortalEvent({
         event: "id_upload_failed",
@@ -311,9 +362,14 @@ export function GuestDocumentUpload({
         errorMessage: String(err?.message ?? "Upload failed"),
       });
       toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+      setStalled(
+        String(err?.message ?? "") ||
+          t("documents.uploadFailedRecovery", "Your ID upload didn't go through. Try again, or contact the front desk."),
+      );
     }
     if (fileRef.current) fileRef.current.value = "";
   };
+
 
 
   const handleDelete = async (doc: GuestDocument) => {
@@ -386,8 +442,21 @@ export function GuestDocumentUpload({
             <Upload className="h-4 w-4 mr-2" />
             {upload.isPending ? t("common.uploading") : t("documents.uploadDocument")}
           </Button>
+          {stalled && (
+            <GuestRecoveryNotice
+              message={stalled}
+              onRetry={() => {
+                setStalled(null);
+                void refetch();
+                fileRef.current?.click();
+              }}
+              retryLabel={t("documents.retryUpload", "Refresh & try again")}
+              onDismiss={() => setStalled(null)}
+            />
+          )}
         </>
       )}
+
     </div>
   );
 }
