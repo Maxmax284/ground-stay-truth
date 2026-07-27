@@ -88,22 +88,28 @@ function createStripeAdapter(secretKey: string): ProviderAdapter {
 // ── Provider Resolution ──
 async function resolveProvider(
   providerName: string,
-  adminClient: any
+  adminClient: any,
+  preloadedStripeKey?: string
 ): Promise<ProviderAdapter> {
   switch (providerName) {
     case "stripe": {
-      // Read secret from integration_secrets (not policy_settings)
-      const { data: secretRow } = await adminClient
-        .from("integration_secrets")
-        .select("encrypted_value")
-        .eq("secret_key", "stripe_secret_key")
-        .maybeSingle();
-      const secretKey = secretRow?.encrypted_value;
+      // The live-safety gate already loaded this key; reuse it when available
+      // so we don't pay for a second round-trip on the guest's critical path.
+      let secretKey = preloadedStripeKey;
+      if (!secretKey) {
+        const { data: secretRow } = await adminClient
+          .from("integration_secrets")
+          .select("encrypted_value")
+          .eq("secret_key", "stripe_secret_key")
+          .maybeSingle();
+        secretKey = secretRow?.encrypted_value;
+      }
       if (!secretKey || secretKey.length < 10) {
         throw new Error("Stripe not configured");
       }
       return createStripeAdapter(secretKey);
     }
+
     // Future: case "paypal": return createPayPalAdapter(...)
     default:
       throw new Error("Online payments not configured");
