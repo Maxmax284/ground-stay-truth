@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { CreditCard, Loader2, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logGuestPortalEvent } from "@/lib/guestPortalTelemetry";
 
 interface GuestPaymentButtonProps {
   bookingId: string;
@@ -14,9 +15,19 @@ interface GuestPaymentButtonProps {
 export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = "฿" }: GuestPaymentButtonProps) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(false);
 
-  const handlePay = async () => {
+  const handlePay = useCallback(async (trigger: "button" | "auto" = "button") => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
+    logGuestPortalEvent({
+      event: "checkout_button_clicked",
+      bookingId,
+      component: "GuestPaymentButton",
+      action: trigger,
+      metadata: { deposit_amount: depositAmount },
+    });
     // Stripe session creation can take a few seconds (cold start + Stripe API).
     // Tell the guest something is happening instead of leaving a silent spinner,
     // and hard-stop after 25s so the button can never hang forever.
@@ -25,12 +36,27 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
     );
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 25_000);
+    const startedAt = Date.now();
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         toast.error("Please log in to continue");
+        logGuestPortalEvent({
+          event: "checkout_create_failed",
+          bookingId,
+          component: "GuestPaymentButton",
+          errorCode: "no_session",
+          errorMessage: "No active auth session",
+        });
         return;
       }
+
+      logGuestPortalEvent({
+        event: "checkout_create_started",
+        bookingId,
+        component: "GuestPaymentButton",
+      });
+
 
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-payment`,
