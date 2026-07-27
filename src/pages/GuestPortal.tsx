@@ -734,6 +734,61 @@ function DepositBanner({ policies, depositAmount, bookingId }: { policies?: any[
   );
 }
 
+/**
+ * Guest-facing "what's happening / what's next" strip.
+ *
+ * Guests should never have to rely on an email to understand their booking.
+ * Purely presentational — reads the booking state, changes nothing.
+ */
+function BookingNextStep({ state, bookingId }: { state: BookingState; bookingId: string }) {
+  const copy: Record<string, { status: string; next: string }> = {
+    inquiry: {
+      status: "Booking request received.",
+      next: "Our team is reviewing your dates. We'll confirm availability shortly.",
+    },
+    soft_hold: {
+      status: "Dates held for you.",
+      next: "We're holding these dates while your request is reviewed.",
+    },
+    pending_approval: {
+      status: "Awaiting staff confirmation.",
+      next: "Nothing to do right now — we'll let you know as soon as it's approved.",
+    },
+    pending_deposit: {
+      status: "Deposit required to confirm your booking.",
+      next: "Use the payment section below. If you didn't get an email, you can still pay right here.",
+    },
+    confirmed: {
+      status: "Booking confirmed.",
+      next: "Add your ID document below and check your arrival details before you travel.",
+    },
+    checked_in: {
+      status: "You're checked in.",
+      next: "Need anything? Use Stay Support or message the front desk.",
+    },
+    completed: { status: "Stay completed.", next: "Thanks for staying with us." },
+    cancelled: { status: "Booking cancelled.", next: "Contact the front desk if this looks wrong." },
+    no_show: { status: "Marked as no-show.", next: "Contact the front desk if this looks wrong." },
+  };
+
+  const entry = copy[state];
+  if (!entry) return null;
+
+  return (
+    <div
+      id={`status-${bookingId}`}
+      className="rounded-md border border-border bg-muted/40 p-3 space-y-1"
+    >
+      <p className="text-sm font-medium text-foreground">{entry.status}</p>
+      <p className="text-xs text-muted-foreground">{entry.next}</p>
+      <p className="text-xs text-muted-foreground">
+        Haven't received an email from us? Everything you need is on this page — and you can always
+        message the front desk here.
+      </p>
+    </div>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-3">
@@ -742,6 +797,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     </div>
   );
 }
+
 
 function GuestBookingCard({ booking, messages, userId, policies, guestReviews, guestName }: { booking: any; messages: any[]; userId?: string; policies?: any[]; guestReviews?: any[]; guestName?: string | null }) {
   const { t } = useTranslation();
