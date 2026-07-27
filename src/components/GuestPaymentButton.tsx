@@ -80,6 +80,14 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
       const data = await resp.json();
 
       if (!resp.ok) {
+        logGuestPortalEvent({
+          event: "checkout_create_failed",
+          bookingId,
+          component: "GuestPaymentButton",
+          errorCode: String(data.error ?? resp.status),
+          errorMessage: String(data.message ?? data.error ?? `HTTP ${resp.status}`),
+          metadata: { http_status: resp.status, elapsed_ms: Date.now() - startedAt },
+        });
         // Distinct, honest messaging. Never say "online payments unavailable"
         // when the real problem is stale booking state or a setup issue the
         // front desk can resolve with a payment link.
@@ -107,14 +115,42 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
       }
 
       if (data.url) {
+        logGuestPortalEvent({
+          event: "checkout_create_success",
+          bookingId,
+          status: "ok",
+          component: "GuestPaymentButton",
+          metadata: { elapsed_ms: Date.now() - startedAt },
+        });
+        logGuestPortalEvent({
+          event: "checkout_redirect_started",
+          bookingId,
+          status: "ok",
+          component: "GuestPaymentButton",
+        });
         // Keep the spinner up through the redirect — resetting it makes the
         // page look idle while the browser is already navigating to Stripe.
         window.location.href = data.url;
         return;
       }
+      logGuestPortalEvent({
+        event: "checkout_create_failed",
+        bookingId,
+        component: "GuestPaymentButton",
+        errorCode: "no_checkout_url",
+        errorMessage: "Provider returned no checkout URL",
+      });
       toast.error(t("deposit.noCheckoutUrl", "Checkout could not be opened. Please contact the front desk."));
     } catch (err: any) {
       if (err?.name === "AbortError") {
+        logGuestPortalEvent({
+          event: "checkout_timeout",
+          bookingId,
+          component: "GuestPaymentButton",
+          errorCode: "timeout",
+          errorMessage: "Checkout creation exceeded 25s",
+          metadata: { elapsed_ms: Date.now() - startedAt },
+        });
         toast.error(
           t(
             "deposit.checkoutTimeout",
@@ -122,19 +158,41 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
           ),
         );
       } else {
+        logGuestPortalEvent({
+          event: "guest_network_error",
+          bookingId,
+          component: "GuestPaymentButton",
+          errorCode: "network",
+          errorMessage: String(err?.message ?? "Network error"),
+        });
         toast.error(err.message || "Payment failed");
       }
     } finally {
       clearTimeout(timeoutId);
       toast.dismiss(pendingToast);
+      loadingRef.current = false;
       setLoading(false);
     }
-  };
+  }, [bookingId, depositAmount, t]);
+
+  // The summary card's "Pay Deposit" shortcut fires this event after scrolling
+  // to the deposit block, so one tap actually starts checkout instead of just
+  // moving the page. Only the matching booking's button responds.
+  useEffect(() => {
+    const onAuto = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { bookingId?: string } | undefined;
+      if (detail?.bookingId && detail.bookingId !== bookingId) return;
+      void handlePay("auto");
+    };
+    window.addEventListener("guest-start-deposit-checkout", onAuto as EventListener);
+    return () => window.removeEventListener("guest-start-deposit-checkout", onAuto as EventListener);
+  }, [bookingId, handlePay]);
 
 
   return (
     <Button
-      onClick={handlePay}
+      onClick={() => handlePay("button")}
+
       disabled={loading}
       className="w-full gap-2"
       size="sm"
