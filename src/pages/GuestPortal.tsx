@@ -472,6 +472,16 @@ const GuestPortal = () => {
         {/* Passive Layer: Your Stay Summary */}
         <GuestStaySummary focusSection={focusSection} onSectionFocused={() => setFocusSection(null)} />
 
+        {/* Email is not the source of truth — the portal is. Tell them how to
+            pay and upload ID here if nothing ever landed in their inbox. */}
+        {(upcomingBookings.length > 0 || activeBookings.length > 0) && (
+          <GuestEmailFallbackNotice
+            bookingId={(upcomingBookings[0] ?? activeBookings[0])?.id ?? null}
+            depositDue={upcomingBookings.some((b: any) => b.state === "pending_deposit")}
+          />
+        )}
+
+
         {/* Heads Up — contextual, journey-aware intelligence carousel */}
         <GuestHeadsUpStrip
           locations={guestLocations}
