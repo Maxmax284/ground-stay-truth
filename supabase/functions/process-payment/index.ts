@@ -88,22 +88,28 @@ function createStripeAdapter(secretKey: string): ProviderAdapter {
 // ── Provider Resolution ──
 async function resolveProvider(
   providerName: string,
-  adminClient: any
+  adminClient: any,
+  preloadedStripeKey?: string
 ): Promise<ProviderAdapter> {
   switch (providerName) {
     case "stripe": {
-      // Read secret from integration_secrets (not policy_settings)
-      const { data: secretRow } = await adminClient
-        .from("integration_secrets")
-        .select("encrypted_value")
-        .eq("secret_key", "stripe_secret_key")
-        .maybeSingle();
-      const secretKey = secretRow?.encrypted_value;
+      // The live-safety gate already loaded this key; reuse it when available
+      // so we don't pay for a second round-trip on the guest's critical path.
+      let secretKey = preloadedStripeKey;
+      if (!secretKey) {
+        const { data: secretRow } = await adminClient
+          .from("integration_secrets")
+          .select("encrypted_value")
+          .eq("secret_key", "stripe_secret_key")
+          .maybeSingle();
+        secretKey = secretRow?.encrypted_value;
+      }
       if (!secretKey || secretKey.length < 10) {
         throw new Error("Stripe not configured");
       }
       return createStripeAdapter(secretKey);
     }
+
     // Future: case "paypal": return createPayPalAdapter(...)
     default:
       throw new Error("Online payments not configured");
@@ -151,26 +157,33 @@ serve(async (req) => {
 
     // Live-safety gate: refuse to open a Stripe checkout unless the platform
     // has a live key, a webhook secret, and evidence the webhook works.
+    // These three lookups are independent — run them together so the guest
+    // isn't waiting on three serial round-trips before Stripe is even called.
+    let preloadedStripeKey = "";
     {
-      const { data: secretRows } = await adminClient
-        .from("integration_secrets")
-        .select("secret_key, encrypted_value")
-        .in("secret_key", ["stripe_secret_key", "stripe_webhook_secret"]);
+      const [secretsRes, healthRes, flagRes] = await Promise.all([
+        adminClient
+          .from("integration_secrets")
+          .select("secret_key, encrypted_value")
+          .in("secret_key", ["stripe_secret_key", "stripe_webhook_secret"]),
+        adminClient
+          .from("webhook_health")
+          .select("last_success_at")
+          .eq("provider", "stripe")
+          .maybeSingle(),
+        adminClient
+          .from("policy_settings")
+          .select("value")
+          .eq("key", "stripe_live_smoke_test_passed")
+          .is("property_id", null)
+          .maybeSingle(),
+      ]);
       const secrets = new Map<string, string>();
-      for (const r of secretRows ?? []) secrets.set((r as any).secret_key, String((r as any).encrypted_value ?? ""));
+      for (const r of secretsRes.data ?? []) secrets.set((r as any).secret_key, String((r as any).encrypted_value ?? ""));
       const sk = secrets.get("stripe_secret_key") ?? "";
       const whsec = secrets.get("stripe_webhook_secret") ?? "";
-      const { data: health } = await adminClient
-        .from("webhook_health")
-        .select("last_success_at")
-        .eq("provider", "stripe")
-        .maybeSingle();
-      const { data: flagRow } = await adminClient
-        .from("policy_settings")
-        .select("value")
-        .eq("key", "stripe_live_smoke_test_passed")
-        .is("property_id", null)
-        .maybeSingle();
+      const health = healthRes.data;
+      const flagRow = flagRes.data;
       const smokeOk = flagRow && String(flagRow.value).replace(/^"|"$/g, "").toLowerCase() === "true";
       let reason: string | null = null;
       if (!sk || sk.length < 10) reason = "Stripe secret key is not configured.";
@@ -184,7 +197,9 @@ serve(async (req) => {
           headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
       }
+      preloadedStripeKey = sk;
     }
+
 
     const { booking_id, success_url, cancel_url } = await req.json();
     if (!booking_id) {
@@ -229,12 +244,25 @@ serve(async (req) => {
       );
     }
 
-    // Check for existing successful payment
-    const { data: existingPayments } = await adminClient
-      .from("payments")
-      .select("id, status")
-      .eq("booking_id", booking_id)
-      .eq("status", "recorded");
+    // Existing payments + policy settings are independent reads — batch them.
+    const [existingRes, pendingRes, policiesRes] = await Promise.all([
+      adminClient
+        .from("payments")
+        .select("id, status")
+        .eq("booking_id", booking_id)
+        .eq("status", "recorded"),
+      adminClient
+        .from("payments")
+        .select("id, provider_session_id, expires_at")
+        .eq("booking_id", booking_id)
+        .eq("status", "pending"),
+      adminClient
+        .from("policy_settings")
+        .select("key, value")
+        .in("key", ["payment_provider", "deposit_percentage", "currency_code"]),
+    ]);
+
+    const existingPayments = existingRes.data;
     if (existingPayments && existingPayments.length > 0) {
       return new Response(
         JSON.stringify({ error: "Payment already recorded" }),
@@ -245,41 +273,23 @@ serve(async (req) => {
       );
     }
 
-    // Check for existing pending session (don't create duplicate checkout sessions)
-    const { data: pendingPayments } = await adminClient
-      .from("payments")
-      .select("id, provider_session_id, expires_at")
-      .eq("booking_id", booking_id)
-      .eq("status", "pending");
-
+    // Retire stale pending sessions in one statement instead of one-by-one.
+    const pendingPayments = pendingRes.data;
     if (pendingPayments && pendingPayments.length > 0) {
-      const pending = pendingPayments[0];
-      // If not expired, reuse the existing session — but we don't have the URL stored
-      // Mark old pending as cancelled and create fresh
-      for (const p of pendingPayments) {
-        await adminClient
-          .from("payments")
-          .update({ status: "cancelled" })
-          .eq("id", p.id);
-      }
+      await adminClient
+        .from("payments")
+        .update({ status: "cancelled" })
+        .in("id", pendingPayments.map((p: any) => p.id));
     }
 
-    // Get non-secret policy settings
-    const { data: policies } = await adminClient
-      .from("policy_settings")
-      .select("key, value")
-      .in("key", [
-        "payment_provider",
-        "deposit_percentage",
-        "currency_code",
-      ]);
-
+    const policies = policiesRes.data;
     const policyMap = new Map(
       (policies ?? []).map((p: any) => [
         p.key,
         String(p.value).replace(/^"|"$/g, ""),
       ])
     );
+
     // Provider resolution.
     //
     // Historically this read `payment_provider` from policy_settings and
@@ -299,7 +309,7 @@ serve(async (req) => {
     // Resolve the provider adapter
     let adapter: ProviderAdapter;
     try {
-      adapter = await resolveProvider(providerName, adminClient);
+      adapter = await resolveProvider(providerName, adminClient, preloadedStripeKey);
     } catch (e: any) {
       return new Response(
         JSON.stringify({

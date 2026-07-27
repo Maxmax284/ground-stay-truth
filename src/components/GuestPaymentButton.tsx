@@ -17,6 +17,14 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
 
   const handlePay = async () => {
     setLoading(true);
+    // Stripe session creation can take a few seconds (cold start + Stripe API).
+    // Tell the guest something is happening instead of leaving a silent spinner,
+    // and hard-stop after 25s so the button can never hang forever.
+    const pendingToast = toast.loading(
+      t("deposit.openingCheckout", "Opening secure checkout — this can take a few seconds..."),
+    );
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25_000);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -28,6 +36,7 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-payment`,
         {
           method: "POST",
+          signal: controller.signal,
           headers: {
             Authorization: `Bearer ${session.access_token}`,
             "Content-Type": "application/json",
@@ -40,6 +49,7 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
           }),
         }
       );
+
 
       const data = await resp.json();
 
@@ -71,14 +81,30 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
       }
 
       if (data.url) {
+        // Keep the spinner up through the redirect — resetting it makes the
+        // page look idle while the browser is already navigating to Stripe.
         window.location.href = data.url;
+        return;
       }
+      toast.error(t("deposit.noCheckoutUrl", "Checkout could not be opened. Please contact the front desk."));
     } catch (err: any) {
-      toast.error(err.message || "Payment failed");
+      if (err?.name === "AbortError") {
+        toast.error(
+          t(
+            "deposit.checkoutTimeout",
+            "Checkout is taking longer than usual. Please check your connection and try again, or contact the front desk for a payment link.",
+          ),
+        );
+      } else {
+        toast.error(err.message || "Payment failed");
+      }
     } finally {
+      clearTimeout(timeoutId);
+      toast.dismiss(pendingToast);
       setLoading(false);
     }
   };
+
 
   return (
     <Button
