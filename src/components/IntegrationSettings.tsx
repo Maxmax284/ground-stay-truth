@@ -16,6 +16,9 @@ import { CreditCard, Mail, Eye, EyeOff, Save, CheckCircle2, XCircle, ShieldCheck
 import { supabase } from "@/integrations/supabase/client";
 import { MessagingBridgeSettings } from "@/components/MessagingBridgeSettings";
 import { WebhookHealthCard } from "@/components/WebhookHealthCard";
+import { StripeConnectionStatus } from "@/components/StripeConnectionStatus";
+import ErrorBoundary from "@/components/ErrorBoundary";
+
 
 const SECRET_KEYS = ["stripe_secret_key", "stripe_publishable_key", "stripe_webhook_secret", "resend_api_key", "fenrir_api_key", "fenrir_receive_token"];
 
