@@ -4,7 +4,9 @@ import { logGuestPortalEvent } from "@/lib/guestPortalTelemetry";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { GuestRecoveryNotice } from "@/components/GuestRecoveryNotice";
 import { useToast } from "@/hooks/use-toast";
+
 import {
   useGuestDocuments,
   useUploadGuestDocument,
