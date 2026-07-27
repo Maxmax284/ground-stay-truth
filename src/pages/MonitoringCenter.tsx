@@ -533,8 +533,11 @@ export default function MonitoringCenter() {
           </Card>
         )}
 
+        {/* Guest portal health — is the guest-facing side actually working? */}
+        <GuestPortalHealth />
 
         {/* Recent activity */}
+
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Recent activity</CardTitle>
