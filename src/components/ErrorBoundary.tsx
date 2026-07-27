@@ -32,7 +32,35 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   render() {
     if (!this.state.hasError) return this.props.children;
+
+    // Inline mode: one broken panel must never blank out the whole page.
+    if (this.props.inline) {
+      return (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 space-y-2">
+          <p className="text-sm font-medium text-foreground">
+            {this.props.label ? `${this.props.label} couldn't load` : "This section couldn't load"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            The rest of this page still works. Try refreshing — if it keeps happening, send this
+            message to support.
+          </p>
+          {this.state.error?.message && (
+            <p className="text-[11px] font-mono text-muted-foreground/70 break-words">
+              {this.state.error.message}
+            </p>
+          )}
+          <button
+            onClick={this.handleReload}
+            className="px-3 py-1.5 rounded border border-border text-xs font-medium hover:bg-muted"
+          >
+            Refresh
+          </button>
+        </div>
+      );
+    }
+
     return (
+
       <div className="min-h-screen flex items-center justify-center bg-background px-6">
         <div className="max-w-md text-center space-y-4">
           <h1 className="text-xl font-semibold text-foreground">Something went wrong</h1>
