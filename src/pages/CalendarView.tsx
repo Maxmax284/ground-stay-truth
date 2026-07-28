@@ -14,6 +14,8 @@ import { BookingFormDialog } from "@/components/BookingFormDialog";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { ApplyDiscountDialog } from "@/components/ApplyDiscountDialog";
 import { MaintenanceBlockDialog } from "@/components/MaintenanceBlockDialog";
+import { MaintenanceBlockManageDialog } from "@/components/MaintenanceBlockManageDialog";
+import type { MaintenanceBlock } from "@/hooks/useMaintenanceBlocks";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUnits } from "@/hooks/useUnits";
 import { useBookings } from "@/hooks/useBookings";
@@ -222,6 +224,12 @@ const CalendarView = () => {
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [discountBooking, setDiscountBooking] = useState<any | null>(null);
   const [showMaintenanceDialog, setShowMaintenanceDialog] = useState(false);
+  const [activeBlock, setActiveBlock] = useState<MaintenanceBlock | null>(null);
+  const canManageBlocks = permissions.canManageMaintenanceBlocks(role);
+  const activeBlockUnitName = useMemo(
+    () => allUnits.find((u) => u.id === activeBlock?.unit_id)?.name,
+    [allUnits, activeBlock]
+  );
   const canApplyDiscount = role === "admin" || role === "manager";
 
   const handleCellClick = (unitId: string, date: string) => {
@@ -378,7 +386,9 @@ const CalendarView = () => {
                     onClick={() => {
                       if (booking) {
                         handleBookingClick(booking.id);
-                      } else if (!maintenance && selectedMobileUnit) {
+                      } else if (maintenance) {
+                        setActiveBlock(maintenance);
+                      } else if (selectedMobileUnit) {
                         handleCellClick(selectedMobileUnit.id, dateStr);
                       }
                     }}
@@ -419,6 +429,7 @@ const CalendarView = () => {
               units={allUnits}
               bookings={bookings ?? []}
               maintenanceBlocks={maintenanceBlocks ?? []}
+            onMaintenanceClick={setActiveBlock}
               startDate={startDate}
               days={DEFAULT_DAYS}
               cleaningBufferHours={cleaningBufferHours}
@@ -439,6 +450,7 @@ const CalendarView = () => {
             currentMonth={currentMonth}
             bookings={bookings ?? []}
             maintenanceBlocks={maintenanceBlocks ?? []}
+            onMaintenanceClick={setActiveBlock}
             onDayClick={handleMonthDayClick}
           />
         )}
@@ -450,6 +462,7 @@ const CalendarView = () => {
             units={allUnits}
             bookings={bookings ?? []}
             maintenanceBlocks={maintenanceBlocks ?? []}
+            onMaintenanceClick={setActiveBlock}
             onBookingClick={handleBookingClick}
             onAvailableClick={handleCellClick}
           />
