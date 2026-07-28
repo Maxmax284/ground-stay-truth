@@ -38,8 +38,12 @@ export function useBookings(filters?: {
       if (activePropertyId) query = query.eq("property_id", activePropertyId);
       if (filters?.state) query = query.eq("state", filters.state);
       if (filters?.unitId) query = query.eq("unit_id", filters.unitId);
-      if (filters?.dateFrom) query = query.gte("check_in", filters.dateFrom);
-      if (filters?.dateTo) query = query.lte("check_out", filters.dateTo);
+      // Overlap semantics, not containment. A stay that starts before the
+      // window or ends after it still occupies the room inside the window —
+      // e.g. a Sep 12 → Nov 17 stay must appear on a 30-day calendar slice.
+      if (filters?.dateTo) query = query.lt("check_in", filters.dateTo);
+      if (filters?.dateFrom) query = query.gt("check_out", filters.dateFrom);
+
 
       const { data, error } = await query;
       if (error) throw error;

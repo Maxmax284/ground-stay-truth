@@ -17,6 +17,7 @@ interface CalendarDayViewProps {
   maintenanceBlocks: MaintenanceBlock[];
   onBookingClick?: (bookingId: string) => void;
   onAvailableClick?: (unitId: string, date: string) => void;
+  onMaintenanceClick?: (block: MaintenanceBlock) => void;
 }
 
 export function CalendarDayView({
@@ -26,6 +27,7 @@ export function CalendarDayView({
   maintenanceBlocks,
   onBookingClick,
   onAvailableClick,
+  onMaintenanceClick,
 }: CalendarDayViewProps) {
   const { t } = useTranslation();
   const dateStr = format(date, "yyyy-MM-dd");
@@ -102,13 +104,15 @@ export function CalendarDayView({
             key={unit.id}
             className={`transition-colors ${
               maintenance
-                ? "border-destructive/30 bg-destructive/5"
+                ? "border-destructive/30 bg-destructive/5 cursor-pointer"
                 : unitBookings.length > 0
                   ? "border-primary/20"
                   : "cursor-pointer hover:border-primary/30 hover:bg-primary/5"
             }`}
             onClick={() => {
-              if (unitBookings.length > 0 && onBookingClick) {
+              if (maintenance && onMaintenanceClick) {
+                onMaintenanceClick(maintenance);
+              } else if (unitBookings.length > 0 && onBookingClick) {
                 onBookingClick(unitBookings[0].id);
               } else if (!maintenance && onAvailableClick) {
                 onAvailableClick(unit.id, dateStr);

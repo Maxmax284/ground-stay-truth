@@ -435,11 +435,29 @@ function AIAssistantPanelInner() {
             <LoadingIndicator />
           )}
           {error && (
-            <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2 animate-shake-subtle">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              <span>{error}</span>
+            <div className="space-y-2 text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2 animate-shake-subtle">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+              {/* Never dead-end. Give the answer to the most common admin asks
+                  even when the AI call itself failed. */}
+              <div className="text-xs text-foreground/80 border-t border-destructive/20 pt-2 space-y-1">
+                <p className="font-medium">While I'm down, here's the short version:</p>
+                <p>
+                  <strong>Remove a maintenance block:</strong> Calendar → click the striped
+                  red block on the room → “Mark resolved” or “Remove block”. The room becomes
+                  bookable again right away.
+                </p>
+                <p>
+                  <strong>A booking isn't blocking the calendar:</strong> open the booking and
+                  check it's assigned to a specific room and not cancelled.
+                </p>
+                <p>If it still won't behave, ping an admin — nothing is lost, just stuck.</p>
+              </div>
             </div>
           )}
+
         </div>
       </div>
 

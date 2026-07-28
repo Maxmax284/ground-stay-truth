@@ -34,6 +34,7 @@ interface CalendarGridProps {
   canDragDrop?: boolean;
   onBookingDragEnd?: (result: DragResult) => void;
   onApplyDiscount?: (booking: BookingWithJoins) => void;
+  onMaintenanceClick?: (block: MaintenanceBlock) => void;
 }
 
 function getPaymentStatus(booking: BookingWithJoins, totalPaid: number): "unpaid" | "deposit" | "fully_paid" {
@@ -61,7 +62,7 @@ const NON_DRAGGABLE_STATES: string[] = ["completed", "cancelled", "no_show"];
 export function CalendarGrid({
   units, bookings, maintenanceBlocks = [], startDate, days, cleaningBufferHours,
   onCellClick, onBookingClick, unitGroups = [], paymentSummaries = [],
-  canDragDrop = false, onBookingDragEnd, onApplyDiscount,
+  canDragDrop = false, onBookingDragEnd, onApplyDiscount, onMaintenanceClick,
 }: CalendarGridProps) {
   const { t } = useTranslation();
   const dates = useMemo(() => Array.from({ length: days }, (_, i) => addDays(startDate, i)), [startDate, days]);
@@ -323,8 +324,8 @@ export function CalendarGrid({
             if (barWidth <= 0) return null;
             return (
               <Tooltip key={`maint-${block.id}`}>
-                <TooltipTrigger asChild><div className="absolute top-1 rounded-sm" style={{ left: barStartOffset * COL_WIDTH + 2, width: barWidth * COL_WIDTH - 4, height: ROW_HEIGHT - 8, backgroundImage: "repeating-linear-gradient(45deg, hsl(var(--destructive) / 0.15), hsl(var(--destructive) / 0.15) 3px, hsl(var(--destructive) / 0.05) 3px, hsl(var(--destructive) / 0.05) 6px)", border: "1px dashed hsl(var(--destructive) / 0.4)" }} /></TooltipTrigger>
-                <TooltipContent side="top"><p className="text-xs font-medium">{t("calendar.maintenance")}</p>{block.reason && <p className="text-xs text-muted-foreground">{block.reason}</p>}<p className="text-xs text-muted-foreground">{format(blockStart, "MMM d")} – {format(new Date(block.end_date), "MMM d")}</p></TooltipContent>
+                <TooltipTrigger asChild><div role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); onMaintenanceClick?.(block); }} className="absolute top-1 rounded-sm cursor-pointer" style={{ left: barStartOffset * COL_WIDTH + 2, width: barWidth * COL_WIDTH - 4, height: ROW_HEIGHT - 8, backgroundImage: "repeating-linear-gradient(45deg, hsl(var(--destructive) / 0.15), hsl(var(--destructive) / 0.15) 3px, hsl(var(--destructive) / 0.05) 3px, hsl(var(--destructive) / 0.05) 6px)", border: "1px dashed hsl(var(--destructive) / 0.4)" }} /></TooltipTrigger>
+                <TooltipContent side="top"><p className="text-xs font-medium">{t("calendar.maintenance")}</p>{block.reason && <p className="text-xs text-muted-foreground">{block.reason}</p>}<p className="text-xs text-muted-foreground">{format(blockStart, "MMM d")} – {format(new Date(block.end_date), "MMM d")}</p><p className="text-xs text-muted-foreground">Click to remove or mark resolved</p></TooltipContent>
               </Tooltip>
             );
           })}
