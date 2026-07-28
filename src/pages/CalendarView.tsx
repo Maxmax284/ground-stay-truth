@@ -429,7 +429,7 @@ const CalendarView = () => {
               units={allUnits}
               bookings={bookings ?? []}
               maintenanceBlocks={maintenanceBlocks ?? []}
-            onMaintenanceClick={setActiveBlock}
+              onMaintenanceClick={setActiveBlock}
               startDate={startDate}
               days={DEFAULT_DAYS}
               cleaningBufferHours={cleaningBufferHours}
@@ -450,7 +450,7 @@ const CalendarView = () => {
             currentMonth={currentMonth}
             bookings={bookings ?? []}
             maintenanceBlocks={maintenanceBlocks ?? []}
-            onMaintenanceClick={setActiveBlock}
+
             onDayClick={handleMonthDayClick}
           />
         )}
@@ -468,6 +468,13 @@ const CalendarView = () => {
           />
         )}
       </div>
+
+      <MaintenanceBlockManageDialog
+        block={activeBlock}
+        unitName={activeBlockUnitName}
+        canManage={canManageBlocks}
+        onOpenChange={(o) => { if (!o) setActiveBlock(null); }}
+      />
 
       <BookingFormDialog
         open={showCreateDialog}
