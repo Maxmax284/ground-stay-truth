@@ -24,9 +24,12 @@ function minimizePII(text: string): string {
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
   "https://ground-stay-truth.lovable.app",
+  "https://lmtcampstay.com",
+  "https://www.lmtcampstay.com",
   "http://localhost:5173",
   "http://localhost:8080",
 ];
+
 
 function isAllowedOrigin(origin: string): boolean {
   if (ALLOWED_ORIGINS.includes(origin)) return true;
