@@ -51,6 +51,13 @@ export function CalendarLegend() {
           <span className="text-muted-foreground">Fully Paid</span>
         </div>
       </div>
+      {/* Plain-English reading guide */}
+      <p className="text-[11px] text-muted-foreground">
+        Green = confirmed booking · Amber = not confirmed yet · Red stripes = maintenance
+        (room blocked manually). Click a booking for details, or click a maintenance block
+        to remove it or mark it resolved.
+      </p>
     </div>
   );
 }
+
