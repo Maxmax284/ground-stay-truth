@@ -12,7 +12,10 @@ import {
 
 const INSTALL_STAMP_KEY = "lmt-campstay:install-stamp";
 const DISMISS_KEY = "lmt-campstay:reinstall-dismissed";
+const SEEN_COUNT_KEY = "lmt-campstay:reinstall-seen-count";
 const EXPECTED_START_URL = "/index";
+/** Hard ceiling on how many launches may ever show this notice. */
+const MAX_SHOWS = 2;
 
 /**
  * When the app is launched in standalone (installed PWA) mode, we stamp
