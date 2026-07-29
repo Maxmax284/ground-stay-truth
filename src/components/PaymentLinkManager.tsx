@@ -10,6 +10,8 @@ import { Loader2, Link as LinkIcon, Copy, RefreshCw, Check, Clock, Mail, Bell, M
 import { toast } from "sonner";
 import { formatDistanceToNow, format } from "date-fns";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
+import { copyText } from "@/lib/clipboard";
+
 
 interface PaymentLinkManagerProps {
   bookingId: string;
@@ -191,7 +193,13 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
 
   const handleCopy = async () => {
     if (!lastUrl) return;
-    await navigator.clipboard.writeText(lastUrl);
+    // Clipboard access fails in in-app browsers / non-secure contexts. Tell the
+    // user instead of silently doing nothing — the URL stays on screen to select.
+    const ok = await copyText(lastUrl);
+    if (!ok) {
+      toast.error("Couldn't reach the clipboard — select the link above and copy it manually.");
+      return;
+    }
     setCopied(true);
     toast.success("Link copied");
     try {
@@ -212,6 +220,7 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+
   const active = links?.find((l) => !l.used_at && !l.revoked_at && new Date(l.expires_at).getTime() > Date.now());
 
   const buildWhatsAppText = (url: string) => {
@@ -221,11 +230,16 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
 
   const handleWhatsAppCopy = async () => {
     if (!lastUrl) return;
-    await navigator.clipboard.writeText(buildWhatsAppText(lastUrl));
+    const ok = await copyText(buildWhatsAppText(lastUrl));
+    if (!ok) {
+      toast.error("Couldn't reach the clipboard — copy the link above manually.");
+      return;
+    }
     setWaCopied(true);
     toast.success(guestPhone ? `Message ready for ${guestPhone}` : "Message copied — paste into WhatsApp / LINE");
     setTimeout(() => setWaCopied(false), 2000);
   };
+
 
   return (
     <Card className="p-4 space-y-3">
@@ -287,7 +301,16 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
               </Badge>
             )}
           </div>
-          <div className="text-xs break-all text-foreground font-mono">{lastUrl}</div>
+          {/* Readonly input, not a div: if the clipboard API is blocked the
+              staffer can still tap-and-hold / ctrl+A to grab the URL. */}
+          <input
+            readOnly
+            value={lastUrl}
+            onFocus={(e) => e.currentTarget.select()}
+            onClick={(e) => e.currentTarget.select()}
+            className="w-full rounded border border-border bg-background px-2 py-1 text-xs font-mono text-foreground"
+          />
+
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" onClick={handleCopy} className="gap-2">
               {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
@@ -300,6 +323,23 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
           </div>
         </div>
       )}
+
+      {/* An active link exists but its URL isn't on screen — the raw token is
+          only ever returned once at creation (we store a hash), so there is
+          nothing to copy until a fresh link is generated. Say so plainly. */}
+      {active && !lastUrl && (
+        <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-2.5">
+          <AlertCircle className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+          <div className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">There's already an active link for this booking</span>
+            {" "}— but the address is only shown once, right after it's created, for security.
+            The guest still has it in their email and portal. To get a copyable link now, hit
+            <span className="font-medium text-foreground"> Regenerate</span> below; the old one stops working.
+          </div>
+        </div>
+      )}
+
+
 
       {blocked && (
         <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2.5">
