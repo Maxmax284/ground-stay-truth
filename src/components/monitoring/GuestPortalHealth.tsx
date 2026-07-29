@@ -160,6 +160,7 @@ function deviceSentence(r: Row) {
 
 export function GuestPortalHealth() {
   const [win, setWin] = useState<(typeof WINDOWS)[number]["key"]>("24");
+  const [selected, setSelected] = useState<Row | null>(null);
   const windowDef = WINDOWS.find((w) => w.key === win)!;
   const hours = windowDef.hours;
 
