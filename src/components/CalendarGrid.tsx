@@ -287,7 +287,7 @@ export function CalendarGrid({
     const unitBlocks = blocksByUnit.get(unit.id) ?? [];
     return (
       <div key={unit.id} className="flex border-b last:border-b-0">
-        <div className="shrink-0 border-r flex items-center px-3 text-sm font-medium truncate" style={{ width: LABEL_WIDTH, height: ROW_HEIGHT }} title={unit.name}>{unit.name}</div>
+        <div className="shrink-0 border-r flex items-center px-3 text-sm font-medium truncate sticky left-0 z-10 bg-card" style={{ width: LABEL_WIDTH, height: ROW_HEIGHT }} title={unit.name}>{unit.name}</div>
         <div className="relative flex" style={{ height: ROW_HEIGHT }}>
           {dates.map((d, i) => {
             const isWeekend = d.getDay() === 0 || d.getDay() === 6;
