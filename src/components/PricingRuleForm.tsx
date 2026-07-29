@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useCreatePricingRule, useUpdatePricingRule, type PricingRule } from "@/hooks/usePricingRules";
 import { useUnits } from "@/hooks/useUnits";
+import { useUnitGroups } from "@/hooks/useUnitGroups";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
