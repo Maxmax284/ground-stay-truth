@@ -199,7 +199,7 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
     queryFn: async () => {
       const { data, error } = await supabase
         .from("payments")
-        .select("booking_id, amount, status, refund_amount")
+        .select("booking_id, amount, status, refund_amount, payment_type")
         .in("booking_id", bookingIds);
       if (error) throw error;
       return data;
@@ -495,7 +495,7 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
         const bPayments = (payments ?? []).filter((p) => p.booking_id === booking.id);
         const { outstanding } = calculateOutstanding(
           booking.total_price,
-          bPayments.map((p) => ({ amount: p.amount, status: p.status, refund_amount: p.refund_amount }))
+          bPayments.map((p) => ({ amount: p.amount, status: p.status, refund_amount: p.refund_amount, payment_type: p.payment_type }))
         );
         const pickup = (pickups ?? []).find((p: any) => p.booking_id === booking.id);
         const deposit = (deposits ?? []).find((d) => d.booking_id === booking.id);
