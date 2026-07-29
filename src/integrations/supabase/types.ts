@@ -3805,6 +3805,7 @@ export type Database = {
           unit_name: string
         }[]
       }
+      can_view_guest_documents: { Args: { _user_id: string }; Returns: boolean }
       cleanup_expired_link_codes: { Args: never; Returns: undefined }
       create_recovery_snapshot: {
         Args: { _kind?: string; _label: string; _notes?: string }
