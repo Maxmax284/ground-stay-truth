@@ -1085,6 +1085,36 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_notes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          guest_id: string | null
+          guest_key: string
+          id: string
+          note: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          guest_id?: string | null
+          guest_key: string
+          id?: string
+          note: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          guest_id?: string | null
+          guest_key?: string
+          id?: string
+          note?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       guest_portal_activity: {
         Row: {
           action: string | null
@@ -3801,6 +3831,45 @@ export type Database = {
           occurred_at: string
         }[]
       }
+      get_guest_bookings: {
+        Args: { _guest_key: string }
+        Returns: {
+          booking_id: string
+          check_in: string
+          check_out: string
+          confirmation_number: string
+          created_at: string
+          num_guests: number
+          owed: number
+          paid: number
+          state: string
+          total_price: number
+          unit_name: string
+        }[]
+      }
+      get_guest_directory: {
+        Args: never
+        Returns: {
+          cancelled_bookings: number
+          completed_stays: number
+          email: string
+          first_seen: string
+          full_name: string
+          guest_id: string
+          guest_key: string
+          in_house: boolean
+          is_linked: boolean
+          last_check_out: string
+          lifetime_spend: number
+          next_check_in: string
+          outstanding_balance: number
+          phone: string
+          preferred_language: string
+          total_bookings: number
+          total_nights: number
+          upcoming_stays: number
+        }[]
+      }
       get_integration_secret: { Args: { _key: string }; Returns: string }
       get_ops_exceptions: {
         Args: never
@@ -3884,6 +3953,10 @@ export type Database = {
           _target_user_id?: string
         }
         Returns: string
+      }
+      merge_guest_records: {
+        Args: { _source_key: string; _target_key: string }
+        Returns: number
       }
     }
     Enums: {

@@ -26,6 +26,9 @@ import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { GuestDirectory } from "@/components/guests/GuestDirectory";
+
 
 function BookingStatusBadge({ booking }: { booking: any }) {
   const { t } = useTranslation();
@@ -192,6 +195,17 @@ const Bookings = () => {
           )}
         </div>
 
+        <Tabs defaultValue="bookings" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="bookings">{t("guests.tabBookings")}</TabsTrigger>
+            <TabsTrigger value="directory">{t("guests.tabDirectory")}</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="directory">
+            <GuestDirectory onOpenBooking={(id) => setSelectedBookingId(id)} />
+          </TabsContent>
+
+          <TabsContent value="bookings" className="space-y-4">
         <BookingFilters
           state={stateFilter}
           unitId={unitFilter}
@@ -305,7 +319,10 @@ const Bookings = () => {
             </Table>
           </div>
         )}
+          </TabsContent>
+        </Tabs>
       </div>
+
 
       <BookingFormDialog open={showCreate} onOpenChange={setShowCreate} />
       <BookingDetailSheet
