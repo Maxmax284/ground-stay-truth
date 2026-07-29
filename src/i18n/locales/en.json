@@ -1443,7 +1443,8 @@
       "upcoming": "Upcoming",
       "past": "Past guest",
       "inquiry_only": "Inquiry only",
-      "cancelled_only": "Cancelled only"
+      "cancelled_only": "Cancelled only",
+      "account_only": "Account, no booking"
     },
     "sortRecent": "Most recent activity",
     "sortNameAz": "Name A-Z",

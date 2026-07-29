@@ -36,6 +36,7 @@ const STATUS_STYLE: Record<GuestStatus, string> = {
   past: "bg-muted text-muted-foreground border-border",
   inquiry_only: "bg-muted text-muted-foreground border-border",
   cancelled_only: "bg-destructive/10 text-destructive border-destructive/30",
+  account_only: "bg-primary/10 text-primary border-primary/30",
 };
 
 type SortKey = "recent" | "name_asc" | "stays_desc" | "spend_desc" | "owed_desc";
