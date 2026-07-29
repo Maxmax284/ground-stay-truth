@@ -33,41 +33,50 @@ export function ReinstallPrompt() {
       (navigator as any).standalone === true;
 
     if (!isStandalone) return;
-    if (sessionStorage.getItem(DISMISS_KEY)) return;
+    // Dismissal is permanent (localStorage), not per-session — the old
+    // sessionStorage key meant the notice came back on every single launch.
+    if (localStorage.getItem(DISMISS_KEY)) return;
+
+    const seen = Number(localStorage.getItem(SEEN_COUNT_KEY) ?? "0");
+    if (seen >= MAX_SHOWS) return;
 
     const existing = localStorage.getItem(INSTALL_STAMP_KEY);
     const landedAtLegacyRoot =
       window.location.pathname === "/" || window.location.pathname === "";
 
+    const show = () => {
+      localStorage.setItem(SEEN_COUNT_KEY, String(seen + 1));
+      setOpen(true);
+    };
+
     // If the standalone shell launched at "/" (the old cached start_url),
-    // the installed icon is still pointing at the pre-update target — prompt
-    // regardless of whether a stamp was ever written.
+    // the installed icon is still pointing at the pre-update target.
     if (landedAtLegacyRoot) {
-      setOpen(true);
+      show();
       return;
     }
 
-    if (!existing) {
-      // First launch on this build from the new start_url — record identity.
-      localStorage.setItem(INSTALL_STAMP_KEY, EXPECTED_START_URL);
-      return;
-    }
-
-    if (existing !== EXPECTED_START_URL) {
-      setOpen(true);
+    // Launched from the current start_url — the install is healthy. Stamp it
+    // and never nag on this device again.
+    localStorage.setItem(INSTALL_STAMP_KEY, EXPECTED_START_URL);
+    localStorage.setItem(DISMISS_KEY, "1");
+    if (existing && existing !== EXPECTED_START_URL) {
+      // Stamp was stale but the launch target is now correct — nothing to do.
     }
   }, []);
 
   const handleDismiss = () => {
-    sessionStorage.setItem(DISMISS_KEY, "1");
+    localStorage.setItem(DISMISS_KEY, "1");
     setOpen(false);
   };
 
   const handleAcknowledgedReinstall = () => {
-    // User says they've reinstalled — refresh the stamp so we don't nag again.
+    // User says they've reinstalled — never show this again on this device.
     localStorage.setItem(INSTALL_STAMP_KEY, EXPECTED_START_URL);
+    localStorage.setItem(DISMISS_KEY, "1");
     setOpen(false);
   };
+
 
   return (
     <Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : handleDismiss())}>
