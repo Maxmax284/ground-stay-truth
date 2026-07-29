@@ -359,28 +359,33 @@ serve(async (req) => {
     drawSafe(page, L.guests, { x: 50 + cellW, y, size: 9, font, color: muted });
     drawSafe(page, String(booking.num_guests), { x: 50 + cellW, y: y - 14, size: 12, font: bold, color: ink });
 
-    y -= 50;
+    y -= 46;
     page.drawLine({ start: { x: 50, y }, end: { x: width - 50, y }, thickness: 0.5, color: muted });
-    y -= 24;
+    y -= 22;
+    drawSafe(page, "FINANCIAL SUMMARY", { x: 50, y, size: 8, font: bold, color: accent });
+    y -= 22;
     drawSafe(page, L.total, { x: 50, y, size: 10, font, color: ink });
     drawSafe(page, `${symbol}${fmtMoney(Number(booking.total_price || 0))} ${currency}`,
       { x: width - 200, y, size: 11, font: bold, color: ink });
-    y -= 16;
+    y -= 18;
     drawSafe(page, L.paid, { x: 50, y, size: 10, font, color: muted });
     drawSafe(page, `${symbol}${fmtMoney(paid)} ${currency}`,
       { x: width - 200, y, size: 10, font, color: muted });
-    y -= 16;
+    y -= 18;
     const balance = Math.max(0, Number(booking.total_price || 0) - paid);
-    drawSafe(page, L.balance, { x: 50, y, size: 10, font, color: muted });
+    drawSafe(page, L.balance, { x: 50, y, size: 10, font: bold, color: ink });
     drawSafe(page, `${symbol}${fmtMoney(balance)} ${currency}`,
-      { x: width - 200, y, size: 10, font, color: muted });
+      { x: width - 200, y, size: 10, font: bold, color: accent });
+    y -= 14;
+    page.drawLine({ start: { x: 50, y }, end: { x: width - 50, y }, thickness: 0.5, color: muted });
 
-    y -= 50;
-    drawSafe(page, L.status, { x: 50, y, size: 10, font, color: muted });
+    y -= 40;
+    drawSafe(page, L.status.toUpperCase(), { x: 50, y, size: 8, font: bold, color: accent });
     const statusText = pendingMode
       ? "PENDING (NOT YET CONFIRMED)"
       : String(booking.state).replace(/_/g, " ").toUpperCase();
-    drawSafe(page, statusText, { x: 120, y, size: 10, font: bold, color: accent });
+    drawSafe(page, statusText, { x: 50, y: y - 18, size: 13, font: bold, color: accent });
+
 
     // QR code (bottom-right) — deep link to guest booking view
     const qrTarget = `${siteUrl.replace(/\/$/, "")}/guest?ref=${encodeURIComponent(displayRef)}`;
