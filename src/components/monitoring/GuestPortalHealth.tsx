@@ -1,12 +1,17 @@
 /**
- * Guest Portal Health — Operations Monitor panel.
+ * Guest Portal Health — Operations Monitor panel (top of page).
  *
  * Answers the question Nikki actually asks: "some guests pay easily, others
  * get stuck — who is stuck, and where?"
  *
  * Reads `public.guest_portal_activity` (staff-only SELECT via RLS) and turns
- * raw events into a funnel + a recent-activity feed. Read-only: this panel
- * never writes, never mutates a booking.
+ * raw events into a plain-English readout. Read-only: this panel never writes,
+ * never mutates a booking.
+ *
+ * WRITING RULE FOR THIS FILE: no tech jargon in anything a human reads.
+ * Every label is a sentence a front-desk person understands cold. Every time
+ * is spelled out as "how long ago" plus the actual clock time. Every booking
+ * is named by guest + confirmation number, never a raw UUID fragment.
  */
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Link } from "react-router-dom";
 import {
   Users,
   CreditCard,
@@ -23,8 +29,10 @@ import {
   Smartphone,
   RefreshCw,
   LogIn,
+  ArrowRight,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { formatInBangkok } from "@/lib/timezone";
 
 type Row = {
   id: string;
@@ -46,10 +54,19 @@ type Row = {
   metadata: Record<string, unknown> | null;
 };
 
+type BookingLabel = {
+  id: string;
+  confirmation_number: string | null;
+  manual_guest_name: string | null;
+  check_in: string;
+  state: string;
+  profiles: { full_name: string | null } | null;
+};
+
 const WINDOWS = [
-  { key: "24", label: "24h", hours: 24 },
-  { key: "72", label: "3d", hours: 72 },
-  { key: "168", label: "7d", hours: 168 },
+  { key: "24", label: "Today", hours: 24, phrase: "the last 24 hours" },
+  { key: "72", label: "3 days", hours: 72, phrase: "the last 3 days" },
+  { key: "168", label: "7 days", hours: 168, phrase: "the last 7 days" },
 ] as const;
 
 const FAILURE_TYPES = new Set([
@@ -63,33 +80,38 @@ const FAILURE_TYPES = new Set([
   "guest_login_failed",
 ]);
 
+/**
+ * Plain-English event names. Left side is the raw event we log, right side is
+ * what a person reads. If an event ever shows up here as raw text, it means we
+ * forgot to add it to this map.
+ */
 const PLAIN_ENGLISH: Record<string, string> = {
-  guest_portal_loaded: "Opened the portal",
-  guest_portal_load_failed: "Portal failed to load their bookings",
-  guest_booking_loaded: "Saw their booking",
-  guest_booking_missing: "Logged in but has no booking linked",
-  deposit_button_clicked: "Tapped Pay Deposit",
-  deposit_section_scrolled: "Reached the deposit section",
+  guest_portal_loaded: "Opened their guest page",
+  guest_portal_load_failed: "Their guest page wouldn't load their booking",
+  guest_booking_loaded: "Saw their booking on screen",
+  guest_booking_missing: "Signed in, but no booking is attached to their email",
+  deposit_button_clicked: "Tapped the Pay Deposit button",
+  deposit_section_scrolled: "Scrolled down to the deposit section",
   checkout_button_clicked: "Tapped Pay Deposit Online",
-  checkout_create_started: "Checkout being created",
-  checkout_create_success: "Checkout created",
-  checkout_redirect_started: "Sent to Stripe",
-  checkout_create_failed: "Checkout failed",
-  checkout_timeout: "Checkout timed out",
+  checkout_create_started: "We started building their payment page",
+  checkout_create_success: "Payment page was built and ready",
+  checkout_redirect_started: "Got handed off to the card payment page",
+  checkout_create_failed: "We couldn't build their payment page",
+  checkout_timeout: "Payment page took too long and gave up",
   id_upload_button_clicked: "Tapped Upload ID",
-  id_upload_section_scrolled: "Reached the ID upload box",
-  id_upload_started: "Started uploading ID",
-  id_upload_success: "Uploaded ID",
-  id_upload_failed: "ID upload failed",
-  id_upload_validation_failed: "ID file rejected (type or size)",
-  guest_in_app_browser_detected: "Opened inside an in-app browser",
-  guest_network_error: "Network error in the portal",
-  guest_client_error: "App error in the portal",
-  guest_react_error_boundary: "Portal crashed on their screen",
-  guest_login_failed: "Login failed",
+  id_upload_section_scrolled: "Scrolled down to the ID upload box",
+  id_upload_started: "Started sending us their ID",
+  id_upload_success: "Sent us their ID successfully",
+  id_upload_failed: "Their ID upload didn't go through",
+  id_upload_validation_failed: "We rejected their ID file — wrong file type or too big",
+  guest_in_app_browser_detected: "Opened the link inside a social app instead of a real browser",
+  guest_network_error: "Lost internet while on their guest page",
+  guest_client_error: "Something broke on their guest page",
+  guest_react_error_boundary: "Their guest page crashed and showed an error screen",
+  guest_login_failed: "Couldn't log in",
 };
 
-/** Minutes we allow between "tapped pay" and "reached Stripe" before alerting. */
+/** How long we wait after a tap before we call it "nothing happened". */
 const STALL_MINUTES = 10;
 
 /** Any of these, logged after the click, means the guest was not left hanging. */
@@ -107,9 +129,32 @@ function statusTone(r: Row) {
   return "text-muted-foreground";
 }
 
+/**
+ * Always show both: how long ago it happened AND the actual clock time.
+ * "1 hour ago" on its own is the thing that confuses people — they can't tell
+ * whether it means "1 hour ago" or "1 hour left".
+ */
+function WhenLabel({ iso }: { iso: string }) {
+  return (
+    <span className="text-muted-foreground shrink-0 whitespace-nowrap">
+      {formatDistanceToNow(new Date(iso), { addSuffix: true })} · {formatInBangkok(iso, "h:mm a")}
+    </span>
+  );
+}
+
+/** Turn "instagram in-app browser on iPhone" into words. */
+function deviceSentence(r: Row) {
+  const bits: string[] = [];
+  if (r.device_type) bits.push(r.device_type === "mobile" ? "on their phone" : `on ${r.device_type}`);
+  if (r.browser_name) bits.push(`using ${r.browser_name}`);
+  if (r.os_name) bits.push(`(${r.os_name})`);
+  return bits.length ? bits.join(" ") : "device unknown";
+}
+
 export function GuestPortalHealth() {
   const [win, setWin] = useState<(typeof WINDOWS)[number]["key"]>("24");
-  const hours = WINDOWS.find((w) => w.key === win)!.hours;
+  const windowDef = WINDOWS.find((w) => w.key === win)!;
+  const hours = windowDef.hours;
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["guest-portal-activity", win],
@@ -127,7 +172,44 @@ export function GuestPortalHealth() {
     refetchInterval: 60_000,
   });
 
-  const rows = data ?? [];
+  const rows = useMemo(() => data ?? [], [data]);
+
+  // Resolve raw booking ids into "Arvid Kestens · LMT-2026-0142" labels.
+  const bookingIds = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.booking_id).filter(Boolean))) as string[],
+    [rows],
+  );
+
+  const { data: bookingLabels } = useQuery({
+    queryKey: ["guest-portal-booking-labels", bookingIds.sort().join(",")],
+    enabled: bookingIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("id, confirmation_number, manual_guest_name, check_in, state, profiles:guest_id(full_name)")
+        .in("id", bookingIds);
+      if (error) throw error;
+      const map = new Map<string, BookingLabel>();
+      for (const b of (data ?? []) as unknown as BookingLabel[]) map.set(b.id, b);
+      return map;
+    },
+  });
+
+  /** Renders a human booking reference instead of a UUID stub. */
+  const BookingRef = ({ id }: { id: string }) => {
+    const b = bookingLabels?.get(id);
+    const name = b?.profiles?.full_name || b?.manual_guest_name || "Guest";
+    const ref = b?.confirmation_number ? ` · ${b.confirmation_number}` : "";
+    return (
+      <Link
+        to={`/bookings?id=${id}`}
+        className="text-[11px] text-primary hover:underline inline-flex items-center gap-1"
+      >
+        {b ? `${name}${ref}` : "Open booking"}
+        <ArrowRight className="h-3 w-3" />
+      </Link>
+    );
+  };
 
   const stats = useMemo(() => {
     const count = (t: string) => rows.filter((r) => r.event_type === t).length;
@@ -137,7 +219,7 @@ export function GuestPortalHealth() {
     const clicked = count("checkout_button_clicked");
     const reached = count("checkout_redirect_started");
     const failed = count("checkout_create_failed") + count("checkout_timeout");
-    // "Abandoned" = started checkout, never reached Stripe, and no failure logged.
+    // "Walked away" = started paying, never got to the card page, no error either.
     const abandoned = Math.max(0, clicked - reached - failed);
 
     return {
@@ -159,12 +241,8 @@ export function GuestPortalHealth() {
   }, [rows]);
 
   /**
-   * Alert: guest tapped Pay Deposit but never reached Stripe.
-   *
-   * A checkout click is "stalled" when, for the same session, no
-   * checkout_redirect_started / success and no failure event was recorded
-   * after the click, and the click is older than STALL_MINUTES. That is the
-   * exact shape of "the button did nothing" complaints.
+   * Alert: guest tapped Pay Deposit and then nothing happened at all.
+   * No card page, no error message — the button just ate the tap.
    */
   const stalledCheckouts = useMemo(() => {
     const cutoff = Date.now() - STALL_MINUTES * 60_000;
@@ -195,16 +273,36 @@ export function GuestPortalHealth() {
     [rows],
   );
 
+  /** One-line summary of the whole panel, in words, at the very top. */
+  const headline = useMemo(() => {
+    if (rows.length === 0) return null;
+    if (stalledCheckouts.length > 0)
+      return {
+        tone: "bad" as const,
+        text: `${stalledCheckouts.length} guest${stalledCheckouts.length === 1 ? " is" : "s are"} stuck trying to pay right now. Reach out to them.`,
+      };
+    if (stats.errors > 0)
+      return {
+        tone: "warn" as const,
+        text: `${stats.errors} guest${stats.errors === 1 ? " ran" : "s ran"} into a problem on their guest page. Nothing is blocking payments overall.`,
+      };
+    return {
+      tone: "ok" as const,
+      text: "No guest is stuck. Everyone who tried to pay or upload an ID got through.",
+    };
+  }, [rows.length, stalledCheckouts.length, stats.errors]);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
         <div className="min-w-0">
           <CardTitle className="flex items-center gap-2 text-base">
             <Users className="h-4 w-4" />
-            Guest Portal Health
+            How guests are doing right now
           </CardTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Who logged in, who paid, who got stuck — last {WINDOWS.find((w) => w.key === win)!.label}.
+            Everything a guest did on their own booking page over {windowDef.phrase} — who logged in, who paid, and
+            who got stuck.
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -225,92 +323,136 @@ export function GuestPortalHealth() {
 
       <CardContent className="space-y-5">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading portal activity…</p>
+          <p className="text-sm text-muted-foreground">Checking what guests have been up to…</p>
         ) : rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No guest portal activity recorded in this window.
+            No guest opened their booking page in {windowDef.phrase}. That's normal on a quiet day — it does not mean
+            anything is broken.
           </p>
         ) : (
           <>
+            {/* One-sentence verdict */}
+            {headline && (
+              <div
+                className={`rounded-md border p-3 text-sm font-medium ${
+                  headline.tone === "bad"
+                    ? "border-rose-500/40 bg-rose-50/60 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400"
+                    : headline.tone === "warn"
+                      ? "border-amber-500/40 bg-amber-50/60 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400"
+                      : "border-emerald-500/40 bg-emerald-50/60 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400"
+                }`}
+              >
+                {headline.text}
+              </div>
+            )}
+
             {/* Headline numbers */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <Stat icon={LogIn} label="Guests in portal" value={stats.guests} sub={`${stats.sessions} sessions`} />
-              <Stat icon={CreditCard} label="Reached Stripe" value={stats.reached} sub={`${stats.clicked} tapped pay`} />
-              <Stat icon={Upload} label="ID uploaded" value={stats.uploadOk} sub={`${stats.uploadTapped} tapped upload`} />
+              <Stat
+                icon={LogIn}
+                label="Guests who logged in"
+                value={stats.guests}
+                sub={`${stats.sessions} separate visits`}
+              />
+              <Stat
+                icon={CreditCard}
+                label="Made it to the card page"
+                value={stats.reached}
+                sub={`out of ${stats.clicked} who tapped Pay`}
+              />
+              <Stat
+                icon={Upload}
+                label="IDs received"
+                value={stats.uploadOk}
+                sub={`${stats.uploadTapped} tried to send one`}
+              />
               <Stat
                 icon={AlertTriangle}
-                label="Problems"
+                label="Guests who hit a problem"
                 value={stats.errors}
-                sub={stats.abandoned ? `${stats.abandoned} abandoned` : "no drop-offs"}
+                sub={stats.abandoned ? `${stats.abandoned} walked away mid-payment` : "nobody dropped off"}
                 tone={stats.errors > 0 ? "bad" : "ok"}
               />
             </div>
 
-            {/* ALERT — tapped pay, never reached Stripe */}
+            {/* ALERT — tapped pay, nothing happened */}
             {stalledCheckouts.length > 0 && (
               <div className="rounded-md border border-rose-500/40 bg-rose-50/60 dark:bg-rose-950/20 p-3">
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-rose-600" />
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-rose-700 dark:text-rose-400">
-                      {stalledCheckouts.length} guest{stalledCheckouts.length === 1 ? "" : "s"} tapped Pay Deposit but
-                      never reached Stripe
+                      {stalledCheckouts.length} guest{stalledCheckouts.length === 1 ? "" : "s"} tapped Pay Deposit and
+                      the button did nothing
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      No redirect, no error — nothing happened for over {STALL_MINUTES} minutes after the tap. Send them
-                      a direct payment link.
+                      They never got to the card payment page, and no error was shown to them either — it just sat
+                      there for more than {STALL_MINUTES} minutes. These guests think they tried to pay and gave up.
+                      Text them a direct payment link.
                     </p>
                   </div>
                 </div>
-                <div className="mt-2 space-y-1.5">
+                <div className="mt-3 space-y-2">
                   {stalledCheckouts.slice(0, 8).map((r) => (
-                    <div key={r.id} className="flex flex-wrap items-center gap-2 text-xs">
-                      <span className="text-muted-foreground">
-                        {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
-                      </span>
-                      <Badge variant="outline" className="text-[10px]">
-                        {r.device_type ?? "?"} · {r.browser_name ?? "?"}
-                      </Badge>
-                      {r.is_in_app_browser && (
-                        <Badge variant="outline" className="text-[10px] text-amber-600">
-                          in-app browser
-                        </Badge>
-                      )}
-                      {r.booking_id && (
-                        <span className="font-mono text-[10px] text-muted-foreground">
-                          booking {r.booking_id.slice(0, 8)}
-                        </span>
-                      )}
+                    <div key={r.id} className="rounded border bg-background/60 p-2 text-xs space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        {r.booking_id ? <BookingRef id={r.booking_id} /> : <span>Guest not identified</span>}
+                        <WhenLabel iso={r.created_at} />
+                      </div>
+                      <p className="text-muted-foreground">
+                        Tapped Pay {deviceSentence(r)}.
+                        {r.is_in_app_browser
+                          ? " They opened the link inside a social app (Instagram, Facebook, etc.) — that's almost certainly why it froze."
+                          : ""}
+                      </p>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Deposit funnel */}
+            {/* Payment step-by-step */}
             <div>
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                Deposit funnel
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                Where guests are in the payment steps
               </h4>
+              <p className="text-xs text-muted-foreground mb-2">
+                Read left to right. Each number should be close to the one before it — a big drop means guests are
+                falling out at that step.
+              </p>
               <div className="flex flex-wrap gap-2 text-xs">
-                <FunnelPill label="Saw booking" value={stats.viewedBooking} />
+                <FunnelPill label="Saw their booking" value={stats.viewedBooking} />
                 <FunnelPill label="Tapped Pay Deposit" value={stats.depositTapped} />
-                <FunnelPill label="Started checkout" value={stats.clicked} />
-                <FunnelPill label="Reached Stripe" value={stats.reached} tone="ok" />
-                <FunnelPill label="Failed" value={stats.failed} tone={stats.failed ? "bad" : undefined} />
-                <FunnelPill label="Abandoned" value={stats.abandoned} tone={stats.abandoned ? "warn" : undefined} />
+                <FunnelPill label="Started paying" value={stats.clicked} />
+                <FunnelPill label="Reached the card page" value={stats.reached} tone="ok" />
+                <FunnelPill label="Got an error" value={stats.failed} tone={stats.failed ? "bad" : undefined} />
+                <FunnelPill
+                  label="Walked away mid-payment"
+                  value={stats.abandoned}
+                  tone={stats.abandoned ? "warn" : undefined}
+                />
               </div>
               {stats.inApp > 0 && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1.5">
-                  <Smartphone className="h-3.5 w-3.5" />
-                  {stats.inApp} portal opens happened inside an in-app browser (Instagram/Facebook/etc.) — a common
-                  cause of stalled payments. Ask those guests to open the link in Safari or Chrome.
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 flex items-start gap-1.5">
+                  <Smartphone className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  <span>
+                    {stats.inApp} guest visits came from a link tapped inside a social app (Instagram, Facebook,
+                    Messenger). Those mini-browsers block card payments a lot of the time. Tell those guests to open
+                    the link in Safari or Chrome instead.
+                  </span>
                 </p>
               )}
               {stats.noBooking > 0 && (
                 <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5">
-                  {stats.noBooking} guests signed in with no booking linked to their account — likely booked with a
-                  different email.
+                  {stats.noBooking} guest{stats.noBooking === 1 ? "" : "s"} signed in and saw an empty page — their
+                  booking is under a different email than the one they signed up with. Match the emails on the booking
+                  and it'll show up.
+                </p>
+              )}
+              {stats.uploadFail > 0 && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5">
+                  {stats.uploadFail} ID upload{stats.uploadFail === 1 ? "" : "s"} didn't go through — usually a photo
+                  that's too large or a file type we don't take. Ask for a regular phone photo (JPG or PNG).
                 </p>
               )}
             </div>
@@ -318,38 +460,31 @@ export function GuestPortalHealth() {
             {/* Guests who got stuck */}
             {stuck.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                  Guests who got stuck
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                  Guests who hit a wall
                 </h4>
+                <p className="text-xs text-muted-foreground mb-2">
+                  These people had something go wrong on their end. Each one is worth a quick message.
+                </p>
                 <div className="space-y-2">
                   {stuck.map((r) => (
-                    <div key={r.id} className="rounded-md border p-2.5 text-xs">
+                    <div key={r.id} className="rounded-md border p-2.5 text-xs space-y-1.5">
                       <div className="flex items-start justify-between gap-2">
                         <span className={`font-medium ${statusTone(r)}`}>
                           {PLAIN_ENGLISH[r.event_type] ?? r.event_type}
                         </span>
-                        <span className="text-muted-foreground shrink-0">
-                          {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
-                        </span>
+                        <WhenLabel iso={r.created_at} />
                       </div>
+                      <p className="text-muted-foreground">
+                        {deviceSentence(r)}
+                        {r.is_in_app_browser ? " — opened from inside a social app" : ""}.
+                      </p>
                       {(r.error_message || r.message) && (
-                        <p className="text-muted-foreground mt-1 break-words">{r.error_message ?? r.message}</p>
+                        <p className="text-muted-foreground/80 break-words italic">
+                          What the system saw: {r.error_message ?? r.message}
+                        </p>
                       )}
-                      <div className="flex flex-wrap gap-1.5 mt-1.5">
-                        {r.booking_id && (
-                          <Badge variant="outline" className="text-[10px]">
-                            booking {r.booking_id.slice(0, 8)}
-                          </Badge>
-                        )}
-                        <Badge variant="outline" className="text-[10px]">
-                          {r.device_type ?? "?"} · {r.browser_name ?? "?"} · {r.os_name ?? "?"}
-                        </Badge>
-                        {r.is_in_app_browser && (
-                          <Badge variant="outline" className="text-[10px] text-amber-600">
-                            in-app browser
-                          </Badge>
-                        )}
-                      </div>
+                      {r.booking_id && <BookingRef id={r.booking_id} />}
                     </div>
                   ))}
                 </div>
@@ -358,18 +493,19 @@ export function GuestPortalHealth() {
 
             {/* Recent activity */}
             <div>
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                Recent guest activity
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                Everything guests did, newest first
               </h4>
+              <p className="text-xs text-muted-foreground mb-2">
+                A running log. Times are how long ago it happened, plus the actual time here in Thailand.
+              </p>
               <div className="space-y-1 max-h-72 overflow-y-auto pr-1">
                 {rows.slice(0, 60).map((r) => (
                   <div key={r.id} className="flex items-center justify-between gap-3 text-xs py-1 border-b last:border-0">
                     <span className={`truncate ${statusTone(r)}`}>
                       {PLAIN_ENGLISH[r.event_type] ?? r.event_type}
                     </span>
-                    <span className="text-muted-foreground shrink-0">
-                      {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
-                    </span>
+                    <WhenLabel iso={r.created_at} />
                   </div>
                 ))}
               </div>
@@ -397,7 +533,7 @@ function Stat({
   return (
     <div className="rounded-md border p-3">
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Icon className="h-3.5 w-3.5" />
+        <Icon className="h-3.5 w-3.5 shrink-0" />
         <span className="truncate">{label}</span>
       </div>
       <p
@@ -407,7 +543,7 @@ function Stat({
       >
         {value}
       </p>
-      {sub && <p className="text-[11px] text-muted-foreground truncate">{sub}</p>}
+      {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
     </div>
   );
 }
