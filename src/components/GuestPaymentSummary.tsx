@@ -62,6 +62,13 @@ export function GuestPaymentSummary({ bookingId, totalPrice, policies }: GuestPa
             <span className="text-muted-foreground">{t("payments.totalStayCost", { defaultValue: "Total Stay Cost" })}</span>
             <span className="font-medium">{formatPrice(totalPrice, policies)}</span>
           </div>
+          {balance.addonTotal > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">{t("payments.addonsLabel", { defaultValue: "Add-ons (airport pickup, extras)" })}</span>
+              <span className="font-medium">{formatPrice(balance.addonTotal, policies)}</span>
+            </div>
+          )}
+
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">{t("payments.totalPaid", { defaultValue: "Total Paid" })}</span>
             <span className="font-medium text-[hsl(var(--success))]">{formatPrice(balance.totalPaid, policies)}</span>
