@@ -358,10 +358,10 @@ export function CalendarGrid({
           <span>Drag bookings to move, resize, or reassign rooms</span>
         </div>
       )}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-16rem)]">
         <div style={{ minWidth: LABEL_WIDTH + COL_WIDTH * days }}>
-          {/* Header row */}
-          <div className="flex border-b sticky top-0 z-10 bg-card">
+          {/* Header row - sticky so dates stay visible while scrolling through units */}
+          <div className="flex border-b sticky top-0 z-20 bg-card shadow-sm">
             <div className="shrink-0 border-r bg-card flex items-end px-3 pb-2 text-xs font-medium text-muted-foreground" style={{ width: LABEL_WIDTH, height: HEADER_HEIGHT }}>{t("units.title")}</div>
             {dates.map((d, i) => {
               const isWeekend = d.getDay() === 0 || d.getDay() === 6;
