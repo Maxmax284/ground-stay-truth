@@ -104,21 +104,19 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
   const hasUnpaidLink = false; // link visibility lives in PaymentLinkManager; edge fn revokes if present
   const discountBlockedReason = eligibility.allowed ? null : eligibility.reason;
 
-  const softHoldInfo = useMemo(() => {
-    if (!booking || (booking.state as BookingState) !== "soft_hold") return null;
-    const expiryHours = policies?.find((p) => p.key === "soft_hold_expiration_hours");
-    const hours = expiryHours ? Number(expiryHours.value) : 12;
-    const elapsed = differenceInHours(new Date(), new Date(booking.created_at));
-    return { isExpired: elapsed >= hours, remaining: hours - elapsed, hours };
-  }, [booking, policies]);
-
-  const depositDeadlineInfo = useMemo(() => {
-    if (!booking || (booking.state as BookingState) !== "pending_deposit") return null;
-    const deadlineSetting = policies?.find((p) => p.key === "deposit_deadline_hours");
-    const hours = deadlineSetting ? Number(deadlineSetting.value) : 24;
-    const elapsed = differenceInHours(new Date(), new Date(booking.updated_at));
-    return { isExpired: elapsed >= hours, remaining: hours - elapsed, hours };
-  }, [booking, policies]);
+  // Single source of truth for hold / deposit clocks — honours staff overrides.
+  const deadlineInfo = useMemo(
+    () => getBookingDeadline(booking, policies as any),
+    [booking, policies],
+  );
+  const softHoldInfo = (booking?.state as BookingState) === "soft_hold" && deadlineInfo
+    ? { ...deadlineInfo, remaining: deadlineInfo.hoursRemaining, hours: deadlineInfo.policyHours }
+    : null;
+  const depositDeadlineInfo = (booking?.state as BookingState) === "pending_deposit" && deadlineInfo
+    ? { ...deadlineInfo, remaining: deadlineInfo.hoursRemaining, hours: deadlineInfo.policyHours }
+    : null;
+  const canOverrideDeadline = permissions.canOverrideDeposit(role);
+  const [extendOpen, setExtendOpen] = useState(false);
 
   const { data: maintenanceReqs } = useMaintenanceRequests(bookingId);
   const { data: laundryReqs } = useLaundryRequests(bookingId);
