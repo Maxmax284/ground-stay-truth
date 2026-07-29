@@ -230,11 +230,16 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
 
   const handleWhatsAppCopy = async () => {
     if (!lastUrl) return;
-    await navigator.clipboard.writeText(buildWhatsAppText(lastUrl));
+    const ok = await copyText(buildWhatsAppText(lastUrl));
+    if (!ok) {
+      toast.error("Couldn't reach the clipboard — copy the link above manually.");
+      return;
+    }
     setWaCopied(true);
     toast.success(guestPhone ? `Message ready for ${guestPhone}` : "Message copied — paste into WhatsApp / LINE");
     setTimeout(() => setWaCopied(false), 2000);
   };
+
 
   return (
     <Card className="p-4 space-y-3">
