@@ -234,7 +234,12 @@ const Bookings = () => {
           onDateToChange={setDateTo}
           onSortChange={setSort}
           onShowCancelledChange={setShowCancelled}
+          expiredOnly={expiredOnly}
+          expiredCount={expiredCount}
+          onExpiredOnlyChange={setExpiredOnly}
         />
+
+
 
         {isLoading ? (
           <div className="space-y-3">
