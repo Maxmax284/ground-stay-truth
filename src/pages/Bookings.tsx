@@ -26,6 +26,9 @@ import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { GuestDirectory } from "@/components/guests/GuestDirectory";
+
 
 function BookingStatusBadge({ booking }: { booking: any }) {
   const { t } = useTranslation();
