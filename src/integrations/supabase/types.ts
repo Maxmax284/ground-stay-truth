@@ -3968,11 +3968,11 @@ export type Database = {
       }
       log_staff_audit_event: {
         Args: {
-          _actor_id: string
+          _actor_id?: string
           _event_type: string
           _metadata?: Json
           _reason?: string
-          _severity: string
+          _severity?: string
           _target_user_id?: string
         }
         Returns: string
