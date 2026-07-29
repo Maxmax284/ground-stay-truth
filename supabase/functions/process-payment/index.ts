@@ -253,7 +253,7 @@ serve(async (req) => {
         .eq("status", "recorded"),
       adminClient
         .from("payments")
-        .select("id, provider_session_id, expires_at")
+        .select("id, provider_session_id, expires_at, payment_type")
         .eq("booking_id", booking_id)
         .eq("status", "pending"),
       adminClient
@@ -273,9 +273,17 @@ serve(async (req) => {
       );
     }
 
-    // Retire stale pending sessions in one statement instead of one-by-one.
-    const pendingPayments = pendingRes.data;
-    if (pendingPayments && pendingPayments.length > 0) {
+    // Retire stale pending CHECKOUT sessions in one statement instead of one-by-one.
+    //
+    // BUSINESS-CRITICAL: only room-money obligations (deposit / balance) are
+    // superseded by a new checkout session. Standing obligations like an
+    // airport pickup fee (`addon`) or a `security_deposit` are separate money
+    // the guest still owes — cancelling them here silently wiped them off the
+    // outstanding balance when a new deposit link was generated.
+    const pendingPayments = (pendingRes.data ?? []).filter(
+      (p: any) => !["addon", "security_deposit"].includes(p.payment_type ?? "")
+    );
+    if (pendingPayments.length > 0) {
       await adminClient
         .from("payments")
         .update({ status: "cancelled" })
