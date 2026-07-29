@@ -28,6 +28,10 @@ import { useTranslation } from "react-i18next";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GuestDirectory } from "@/components/guests/GuestDirectory";
+import { getBookingDeadline, describeDeadline } from "@/lib/bookingDeadline";
+import { ExtendDeadlineDialog } from "@/components/ExtendDeadlineDialog";
+import { Clock } from "lucide-react";
+
 
 
 function BookingStatusBadge({ booking }: { booking: any }) {
