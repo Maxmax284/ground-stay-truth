@@ -448,7 +448,11 @@ export default function MonitoringCenter() {
           </div>
         </div>
 
+        {/* Guest portal health — guests come first, everything else is second. */}
+        <GuestPortalHealth />
+
         {/* Overall status */}
+
         <Card>
           <CardContent className="pt-6 flex items-center gap-4">
             <span className={`h-3 w-3 rounded-full ${healthStyles[activeOverall].dot}`} />
