@@ -96,13 +96,17 @@ export function CloneYearDialog() {
         const newStart = start.toISOString().split("T")[0];
         const newEnd = end.toISOString().split("T")[0];
 
-        // Overlap check
-        const { data: existing } = await supabase
+        // Overlap check — scoped the same way as the rule itself
+        // (room type vs single-room override).
+        let overlapQuery = supabase
           .from("pricing_rules")
           .select("id, name")
-          .eq("unit_id", r.unit_id)
           .lte("start_date", newEnd)
           .gte("end_date", newStart);
+        overlapQuery = (r as any).group_id
+          ? overlapQuery.eq("group_id", (r as any).group_id)
+          : overlapQuery.eq("unit_id", r.unit_id as string);
+        const { data: existing } = await overlapQuery;
 
         if (existing && existing.length > 0) {
           skipped++;
@@ -113,7 +117,8 @@ export function CloneYearDialog() {
         const { error } = await supabase.from("pricing_rules").insert({
           name: r.name.replace(String(sourceYear), String(targetYear)) ||
             `${r.name} (${targetYear})`,
-          unit_id: r.unit_id,
+          unit_id: (r as any).group_id ? null : r.unit_id,
+          group_id: (r as any).group_id ?? null,
           start_date: newStart,
           end_date: newEnd,
           price: r.price,
@@ -232,7 +237,9 @@ export function CloneYearDialog() {
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{r.name}</div>
                       <div className="text-xs text-muted-foreground truncate">
-                        {r.units?.name ?? "—"} · {r.start_date} → {r.end_date}
+                        {(r as any).group_id
+                          ? `${(r as any).unit_groups?.name ?? "Room type"} (all rooms)`
+                          : r.units?.name ?? "—"} · {r.start_date} → {r.end_date}
                       </div>
                     </div>
                   </label>
