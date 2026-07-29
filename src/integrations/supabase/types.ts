@@ -2539,12 +2539,13 @@ export type Database = {
           adjustment_value: number | null
           created_at: string
           end_date: string
+          group_id: string | null
           id: string
           min_nights: number | null
           name: string
           price: number
           start_date: string
-          unit_id: string
+          unit_id: string | null
           weekend_price: number | null
         }
         Insert: {
@@ -2552,12 +2553,13 @@ export type Database = {
           adjustment_value?: number | null
           created_at?: string
           end_date: string
+          group_id?: string | null
           id?: string
           min_nights?: number | null
           name: string
           price: number
           start_date: string
-          unit_id: string
+          unit_id?: string | null
           weekend_price?: number | null
         }
         Update: {
@@ -2565,15 +2567,23 @@ export type Database = {
           adjustment_value?: number | null
           created_at?: string
           end_date?: string
+          group_id?: string | null
           id?: string
           min_nights?: number | null
           name?: string
           price?: number
           start_date?: string
-          unit_id?: string
+          unit_id?: string | null
           weekend_price?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pricing_rules_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "unit_groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pricing_rules_unit_id_fkey"
             columns: ["unit_id"]
