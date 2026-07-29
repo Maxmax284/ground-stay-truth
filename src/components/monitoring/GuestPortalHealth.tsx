@@ -32,7 +32,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { formatInBangkok } from "@/lib/timezone";
+import { formatInPropertyTimezone } from "@/lib/timezone";
 
 type Row = {
   id: string;
