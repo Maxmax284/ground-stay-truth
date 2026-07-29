@@ -35,21 +35,9 @@ function BookingStatusBadge({ booking }: { booking: any }) {
   const { data: policies } = usePolicySettings();
   const state = booking.state as BookingState;
 
-  const deadlineInfo = (() => {
-    if (state === "soft_hold") {
-      const expiryHours = policies?.find((p: any) => p.key === "soft_hold_expiration_hours");
-      const hours = expiryHours ? Number(expiryHours.value) : 12;
-      const elapsed = differenceInHours(new Date(), new Date(booking.created_at));
-      return { isExpired: elapsed >= hours, remaining: hours - elapsed };
-    }
-    if (state === "pending_deposit") {
-      const deadlineHours = policies?.find((p: any) => p.key === "deposit_deadline_hours");
-      const hours = deadlineHours ? Number(deadlineHours.value) : 24;
-      const elapsed = differenceInHours(new Date(), new Date(booking.updated_at));
-      return { isExpired: elapsed >= hours, remaining: hours - elapsed };
-    }
-    return null;
-  })();
+  // Shared resolver — honours staff deadline overrides, so an extended
+  // booking stops screaming "Expired" the moment the override is saved.
+  const deadlineInfo = getBookingDeadline(booking, policies as any);
 
   if (deadlineInfo) {
     return (
@@ -62,7 +50,10 @@ function BookingStatusBadge({ booking }: { booking: any }) {
             <AlertTriangle className="h-3 w-3 mr-0.5" /> {t("bookings.expired")}
           </Badge>
         ) : (
-          <span className="text-[10px] text-muted-foreground">{t("bookings.hoursLeft", { hours: deadlineInfo.remaining })}</span>
+          <span className="text-[10px] text-muted-foreground">{describeDeadline(deadlineInfo)}</span>
+        )}
+        {deadlineInfo.source === "override" && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0">Extended</Badge>
         )}
       </div>
     );
@@ -74,6 +65,7 @@ function BookingStatusBadge({ booking }: { booking: any }) {
     </Badge>
   );
 }
+
 
 function BookingCard({ booking, onClick }: { booking: any; onClick: () => void }) {
   const { t } = useTranslation();
