@@ -113,6 +113,9 @@ const Bookings = () => {
   const [rejectReason, setRejectReason] = useState("");
   const [sort, setSort] = useState<BookingSort>("check_in_asc");
   const [showCancelled, setShowCancelled] = useState(false);
+  const [expiredOnly, setExpiredOnly] = useState(false);
+  const [extendBooking, setExtendBooking] = useState<any | null>(null);
+  const { data: policiesForDeadlines } = usePolicySettings();
 
   const { data: rawBookings, isLoading, isError, refetch } = useBookings({
     state: stateFilter,
@@ -125,9 +128,16 @@ const Bookings = () => {
   // filtered for). Completed stays remain visible — they're operational history.
   const bookings = useMemo(() => {
     if (!rawBookings) return rawBookings;
-    const visible = (showCancelled || stateFilter === "cancelled")
+    let visible = (showCancelled || stateFilter === "cancelled")
       ? rawBookings
       : rawBookings.filter((b: any) => b.state !== "cancelled");
+
+    // "Expired only" — holds / deposit windows that have run out and are
+    // still sitting there waiting on a human decision.
+    if (expiredOnly) {
+      visible = visible.filter((b: any) => getBookingDeadline(b, policiesForDeadlines as any)?.isExpired);
+    }
+
 
     const name = (b: any) => (resolveGuestDisplayName(b) ?? "").toLowerCase();
     const sorted = [...visible];
