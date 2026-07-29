@@ -195,6 +195,17 @@ const Bookings = () => {
           )}
         </div>
 
+        <Tabs defaultValue="bookings" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="bookings">{t("guests.tabBookings")}</TabsTrigger>
+            <TabsTrigger value="directory">{t("guests.tabDirectory")}</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="directory">
+            <GuestDirectory onOpenBooking={(id) => setSelectedBookingId(id)} />
+          </TabsContent>
+
+          <TabsContent value="bookings" className="space-y-4">
         <BookingFilters
           state={stateFilter}
           unitId={unitFilter}
