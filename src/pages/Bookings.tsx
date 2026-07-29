@@ -71,8 +71,10 @@ function BookingStatusBadge({ booking }: { booking: any }) {
 }
 
 
-function BookingCard({ booking, onClick }: { booking: any; onClick: () => void }) {
+function BookingCard({ booking, onClick, onExtend }: { booking: any; onClick: () => void; onExtend?: (b: any) => void }) {
   const { t } = useTranslation();
+  const { data: cardPolicies } = usePolicySettings();
+  const cardDeadline = getBookingDeadline(booking, cardPolicies as any);
   return (
     <div
       className="rounded-lg border bg-card p-4 cursor-pointer active:bg-accent/50 transition-colors"
@@ -93,6 +95,13 @@ function BookingCard({ booking, onClick }: { booking: any; onClick: () => void }
         <span>·</span>
         <span>{t("bookings.guestCount", { count: booking.num_guests })}</span>
       </div>
+      {cardDeadline?.isExpired && onExtend && (
+        <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+          <Button size="sm" variant="outline" className="h-7 px-2 text-xs w-full" onClick={() => onExtend(booking)}>
+            <Clock className="h-3 w-3 mr-1" /> Override expiry
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -104,6 +113,8 @@ const Bookings = () => {
   const isMobile = useIsMobile();
   const transition = useTransitionBookingState();
   const canApprove = permissions.canApproveBooking(role);
+  // Manager+ may push an expired hold / deposit deadline forward.
+  const canOverrideDeadline = permissions.canOverrideDeposit(role);
 
   const [stateFilter, setStateFilter] = useState<BookingState | null>(null);
   const [unitFilter, setUnitFilter] = useState<string | null>(null);
@@ -254,7 +265,7 @@ const Bookings = () => {
         ) : isMobile ? (
           <div className="space-y-3">
             {bookings.map((b) => (
-              <BookingCard key={b.id} booking={b} onClick={() => setSelectedBookingId(b.id)} />
+              <BookingCard key={b.id} booking={b} onClick={() => setSelectedBookingId(b.id)} onExtend={canOverrideDeadline ? setExtendBooking : undefined} />
             ))}
           </div>
         ) : (
@@ -293,6 +304,11 @@ const Bookings = () => {
                     {canApprove && (
                       <TableCell>
                         <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                          {canOverrideDeadline && getBookingDeadline(b, policiesForDeadlines as any)?.isExpired && (
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setExtendBooking(b)}>
+                              <Clock className="h-3 w-3 mr-1" /> Override expiry
+                            </Button>
+                          )}
                           {b.state === "pending_approval" && (
                             <>
                               <Button size="sm" variant="default" className="h-7 px-2 text-xs" onClick={(e) => handleQuickApprove(e, b.id)} disabled={transition.isPending}>
