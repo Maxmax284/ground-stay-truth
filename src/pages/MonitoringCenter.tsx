@@ -27,6 +27,7 @@ import {
   Activity,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { formatInPropertyTimezone } from "@/lib/timezone";
 
 // ---------- types ----------
 type Health = "healthy" | "warning" | "attention";
@@ -448,7 +449,11 @@ export default function MonitoringCenter() {
           </div>
         </div>
 
+        {/* Guest portal health — guests come first, everything else is second. */}
+        <GuestPortalHealth />
+
         {/* Overall status */}
+
         <Card>
           <CardContent className="pt-6 flex items-center gap-4">
             <span className={`h-3 w-3 rounded-full ${healthStyles[activeOverall].dot}`} />
@@ -535,8 +540,7 @@ export default function MonitoringCenter() {
           </Card>
         )}
 
-        {/* Guest portal health — is the guest-facing side actually working? */}
-        <GuestPortalHealth />
+
 
         {/* Recent activity */}
 
@@ -610,8 +614,10 @@ function AlertRow({ alert }: { alert: Alert }) {
               {healthStyles[alert.health].label}
             </Badge>
             <span className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(alert.when), { addSuffix: true })}
+              Happened {formatDistanceToNow(new Date(alert.when), { addSuffix: true })} ·{" "}
+              {formatInPropertyTimezone(alert.when, "datetime")}
             </span>
+
             {alert.bookingId && (
               <Link
                 to={`/bookings?id=${alert.bookingId}`}
