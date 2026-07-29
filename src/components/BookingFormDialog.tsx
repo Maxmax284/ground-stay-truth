@@ -21,7 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProperty } from "@/hooks/useProperty";
 import { permissions } from "@/lib/permissions";
 import { supabase } from "@/integrations/supabase/client";
-import { calculatePricing, type PricingSummary } from "@/lib/pricingCalculator";
+import { calculatePricing, getRulesForUnit, type PricingSummary } from "@/lib/pricingCalculator";
 import { formatPrice } from "@/lib/currency";
 import { getGuestTypesForMode, DEFAULT_GUEST_TYPE } from "@/lib/guestTypes";
 import { AlertTriangle } from "lucide-react";
@@ -82,7 +82,7 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
     const nights = differenceInCalendarDays(new Date(checkOut), new Date(checkIn));
     if (nights <= 0) errs.push(t("bookingForm.checkoutAfterCheckin"));
     else {
-      const unitRules = (allPricingRules ?? []).filter((r) => r.unit_id === selectedUnit.id);
+      const unitRules = getRulesForUnit(allPricingRules ?? [], selectedUnit as any);
       const seasonalRule = unitRules.find(
         (r) => r.min_nights != null && r.min_nights > 0 && checkIn >= r.start_date && checkIn <= r.end_date
       );

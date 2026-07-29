@@ -7,18 +7,37 @@ export type PricingRule = Tables<"pricing_rules">;
 export type PricingRuleInsert = TablesInsert<"pricing_rules">;
 export type PricingRuleUpdate = TablesUpdate<"pricing_rules">;
 
+export type PricingRuleWithScope = PricingRule & {
+  units: { name: string } | null;
+  unit_groups: { name: string } | null;
+};
+
+/**
+ * Scope helper — a rule targets either one unit (override) or a whole
+ * room type (`group_id`). Overlap checks must run against the same scope,
+ * otherwise a group-wide season would block a deliberate single-room override.
+ */
+function scopeFilter<T extends { eq: (col: string, val: any) => T }>(
+  query: T,
+  rule: { unit_id?: string | null; group_id?: string | null }
+): T {
+  return rule.group_id
+    ? query.eq("group_id", rule.group_id)
+    : query.eq("unit_id", rule.unit_id as string);
+}
+
 export function usePricingRules(unitId?: string | null) {
   return useQuery({
     queryKey: ["pricing_rules", unitId],
     queryFn: async () => {
       let query = supabase
         .from("pricing_rules")
-        .select("*, units(name)")
+        .select("*, units(name), unit_groups(name)")
         .order("start_date", { ascending: true });
       if (unitId) query = query.eq("unit_id", unitId);
       const { data, error } = await query;
       if (error) throw error;
-      return data as (PricingRule & { units: { name: string } | null })[];
+      return data as unknown as PricingRuleWithScope[];
     },
   });
 }
@@ -27,11 +46,13 @@ export function useCreatePricingRule() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (rule: PricingRuleInsert) => {
-      // Check for overlapping rules on the same unit
-      const { data: existing } = await supabase
-        .from("pricing_rules")
-        .select("id, name, start_date, end_date")
-        .eq("unit_id", rule.unit_id)
+      // Check for overlapping rules within the same scope
+      const { data: existing } = await scopeFilter(
+        supabase
+          .from("pricing_rules")
+          .select("id, name, start_date, end_date") as any,
+        rule
+      )
         .lte("start_date", rule.end_date)
         .gte("end_date", rule.start_date);
       if (existing && existing.length > 0) {
@@ -52,13 +73,15 @@ export function useUpdatePricingRule() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: PricingRuleUpdate & { id: string }) => {
-      // Check for overlapping rules on the same unit (exclude self)
-      if (updates.unit_id && updates.start_date && updates.end_date) {
-        const { data: existing } = await supabase
-          .from("pricing_rules")
-          .select("id, name, start_date, end_date")
-          .eq("unit_id", updates.unit_id)
-          .neq("id", id)
+      // Check for overlapping rules within the same scope (exclude self)
+      if ((updates.unit_id || updates.group_id) && updates.start_date && updates.end_date) {
+        const { data: existing } = await scopeFilter(
+          supabase
+            .from("pricing_rules")
+            .select("id, name, start_date, end_date")
+            .neq("id", id) as any,
+          updates
+        )
           .lte("start_date", updates.end_date)
           .gte("end_date", updates.start_date);
         if (existing && existing.length > 0) {

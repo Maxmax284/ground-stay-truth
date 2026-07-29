@@ -44,7 +44,7 @@ const Pricing = () => {
     }
   };
 
-  const handleDuplicate = async (r: PricingRule & { units?: { name: string } | null }) => {
+  const handleDuplicate = async (r: PricingRule & { units?: { name: string } | null; unit_groups?: { name: string } | null }) => {
     try {
       const startDate = new Date(r.start_date);
       const endDate = new Date(r.end_date);
@@ -53,6 +53,7 @@ const Pricing = () => {
       await duplicateRule.mutateAsync({
         name: `${r.name} (${startDate.getFullYear()})`,
         unit_id: r.unit_id,
+        group_id: (r as any).group_id ?? null,
         start_date: startDate.toISOString().split("T")[0],
         end_date: endDate.toISOString().split("T")[0],
         price: r.price,
@@ -177,7 +178,7 @@ const Pricing = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead>{t("pricing.ruleName")}</TableHead>
-                        <TableHead>{t("bookings.unit")}</TableHead>
+                        <TableHead>Applies to</TableHead>
                         <TableHead>{t("pricing.dates")}</TableHead>
                         <TableHead>Type</TableHead>
                         <TableHead>{t("pricing.pricePerNight")}</TableHead>
@@ -198,7 +199,19 @@ const Pricing = () => {
                                 <Badge variant="outline" className="ml-2 text-xs">Min {ruleAny.min_nights}N</Badge>
                               )}
                             </TableCell>
-                            <TableCell>{r.units?.name ?? "—"}</TableCell>
+                            <TableCell>
+                              {(r as any).group_id ? (
+                                <div className="flex items-center gap-1.5">
+                                  <span>{(r as any).unit_groups?.name ?? "Room type"}</span>
+                                  <Badge variant="secondary" className="text-xs">All rooms</Badge>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1.5">
+                                  <span>{r.units?.name ?? "—"}</span>
+                                  <Badge variant="outline" className="text-xs">Override</Badge>
+                                </div>
+                              )}
+                            </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
                               {format(new Date(r.start_date), "MMM d")} – {format(new Date(r.end_date), "MMM d, yyyy")}
                             </TableCell>

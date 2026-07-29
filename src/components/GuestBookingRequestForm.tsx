@@ -118,7 +118,10 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
     if (!selectedGroup) return null;
     return {
       id: selectedGroup.representativeUnitId ?? "",
+      // Needed so room-type (group) seasonal rules resolve for guest quotes.
+      group_id: selectedGroup.id,
       name: selectedGroup.name,
+
       base_price: selectedGroup.base_price,
       capacity: selectedGroup.capacity,
       min_nights: selectedGroup.min_nights,

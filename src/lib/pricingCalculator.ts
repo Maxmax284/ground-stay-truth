@@ -132,6 +132,30 @@ export function getLoyaltyDiscount(
 }
 
 /**
+
+ * Resolve which seasonal rules apply to a given unit.
+ *
+ * Two scopes exist:
+ *  - `unit_id` set  → rule applies to that one room only (manual override)
+ *  - `group_id` set → rule applies to every room of that type
+ *
+ * Unit-level rules are returned first so `.find()` picks them over a group
+ * rule covering the same night.
+ */
+export function getRulesForUnit(
+  pricingRules: PricingRule[],
+  unit: Pick<Unit, "id"> & { group_id?: string | null }
+): PricingRule[] {
+  const byDate = (a: PricingRule, b: PricingRule) => a.start_date.localeCompare(b.start_date);
+  const unitLevel = pricingRules.filter((r) => r.unit_id === unit.id).sort(byDate);
+  const groupLevel = unit.group_id
+    ? pricingRules.filter((r) => !r.unit_id && (r as any).group_id === unit.group_id).sort(byDate)
+    : [];
+  return [...unitLevel, ...groupLevel];
+}
+
+
+/**
  * Calculate nightly prices using the constitutional cascade:
  * 1. Manual override (highest priority)
  * 2. Seasonal pricing rules
@@ -196,9 +220,11 @@ export function calculatePricing(
     fixedRateSource = "weekly_rate";
   }
 
-  const unitRules = pricingRules
-    .filter((r) => r.unit_id === unit.id)
-    .sort((a, b) => a.start_date.localeCompare(b.start_date));
+  // Scope resolution: a rule can target one specific unit (override) or a
+  // whole room type via `group_id`. Unit-level rules win when both cover the
+  // same night — that's how Superior Single 5 keeps its manual price.
+  const unitRules = getRulesForUnit(pricingRules, unit);
+
 
   const nights: NightBreakdown[] = nightDates.map((date) => {
     const dateStr = format(date, "yyyy-MM-dd");
