@@ -20,6 +20,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
 import {
   Users,
@@ -153,6 +160,7 @@ function deviceSentence(r: Row) {
 
 export function GuestPortalHealth() {
   const [win, setWin] = useState<(typeof WINDOWS)[number]["key"]>("24");
+  const [selected, setSelected] = useState<Row | null>(null);
   const windowDef = WINDOWS.find((w) => w.key === win)!;
   const hours = windowDef.hours;
 
@@ -210,6 +218,58 @@ export function GuestPortalHealth() {
       </Link>
     );
   };
+
+  /**
+   * Names for people who were signed in but whose event isn't tied to a booking
+   * (e.g. they logged in and no booking was attached to their email).
+   */
+  const guestIds = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.guest_id).filter(Boolean))) as string[],
+    [rows],
+  );
+
+  const { data: guestNames } = useQuery({
+    queryKey: ["guest-portal-guest-names", guestIds.sort().join(",")],
+    enabled: guestIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, email")
+        .in("user_id", guestIds);
+      if (error) throw error;
+      const map = new Map<string, string>();
+      for (const p of data ?? []) {
+        map.set(p.user_id as string, (p.full_name as string) || (p.email as string) || "Guest");
+      }
+      return map;
+    },
+  });
+
+  /** "Arvid Kestens · LMT-2026-0142" / "Signed-in guest" / "Someone not signed in". */
+  const whoLabel = (r: Row) => {
+    const b = r.booking_id ? bookingLabels?.get(r.booking_id) : null;
+    const name =
+      b?.profiles?.full_name ||
+      b?.manual_guest_name ||
+      (r.guest_id ? guestNames?.get(r.guest_id) : null);
+    if (name) return b?.confirmation_number ? `${name} · ${b.confirmation_number}` : name;
+    if (r.guest_id) return "A signed-in guest (name not on file yet)";
+    return "Somebody not signed in";
+  };
+
+  /** Every other thing logged in the same browser visit, oldest first. */
+  const sessionTrail = useMemo(() => {
+    if (!selected) return [] as Row[];
+    const key = selected.session_id;
+    const same = key
+      ? rows.filter((r) => r.session_id === key)
+      : rows.filter((r) => r.guest_id && r.guest_id === selected.guest_id);
+    return [...same].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    );
+  }, [rows, selected, guestNames]);
+
+
 
   const stats = useMemo(() => {
     const count = (t: string) => rows.filter((r) => r.event_type === t).length;
@@ -497,25 +557,129 @@ export function GuestPortalHealth() {
                 Everything guests did, newest first
               </h4>
               <p className="text-xs text-muted-foreground mb-2">
-                A running log. Times are how long ago it happened, plus the actual time here in Thailand.
+                Tap any line to see who it was, what device they were on, and everything else
+                they did in that same visit.
               </p>
               <div className="space-y-1 max-h-72 overflow-y-auto pr-1">
                 {rows.slice(0, 60).map((r) => (
-                  <div key={r.id} className="flex items-center justify-between gap-3 text-xs py-1 border-b last:border-0">
-                    <span className={`truncate ${statusTone(r)}`}>
-                      {PLAIN_ENGLISH[r.event_type] ?? r.event_type}
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => setSelected(r)}
+                    className="w-full flex items-center justify-between gap-3 text-xs py-1.5 border-b last:border-0 text-left hover:bg-accent/40 rounded-sm px-1 -mx-1 transition-colors"
+                  >
+                    <span className="min-w-0">
+                      <span className={`block truncate ${statusTone(r)}`}>
+                        {PLAIN_ENGLISH[r.event_type] ?? r.event_type}
+                      </span>
+                      <span className="block truncate text-[11px] text-muted-foreground">
+                        {whoLabel(r)}
+                      </span>
                     </span>
                     <WhenLabel iso={r.created_at} />
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
           </>
         )}
       </CardContent>
+
+      {/* Who did what — full detail for one logged action */}
+      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-base">
+              {selected ? (PLAIN_ENGLISH[selected.event_type] ?? selected.event_type) : ""}
+            </DialogTitle>
+            <DialogDescription>
+              {selected ? (
+                <>
+                  {formatDistanceToNow(new Date(selected.created_at), { addSuffix: true })} ·{" "}
+                  {formatInPropertyTimezone(selected.created_at, "datetime")} Thailand time
+                </>
+              ) : null}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selected && (
+            <div className="space-y-4 text-sm">
+              <div className="rounded-md border p-3 space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Who
+                </p>
+                <p>{whoLabel(selected)}</p>
+                {selected.booking_id && <BookingRef id={selected.booking_id} />}
+                {!selected.guest_id && !selected.booking_id && (
+                  <p className="text-xs text-muted-foreground">
+                    Nobody was signed in yet — this was an anonymous visit to the guest page.
+                  </p>
+                )}
+              </div>
+
+              <div className="rounded-md border p-3 space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  What they were on
+                </p>
+                <p>{deviceSentence(selected)}</p>
+                {selected.is_in_app_browser && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    They opened the link inside a social app (Instagram, Facebook, LINE) instead of
+                    a real browser. That's the usual reason payments hang.
+                  </p>
+                )}
+              </div>
+
+              {(selected.error_message || selected.message || selected.error_code) && (
+                <div className="rounded-md border p-3 space-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    What the system saw
+                  </p>
+                  <p className="break-words italic text-muted-foreground">
+                    {selected.error_message ?? selected.message}
+                    {selected.error_code ? ` (${selected.error_code})` : ""}
+                  </p>
+                </div>
+              )}
+
+              <div className="rounded-md border p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                  Everything else in this same visit
+                </p>
+                {sessionTrail.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    This is the only thing we logged for this visit.
+                  </p>
+                ) : (
+                  <ol className="space-y-1">
+                    {sessionTrail.map((r) => (
+                      <li
+                        key={r.id}
+                        className={`flex items-start justify-between gap-3 text-xs ${
+                          r.id === selected.id ? "font-semibold" : ""
+                        }`}
+                      >
+                        <span className={statusTone(r)}>
+                          {PLAIN_ENGLISH[r.event_type] ?? r.event_type}
+                        </span>
+                        <WhenLabel iso={r.created_at} />
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+
+              <p className="text-[11px] text-muted-foreground">
+                Visit reference: {selected.session_id ?? "not recorded"}
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
+
 
 function Stat({
   icon: Icon,
