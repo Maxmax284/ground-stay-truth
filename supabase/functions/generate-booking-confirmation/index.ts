@@ -131,7 +131,7 @@ function wa(input: unknown): string {
 function drawSafe(page: any, text: unknown, opts: any) {
   const t = wa(text);
   if (!t) return;
-  drawSafe(page, t, opts);
+  page.drawText(t, opts);
 }
 
 serve(async (req) => {
