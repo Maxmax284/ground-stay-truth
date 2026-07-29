@@ -198,10 +198,14 @@ const Bookings = () => {
           dateFrom={dateFrom}
           dateTo={dateTo}
           units={units ?? []}
+          sort={sort}
+          showCancelled={showCancelled}
           onStateChange={setStateFilter}
           onUnitChange={setUnitFilter}
           onDateFromChange={setDateFrom}
           onDateToChange={setDateTo}
+          onSortChange={setSort}
+          onShowCancelledChange={setShowCancelled}
         />
 
         {isLoading ? (
