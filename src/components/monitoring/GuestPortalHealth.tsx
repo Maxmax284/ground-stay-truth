@@ -497,25 +497,129 @@ export function GuestPortalHealth() {
                 Everything guests did, newest first
               </h4>
               <p className="text-xs text-muted-foreground mb-2">
-                A running log. Times are how long ago it happened, plus the actual time here in Thailand.
+                Tap any line to see who it was, what device they were on, and everything else
+                they did in that same visit.
               </p>
               <div className="space-y-1 max-h-72 overflow-y-auto pr-1">
                 {rows.slice(0, 60).map((r) => (
-                  <div key={r.id} className="flex items-center justify-between gap-3 text-xs py-1 border-b last:border-0">
-                    <span className={`truncate ${statusTone(r)}`}>
-                      {PLAIN_ENGLISH[r.event_type] ?? r.event_type}
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => setSelected(r)}
+                    className="w-full flex items-center justify-between gap-3 text-xs py-1.5 border-b last:border-0 text-left hover:bg-accent/40 rounded-sm px-1 -mx-1 transition-colors"
+                  >
+                    <span className="min-w-0">
+                      <span className={`block truncate ${statusTone(r)}`}>
+                        {PLAIN_ENGLISH[r.event_type] ?? r.event_type}
+                      </span>
+                      <span className="block truncate text-[11px] text-muted-foreground">
+                        {whoLabel(r)}
+                      </span>
                     </span>
                     <WhenLabel iso={r.created_at} />
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
           </>
         )}
       </CardContent>
+
+      {/* Who did what — full detail for one logged action */}
+      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-base">
+              {selected ? (PLAIN_ENGLISH[selected.event_type] ?? selected.event_type) : ""}
+            </DialogTitle>
+            <DialogDescription>
+              {selected ? (
+                <>
+                  {formatDistanceToNow(new Date(selected.created_at), { addSuffix: true })} ·{" "}
+                  {formatInPropertyTimezone(selected.created_at, "datetime")} Thailand time
+                </>
+              ) : null}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selected && (
+            <div className="space-y-4 text-sm">
+              <div className="rounded-md border p-3 space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Who
+                </p>
+                <p>{whoLabel(selected)}</p>
+                {selected.booking_id && <BookingRef id={selected.booking_id} />}
+                {!selected.guest_id && !selected.booking_id && (
+                  <p className="text-xs text-muted-foreground">
+                    Nobody was signed in yet — this was an anonymous visit to the guest page.
+                  </p>
+                )}
+              </div>
+
+              <div className="rounded-md border p-3 space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  What they were on
+                </p>
+                <p>{deviceSentence(selected)}</p>
+                {selected.is_in_app_browser && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    They opened the link inside a social app (Instagram, Facebook, LINE) instead of
+                    a real browser. That's the usual reason payments hang.
+                  </p>
+                )}
+              </div>
+
+              {(selected.error_message || selected.message || selected.error_code) && (
+                <div className="rounded-md border p-3 space-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    What the system saw
+                  </p>
+                  <p className="break-words italic text-muted-foreground">
+                    {selected.error_message ?? selected.message}
+                    {selected.error_code ? ` (${selected.error_code})` : ""}
+                  </p>
+                </div>
+              )}
+
+              <div className="rounded-md border p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                  Everything else in this same visit
+                </p>
+                {sessionTrail.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    This is the only thing we logged for this visit.
+                  </p>
+                ) : (
+                  <ol className="space-y-1">
+                    {sessionTrail.map((r) => (
+                      <li
+                        key={r.id}
+                        className={`flex items-start justify-between gap-3 text-xs ${
+                          r.id === selected.id ? "font-semibold" : ""
+                        }`}
+                      >
+                        <span className={statusTone(r)}>
+                          {PLAIN_ENGLISH[r.event_type] ?? r.event_type}
+                        </span>
+                        <WhenLabel iso={r.created_at} />
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+
+              <p className="text-[11px] text-muted-foreground">
+                Visit reference: {selected.session_id ?? "not recorded"}
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
+
 
 function Stat({
   icon: Icon,
