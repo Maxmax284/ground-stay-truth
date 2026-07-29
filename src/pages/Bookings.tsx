@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ import { useUnits } from "@/hooks/useUnits";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
-import { BookingFilters } from "@/components/BookingFilters";
+import { BookingFilters, type BookingSort } from "@/components/BookingFilters";
 import { BookingFormDialog } from "@/components/BookingFormDialog";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
