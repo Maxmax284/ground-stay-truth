@@ -218,6 +218,58 @@ export function GuestPortalHealth() {
     );
   };
 
+  /**
+   * Names for people who were signed in but whose event isn't tied to a booking
+   * (e.g. they logged in and no booking was attached to their email).
+   */
+  const guestIds = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.guest_id).filter(Boolean))) as string[],
+    [rows],
+  );
+
+  const { data: guestNames } = useQuery({
+    queryKey: ["guest-portal-guest-names", guestIds.sort().join(",")],
+    enabled: guestIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, email")
+        .in("user_id", guestIds);
+      if (error) throw error;
+      const map = new Map<string, string>();
+      for (const p of data ?? []) {
+        map.set(p.user_id as string, (p.full_name as string) || (p.email as string) || "Guest");
+      }
+      return map;
+    },
+  });
+
+  /** "Arvid Kestens · LMT-2026-0142" / "Signed-in guest" / "Someone not signed in". */
+  const whoLabel = (r: Row) => {
+    const b = r.booking_id ? bookingLabels?.get(r.booking_id) : null;
+    const name =
+      b?.profiles?.full_name ||
+      b?.manual_guest_name ||
+      (r.guest_id ? guestNames?.get(r.guest_id) : null);
+    if (name) return b?.confirmation_number ? `${name} · ${b.confirmation_number}` : name;
+    if (r.guest_id) return "A signed-in guest (name not on file yet)";
+    return "Somebody not signed in";
+  };
+
+  /** Every other thing logged in the same browser visit, oldest first. */
+  const sessionTrail = useMemo(() => {
+    if (!selected) return [] as Row[];
+    const key = selected.session_id;
+    const same = key
+      ? rows.filter((r) => r.session_id === key)
+      : rows.filter((r) => r.guest_id && r.guest_id === selected.guest_id);
+    return [...same].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    );
+  }, [rows, selected, guestNames]);
+
+
+
   const stats = useMemo(() => {
     const count = (t: string) => rows.filter((r) => r.event_type === t).length;
     const sessions = new Set(rows.map((r) => r.session_id).filter(Boolean)).size;
