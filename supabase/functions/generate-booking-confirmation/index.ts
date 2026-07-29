@@ -279,31 +279,68 @@ serve(async (req) => {
       });
     }
 
-    let y = 800;
-    drawSafe(page, pendingMode ? `${L.title} (PREVIEW)` : L.title, { x: 50, y, size: 20, font: bold, color: ink });
-    drawSafe(page, L.sub, { x: 50, y: y - 20, size: 10, font, color: muted });
-    drawSafe(page, `${L.ref}: ${displayRef}`, { x: width - 220, y, size: 11, font: bold, color: accent });
-    drawSafe(page, `${L.issued}: ${new Date().toISOString().slice(0, 10)}`, { x: width - 220, y: y - 16, size: 9, font, color: muted });
+    // ---- Branded masthead -------------------------------------------------
+    // Logo is best-effort: if the fetch fails we fall back to a drawn
+    // "LMT CAMPSTAY" wordmark so the document is never unbranded.
+    const headerTop = height - 40;
+    let logoDrawn = false;
+    try {
+      const logoUrl = `${siteUrl.replace(/\/$/, "")}/__l5e/assets-v1/7581ceff-4953-4770-ad23-8e581a21c2e4/lamai-camp-logo.jpg`;
+      const resp = await fetch(logoUrl);
+      if (resp.ok) {
+        const logoBytes = new Uint8Array(await resp.arrayBuffer());
+        const img = await pdf.embedJpg(logoBytes);
+        const h = 46;
+        const w = (img.width / img.height) * h;
+        page.drawImage(img, { x: 50, y: headerTop - h, width: Math.min(w, 110), height: h });
+        logoDrawn = true;
+      }
+    } catch (e) {
+      console.warn("logo embed failed, using wordmark:", e);
+    }
+    if (!logoDrawn) {
+      drawSafe(page, "LMT", { x: 50, y: headerTop - 22, size: 20, font: bold, color: accent });
+      drawSafe(page, "CAMPSTAY", { x: 50, y: headerTop - 40, size: 13, font: bold, color: ink });
+      drawSafe(page, "LAMAI MUAY THAI CAMP", { x: 50, y: headerTop - 50, size: 5, font, color: muted });
+    }
 
-    y -= 70;
-    drawSafe(page, L.guest, { x: 50, y, size: 10, font: bold, color: ink });
-    drawSafe(page, guestName, { x: 50, y: y - 14, size: 11, font, color: ink });
-    if (guestEmail) drawSafe(page, guestEmail, { x: 50, y: y - 28, size: 9, font, color: muted });
+    const titleX = 175;
+    drawSafe(page, pendingMode ? `${L.title} (PREVIEW)` : L.title,
+      { x: titleX, y: headerTop - 18, size: 17, font: bold, color: ink });
+    drawSafe(page, L.sub, { x: titleX, y: headerTop - 32, size: 8, font, color: muted });
+    drawSafe(page, `${L.ref}: ${displayRef}`,
+      { x: titleX, y: headerTop - 46, size: 8, font: bold, color: accent });
+    drawSafe(page, `${L.issued}: ${new Date().toISOString().slice(0, 10)}`,
+      { x: width - 150, y: headerTop - 46, size: 8, font, color: muted });
 
-    drawSafe(page, L.host, { x: 320, y, size: 10, font: bold, color: ink });
-    drawSafe(page, companyName, { x: 320, y: y - 14, size: 11, font, color: ink });
-    if (companyAddress) drawSafe(page, companyAddress, { x: 320, y: y - 28, size: 9, font, color: muted });
-    if (companyPhone) drawSafe(page, companyPhone, { x: 320, y: y - 40, size: 9, font, color: muted });
+    // Red rule under the masthead
+    let y = headerTop - 60;
+    page.drawRectangle({ x: 50, y, width: width - 100, height: 2, color: accent });
 
-    y -= 80;
+    // ---- Guest / host -----------------------------------------------------
+    y -= 30;
+    drawSafe(page, L.guest.toUpperCase(), { x: 50, y, size: 8, font: bold, color: accent });
+    drawSafe(page, guestName, { x: 50, y: y - 16, size: 11, font: bold, color: ink });
+    if (guestEmail) drawSafe(page, guestEmail, { x: 50, y: y - 30, size: 9, font, color: muted });
+
+    drawSafe(page, L.host.toUpperCase(), { x: 320, y, size: 8, font: bold, color: accent });
+    drawSafe(page, companyName, { x: 320, y: y - 16, size: 11, font: bold, color: ink });
+    if (companyAddress) drawSafe(page, companyAddress, { x: 320, y: y - 30, size: 9, font, color: muted });
+    if (companyPhone) drawSafe(page, companyPhone, { x: 320, y: y - 42, size: 9, font, color: muted });
+
+    y -= 66;
     page.drawLine({ start: { x: 50, y }, end: { x: width - 50, y }, thickness: 0.5, color: muted });
 
+    // ---- Accommodation ----------------------------------------------------
     y -= 26;
-    drawSafe(page, L.accommodation, { x: 50, y, size: 10, font: bold, color: ink });
-    drawSafe(page, unitName, { x: 50, y: y - 16, size: 14, font: bold, color: ink });
+    drawSafe(page, L.accommodation.toUpperCase(), { x: 50, y, size: 8, font: bold, color: accent });
+    drawSafe(page, unitName, { x: 50, y: y - 18, size: 14, font: bold, color: ink });
 
-    y -= 46;
+    y -= 52;
+    drawSafe(page, "STAY DATES", { x: 50, y, size: 8, font: bold, color: accent });
+    y -= 22;
     const cellW = (width - 100) / 2;
+
     drawSafe(page, L.checkin, { x: 50, y, size: 9, font, color: muted });
     drawSafe(page, `${booking.check_in}`, { x: 50, y: y - 14, size: 12, font: bold, color: ink });
     drawSafe(page, `${L.from} ${checkinTime}`, { x: 50, y: y - 30, size: 9, font, color: muted });
