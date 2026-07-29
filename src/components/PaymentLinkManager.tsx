@@ -191,7 +191,13 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
 
   const handleCopy = async () => {
     if (!lastUrl) return;
-    await navigator.clipboard.writeText(lastUrl);
+    // Clipboard access fails in in-app browsers / non-secure contexts. Tell the
+    // user instead of silently doing nothing — the URL stays on screen to select.
+    const ok = await copyText(lastUrl);
+    if (!ok) {
+      toast.error("Couldn't reach the clipboard — select the link above and copy it manually.");
+      return;
+    }
     setCopied(true);
     toast.success("Link copied");
     try {
@@ -211,6 +217,7 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
     } catch { /* swallow */ }
     setTimeout(() => setCopied(false), 2000);
   };
+
 
   const active = links?.find((l) => !l.used_at && !l.revoked_at && new Date(l.expires_at).getTime() > Date.now());
 
