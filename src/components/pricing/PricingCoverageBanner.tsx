@@ -4,6 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useUnits } from "@/hooks/useUnits";
 import { usePricingRules } from "@/hooks/usePricingRules";
+import { getRulesForUnit } from "@/lib/pricingCalculator";
 
 /**
  * Warns admins when active units have no seasonal pricing rules covering
