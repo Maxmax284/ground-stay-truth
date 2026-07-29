@@ -151,7 +151,7 @@ export function useFrontDeskData() {
       const myPays = pays.filter((p) => p.booking_id === b.id);
       const { totalPaid, outstanding } = calculateOutstanding(
         b.total_price,
-        myPays.map((p: any) => ({ amount: Number(p.amount), status: p.status }))
+        myPays.map((p: any) => ({ amount: Number(p.amount), status: p.status, payment_type: p.payment_type }))
       );
       const depositPaid = myPays.some(
         (p: any) =>
