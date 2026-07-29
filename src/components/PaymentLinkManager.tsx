@@ -10,6 +10,8 @@ import { Loader2, Link as LinkIcon, Copy, RefreshCw, Check, Clock, Mail, Bell, M
 import { toast } from "sonner";
 import { formatDistanceToNow, format } from "date-fns";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
+import { copyText } from "@/lib/clipboard";
+
 
 interface PaymentLinkManagerProps {
   bookingId: string;
