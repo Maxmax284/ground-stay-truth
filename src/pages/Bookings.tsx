@@ -379,6 +379,18 @@ const Bookings = () => {
         />
       )}
 
+      {extendBooking && (
+        <ExtendDeadlineDialog
+          bookingId={extendBooking.id}
+          state={extendBooking.state}
+          info={getBookingDeadline(extendBooking, policiesForDeadlines as any)}
+          open={!!extendBooking}
+          onOpenChange={(o) => !o && setExtendBooking(null)}
+        />
+      )}
+
+
+
       {/* Reject dialog */}
       {rejectId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80">
