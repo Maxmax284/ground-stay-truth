@@ -110,6 +110,30 @@ function makeConfirmationNumber(bookingId: string, createdAt: string | null): st
   return `LMT-CS-${year}-${suffix}`;
 }
 
+/**
+ * pdf-lib's standard fonts are WinAnsi-encoded: any glyph outside Latin-1
+ * (the Thai baht sign, Thai/Chinese names, smart quotes) makes drawText THROW,
+ * which killed every PDF generation. Sanitize before drawing.
+ */
+function wa(input: unknown): string {
+  let t = String(input ?? "");
+  t = t.replace(/\u0e3f/g, "");                      // ฿ -> dropped (currency code is printed)
+  t = t.replace(/[\u2018\u2019]/g, "'")
+       .replace(/[\u201c\u201d]/g, '"')
+       .replace(/[\u2013\u2014]/g, "-")
+       .replace(/\u2026/g, "...");
+  t = t.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+  t = t.replace(/[^\x20-\x7E\xA0-\xFF]/g, "");
+  return t.replace(/\s+/g, " ").trim();
+}
+
+/** Draw WinAnsi-safe text; silently skips when nothing renderable is left. */
+function drawSafe(page: any, text: unknown, opts: any) {
+  const t = wa(text);
+  if (!t) return;
+  page.drawText(t, opts);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders(req) });
 
@@ -246,7 +270,7 @@ serve(async (req) => {
 
     // Pending watermark, drawn behind content
     if (pendingMode) {
-      page.drawText(L.pending, {
+      drawSafe(page, L.pending, {
         x: 60, y: height / 2,
         size: 56, font: bold,
         color: rgb(0.95, 0.55, 0.15),
@@ -256,70 +280,70 @@ serve(async (req) => {
     }
 
     let y = 800;
-    page.drawText(pendingMode ? `${L.title} (PREVIEW)` : L.title, { x: 50, y, size: 20, font: bold, color: ink });
-    page.drawText(L.sub, { x: 50, y: y - 20, size: 10, font, color: muted });
-    page.drawText(`${L.ref}: ${displayRef}`, { x: width - 220, y, size: 11, font: bold, color: accent });
-    page.drawText(`${L.issued}: ${new Date().toISOString().slice(0, 10)}`, { x: width - 220, y: y - 16, size: 9, font, color: muted });
+    drawSafe(page, pendingMode ? `${L.title} (PREVIEW)` : L.title, { x: 50, y, size: 20, font: bold, color: ink });
+    drawSafe(page, L.sub, { x: 50, y: y - 20, size: 10, font, color: muted });
+    drawSafe(page, `${L.ref}: ${displayRef}`, { x: width - 220, y, size: 11, font: bold, color: accent });
+    drawSafe(page, `${L.issued}: ${new Date().toISOString().slice(0, 10)}`, { x: width - 220, y: y - 16, size: 9, font, color: muted });
 
     y -= 70;
-    page.drawText(L.guest, { x: 50, y, size: 10, font: bold, color: ink });
-    page.drawText(guestName, { x: 50, y: y - 14, size: 11, font, color: ink });
-    if (guestEmail) page.drawText(guestEmail, { x: 50, y: y - 28, size: 9, font, color: muted });
+    drawSafe(page, L.guest, { x: 50, y, size: 10, font: bold, color: ink });
+    drawSafe(page, guestName, { x: 50, y: y - 14, size: 11, font, color: ink });
+    if (guestEmail) drawSafe(page, guestEmail, { x: 50, y: y - 28, size: 9, font, color: muted });
 
-    page.drawText(L.host, { x: 320, y, size: 10, font: bold, color: ink });
-    page.drawText(companyName, { x: 320, y: y - 14, size: 11, font, color: ink });
-    if (companyAddress) page.drawText(companyAddress, { x: 320, y: y - 28, size: 9, font, color: muted });
-    if (companyPhone) page.drawText(companyPhone, { x: 320, y: y - 40, size: 9, font, color: muted });
+    drawSafe(page, L.host, { x: 320, y, size: 10, font: bold, color: ink });
+    drawSafe(page, companyName, { x: 320, y: y - 14, size: 11, font, color: ink });
+    if (companyAddress) drawSafe(page, companyAddress, { x: 320, y: y - 28, size: 9, font, color: muted });
+    if (companyPhone) drawSafe(page, companyPhone, { x: 320, y: y - 40, size: 9, font, color: muted });
 
     y -= 80;
     page.drawLine({ start: { x: 50, y }, end: { x: width - 50, y }, thickness: 0.5, color: muted });
 
     y -= 26;
-    page.drawText(L.accommodation, { x: 50, y, size: 10, font: bold, color: ink });
-    page.drawText(unitName, { x: 50, y: y - 16, size: 14, font: bold, color: ink });
+    drawSafe(page, L.accommodation, { x: 50, y, size: 10, font: bold, color: ink });
+    drawSafe(page, unitName, { x: 50, y: y - 16, size: 14, font: bold, color: ink });
 
     y -= 46;
     const cellW = (width - 100) / 2;
-    page.drawText(L.checkin, { x: 50, y, size: 9, font, color: muted });
-    page.drawText(`${booking.check_in}`, { x: 50, y: y - 14, size: 12, font: bold, color: ink });
-    page.drawText(`${L.from} ${checkinTime}`, { x: 50, y: y - 30, size: 9, font, color: muted });
+    drawSafe(page, L.checkin, { x: 50, y, size: 9, font, color: muted });
+    drawSafe(page, `${booking.check_in}`, { x: 50, y: y - 14, size: 12, font: bold, color: ink });
+    drawSafe(page, `${L.from} ${checkinTime}`, { x: 50, y: y - 30, size: 9, font, color: muted });
 
-    page.drawText(L.checkout, { x: 50 + cellW, y, size: 9, font, color: muted });
-    page.drawText(`${booking.check_out}`, { x: 50 + cellW, y: y - 14, size: 12, font: bold, color: ink });
-    page.drawText(`${L.by} ${checkoutTime}`, { x: 50 + cellW, y: y - 30, size: 9, font, color: muted });
+    drawSafe(page, L.checkout, { x: 50 + cellW, y, size: 9, font, color: muted });
+    drawSafe(page, `${booking.check_out}`, { x: 50 + cellW, y: y - 14, size: 12, font: bold, color: ink });
+    drawSafe(page, `${L.by} ${checkoutTime}`, { x: 50 + cellW, y: y - 30, size: 9, font, color: muted });
 
     y -= 60;
     const nights = Math.round(
       (new Date(booking.check_out).getTime() - new Date(booking.check_in).getTime()) / 86400000
     );
-    page.drawText(L.nights, { x: 50, y, size: 9, font, color: muted });
-    page.drawText(String(nights), { x: 50, y: y - 14, size: 12, font: bold, color: ink });
+    drawSafe(page, L.nights, { x: 50, y, size: 9, font, color: muted });
+    drawSafe(page, String(nights), { x: 50, y: y - 14, size: 12, font: bold, color: ink });
 
-    page.drawText(L.guests, { x: 50 + cellW, y, size: 9, font, color: muted });
-    page.drawText(String(booking.num_guests), { x: 50 + cellW, y: y - 14, size: 12, font: bold, color: ink });
+    drawSafe(page, L.guests, { x: 50 + cellW, y, size: 9, font, color: muted });
+    drawSafe(page, String(booking.num_guests), { x: 50 + cellW, y: y - 14, size: 12, font: bold, color: ink });
 
     y -= 50;
     page.drawLine({ start: { x: 50, y }, end: { x: width - 50, y }, thickness: 0.5, color: muted });
     y -= 24;
-    page.drawText(L.total, { x: 50, y, size: 10, font, color: ink });
-    page.drawText(`${symbol}${fmtMoney(Number(booking.total_price || 0))} ${currency}`,
+    drawSafe(page, L.total, { x: 50, y, size: 10, font, color: ink });
+    drawSafe(page, `${symbol}${fmtMoney(Number(booking.total_price || 0))} ${currency}`,
       { x: width - 200, y, size: 11, font: bold, color: ink });
     y -= 16;
-    page.drawText(L.paid, { x: 50, y, size: 10, font, color: muted });
-    page.drawText(`${symbol}${fmtMoney(paid)} ${currency}`,
+    drawSafe(page, L.paid, { x: 50, y, size: 10, font, color: muted });
+    drawSafe(page, `${symbol}${fmtMoney(paid)} ${currency}`,
       { x: width - 200, y, size: 10, font, color: muted });
     y -= 16;
     const balance = Math.max(0, Number(booking.total_price || 0) - paid);
-    page.drawText(L.balance, { x: 50, y, size: 10, font, color: muted });
-    page.drawText(`${symbol}${fmtMoney(balance)} ${currency}`,
+    drawSafe(page, L.balance, { x: 50, y, size: 10, font, color: muted });
+    drawSafe(page, `${symbol}${fmtMoney(balance)} ${currency}`,
       { x: width - 200, y, size: 10, font, color: muted });
 
     y -= 50;
-    page.drawText(L.status, { x: 50, y, size: 10, font, color: muted });
+    drawSafe(page, L.status, { x: 50, y, size: 10, font, color: muted });
     const statusText = pendingMode
       ? "PENDING (NOT YET CONFIRMED)"
       : String(booking.state).replace(/_/g, " ").toUpperCase();
-    page.drawText(statusText, { x: 120, y, size: 10, font: bold, color: accent });
+    drawSafe(page, statusText, { x: 120, y, size: 10, font: bold, color: accent });
 
     // QR code (bottom-right) — deep link to guest booking view
     const qrTarget = `${siteUrl.replace(/\/$/, "")}/guest?ref=${encodeURIComponent(displayRef)}`;
@@ -333,20 +357,20 @@ serve(async (req) => {
       const qrX = width - 50 - qrSize;
       const qrY = 50;
       page.drawImage(qrImg, { x: qrX, y: qrY, width: qrSize, height: qrSize });
-      page.drawText(L.scan_qr, { x: qrX, y: qrY - 10, size: 7, font, color: muted });
+      drawSafe(page, L.scan_qr, { x: qrX, y: qrY - 10, size: 7, font, color: muted });
     } catch (e) {
       console.warn("QR generation failed:", e);
     }
 
     // VAT invoice request — email address in the footer for copy/tap
-    page.drawText(L.footer1, { x: 50, y: 110, size: 8, font, color: muted });
-    page.drawText(`${L.vat_request}: ${contactEmail}`, { x: 50, y: 96, size: 9, font: bold, color: accent });
-    page.drawText(`Include reference ${displayRef} in your email.`,
+    drawSafe(page, L.footer1, { x: 50, y: 110, size: 8, font, color: muted });
+    drawSafe(page, `${L.vat_request}: ${contactEmail}`, { x: 50, y: 96, size: 9, font: bold, color: accent });
+    drawSafe(page, `Include reference ${displayRef} in your email.`,
       { x: 50, y: 82, size: 8, font, color: muted });
-    page.drawText(`Generated ${new Date().toISOString()} — ${companyName}.`,
+    drawSafe(page, `Generated ${new Date().toISOString()} — ${companyName}.`,
       { x: 50, y: 66, size: 7, font, color: muted });
     if (pendingMode) {
-      page.drawText("Not a confirmation. Booking is not yet finalised.",
+      drawSafe(page, "Not a confirmation. Booking is not yet finalised.",
         { x: 50, y: 54, size: 8, font: bold, color: accent });
     }
 
