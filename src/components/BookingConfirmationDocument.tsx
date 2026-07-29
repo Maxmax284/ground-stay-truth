@@ -21,6 +21,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
+import { copyText } from "@/lib/clipboard";
 
 interface BookingConfirmationDocumentProps {
   bookingId: string;
@@ -102,10 +103,33 @@ export function BookingConfirmationDocument({
     }
   };
 
+  /**
+   * Mobile browsers (and every in-app WebView) block `window.open` that
+   * happens after an await, so the old download button silently did nothing.
+   * Fetch the PDF as a blob and click a real <a download> instead, with a
+   * same-tab navigation as the last-resort fallback.
+   */
   const handleDownload = async () => {
     // A fresh language selection invalidates the cached URL — regenerate.
     const url = await generate("confirmed");
-    if (url) window.open(url, "_blank", "noopener");
+    if (!url) return;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = `booking-confirmation-${bookingId.slice(0, 8)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+      toast.success("Confirmation PDF downloaded");
+    } catch (e) {
+      console.error("PDF download fallback", e);
+      window.location.href = url;
+    }
   };
 
   const handlePreview = async () => {
@@ -124,12 +148,12 @@ export function BookingConfirmationDocument({
   const handleCopy = async () => {
     const url = lastUrl || (await generate("confirmed"));
     if (!url) return;
-    try {
-      await navigator.clipboard.writeText(url);
+    const ok = await copyText(url);
+    if (ok) {
       setCopied(true);
       toast.success("Confirmation link copied");
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } else {
       toast.error("Copy failed — long-press to copy manually");
     }
   };
