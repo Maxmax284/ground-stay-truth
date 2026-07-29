@@ -301,7 +301,16 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
               </Badge>
             )}
           </div>
-          <div className="text-xs break-all text-foreground font-mono">{lastUrl}</div>
+          {/* Readonly input, not a div: if the clipboard API is blocked the
+              staffer can still tap-and-hold / ctrl+A to grab the URL. */}
+          <input
+            readOnly
+            value={lastUrl}
+            onFocus={(e) => e.currentTarget.select()}
+            onClick={(e) => e.currentTarget.select()}
+            className="w-full rounded border border-border bg-background px-2 py-1 text-xs font-mono text-foreground"
+          />
+
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" onClick={handleCopy} className="gap-2">
               {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
