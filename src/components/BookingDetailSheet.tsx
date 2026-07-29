@@ -60,6 +60,8 @@ import { BookingAdjustmentsCard } from "@/components/BookingAdjustmentsCard";
 import { getDiscountEligibility, DISCOUNT_TOOLTIP_HELP } from "@/lib/discountEligibility";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Lock, Percent as PercentIcon } from "lucide-react";
+import { getBookingDeadline, describeDeadline } from "@/lib/bookingDeadline";
+import { ExtendDeadlineDialog } from "@/components/ExtendDeadlineDialog";
 
 interface BookingDetailSheetProps { bookingId: string | null; open: boolean; onOpenChange: (open: boolean) => void; isAdmin: boolean; }
 
