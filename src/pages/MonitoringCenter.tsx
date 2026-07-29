@@ -613,8 +613,10 @@ function AlertRow({ alert }: { alert: Alert }) {
               {healthStyles[alert.health].label}
             </Badge>
             <span className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(alert.when), { addSuffix: true })}
+              Happened {formatDistanceToNow(new Date(alert.when), { addSuffix: true })} ·{" "}
+              {formatInPropertyTimezone(alert.when, "datetime")}
             </span>
+
             {alert.bookingId && (
               <Link
                 to={`/bookings?id=${alert.bookingId}`}
