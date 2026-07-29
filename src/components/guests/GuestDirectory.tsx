@@ -121,7 +121,7 @@ export function GuestDirectory({ onOpenBooking }: { onOpenBooking: (id: string) 
           <SelectTrigger className="w-full sm:w-[170px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("guests.allStatuses")}</SelectItem>
-            {(["in_house", "arriving_soon", "upcoming", "past", "inquiry_only", "cancelled_only"] as GuestStatus[]).map((s) => (
+            {(["in_house", "arriving_soon", "upcoming", "past", "account_only", "inquiry_only", "cancelled_only"] as GuestStatus[]).map((s) => (
               <SelectItem key={s} value={s}>{t(`guests.status.${s}`)}</SelectItem>
             ))}
           </SelectContent>
