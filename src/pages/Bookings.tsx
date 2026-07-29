@@ -28,6 +28,10 @@ import { useTranslation } from "react-i18next";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GuestDirectory } from "@/components/guests/GuestDirectory";
+import { getBookingDeadline, describeDeadline } from "@/lib/bookingDeadline";
+import { ExtendDeadlineDialog } from "@/components/ExtendDeadlineDialog";
+import { Clock } from "lucide-react";
+
 
 
 function BookingStatusBadge({ booking }: { booking: any }) {
@@ -35,21 +39,9 @@ function BookingStatusBadge({ booking }: { booking: any }) {
   const { data: policies } = usePolicySettings();
   const state = booking.state as BookingState;
 
-  const deadlineInfo = (() => {
-    if (state === "soft_hold") {
-      const expiryHours = policies?.find((p: any) => p.key === "soft_hold_expiration_hours");
-      const hours = expiryHours ? Number(expiryHours.value) : 12;
-      const elapsed = differenceInHours(new Date(), new Date(booking.created_at));
-      return { isExpired: elapsed >= hours, remaining: hours - elapsed };
-    }
-    if (state === "pending_deposit") {
-      const deadlineHours = policies?.find((p: any) => p.key === "deposit_deadline_hours");
-      const hours = deadlineHours ? Number(deadlineHours.value) : 24;
-      const elapsed = differenceInHours(new Date(), new Date(booking.updated_at));
-      return { isExpired: elapsed >= hours, remaining: hours - elapsed };
-    }
-    return null;
-  })();
+  // Shared resolver — honours staff deadline overrides, so an extended
+  // booking stops screaming "Expired" the moment the override is saved.
+  const deadlineInfo = getBookingDeadline(booking, policies as any);
 
   if (deadlineInfo) {
     return (
@@ -62,7 +54,10 @@ function BookingStatusBadge({ booking }: { booking: any }) {
             <AlertTriangle className="h-3 w-3 mr-0.5" /> {t("bookings.expired")}
           </Badge>
         ) : (
-          <span className="text-[10px] text-muted-foreground">{t("bookings.hoursLeft", { hours: deadlineInfo.remaining })}</span>
+          <span className="text-[10px] text-muted-foreground">{describeDeadline(deadlineInfo)}</span>
+        )}
+        {deadlineInfo.source === "override" && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0">Extended</Badge>
         )}
       </div>
     );
@@ -75,8 +70,11 @@ function BookingStatusBadge({ booking }: { booking: any }) {
   );
 }
 
-function BookingCard({ booking, onClick }: { booking: any; onClick: () => void }) {
+
+function BookingCard({ booking, onClick, onExtend }: { booking: any; onClick: () => void; onExtend?: (b: any) => void }) {
   const { t } = useTranslation();
+  const { data: cardPolicies } = usePolicySettings();
+  const cardDeadline = getBookingDeadline(booking, cardPolicies as any);
   return (
     <div
       className="rounded-lg border bg-card p-4 cursor-pointer active:bg-accent/50 transition-colors"
@@ -97,6 +95,13 @@ function BookingCard({ booking, onClick }: { booking: any; onClick: () => void }
         <span>·</span>
         <span>{t("bookings.guestCount", { count: booking.num_guests })}</span>
       </div>
+      {cardDeadline?.isExpired && onExtend && (
+        <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+          <Button size="sm" variant="outline" className="h-7 px-2 text-xs w-full" onClick={() => onExtend(booking)}>
+            <Clock className="h-3 w-3 mr-1" /> Override expiry
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -108,6 +113,8 @@ const Bookings = () => {
   const isMobile = useIsMobile();
   const transition = useTransitionBookingState();
   const canApprove = permissions.canApproveBooking(role);
+  // Manager+ may push an expired hold / deposit deadline forward.
+  const canOverrideDeadline = permissions.canOverrideDeposit(role);
 
   const [stateFilter, setStateFilter] = useState<BookingState | null>(null);
   const [unitFilter, setUnitFilter] = useState<string | null>(null);
@@ -117,6 +124,9 @@ const Bookings = () => {
   const [rejectReason, setRejectReason] = useState("");
   const [sort, setSort] = useState<BookingSort>("check_in_asc");
   const [showCancelled, setShowCancelled] = useState(false);
+  const [expiredOnly, setExpiredOnly] = useState(false);
+  const [extendBooking, setExtendBooking] = useState<any | null>(null);
+  const { data: policiesForDeadlines } = usePolicySettings();
 
   const { data: rawBookings, isLoading, isError, refetch } = useBookings({
     state: stateFilter,
@@ -129,9 +139,16 @@ const Bookings = () => {
   // filtered for). Completed stays remain visible — they're operational history.
   const bookings = useMemo(() => {
     if (!rawBookings) return rawBookings;
-    const visible = (showCancelled || stateFilter === "cancelled")
+    let visible = (showCancelled || stateFilter === "cancelled")
       ? rawBookings
       : rawBookings.filter((b: any) => b.state !== "cancelled");
+
+    // "Expired only" — holds / deposit windows that have run out and are
+    // still sitting there waiting on a human decision.
+    if (expiredOnly) {
+      visible = visible.filter((b: any) => getBookingDeadline(b, policiesForDeadlines as any)?.isExpired);
+    }
+
 
     const name = (b: any) => (resolveGuestDisplayName(b) ?? "").toLowerCase();
     const sorted = [...visible];
@@ -155,7 +172,15 @@ const Bookings = () => {
         break;
     }
     return sorted;
-  }, [rawBookings, showCancelled, stateFilter, sort]);
+  }, [rawBookings, showCancelled, stateFilter, sort, expiredOnly, policiesForDeadlines]);
+
+  // Count of expired holds/deposits across the loaded set — drives the filter chip.
+  const expiredCount = useMemo(
+    () => (rawBookings ?? []).filter((b: any) =>
+      b.state !== "cancelled" && getBookingDeadline(b, policiesForDeadlines as any)?.isExpired,
+    ).length,
+    [rawBookings, policiesForDeadlines],
+  );
 
 
   const [showCreate, setShowCreate] = useState(false);
@@ -220,7 +245,12 @@ const Bookings = () => {
           onDateToChange={setDateTo}
           onSortChange={setSort}
           onShowCancelledChange={setShowCancelled}
+          expiredOnly={expiredOnly}
+          expiredCount={expiredCount}
+          onExpiredOnlyChange={setExpiredOnly}
         />
+
+
 
         {isLoading ? (
           <div className="space-y-3">
@@ -235,7 +265,7 @@ const Bookings = () => {
         ) : isMobile ? (
           <div className="space-y-3">
             {bookings.map((b) => (
-              <BookingCard key={b.id} booking={b} onClick={() => setSelectedBookingId(b.id)} />
+              <BookingCard key={b.id} booking={b} onClick={() => setSelectedBookingId(b.id)} onExtend={canOverrideDeadline ? setExtendBooking : undefined} />
             ))}
           </div>
         ) : (
@@ -274,6 +304,11 @@ const Bookings = () => {
                     {canApprove && (
                       <TableCell>
                         <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                          {canOverrideDeadline && getBookingDeadline(b, policiesForDeadlines as any)?.isExpired && (
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setExtendBooking(b)}>
+                              <Clock className="h-3 w-3 mr-1" /> Override expiry
+                            </Button>
+                          )}
                           {b.state === "pending_approval" && (
                             <>
                               <Button size="sm" variant="default" className="h-7 px-2 text-xs" onClick={(e) => handleQuickApprove(e, b.id)} disabled={transition.isPending}>
@@ -343,6 +378,18 @@ const Bookings = () => {
           policies={policies}
         />
       )}
+
+      {extendBooking && (
+        <ExtendDeadlineDialog
+          bookingId={extendBooking.id}
+          state={extendBooking.state}
+          info={getBookingDeadline(extendBooking, policiesForDeadlines as any)}
+          open={!!extendBooking}
+          onOpenChange={(o) => !o && setExtendBooking(null)}
+        />
+      )}
+
+
 
       {/* Reject dialog */}
       {rejectId && (

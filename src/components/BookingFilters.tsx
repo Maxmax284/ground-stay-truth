@@ -2,7 +2,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { X } from "lucide-react";
+import { X, AlertTriangle } from "lucide-react";
 import { type BookingState } from "@/lib/bookingStateMachine";
 import { Constants } from "@/integrations/supabase/types";
 import type { Unit } from "@/hooks/useUnits";
@@ -26,20 +26,25 @@ interface BookingFiltersProps {
   units: Unit[];
   sort: BookingSort;
   showCancelled: boolean;
+  /** Show only bookings whose hold / deposit clock has run out. */
+  expiredOnly: boolean;
+  expiredCount: number;
   onStateChange: (s: BookingState | null) => void;
   onUnitChange: (id: string | null) => void;
   onDateFromChange: (d: string | null) => void;
   onDateToChange: (d: string | null) => void;
   onSortChange: (s: BookingSort) => void;
   onShowCancelledChange: (v: boolean) => void;
+  onExpiredOnlyChange: (v: boolean) => void;
 }
 
 export function BookingFilters({
-  state, unitId, dateFrom, dateTo, units, sort, showCancelled,
+  state, unitId, dateFrom, dateTo, units, sort, showCancelled, expiredOnly, expiredCount,
   onStateChange, onUnitChange, onDateFromChange, onDateToChange, onSortChange, onShowCancelledChange,
+  onExpiredOnlyChange,
 }: BookingFiltersProps) {
   const { t } = useTranslation();
-  const hasFilters = state || unitId || dateFrom || dateTo || sort !== "check_in_asc" || showCancelled;
+  const hasFilters = state || unitId || dateFrom || dateTo || sort !== "check_in_asc" || showCancelled || expiredOnly;
 
   const clearAll = () => {
     onStateChange(null);
@@ -48,6 +53,7 @@ export function BookingFilters({
     onDateToChange(null);
     onSortChange("check_in_asc");
     onShowCancelledChange(false);
+    onExpiredOnlyChange(false);
   };
 
 
@@ -115,6 +121,18 @@ export function BookingFilters({
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="flex items-center gap-2 h-10">
+        <Button
+          type="button"
+          size="sm"
+          variant={expiredOnly ? "destructive" : "outline"}
+          onClick={() => onExpiredOnlyChange(!expiredOnly)}
+        >
+          <AlertTriangle className="h-3.5 w-3.5 mr-1.5" />
+          Expired only{expiredCount > 0 ? ` (${expiredCount})` : ""}
+        </Button>
       </div>
 
       <div className="flex items-center gap-2 h-10">

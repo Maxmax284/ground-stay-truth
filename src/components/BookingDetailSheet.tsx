@@ -60,6 +60,8 @@ import { BookingAdjustmentsCard } from "@/components/BookingAdjustmentsCard";
 import { getDiscountEligibility, DISCOUNT_TOOLTIP_HELP } from "@/lib/discountEligibility";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Lock, Percent as PercentIcon } from "lucide-react";
+import { getBookingDeadline, describeDeadline } from "@/lib/bookingDeadline";
+import { ExtendDeadlineDialog } from "@/components/ExtendDeadlineDialog";
 
 interface BookingDetailSheetProps { bookingId: string | null; open: boolean; onOpenChange: (open: boolean) => void; isAdmin: boolean; }
 
@@ -104,21 +106,19 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
   const hasUnpaidLink = false; // link visibility lives in PaymentLinkManager; edge fn revokes if present
   const discountBlockedReason = eligibility.allowed ? null : eligibility.reason;
 
-  const softHoldInfo = useMemo(() => {
-    if (!booking || (booking.state as BookingState) !== "soft_hold") return null;
-    const expiryHours = policies?.find((p) => p.key === "soft_hold_expiration_hours");
-    const hours = expiryHours ? Number(expiryHours.value) : 12;
-    const elapsed = differenceInHours(new Date(), new Date(booking.created_at));
-    return { isExpired: elapsed >= hours, remaining: hours - elapsed, hours };
-  }, [booking, policies]);
-
-  const depositDeadlineInfo = useMemo(() => {
-    if (!booking || (booking.state as BookingState) !== "pending_deposit") return null;
-    const deadlineSetting = policies?.find((p) => p.key === "deposit_deadline_hours");
-    const hours = deadlineSetting ? Number(deadlineSetting.value) : 24;
-    const elapsed = differenceInHours(new Date(), new Date(booking.updated_at));
-    return { isExpired: elapsed >= hours, remaining: hours - elapsed, hours };
-  }, [booking, policies]);
+  // Single source of truth for hold / deposit clocks — honours staff overrides.
+  const deadlineInfo = useMemo(
+    () => getBookingDeadline(booking, policies as any),
+    [booking, policies],
+  );
+  const softHoldInfo = (booking?.state as BookingState) === "soft_hold" && deadlineInfo
+    ? { ...deadlineInfo, remaining: deadlineInfo.hoursRemaining, hours: deadlineInfo.policyHours }
+    : null;
+  const depositDeadlineInfo = (booking?.state as BookingState) === "pending_deposit" && deadlineInfo
+    ? { ...deadlineInfo, remaining: deadlineInfo.hoursRemaining, hours: deadlineInfo.policyHours }
+    : null;
+  const canOverrideDeadline = permissions.canOverrideDeposit(role);
+  const [extendOpen, setExtendOpen] = useState(false);
 
   const { data: maintenanceReqs } = useMaintenanceRequests(bookingId);
   const { data: laundryReqs } = useLaundryRequests(bookingId);
@@ -246,6 +246,21 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
               {depositDeadlineInfo.isExpired ? t("bookingDetail.depositExpired") : t("bookingDetail.depositExpires", { hours: depositDeadlineInfo.remaining })}
             </div>
           )}
+          {/* Deadline override — lets staff put an expired hold back in play. */}
+          {deadlineInfo && (
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span>
+                Deadline: {format(deadlineInfo.deadline, "MMM d, HH:mm")} · {describeDeadline(deadlineInfo)}
+                {deadlineInfo.source === "override" && " · extended by staff"}
+              </span>
+              {canOverrideDeadline && (
+                <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setExtendOpen(true)}>
+                  {deadlineInfo.isExpired ? "Override expiry" : "Extend deadline"}
+                </Button>
+              )}
+            </div>
+          )}
+
           {nextStep && <div className="flex items-center gap-2 text-sm text-primary bg-primary/5 rounded-md px-3 py-2"><Info className="h-4 w-4 shrink-0" /><span><strong>{t("common.next")}:</strong> {nextStep}</span></div>}
           <div className="flex items-center gap-2 text-sm text-muted-foreground"><CalendarDays className="h-4 w-4" /><span>{format(new Date(booking.check_in), "MMM d, yyyy")}</span><ArrowRight className="h-3 w-3" /><span>{format(new Date(booking.check_out), "MMM d, yyyy")}</span></div>
           <div className="text-sm text-muted-foreground">
@@ -328,6 +343,13 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
           originalTotal={(booking as any).original_total ?? null}
           hasUnpaidLink={hasUnpaidLink}
           policies={policies}
+        />
+        <ExtendDeadlineDialog
+          bookingId={booking.id}
+          state={booking.state as string}
+          info={deadlineInfo}
+          open={extendOpen}
+          onOpenChange={setExtendOpen}
         />
         <Separator />
         <div className="py-4"><BookingStateTransition bookingId={booking.id} currentState={booking.state as BookingState} isAdmin={isAdmin} checkInDate={booking.check_in} totalPrice={booking.total_price} unitId={booking.unit_id} /></div>
