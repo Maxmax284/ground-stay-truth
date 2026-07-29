@@ -103,9 +103,21 @@ export function PricingRuleForm({ open, onOpenChange, rule, defaultUnitId }: Pri
 
   const onSubmit = async (data: FormValues) => {
     try {
+      const isGroupScope = data.scope === "group";
+      if (isGroupScope && !data.group_id) {
+        toast({ title: "Pick a room type", variant: "destructive" });
+        return;
+      }
+      if (!isGroupScope && !data.unit_id) {
+        toast({ title: "Pick a room", variant: "destructive" });
+        return;
+      }
+
       const payload: any = {
         name: data.name,
-        unit_id: data.unit_id,
+        // Exactly one scope is stored — the DB enforces this too.
+        unit_id: isGroupScope ? null : data.unit_id,
+        group_id: isGroupScope ? data.group_id : null,
         start_date: data.start_date,
         end_date: data.end_date,
         price: data.adjustment_type === "percentage" && selectedUnit
@@ -116,6 +128,7 @@ export function PricingRuleForm({ open, onOpenChange, rule, defaultUnitId }: Pri
         adjustment_value: data.adjustment_type === "percentage" ? Number(data.adjustment_value || 0) : null,
         min_nights: data.min_nights ? Number(data.min_nights) : null,
       };
+
 
       if (isEditing && rule) {
         await updateRule.mutateAsync({ id: rule.id, ...payload });
