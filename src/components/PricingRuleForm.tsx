@@ -23,7 +23,9 @@ interface PricingRuleFormProps {
 
 interface FormValues {
   name: string;
+  scope: "group" | "unit";
   unit_id: string;
+  group_id: string;
   start_date: string;
   end_date: string;
   price: number;
@@ -40,46 +42,49 @@ export function PricingRuleForm({ open, onOpenChange, rule, defaultUnitId }: Pri
   const createRule = useCreatePricingRule();
   const updateRule = useUpdatePricingRule();
   const { data: units } = useUnits();
+  const { data: groups } = useUnitGroups();
   const { data: policies } = usePolicySettings();
 
   const [weekendOpen, setWeekendOpen] = useState(false);
 
-  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormValues>({
-    defaultValues: {
-      name: rule?.name ?? "",
-      unit_id: rule?.unit_id ?? defaultUnitId ?? "",
-      start_date: rule?.start_date ?? "",
-      end_date: rule?.end_date ?? "",
-      price: rule?.price ?? 0,
-      weekend_price: rule?.weekend_price != null ? String(rule.weekend_price) : "",
-      adjustment_type: (rule as any)?.adjustment_type ?? "absolute",
-      adjustment_value: (rule as any)?.adjustment_value != null ? String((rule as any).adjustment_value) : "",
-      min_nights: (rule as any)?.min_nights != null ? String((rule as any).min_nights) : "",
-    },
+  const initialValues = (): FormValues => ({
+    name: rule?.name ?? "",
+    scope: (rule as any)?.group_id ? "group" : rule ? "unit" : "group",
+    unit_id: rule?.unit_id ?? defaultUnitId ?? "",
+    group_id: (rule as any)?.group_id ?? "",
+    start_date: rule?.start_date ?? "",
+    end_date: rule?.end_date ?? "",
+    price: rule?.price ?? 0,
+    weekend_price: rule?.weekend_price != null ? String(rule.weekend_price) : "",
+    adjustment_type: (rule as any)?.adjustment_type ?? "absolute",
+    adjustment_value: (rule as any)?.adjustment_value != null ? String((rule as any).adjustment_value) : "",
+    min_nights: (rule as any)?.min_nights != null ? String((rule as any).min_nights) : "",
   });
 
+  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormValues>({
+    defaultValues: initialValues(),
+  });
+
+  const scope = watch("scope");
   const selectedUnitId = watch("unit_id");
+  const selectedGroupId = watch("group_id");
   const adjustmentType = watch("adjustment_type");
   const adjustmentValue = watch("adjustment_value");
   const activeUnits = units?.filter((u) => u.is_active) ?? [];
-  const selectedUnit = activeUnits.find((u) => u.id === selectedUnitId);
+  const activeGroups = groups ?? [];
+  // Rooms in the chosen type — used for the "this covers X rooms" hint and
+  // as the price reference for percentage previews on group rules.
+  const groupUnits = activeUnits.filter((u) => u.group_id === selectedGroupId);
+  const selectedUnit =
+    scope === "group" ? groupUnits[0] : activeUnits.find((u) => u.id === selectedUnitId);
 
   // Reset form when rule changes
   useEffect(() => {
     if (open) {
-      reset({
-        name: rule?.name ?? "",
-        unit_id: rule?.unit_id ?? defaultUnitId ?? "",
-        start_date: rule?.start_date ?? "",
-        end_date: rule?.end_date ?? "",
-        price: rule?.price ?? 0,
-        weekend_price: rule?.weekend_price != null ? String(rule.weekend_price) : "",
-        adjustment_type: (rule as any)?.adjustment_type ?? "absolute",
-        adjustment_value: (rule as any)?.adjustment_value != null ? String((rule as any).adjustment_value) : "",
-        min_nights: (rule as any)?.min_nights != null ? String((rule as any).min_nights) : "",
-      });
+      reset(initialValues());
       setWeekendOpen(rule?.weekend_price != null && Number(rule.weekend_price) > 0);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, rule, defaultUnitId, reset]);
 
   // Percentage preview calculation
@@ -94,6 +99,7 @@ export function PricingRuleForm({ open, onOpenChange, rule, defaultUnitId }: Pri
       : null;
     return { base: basePreview, weekend: weekendPreview };
   })();
+
 
   const onSubmit = async (data: FormValues) => {
     try {
