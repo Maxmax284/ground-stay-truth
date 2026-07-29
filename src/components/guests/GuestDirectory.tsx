@@ -36,6 +36,7 @@ const STATUS_STYLE: Record<GuestStatus, string> = {
   past: "bg-muted text-muted-foreground border-border",
   inquiry_only: "bg-muted text-muted-foreground border-border",
   cancelled_only: "bg-destructive/10 text-destructive border-destructive/30",
+  account_only: "bg-primary/10 text-primary border-primary/30",
 };
 
 type SortKey = "recent" | "name_asc" | "stays_desc" | "spend_desc" | "owed_desc";
@@ -120,7 +121,7 @@ export function GuestDirectory({ onOpenBooking }: { onOpenBooking: (id: string) 
           <SelectTrigger className="w-full sm:w-[170px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("guests.allStatuses")}</SelectItem>
-            {(["in_house", "arriving_soon", "upcoming", "past", "inquiry_only", "cancelled_only"] as GuestStatus[]).map((s) => (
+            {(["in_house", "arriving_soon", "upcoming", "past", "account_only", "inquiry_only", "cancelled_only"] as GuestStatus[]).map((s) => (
               <SelectItem key={s} value={s}>{t(`guests.status.${s}`)}</SelectItem>
             ))}
           </SelectContent>

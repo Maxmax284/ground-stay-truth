@@ -49,10 +49,13 @@ export type GuestStatus =
   | "upcoming"
   | "past"
   | "inquiry_only"
-  | "cancelled_only";
+  | "cancelled_only"
+  | "account_only";
 
 /** Derive a single operational status chip for a directory row. */
 export function guestStatus(g: GuestDirectoryRow): GuestStatus {
+  // Signed up but never booked anything yet.
+  if (g.total_bookings === 0) return "account_only";
   if (g.in_house) return "in_house";
   if (g.next_check_in) {
     const days =
