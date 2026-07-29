@@ -246,6 +246,21 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
               {depositDeadlineInfo.isExpired ? t("bookingDetail.depositExpired") : t("bookingDetail.depositExpires", { hours: depositDeadlineInfo.remaining })}
             </div>
           )}
+          {/* Deadline override — lets staff put an expired hold back in play. */}
+          {deadlineInfo && (
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span>
+                Deadline: {format(deadlineInfo.deadline, "MMM d, HH:mm")} · {describeDeadline(deadlineInfo)}
+                {deadlineInfo.source === "override" && " · extended by staff"}
+              </span>
+              {canOverrideDeadline && (
+                <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setExtendOpen(true)}>
+                  {deadlineInfo.isExpired ? "Override expiry" : "Extend deadline"}
+                </Button>
+              )}
+            </div>
+          )}
+
           {nextStep && <div className="flex items-center gap-2 text-sm text-primary bg-primary/5 rounded-md px-3 py-2"><Info className="h-4 w-4 shrink-0" /><span><strong>{t("common.next")}:</strong> {nextStep}</span></div>}
           <div className="flex items-center gap-2 text-sm text-muted-foreground"><CalendarDays className="h-4 w-4" /><span>{format(new Date(booking.check_in), "MMM d, yyyy")}</span><ArrowRight className="h-3 w-3" /><span>{format(new Date(booking.check_out), "MMM d, yyyy")}</span></div>
           <div className="text-sm text-muted-foreground">
