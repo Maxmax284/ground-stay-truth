@@ -583,10 +583,14 @@ export type Database = {
           confirmation_regeneration_count: number
           created_at: string
           created_by: string | null
+          deadline_override_at: string | null
+          deadline_override_by: string | null
+          deadline_override_reason: string | null
           flight_number: string | null
           guest_id: string | null
           guest_tax_id: string | null
           guest_type: string | null
+          hold_deadline_at: string | null
           id: string
           manual_guest_email: string | null
           manual_guest_name: string | null
@@ -616,10 +620,14 @@ export type Database = {
           confirmation_regeneration_count?: number
           created_at?: string
           created_by?: string | null
+          deadline_override_at?: string | null
+          deadline_override_by?: string | null
+          deadline_override_reason?: string | null
           flight_number?: string | null
           guest_id?: string | null
           guest_tax_id?: string | null
           guest_type?: string | null
+          hold_deadline_at?: string | null
           id?: string
           manual_guest_email?: string | null
           manual_guest_name?: string | null
@@ -649,10 +657,14 @@ export type Database = {
           confirmation_regeneration_count?: number
           created_at?: string
           created_by?: string | null
+          deadline_override_at?: string | null
+          deadline_override_by?: string | null
+          deadline_override_reason?: string | null
           flight_number?: string | null
           guest_id?: string | null
           guest_tax_id?: string | null
           guest_type?: string | null
+          hold_deadline_at?: string | null
           id?: string
           manual_guest_email?: string | null
           manual_guest_name?: string | null
