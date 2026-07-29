@@ -25,14 +25,16 @@ export function PricingCoverageBanner() {
     return units
       .filter((u) => u.is_active)
       .filter((u) => {
-        const unitRules = rules.filter((r) => r.unit_id === u.id);
-        // Any rule that overlaps [today, horizon]?
+        // A unit is covered by its own override rules OR by a rule on its
+        // room type — group rules apply to every room in the group.
+        const unitRules = getRulesForUnit(rules, u as any);
         const covered = unitRules.some(
           (r) => r.start_date <= horizonISO && r.end_date >= todayISO
         );
         return !covered;
       })
       .map((u) => u.name);
+
   }, [units, rules]);
 
   if (gaps.length === 0) return null;
