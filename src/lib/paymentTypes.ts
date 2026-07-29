@@ -112,11 +112,19 @@ export function isPaymentReceived(status: string): boolean {
   return status === "recorded" || status === "partially_refunded";
 }
 
-/** Calculate outstanding balance for a booking */
+/**
+ * Calculate outstanding balance for a booking.
+ *
+ * BUSINESS-CRITICAL: add-on obligations (airport pickup fee, transfers, extras)
+ * are NOT part of `bookings.total_price` — they live as `payment_type = 'addon'`
+ * rows. They are real money the guest owes, so they are folded into the amount
+ * due here. A `waived` add-on means the money already came in bundled under a
+ * balance payment, so it counts as both owed and covered (net zero).
+ */
 export function calculateOutstanding(
   totalPrice: number | null,
-  payments: Array<{ amount: number; status: string; refund_amount?: number | null }>
-): { totalPaid: number; totalRefunded: number; outstanding: number } {
+  payments: Array<{ amount: number; status: string; refund_amount?: number | null; payment_type?: string | null }>
+): { totalPaid: number; totalRefunded: number; addonTotal: number; grandTotal: number; outstanding: number } {
   const totalPaid = payments
     .filter((p) => isPaymentReceived(p.status))
     .reduce((sum, p) => sum + Number(p.amount), 0);
@@ -125,10 +133,28 @@ export function calculateOutstanding(
     .filter((p) => p.status === "refunded" || p.status === "partially_refunded")
     .reduce((sum, p) => sum + Number(p.refund_amount ?? 0), 0);
 
-  const outstanding = (totalPrice ?? 0) - totalPaid + totalRefunded;
+  // Add-on obligations that are still live: awaiting payment, already paid,
+  // or settled inside another payment (waived).
+  const addonTotal = payments
+    .filter(
+      (p) =>
+        (p.payment_type ?? "") === "addon" &&
+        ["pending", "recorded", "partially_refunded", "waived"].includes(p.status)
+    )
+    .reduce((sum, p) => sum + Number(p.amount), 0);
 
-  return { totalPaid, totalRefunded, outstanding: Math.max(0, outstanding) };
+  const grandTotal = Math.round(((totalPrice ?? 0) + addonTotal) * 100) / 100;
+  const outstanding = grandTotal - totalPaid + totalRefunded;
+
+  return {
+    totalPaid,
+    totalRefunded,
+    addonTotal: Math.round(addonTotal * 100) / 100,
+    grandTotal,
+    outstanding: Math.max(0, Math.round(outstanding * 100) / 100),
+  };
 }
+
 
 type PaymentRow = {
   amount: number;
