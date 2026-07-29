@@ -137,7 +137,7 @@ function statusTone(r: Row) {
 function WhenLabel({ iso }: { iso: string }) {
   return (
     <span className="text-muted-foreground shrink-0 whitespace-nowrap">
-      {formatDistanceToNow(new Date(iso), { addSuffix: true })} · {formatInBangkok(iso, "h:mm a")}
+      {formatDistanceToNow(new Date(iso), { addSuffix: true })} · {formatInPropertyTimezone(iso, "time")}
     </span>
   );
 }
