@@ -158,18 +158,51 @@ export function PricingRuleForm({ open, onOpenChange, rule, defaultUnitId }: Pri
             {errors.name && <p className="text-sm text-destructive">{t("common.required")}</p>}
           </div>
 
-          {/* Unit */}
+          {/* Scope: whole room type, or one specific room */}
           <div className="space-y-2">
-            <Label>{t("bookings.unit")} *</Label>
-            <Select value={selectedUnitId} onValueChange={(v) => setValue("unit_id", v)}>
-              <SelectTrigger><SelectValue placeholder={t("bookingForm.selectUnit")} /></SelectTrigger>
+            <Label>Applies to *</Label>
+            <Select value={scope} onValueChange={(v) => setValue("scope", v as "group" | "unit")}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {activeUnits.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                <SelectItem value="group">A whole room type (recommended)</SelectItem>
+                <SelectItem value="unit">One specific room (override)</SelectItem>
               </SelectContent>
             </Select>
-            <input type="hidden" {...register("unit_id", { required: true })} />
-            {errors.unit_id && <p className="text-sm text-destructive">{t("common.required")}</p>}
+            <p className="text-xs text-muted-foreground">
+              {scope === "group"
+                ? "Every room of this type gets the season. Set it once, no rooms left behind."
+                : "Only this room. Use this when a single room is priced differently on purpose."}
+            </p>
           </div>
+
+          {scope === "group" ? (
+            <div className="space-y-2">
+              <Label>Room type *</Label>
+              <Select value={selectedGroupId} onValueChange={(v) => setValue("group_id", v)}>
+                <SelectTrigger><SelectValue placeholder="Select room type" /></SelectTrigger>
+                <SelectContent>
+                  {activeGroups.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              {selectedGroupId && (
+                <p className="text-xs text-muted-foreground">
+                  Covers {groupUnits.length} room{groupUnits.length === 1 ? "" : "s"}
+                  {groupUnits.length > 0 && `: ${groupUnits.map((u) => u.name).join(", ")}`}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label>{t("bookings.unit")} *</Label>
+              <Select value={selectedUnitId} onValueChange={(v) => setValue("unit_id", v)}>
+                <SelectTrigger><SelectValue placeholder={t("bookingForm.selectUnit")} /></SelectTrigger>
+                <SelectContent>
+                  {activeUnits.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
 
           {/* Dates */}
           <div className="grid grid-cols-2 gap-4">
