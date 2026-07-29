@@ -362,7 +362,7 @@ export function CalendarGrid({
         <div style={{ minWidth: LABEL_WIDTH + COL_WIDTH * days }}>
           {/* Header row - sticky so dates stay visible while scrolling through units */}
           <div className="flex border-b sticky top-0 z-20 bg-card shadow-sm">
-            <div className="shrink-0 border-r bg-card flex items-end px-3 pb-2 text-xs font-medium text-muted-foreground" style={{ width: LABEL_WIDTH, height: HEADER_HEIGHT }}>{t("units.title")}</div>
+            <div className="shrink-0 border-r bg-card flex items-end px-3 pb-2 text-xs font-medium text-muted-foreground sticky left-0 z-30" style={{ width: LABEL_WIDTH, height: HEADER_HEIGHT }}>{t("units.title")}</div>
             {dates.map((d, i) => {
               const isWeekend = d.getDay() === 0 || d.getDay() === 6;
               const isToday = isSameDay(d, new Date());
