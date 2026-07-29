@@ -129,8 +129,10 @@ export function getLoyaltyDiscount(
     percentage: pct,
     amount: Math.round((subtotal * pct) / 100 * 100) / 100,
   };
+}
 
 /**
+
  * Resolve which seasonal rules apply to a given unit.
  *
  * Two scopes exist:
