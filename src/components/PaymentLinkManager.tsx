@@ -324,6 +324,23 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
         </div>
       )}
 
+      {/* An active link exists but its URL isn't on screen — the raw token is
+          only ever returned once at creation (we store a hash), so there is
+          nothing to copy until a fresh link is generated. Say so plainly. */}
+      {active && !lastUrl && (
+        <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-2.5">
+          <AlertCircle className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+          <div className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">There's already an active link for this booking</span>
+            {" "}— but the address is only shown once, right after it's created, for security.
+            The guest still has it in their email and portal. To get a copyable link now, hit
+            <span className="font-medium text-foreground"> Regenerate</span> below; the old one stops working.
+          </div>
+        </div>
+      )}
+
+
+
       {blocked && (
         <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2.5">
           <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
