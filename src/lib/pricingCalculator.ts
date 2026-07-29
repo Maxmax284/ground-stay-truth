@@ -196,9 +196,11 @@ export function calculatePricing(
     fixedRateSource = "weekly_rate";
   }
 
-  const unitRules = pricingRules
-    .filter((r) => r.unit_id === unit.id)
-    .sort((a, b) => a.start_date.localeCompare(b.start_date));
+  // Scope resolution: a rule can target one specific unit (override) or a
+  // whole room type via `group_id`. Unit-level rules win when both cover the
+  // same night — that's how Superior Single 5 keeps its manual price.
+  const unitRules = getRulesForUnit(pricingRules, unit);
+
 
   const nights: NightBreakdown[] = nightDates.map((date) => {
     const dateStr = format(date, "yyyy-MM-dd");
