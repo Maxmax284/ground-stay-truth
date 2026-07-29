@@ -21,6 +21,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
+import { copyText } from "@/lib/clipboard";
 
 interface BookingConfirmationDocumentProps {
   bookingId: string;
@@ -147,12 +148,12 @@ export function BookingConfirmationDocument({
   const handleCopy = async () => {
     const url = lastUrl || (await generate("confirmed"));
     if (!url) return;
-    try {
-      await navigator.clipboard.writeText(url);
+    const ok = await copyText(url);
+    if (ok) {
       setCopied(true);
       toast.success("Confirmation link copied");
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } else {
       toast.error("Copy failed — long-press to copy manually");
     }
   };
