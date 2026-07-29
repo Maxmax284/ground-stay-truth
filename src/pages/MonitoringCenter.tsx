@@ -27,6 +27,7 @@ import {
   Activity,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { formatInPropertyTimezone } from "@/lib/timezone";
 
 // ---------- types ----------
 type Health = "healthy" | "warning" | "attention";
