@@ -381,7 +381,7 @@ export function CalendarGrid({
             <div key={group?.id ?? "ungrouped"}>
               {group && (
                 <div className="flex border-b bg-accent/20">
-                  <div className="flex items-center px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider" style={{ height: GROUP_HEADER_HEIGHT }}>
+                  <div className="sticky left-0 z-10 shrink-0 flex items-center px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider" style={{ height: GROUP_HEADER_HEIGHT, minWidth: LABEL_WIDTH }}>
                     {group.name}
                     <span className="ml-2 text-[10px] font-normal lowercase">({groupUnits.length})</span>
                   </div>
@@ -389,7 +389,7 @@ export function CalendarGrid({
               )}
               {!group && groupedUnits.length > 1 && (
                 <div className="flex border-b bg-accent/20">
-                  <div className="flex items-center px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider" style={{ height: GROUP_HEADER_HEIGHT }}>
+                  <div className="sticky left-0 z-10 shrink-0 flex items-center px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider" style={{ height: GROUP_HEADER_HEIGHT, minWidth: LABEL_WIDTH }}>
                     Other Rooms
                     <span className="ml-2 text-[10px] font-normal lowercase">({groupUnits.length})</span>
                   </div>
