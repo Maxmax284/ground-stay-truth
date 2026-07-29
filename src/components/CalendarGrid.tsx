@@ -287,7 +287,7 @@ export function CalendarGrid({
     const unitBlocks = blocksByUnit.get(unit.id) ?? [];
     return (
       <div key={unit.id} className="flex border-b last:border-b-0">
-        <div className="shrink-0 border-r flex items-center px-3 text-sm font-medium truncate" style={{ width: LABEL_WIDTH, height: ROW_HEIGHT }} title={unit.name}>{unit.name}</div>
+        <div className="shrink-0 border-r flex items-center px-3 text-sm font-medium truncate sticky left-0 z-10 bg-card" style={{ width: LABEL_WIDTH, height: ROW_HEIGHT }} title={unit.name}>{unit.name}</div>
         <div className="relative flex" style={{ height: ROW_HEIGHT }}>
           {dates.map((d, i) => {
             const isWeekend = d.getDay() === 0 || d.getDay() === 6;
@@ -362,7 +362,7 @@ export function CalendarGrid({
         <div style={{ minWidth: LABEL_WIDTH + COL_WIDTH * days }}>
           {/* Header row - sticky so dates stay visible while scrolling through units */}
           <div className="flex border-b sticky top-0 z-20 bg-card shadow-sm">
-            <div className="shrink-0 border-r bg-card flex items-end px-3 pb-2 text-xs font-medium text-muted-foreground" style={{ width: LABEL_WIDTH, height: HEADER_HEIGHT }}>{t("units.title")}</div>
+            <div className="shrink-0 border-r bg-card flex items-end px-3 pb-2 text-xs font-medium text-muted-foreground sticky left-0 z-30" style={{ width: LABEL_WIDTH, height: HEADER_HEIGHT }}>{t("units.title")}</div>
             {dates.map((d, i) => {
               const isWeekend = d.getDay() === 0 || d.getDay() === 6;
               const isToday = isSameDay(d, new Date());
@@ -381,7 +381,7 @@ export function CalendarGrid({
             <div key={group?.id ?? "ungrouped"}>
               {group && (
                 <div className="flex border-b bg-accent/20">
-                  <div className="flex items-center px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider" style={{ height: GROUP_HEADER_HEIGHT }}>
+                  <div className="sticky left-0 z-10 shrink-0 flex items-center px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider" style={{ height: GROUP_HEADER_HEIGHT, minWidth: LABEL_WIDTH }}>
                     {group.name}
                     <span className="ml-2 text-[10px] font-normal lowercase">({groupUnits.length})</span>
                   </div>
@@ -389,7 +389,7 @@ export function CalendarGrid({
               )}
               {!group && groupedUnits.length > 1 && (
                 <div className="flex border-b bg-accent/20">
-                  <div className="flex items-center px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider" style={{ height: GROUP_HEADER_HEIGHT }}>
+                  <div className="sticky left-0 z-10 shrink-0 flex items-center px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider" style={{ height: GROUP_HEADER_HEIGHT, minWidth: LABEL_WIDTH }}>
                     Other Rooms
                     <span className="ml-2 text-[10px] font-normal lowercase">({groupUnits.length})</span>
                   </div>
