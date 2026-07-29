@@ -103,6 +103,27 @@ export function BookingFilters({
         />
       </div>
 
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">{t("filters.sort")}</label>
+        <Select value={sort} onValueChange={(v) => onSortChange(v as BookingSort)}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {BOOKING_SORT_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>{t(o.labelKey)}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex items-center gap-2 h-10">
+        <Switch id="show-cancelled" checked={showCancelled} onCheckedChange={onShowCancelledChange} />
+        <label htmlFor="show-cancelled" className="text-xs font-medium text-muted-foreground cursor-pointer">
+          {t("filters.showCancelled")}
+        </label>
+      </div>
+
       {hasFilters && (
         <Button variant="ghost" size="sm" onClick={clearAll} className="h-10">
           <X className="h-4 w-4 mr-1" /> {t("common.clear")}
