@@ -381,7 +381,7 @@ export function useBookingPayments(bookingId: string | null) {
 export function useOutstandingBalance(bookingId: string | null, totalPrice: number | null) {
   const { data: payments } = useBookingPayments(bookingId);
   return useMemo(() => {
-    if (!payments) return { totalPaid: 0, totalRefunded: 0, outstanding: totalPrice ?? 0 };
+    if (!payments) return { totalPaid: 0, totalRefunded: 0, addonTotal: 0, grandTotal: totalPrice ?? 0, outstanding: totalPrice ?? 0 };
     return calculateOutstanding(totalPrice, payments);
   }, [payments, totalPrice]);
 }
