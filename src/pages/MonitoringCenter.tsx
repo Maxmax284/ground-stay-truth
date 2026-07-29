@@ -452,6 +452,9 @@ export default function MonitoringCenter() {
         {/* Guest portal health — guests come first, everything else is second. */}
         <GuestPortalHealth />
 
+        {/* Staff activity — the other side: who on the team changed what. */}
+        <StaffActivity />
+
         {/* Overall status */}
 
         <Card>
