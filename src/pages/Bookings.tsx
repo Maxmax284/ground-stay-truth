@@ -319,7 +319,10 @@ const Bookings = () => {
             </Table>
           </div>
         )}
+          </TabsContent>
+        </Tabs>
       </div>
+
 
       <BookingFormDialog open={showCreate} onOpenChange={setShowCreate} />
       <BookingDetailSheet
