@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ import { useUnits } from "@/hooks/useUnits";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
-import { BookingFilters } from "@/components/BookingFilters";
+import { BookingFilters, type BookingSort } from "@/components/BookingFilters";
 import { BookingFormDialog } from "@/components/BookingFormDialog";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
@@ -112,13 +112,48 @@ const Bookings = () => {
   const [dateTo, setDateTo] = useState<string | null>(null);
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [sort, setSort] = useState<BookingSort>("check_in_asc");
+  const [showCancelled, setShowCancelled] = useState(false);
 
-  const { data: bookings, isLoading, isError, refetch } = useBookings({
+  const { data: rawBookings, isLoading, isError, refetch } = useBookings({
     state: stateFilter,
     unitId: unitFilter,
     dateFrom,
     dateTo,
   });
+
+  // Cancelled bookings are hidden unless explicitly toggled on (or explicitly
+  // filtered for). Completed stays remain visible — they're operational history.
+  const bookings = useMemo(() => {
+    if (!rawBookings) return rawBookings;
+    const visible = (showCancelled || stateFilter === "cancelled")
+      ? rawBookings
+      : rawBookings.filter((b: any) => b.state !== "cancelled");
+
+    const name = (b: any) => (resolveGuestDisplayName(b) ?? "").toLowerCase();
+    const sorted = [...visible];
+    switch (sort) {
+      case "check_in_asc":
+        sorted.sort((a: any, b: any) => a.check_in.localeCompare(b.check_in));
+        break;
+      case "check_in_desc":
+        sorted.sort((a: any, b: any) => b.check_in.localeCompare(a.check_in));
+        break;
+      case "created_desc":
+        sorted.sort((a: any, b: any) => b.created_at.localeCompare(a.created_at));
+        break;
+      case "guest_asc":
+        sorted.sort((a: any, b: any) => name(a).localeCompare(name(b)));
+        break;
+      case "unit_asc":
+        sorted.sort((a: any, b: any) =>
+          (a.units?.name ?? "").localeCompare(b.units?.name ?? "") ||
+          a.check_in.localeCompare(b.check_in));
+        break;
+    }
+    return sorted;
+  }, [rawBookings, showCancelled, stateFilter, sort]);
+
 
   const [showCreate, setShowCreate] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
@@ -163,10 +198,14 @@ const Bookings = () => {
           dateFrom={dateFrom}
           dateTo={dateTo}
           units={units ?? []}
+          sort={sort}
+          showCancelled={showCancelled}
           onStateChange={setStateFilter}
           onUnitChange={setUnitFilter}
           onDateFromChange={setDateFrom}
           onDateToChange={setDateTo}
+          onSortChange={setSort}
+          onShowCancelledChange={setShowCancelled}
         />
 
         {isLoading ? (

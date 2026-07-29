@@ -760,7 +760,14 @@
     "from": "From",
     "to": "To",
     "allStates": "All states",
-    "allUnits": "All units"
+    "allUnits": "All units",
+    "sort": "Sort by",
+    "sortCheckInSoonest": "Check-in soonest",
+    "sortCheckInLatest": "Check-in latest",
+    "sortNewest": "Recently created",
+    "sortGuestAZ": "Guest A–Z",
+    "sortUnitAZ": "Unit A–Z",
+    "showCancelled": "Show cancelled"
   },
   "language": {
     "label": "Language",
