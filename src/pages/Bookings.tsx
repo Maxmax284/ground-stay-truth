@@ -161,7 +161,15 @@ const Bookings = () => {
         break;
     }
     return sorted;
-  }, [rawBookings, showCancelled, stateFilter, sort]);
+  }, [rawBookings, showCancelled, stateFilter, sort, expiredOnly, policiesForDeadlines]);
+
+  // Count of expired holds/deposits across the loaded set — drives the filter chip.
+  const expiredCount = useMemo(
+    () => (rawBookings ?? []).filter((b: any) =>
+      b.state !== "cancelled" && getBookingDeadline(b, policiesForDeadlines as any)?.isExpired,
+    ).length,
+    [rawBookings, policiesForDeadlines],
+  );
 
 
   const [showCreate, setShowCreate] = useState(false);
