@@ -231,3 +231,75 @@ export function Cta({
     </Section>
   )
 }
+
+/**
+ * Full-width, table-based CTA. Renders reliably in Gmail (desktop + mobile),
+ * iOS Mail, Outlook and webmail — no background images, no external CSS, so it
+ * stays visible even when the client blocks images.
+ */
+export function BigCta({
+  href,
+  label,
+  sub,
+  color = BRAND,
+}: {
+  href: string
+  label: string
+  sub?: string
+  color?: string
+}) {
+  return (
+    <Section style={{ margin: '24px 0' }}>
+      <table
+        width="100%"
+        cellPadding={0}
+        cellSpacing={0}
+        role="presentation"
+        style={{ borderCollapse: 'separate' }}
+      >
+        <tbody>
+          <tr>
+            <td
+              align="center"
+              bgcolor={color}
+              style={{
+                backgroundColor: color,
+                borderRadius: '10px',
+                padding: '0',
+              }}
+            >
+              <a
+                href={href}
+                style={{
+                  display: 'block',
+                  padding: '18px 20px',
+                  color: '#ffffff',
+                  fontSize: '17px',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  lineHeight: '1.3',
+                  textAlign: 'center',
+                }}
+              >
+                {label}
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      {sub ? (
+        <Text
+          style={{
+            margin: '10px 0 0 0',
+            color: '#777777',
+            fontSize: '13px',
+            lineHeight: '1.5',
+            textAlign: 'center',
+          }}
+        >
+          {sub}
+        </Text>
+      ) : null}
+    </Section>
+  )
+}
