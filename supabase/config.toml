@@ -34,7 +34,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.send-transactional-email]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-scheduled-emails]
 verify_jwt = false
