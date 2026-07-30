@@ -49,7 +49,11 @@ Deno.serve(async (req) => {
     )
   }
 
-  // Parse request body
+  // Parse request body.
+  // Backwards compatible with the legacy Resend-era contract:
+  //   { template_key, recipient_email, data, language, booking_id }
+  // maps onto the native contract:
+  //   { templateName, recipientEmail, templateData, idempotencyKey }
   let templateName: string
   let recipientEmail: string
   let idempotencyKey: string
@@ -57,14 +61,26 @@ Deno.serve(async (req) => {
   let templateData: Record<string, any> = {}
   try {
     const body = await req.json()
-    templateName = body.templateName || body.template_name
+    templateName = body.templateName || body.template_name || body.template_key
     recipientEmail = body.recipientEmail || body.recipient_email
     messageId = crypto.randomUUID()
-    idempotencyKey = body.idempotencyKey || body.idempotency_key || messageId
     if (body.templateData && typeof body.templateData === 'object') {
       templateData = body.templateData
+    } else if (body.data && typeof body.data === 'object') {
+      // Legacy payload shape — language travels inside templateData so the
+      // React template can render EN/TH from one component.
+      templateData = { ...body.data }
     }
+    if (body.language && !templateData.language) {
+      templateData.language = body.language
+    }
+    // Legacy booking-scoped dedupe: one send per (booking, template).
+    const legacyKey =
+      body.booking_id && templateName ? `${templateName}-${body.booking_id}` : null
+    idempotencyKey =
+      body.idempotencyKey || body.idempotency_key || legacyKey || messageId
   } catch {
+
     return new Response(
       JSON.stringify({ error: 'Invalid JSON in request body' }),
       {
