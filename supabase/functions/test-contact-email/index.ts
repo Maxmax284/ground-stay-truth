@@ -1,8 +1,8 @@
 // test-contact-email
 // -----------------------------------------------------------------------------
 // Admin-only. Sends a short test email to the current policy_settings.contact_email
-// (or an override) via Resend, so we can confirm the address actually receives
-// mail. Returns provider status + Resend message id or the exact error body.
+// (or an override) through the platform email service, so we can confirm the
+// address actually receives mail. Returns queue status or the exact error body.
 // No email_log write, no booking touch.
 // -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -71,74 +71,49 @@ serve(async (req) => {
     const { data: rows } = await admin
       .from("policy_settings")
       .select("key, value")
-      .in("key", ["contact_email", "resend_from_email", "company_legal_name"]);
+      .in("key", ["contact_email", "email_from_address", "company_legal_name"]);
     const map = new Map((rows ?? []).map((r: any) => [r.key, unquote(r.value)]));
     const contactEmail = overrideTo || map.get("contact_email") || "";
-    const fromEmail = map.get("resend_from_email") || "noreply@lmtcampstay.com";
+    const fromEmail = map.get("email_from_address") || "noreply@lmtcampstay.com";
     const bizName = map.get("company_legal_name") || "LMT CampStay";
 
     if (!contactEmail || !/^\S+@\S+\.\S+$/.test(contactEmail)) {
       return j(req, { sent: false, error: "No valid contact_email configured", contact_email: contactEmail }, 400);
     }
 
-    const { data: secretRow } = await admin
-      .from("integration_secrets")
-      .select("encrypted_value")
-      .eq("secret_key", "resend_api_key")
-      .maybeSingle();
-    const resendApiKey = secretRow?.encrypted_value;
-    if (!resendApiKey || String(resendApiKey).length < 5) {
-      return j(req, { sent: false, error: "Resend API key not configured" }, 400);
-    }
-
     const stamp = new Date().toISOString();
-    const subject = `LMT CampStay — deliverability test (${stamp.slice(0, 16).replace("T", " ")} UTC)`;
-    const html = `
-      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:560px;margin:0 auto;padding:20px;color:#1a1a1a">
-        <h1 style="font-size:20px;margin:0 0 8px 0">Deliverability test</h1>
-        <p style="color:#555;margin:0 0 16px 0">
-          This is a one-off test message from <strong>${bizName}</strong> to verify that
-          <strong>${contactEmail}</strong> actually receives mail from
-          <strong>${fromEmail}</strong>.
-        </p>
-        <div style="background:#f6f6f6;border-radius:10px;padding:14px;font-size:13px;color:#333">
-          <div><strong>From:</strong> ${fromEmail}</div>
-          <div><strong>To:</strong> ${contactEmail}</div>
-          <div><strong>Sent:</strong> ${stamp}</div>
-        </div>
-        <p style="color:#888;font-size:12px;margin-top:16px">
-          If this landed in the intended inbox, contact_email is reachable. If it bounced
-          or never arrived, the forwarding / mailbox for this address needs attention.
-          No guest, booking, or payment data was touched.
-        </p>
-      </div>`;
 
-    const resendResp = await fetch("https://api.resend.com/emails", {
+    // Routed through the platform email engine (queued + retried + logged).
+    const resp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${resendApiKey}`,
+        Authorization: `Bearer ${serviceRoleKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: fromEmail,
-        to: [contactEmail],
-        subject,
-        html,
+        template_key: "admin_alert_generic",
+        recipient_email: contactEmail,
+        idempotency_key: `contact-test-${stamp}`,
+        data: {
+          title: "Deliverability test",
+          message: `One-off test from ${bizName} to confirm ${contactEmail} actually receives mail.`,
+          severity: "info",
+          context: { to: contactEmail, sent_at: stamp },
+        },
       }),
     });
 
-    const providerBody = await resendResp.text();
+    const providerBody = await resp.text();
     let parsed: any = null;
     try { parsed = JSON.parse(providerBody); } catch { /* keep raw */ }
 
-    if (!resendResp.ok) {
-      console.error("[test-contact-email] Resend error", resendResp.status, providerBody);
+    if (!resp.ok || parsed?.success === false) {
+      console.error("[test-contact-email] send failed", resp.status, providerBody);
       return j(req, {
         sent: false,
-        status: resendResp.status,
-        from: fromEmail,
+        status: resp.status,
         to: contactEmail,
-        error: parsed?.message || parsed?.error || providerBody.slice(0, 400),
+        error: parsed?.error || parsed?.reason || providerBody.slice(0, 400),
       }, 502);
     }
 
@@ -146,8 +121,8 @@ serve(async (req) => {
       sent: true,
       from: fromEmail,
       to: contactEmail,
-      message_id: parsed?.id || null,
-      note: "Resend accepted the message. Check the destination inbox (and spam) to confirm it actually arrived.",
+      message_id: null,
+      note: "Queued by the platform email service. Delivery happens within seconds — check the destination inbox (and spam) to confirm it arrived.",
     });
   } catch (e) {
     console.error("[test-contact-email] fatal", e);

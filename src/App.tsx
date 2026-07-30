@@ -44,6 +44,8 @@ import OAuthConsent from "./pages/OAuthConsent";
 import NotificationCenter from "./pages/NotificationCenter";
 import AdjustmentsCenter from "./pages/AdjustmentsCenter";
 import StripeSetup from "./pages/StripeSetup";
+import Unsubscribe from "./pages/Unsubscribe";
+
 
 
 // Global React Query defaults — consistent caching across all hooks.
@@ -120,6 +122,8 @@ const App = () => (
                 <Route path="/stay" element={<Stay />} />
                 <Route path="/pay/:token" element={<GuestPaymentLink />} />
                 <Route path="/legal" element={<Legal />} />
+                <Route path="/unsubscribe" element={<Unsubscribe />} />
+
                 <Route path="/landing" element={<LandingPage />} />
 
                 <Route path="*" element={<NotFound />} />

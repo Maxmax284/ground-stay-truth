@@ -271,28 +271,18 @@ export function IntegrationSettings() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {renderSecretField("resend_api_key", "Resend API Key", "re_...")}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">From Email</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                value={editValues["resend_from_email"] ?? getValue("resend_from_email")}
-                onChange={(e) => setEditValues((prev) => ({ ...prev, resend_from_email: e.target.value }))}
-                placeholder="noreply@yourdomain.com"
-                className="flex-1 text-sm"
-              />
-              {(editValues["resend_from_email"] !== undefined && editValues["resend_from_email"] !== getValue("resend_from_email")) && (
-                <Button size="icon" variant="outline" onClick={() => handleSavePolicy("resend_from_email")} disabled={updateSetting.isPending}>
-                  <Save className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Must be a verified domain in your Resend account
+        <CardContent className="space-y-3">
+          <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+            <div className="font-medium">Handled by the built-in email service</div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Guest and admin email now sends through the platform's own queued email
+              engine on <span className="font-mono">notify.lmtcampstay.com</span> — no API
+              key to manage, with automatic retries, bounce suppression, and a delivery log.
+              Failures show up in the Monitoring Center.
             </p>
           </div>
         </CardContent>
+
       </Card>
 
       {/* Security Telemetry Section */}

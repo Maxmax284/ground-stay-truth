@@ -1,627 +1,370 @@
-// send-transactional-email
-// -----------------------------------------------------------------------------
-// Resend wrapper. All outbound transactional email funnels through here so
-// we have one place for templates, i18n, deliverability, and `email_log`
-// dedupe. Templates are per-language (9 locales) with English fallback.
-// -----------------------------------------------------------------------------
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as React from 'npm:react@18.3.1'
+import { renderAsync } from 'npm:@react-email/components@0.0.22'
+import { createClient } from 'npm:@supabase/supabase-js@2'
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
+import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
 
-const ALLOWED_ORIGINS = [
-  Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
-  "https://ground-stay-truth.lovable.app",
-  "http://localhost:5173",
-  "http://localhost:8080",
-];
+// Configuration baked in at scaffold time — do NOT change these manually.
+// To update, re-run the email domain setup flow.
+const SITE_NAME = "LMT CampStay"
+// SENDER_DOMAIN is the verified sender subdomain FQDN (e.g., "notify.example.com").
+// It MUST match the subdomain delegated to Lovable's nameservers — never the root domain.
+// The email API looks up this exact domain; a mismatch causes "No email domain record found".
+const SENDER_DOMAIN = "notify.lmtcampstay.com"
+// FROM_DOMAIN is the domain shown in the From: header (e.g., "example.com").
+// When display_from_root is enabled, this can be the root domain for cleaner branding,
+// even though actual sending uses the subdomain above.
+const FROM_DOMAIN = "lmtcampstay.com"
 
-function isAllowedOrigin(origin: string): boolean {
-  if (ALLOWED_ORIGINS.includes(origin)) return true;
-  // Allow Lovable preview/dev origins
-  if (/^https:\/\/[a-z0-9-]+\.lovableproject\.com$/.test(origin)) return true;
-  if (/^https:\/\/[a-z0-9-]+\.lovable\.app$/.test(origin)) return true;
-  if (/^https:\/\/id-preview--[a-z0-9-]+\.lovable\.app$/.test(origin)) return true;
-  return false;
+// Generate a cryptographically random 32-byte hex token
+function generateToken(): string {
+  const bytes = new Uint8Array(32)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
 }
 
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("origin") || "";
-  const allowedOrigin = isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-  };
-}
+// Auth note: this function uses verify_jwt = true in config.toml, so Supabase's
+// gateway validates the caller's JWT (anon or service_role) before the request
+// reaches this code. No in-function auth check is needed.
 
-// Template definitions (English + Thai)
-const templates: Record<string, Record<string, { subject: string; html: (data: any) => string }>> = {
-  booking_confirmed: {
-    en: {
-      subject: "Booking Confirmed ✅ — LMT CampStay",
-      html: (d) => {
-        const qrTarget = d.qr_target || `https://lmtcampstay.com/guest${d.confirmation_number ? `?ref=${encodeURIComponent(d.confirmation_number)}` : ""}`;
-        const qrImg = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=${encodeURIComponent(qrTarget)}`;
-        const vatMailto = `mailto:${d.contact_email || "info@lmtcampstay.com"}?subject=${encodeURIComponent(`VAT invoice request — ${d.confirmation_number || "booking"}`)}`;
-        return `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
-          <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">Booking Confirmed</h1>
-          <p style="color:#666;margin-bottom:24px">Sawadee ${d.guest_name}! Your stay is confirmed.</p>
-          ${d.confirmation_number ? `<p style="color:#333;font-size:13px;margin:-12px 0 20px 0"><strong>Confirmation #</strong> ${d.confirmation_number}</p>` : ""}
-          <div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:20px">
-            <h2 style="font-size:18px;margin:0 0 16px 0">${d.unit_name}</h2>
-            <table style="width:100%;border-collapse:collapse">
-              <tr><td style="padding:8px 0;color:#666;width:40%">Check-in</td><td style="padding:8px 0;font-weight:600">${d.check_in} from ${d.checkin_time}</td></tr>
-              <tr><td style="padding:8px 0;color:#666">Check-out</td><td style="padding:8px 0;font-weight:600">${d.check_out} by ${d.checkout_time}</td></tr>
-              <tr><td style="padding:8px 0;color:#666">Guests</td><td style="padding:8px 0;font-weight:600">${d.num_guests}</td></tr>
-              <tr><td style="padding:8px 0;color:#666">Total</td><td style="padding:8px 0;font-weight:600">${d.total_formatted}</td></tr>
-            </table>
-          </div>
-          ${d.confirmation_pdf_url ? `
-          <p style="text-align:center;margin:24px 0">
-            <a href="${d.confirmation_pdf_url}" style="background:#b81c1c;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600;display:inline-block">Download Booking Confirmation (PDF)</a>
-          </p>
-          <p style="color:#888;font-size:12px;text-align:center;margin-top:-8px">The PDF is also attached. Show it to immigration, airlines, or your employer.</p>` : ""}
-          <div style="text-align:center;margin:24px 0;padding:16px;background:#fafafa;border-radius:12px">
-            <img src="${qrImg}" alt="Booking QR code" width="140" height="140" style="display:block;margin:0 auto 8px auto;border-radius:6px" />
-            <p style="margin:0;color:#666;font-size:12px">Scan to open your booking or share your reference</p>
-          </div>
-          <p style="text-align:center;margin:20px 0 8px 0;color:#666;font-size:13px">
-            Need a Thai VAT invoice? <a href="${vatMailto}" style="color:#b81c1c;font-weight:600;text-decoration:none">Request Thai VAT invoice</a>
-          </p>
-          <p style="color:#666;font-size:14px;margin-top:24px">Upload your ID document through the Guest Portal before check-in.</p>
-          <p style="color:#999;font-size:12px;margin-top:24px">LMT CampStay — Lamai Muay Thai Fight Camp</p>
-        </div>`;
-      },
-    },
-    th: {
-      subject: "ยืนยันการจอง ✅ — LMT CampStay",
-      html: (d) => {
-        const qrTarget = d.qr_target || `https://lmtcampstay.com/guest${d.confirmation_number ? `?ref=${encodeURIComponent(d.confirmation_number)}` : ""}`;
-        const qrImg = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=${encodeURIComponent(qrTarget)}`;
-        const vatMailto = `mailto:${d.contact_email || "info@lmtcampstay.com"}?subject=${encodeURIComponent(`VAT invoice request — ${d.confirmation_number || "booking"}`)}`;
-        return `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
-          <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">ยืนยันการจองแล้ว</h1>
-          <p style="color:#666;margin-bottom:24px">สวัสดีครับ/ค่ะ ${d.guest_name}! การเข้าพักของคุณได้รับการยืนยันแล้ว</p>
-          ${d.confirmation_number ? `<p style="color:#333;font-size:13px;margin:-12px 0 20px 0"><strong>เลขที่ยืนยัน</strong> ${d.confirmation_number}</p>` : ""}
-          <div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:20px">
-            <h2 style="font-size:18px;margin:0 0 16px 0">${d.unit_name}</h2>
-            <table style="width:100%;border-collapse:collapse">
-              <tr><td style="padding:8px 0;color:#666;width:40%">เช็คอิน</td><td style="padding:8px 0;font-weight:600">${d.check_in} ตั้งแต่ ${d.checkin_time}</td></tr>
-              <tr><td style="padding:8px 0;color:#666">เช็คเอาท์</td><td style="padding:8px 0;font-weight:600">${d.check_out} ภายใน ${d.checkout_time}</td></tr>
-              <tr><td style="padding:8px 0;color:#666">จำนวนผู้เข้าพัก</td><td style="padding:8px 0;font-weight:600">${d.num_guests}</td></tr>
-              <tr><td style="padding:8px 0;color:#666">ราคารวม</td><td style="padding:8px 0;font-weight:600">${d.total_formatted}</td></tr>
-            </table>
-          </div>
-          ${d.confirmation_pdf_url ? `
-          <p style="text-align:center;margin:24px 0">
-            <a href="${d.confirmation_pdf_url}" style="background:#b81c1c;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600;display:inline-block">ดาวน์โหลดใบยืนยันการจอง (PDF)</a>
-          </p>` : ""}
-          <div style="text-align:center;margin:24px 0;padding:16px;background:#fafafa;border-radius:12px">
-            <img src="${qrImg}" alt="Booking QR code" width="140" height="140" style="display:block;margin:0 auto 8px auto;border-radius:6px" />
-            <p style="margin:0;color:#666;font-size:12px">สแกนเพื่อเปิดการจองของคุณ</p>
-          </div>
-          <p style="text-align:center;margin:20px 0 8px 0;color:#666;font-size:13px">
-            ต้องการใบกำกับภาษี? <a href="${vatMailto}" style="color:#b81c1c;font-weight:600;text-decoration:none">ขอใบกำกับภาษี (VAT)</a>
-          </p>
-          <p style="color:#666;font-size:14px">กรุณาอัพโหลดเอกสารประจำตัวผ่าน Guest Portal ก่อนเช็คอิน</p>
-          <p style="color:#999;font-size:12px;margin-top:24px">LMT CampStay — Lamai Muay Thai Fight Camp</p>
-        </div>`;
-      },
-    },
-  },
-
-  deposit_reminder: {
-    en: {
-      subject: "Deposit Reminder — Complete Your Booking",
-      html: (d) => `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
-          <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">Deposit Reminder</h1>
-          <p style="color:#666;margin-bottom:24px">${d.guest_name}, your booking for ${d.unit_name} is awaiting deposit.</p>
-          <div style="background:#fff3cd;border-radius:8px;padding:16px;margin-bottom:20px">
-            <p style="margin:0;font-size:14px;color:#856404">
-              <strong>Amount due:</strong> ${d.deposit_amount}<br/>
-              <strong>Dates:</strong> ${d.check_in} — ${d.check_out}
-            </p>
-          </div>
-          <p style="color:#666;font-size:14px">Log in to your Guest Portal to complete payment.</p>
-          <p style="color:#999;font-size:12px;margin-top:24px">Ground Stay — Lamai Muay Thai Fight Camp</p>
-        </div>`,
-    },
-    th: {
-      subject: "แจ้งเตือนมัดจำ — ชำระเงินเพื่อยืนยันการจอง",
-      html: (d) => `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
-          <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">แจ้งเตือนมัดจำ</h1>
-          <p style="color:#666;margin-bottom:24px">${d.guest_name} การจอง ${d.unit_name} ของคุณรอการชำระมัดจำ</p>
-          <div style="background:#fff3cd;border-radius:8px;padding:16px;margin-bottom:20px">
-            <p style="margin:0;font-size:14px;color:#856404">
-              <strong>จำนวนเงิน:</strong> ${d.deposit_amount}<br/>
-              <strong>วันที่:</strong> ${d.check_in} — ${d.check_out}
-            </p>
-          </div>
-          <p style="color:#666;font-size:14px">เข้าสู่ระบบ Guest Portal เพื่อชำระเงิน</p>
-          <p style="color:#999;font-size:12px;margin-top:24px">Ground Stay — Lamai Muay Thai Fight Camp</p>
-        </div>`,
-    },
-  },
-  payment_link_sent: {
-    en: {
-      subject: "Your payment link is ready",
-      html: (d) => `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
-          <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">Time to lock it in</h1>
-          <p style="color:#444;margin-bottom:20px">${d.guest_name || "Hey"} — here's the secure link to pay your ${d.payment_label || "deposit"} for <strong>${d.unit_name || "your stay"}</strong>.</p>
-          <div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:20px">
-            <table style="width:100%;border-collapse:collapse">
-              <tr><td style="padding:6px 0;color:#666;width:45%">${d.payment_label || "Amount"}</td><td style="padding:6px 0;font-weight:600">${d.amount_formatted}</td></tr>
-              <tr><td style="padding:6px 0;color:#666">Dates</td><td style="padding:6px 0;font-weight:600">${d.check_in} → ${d.check_out}</td></tr>
-            </table>
-          </div>
-          <p style="text-align:center;margin:28px 0">
-            <a href="${d.payment_url}" style="background:#1a1a1a;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;display:inline-block">Pay securely now</a>
-          </p>
-          <p style="color:#666;font-size:13px">Link expires ${d.expires_at_human || "soon"}. Card is processed by Stripe — we never see your details.</p>
-          <p style="color:#999;font-size:12px;margin-top:24px;word-break:break-all">If the button doesn't work, paste this into your browser:<br/>${d.payment_url}</p>
-          <p style="color:#999;font-size:12px;margin-top:24px">Ground Stay — Lamai Muay Thai Fight Camp</p>
-        </div>`,
-    },
-    th: {
-      subject: "ลิงก์ชำระเงินของคุณพร้อมแล้ว",
-      html: (d) => `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
-          <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">ชำระเงินเพื่อยืนยันการจอง</h1>
-          <p style="color:#444;margin-bottom:20px">${d.guest_name || "สวัสดี"} — นี่คือลิงก์ชำระ ${d.payment_label || "มัดจำ"} สำหรับ <strong>${d.unit_name || "การเข้าพักของคุณ"}</strong></p>
-          <div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:20px">
-            <table style="width:100%;border-collapse:collapse">
-              <tr><td style="padding:6px 0;color:#666;width:45%">จำนวนเงิน</td><td style="padding:6px 0;font-weight:600">${d.amount_formatted}</td></tr>
-              <tr><td style="padding:6px 0;color:#666">วันที่</td><td style="padding:6px 0;font-weight:600">${d.check_in} → ${d.check_out}</td></tr>
-            </table>
-          </div>
-          <p style="text-align:center;margin:28px 0">
-            <a href="${d.payment_url}" style="background:#1a1a1a;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;display:inline-block">ชำระเงินอย่างปลอดภัย</a>
-          </p>
-          <p style="color:#999;font-size:12px;word-break:break-all">${d.payment_url}</p>
-        </div>`,
-    },
-  },
-  pre_arrival_reminder: {
-    en: {
-      subject: "Arriving Soon — Pre-Arrival Checklist",
-      html: (d) => `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
-          <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">See You Soon!</h1>
-          <p style="color:#666;margin-bottom:24px">${d.guest_name}, your stay at ${d.unit_name} starts on ${d.check_in}.</p>
-          <div style="background:#f0f9ff;border-radius:8px;padding:16px;margin-bottom:20px">
-            <p style="margin:0;font-size:14px;color:#1e40af">
-              <strong>Check-in:</strong> ${d.check_in} from ${d.checkin_time}<br/>
-              <strong>Please complete:</strong> ID upload and pre-arrival checklist in your Guest Portal
-            </p>
-          </div>
-          <p style="color:#999;font-size:12px;margin-top:24px">Ground Stay — Lamai Muay Thai Fight Camp</p>
-        </div>`,
-    },
-    th: {
-      subject: "ใกล้ถึงวันเข้าพัก — เตรียมตัวก่อนเดินทาง",
-      html: (d) => `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
-          <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">เจอกันเร็วๆ นี้!</h1>
-          <p style="color:#666;margin-bottom:24px">${d.guest_name} การเข้าพักของคุณที่ ${d.unit_name} เริ่มวันที่ ${d.check_in}</p>
-          <div style="background:#f0f9ff;border-radius:8px;padding:16px;margin-bottom:20px">
-            <p style="margin:0;font-size:14px;color:#1e40af">
-              <strong>เช็คอิน:</strong> ${d.check_in} ตั้งแต่ ${d.checkin_time}<br/>
-              <strong>กรุณา:</strong> อัพโหลดบัตรประชาชนและกรอก checklist ใน Guest Portal
-            </p>
-          </div>
-          <p style="color:#999;font-size:12px;margin-top:24px">Ground Stay — Lamai Muay Thai Fight Camp</p>
-        </div>`,
-    },
-  },
-  checkout_followup: {
-    en: {
-      subject: "Thank You For Your Stay!",
-      html: (d) => `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
-          <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">Thank You!</h1>
-          <p style="color:#666;margin-bottom:24px">${d.guest_name}, we hope you enjoyed your stay at ${d.unit_name}.</p>
-          <p style="color:#666;font-size:14px">We'd love to hear about your experience. Leave a review in your Guest Portal!</p>
-          <p style="color:#999;font-size:12px;margin-top:24px">Ground Stay — Lamai Muay Thai Fight Camp</p>
-        </div>`,
-    },
-    th: {
-      subject: "ขอบคุณสำหรับการเข้าพัก!",
-      html: (d) => `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
-          <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">ขอบคุณครับ/ค่ะ!</h1>
-          <p style="color:#666;margin-bottom:24px">${d.guest_name} หวังว่าจะสนุกกับการเข้าพักที่ ${d.unit_name}</p>
-          <p style="color:#666;font-size:14px">รบกวนรีวิวประสบการณ์ของคุณใน Guest Portal!</p>
-          <p style="color:#999;font-size:12px;margin-top:24px">Ground Stay — Lamai Muay Thai Fight Camp</p>
-        </div>`,
-    },
-  },
-  review_request: {
-    en: {
-      subject: "How Was Your Stay?",
-      html: (d) => `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
-          <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">Your Feedback Matters</h1>
-          <p style="color:#666;margin-bottom:24px">${d.guest_name}, how was your stay at ${d.unit_name}?</p>
-          <p style="color:#666;font-size:14px">Take a moment to share your experience — it helps future guests and helps us improve.</p>
-          <p style="color:#999;font-size:12px;margin-top:24px">Ground Stay — Lamai Muay Thai Fight Camp</p>
-        </div>`,
-    },
-    th: {
-      subject: "การเข้าพักเป็นอย่างไรบ้าง?",
-      html: (d) => `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
-          <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">ความคิดเห็นของคุณมีค่า</h1>
-          <p style="color:#666;margin-bottom:24px">${d.guest_name} การเข้าพักที่ ${d.unit_name} เป็นอย่างไรบ้าง?</p>
-          <p style="color:#666;font-size:14px">แบ่งปันประสบการณ์ของคุณ — ช่วยให้แขกในอนาคตและช่วยให้เราปรับปรุงบริการ</p>
-          <p style="color:#999;font-size:12px;margin-top:24px">Ground Stay — Lamai Muay Thai Fight Camp</p>
-        </div>`,
-    },
-  },
-  welcome_checkin: {
-    en: {
-      subject: "Welcome to Your Stay! 🏠",
-      html: (d) => `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
-          <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">Welcome, ${d.guest_name}!</h1>
-          <p style="color:#666;margin-bottom:24px">Today's the day — your stay at <strong>${d.unit_name}</strong> begins. Here's everything you need.</p>
-
-          <div style="background:#f0fdf4;border-radius:12px;padding:20px;margin-bottom:20px">
-            <h2 style="font-size:16px;margin:0 0 12px 0;color:#166534">📶 WiFi</h2>
-            <table style="width:100%;border-collapse:collapse">
-              <tr><td style="padding:4px 0;color:#666;width:40%">Network</td><td style="padding:4px 0;font-weight:600">${d.wifi_network || "—"}</td></tr>
-              <tr><td style="padding:4px 0;color:#666">Password</td><td style="padding:4px 0;font-weight:600;font-family:monospace">${d.wifi_password || "—"}</td></tr>
-            </table>
-          </div>
-
-          <div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:20px">
-            <h2 style="font-size:16px;margin:0 0 12px 0;color:#1a1a1a">📋 House Rules</h2>
-            <p style="color:#666;font-size:14px;line-height:1.6;margin:0;white-space:pre-line">${d.house_rules || "Please ask at front desk."}</p>
-          </div>
-
-          <div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:20px">
-            <h2 style="font-size:16px;margin:0 0 12px 0;color:#1a1a1a">⏰ Check-in / Check-out</h2>
-            <table style="width:100%;border-collapse:collapse">
-              <tr><td style="padding:4px 0;color:#666;width:40%">Check-in from</td><td style="padding:4px 0;font-weight:600">${d.checkin_time}</td></tr>
-              <tr><td style="padding:4px 0;color:#666">Check-out by</td><td style="padding:4px 0;font-weight:600">${d.checkout_time || "12:00"}</td></tr>
-              <tr><td style="padding:4px 0;color:#666">Your dates</td><td style="padding:4px 0;font-weight:600">${d.check_in} → ${d.check_out}</td></tr>
-            </table>
-          </div>
-
-          <div style="background:#fef2f2;border-radius:12px;padding:20px;margin-bottom:20px">
-            <h2 style="font-size:16px;margin:0 0 12px 0;color:#991b1b">🚨 Emergency Contact</h2>
-            <p style="color:#666;font-size:14px;margin:0"><strong>${d.emergency_name || "Front Desk"}</strong><br/>${d.emergency_phone || "See Guest Portal"}</p>
-          </div>
-
-          <p style="color:#666;font-size:14px">Need anything? Message us through the Guest Portal anytime.</p>
-          <p style="color:#999;font-size:12px;margin-top:24px">Ground Stay — Lamai Muay Thai Fight Camp</p>
-        </div>`,
-    },
-    th: {
-      subject: "ยินดีต้อนรับ! 🏠",
-      html: (d) => `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px">
-          <h1 style="color:#1a1a1a;font-size:24px;margin-bottom:8px">ยินดีต้อนรับ ${d.guest_name}!</h1>
-          <p style="color:#666;margin-bottom:24px">วันนี้เป็นวันเช็คอินของคุณที่ <strong>${d.unit_name}</strong> นี่คือข้อมูลที่จำเป็น</p>
-
-          <div style="background:#f0fdf4;border-radius:12px;padding:20px;margin-bottom:20px">
-            <h2 style="font-size:16px;margin:0 0 12px 0;color:#166534">📶 WiFi</h2>
-            <table style="width:100%;border-collapse:collapse">
-              <tr><td style="padding:4px 0;color:#666;width:40%">ชื่อเครือข่าย</td><td style="padding:4px 0;font-weight:600">${d.wifi_network || "—"}</td></tr>
-              <tr><td style="padding:4px 0;color:#666">รหัสผ่าน</td><td style="padding:4px 0;font-weight:600;font-family:monospace">${d.wifi_password || "—"}</td></tr>
-            </table>
-          </div>
-
-          <div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:20px">
-            <h2 style="font-size:16px;margin:0 0 12px 0;color:#1a1a1a">📋 กฎบ้าน</h2>
-            <p style="color:#666;font-size:14px;line-height:1.6;margin:0;white-space:pre-line">${d.house_rules || "กรุณาสอบถามที่แผนกต้อนรับ"}</p>
-          </div>
-
-          <div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:20px">
-            <h2 style="font-size:16px;margin:0 0 12px 0;color:#1a1a1a">⏰ เช็คอิน / เช็คเอาท์</h2>
-            <table style="width:100%;border-collapse:collapse">
-              <tr><td style="padding:4px 0;color:#666;width:40%">เช็คอินตั้งแต่</td><td style="padding:4px 0;font-weight:600">${d.checkin_time}</td></tr>
-              <tr><td style="padding:4px 0;color:#666">เช็คเอาท์ภายใน</td><td style="padding:4px 0;font-weight:600">${d.checkout_time || "12:00"}</td></tr>
-              <tr><td style="padding:4px 0;color:#666">วันที่</td><td style="padding:4px 0;font-weight:600">${d.check_in} → ${d.check_out}</td></tr>
-            </table>
-          </div>
-
-          <div style="background:#fef2f2;border-radius:12px;padding:20px;margin-bottom:20px">
-            <h2 style="font-size:16px;margin:0 0 12px 0;color:#991b1b">🚨 ติดต่อฉุกเฉิน</h2>
-            <p style="color:#666;font-size:14px;margin:0"><strong>${d.emergency_name || "แผนกต้อนรับ"}</strong><br/>${d.emergency_phone || "ดูใน Guest Portal"}</p>
-          </div>
-
-          <p style="color:#666;font-size:14px">ต้องการอะไรเพิ่มเติม? ส่งข้อความผ่าน Guest Portal ได้ตลอดเวลา</p>
-          <p style="color:#999;font-size:12px;margin-top:24px">Ground Stay — Lamai Muay Thai Fight Camp</p>
-        </div>`,
-    },
-  },
-  admin_alert_generic: {
-    en: {
-      subject: "LMT CampStay — Admin alert",
-      html: (d) => {
-        const ctxRows = (() => {
-          const ctx = d.context && typeof d.context === "object" ? d.context as Record<string, unknown> : {};
-          const keys = Object.keys(ctx).slice(0, 8);
-          if (keys.length === 0) return "";
-          return `<table style="width:100%;border-collapse:collapse;margin-top:8px">${keys
-            .map((k) => {
-              const v = ctx[k];
-              const display = v === null || v === undefined ? "—" : typeof v === "object" ? JSON.stringify(v) : String(v);
-              const safeK = String(k).replace(/[<>&"']/g, "");
-              const safeV = display.replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;" }[c]!));
-              return `<tr><td style="padding:4px 8px 4px 0;color:#666;font-size:13px;width:35%">${safeK}</td><td style="padding:4px 0;font-size:13px;color:#1a1a1a">${safeV}</td></tr>`;
-            })
-            .join("")}</table>`;
-        })();
-        const safeSummary = String(d.summary || "").replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;" }[c]!));
-        const safeHeadline = String(d.headline || d.event_label || "Admin alert").replace(/[<>&"']/g, "");
-        const safeRecipient = String(d.recipient_name || "Team").replace(/[<>&"']/g, "");
-        const link = String(d.deep_link || "https://lmtcampstay.com/");
-        return `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#ffffff">
-          <p style="color:#666;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 6px 0">LMT CampStay · Admin alert</p>
-          <h1 style="color:#1a1a1a;font-size:20px;margin:0 0 12px 0">${safeHeadline}</h1>
-          <p style="color:#333;margin:0 0 16px 0">Hey ${safeRecipient}, heads up:</p>
-          <div style="background:#f8f8f8;border-left:3px solid #b81c1c;border-radius:6px;padding:14px 16px;margin-bottom:16px">
-            <p style="margin:0;color:#1a1a1a;font-size:14px;line-height:1.5">${safeSummary}</p>
-            ${ctxRows}
-          </div>
-          <p style="text-align:center;margin:24px 0">
-            <a href="${link}" style="background:#1a1a1a;color:#fff;text-decoration:none;padding:10px 22px;border-radius:8px;font-weight:600;display:inline-block">Open in CampStay</a>
-          </p>
-          <p style="color:#999;font-size:11px;margin-top:24px;border-top:1px solid #eee;padding-top:12px;line-height:1.5">
-            You're receiving this because you're an admin/manager on LMT CampStay.
-            Adjust which alerts you get in <a href="https://lmtcampstay.com/settings" style="color:#b81c1c">Settings → Notifications</a>.
-            This alert is a heads-up — the booking, payment, and message records in the app remain the source of truth.
-          </p>
-        </div>`;
-      },
-    },
-  },
-};
-
-
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: getCorsHeaders(req) });
+Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
   }
 
-  try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-    // ─── AUTH: Only allow internal calls with service role key ────────────
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader || authHeader !== `Bearer ${serviceRoleKey}`) {
-      return new Response(JSON.stringify({ error: "Unauthorized — internal use only" }), {
-        status: 401,
-        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
-      });
-    }
-
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
-
-    const { template_key, recipient_email, data, booking_id, language, attachments, correlation_id: incomingCorrelationId } = await req.json();
-
-    if (!template_key || !recipient_email) {
-      return new Response(JSON.stringify({ error: "template_key and recipient_email required" }), {
-        status: 400,
-        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
-      });
-    }
-
-    const correlationId = incomingCorrelationId || crypto.randomUUID();
-    const isAdminAlert = String(template_key || "").startsWith("admin_alert_");
-
-    // Idempotency: only for booking-scoped, non-admin, successful sends.
-    if (booking_id && !isAdminAlert) {
-      const { data: existing } = await adminClient
-        .from("email_log")
-        .select("id, status")
-        .eq("booking_id", booking_id)
-        .eq("template_key", template_key)
-        .eq("status", "sent")
-        .maybeSingle();
-      if (existing) {
-        return new Response(JSON.stringify({ skipped: true, reason: "Already sent", correlation_id: correlationId }), {
-          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
-        });
-      }
-    }
-
-    // Get Resend API key from integration_secrets (secure)
-    const { data: resendSecretRow } = await adminClient
-      .from("integration_secrets")
-      .select("encrypted_value")
-      .eq("secret_key", "resend_api_key")
-      .maybeSingle();
-    const resendApiKey = resendSecretRow?.encrypted_value;
-
-    const { data: fromPolicies } = await adminClient
-      .from("policy_settings")
-      .select("key, value")
-      .in("key", ["resend_from_email"]);
-    const fromPolicyMap = new Map((fromPolicies ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]));
-    const fromEmail = fromPolicyMap.get("resend_from_email") || "noreply@lmtcampstay.com";
-
-    if (!resendApiKey || resendApiKey.length < 5) {
-      console.log("[send-transactional-email] Resend API key not configured", { correlationId });
-      await adminClient.from("email_log").insert({
-        booking_id: booking_id ?? null,
-        template_key,
-        recipient_email,
-        status: "no_provider",
-        correlation_id: correlationId,
-        failure_category: "configuration",
-        failure_reason: "Resend API key not configured",
-        error_message: "resend_api_key missing from integration_secrets",
-      });
-      return new Response(JSON.stringify({ sent: false, reason: "Email provider not configured", correlation_id: correlationId }), {
-        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
-      });
-    }
-
-    const lang = language || "en";
-    const templateSet = templates[template_key];
-    if (!templateSet) {
-      return new Response(JSON.stringify({ error: `Unknown template: ${template_key}`, correlation_id: correlationId }), {
-        status: 400,
-        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
-      });
-    }
-    const template = templateSet[lang] || templateSet.en;
-
-    const resendPayload: Record<string, unknown> = {
-      from: fromEmail,
-      to: [recipient_email],
-      subject: template.subject,
-      html: template.html(data || {}),
-      headers: { "X-Correlation-Id": correlationId },
-    };
-    if (Array.isArray(attachments) && attachments.length > 0) {
-      resendPayload.attachments = attachments;
-    }
-
-    // Classify Resend errors so we know whether to retry.
-    // Permanent 4xx (auth, invalid recipient, invalid sender, validation) => do NOT retry.
-    // Network / 5xx / 429 / timeout => retry with exponential backoff.
-    const classify = (status: number, body: any): { category: string; reason: string; retryable: boolean } => {
-      const msg = String(body?.message || body?.error || "").toLowerCase();
-      const name = String(body?.name || "").toLowerCase();
-      if (status === 401 || status === 403 || name.includes("api_key") || msg.includes("api key")) {
-        return { category: "auth", reason: "API authentication failed — check Resend API key", retryable: false };
-      }
-      if (status === 422 && (msg.includes("from") || msg.includes("domain") || msg.includes("verify"))) {
-        return { category: "sender_domain", reason: "Provider rejected sender domain — verify domain in Resend", retryable: false };
-      }
-      if (status === 422 && (msg.includes("to") || msg.includes("recipient") || msg.includes("email"))) {
-        return { category: "invalid_recipient", reason: "Invalid recipient address", retryable: false };
-      }
-      if (status === 429) return { category: "rate_limited", reason: "Rate limited by provider", retryable: true };
-      if (status >= 500) return { category: "provider_outage", reason: "Temporary provider outage", retryable: true };
-      if (status === 400) return { category: "validation", reason: `Validation error: ${body?.message || "bad request"}`, retryable: false };
-      if (status === 408) return { category: "timeout", reason: "Provider timeout", retryable: true };
-      return { category: "unknown", reason: `Provider returned ${status}`, retryable: false };
-    };
-
-    const MAX_ATTEMPTS = 3;
-    let lastStatus = 0;
-    let lastBody: any = null;
-    let lastCategory = "unknown";
-    let lastReason = "";
-    let attempts = 0;
-    let resendData: any = null;
-
-    for (attempts = 1; attempts <= MAX_ATTEMPTS; attempts++) {
-      let networkFail: unknown = null;
-      let resp: Response | null = null;
-      const controller = new AbortController();
-      const timeoutHandle = setTimeout(() => controller.abort(), 15_000);
-      try {
-        resp = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${resendApiKey}`,
-            "Content-Type": "application/json",
-            "Idempotency-Key": `${correlationId}-${attempts}`,
-          },
-          body: JSON.stringify(resendPayload),
-          signal: controller.signal,
-        });
-      } catch (err) {
-        networkFail = err;
-      } finally {
-        clearTimeout(timeoutHandle);
-      }
-
-      if (!resp) {
-        lastStatus = 0;
-        lastBody = { message: networkFail instanceof Error ? networkFail.message : String(networkFail) };
-        lastCategory = "network";
-        lastReason = `Network error: ${lastBody.message}`;
-        console.warn("[send-transactional-email] network error", { correlationId, attempt: attempts, err: lastBody.message });
-      } else {
-        lastStatus = resp.status;
-        try {
-          lastBody = await resp.json();
-        } catch {
-          lastBody = { message: await resp.text().catch(() => "") };
-        }
-        if (resp.ok) {
-          resendData = lastBody;
-          break;
-        }
-        const cls = classify(resp.status, lastBody);
-        lastCategory = cls.category;
-        lastReason = cls.reason;
-        console.warn("[send-transactional-email] provider error", { correlationId, attempt: attempts, status: resp.status, category: cls.category, retryable: cls.retryable });
-        if (!cls.retryable) break; // stop early on permanent failures
-      }
-
-      if (attempts < MAX_ATTEMPTS) {
-        // Exponential backoff: 500ms, 2s
-        const backoff = 500 * Math.pow(4, attempts - 1);
-        await new Promise((r) => setTimeout(r, backoff));
-      }
-    }
-
-    if (!resendData) {
-      const cls = lastStatus > 0 ? classify(lastStatus, lastBody) : { category: lastCategory, reason: lastReason, retryable: false };
-      console.error("[send-transactional-email] final failure", { correlationId, status: lastStatus, category: cls.category });
-      await adminClient.from("email_log").insert({
-        booking_id: booking_id ?? null,
-        template_key,
-        recipient_email,
-        status: "failed",
-        correlation_id: correlationId,
-        retry_count: Math.max(0, attempts - 1),
-        last_retry_at: attempts > 1 ? new Date().toISOString() : null,
-        failure_category: cls.category,
-        failure_reason: cls.reason,
-        error_message: typeof lastBody?.message === "string" ? lastBody.message : JSON.stringify(lastBody).slice(0, 800),
-        provider_response: lastBody ?? null,
-      });
-      return new Response(JSON.stringify({
-        sent: false,
-        error: lastBody,
-        failure_category: cls.category,
-        failure_reason: cls.reason,
-        retry_count: Math.max(0, attempts - 1),
-        correlation_id: correlationId,
-      }), {
-        status: 502,
-        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
-      });
-    }
-
-    await adminClient.from("email_log").insert({
-      booking_id: booking_id ?? null,
-      template_key,
-      recipient_email,
-      provider_message_id: resendData.id || null,
-      status: "sent",
-      correlation_id: correlationId,
-      retry_count: Math.max(0, attempts - 1),
-      last_retry_at: attempts > 1 ? new Date().toISOString() : null,
-      provider_response: resendData ?? null,
-    });
-
-    return new Response(JSON.stringify({
-      sent: true,
-      message_id: resendData.id,
-      correlation_id: correlationId,
-      retry_count: Math.max(0, attempts - 1),
-    }), {
-      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
-    });
-  } catch (e) {
-    console.error("send-transactional-email error:", e);
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.error('Missing required environment variables')
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
-    );
+      JSON.stringify({ error: 'Server configuration error' }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
   }
-});
+
+  // Parse request body.
+  // Backwards compatible with the legacy Resend-era contract:
+  //   { template_key, recipient_email, data, language, booking_id }
+  // maps onto the native contract:
+  //   { templateName, recipientEmail, templateData, idempotencyKey }
+  let templateName: string
+  let recipientEmail: string
+  let idempotencyKey: string
+  let messageId: string
+  let templateData: Record<string, any> = {}
+  try {
+    const body = await req.json()
+    templateName = body.templateName || body.template_name || body.template_key
+    recipientEmail = body.recipientEmail || body.recipient_email
+    messageId = crypto.randomUUID()
+    if (body.templateData && typeof body.templateData === 'object') {
+      templateData = body.templateData
+    } else if (body.data && typeof body.data === 'object') {
+      // Legacy payload shape — language travels inside templateData so the
+      // React template can render EN/TH from one component.
+      templateData = { ...body.data }
+    }
+    if (body.language && !templateData.language) {
+      templateData.language = body.language
+    }
+    // Legacy booking-scoped dedupe: one send per (booking, template).
+    const legacyKey =
+      body.booking_id && templateName ? `${templateName}-${body.booking_id}` : null
+    idempotencyKey =
+      body.idempotencyKey || body.idempotency_key || legacyKey || messageId
+  } catch {
+
+    return new Response(
+      JSON.stringify({ error: 'Invalid JSON in request body' }),
+      {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
+  }
+
+  if (!templateName) {
+    return new Response(
+      JSON.stringify({ error: 'templateName is required' }),
+      {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
+  }
+
+  // 1. Look up template from registry (early — needed to resolve recipient)
+  const template = TEMPLATES[templateName]
+
+  if (!template) {
+    console.error('Template not found in registry', { templateName })
+    return new Response(
+      JSON.stringify({
+        error: `Template '${templateName}' not found. Available: ${Object.keys(TEMPLATES).join(', ')}`,
+      }),
+      {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
+  }
+
+  // Resolve effective recipient: template-level `to` takes precedence over
+  // the caller-provided recipientEmail. This allows notification templates
+  // to always send to a fixed address (e.g., site owner from env var).
+  const effectiveRecipient = template.to || recipientEmail
+
+  if (!effectiveRecipient) {
+    return new Response(
+      JSON.stringify({
+        error: 'recipientEmail is required (unless the template defines a fixed recipient)',
+      }),
+      {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
+  }
+
+  // Create Supabase client with service role (bypasses RLS)
+  const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+  // 2. Check suppression list (fail-closed: if we can't verify, don't send)
+  const { data: suppressed, error: suppressionError } = await supabase
+    .from('suppressed_emails')
+    .select('id')
+    .eq('email', effectiveRecipient.toLowerCase())
+    .maybeSingle()
+
+  if (suppressionError) {
+    console.error('Suppression check failed — refusing to send', {
+      error: suppressionError,
+      effectiveRecipient,
+    })
+    return new Response(
+      JSON.stringify({ error: 'Failed to verify suppression status' }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
+  }
+
+  if (suppressed) {
+    // Log the suppressed attempt
+    await supabase.from('email_send_log').insert({
+      message_id: messageId,
+      template_name: templateName,
+      recipient_email: effectiveRecipient,
+      status: 'suppressed',
+    })
+
+    console.log('Email suppressed', { effectiveRecipient, templateName })
+    return new Response(
+      JSON.stringify({ success: false, reason: 'email_suppressed' }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
+  }
+
+  // 3. Get or create unsubscribe token (one token per email address)
+  const normalizedEmail = effectiveRecipient.toLowerCase()
+  let unsubscribeToken: string
+
+  // Check for existing token for this email
+  const { data: existingToken, error: tokenLookupError } = await supabase
+    .from('email_unsubscribe_tokens')
+    .select('token, used_at')
+    .eq('email', normalizedEmail)
+    .maybeSingle()
+
+  if (tokenLookupError) {
+    console.error('Token lookup failed', {
+      error: tokenLookupError,
+      email: normalizedEmail,
+    })
+    await supabase.from('email_send_log').insert({
+      message_id: messageId,
+      template_name: templateName,
+      recipient_email: effectiveRecipient,
+      status: 'failed',
+      error_message: 'Failed to look up unsubscribe token',
+    })
+    return new Response(
+      JSON.stringify({ error: 'Failed to prepare email' }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
+  }
+
+  if (existingToken && !existingToken.used_at) {
+    // Reuse existing unused token
+    unsubscribeToken = existingToken.token
+  } else if (!existingToken) {
+    // Create new token — upsert handles concurrent inserts gracefully
+    unsubscribeToken = generateToken()
+    const { error: tokenError } = await supabase
+      .from('email_unsubscribe_tokens')
+      .upsert(
+        { token: unsubscribeToken, email: normalizedEmail },
+        { onConflict: 'email', ignoreDuplicates: true }
+      )
+
+    if (tokenError) {
+      console.error('Failed to create unsubscribe token', {
+        error: tokenError,
+      })
+      await supabase.from('email_send_log').insert({
+        message_id: messageId,
+        template_name: templateName,
+        recipient_email: effectiveRecipient,
+        status: 'failed',
+        error_message: 'Failed to create unsubscribe token',
+      })
+      return new Response(
+        JSON.stringify({ error: 'Failed to prepare email' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
+    // If another request raced us, our upsert was silently ignored.
+    // Re-read to get the actual stored token.
+    const { data: storedToken, error: reReadError } = await supabase
+      .from('email_unsubscribe_tokens')
+      .select('token')
+      .eq('email', normalizedEmail)
+      .maybeSingle()
+
+    if (reReadError || !storedToken) {
+      console.error('Failed to read back unsubscribe token after upsert', {
+        error: reReadError,
+        email: normalizedEmail,
+      })
+      await supabase.from('email_send_log').insert({
+        message_id: messageId,
+        template_name: templateName,
+        recipient_email: effectiveRecipient,
+        status: 'failed',
+        error_message: 'Failed to confirm unsubscribe token storage',
+      })
+      return new Response(
+        JSON.stringify({ error: 'Failed to prepare email' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+    unsubscribeToken = storedToken.token
+  } else {
+    // Token exists but is already used — email should have been caught by suppression check above.
+    // This is a safety fallback; log and skip sending.
+    console.warn('Unsubscribe token already used but email not suppressed', {
+      email: normalizedEmail,
+    })
+    await supabase.from('email_send_log').insert({
+      message_id: messageId,
+      template_name: templateName,
+      recipient_email: effectiveRecipient,
+      status: 'suppressed',
+      error_message:
+        'Unsubscribe token used but email missing from suppressed list',
+    })
+    return new Response(
+      JSON.stringify({ success: false, reason: 'email_suppressed' }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
+  }
+
+  // 4. Render React Email template to HTML and plain text
+  const html = await renderAsync(
+    React.createElement(template.component, templateData)
+  )
+  const plainText = await renderAsync(
+    React.createElement(template.component, templateData),
+    { plainText: true }
+  )
+
+  // Resolve subject — supports static string or dynamic function
+  const resolvedSubject =
+    typeof template.subject === 'function'
+      ? template.subject(templateData)
+      : template.subject
+
+  // 5. Enqueue the pre-rendered email for async processing by the dispatcher.
+  // The dispatcher (process-email-queue) handles sending, retries, and rate-limit backoff.
+
+  // Log pending BEFORE enqueue so we have a record even if enqueue crashes
+  await supabase.from('email_send_log').insert({
+    message_id: messageId,
+    template_name: templateName,
+    recipient_email: effectiveRecipient,
+    status: 'pending',
+  })
+
+  const { error: enqueueError } = await supabase.rpc('enqueue_email', {
+    queue_name: 'transactional_emails',
+    payload: {
+      message_id: messageId,
+      to: effectiveRecipient,
+      from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
+      sender_domain: SENDER_DOMAIN,
+      subject: resolvedSubject,
+      html,
+      text: plainText,
+      purpose: 'transactional',
+      label: templateName,
+      idempotency_key: idempotencyKey,
+      unsubscribe_token: unsubscribeToken,
+      queued_at: new Date().toISOString(),
+    },
+  })
+
+  if (enqueueError) {
+    console.error('Failed to enqueue email', {
+      error: enqueueError,
+      templateName,
+      effectiveRecipient,
+    })
+
+    await supabase.from('email_send_log').insert({
+      message_id: messageId,
+      template_name: templateName,
+      recipient_email: effectiveRecipient,
+      status: 'failed',
+      error_message: 'Failed to enqueue email',
+    })
+
+    return new Response(JSON.stringify({ error: 'Failed to enqueue email' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
+  console.log('Transactional email enqueued', { templateName, effectiveRecipient })
+
+  return new Response(
+    JSON.stringify({ success: true, sent: true, queued: true }),
+    {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    }
+  )
+})
