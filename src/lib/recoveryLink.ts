@@ -75,3 +75,7 @@ export function consumeRecoveryPayload(): RecoveryPayload | null {
     return null;
   }
 }
+
+// Side effect on import: runs before the Supabase client module is evaluated
+// (as long as this module is imported first in main.tsx).
+captureRecoveryLink();
