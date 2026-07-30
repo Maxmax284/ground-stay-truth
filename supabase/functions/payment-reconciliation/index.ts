@@ -5,6 +5,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.14.0?target=deno";
+import { emitAdminAlert } from "../_shared/adminAlert.ts";
 
 serve(async (_req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -89,6 +90,14 @@ serve(async (_req) => {
       severity: "info", kind: "clean_run",
       details: { scanned, window_days: 7 },
     });
+  }
+
+  if (issues > 0) {
+    await emitAdminAlert(
+      "reconciliation_mismatch",
+      `Stripe and CampStay disagree on ${issues} payment(s) from the last 7 days.`,
+      { deepLink: "/monitoring", context: { issues, scanned, window_days: 7, first_kind: logs[0]?.kind } },
+    );
   }
 
   return new Response(

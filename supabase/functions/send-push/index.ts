@@ -1,5 +1,6 @@
 // send-push
 // -----------------------------------------------------------------------------
+import { emitAdminAlert } from "../_shared/adminAlert.ts";
 // BUSINESS-CRITICAL — Web Push (RFC 8030 / 8291 / 8292).
 //
 // Delivers OS-level notifications to staff and guests who subscribed from the
@@ -352,6 +353,16 @@ Deno.serve(async (req) => {
 
     if (logRows.length > 0) {
       await supabase.from("push_delivery_log").insert(logRows);
+    }
+
+    // Admin alert: phone alerts went nowhere. Never alert on the alert lane
+    // itself, or a broken push service would loop.
+    if (sent === 0 && failures.length > 0 && source !== "admin-alert") {
+      await emitAdminAlert(
+        "push_failure",
+        `Phone alerts failed for all ${failures.length} device(s): ${failures[0]?.error ?? `HTTP ${failures[0]?.status}`}`,
+        { deepLink: "/monitoring", context: { attempted: subs.length, first_status: failures[0]?.status, source: source ?? "system" } },
+      );
     }
 
     return json({ sent, failed: failures.length, total: subs.length, failures });

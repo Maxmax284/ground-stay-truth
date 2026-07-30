@@ -1,5 +1,6 @@
 // availability-consistency-check
 // -----------------------------------------------------------------------------
+import { emitAdminAlert } from "../_shared/adminAlert.ts";
 // Compares two independent availability signals for the same group + window
 // and logs any discrepancy for admin review:
 //
@@ -127,6 +128,14 @@ Deno.serve(async (req) => {
           unit_count: unitIds.length,
         },
       });
+    }
+
+    if (!consistent) {
+      await emitAdminAlert(
+        "calendar_mismatch",
+        `Availability signals disagree for ${check_in}→${check_out}: calendar says ${calendarAvailable ? "free" : "blocked"}, the booking engine says ${rpcAvailable ? "free" : "blocked"}.`,
+        { deepLink: "/calendar", context: { group_id, check_in, check_out, calendar_available: calendarAvailable, rpc_available: rpcAvailable, source } },
+      );
     }
 
     return new Response(
