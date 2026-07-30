@@ -1,132 +1,91 @@
 project_id = "eglgvhnkwhozjnenwjxd"
 
-[functions.create-staff-account]
-verify_jwt = false
-
-[functions.delete-account]
-verify_jwt = false
-
-[functions.get-availability]
-verify_jwt = false
-
-[functions.verify-document]
-verify_jwt = false
-
-[functions.ai-assistant]
-verify_jwt = false
-
-[functions.translate-message]
-verify_jwt = false
-
-[functions.account-census]
-verify_jwt = false
-
-[functions.expire-stale-bookings]
-verify_jwt = false
-
-[functions.send-booking-confirmation]
-verify_jwt = false
-
-[functions.process-payment]
-verify_jwt = false
-
-[functions.payment-webhook]
-verify_jwt = false
-
-[functions.send-transactional-email]
-verify_jwt = true
-
-[functions.send-scheduled-emails]
-verify_jwt = false
-
-[functions.ical-export]
-verify_jwt = false
-
-[functions.poll-flights]
-verify_jwt = false
-
-[functions.poll-airport-traffic]
-verify_jwt = false
-
-[functions.guest-landed]
-verify_jwt = false
-
-[functions.cleanup-retention]
-verify_jwt = false
-
-[functions.cleanup-storage]
-verify_jwt = false
-
-[functions.messaging-link]
-verify_jwt = false
-
-[functions.messaging-router]
-verify_jwt = false
-
-[functions.telegram-poll]
-verify_jwt = false
-
-[functions.twilio-webhook]
-verify_jwt = false
-
-[functions.notify-via-messaging]
-verify_jwt = false
-
-[functions.daily-briefing]
-verify_jwt = false
-
-[functions.line-webhook]
-verify_jwt = false
-
-[functions.line-register-webhook]
-verify_jwt = false
-
-[functions.line-check-webhook]
-verify_jwt = false
-
-[functions.whatsapp-meta-webhook]
-verify_jwt = false
-
-[functions.refund-payment]
-verify_jwt = false
-
-[functions.generate-tax-invoice]
-verify_jwt = false
-
-[functions.payment-webhook-watchdog]
-verify_jwt = false
-
-[functions.payment-reconciliation]
-verify_jwt = false
-
-[functions.create-payment-link]
-verify_jwt = false
-
-[functions.guest-payment-link]
-verify_jwt = false
-
-[functions.vanta-emit]
-verify_jwt = false
-
-[functions.vanta-lookup]
-verify_jwt = false
-
-[functions.ops-tower-narrative]
-verify_jwt = false
-
-[functions.emit-admin-alert]
-verify_jwt = false
-
-
-
-[functions.process-email-queue]
-verify_jwt = true
-
-[functions.preview-transactional-email]
-verify_jwt = false
-
-[functions.handle-email-unsubscribe]
-verify_jwt = false
-
-[functions.handle-email-suppression]
-verify_jwt = false
+[functions]
+  [functions.account-census]
+    verify_jwt = false
+  [functions.ai-assistant]
+    verify_jwt = false
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.cleanup-retention]
+    verify_jwt = false
+  [functions.cleanup-storage]
+    verify_jwt = false
+  [functions.create-payment-link]
+    verify_jwt = false
+  [functions.create-staff-account]
+    verify_jwt = false
+  [functions.daily-briefing]
+    verify_jwt = false
+  [functions.delete-account]
+    verify_jwt = false
+  [functions.emit-admin-alert]
+    verify_jwt = false
+  [functions.expire-stale-bookings]
+    verify_jwt = false
+  [functions.generate-tax-invoice]
+    verify_jwt = false
+  [functions.get-availability]
+    verify_jwt = false
+  [functions.guest-landed]
+    verify_jwt = false
+  [functions.guest-payment-link]
+    verify_jwt = false
+  [functions.handle-email-suppression]
+    verify_jwt = false
+  [functions.handle-email-unsubscribe]
+    verify_jwt = false
+  [functions.ical-export]
+    verify_jwt = false
+  [functions.line-check-webhook]
+    verify_jwt = false
+  [functions.line-register-webhook]
+    verify_jwt = false
+  [functions.line-webhook]
+    verify_jwt = false
+  [functions.messaging-link]
+    verify_jwt = false
+  [functions.messaging-router]
+    verify_jwt = false
+  [functions.notify-via-messaging]
+    verify_jwt = false
+  [functions.ops-tower-narrative]
+    verify_jwt = false
+  [functions.payment-reconciliation]
+    verify_jwt = false
+  [functions.payment-webhook]
+    verify_jwt = false
+  [functions.payment-webhook-watchdog]
+    verify_jwt = false
+  [functions.poll-airport-traffic]
+    verify_jwt = false
+  [functions.poll-flights]
+    verify_jwt = false
+  [functions.preview-transactional-email]
+    verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = true
+  [functions.process-payment]
+    verify_jwt = false
+  [functions.refund-payment]
+    verify_jwt = false
+  [functions.send-booking-confirmation]
+    verify_jwt = false
+  [functions.send-scheduled-emails]
+    verify_jwt = false
+  [functions.send-transactional-email]
+    verify_jwt = true
+  [functions.telegram-poll]
+    verify_jwt = false
+  [functions.translate-message]
+    verify_jwt = false
+  [functions.twilio-webhook]
+    verify_jwt = false
+  [functions.vanta-emit]
+    verify_jwt = false
+  [functions.vanta-lookup]
+    verify_jwt = false
+  [functions.verify-document]
+    verify_jwt = false
+  [functions.whatsapp-meta-webhook]
+    verify_jwt = false
