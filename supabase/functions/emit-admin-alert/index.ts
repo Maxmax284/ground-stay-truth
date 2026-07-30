@@ -177,7 +177,8 @@ Deno.serve(async (req) => {
             user_ids: inAppTargets,
             title: `LMT CampStay — ${eventLabel}`,
             body: body.message,
-            url: deepLinkAbsolute,
+            source: "admin-alert",
+            data: { url: deepLinkAbsolute, type: body.event_type },
           }),
         });
       } catch (e) {

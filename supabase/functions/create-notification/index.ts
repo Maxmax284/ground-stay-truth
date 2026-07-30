@@ -8,7 +8,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [
-  Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
+  Deno.env.get("SITE_URL") || "https://lmtcampstay.com",
+  "https://lmtcampstay.com",
+  "https://www.lmtcampstay.com",
   "https://ground-stay-truth.lovable.app",
   "http://localhost:5173",
   "http://localhost:8080",
@@ -149,11 +151,16 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           user_ids: uniqueUserIds,
-          title: `Ground Stay — ${typeLabel}`,
+          title: `LMT CampStay — ${typeLabel}`,
           body: rows.length === 1
             ? firstNotif.message
             : `${rows.length} new notifications`,
-          data: { type: firstNotif.type, reference_id: firstNotif.reference_id },
+          source: "create-notification",
+          data: {
+            type: firstNotif.type,
+            reference_id: firstNotif.reference_id,
+            url: firstNotif.reference_id ? `/notifications` : "/",
+          },
         }),
       });
     } catch (pushErr) {
