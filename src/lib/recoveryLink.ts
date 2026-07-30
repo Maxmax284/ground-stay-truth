@@ -77,6 +77,59 @@ export function consumeRecoveryPayload(): RecoveryPayload | null {
   }
 }
 
+/**
+ * The single source of truth for the `redirectTo` we hand Supabase when asking
+ * for a reset email. Every reset link Supabase mails out is built on top of
+ * this URL, so it must always be the same-origin /reset-password route with no
+ * query string, hash, or trailing slash.
+ */
+export function recoveryRedirectTo(origin: string = window.location.origin): string {
+  return `${origin.replace(/\/+$/, "")}/reset-password`;
+}
+
+export type RecoveryLinkKind = "hash" | "pkce" | "token_hash" | "error";
+
+/**
+ * Builds the reset URLs in the exact shapes Supabase delivers them, on top of
+ * `recoveryRedirectTo()`. Used to document and test the link contract that
+ * `captureRecoveryLink()` must be able to parse.
+ */
+export function buildRecoveryLink(
+  kind: RecoveryLinkKind,
+  params: Record<string, string> = {},
+  origin: string = window.location.origin,
+): string {
+  const base = recoveryRedirectTo(origin);
+
+  if (kind === "hash") {
+    const hash = new URLSearchParams({
+      access_token: params.access_token ?? "",
+      refresh_token: params.refresh_token ?? "",
+      token_type: "bearer",
+      type: "recovery",
+    });
+    return `${base}#${hash.toString()}`;
+  }
+
+  if (kind === "pkce") {
+    return `${base}?${new URLSearchParams({ code: params.code ?? "" }).toString()}`;
+  }
+
+  if (kind === "token_hash") {
+    return `${base}?${new URLSearchParams({
+      token_hash: params.token_hash ?? "",
+      type: "recovery",
+    }).toString()}`;
+  }
+
+  return `${base}#${new URLSearchParams({
+    error: params.error ?? "access_denied",
+    error_code: params.error_code ?? "otp_expired",
+    error_description: params.error_description ?? "Email link is invalid or has expired",
+  }).toString()}`;
+}
+
+
 // Side effect on import: runs before the Supabase client module is evaluated
 // (as long as this module is imported first in main.tsx).
 captureRecoveryLink();
