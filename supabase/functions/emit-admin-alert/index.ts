@@ -1,17 +1,32 @@
 // emit-admin-alert
 // -----------------------------------------------------------------------------
-// Phase 1 admin notification fan-out. Called only by DB triggers with an
-// internal token. Resolves admin/manager recipients, inserts in-app
-// `notifications` rows (which fire realtime + push automatically via existing
-// pipes), and dispatches admin-alert emails via send-transactional-email
-// respecting per-user preferences in `messaging_notification_prefs`.
+// Admin Alert Command Center fan-out. Called by DB triggers (via
+// public.emit_admin_alert) and by internal edge functions with the shared
+// internal token.
 //
-// Preference model:
-//   - channel='in_app'  : default ON when no row exists
-//   - channel='email'   : default OFF when no row exists (opt-in per event)
-//   - channel='telegram': existing behaviour is preserved (handled elsewhere)
+// One operational event in → the system decides where it goes:
+//   - in-app notification (bell)
+//   - admin alert email (internal Lovable email engine)
+//   - push (best effort, unchanged — reconnects later)
+//
+// Routing rules live in _shared/adminAlertCatalog.ts (mirrored in
+// src/lib/adminAlertCatalog.ts). Per-admin overrides live in
+// `messaging_notification_prefs`. Every email attempt is written to
+// `admin_alert_log` for Operations Monitor visibility.
+//
+// GUEST SAFETY: this function never sends guest-facing email. It only ever
+// emails users holding admin/manager roles, using the `admin_alert_generic`
+// template. Admin preferences here can never block a transactional guest email.
 // -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  EVENTS_BY_KEY,
+  PREF_CRITICAL_ONLY,
+  PREF_EMAIL_MASTER,
+  SEVERITY_PREFIX,
+  passesCriticalOnly,
+  type AdminAlertEvent,
+} from "../_shared/adminAlertCatalog.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -25,32 +40,47 @@ interface AlertPayload {
   reference_id?: string | null;
   deep_link?: string | null;
   context?: Record<string, unknown>;
+  triggered_by?: string | null;
 }
 
-// Map event_type → notification.type bucket (used by NotificationBell icons + sounds).
-const EVENT_TO_NOTIF_TYPE: Record<string, string> = {
-  new_booking_request: "booking",
-  booking_cancelled: "booking",
-  airport_pickup_requested: "booking",
-  guest_message_received: "message",
-  deposit_paid: "payment",
-  balance_paid: "payment",
-  payment_link_failed: "payment",
-  stripe_diagnostics_no_go: "payment",
-  webhook_failure: "override",
+// Map catalog category → notification.type bucket used by the bell icons/sounds.
+const CATEGORY_TO_NOTIF_TYPE: Record<string, string> = {
+  bookings: "booking",
+  payments: "payment",
+  guest_portal: "message",
+  rooms: "booking",
+  maintenance: "override",
+  email_delivery: "override",
+  system: "override",
+  operations: "booking",
+  ai: "override",
+  summary: "booking",
 };
 
-const EVENT_LABELS: Record<string, string> = {
-  new_booking_request: "New booking request",
-  booking_cancelled: "Booking cancelled",
-  airport_pickup_requested: "Airport pickup requested",
-  guest_message_received: "Guest message received",
-  deposit_paid: "Deposit paid",
-  balance_paid: "Balance paid",
-  payment_link_failed: "Payment link failed",
-  stripe_diagnostics_no_go: "Stripe diagnostics: NO-GO",
-  webhook_failure: "Webhook failure",
+const SITE = "https://lmtcampstay.com";
+
+// Suppression: at most N non-critical emails of the same event to the same
+// admin inside the window. Critical alerts always go through.
+const SUPPRESSION_WINDOW_MIN = 5;
+const SUPPRESSION_MAX = 3;
+
+const FALLBACK_EVENT: AdminAlertEvent = {
+  key: "unknown",
+  label: "Operational event",
+  description: "",
+  category: "system",
+  severity: "info",
+  defaultEmail: false,
+  defaultInApp: true,
+  nextAction: "Open Operations Monitor for detail.",
+  where: "Operations Monitor",
+  wired: true,
 };
+
+// Human-friendly key names for the context table in the email.
+function prettyKey(k: string): string {
+  return k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -74,8 +104,14 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(supabaseUrl, serviceRoleKey);
+    const event: AdminAlertEvent = EVENTS_BY_KEY[body.event_type] ?? {
+      ...FALLBACK_EVENT,
+      key: body.event_type,
+      label: prettyKey(body.event_type),
+    };
+    const eventId = crypto.randomUUID();
 
-    // Resolve admin + manager recipients.
+    // ---------------------------------------------------------------- roles
     const { data: roleRows, error: roleErr } = await admin
       .from("user_roles")
       .select("user_id, role")
@@ -88,36 +124,49 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Load prefs for these recipients + this event across in_app/email channels.
+    // ------------------------------------------------------------ preferences
     const { data: prefRows } = await admin
       .from("messaging_notification_prefs")
-      .select("user_id, channel, enabled")
+      .select("user_id, channel, notification_type, enabled")
       .in("user_id", recipientIds)
-      .eq("notification_type", body.event_type)
+      .in("notification_type", [event.key, PREF_EMAIL_MASTER, PREF_CRITICAL_ONLY])
       .in("channel", ["in_app", "email"]);
 
-    // Default: in_app = true when no row, email = false when no row.
-    const prefFor = (userId: string, channel: "in_app" | "email"): boolean => {
-      const row = (prefRows ?? []).find((p: any) => p.user_id === userId && p.channel === channel);
-      if (row) return !!row.enabled;
-      return channel === "in_app";
+    const pref = (userId: string, channel: string, type: string): boolean | undefined => {
+      const row = (prefRows ?? []).find(
+        (p: any) => p.user_id === userId && p.channel === channel && p.notification_type === type,
+      );
+      return row ? !!row.enabled : undefined;
     };
 
-    // Profiles for email fan-out.
+    const wantsInApp = (uid: string) => pref(uid, "in_app", event.key) ?? event.defaultInApp;
+    const wantsEmail = (uid: string) => {
+      const master = pref(uid, "email", PREF_EMAIL_MASTER) ?? true;
+      if (!master) return false;
+      const criticalOnly = pref(uid, "email", PREF_CRITICAL_ONLY) ?? false;
+      if (criticalOnly && !passesCriticalOnly(event)) return false;
+      return pref(uid, "email", event.key) ?? event.defaultEmail;
+    };
+
+    // --------------------------------------------------------------- profiles
     const { data: profileRows } = await admin
       .from("profiles")
-      .select("user_id, email, full_name, preferred_language")
+      .select("user_id, email, full_name")
       .in("user_id", recipientIds);
     const profileById = new Map((profileRows ?? []).map((p: any) => [p.user_id, p]));
 
-    const notifType = EVENT_TO_NOTIF_TYPE[body.event_type] ?? "override";
-    const eventLabel = EVENT_LABELS[body.event_type] ?? body.event_type;
+    const notifType = CATEGORY_TO_NOTIF_TYPE[event.category] ?? "override";
     const deepLinkAbsolute = body.deep_link
-      ? (body.deep_link.startsWith("http") ? body.deep_link : `https://lmtcampstay.com${body.deep_link}`)
-      : "https://lmtcampstay.com/";
+      ? (body.deep_link.startsWith("http") ? body.deep_link : `${SITE}${body.deep_link}`)
+      : `${SITE}/monitoring`;
+    const ctx = (body.context ?? {}) as Record<string, unknown>;
+    const bookingId =
+      (typeof ctx.booking_id === "string" ? ctx.booking_id : null) ??
+      (body.reference_id && event.category !== "system" ? body.reference_id : null);
+    const guestId = typeof ctx.guest_id === "string" ? ctx.guest_id : null;
 
-    // 1) In-app fan-out.
-    const inAppTargets = recipientIds.filter((uid) => prefFor(uid, "in_app"));
+    // ------------------------------------------------------- 1) in-app fan-out
+    const inAppTargets = recipientIds.filter(wantsInApp);
     if (inAppTargets.length > 0) {
       const rows = inAppTargets.map((uid) => ({
         user_id: uid,
@@ -129,56 +178,109 @@ Deno.serve(async (req) => {
       if (nerr) console.error("[emit-admin-alert] notifications insert:", nerr);
     }
 
-    // 2) Email fan-out (opt-in, uses the built-in email queue via send-transactional-email).
-    const emailTargets = recipientIds.filter((uid) => prefFor(uid, "email"));
+    // -------------------------------------------------- 2) admin email fan-out
+    const emailCandidates = recipientIds.filter(wantsEmail);
+    const isCritical = event.severity === "critical";
+    const since = new Date(Date.now() - SUPPRESSION_WINDOW_MIN * 60_000).toISOString();
+
     let emailSent = 0;
-    for (const uid of emailTargets) {
+    let emailFailed = 0;
+    let suppressed = 0;
+
+    const nowLabel = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Bangkok", dateStyle: "medium", timeStyle: "short",
+    }).format(new Date());
+
+    for (const uid of emailCandidates) {
       const profile = profileById.get(uid);
       if (!profile?.email) continue;
+
+      // Anti-spam: critical bypasses, everything else is rate limited.
+      if (!isCritical) {
+        const { count } = await admin
+          .from("admin_alert_log")
+          .select("id", { count: "exact", head: true })
+          .eq("recipient_user_id", uid)
+          .eq("event_type", event.key)
+          .eq("channel", "email")
+          .eq("status", "sent")
+          .gte("created_at", since);
+        if ((count ?? 0) >= SUPPRESSION_MAX) {
+          suppressed++;
+          await admin.from("admin_alert_log").insert({
+            event_id: eventId, event_type: event.key, category: event.category,
+            severity: event.severity, channel: "email", recipient_user_id: uid,
+            recipient_email: profile.email, status: "suppressed",
+            failure_reason: `Rate limited: more than ${SUPPRESSION_MAX} in ${SUPPRESSION_WINDOW_MIN} min`,
+            booking_id: bookingId, guest_id: guestId,
+            triggered_by: body.triggered_by ?? "system", template_key: "admin_alert_generic",
+          });
+          continue;
+        }
+      }
+
+      const subject = `${SEVERITY_PREFIX[event.severity]} ${event.label}`;
+      let ok = false;
+      let failure: string | null = null;
       try {
         const resp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${serviceRoleKey}`,
-          },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceRoleKey}` },
           body: JSON.stringify({
             template_key: "admin_alert_generic",
             recipient_email: profile.email,
             language: "en",
+            source: "admin-alert",
             data: {
-              event_label: eventLabel,
-              admin_alert_slug: body.event_type,
+              subject_line: subject,
+              severity: event.severity,
+              severity_label: event.severity,
+              category_label: event.label,
               recipient_name: profile.full_name || "Team",
-              headline: eventLabel,
-              summary: body.message,
-              context: body.context ?? {},
-              deep_link: deepLinkAbsolute,
+              what_happened: body.message,
+              when_label: `${nowLabel} (Bangkok time)`,
+              where_label: event.where,
+              why_it_matters: event.description,
+              next_action: event.nextAction,
+              context: Object.fromEntries(
+                Object.entries(ctx)
+                  .filter(([k]) => !/token|secret|url|key|password/i.test(k))
+                  .slice(0, 10)
+                  .map(([k, v]) => [prettyKey(k), v]),
+              ),
+              action_url: deepLinkAbsolute,
+              action_label: "Open in CampStay",
             },
           }),
         });
-        if (resp.ok) emailSent++;
-        else console.error("[emit-admin-alert] send-transactional-email failed:", resp.status, await resp.text());
+        ok = resp.ok;
+        if (!ok) failure = `${resp.status}: ${(await resp.text()).slice(0, 300)}`;
       } catch (e) {
-        console.error("[emit-admin-alert] email dispatch error:", e);
+        failure = e instanceof Error ? e.message : "dispatch error";
       }
+
+      ok ? emailSent++ : emailFailed++;
+      await admin.from("admin_alert_log").insert({
+        event_id: eventId, event_type: event.key, category: event.category,
+        severity: event.severity, channel: "email", recipient_user_id: uid,
+        recipient_email: profile.email, status: ok ? "sent" : "failed",
+        failure_reason: failure, booking_id: bookingId, guest_id: guestId,
+        triggered_by: body.triggered_by ?? "system", template_key: "admin_alert_generic",
+      });
     }
 
-    // 3) Best-effort push fan-out for in-app recipients that have a push subscription.
+    // --------------------------------------------- 3) push (best effort, as-is)
     if (inAppTargets.length > 0) {
       try {
         await fetch(`${supabaseUrl}/functions/v1/send-push`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${serviceRoleKey}`,
-          },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceRoleKey}` },
           body: JSON.stringify({
             user_ids: inAppTargets,
-            title: `LMT CampStay — ${eventLabel}`,
+            title: `LMT CampStay — ${event.label}`,
             body: body.message,
             source: "admin-alert",
-            data: { url: deepLinkAbsolute, type: body.event_type },
+            data: { url: deepLinkAbsolute, type: event.key },
           }),
         });
       } catch (e) {
@@ -189,10 +291,15 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         ok: true,
-        event_type: body.event_type,
+        event_id: eventId,
+        event_type: event.key,
+        severity: event.severity,
+        category: event.category,
         recipients: recipientIds.length,
         in_app: inAppTargets.length,
         email_sent: emailSent,
+        email_failed: emailFailed,
+        email_suppressed: suppressed,
       }),
       { headers: { ...CORS, "Content-Type": "application/json" } },
     );

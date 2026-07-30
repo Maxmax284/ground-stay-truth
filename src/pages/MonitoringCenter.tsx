@@ -6,6 +6,8 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { GuestPortalHealth } from "@/components/monitoring/GuestPortalHealth";
 import { StaffActivity } from "@/components/monitoring/StaffActivity";
 import { PushHealth } from "@/components/monitoring/PushHealth";
+import { AdminEmailHealth } from "@/components/monitoring/AdminEmailHealth";
+
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -454,8 +456,12 @@ export default function MonitoringCenter() {
         {/* Guest portal health — guests come first, everything else is second. */}
         <GuestPortalHealth />
 
+        {/* Admin email lane — the reliable paper trail for staff alerts. */}
+        <AdminEmailHealth />
+
         {/* Phone alerts — can staff actually be reached on their phones? */}
         <PushHealth />
+
 
         {/* Staff activity — the other side: who on the team changed what. */}
         <StaffActivity />

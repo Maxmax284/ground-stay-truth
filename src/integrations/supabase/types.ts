@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_alert_log: {
+        Row: {
+          booking_id: string | null
+          category: string | null
+          channel: string
+          created_at: string
+          event_id: string | null
+          event_type: string
+          failure_reason: string | null
+          guest_id: string | null
+          id: string
+          is_test: boolean
+          recipient_email: string | null
+          recipient_user_id: string | null
+          retry_count: number
+          severity: string | null
+          status: string
+          template_key: string | null
+          triggered_by: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          category?: string | null
+          channel?: string
+          created_at?: string
+          event_id?: string | null
+          event_type: string
+          failure_reason?: string | null
+          guest_id?: string | null
+          id?: string
+          is_test?: boolean
+          recipient_email?: string | null
+          recipient_user_id?: string | null
+          retry_count?: number
+          severity?: string | null
+          status?: string
+          template_key?: string | null
+          triggered_by?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          category?: string | null
+          channel?: string
+          created_at?: string
+          event_id?: string | null
+          event_type?: string
+          failure_reason?: string | null
+          guest_id?: string | null
+          id?: string
+          is_test?: boolean
+          recipient_email?: string | null
+          recipient_user_id?: string | null
+          retry_count?: number
+          severity?: string | null
+          status?: string
+          template_key?: string | null
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       ai_assistant_audit: {
         Row: {
           assistant_response_at: string
