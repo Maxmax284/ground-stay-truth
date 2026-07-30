@@ -53,13 +53,22 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const { booking_id } = await req.json();
+    // `resend` = staff-initiated resend of an existing confirmation.
+    // It re-sends the same email with a fresh signed PDF link, and deliberately
+    // skips the in-app notification so we don't spam the guest's bell.
+    // `override_to` routes the copy to a staff inbox for safe testing.
+    const payload = await req.json();
+    const booking_id = payload?.booking_id;
+    const isResend = payload?.resend === true;
+    const overrideTo =
+      typeof payload?.override_to === "string" ? payload.override_to.trim() : "";
     if (!booking_id) {
       return new Response(JSON.stringify({ error: "booking_id required" }), {
         status: 400,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
+
 
     // Fetch booking with unit and guest profile
     const { data: booking, error: bookingErr } = await adminClient
