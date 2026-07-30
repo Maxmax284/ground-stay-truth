@@ -42,7 +42,8 @@ export function captureRecoveryLink(): void {
 
   const isRecovery =
     type === "recovery" ||
-    (onResetRoute && (!!get("code") || !!get("token_hash") || !!get("access_token") || hasError));
+    (onResetRoute &&
+      (!!get("code") || !!get("token_hash") || !!get("token") || !!get("access_token") || hasError));
 
   if (!isRecovery) return;
 
