@@ -59,6 +59,9 @@ Deno.serve(async (req) => {
   let idempotencyKey: string
   let messageId: string
   let templateData: Record<string, any> = {}
+  // Observability metadata written alongside every email_send_log row.
+  // Deliberately excludes signed URLs, unsubscribe tokens and secrets.
+  let logMeta: Record<string, any> = {}
   try {
     const body = await req.json()
     templateName = body.templateName || body.template_name || body.template_key
@@ -79,6 +82,16 @@ Deno.serve(async (req) => {
       body.booking_id && templateName ? `${templateName}-${body.booking_id}` : null
     idempotencyKey =
       body.idempotencyKey || body.idempotency_key || legacyKey || messageId
+    logMeta = {
+      booking_id: body.booking_id ?? body.bookingId ?? null,
+      language: templateData.language ?? null,
+      idempotency_key: idempotencyKey,
+      source: body.source ?? null,
+      triggered_by: body.triggered_by ?? null,
+      has_pdf_link: Boolean(templateData.confirmation_pdf_url),
+      queued_at: new Date().toISOString(),
+    }
+
   } catch {
 
     return new Response(
@@ -163,6 +176,7 @@ Deno.serve(async (req) => {
       message_id: messageId,
       template_name: templateName,
       recipient_email: effectiveRecipient,
+      metadata: logMeta,
       status: 'suppressed',
     })
 
@@ -196,6 +210,7 @@ Deno.serve(async (req) => {
       message_id: messageId,
       template_name: templateName,
       recipient_email: effectiveRecipient,
+      metadata: logMeta,
       status: 'failed',
       error_message: 'Failed to look up unsubscribe token',
     })
@@ -229,6 +244,7 @@ Deno.serve(async (req) => {
         message_id: messageId,
         template_name: templateName,
         recipient_email: effectiveRecipient,
+      metadata: logMeta,
         status: 'failed',
         error_message: 'Failed to create unsubscribe token',
       })
@@ -258,6 +274,7 @@ Deno.serve(async (req) => {
         message_id: messageId,
         template_name: templateName,
         recipient_email: effectiveRecipient,
+      metadata: logMeta,
         status: 'failed',
         error_message: 'Failed to confirm unsubscribe token storage',
       })
@@ -280,6 +297,7 @@ Deno.serve(async (req) => {
       message_id: messageId,
       template_name: templateName,
       recipient_email: effectiveRecipient,
+      metadata: logMeta,
       status: 'suppressed',
       error_message:
         'Unsubscribe token used but email missing from suppressed list',
@@ -316,6 +334,7 @@ Deno.serve(async (req) => {
     message_id: messageId,
     template_name: templateName,
     recipient_email: effectiveRecipient,
+      metadata: logMeta,
     status: 'pending',
   })
 
@@ -348,6 +367,7 @@ Deno.serve(async (req) => {
       message_id: messageId,
       template_name: templateName,
       recipient_email: effectiveRecipient,
+      metadata: logMeta,
       status: 'failed',
       error_message: 'Failed to enqueue email',
     })

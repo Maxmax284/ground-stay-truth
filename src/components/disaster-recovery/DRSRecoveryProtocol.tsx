@@ -45,7 +45,7 @@ const protocol: ProtocolStep[] = [
   },
   {
     title: "Configure external integrations",
-    description: "Re-enter Stripe keys, Resend API key, VAPID keys, and any other integration credentials through Settings → Integrations.",
+    description: "Re-enter Stripe keys, VAPID keys, and any other integration credentials through Settings → Integrations.",
     critical: false,
   },
   {

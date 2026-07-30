@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
       if (nerr) console.error("[emit-admin-alert] notifications insert:", nerr);
     }
 
-    // 2) Email fan-out (opt-in, uses existing Resend pipeline via send-transactional-email).
+    // 2) Email fan-out (opt-in, uses the built-in email queue via send-transactional-email).
     const emailTargets = recipientIds.filter((uid) => prefFor(uid, "email"));
     let emailSent = 0;
     for (const uid of emailTargets) {

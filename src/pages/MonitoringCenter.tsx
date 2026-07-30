@@ -151,15 +151,15 @@ function buildAlerts(d: Awaited<ReturnType<typeof fetchMonitoring>>): Alert[] {
   // Email failures — grouped by (template, recipient, failure category, reason)
   // so the monitor doesn't spam identical failures. Task 4.
   const categoryToMessage: Record<string, { title: string; action: string; severity: Health }> = {
-    auth: { title: "Email provider rejected our API key.", action: "Update the Resend API key in Settings → Integrations, then resend from the booking.", severity: "attention" },
-    sender_domain: { title: "Provider rejected the sender domain.", action: "Verify lmtcampstay.com in Resend (SPF + DKIM), then resend.", severity: "attention" },
+    auth: { title: "Email provider rejected our API key.", action: "Check the email domain status in Cloud → Emails, then resend from the booking.", severity: "attention" },
+    sender_domain: { title: "Provider rejected the sender domain.", action: "The sender domain notify.lmtcampstay.com is not verified yet. Check Cloud → Emails, then resend.", severity: "attention" },
     invalid_recipient: { title: "Guest email address was rejected as invalid.", action: "Correct the guest's email on the booking and resend.", severity: "warning" },
     rate_limited: { title: "Email provider is rate-limiting us.", action: "Wait a few minutes — the pipeline auto-retries with backoff.", severity: "warning" },
     provider_outage: { title: "Temporary email provider outage.", action: "Auto-retried up to 3× — will heal on its own if provider recovers.", severity: "warning" },
     timeout: { title: "Email provider timed out.", action: "Auto-retried — resend manually if it keeps failing.", severity: "warning" },
     network: { title: "Network error reaching the email provider.", action: "Usually transient — check again in a few minutes.", severity: "warning" },
     validation: { title: "Email payload was rejected by the provider.", action: "Check template configuration.", severity: "attention" },
-    configuration: { title: "Email provider is not configured.", action: "Add the Resend API key in Settings → Integrations.", severity: "attention" },
+    configuration: { title: "Email provider is not configured.", action: "The sender domain is not set up. Check Cloud → Emails.", severity: "attention" },
     unknown: { title: "Guest email failed to send.", action: "Open the booking and resend. Check the correlation ID in logs if it repeats.", severity: "warning" },
   };
   const groups = new Map<string, { latest: any; count: number }>();

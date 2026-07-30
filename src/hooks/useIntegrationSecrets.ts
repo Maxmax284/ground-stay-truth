@@ -5,7 +5,6 @@ const SECRET_KEYS = [
   "stripe_secret_key",
   "stripe_publishable_key",
   "stripe_webhook_secret",
-  "resend_api_key",
   "fenrir_api_key",
   "fenrir_receive_token",
   "telegram_bot_token",

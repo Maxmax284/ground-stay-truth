@@ -63,7 +63,7 @@ export function SendTestEmailButton() {
       if ((data as Result)?.sent) {
         toast({
           title: "Test email dispatched",
-          description: `Sent to ${(data as Result).to}. Check the inbox to confirm arrival.`,
+          description: `Queued for ${(data as Result).to}. Check the inbox (and spam) to confirm arrival.`,
         });
       } else {
         toast({
@@ -90,8 +90,8 @@ export function SendTestEmailButton() {
         </CardTitle>
         <CardDescription className="text-xs mt-1">
           Sends a short real message to the saved <strong>Contact Email</strong> via
-          our email provider. Use this to verify the inbox / forwarding is actually
-          working. No booking, guest, or payment data is touched.
+          the built-in LMT CampStay email engine. Use this to verify the inbox /
+          forwarding is actually working. No booking, guest, or payment data is touched.
         </CardDescription>
       </CardHeader>
       <CardContent className="px-5 pb-5 space-y-3">
@@ -124,7 +124,7 @@ export function SendTestEmailButton() {
           >
             <div className="flex items-center gap-1.5 font-medium">
               {result.sent ? (
-                <><CheckCircle2 className="h-3.5 w-3.5" /> Accepted by provider</>
+                <><CheckCircle2 className="h-3.5 w-3.5" /> Queued for delivery</>
               ) : (
                 <><AlertTriangle className="h-3.5 w-3.5" /> Not sent</>
               )}

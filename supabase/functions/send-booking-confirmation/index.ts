@@ -53,13 +53,22 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const { booking_id } = await req.json();
+    // `resend` = staff-initiated resend of an existing confirmation.
+    // It re-sends the same email with a fresh signed PDF link, and deliberately
+    // skips the in-app notification so we don't spam the guest's bell.
+    // `override_to` routes the copy to a staff inbox for safe testing.
+    const payload = await req.json();
+    const booking_id = payload?.booking_id;
+    const isResend = payload?.resend === true;
+    const overrideTo =
+      typeof payload?.override_to === "string" ? payload.override_to.trim() : "";
     if (!booking_id) {
       return new Response(JSON.stringify({ error: "booking_id required" }), {
         status: 400,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
+
 
     // Fetch booking with unit and guest profile
     const { data: booking, error: bookingErr } = await adminClient
@@ -133,7 +142,12 @@ Deno.serve(async (req) => {
       console.error("PDF pre-generation failed (email will still send):", e);
     }
 
-    // Send via send-transactional-email
+    const portalUrl = `${siteUrl}/guest${confirmationNumber ? `?ref=${encodeURIComponent(confirmationNumber)}` : ""}`;
+    const sendTo = overrideTo || guestEmail;
+
+    // Send via send-transactional-email.
+    // NOTE: the internal email engine does not support file attachments — the
+    // guest gets a prominent signed PDF *link* in the email instead.
     const emailResp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
       method: "POST",
       headers: {
@@ -142,14 +156,13 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         template_key: "booking_confirmed",
-        recipient_email: guestEmail,
+        recipient_email: sendTo,
         booking_id: booking_id,
         language: guestLang,
-        attachments: pdfBase64
-          ? [{
-              filename: `booking-confirmation-${confirmationNumber || booking_id.slice(0, 8)}.pdf`,
-              content: pdfBase64,
-            }]
+        source: isResend ? "staff_resend" : "auto_confirm",
+        // Resends must not collide with the original send's idempotency key.
+        idempotency_key: isResend
+          ? `booking_confirmed-${booking_id}-resend-${Date.now()}`
           : undefined,
         data: {
           guest_name: guestName,
@@ -163,26 +176,37 @@ Deno.serve(async (req) => {
           confirmation_number: confirmationNumber,
           confirmation_pdf_url: confirmationPdfUrl,
           contact_email: contactEmail,
-          qr_target: `${siteUrl}/guest${confirmationNumber ? `?ref=${encodeURIComponent(confirmationNumber)}` : ""}`,
+          portal_url: portalUrl,
+          qr_target: portalUrl,
         },
       }),
     });
 
-
     const emailResult = await emailResp.json();
 
-    // Always create in-app notification as well
-    await adminClient.from("notifications").insert({
-      user_id: booking.guest_id,
-      type: "booking_confirmed",
-      message: `Your booking for ${unitName} (${booking.check_in} → ${booking.check_out}) is confirmed! Check-in from ${checkinTime}.`,
-      reference_id: booking.id,
-    });
+    // In-app notification only on the original confirmation — a staff resend
+    // shouldn't re-ring the guest's bell or duplicate the record.
+    if (!isResend && !overrideTo) {
+      await adminClient.from("notifications").insert({
+        user_id: booking.guest_id,
+        type: "booking_confirmed",
+        message: `Your booking for ${unitName} (${booking.check_in} → ${booking.check_out}) is confirmed! Check-in from ${checkinTime}.`,
+        reference_id: booking.id,
+      });
+    }
 
     return new Response(
-      JSON.stringify({ success: true, email: emailResult }),
+      JSON.stringify({
+        success: true,
+        recipient: sendTo,
+        resend: isResend,
+        confirmation_number: confirmationNumber,
+        pdf_link_available: Boolean(confirmationPdfUrl),
+        email: emailResult,
+      }),
       { headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
+
   } catch (e) {
     console.error("send-booking-confirmation error:", e);
     return new Response(

@@ -55,6 +55,8 @@ import { useBookingReview } from "@/hooks/useReviews";
 import { setAIFocus, clearAIFocus } from "@/lib/aiFocusStore";
 import { AIBriefingCard } from "@/components/ai/AIBriefingCard";
 import { BookingConfirmationDocument } from "@/components/BookingConfirmationDocument";
+import { BookingEmailStatus } from "@/components/BookingEmailStatus";
+
 import { ApplyDiscountDialog } from "@/components/ApplyDiscountDialog";
 import { BookingAdjustmentsCard } from "@/components/BookingAdjustmentsCard";
 import { getDiscountEligibility, DISCOUNT_TOOLTIP_HELP } from "@/lib/discountEligibility";
@@ -558,6 +560,8 @@ function PaymentsTab({ payments, bookingId, bookingState, canSeeAmounts, canReco
           <PaymentLinkManager bookingId={bookingId} />
           <PaymentGuideLink />
           <BookingConfirmationDocument bookingId={bookingId} bookingState={bookingState} variant="full" allowPending />
+          <BookingEmailStatus bookingId={bookingId} />
+
         </>
       )}
 

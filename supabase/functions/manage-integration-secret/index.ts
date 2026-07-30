@@ -108,7 +108,6 @@ serve(async (req) => {
       "stripe_secret_key",
       "stripe_publishable_key",
       "stripe_webhook_secret",
-      "resend_api_key",
       "fenrir_api_key",
       "fenrir_receive_token",
       // Messaging bridge (Telegram + Twilio for WhatsApp/SMS)

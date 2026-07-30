@@ -41,10 +41,10 @@ const systems: SystemNode[] = [
     description: "Payment processing — configured via Admin integration settings",
   },
   {
-    name: "Resend",
+    name: "Built-in email engine",
     type: "supporting",
     dependencies: ["Edge Functions"],
-    description: "Transactional email delivery",
+    description: "Transactional email delivery via notify.lmtcampstay.com",
   },
   {
     name: "AviationStack",

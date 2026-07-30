@@ -121,9 +121,10 @@ serve(async (req) => {
       sent: true,
       from: fromEmail,
       to: contactEmail,
-      message_id: null,
-      note: "Queued by the platform email service. Delivery happens within seconds — check the destination inbox (and spam) to confirm it arrived.",
+      message_id: parsed?.messageId ?? parsed?.message_id ?? null,
+      note: "Queued by the platform email service. Delivery normally happens within seconds — check the destination inbox (and spam) to confirm it arrived.",
     });
+
   } catch (e) {
     console.error("[test-contact-email] fatal", e);
     return j(req, { sent: false, error: e instanceof Error ? e.message : "Unknown error" }, 500);
