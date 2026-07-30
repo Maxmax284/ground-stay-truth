@@ -96,12 +96,40 @@ export function BookingEmailStatus({ bookingId }: { bookingId: string }) {
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
-    const { data, error } = await supabase
+
+    // Two-step lookup on purpose: send-transactional-email writes the booking_id
+    // into metadata on the `pending` row, but the queue worker writes the final
+    // `sent` / `dlq` row without it. So we resolve message_ids first, then pull
+    // every row for those ids to get the real end state.
+    const { data: seedRows, error: seedError } = await supabase
       .from("email_send_log")
-      .select("id, message_id, template_name, recipient_email, status, error_message, created_at")
+      .select("message_id")
       .contains("metadata", { booking_id: bookingId })
       .order("created_at", { ascending: false })
       .limit(50);
+
+    if (seedError) {
+      setLoadError(seedError.message);
+      setRows([]);
+      setLoading(false);
+      return;
+    }
+
+    const ids = Array.from(
+      new Set((seedRows ?? []).map((r: any) => r.message_id).filter(Boolean)),
+    ) as string[];
+
+    if (ids.length === 0) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("email_send_log")
+      .select("id, message_id, template_name, recipient_email, status, error_message, created_at")
+      .in("message_id", ids)
+      .order("created_at", { ascending: false });
 
     if (error) {
       setLoadError(error.message);
@@ -120,6 +148,7 @@ export function BookingEmailStatus({ bookingId }: { bookingId: string }) {
     }
     setLoading(false);
   }, [bookingId]);
+
 
   useEffect(() => {
     if (canView) load();
