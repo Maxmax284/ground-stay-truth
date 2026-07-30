@@ -95,6 +95,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session, role]);
 
   useEffect(() => {
+    // Tracks which user we've already resolved a role for. Supabase fires
+    // SIGNED_IN / TOKEN_REFRESHED whenever the tab regains focus; re-running
+    // the role lookup there flipped roleResolved back to false, which made the
+    // route guards unmount the page and wipe whatever the user was doing.
+    let resolvedForUserId: string | null = null;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === "PASSWORD_RECOVERY" && window.location.pathname !== "/reset-password") {
@@ -110,13 +116,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          // Clear stale role immediately on user/session change to avoid wrong redirects
+          const uid = session.user.id;
+          if (resolvedForUserId === uid) {
+            // Same user, just a token refresh / focus event — keep current role
+            // and keep the UI mounted.
+            setLoading(false);
+            return;
+          }
+          resolvedForUserId = uid;
+          // Clear stale role immediately on real user change to avoid wrong redirects
           setRole(null);
           setRoleResolved(false);
           setTimeout(() => {
-            void fetchRole(session.user.id);
+            void fetchRole(uid);
           }, 0);
         } else {
+          resolvedForUserId = null;
           setRole(null);
           setRoleResolved(true);
         }
@@ -128,10 +143,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        setRole(null);
-        setRoleResolved(false);
-        void fetchRole(session.user.id);
+        if (resolvedForUserId !== session.user.id) {
+          resolvedForUserId = session.user.id;
+          setRole(null);
+          setRoleResolved(false);
+          void fetchRole(session.user.id);
+        }
       } else {
+        resolvedForUserId = null;
         setRole(null);
         setRoleResolved(true);
       }
