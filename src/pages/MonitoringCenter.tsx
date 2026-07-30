@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { GuestPortalHealth } from "@/components/monitoring/GuestPortalHealth";
 import { StaffActivity } from "@/components/monitoring/StaffActivity";
+import { PushHealth } from "@/components/monitoring/PushHealth";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
