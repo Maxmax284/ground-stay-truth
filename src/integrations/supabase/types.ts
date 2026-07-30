@@ -2810,32 +2810,86 @@ export type Database = {
         }
         Relationships: []
       }
+      push_delivery_log: {
+        Row: {
+          created_at: string
+          endpoint_tail: string | null
+          error: string | null
+          http_status: number | null
+          id: string
+          source: string | null
+          status: string
+          title: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          endpoint_tail?: string | null
+          error?: string | null
+          http_status?: number | null
+          id?: string
+          source?: string | null
+          status: string
+          title?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          endpoint_tail?: string | null
+          error?: string | null
+          http_status?: number | null
+          id?: string
+          source?: string | null
+          status?: string
+          title?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
           created_at: string
           endpoint: string
+          failure_count: number
           id: string
+          last_error: string | null
+          last_success_at: string | null
           p256dh: string
+          platform: string | null
+          standalone: boolean | null
           updated_at: string
+          user_agent: string | null
           user_id: string
         }
         Insert: {
           auth: string
           created_at?: string
           endpoint: string
+          failure_count?: number
           id?: string
+          last_error?: string | null
+          last_success_at?: string | null
           p256dh: string
+          platform?: string | null
+          standalone?: boolean | null
           updated_at?: string
+          user_agent?: string | null
           user_id: string
         }
         Update: {
           auth?: string
           created_at?: string
           endpoint?: string
+          failure_count?: number
           id?: string
+          last_error?: string | null
+          last_success_at?: string | null
           p256dh?: string
+          platform?: string | null
+          standalone?: boolean | null
           updated_at?: string
+          user_agent?: string | null
           user_id?: string
         }
         Relationships: []
