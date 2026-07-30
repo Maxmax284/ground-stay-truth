@@ -22,7 +22,7 @@ export function useMediaAssets() {
   return useQuery({
     queryKey: ["media-library-assets"],
     staleTime: 30_000,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("media_library_assets")

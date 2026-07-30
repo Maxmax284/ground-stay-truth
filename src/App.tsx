@@ -55,7 +55,8 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 60_000,          // 1 min — kill the request-storm-on-mount pattern
       gcTime: 5 * 60_000,         // 5 min cache retention
-      refetchOnWindowFocus: true, // self-heal when users return to the tab
+      refetchOnWindowFocus: false, // never refetch just because the tab regained focus
+                                   // (it wiped in-progress work / open dialogs)
       refetchOnReconnect: true,   // self-heal after network blips (iOS bfcache, etc.)
       retry: 1,
     },
