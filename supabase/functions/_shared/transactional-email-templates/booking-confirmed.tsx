@@ -1,6 +1,6 @@
 import * as React from 'npm:react@18.3.1'
 import { Img, Section, Text } from 'npm:@react-email/components@0.0.22'
-import { Cta, Panel, Rows, Shell, bodyText, t } from './shared.tsx'
+import { BigCta, Panel, Rows, Shell, bodyText, t } from './shared.tsx'
 import type { TemplateEntry } from './registry.ts'
 
 interface Props {
@@ -17,19 +17,22 @@ interface Props {
   confirmation_pdf_url?: string | null
   contact_email?: string
   qr_target?: string
+  portal_url?: string
 }
 
 const Email = (d: Props) => {
   const lang = d.language
-  const qrTarget =
-    d.qr_target ||
+  const portalUrl =
+    d.portal_url ||
     `https://lmtcampstay.com/guest${
       d.confirmation_number ? `?ref=${encodeURIComponent(d.confirmation_number)}` : ''
     }`
+  const qrTarget = d.qr_target || portalUrl
   const qrImg = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=${encodeURIComponent(
     qrTarget,
   )}`
-  const vatMailto = `mailto:${d.contact_email || 'info@lmtcampstay.com'}?subject=${encodeURIComponent(
+  const contactEmail = d.contact_email || 'info@lmtcampstay.com'
+  const vatMailto = `mailto:${contactEmail}?subject=${encodeURIComponent(
     `VAT invoice request — ${d.confirmation_number || 'booking'}`,
   )}`
 
@@ -66,25 +69,45 @@ const Email = (d: Props) => {
         />
       </Panel>
 
+      {/* Primary action — the PDF is a link, not an attachment, so it has to be
+          impossible to miss. Table-based button stays visible with images off. */}
       {d.confirmation_pdf_url ? (
-        <>
-          <Cta
-            href={d.confirmation_pdf_url}
-            label={t(
-              lang,
-              'Download Booking Confirmation (PDF)',
-              'ดาวน์โหลดใบยืนยันการจอง (PDF)',
-            )}
-          />
-          <Text style={{ ...bodyText, fontSize: '12px', textAlign: 'center' }}>
-            {t(
-              lang,
-              'Show it to immigration, airlines, or your employer.',
-              'ใช้แสดงต่อตรวจคนเข้าเมือง สายการบิน หรือที่ทำงาน',
-            )}
-          </Text>
-        </>
+        <BigCta
+          href={d.confirmation_pdf_url}
+          label={t(
+            lang,
+            'Download Booking Confirmation PDF',
+            'ดาวน์โหลดใบยืนยันการจอง (PDF)',
+          )}
+          sub={t(
+            lang,
+            'Use this document for check-in, travel records, or proof of accommodation if needed.',
+            'ใช้เอกสารนี้สำหรับเช็คอิน บันทึกการเดินทาง หรือเป็นหลักฐานที่พัก',
+          )}
+        />
       ) : null}
+
+      {/* What to do next */}
+      <Panel heading={t(lang, 'What to do next', 'ขั้นตอนถัดไป')} tone="info">
+        <Text style={{ ...bodyText, margin: 0 }}>
+          {t(
+            lang,
+            'You can open your booking through the Guest Portal, upload your ID document before check-in, and review your stay details anytime.',
+            'คุณสามารถเปิดการจองผ่าน Guest Portal อัปโหลดเอกสารประจำตัวก่อนเช็คอิน และดูรายละเอียดการเข้าพักได้ตลอดเวลา',
+          )}
+        </Text>
+      </Panel>
+
+      <BigCta
+        href={portalUrl}
+        label={t(lang, 'Open Guest Portal', 'เปิด Guest Portal')}
+        color="#1a1a1a"
+        sub={t(
+          lang,
+          'The Guest Portal is always the up-to-date record of your stay.',
+          'Guest Portal คือข้อมูลการเข้าพักที่เป็นปัจจุบันเสมอ',
+        )}
+      />
 
       <Section
         style={{
@@ -97,13 +120,17 @@ const Email = (d: Props) => {
       >
         <Img
           src={qrImg}
-          alt="Booking QR code"
+          alt={t(lang, 'QR code linking to your booking', 'คิวอาร์โค้ดสำหรับการจองของคุณ')}
           width="140"
           height="140"
           style={{ display: 'block', margin: '0 auto 8px auto', borderRadius: '6px' }}
         />
         <Text style={{ margin: 0, color: '#777777', fontSize: '12px' }}>
-          {t(lang, 'Scan to open your booking', 'สแกนเพื่อเปิดการจองของคุณ')}
+          {t(lang, 'Scan to open your booking, or ', 'สแกนเพื่อเปิดการจอง หรือ ')}
+          <a href={qrTarget} style={{ color: '#b81c1c', fontWeight: 700 }}>
+            {t(lang, 'use this link', 'ใช้ลิงก์นี้')}
+          </a>
+          {t(lang, ' if the code does not display.', ' หากคิวอาร์โค้ดไม่แสดง')}
         </Text>
       </Section>
 
@@ -114,12 +141,11 @@ const Email = (d: Props) => {
         </a>
       </Text>
 
-      <Text style={bodyText}>
-        {t(
-          lang,
-          'Upload your ID document through the Guest Portal before check-in.',
-          'กรุณาอัพโหลดเอกสารประจำตัวผ่าน Guest Portal ก่อนเช็คอิน',
-        )}
+      <Text style={{ ...bodyText, textAlign: 'center', fontSize: '13px' }}>
+        {t(lang, 'Questions? Email us at ', 'มีคำถาม? อีเมลหาเราที่ ')}
+        <a href={`mailto:${contactEmail}`} style={{ color: '#b81c1c', fontWeight: 700 }}>
+          {contactEmail}
+        </a>
       </Text>
     </Shell>
   )
@@ -140,5 +166,6 @@ export const template = {
     num_guests: 2,
     total_formatted: 'THB 42,000.00',
     confirmation_number: 'LMT-2027-0042',
+    confirmation_pdf_url: 'https://lmtcampstay.com/example-confirmation.pdf',
   },
 } satisfies TemplateEntry
