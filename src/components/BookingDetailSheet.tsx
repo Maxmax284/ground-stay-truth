@@ -558,6 +558,8 @@ function PaymentsTab({ payments, bookingId, bookingState, canSeeAmounts, canReco
           <PaymentLinkManager bookingId={bookingId} />
           <PaymentGuideLink />
           <BookingConfirmationDocument bookingId={bookingId} bookingState={bookingState} variant="full" allowPending />
+          <BookingEmailStatus bookingId={bookingId} />
+
         </>
       )}
 
