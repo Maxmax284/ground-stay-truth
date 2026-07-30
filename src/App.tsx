@@ -122,6 +122,8 @@ const App = () => (
                 <Route path="/stay" element={<Stay />} />
                 <Route path="/pay/:token" element={<GuestPaymentLink />} />
                 <Route path="/legal" element={<Legal />} />
+                <Route path="/unsubscribe" element={<Unsubscribe />} />
+
                 <Route path="/landing" element={<LandingPage />} />
 
                 <Route path="*" element={<NotFound />} />
