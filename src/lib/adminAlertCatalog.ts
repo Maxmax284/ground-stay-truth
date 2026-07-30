@@ -100,49 +100,49 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
   {
     key: "booking_changed", label: "Booking changed",
     description: "Dates, unit or guest count changed on an existing booking.",
-    category: "bookings", severity: "info", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "bookings", severity: "info", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Bookings", nextAction: "Confirm pricing and the calendar still line up.",
   },
   {
     key: "room_assignment_needed", label: "Room assignment needed",
     description: "A confirmed booking has no unit assigned.",
-    category: "rooms", severity: "action", defaultEmail: true, defaultInApp: true, wired: false,
+    category: "rooms", severity: "action", defaultEmail: true, defaultInApp: true, wired: true,
     where: "Calendar", nextAction: "Open the calendar and assign a unit before arrival.",
   },
   {
     key: "missing_confirmation_number", label: "Confirmed booking missing confirmation number",
     description: "A confirmed booking has no confirmation number generated.",
-    category: "bookings", severity: "warning", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "bookings", severity: "warning", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Bookings", nextAction: "Regenerate the confirmation so the guest PDF works.",
   },
   {
     key: "long_stay_booking", label: "Long stay booking created",
     description: "A booking of 14 nights or more was created.",
-    category: "bookings", severity: "info", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "bookings", severity: "info", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Bookings", nextAction: "Check long-stay pricing tiers applied correctly.",
   },
   {
     key: "checkin_today", label: "Check-in today",
     description: "Daily list of arrivals.",
-    category: "bookings", severity: "info", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "bookings", severity: "info", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Front Desk", nextAction: "Prep rooms and pickups for today's arrivals.",
   },
   {
     key: "checkin_tomorrow", label: "Check-in tomorrow",
     description: "Heads-up on tomorrow's arrivals.",
-    category: "bookings", severity: "info", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "bookings", severity: "info", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Front Desk", nextAction: "Confirm transport and room readiness.",
   },
   {
     key: "checkout_today", label: "Checkout today",
     description: "Daily list of departures.",
-    category: "bookings", severity: "info", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "bookings", severity: "info", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Front Desk", nextAction: "Schedule housekeeping turnover.",
   },
   {
     key: "checkout_tomorrow", label: "Checkout tomorrow",
     description: "Heads-up on tomorrow's departures.",
-    category: "bookings", severity: "info", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "bookings", severity: "info", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Front Desk", nextAction: "Confirm balances are settled before departure.",
   },
 
@@ -162,7 +162,7 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
   {
     key: "payment_failed", label: "Payment failed",
     description: "A guest payment attempt failed.",
-    category: "payments", severity: "critical", defaultEmail: true, defaultInApp: true, wired: false,
+    category: "payments", severity: "critical", defaultEmail: true, defaultInApp: true, wired: true,
     bypassCriticalOnly: true,
     where: "Booking → Payments", nextAction: "Contact the guest and regenerate the payment link.",
   },
@@ -176,7 +176,7 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
   {
     key: "payment_link_created", label: "Payment link created",
     description: "A staff member generated a payment link.",
-    category: "payments", severity: "info", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "payments", severity: "info", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Booking → Payments", nextAction: "None — informational only.",
   },
   {
@@ -189,7 +189,7 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
   {
     key: "reconciliation_mismatch", label: "Reconciliation mismatch",
     description: "Stripe and CampStay disagree on a recorded payment.",
-    category: "payments", severity: "critical", defaultEmail: true, defaultInApp: true, wired: false,
+    category: "payments", severity: "critical", defaultEmail: true, defaultInApp: true, wired: true,
     bypassCriticalOnly: true,
     where: "Operations Monitor", nextAction: "Compare the booking ledger against Stripe before refunding anything.",
   },
@@ -204,7 +204,7 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
   {
     key: "guest_stuck_at_payment", label: "Guest stuck at payment",
     description: "Guest tapped Pay but never reached Stripe.",
-    category: "guest_portal", severity: "action", defaultEmail: true, defaultInApp: true, wired: false,
+    category: "guest_portal", severity: "action", defaultEmail: true, defaultInApp: true, wired: true,
     bypassCriticalOnly: true,
     where: "Operations Monitor → Guest Portal Health",
     nextAction: "Open the booking and contact the guest if the deposit is still pending.",
@@ -212,37 +212,37 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
   {
     key: "guest_uploaded_id", label: "Guest uploaded ID",
     description: "A guest uploaded an identity document.",
-    category: "guest_portal", severity: "action", defaultEmail: true, defaultInApp: true, wired: false,
+    category: "guest_portal", severity: "action", defaultEmail: true, defaultInApp: true, wired: true,
     where: "Booking → Documents", nextAction: "Review the document and mark it verified.",
   },
   {
     key: "guest_id_upload_failed", label: "ID upload failed",
     description: "A guest document upload errored out.",
-    category: "guest_portal", severity: "warning", defaultEmail: true, defaultInApp: true, wired: false,
+    category: "guest_portal", severity: "warning", defaultEmail: true, defaultInApp: true, wired: true,
     where: "Booking → Documents", nextAction: "Ask the guest to retry, or collect the document at check-in.",
   },
   {
     key: "guest_logged_in", label: "Guest logged in",
     description: "A guest signed into the portal.",
-    category: "guest_portal", severity: "info", defaultEmail: false, defaultInApp: false, wired: false,
+    category: "guest_portal", severity: "info", defaultEmail: false, defaultInApp: false, wired: true,
     where: "Guest Portal", nextAction: "None — informational only.",
   },
   {
     key: "guest_viewed_no_pay", label: "Guest viewed booking but did not pay",
     description: "Guest opened the booking and left without paying.",
-    category: "guest_portal", severity: "info", defaultEmail: false, defaultInApp: false, wired: false,
+    category: "guest_portal", severity: "info", defaultEmail: false, defaultInApp: false, wired: true,
     where: "Guest Portal", nextAction: "Follow up if the deadline is close.",
   },
   {
     key: "guest_reached_stripe", label: "Guest reached Stripe",
     description: "Guest successfully landed on the Stripe checkout page.",
-    category: "guest_portal", severity: "info", defaultEmail: false, defaultInApp: false, wired: false,
+    category: "guest_portal", severity: "info", defaultEmail: false, defaultInApp: false, wired: true,
     where: "Guest Portal", nextAction: "None — informational only.",
   },
   {
     key: "guest_in_app_browser", label: "Guest opened portal in in-app browser",
     description: "Portal opened inside Instagram/Facebook/LINE browser, which can block checkout.",
-    category: "guest_portal", severity: "info", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "guest_portal", severity: "info", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Guest Portal", nextAction: "If they get stuck, tell them to open the link in Safari or Chrome.",
   },
 
@@ -250,25 +250,25 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
   {
     key: "maintenance_block_created", label: "Maintenance block created",
     description: "A unit was taken out of service.",
-    category: "maintenance", severity: "warning", defaultEmail: true, defaultInApp: true, wired: false,
+    category: "maintenance", severity: "warning", defaultEmail: true, defaultInApp: true, wired: true,
     where: "Calendar", nextAction: "Check no confirmed booking overlaps the blocked dates.",
   },
   {
     key: "maintenance_block_resolved", label: "Maintenance block removed",
     description: "A unit was returned to service.",
-    category: "maintenance", severity: "info", defaultEmail: true, defaultInApp: true, wired: false,
+    category: "maintenance", severity: "info", defaultEmail: true, defaultInApp: true, wired: true,
     where: "Calendar", nextAction: "Confirm the room is clean and bookable again.",
   },
   {
     key: "room_unavailable", label: "Room unavailable",
     description: "A unit was deactivated or became unbookable.",
-    category: "rooms", severity: "warning", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "rooms", severity: "warning", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Units", nextAction: "Check availability impact on upcoming bookings.",
   },
   {
     key: "calendar_mismatch", label: "Potential calendar mismatch",
     description: "Availability checks disagree with the booking ledger.",
-    category: "rooms", severity: "warning", defaultEmail: true, defaultInApp: true, wired: false,
+    category: "rooms", severity: "warning", defaultEmail: true, defaultInApp: true, wired: true,
     bypassCriticalOnly: true,
     where: "Calendar", nextAction: "Run the availability consistency check in Operations Monitor.",
   },
@@ -277,14 +277,14 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
   {
     key: "guest_email_failed", label: "Guest confirmation email failed",
     description: "A guest-facing transactional email failed to send.",
-    category: "email_delivery", severity: "critical", defaultEmail: true, defaultInApp: true, wired: false,
+    category: "email_delivery", severity: "critical", defaultEmail: true, defaultInApp: true, wired: true,
     bypassCriticalOnly: true,
     where: "Booking → Email status", nextAction: "Resend the confirmation, or contact the guest directly.",
   },
   {
     key: "payment_email_failed", label: "Payment email failed",
     description: "A payment link or reminder email failed to send.",
-    category: "email_delivery", severity: "warning", defaultEmail: true, defaultInApp: true, wired: false,
+    category: "email_delivery", severity: "warning", defaultEmail: true, defaultInApp: true, wired: true,
     bypassCriticalOnly: true,
     where: "Booking → Email status", nextAction: "Resend the payment email or send the link by WhatsApp.",
   },
@@ -299,13 +299,13 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
   {
     key: "guest_has_no_email", label: "Guest has no email",
     description: "A booking exists with no usable guest email address.",
-    category: "email_delivery", severity: "action", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "email_delivery", severity: "action", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Guest Directory", nextAction: "Add an email to the guest record so confirmations can send.",
   },
   {
     key: "email_resend_performed", label: "Resend performed",
     description: "Staff manually resent a guest email.",
-    category: "email_delivery", severity: "info", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "email_delivery", severity: "info", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Booking → Email status", nextAction: "None — informational only.",
   },
 
@@ -320,19 +320,19 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
   {
     key: "client_error", label: "Page crash / client error",
     description: "The app threw an unhandled error for a user.",
-    category: "system", severity: "warning", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "system", severity: "warning", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Operations Monitor", nextAction: "Check whether it repeats on the same page before escalating.",
   },
   {
     key: "app_health_warning", label: "App health warning",
     description: "Service worker, domain or PWA health degraded.",
-    category: "system", severity: "warning", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "system", severity: "warning", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Operations Monitor", nextAction: "Check App Status in Settings.",
   },
   {
     key: "push_failure", label: "Push notification failure",
     description: "Phone alerts failed to deliver (active once push is reconnected).",
-    category: "system", severity: "info", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "system", severity: "info", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Operations Monitor → Push Health", nextAction: "Have the device reconnect alerts in Settings.",
   },
 
@@ -346,43 +346,43 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
   {
     key: "pickup_fee_added", label: "Pickup fee added",
     description: "A pickup fee was added to a booking as an add-on charge.",
-    category: "operations", severity: "info", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "operations", severity: "info", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Booking → Payments", nextAction: "None — the fee lands in the outstanding balance.",
   },
   {
     key: "staff_override_used", label: "Staff override used",
     description: "A staff member used an override (expiry, past dates, etc).",
-    category: "operations", severity: "warning", defaultEmail: true, defaultInApp: true, wired: false,
+    category: "operations", severity: "warning", defaultEmail: true, defaultInApp: true, wired: true,
     where: "Operations Monitor → Staff Activity", nextAction: "Confirm the override was intentional.",
   },
   {
     key: "admin_discount_applied", label: "Admin discount applied",
     description: "A discount or adjustment was applied to a booking.",
-    category: "operations", severity: "warning", defaultEmail: true, defaultInApp: true, wired: false,
+    category: "operations", severity: "warning", defaultEmail: true, defaultInApp: true, wired: true,
     where: "Booking → Adjustments", nextAction: "Confirm the adjustment matches what was agreed with the guest.",
   },
   {
     key: "booking_adjustment_voided", label: "Booking adjustment voided",
     description: "A previously applied adjustment was voided.",
-    category: "operations", severity: "warning", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "operations", severity: "warning", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Booking → Adjustments", nextAction: "Check the balance recalculated correctly.",
   },
   {
     key: "manual_booking_created", label: "Manual booking created",
     description: "Staff created a booking directly in the platform.",
-    category: "operations", severity: "info", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "operations", severity: "info", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Bookings", nextAction: "None — informational only.",
   },
   {
     key: "guest_note_added", label: "Guest note added",
     description: "A staff note was added to a guest record.",
-    category: "operations", severity: "info", defaultEmail: false, defaultInApp: false, wired: false,
+    category: "operations", severity: "info", defaultEmail: false, defaultInApp: false, wired: true,
     where: "Guest Directory", nextAction: "None — informational only.",
   },
   {
     key: "laundry_request", label: "Laundry request created or ready",
     description: "A laundry request was raised or completed.",
-    category: "operations", severity: "info", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "operations", severity: "info", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Stay Support", nextAction: "None — handled by housekeeping.",
   },
 
@@ -390,13 +390,13 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
   {
     key: "ai_assistant_failure", label: "Kru Glitch load/error",
     description: "The AI assistant failed to load or answer.",
-    category: "ai", severity: "warning", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "ai", severity: "warning", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Operations Monitor", nextAction: "Check the AI gateway status if it keeps repeating.",
   },
   {
     key: "ai_budget_warning", label: "AI budget warning",
     description: "AI spend crossed the configured threshold.",
-    category: "ai", severity: "warning", defaultEmail: true, defaultInApp: true, wired: false,
+    category: "ai", severity: "warning", defaultEmail: true, defaultInApp: true, wired: true,
     where: "Settings → AI", nextAction: "Review AI usage and raise or hold the budget.",
   },
 
@@ -404,7 +404,7 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
   {
     key: "daily_summary", label: "Daily summary",
     description: "One roll-up email per day instead of live pings.",
-    category: "summary", severity: "info", defaultEmail: false, defaultInApp: true, wired: false,
+    category: "summary", severity: "info", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Dashboard", nextAction: "Skim the day's numbers.",
   },
 ];
