@@ -284,8 +284,10 @@ export function calculatePricing(
   const subtotal = nights.reduce((sum, n) => sum + n.price, 0);
   const cleaningFee = Number(unit.cleaning_fee ?? 0);
 
-  // Long-stay discount (skip if already using weekly/monthly rate)
-  const longStayDiscount = useFixedRate ? null : getLongStayDiscount(nights.length, subtotal, policies);
+  // Long-stay discount — skipped only when every night is already on a
+  // weekly/monthly flat rate (otherwise seasonal nights would lose the tier).
+  const allNightsFixed = useFixedRate && nights.every((n) => n.ruleName === "Weekly Rate" || n.ruleName === "Monthly Rate");
+  const longStayDiscount = allNightsFixed ? null : getLongStayDiscount(nights.length, subtotal, policies);
 
   // Loyalty discount
   const loyaltyDiscount = getLoyaltyDiscount(completedStays ?? 0, subtotal, policies);
