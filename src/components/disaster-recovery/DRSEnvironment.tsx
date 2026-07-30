@@ -20,7 +20,7 @@ const envVars: EnvVar[] = [
 
 const externalServices = [
   { name: "Stripe", purpose: "Payment processing", configuredVia: "Integration Settings (Admin UI)" },
-  { name: "Resend", purpose: "Transactional email", configuredVia: "Integration Settings (Admin UI)" },
+  { name: "Built-in email engine", purpose: "Transactional email (notify.lmtcampstay.com)", configuredVia: "Cloud → Emails" },
   { name: "VAPID Keys", purpose: "Push notifications", configuredVia: "Integration Settings (Admin UI)" },
   { name: "AviationStack", purpose: "Flight tracking", configuredVia: "Edge Function secret" },
   { name: "Fenrir Lock", purpose: "Security monitoring", configuredVia: "Integration Settings (Admin UI)" },

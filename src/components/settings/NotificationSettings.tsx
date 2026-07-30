@@ -124,7 +124,7 @@ export default function NotificationSettings() {
         <h2 className="text-lg font-semibold">Admin alerts</h2>
         <p className="text-sm text-muted-foreground mt-1">
           Pick which operational events reach you and how. In-app alerts also fire browser push if you've allowed it.
-          Email uses the existing LMT CampStay Resend pipeline. Telegram requires a linked chat.
+          Email uses the built-in LMT CampStay sending pipeline. Telegram requires a linked chat.
         </p>
       </Card>
 
