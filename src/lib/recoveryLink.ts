@@ -51,7 +51,7 @@ export function captureRecoveryLink(): void {
     refresh_token: get("refresh_token") ?? undefined,
     code: get("code") ?? undefined,
     token_hash: get("token_hash") ?? get("token") ?? undefined,
-    error: get("error") ?? get("error_code") ?? undefined,
+    error: get("error_code") ?? get("error") ?? undefined,
     error_description: get("error_description") ?? undefined,
   };
 
