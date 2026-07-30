@@ -51,20 +51,8 @@ navigator.serviceWorker?.addEventListener("message", (event) => {
   }
 });
 
-const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-const searchParams = new URLSearchParams(window.location.search);
-const isPasswordRecoveryLink =
-  hashParams.get("type") === "recovery" ||
-  searchParams.get("type") === "recovery" ||
-  (window.location.pathname === "/auth" && hashParams.has("access_token") && hashParams.has("refresh_token"));
+// Recovery-link handling lives in ./lib/recoveryLink (imported first, above).
 
-if (isPasswordRecoveryLink && window.location.pathname !== "/reset-password") {
-  window.history.replaceState(
-    null,
-    "",
-    `/reset-password${window.location.search}${window.location.hash}`,
-  );
-}
 
 createRoot(document.getElementById("root")!).render(
   <ErrorBoundary>
