@@ -11,6 +11,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { logAiUsage as logAiUsageEvent } from "../_shared/aiGuard.ts";
+import { emitAdminAlert } from "../_shared/adminAlert.ts";
 
 // F-53: PII minimization — strip sensitive data before sending to AI
 function minimizePII(text: string): string {
@@ -1382,6 +1383,11 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
       }
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
+      await emitAdminAlert(
+        "ai_assistant_failure",
+        `Kru Glitch could not answer — AI gateway returned ${response.status}.`,
+        { deepLink: "/monitoring", context: { status: response.status, detail: t.slice(0, 200) } },
+      );
       return new Response(JSON.stringify({ error: "AI gateway error" }), {
         status: 500,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
@@ -1399,6 +1405,11 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
       stack: e instanceof Error ? e.stack : undefined,
       timestamp: new Date().toISOString(),
     }));
+    await emitAdminAlert(
+      "ai_assistant_failure",
+      `Kru Glitch crashed: ${e instanceof Error ? e.message : "unknown error"}`,
+      { deepLink: "/monitoring", context: { error: e instanceof Error ? e.message : "unknown" } },
+    );
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
       { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }

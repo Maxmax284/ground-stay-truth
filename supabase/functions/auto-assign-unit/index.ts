@@ -11,6 +11,7 @@
 // or the calendar and the assigner will disagree.
 // -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { emitAdminAlert } from "../_shared/adminAlert.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://www.lmtcampstay.com",
@@ -83,6 +84,11 @@ Deno.serve(async (req) => {
     const picked = row?.unit_id ?? null;
 
     if (!picked) {
+      await emitAdminAlert(
+        "room_assignment_needed",
+        `No unit could be assigned for the requested dates — ${row?.available_count ?? 0} of ${row?.total_count ?? 0} units free.`,
+        { deepLink: "/calendar", context: { available_count: row?.available_count ?? 0, total_count: row?.total_count ?? 0 } },
+      );
       return new Response(
         JSON.stringify({
           available: false,

@@ -6,6 +6,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsPreflight, getCorsHeaders } from "../_shared/cors.ts";
 import { sendFenrirSecurityEvent } from "../_shared/fenrir.ts";
+import { emitAdminAlert } from "../_shared/adminAlert.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsPreflight(req);
@@ -96,6 +97,14 @@ Deno.serve(async (req) => {
         );
         fired.push("100");
       }
+    }
+
+    if (fired.length > 0) {
+      await emitAdminAlert(
+        "ai_budget_warning",
+        `AI spend has reached ${Math.round(pct)}% of this month's budget.`,
+        { deepLink: "/settings", context: { percent_used: Math.round(pct), thresholds_crossed: fired.join(", "), month: monthMarker } },
+      );
     }
 
     return json({ ok: true, spent, budget, pct, fired });
