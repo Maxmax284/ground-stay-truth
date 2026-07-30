@@ -9,6 +9,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { emitAdminAlert } from "../_shared/adminAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -104,6 +105,83 @@ async function buildBriefing(admin: any): Promise<string> {
   return lines.join("\n");
 }
 
+// -----------------------------------------------------------------------------
+// Daily admin-alert sweep. These events have no single write to hang a trigger
+// off — they are "state of the day" facts, so the morning cron raises them.
+// -----------------------------------------------------------------------------
+function addDays(iso: string, n: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+async function sweepAdminAlerts(admin: any, summary: string) {
+  const today = todayInBangkok();
+  const tomorrow = addDays(today, 1);
+  const ACTIVE = ["confirmed", "pending_deposit", "checked_in"];
+
+  const listing = (rows: any[]) =>
+    rows.map((b: any) => `${b.profiles?.full_name ?? b.manual_guest_name ?? "Guest"} — ${b.units?.name ?? "unit"}`).join("; ");
+
+  const sel = "id, manual_guest_name, units(name), profiles!bookings_guest_id_profiles_fkey(full_name)";
+
+  const [inToday, inTomorrow, outToday, outTomorrow, missingConf] = await Promise.all([
+    admin.from("bookings").select(sel).eq("check_in", today).in("state", ACTIVE).limit(30),
+    admin.from("bookings").select(sel).eq("check_in", tomorrow).in("state", ACTIVE).limit(30),
+    admin.from("bookings").select(sel).eq("check_out", today).in("state", ACTIVE).limit(30),
+    admin.from("bookings").select(sel).eq("check_out", tomorrow).in("state", ACTIVE).limit(30),
+    admin.from("bookings").select("id").eq("state", "confirmed").is("confirmation_number", null)
+      .gte("check_out", today).limit(30),
+  ]);
+
+  const jobs: Promise<void>[] = [];
+
+  if ((inToday.data ?? []).length) {
+    jobs.push(emitAdminAlert("checkin_today",
+      `${inToday.data.length} arrival(s) today: ${listing(inToday.data)}`,
+      { deepLink: "/front-desk", context: { date: today, count: inToday.data.length } }));
+  }
+  if ((inTomorrow.data ?? []).length) {
+    jobs.push(emitAdminAlert("checkin_tomorrow",
+      `${inTomorrow.data.length} arrival(s) tomorrow: ${listing(inTomorrow.data)}`,
+      { deepLink: "/front-desk", context: { date: tomorrow, count: inTomorrow.data.length } }));
+  }
+  if ((outToday.data ?? []).length) {
+    jobs.push(emitAdminAlert("checkout_today",
+      `${outToday.data.length} departure(s) today: ${listing(outToday.data)}`,
+      { deepLink: "/front-desk", context: { date: today, count: outToday.data.length } }));
+  }
+  if ((outTomorrow.data ?? []).length) {
+    jobs.push(emitAdminAlert("checkout_tomorrow",
+      `${outTomorrow.data.length} departure(s) tomorrow: ${listing(outTomorrow.data)}`,
+      { deepLink: "/front-desk", context: { date: tomorrow, count: outTomorrow.data.length } }));
+  }
+  if ((missingConf.data ?? []).length) {
+    jobs.push(emitAdminAlert("missing_confirmation_number",
+      `${missingConf.data.length} confirmed booking(s) have no confirmation number, so the guest PDF will not build.`,
+      { deepLink: "/bookings", context: { count: missingConf.data.length } }));
+  }
+
+  // App health: no registered push devices, or a failing webhook lane.
+  const [devices, webhooks] = await Promise.all([
+    admin.from("push_subscriptions").select("id", { count: "exact", head: true }),
+    admin.from("webhook_health").select("provider, status, last_failure_reason").eq("status", "failing"),
+  ]);
+  const healthProblems: string[] = [];
+  if ((devices.count ?? 0) === 0) healthProblems.push("no phones are set up for alerts");
+  for (const w of webhooks.data ?? []) healthProblems.push(`${w.provider} webhook is failing`);
+  if (healthProblems.length) {
+    jobs.push(emitAdminAlert("app_health_warning",
+      `App health check: ${healthProblems.join(", ")}.`,
+      { deepLink: "/monitoring", context: { push_devices: devices.count ?? 0, failing_webhooks: (webhooks.data ?? []).length } }));
+  }
+
+  jobs.push(emitAdminAlert("daily_summary", summary,
+    { deepLink: "/index", context: { date: today } }));
+
+  await Promise.allSettled(jobs);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -128,6 +206,13 @@ serve(async (req) => {
     });
 
     const dispatchResult = resp.ok ? await resp.json() : { error: await resp.text() };
+
+    // Same facts, admin-alert lane (bell + email per each admin's preferences).
+    try {
+      await sweepAdminAlerts(admin, summary);
+    } catch (e) {
+      console.error("daily-briefing admin alert sweep failed:", e);
+    }
 
     return new Response(JSON.stringify({ ok: true, summary, dispatch: dispatchResult }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
