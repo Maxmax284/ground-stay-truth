@@ -246,7 +246,24 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    const { user_ids, title, body, data, source } = await req.json();
+    const reqBody = await req.json();
+
+    // Non-secret key-shape diagnostic: never returns key material, only
+    // whether the configured VAPID pair decodes to the expected byte lengths.
+    if (reqBody?.diagnostic === true) {
+      const pub = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
+      const priv = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
+      const shape = (v: string) => {
+        try {
+          return { chars: v.length, bytes: b64uDecode(v).length, decodes: true };
+        } catch (e) {
+          return { chars: v.length, decodes: false, error: String((e as Error).message) };
+        }
+      };
+      return json({ public_key: shape(pub), private_key: shape(priv) });
+    }
+
+    const { user_ids, title, body, data, source } = reqBody;
 
     if (!user_ids || !Array.isArray(user_ids) || !title || !body) {
       return json({ error: "user_ids (array), title, and body are required" }, 400);
