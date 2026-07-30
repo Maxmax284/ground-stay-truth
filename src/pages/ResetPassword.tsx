@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { consumeRecoveryPayload } from "@/lib/recoveryLink";
+import { consumeRecoveryPayload, recoveryRedirectTo } from "@/lib/recoveryLink";
 import { Loader2 } from "lucide-react";
 
 type Phase = "validating" | "ready" | "invalid";
@@ -123,7 +123,7 @@ const ResetPassword = () => {
     }
     setResending(true);
     const { error } = await supabase.auth.resetPasswordForEmail(resendEmail.trim(), {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: recoveryRedirectTo(),
     });
     setResending(false);
     toast({

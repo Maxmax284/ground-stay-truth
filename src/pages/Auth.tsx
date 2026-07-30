@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { supabase } from "@/integrations/supabase/client";
+import { recoveryRedirectTo } from "@/lib/recoveryLink";
 
 const Auth = () => {
   const { t } = useTranslation();
@@ -51,7 +52,7 @@ const Auth = () => {
     }
     setSendingReset(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: recoveryRedirectTo(),
     });
     setSendingReset(false);
     if (error) {
