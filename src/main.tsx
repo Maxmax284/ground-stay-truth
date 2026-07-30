@@ -1,3 +1,6 @@
+// Must stay first: captures password-recovery tokens from the URL before the
+// Supabase client (imported via ./App) consumes and strips the hash.
+import "./lib/recoveryLink";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
