@@ -7,7 +7,8 @@
  *
  * Order of operations (do not shuffle):
  *   1. Base rate per unit per night (weekday/weekend split)
- *   2. Pricing rules overlay (seasonal, promo, per-property overrides)
+ *   2. Pricing rules overlay (seasonal, promo, per-property overrides) —
+ *      these outrank weekly/monthly flat rates, which only fill uncovered nights
  *   3. Extra beds / extra guests
  *   4. Long-stay discount tiers (7 / 14 / 30 nights)
  *   5. Loyalty discount (repeat guest)
@@ -233,11 +234,10 @@ export function calculatePricing(
       return { date: dateStr, price: priceOverride, source: "override" as const };
     }
 
-    // Weekly/monthly flat rate takes priority over seasonal/weekend but not override
-    if (useFixedRate) {
-      return { date: dateStr, price: fixedRatePerNight, source: "base" as const, ruleName: fixedRateSource === "monthly_rate" ? "Monthly Rate" : "Weekly Rate" };
-    }
-
+    // Seasonal rules outrank weekly/monthly flat rates. A high/peak season
+    // price is a deliberate decision; a long-stay flat rate must never quietly
+    // undercut it (that's how Superior Twin 8 was quoting base rate on a
+    // 15-night high-season stay).
     const matchingRule = unitRules.find(
       (r) => dateStr >= r.start_date && dateStr <= r.end_date
     );
@@ -264,6 +264,12 @@ export function calculatePricing(
       };
     }
 
+    // Weekly/monthly flat rate applies only to nights no seasonal rule covers.
+    if (useFixedRate) {
+      return { date: dateStr, price: fixedRatePerNight, source: "base" as const, ruleName: fixedRateSource === "monthly_rate" ? "Monthly Rate" : "Weekly Rate" };
+    }
+
+
     if (isWeekend(date) && unit.weekend_price != null && Number(unit.weekend_price) > 0) {
       return { date: dateStr, price: Number(unit.weekend_price), source: "weekend" as const };
     }
@@ -279,8 +285,10 @@ export function calculatePricing(
   const subtotal = nights.reduce((sum, n) => sum + n.price, 0);
   const cleaningFee = Number(unit.cleaning_fee ?? 0);
 
-  // Long-stay discount (skip if already using weekly/monthly rate)
-  const longStayDiscount = useFixedRate ? null : getLongStayDiscount(nights.length, subtotal, policies);
+  // Long-stay discount — skipped only when every night is already on a
+  // weekly/monthly flat rate (otherwise seasonal nights would lose the tier).
+  const allNightsFixed = useFixedRate && nights.every((n) => n.ruleName === "Weekly Rate" || n.ruleName === "Monthly Rate");
+  const longStayDiscount = allNightsFixed ? null : getLongStayDiscount(nights.length, subtotal, policies);
 
   // Loyalty discount
   const loyaltyDiscount = getLoyaltyDiscount(completedStays ?? 0, subtotal, policies);
