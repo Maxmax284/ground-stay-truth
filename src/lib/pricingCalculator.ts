@@ -7,7 +7,8 @@
  *
  * Order of operations (do not shuffle):
  *   1. Base rate per unit per night (weekday/weekend split)
- *   2. Pricing rules overlay (seasonal, promo, per-property overrides)
+ *   2. Pricing rules overlay (seasonal, promo, per-property overrides) —
+ *      these outrank weekly/monthly flat rates, which only fill uncovered nights
  *   3. Extra beds / extra guests
  *   4. Long-stay discount tiers (7 / 14 / 30 nights)
  *   5. Loyalty discount (repeat guest)
