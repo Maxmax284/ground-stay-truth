@@ -92,11 +92,44 @@ function DocumentActions({ doc, compact }: { doc: GuestDocument; compact?: boole
   const [replaceOpen, setReplaceOpen] = useState(false);
   const [reason, setReason] = useState<string>(REPLACEMENT_REASONS[0]);
   const [note, setNote] = useState("");
+  // In-app viewer state. Mobile browsers and the installed PWA block
+  // window.open() calls made after an await, which is why staff saw nothing
+  // happen when they tapped View. We render the file inline instead.
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+  const [viewerKind, setViewerKind] = useState<"image" | "pdf" | "other">("image");
+  const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
+
+  const closeViewer = () => {
+    if (viewerUrl) URL.revokeObjectURL(viewerUrl);
+    setViewerUrl(null);
+    setFallbackUrl(null);
+  };
 
   const handleOpen = async (action: "view" | "download") => {
     try {
       const url = await open.mutateAsync({ doc, action });
-      window.open(url, "_blank", "noopener,noreferrer");
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Could not fetch the file");
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+
+      if (action === "download") {
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.download = doc.file_name || "document";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
+        return;
+      }
+
+      const type = blob.type || "";
+      setViewerKind(
+        type.startsWith("image/") ? "image" : type.includes("pdf") ? "pdf" : "other",
+      );
+      setFallbackUrl(url);
+      setViewerUrl(objectUrl);
     } catch (err: any) {
       toast({
         title: "Could not open document",
