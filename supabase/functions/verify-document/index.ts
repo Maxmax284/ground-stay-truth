@@ -248,7 +248,32 @@ IMPORTANT GUIDELINES:
 
     const analysis = JSON.parse(toolCall.function.arguments);
 
+    // ---------------------------------------------------------------------
+    // Wrong-document gate. Guests routinely upload a Thai Digital Arrival
+    // Card, boarding pass, or visa page instead of the passport photo page.
+    // When the AI is confident the image is not a photo ID (or is clearly a
+    // known wrong-document type), we immediately park the row as
+    // "needs_replacement" with a plain-English reason so the guest sees the
+    // correction in their portal without waiting on staff. Still advisory:
+    // staff can accept it manually at any time.
+    // ---------------------------------------------------------------------
+    const WRONG_DOC_LABELS: Record<string, string> = {
+      thai_arrival_card: "This is a Thai Digital Arrival Card, not a passport",
+      boarding_pass: "This is a boarding pass, not a passport",
+      flight_ticket: "This is a flight ticket, not a passport",
+      visa_page: "This is a visa page — we also need the passport photo page",
+      other_document: "This isn't an ID document",
+      not_a_document: "This image isn't a document",
+    };
+    const expected = expectedType ?? "passport";
+    const expectsPhotoId = expected === "passport" || expected === "national_id";
+    const knownWrong = WRONG_DOC_LABELS[analysis.document_type];
+    const notPhotoId =
+      analysis.is_identity_document === false && analysis.confidence !== "low";
+    const isWrongDocument = expectsPhotoId && Boolean(knownWrong || notPhotoId);
+
     const isFlagged =
+      isWrongDocument ||
       analysis.confidence === "low" ||
       analysis.is_expired ||
       (analysis.quality_issues && analysis.quality_issues.length > 0) ||
@@ -256,14 +281,23 @@ IMPORTANT GUIDELINES:
 
     const status = isFlagged ? "flagged" : "clear";
 
-    await supabase
-      .from("guest_documents")
-      .update({
-        verification_status: status,
-        verification_notes: analysis,
-        verified_at: new Date().toISOString(),
-      })
-      .eq("id", documentId);
+    const update: Record<string, unknown> = {
+      verification_status: status,
+      verification_notes: { ...analysis, wrong_document: isWrongDocument },
+      verified_at: new Date().toISOString(),
+    };
+
+    if (isWrongDocument) {
+      update.review_status = "needs_replacement";
+      update.review_reason = "Wrong document";
+      update.review_note =
+        (knownWrong ?? "This doesn't look like a passport or photo ID") +
+        ". Please upload the main passport page with your photo and details.";
+      update.reviewed_at = new Date().toISOString();
+    }
+
+    await supabase.from("guest_documents").update(update).eq("id", documentId);
+
 
     await logAiUsage({
       functionName: FN, actorId, actorRole: role, propertyId,
