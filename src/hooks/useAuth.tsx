@@ -39,36 +39,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roleResolved, setRoleResolved] = useState(false);
 
   const fetchRole = useCallback(async (userId: string) => {
-    // Retry role lookup a few times for slower mobile/PWA session restore
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId);
+    // Role lookup is RLS-scoped to auth.uid(). Immediately after sign-in (or a
+    // slow mobile/PWA session restore) the request can go out before the new
+    // access token is attached, which comes back as a successful response with
+    // ZERO rows — not an error. Treating that as "no role" is what produced the
+    // intermittent broken login that a refresh fixed. So we retry on empty
+    // results too, and confirm a session exists before each attempt.
+    const ATTEMPTS = 5;
 
-      if (!error) {
-        if (data && data.length > 0) {
+    for (let attempt = 0; attempt < ATTEMPTS; attempt += 1) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const activeUserId = sessionData.session?.user?.id ?? null;
+
+      // The user changed (or signed out) while we were resolving — abandon.
+      if (activeUserId && activeUserId !== userId) return;
+
+      if (activeUserId) {
+        const { data, error } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId);
+
+        if (!error && data && data.length > 0) {
           // Pick the highest-authority role
           const best = data.reduce((acc, cur) =>
             ROLE_PRIORITY[cur.role as AppRole] > ROLE_PRIORITY[acc.role as AppRole] ? cur : acc
           );
           setRole(best.role as AppRole);
-        } else {
-          setRole(null);
+          setRoleResolved(true);
+          return;
         }
-        setRoleResolved(true);
-        return;
       }
 
-      if (attempt < 2) {
-        await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+      if (attempt < ATTEMPTS - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
       }
     }
 
-    // Final fallback on persistent failure
+    // Genuinely no role row (or persistent failure) — let the guards show the
+    // pending-access screen rather than bouncing the user somewhere wrong.
     setRole(null);
     setRoleResolved(true);
   }, []);
+
 
   // F-15: Staff session timeout — auto sign out after inactivity
   useEffect(() => {
