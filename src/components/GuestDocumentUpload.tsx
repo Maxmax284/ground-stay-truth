@@ -461,6 +461,23 @@ export function GuestDocumentUpload({
       )}
       {canUpload && (
         <>
+          {/* Plain-English guidance BEFORE the picker opens. Guests kept
+              uploading Thai arrival cards and boarding passes, so we spell out
+              what counts and what doesn't. */}
+          {!isStaff && (documentType ?? "passport") === "passport" && (
+            <div className="rounded-md border bg-muted/40 p-3 text-xs space-y-2">
+              <p className="font-medium text-foreground">
+                {t("documents.guidanceTitle", "What we need: your passport photo page")}
+              </p>
+              <ul className="space-y-1 text-muted-foreground">
+                <li>{t("documents.guidanceOk1", "✓ The page with your photo, name and passport number")}</li>
+                <li>{t("documents.guidanceOk2", "✓ All four corners visible, in focus, no glare")}</li>
+                <li>{t("documents.guidanceBad1", "✗ Thai Digital Arrival Card / TDAC QR code")}</li>
+                <li>{t("documents.guidanceBad2", "✗ Boarding pass, flight ticket or booking confirmation")}</li>
+                <li>{t("documents.guidanceBad3", "✗ Visa sticker page on its own")}</li>
+              </ul>
+            </div>
+          )}
           <input
             ref={fileRef}
             type="file"
@@ -468,6 +485,7 @@ export function GuestDocumentUpload({
             className="hidden"
             onChange={handleFileChange}
           />
+
           <Button
             variant="outline"
             size="sm"
