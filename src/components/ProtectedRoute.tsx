@@ -24,7 +24,7 @@ const ProtectedRoute = ({ children, requiredPath, guestOnly = false }: Protected
       return;
     }
 
-    const timer = window.setTimeout(() => setTimedOut(true), 7000);
+    const timer = window.setTimeout(() => setTimedOut(true), 12000);
     return () => window.clearTimeout(timer);
   }, [loading, user, roleResolved]);
 
