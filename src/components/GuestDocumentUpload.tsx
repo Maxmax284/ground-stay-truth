@@ -427,14 +427,21 @@ export function GuestDocumentUpload({
               }
               if (status === "needs_replacement") {
                 return (
-                  <p className="text-sm text-destructive">
-                    {t(
-                      "documents.needsReplacement",
-                      "Please upload a clearer ID/passport document.",
-                    )}
-                  </p>
+                  <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-1">
+                    <p className="text-sm font-medium text-destructive">
+                      {t("documents.needsReplacementTitle", "We need a different document")}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {latest?.review_note ||
+                        t(
+                          "documents.needsReplacement",
+                          "Please upload the main passport page with your photo and details.",
+                        )}
+                    </p>
+                  </div>
                 );
               }
+
               return null;
             })()}
             {documents.map((doc) => (
