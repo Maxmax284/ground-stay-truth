@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface VerificationNotes {
   document_type?: string;
+  is_identity_document?: boolean;
+  /** True when the AI is confident the guest uploaded the wrong kind of document. */
+  wrong_document?: boolean;
   issuing_country?: string;
   expiry_date?: string | null;
   is_expired?: boolean;
