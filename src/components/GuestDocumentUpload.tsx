@@ -408,18 +408,46 @@ export function GuestDocumentUpload({
       {isLoading ? (
         <p className="text-xs text-muted-foreground">{t("common.loading")}</p>
       ) : documents && documents.length > 0 ? (
-        <div className="space-y-2">
-          {documents.map((doc) => (
-            <DocumentRow
-              key={doc.id}
-              doc={doc}
-              canDelete={canDelete}
-              isStaff={isStaff}
-              onDelete={handleDelete}
-              deleteDisabled={deleteDoc.isPending}
-            />
-          ))}
-        </div>
+        isStaff ? (
+          // Staff get the controlled vault view: secure open/download, review
+          // status, TM30 flag, and version history.
+          <StaffDocumentReview documents={documents} />
+        ) : (
+          <div className="space-y-2">
+            {(() => {
+              const latest = documents[0];
+              const status = latest?.review_status;
+              if (status === "accepted" || status === "reviewed") {
+                return (
+                  <p className="text-sm text-[hsl(var(--success))]">
+                    {t("documents.received", "ID document received.")}
+                  </p>
+                );
+              }
+              if (status === "needs_replacement") {
+                return (
+                  <p className="text-sm text-destructive">
+                    {t(
+                      "documents.needsReplacement",
+                      "Please upload a clearer ID/passport document.",
+                    )}
+                  </p>
+                );
+              }
+              return null;
+            })()}
+            {documents.map((doc) => (
+              <DocumentRow
+                key={doc.id}
+                doc={doc}
+                canDelete={canDelete}
+                isStaff={isStaff}
+                onDelete={handleDelete}
+                deleteDisabled={deleteDoc.isPending}
+              />
+            ))}
+          </div>
+        )
       ) : (
         <p className="text-sm text-muted-foreground">{t("documents.noDocuments")}</p>
       )}
