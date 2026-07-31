@@ -330,7 +330,22 @@ export function StaffDocumentReview({ documents }: { documents: GuestDocument[] 
 
   return (
     <div className="space-y-3">
+      {/* Auto-caught wrong upload. The AI already told the guest to replace it;
+          this just saves staff from opening the file to find out. */}
+      {latest.verification_notes?.wrong_document && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 flex items-start gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <span>
+            <strong>Auto-checked: wrong document.</strong>{" "}
+            {latest.verification_notes.summary ??
+              "This doesn't look like a passport or photo ID."}{" "}
+            The guest has already been asked to upload the passport photo page.
+            You can still accept it manually if it's fine.
+          </span>
+        </div>
+      )}
       <div className="rounded-md border p-3 space-y-3">
+
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="text-sm font-medium flex items-center gap-2 truncate">
