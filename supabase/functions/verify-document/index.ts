@@ -50,7 +50,7 @@ serve(async (req) => {
   const ipHash = await hashIp(req);
 
   try {
-    const { documentId, filePath } = await req.json();
+    const { documentId, filePath, expectedType } = await req.json();
     if (!documentId || !filePath) {
       return new Response(JSON.stringify({ error: "documentId and filePath required" }), {
         status: 400,
@@ -146,16 +146,23 @@ IMPORTANT GUIDELINES:
 - Flag concerns but do not make accusations.
 - Assess document quality, readability, and basic validity indicators.
 - Do not extract or store actual personal data (names, numbers, dates) in your response — only indicate whether fields are readable or not.
-- If the image is not an identification document, indicate that clearly.
+- Be precise about WHAT the image actually is. Many guests upload the wrong thing:
+  a Thai Digital Arrival Card / TDAC QR page, a boarding pass, a flight ticket,
+  a visa page, a hotel voucher, or a random photo. These are NOT passports.
+- A passport photo page shows the holder photo, the machine-readable zone (two
+  lines of characters at the bottom), and the passport number. If those are not
+  visible, it is not a passport photo page.
+- Set is_identity_document to false for anything that is not a government photo ID.
 - Be concise and professional.`,
           },
           {
             role: "user",
             content: [
-              { type: "text", text: "Analyze this identification document image. Use the analyze_document tool to provide your structured assessment." },
+              { type: "text", text: `Analyze this uploaded image. The property expected: ${expectedType ?? "passport"}. Identify exactly what the image is and whether it is a government-issued photo ID. Use the analyze_document tool.` },
               { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64}` } },
             ],
           },
+
         ],
         tools: [
           {
@@ -166,7 +173,8 @@ IMPORTANT GUIDELINES:
               parameters: {
                 type: "object",
                 properties: {
-                  document_type: { type: "string", enum: ["passport", "national_id", "drivers_license", "residence_permit", "unknown"] },
+                  document_type: { type: "string", enum: ["passport", "national_id", "drivers_license", "residence_permit", "visa_page", "thai_arrival_card", "boarding_pass", "flight_ticket", "other_document", "not_a_document", "unknown"] },
+                  is_identity_document: { type: "boolean", description: "True only for a government-issued photo ID (passport, national ID, driver's licence, residence permit)." },
                   issuing_country: { type: "string" },
                   expiry_date: { type: "string" },
                   is_expired: { type: "boolean" },
@@ -177,10 +185,11 @@ IMPORTANT GUIDELINES:
                   summary: { type: "string" },
                 },
                 required: [
-                  "document_type", "issuing_country", "is_expired",
+                  "document_type", "is_identity_document", "issuing_country", "is_expired",
                   "holder_name_readable", "document_number_readable",
                   "quality_issues", "confidence", "summary",
                 ],
+
                 additionalProperties: false,
               },
             },
@@ -239,7 +248,32 @@ IMPORTANT GUIDELINES:
 
     const analysis = JSON.parse(toolCall.function.arguments);
 
+    // ---------------------------------------------------------------------
+    // Wrong-document gate. Guests routinely upload a Thai Digital Arrival
+    // Card, boarding pass, or visa page instead of the passport photo page.
+    // When the AI is confident the image is not a photo ID (or is clearly a
+    // known wrong-document type), we immediately park the row as
+    // "needs_replacement" with a plain-English reason so the guest sees the
+    // correction in their portal without waiting on staff. Still advisory:
+    // staff can accept it manually at any time.
+    // ---------------------------------------------------------------------
+    const WRONG_DOC_LABELS: Record<string, string> = {
+      thai_arrival_card: "This is a Thai Digital Arrival Card, not a passport",
+      boarding_pass: "This is a boarding pass, not a passport",
+      flight_ticket: "This is a flight ticket, not a passport",
+      visa_page: "This is a visa page — we also need the passport photo page",
+      other_document: "This isn't an ID document",
+      not_a_document: "This image isn't a document",
+    };
+    const expected = expectedType ?? "passport";
+    const expectsPhotoId = expected === "passport" || expected === "national_id";
+    const knownWrong = WRONG_DOC_LABELS[analysis.document_type];
+    const notPhotoId =
+      analysis.is_identity_document === false && analysis.confidence !== "low";
+    const isWrongDocument = expectsPhotoId && Boolean(knownWrong || notPhotoId);
+
     const isFlagged =
+      isWrongDocument ||
       analysis.confidence === "low" ||
       analysis.is_expired ||
       (analysis.quality_issues && analysis.quality_issues.length > 0) ||
@@ -247,14 +281,23 @@ IMPORTANT GUIDELINES:
 
     const status = isFlagged ? "flagged" : "clear";
 
-    await supabase
-      .from("guest_documents")
-      .update({
-        verification_status: status,
-        verification_notes: analysis,
-        verified_at: new Date().toISOString(),
-      })
-      .eq("id", documentId);
+    const update: Record<string, unknown> = {
+      verification_status: status,
+      verification_notes: { ...analysis, wrong_document: isWrongDocument },
+      verified_at: new Date().toISOString(),
+    };
+
+    if (isWrongDocument) {
+      update.review_status = "needs_replacement";
+      update.review_reason = "Wrong document";
+      update.review_note =
+        (knownWrong ?? "This doesn't look like a passport or photo ID") +
+        ". Please upload the main passport page with your photo and details.";
+      update.reviewed_at = new Date().toISOString();
+    }
+
+    await supabase.from("guest_documents").update(update).eq("id", documentId);
+
 
     await logAiUsage({
       functionName: FN, actorId, actorRole: role, propertyId,

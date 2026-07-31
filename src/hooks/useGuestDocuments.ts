@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface VerificationNotes {
   document_type?: string;
+  is_identity_document?: boolean;
+  /** True when the AI is confident the guest uploaded the wrong kind of document. */
+  wrong_document?: boolean;
   issuing_country?: string;
   expiry_date?: string | null;
   is_expired?: boolean;
@@ -35,14 +38,15 @@ export const REVIEW_STATUS_LABELS: Record<DocumentReviewStatus, string> = {
 
 /** Plain-English reasons staff can attach when asking for a replacement. */
 export const REPLACEMENT_REASONS = [
-  "Blurry image",
   "Wrong document",
+  "Blurry image",
   "Missing passport photo page",
   "Expired document",
   "Unreadable details",
   "Wrong guest",
   "Missing required page",
 ] as const;
+
 
 export interface GuestDocument {
   id: string;
@@ -116,7 +120,7 @@ export function useUploadGuestDocument() {
       const docData = data as unknown as GuestDocument;
       supabase.functions
         .invoke("verify-document", {
-          body: { documentId: docData.id, filePath },
+          body: { documentId: docData.id, filePath, expectedType: documentType },
         })
         .then(() => {
           // Refetch after a short delay to pick up AI results
