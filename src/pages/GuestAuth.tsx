@@ -42,8 +42,12 @@ const GuestAuth = () => {
 
   if (user) {
     if (role === "guest") return <Navigate to={unitParam ? `/guest?unit=${unitParam}` : "/guest"} replace />;
-    return <Navigate to="/dashboard" replace />;
+    // Role resolved but not a guest (staff, or no role row yet) — hand off to the
+    // role router instead of hard-forcing /dashboard, which dead-ends for
+    // accounts whose role hasn't been assigned.
+    return <Navigate to="/index" replace />;
   }
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
