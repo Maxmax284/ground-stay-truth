@@ -1161,6 +1161,39 @@ export type Database = {
           },
         ]
       }
+      guest_document_access_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_role: string | null
+          booking_id: string | null
+          created_at: string
+          detail: string | null
+          document_id: string | null
+          id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_role?: string | null
+          booking_id?: string | null
+          created_at?: string
+          detail?: string | null
+          document_id?: string | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_role?: string | null
+          booking_id?: string | null
+          created_at?: string
+          detail?: string | null
+          document_id?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       guest_documents: {
         Row: {
           booking_id: string
@@ -1169,7 +1202,16 @@ export type Database = {
           file_name: string
           file_path: string
           id: string
+          review_note: string | null
+          review_reason: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          superseded: boolean
+          tm30_marked_at: string | null
+          tm30_marked_by: string | null
           uploaded_by: string | null
+          used_for_tm30: boolean
           verification_notes: Json | null
           verification_status: string | null
           verified_at: string | null
@@ -1181,7 +1223,16 @@ export type Database = {
           file_name: string
           file_path: string
           id?: string
+          review_note?: string | null
+          review_reason?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          superseded?: boolean
+          tm30_marked_at?: string | null
+          tm30_marked_by?: string | null
           uploaded_by?: string | null
+          used_for_tm30?: boolean
           verification_notes?: Json | null
           verification_status?: string | null
           verified_at?: string | null
@@ -1193,7 +1244,16 @@ export type Database = {
           file_name?: string
           file_path?: string
           id?: string
+          review_note?: string | null
+          review_reason?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          superseded?: boolean
+          tm30_marked_at?: string | null
+          tm30_marked_by?: string | null
           uploaded_by?: string | null
+          used_for_tm30?: boolean
           verification_notes?: Json | null
           verification_status?: string | null
           verified_at?: string | null
