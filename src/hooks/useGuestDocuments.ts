@@ -120,7 +120,7 @@ export function useUploadGuestDocument() {
       const docData = data as unknown as GuestDocument;
       supabase.functions
         .invoke("verify-document", {
-          body: { documentId: docData.id, filePath },
+          body: { documentId: docData.id, filePath, expectedType: documentType },
         })
         .then(() => {
           // Refetch after a short delay to pick up AI results
