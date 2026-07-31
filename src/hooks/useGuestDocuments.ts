@@ -311,3 +311,32 @@ export function useDocumentAccessLog(bookingId: string | null, enabled = false) 
     },
   });
 }
+
+/**
+ * Lightweight per-booking ID status for list views.
+ * Returns a map of booking_id -> worst-case status to surface in the list.
+ */
+export function useBookingDocumentFlags(bookingIds: string[]) {
+  const key = [...bookingIds].sort().join(",");
+  return useQuery({
+    queryKey: ["bookingDocumentFlags", key],
+    enabled: bookingIds.length > 0,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("guest_documents")
+        .select("booking_id, review_status, superseded, created_at")
+        .in("booking_id", bookingIds)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const map: Record<string, DocumentReviewStatus> = {};
+      for (const row of (data ?? []) as any[]) {
+        // First row per booking is the newest upload.
+        if (!map[row.booking_id]) {
+          map[row.booking_id] = (row.review_status ?? "uploaded") as DocumentReviewStatus;
+        }
+      }
+      return map;
+    },
+  });
+}
