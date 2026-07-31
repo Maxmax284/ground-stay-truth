@@ -173,7 +173,8 @@ IMPORTANT GUIDELINES:
               parameters: {
                 type: "object",
                 properties: {
-                  document_type: { type: "string", enum: ["passport", "national_id", "drivers_license", "residence_permit", "unknown"] },
+                  document_type: { type: "string", enum: ["passport", "national_id", "drivers_license", "residence_permit", "visa_page", "thai_arrival_card", "boarding_pass", "flight_ticket", "other_document", "not_a_document", "unknown"] },
+                  is_identity_document: { type: "boolean", description: "True only for a government-issued photo ID (passport, national ID, driver's licence, residence permit)." },
                   issuing_country: { type: "string" },
                   expiry_date: { type: "string" },
                   is_expired: { type: "boolean" },
@@ -184,10 +185,11 @@ IMPORTANT GUIDELINES:
                   summary: { type: "string" },
                 },
                 required: [
-                  "document_type", "issuing_country", "is_expired",
+                  "document_type", "is_identity_document", "issuing_country", "is_expired",
                   "holder_name_readable", "document_number_readable",
                   "quality_issues", "confidence", "summary",
                 ],
+
                 additionalProperties: false,
               },
             },
