@@ -50,7 +50,7 @@ serve(async (req) => {
   const ipHash = await hashIp(req);
 
   try {
-    const { documentId, filePath } = await req.json();
+    const { documentId, filePath, expectedType } = await req.json();
     if (!documentId || !filePath) {
       return new Response(JSON.stringify({ error: "documentId and filePath required" }), {
         status: 400,
