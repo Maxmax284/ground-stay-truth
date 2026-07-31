@@ -32,6 +32,7 @@ import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 import type { DocumentType } from "@/lib/requiredDocuments";
+import { StaffDocumentReview } from "@/components/StaffDocumentReview";
 
 interface GuestDocumentUploadProps {
   bookingId: string;
