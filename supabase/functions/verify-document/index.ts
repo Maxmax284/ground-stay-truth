@@ -146,16 +146,23 @@ IMPORTANT GUIDELINES:
 - Flag concerns but do not make accusations.
 - Assess document quality, readability, and basic validity indicators.
 - Do not extract or store actual personal data (names, numbers, dates) in your response — only indicate whether fields are readable or not.
-- If the image is not an identification document, indicate that clearly.
+- Be precise about WHAT the image actually is. Many guests upload the wrong thing:
+  a Thai Digital Arrival Card / TDAC QR page, a boarding pass, a flight ticket,
+  a visa page, a hotel voucher, or a random photo. These are NOT passports.
+- A passport photo page shows the holder photo, the machine-readable zone (two
+  lines of characters at the bottom), and the passport number. If those are not
+  visible, it is not a passport photo page.
+- Set is_identity_document to false for anything that is not a government photo ID.
 - Be concise and professional.`,
           },
           {
             role: "user",
             content: [
-              { type: "text", text: "Analyze this identification document image. Use the analyze_document tool to provide your structured assessment." },
+              { type: "text", text: `Analyze this uploaded image. The property expected: ${expectedType ?? "passport"}. Identify exactly what the image is and whether it is a government-issued photo ID. Use the analyze_document tool.` },
               { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64}` } },
             ],
           },
+
         ],
         tools: [
           {
