@@ -38,14 +38,15 @@ export const REVIEW_STATUS_LABELS: Record<DocumentReviewStatus, string> = {
 
 /** Plain-English reasons staff can attach when asking for a replacement. */
 export const REPLACEMENT_REASONS = [
-  "Blurry image",
   "Wrong document",
+  "Blurry image",
   "Missing passport photo page",
   "Expired document",
   "Unreadable details",
   "Wrong guest",
   "Missing required page",
 ] as const;
+
 
 export interface GuestDocument {
   id: string;
