@@ -92,11 +92,44 @@ function DocumentActions({ doc, compact }: { doc: GuestDocument; compact?: boole
   const [replaceOpen, setReplaceOpen] = useState(false);
   const [reason, setReason] = useState<string>(REPLACEMENT_REASONS[0]);
   const [note, setNote] = useState("");
+  // In-app viewer state. Mobile browsers and the installed PWA block
+  // window.open() calls made after an await, which is why staff saw nothing
+  // happen when they tapped View. We render the file inline instead.
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+  const [viewerKind, setViewerKind] = useState<"image" | "pdf" | "other">("image");
+  const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
+
+  const closeViewer = () => {
+    if (viewerUrl) URL.revokeObjectURL(viewerUrl);
+    setViewerUrl(null);
+    setFallbackUrl(null);
+  };
 
   const handleOpen = async (action: "view" | "download") => {
     try {
       const url = await open.mutateAsync({ doc, action });
-      window.open(url, "_blank", "noopener,noreferrer");
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Could not fetch the file");
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+
+      if (action === "download") {
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.download = doc.file_name || "document";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
+        return;
+      }
+
+      const type = blob.type || "";
+      setViewerKind(
+        type.startsWith("image/") ? "image" : type.includes("pdf") ? "pdf" : "other",
+      );
+      setFallbackUrl(url);
+      setViewerUrl(objectUrl);
     } catch (err: any) {
       toast({
         title: "Could not open document",
@@ -189,6 +222,41 @@ function DocumentActions({ doc, compact }: { doc: GuestDocument; compact?: boole
           </Button>
         </>
       )}
+
+      <Dialog open={!!viewerUrl} onOpenChange={(o) => !o && closeViewer()}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="truncate">{doc.file_name}</DialogTitle>
+            <DialogDescription>
+              Viewed through a short-lived secure link. This view is logged.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[65vh] overflow-auto rounded-md border bg-muted/30">
+            {viewerKind === "image" && viewerUrl && (
+              <img src={viewerUrl} alt={`Guest document: ${doc.file_name}`} className="w-full h-auto" />
+            )}
+            {viewerKind === "pdf" && viewerUrl && (
+              <iframe src={viewerUrl} title={doc.file_name} className="w-full h-[65vh]" />
+            )}
+            {viewerKind === "other" && (
+              <p className="p-4 text-sm text-muted-foreground">
+                This file type can't be previewed. Use Download instead.
+              </p>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            {fallbackUrl && (
+              <Button variant="outline" asChild>
+                <a href={fallbackUrl} target="_blank" rel="noopener noreferrer">
+                  Open in new tab
+                </a>
+              </Button>
+            )}
+            <Button variant="ghost" onClick={closeViewer}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <Dialog open={replaceOpen} onOpenChange={setReplaceOpen}>
         <DialogContent>
