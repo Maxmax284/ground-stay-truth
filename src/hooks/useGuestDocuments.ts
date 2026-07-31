@@ -14,6 +14,36 @@ export interface VerificationNotes {
   error?: string;
 }
 
+/**
+ * Staff review status for a guest identity document.
+ * Advisory only — none of these values block check-in or any other action.
+ */
+export type DocumentReviewStatus =
+  | "uploaded"
+  | "reviewed"
+  | "accepted"
+  | "needs_replacement"
+  | "superseded";
+
+export const REVIEW_STATUS_LABELS: Record<DocumentReviewStatus, string> = {
+  uploaded: "Uploaded — needs review",
+  reviewed: "Reviewed",
+  accepted: "Accepted",
+  needs_replacement: "Needs replacement",
+  superseded: "Replaced",
+};
+
+/** Plain-English reasons staff can attach when asking for a replacement. */
+export const REPLACEMENT_REASONS = [
+  "Blurry image",
+  "Wrong document",
+  "Missing passport photo page",
+  "Expired document",
+  "Unreadable details",
+  "Wrong guest",
+  "Missing required page",
+] as const;
+
 export interface GuestDocument {
   id: string;
   booking_id: string;
@@ -25,6 +55,15 @@ export interface GuestDocument {
   verification_notes: VerificationNotes | null;
   verified_at: string | null;
   document_type: string;
+  review_status: DocumentReviewStatus;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_reason: string | null;
+  review_note: string | null;
+  used_for_tm30: boolean;
+  tm30_marked_by: string | null;
+  tm30_marked_at: string | null;
+  superseded: boolean;
 }
 
 import type { DocumentType } from "@/lib/requiredDocuments";
