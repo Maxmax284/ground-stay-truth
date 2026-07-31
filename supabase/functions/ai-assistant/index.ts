@@ -295,6 +295,19 @@ function buildSystemPrompt(role: string, language: string, contextData: string, 
     layers.push(STRATEGIC_ARC);
   }
 
+  // Guest identity documents / TM30 workflow. Staff ask where passports live.
+  // Never surface file links, storage paths, or document contents here.
+  if (role && role !== "guest") {
+    layers.push(
+      `GUEST DOCUMENT WORKFLOW: Uploaded guest ID/passport documents live in Booking Detail → Documents tab. ` +
+      `Open the booking, then Documents, to view or download the latest upload. Staff can mark a document ` +
+      `Reviewed, Accepted, or Needs replacement (with a reason such as blurry image or wrong document), and ` +
+      `flag "Details copied for TM30". Older uploads sit under "previous uploads". TM30 filing itself is ` +
+      `confirmed with the TM30 row on the same tab. Every staff view or download is logged. Never share ` +
+      `document links, storage paths, or document contents in chat — direct staff to the booking.`,
+    );
+  }
+
   layers.push(SAFETY_RULES);
   layers.push(ACCURACY);
   layers.push(RESPONSE_STRUCTURE);

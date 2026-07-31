@@ -38,7 +38,8 @@ export function RequiredDocumentsCard({ bookingId, checkIn, checkOut }: Props) {
             Documents Checklist
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            All items are advisory — none of these block check-in.
+            Use for check-in identity review and TM30 registration. Advisory only —
+            nothing here blocks check-in.
           </p>
         </div>
         <Badge variant="outline" className="text-xs shrink-0">

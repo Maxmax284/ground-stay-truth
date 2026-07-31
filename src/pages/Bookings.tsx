@@ -30,7 +30,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GuestDirectory } from "@/components/guests/GuestDirectory";
 import { getBookingDeadline, describeDeadline } from "@/lib/bookingDeadline";
 import { ExtendDeadlineDialog } from "@/components/ExtendDeadlineDialog";
-import { Clock } from "lucide-react";
+import { Clock, IdCard } from "lucide-react";
+import { useBookingDocumentFlags, REVIEW_STATUS_LABELS, type DocumentReviewStatus } from "@/hooks/useGuestDocuments";
+
+/** Small ID-document indicator for the bookings list. Advisory only. */
+function DocumentFlagBadge({ status }: { status?: DocumentReviewStatus }) {
+  if (!status) return null;
+  const label = status === "uploaded" ? "ID uploaded — needs review" : REVIEW_STATUS_LABELS[status];
+  const tone =
+    status === "accepted"
+      ? "bg-success/20 text-[hsl(var(--success))] border-0"
+      : status === "needs_replacement"
+        ? "bg-destructive/15 text-destructive border-0"
+        : "text-muted-foreground";
+  return (
+    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 gap-1 ${tone}`}>
+      <IdCard className="h-3 w-3" /> {label}
+    </Badge>
+  );
+}
 
 
 
@@ -205,6 +223,8 @@ const Bookings = () => {
     finally { setRejectId(null); setRejectReason(""); }
   };
 
+  const { data: docFlags } = useBookingDocumentFlags((bookings ?? []).map((b) => b.id));
+
   return (
     <DashboardLayout>
       <div className="space-y-6" data-ai-focus="bookings">
@@ -291,7 +311,12 @@ const Bookings = () => {
                     onClick={() => setSelectedBookingId(b.id)}
                   >
                     <TableCell className="font-medium">{b.units?.name ?? "—"}</TableCell>
-                    <TableCell className="text-muted-foreground">{resolveGuestDisplayName(b as any)}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      <div className="flex flex-col gap-1">
+                        <span>{resolveGuestDisplayName(b as any)}</span>
+                        <DocumentFlagBadge status={docFlags?.[b.id]} />
+                      </div>
+                    </TableCell>
                     <TableCell>{format(new Date(b.check_in), "MMM d, yyyy")}</TableCell>
                     <TableCell>{format(new Date(b.check_out), "MMM d, yyyy")}</TableCell>
                     <TableCell>{b.num_guests}</TableCell>
