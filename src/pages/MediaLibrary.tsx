@@ -673,6 +673,10 @@ export default function MediaLibrary() {
                             className="bg-background/80 rounded p-1" title="Copy URL">
                             <Copy className="h-3.5 w-3.5" />
                           </button>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); handleSingleDownload(p); }}
+                            className="bg-background/80 rounded p-1" title="Download">
+                            <Download className="h-3.5 w-3.5" />
+                          </button>
                         </div>
 
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 pt-4">
