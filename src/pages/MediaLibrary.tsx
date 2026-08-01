@@ -362,40 +362,67 @@ export default function MediaLibrary() {
 
   // ---- Downloads -----------------------------------------------------------
   const handleSingleDownload = async (p: PhotoRow) => {
+    setSingleDownload({ name: p.original_filename || p.storage_path.split("/").pop() || "photo", attempt: 1, attempts: 3 });
     try {
-      await downloadSingleAsset(p);
+      await downloadSingleAsset(p, (prog) =>
+        setSingleDownload({
+          name: p.original_filename || p.storage_path.split("/").pop() || "photo",
+          attempt: prog.attempt,
+          attempts: prog.attempts,
+          saving: prog.phase === "saving",
+        }),
+      );
     } catch (err: unknown) {
-      toast({ title: "Download failed", description: errorMessage(err), variant: "destructive" });
+      toast({
+        title: "Download failed",
+        description: `${errorMessage(err)} — tap the download icon again to retry.`,
+        variant: "destructive",
+      });
+    } finally {
+      setSingleDownload(null);
     }
   };
 
-  const runZipDownload = async (rows: PhotoRow[], label: string) => {
+  const runZipDownload = async (rows: PhotoRow[], label: string, pass = 0) => {
     if (zipProgress) return;
     if (rows.length === 0) { toast({ title: "Nothing to download" }); return; }
     if (rows.length === 1) { await handleSingleDownload(rows[0]); return; }
-    if (rows.length > 200 && !window.confirm(`Download ${rows.length} photos as one zip? This may take a few minutes.`)) return;
+    if (pass === 0 && rows.length > 200 && !window.confirm(`Download ${rows.length} photos as one zip? This may take a few minutes.`)) return;
 
-    setZipProgress({ done: 0, total: rows.length, phase: "fetching", label });
+    const controller = new AbortController();
+    zipAbortRef.current = controller;
+    setFailedBatch(null);
+    setZipProgress({ done: 0, total: rows.length, phase: "fetching", failed: 0, pass, label });
     try {
-      const { added, failed } = await downloadAssetsAsZip(
+      const { added, failedAssets, aborted } = await downloadAssetsAsZip(
         rows,
         zipFilename(label),
         (p) => setZipProgress({ ...p, label }),
+        { signal: controller.signal, pass },
       );
-      if (added === 0) {
-        toast({ title: "Download failed", description: "None of the files could be fetched.", variant: "destructive" });
+      if (aborted) {
+        toast({ title: "Download cancelled" });
+      } else if (added === 0) {
+        setFailedBatch({ rows: failedAssets as PhotoRow[], label });
+        toast({ title: "Download failed", description: "None of the files could be fetched. Use Retry to try again.", variant: "destructive" });
       } else {
+        if (failedAssets.length > 0) setFailedBatch({ rows: failedAssets as PhotoRow[], label });
         toast({
           title: `Downloaded ${added} photo${added === 1 ? "" : "s"}`,
-          description: failed.length > 0 ? `${failed.length} could not be fetched and were skipped.` : undefined,
+          description: failedAssets.length > 0
+            ? `${failedAssets.length} could not be fetched. Use Retry missed files to grab just those.`
+            : undefined,
         });
       }
     } catch (err: unknown) {
+      setFailedBatch({ rows, label });
       toast({ title: "Download failed", description: errorMessage(err), variant: "destructive" });
     } finally {
+      zipAbortRef.current = null;
       setZipProgress(null);
     }
   };
+
 
 
   // Drag-drop on whole grid
