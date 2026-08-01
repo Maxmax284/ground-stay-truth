@@ -846,16 +846,38 @@ export default function MediaLibrary() {
           {lightbox && (
             <div className="space-y-2">
               <img src={lightbox.url} alt={lightbox.alt_text ?? ""} className="w-full max-h-[80vh] object-contain rounded" />
-              <div className="px-2 pb-2 text-sm">
-                <p className="font-medium">{lightbox.caption || lightbox.original_filename}</p>
-                <p className="text-xs text-muted-foreground">
-                  {lightbox.folder} · {(lightbox.tags ?? []).join(", ") || "No tags"}
-                </p>
+              <div className="px-2 pb-2 text-sm flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{lightbox.caption || lightbox.original_filename}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {lightbox.folder} · {(lightbox.tags ?? []).join(", ") || "No tags"}
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" className="shrink-0" onClick={() => handleSingleDownload(lightbox)}>
+                  <Download className="h-4 w-4" /> Download
+                </Button>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Download progress — bottom-left so it never fights the upload tray */}
+      {zipProgress && (
+        <Card className="fixed bottom-4 left-4 z-50 w-[min(320px,calc(100vw-2rem))] p-3 space-y-2 shadow-2xl border-primary/30 bg-card/95 backdrop-blur">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span className="truncate">
+              {zipProgress.phase === "zipping"
+                ? "Building zip…"
+                : `Downloading ${zipProgress.done} of ${zipProgress.total}…`}
+            </span>
+          </div>
+          <Progress value={zipProgress.total ? (zipProgress.done / zipProgress.total) * 100 : 0} className="h-1.5" />
+          <p className="text-[11px] text-muted-foreground">Keep this tab open until the zip saves.</p>
+        </Card>
+      )}
+
     </DashboardLayout>
   );
 }
