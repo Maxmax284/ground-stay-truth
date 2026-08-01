@@ -120,9 +120,13 @@ export default function MediaLibrary() {
 
   const displayPhotos = useMemo(() => photos.filter((p) => !imageErrors.has(p.id)), [photos, imageErrors]);
 
-  // Sync orphans: storage files in `library/` not in DB (legacy)
+  // Sync orphans: storage files in `library/` not in DB (legacy).
+  // Runs once per visit — it used to re-run on every asset-count change, which
+  // meant a storage list plus a write per orphan on each pass.
+  const orphanSyncRan = useRef(false);
   useEffect(() => {
-    if (!assets) return;
+    if (!assets || orphanSyncRan.current) return;
+    orphanSyncRan.current = true;
     let cancelled = false;
     (async () => {
       const { data: files } = await supabase.storage
@@ -132,6 +136,7 @@ export default function MediaLibrary() {
       const existing = new Set(assets.map((a) => a.storage_path));
       const orphans = files.filter((f) => f.id !== null && !existing.has(`${LIBRARY_PREFIX}/${f.name}`));
       for (const f of orphans) {
+        if (cancelled) return;
         await upsertAsset.mutateAsync({
           storage_path: `${LIBRARY_PREFIX}/${f.name}`,
           original_filename: f.name,
@@ -141,7 +146,7 @@ export default function MediaLibrary() {
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assets?.length]);
+  }, [!!assets]);
 
   // Usage map: url -> unit names
   const usageByUrl = useMemo(() => {
