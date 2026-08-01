@@ -366,6 +366,27 @@ export default function MediaLibrary() {
   const copyUrl = async (url: string) => { await navigator.clipboard.writeText(url); toast({ title: "URL copied" }); };
 
   // ---- Downloads -----------------------------------------------------------
+  const exportCsv = async () => {
+    try {
+      const rows = displayPhotos.map((p) => ({
+        original_filename: p.original_filename,
+        storage_path: p.storage_path,
+        folder: p.folder,
+        created_at: p.created_at,
+        uploaded_by: p.uploaded_by,
+        usedBy: usageByUrl.get(p.url) ?? [],
+      }));
+      const uploaders = await fetchUploaderNames(rows.map((r) => r.uploaded_by || ""));
+      downloadCsv(
+        buildMediaCsv(rows, uploaders),
+        `media-library-${new Date().toISOString().slice(0, 10)}.csv`,
+      );
+      toast({ title: `Exported ${rows.length} rows to CSV` });
+    } catch (err) {
+      toast({ title: "CSV export failed", description: errorMessage(err), variant: "destructive" });
+    }
+  };
+
   const handleSingleDownload = async (p: PhotoRow) => {
     setSingleDownload({ name: p.original_filename || p.storage_path.split("/").pop() || "photo", attempt: 1, attempts: 3 });
     try {
