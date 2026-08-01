@@ -114,7 +114,7 @@ export default function MediaLibrary() {
     // (which only sees the `library/` prefix and would hide backfilled unit photos).
     return (assets ?? []).map((a) => {
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(a.storage_path);
-      return { ...a, url: data.publicUrl };
+      return { ...a, url: data.publicUrl, thumbUrl: thumbFor(data.publicUrl) };
     });
   }, [assets]);
 
