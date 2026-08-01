@@ -585,6 +585,11 @@ export default function MediaLibrary() {
                 <Button size="sm" variant="outline" onClick={() => setRemoveUnitOpen(true)}>
                   <Unlink className="h-4 w-4" /> Remove from unit
                 </Button>
+                <Button size="sm" variant="outline" disabled={!!zipProgress}
+                  onClick={() => runZipDownload(allSelectedPaths, `${allSelectedPaths.length}-selected`)}>
+                  {zipProgress ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  Download ({selected.size})
+                </Button>
                 <Button size="sm" variant="outline" onClick={handleBulkDelete}>
                   <Trash2 className="h-4 w-4" /> Delete
                 </Button>
