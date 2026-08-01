@@ -139,6 +139,14 @@ export default function MediaLibrary() {
     return m;
   }, [units]);
 
+  // Photos currently assigned to at least one unit — "in use as we speak".
+  const inUsePhotos = useMemo(
+    () => displayPhotos.filter((p) => (usageByUrl.get(p.url) ?? []).length > 0),
+    [displayPhotos, usageByUrl],
+  );
+
+
+
   // Folder list
   const folders = useMemo(() => {
     const set = new Set<string>([UNCATEGORIZED, ...DEFAULT_FOLDERS, ...customFolders]);
