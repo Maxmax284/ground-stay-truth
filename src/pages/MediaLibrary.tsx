@@ -709,9 +709,16 @@ export default function MediaLibrary() {
                         className={`group relative aspect-square rounded-md overflow-hidden border transition-all ${
                           isSelected ? "ring-2 ring-primary border-primary" : "border-border hover:border-primary/50"
                         }`}>
-                        <img src={p.url} alt={p.alt_text ?? p.original_filename ?? ""} loading="lazy"
-                          className="w-full h-full object-cover cursor-pointer"
-                          onError={() => setImageErrors((prev) => new Set(prev).add(p.id))}
+                        <img src={p.thumbUrl} alt={p.alt_text ?? p.original_filename ?? ""}
+                          loading="lazy" decoding="async" width={420} height={420}
+                          className="w-full h-full object-cover cursor-pointer bg-muted"
+                          onError={(e) => {
+                            // Transformer unavailable → fall back to the original once,
+                            // then treat it as a genuinely broken file.
+                            const img = e.currentTarget;
+                            if (img.src !== p.url) img.src = p.url;
+                            else setImageErrors((prev) => new Set(prev).add(p.id));
+                          }}
                           onClick={() => toggleSelect(p.id)} />
 
                         <button type="button" onClick={(e) => { e.stopPropagation(); toggleSelect(p.id); }}
