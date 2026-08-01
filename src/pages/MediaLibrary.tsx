@@ -376,7 +376,7 @@ export default function MediaLibrary() {
         folder: p.folder,
         created_at: p.created_at,
         uploaded_by: p.uploaded_by,
-        usedBy: usageByUrl.get(p.url) ?? [],
+        usedBy: (usageByUrl.get(p.url) ?? []).map((u) => u.name),
       }));
       const uploaders = await fetchUploaderNames(rows.map((r) => r.uploaded_by || ""));
       downloadCsv(
