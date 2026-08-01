@@ -969,8 +969,6 @@ export default function MediaLibrary() {
         </Card>
       )}
 
-      )}
-
     </DashboardLayout>
   );
 }
