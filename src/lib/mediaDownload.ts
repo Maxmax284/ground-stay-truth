@@ -131,11 +131,13 @@ export type ZipResult = {
   added: number;
   /** Assets that failed every retry — hand these straight back into a retry pass. */
   failedAssets: DownloadableAsset[];
+  /** Assets whose file is gone from storage — retrying will never help. */
+  missingAssets: DownloadableAsset[];
   aborted: boolean;
 };
 
 /**
- * Fetch every asset (batched, 5 at a time, each with retry) and download a
+ * Fetch every asset (batched, 8 at a time, each with retry) and download a
  * single zip organized into folders that mirror the media library folders.
  * Reports fetch progress, zip-build progress and failure counts as it goes.
  */
@@ -148,16 +150,17 @@ export async function downloadAssetsAsZip(
   const zip = new JSZip();
   const used = new Set<string>();
   const failedAssets: DownloadableAsset[] = [];
+  const missingAssets: DownloadableAsset[] = [];
   const pass = opts.pass ?? 0;
   let added = 0;
   let done = 0;
   const total = assets.length;
   const report = (phase: ZipProgress["phase"], zipPercent?: number) =>
-    onProgress?.({ done, total, phase, failed: failedAssets.length, pass, zipPercent });
+    onProgress?.({ done, total, phase, failed: failedAssets.length + missingAssets.length, pass, zipPercent });
 
-  const BATCH = 5;
+  const BATCH = 8;
   for (let i = 0; i < assets.length; i += BATCH) {
-    if (opts.signal?.aborted) return { added, failedAssets, aborted: true };
+    if (opts.signal?.aborted) return { added, failedAssets, missingAssets, aborted: true };
     const batch = assets.slice(i, i + BATCH);
     await Promise.all(
       batch.map(async (asset) => {
@@ -167,7 +170,10 @@ export async function downloadAssetsAsZip(
           zip.file(path, blob);
           added += 1;
         } catch (e) {
-          if ((e as Error)?.name !== "AbortError") failedAssets.push(asset);
+          const name = (e as Error)?.name;
+          if (name === "AbortError") return;
+          if (name === "PermanentFetchError") missingAssets.push(asset);
+          else failedAssets.push(asset);
         } finally {
           done += 1;
           report("fetching");
@@ -175,6 +181,7 @@ export async function downloadAssetsAsZip(
       }),
     );
   }
+
 
   if (opts.signal?.aborted) return { added, failedAssets, aborted: true };
   if (added === 0) return { added, failedAssets, aborted: false };
