@@ -39,7 +39,17 @@ import { buildMediaCsv, downloadCsv, fetchUploaderNames } from "@/lib/mediaCsv";
 const BUCKET = "unit-photos";
 const LIBRARY_PREFIX = "library";
 
-type PhotoRow = MediaAsset & { url: string };
+type PhotoRow = MediaAsset & { url: string; thumbUrl: string };
+
+/**
+ * Grid thumbnail URL. Originals are 300KB-4MB phone photos; the storage image
+ * transformer serves a ~60KB version instead, which is what made the grid crawl.
+ * Downloads always use the full-size `url`.
+ */
+const thumbFor = (url: string) =>
+  url.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/") +
+  "?width=420&quality=65";
+
 
 type UploadJob = {
   id: string;
@@ -104,15 +114,19 @@ export default function MediaLibrary() {
     // (which only sees the `library/` prefix and would hide backfilled unit photos).
     return (assets ?? []).map((a) => {
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(a.storage_path);
-      return { ...a, url: data.publicUrl };
+      return { ...a, url: data.publicUrl, thumbUrl: thumbFor(data.publicUrl) };
     });
   }, [assets]);
 
   const displayPhotos = useMemo(() => photos.filter((p) => !imageErrors.has(p.id)), [photos, imageErrors]);
 
-  // Sync orphans: storage files in `library/` not in DB (legacy)
+  // Sync orphans: storage files in `library/` not in DB (legacy).
+  // Runs once per visit — it used to re-run on every asset-count change, which
+  // meant a storage list plus a write per orphan on each pass.
+  const orphanSyncRan = useRef(false);
   useEffect(() => {
-    if (!assets) return;
+    if (!assets || orphanSyncRan.current) return;
+    orphanSyncRan.current = true;
     let cancelled = false;
     (async () => {
       const { data: files } = await supabase.storage
@@ -122,6 +136,7 @@ export default function MediaLibrary() {
       const existing = new Set(assets.map((a) => a.storage_path));
       const orphans = files.filter((f) => f.id !== null && !existing.has(`${LIBRARY_PREFIX}/${f.name}`));
       for (const f of orphans) {
+        if (cancelled) return;
         await upsertAsset.mutateAsync({
           storage_path: `${LIBRARY_PREFIX}/${f.name}`,
           original_filename: f.name,
@@ -131,7 +146,7 @@ export default function MediaLibrary() {
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assets?.length]);
+  }, [!!assets]);
 
   // Usage map: url -> unit names
   const usageByUrl = useMemo(() => {
@@ -202,6 +217,19 @@ export default function MediaLibrary() {
 
   const selectedPhotos = useMemo(() => filtered.filter((p) => selected.has(p.id)), [filtered, selected]);
   const allSelectedPaths = useMemo(() => photos.filter((p) => selected.has(p.id)), [photos, selected]);
+
+  // Drop selections whose asset vanished (deleted elsewhere, or a stale refetch)
+  // so the "Download (N)" count always matches what actually gets zipped.
+  useEffect(() => {
+    if (!assets) return;
+    setSelected((prev) => {
+      if (prev.size === 0) return prev;
+      const live = new Set(assets.map((a) => a.id));
+      const next = new Set(Array.from(prev).filter((id) => live.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [assets]);
+
   const uploadStats = useMemo(() => {
     const done = uploadJobs.filter((j) => j.status === "done").length;
     const failed = uploadJobs.filter((j) => j.status === "error").length;
@@ -422,24 +450,34 @@ export default function MediaLibrary() {
     setFailedBatch(null);
     setZipProgress({ done: 0, total: rows.length, phase: "fetching", failed: 0, pass, label });
     try {
-      const { added, failedAssets, aborted } = await downloadAssetsAsZip(
+      const { added, failedAssets, missingAssets, aborted } = await downloadAssetsAsZip(
         rows,
         zipFilename(label),
         (p) => setZipProgress({ ...p, label }),
         { signal: controller.signal, pass },
       );
+      // Missing files are gone from storage — retrying can't fix them, so they
+      // are reported separately instead of being offered as a retry.
+      const missingNote = missingAssets.length > 0
+        ? `${missingAssets.length} photo${missingAssets.length === 1 ? "" : "s"} no longer exist in storage and were skipped.`
+        : "";
+      const retryNote = failedAssets.length > 0
+        ? `${failedAssets.length} could not be fetched. Use Retry missed files to grab just those.`
+        : "";
       if (aborted) {
         toast({ title: "Download cancelled" });
       } else if (added === 0) {
-        setFailedBatch({ rows: failedAssets as PhotoRow[], label });
-        toast({ title: "Download failed", description: "None of the files could be fetched. Use Retry to try again.", variant: "destructive" });
+        if (failedAssets.length > 0) setFailedBatch({ rows: failedAssets as PhotoRow[], label });
+        toast({
+          title: "Nothing was downloaded",
+          description: [missingNote, retryNote].filter(Boolean).join(" ") || "None of the files could be fetched.",
+          variant: "destructive",
+        });
       } else {
         if (failedAssets.length > 0) setFailedBatch({ rows: failedAssets as PhotoRow[], label });
         toast({
-          title: `Downloaded ${added} photo${added === 1 ? "" : "s"}`,
-          description: failedAssets.length > 0
-            ? `${failedAssets.length} could not be fetched. Use Retry missed files to grab just those.`
-            : undefined,
+          title: `Downloaded ${added} of ${rows.length} photo${rows.length === 1 ? "" : "s"}`,
+          description: [missingNote, retryNote].filter(Boolean).join(" ") || undefined,
         });
       }
     } catch (err: unknown) {
@@ -647,7 +685,7 @@ export default function MediaLibrary() {
                 <Button size="sm" variant="outline" disabled={!!zipProgress}
                   onClick={() => runZipDownload(allSelectedPaths, `${allSelectedPaths.length}-selected`)}>
                   {zipProgress ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                  Download ({selected.size})
+                  Download ({allSelectedPaths.length})
                 </Button>
                 <Button size="sm" variant="outline" onClick={handleBulkDelete}>
                   <Trash2 className="h-4 w-4" /> Delete
@@ -699,9 +737,16 @@ export default function MediaLibrary() {
                         className={`group relative aspect-square rounded-md overflow-hidden border transition-all ${
                           isSelected ? "ring-2 ring-primary border-primary" : "border-border hover:border-primary/50"
                         }`}>
-                        <img src={p.url} alt={p.alt_text ?? p.original_filename ?? ""} loading="lazy"
-                          className="w-full h-full object-cover cursor-pointer"
-                          onError={() => setImageErrors((prev) => new Set(prev).add(p.id))}
+                        <img src={p.thumbUrl} alt={p.alt_text ?? p.original_filename ?? ""}
+                          loading="lazy" decoding="async" width={420} height={420}
+                          className="w-full h-full object-cover cursor-pointer bg-muted"
+                          onError={(e) => {
+                            // Transformer unavailable → fall back to the original once,
+                            // then treat it as a genuinely broken file.
+                            const img = e.currentTarget;
+                            if (img.src !== p.url) img.src = p.url;
+                            else setImageErrors((prev) => new Set(prev).add(p.id));
+                          }}
                           onClick={() => toggleSelect(p.id)} />
 
                         <button type="button" onClick={(e) => { e.stopPropagation(); toggleSelect(p.id); }}
