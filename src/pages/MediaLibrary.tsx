@@ -471,7 +471,11 @@ export default function MediaLibrary() {
                 <DropdownMenuItem onClick={() => runZipDownload(filtered, "current-view")}>
                   Current view ({filtered.length})
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={exportCsv}>
+                  Export list as CSV (spreadsheet)
+                </DropdownMenuItem>
               </DropdownMenuContent>
+
             </DropdownMenu>
             <Button variant="outline" onClick={() => setNewFolderOpen(true)}>
               <FolderPlus className="h-4 w-4" /> New folder
