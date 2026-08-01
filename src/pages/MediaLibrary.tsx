@@ -895,19 +895,80 @@ export default function MediaLibrary() {
       </Dialog>
 
       {/* Download progress — bottom-left so it never fights the upload tray */}
-      {zipProgress && (
-        <Card className="fixed bottom-4 left-4 z-50 w-[min(320px,calc(100vw-2rem))] p-3 space-y-2 shadow-2xl border-primary/30 bg-card/95 backdrop-blur">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <span className="truncate">
-              {zipProgress.phase === "zipping"
-                ? "Building zip…"
-                : `Downloading ${zipProgress.done} of ${zipProgress.total}…`}
-            </span>
-          </div>
-          <Progress value={zipProgress.total ? (zipProgress.done / zipProgress.total) * 100 : 0} className="h-1.5" />
-          <p className="text-[11px] text-muted-foreground">Keep this tab open until the zip saves.</p>
+      {(zipProgress || singleDownload || failedBatch) && (
+        <Card className="fixed bottom-4 left-4 z-50 w-[min(340px,calc(100vw-2rem))] p-3 space-y-2 shadow-2xl border-primary/30 bg-card/95 backdrop-blur">
+          {zipProgress && (
+            <>
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <span className="truncate">
+                  {zipProgress.phase === "zipping"
+                    ? `Building zip… ${zipProgress.zipPercent ?? 0}%`
+                    : zipProgress.phase === "saving"
+                      ? "Saving zip to your device…"
+                      : `${zipProgress.pass > 0 ? "Retrying" : "Downloading"} ${zipProgress.done} of ${zipProgress.total}…`}
+                </span>
+              </div>
+              <Progress
+                value={
+                  zipProgress.phase === "zipping"
+                    ? (zipProgress.zipPercent ?? 0)
+                    : zipProgress.phase === "saving"
+                      ? 100
+                      : zipProgress.total ? (zipProgress.done / zipProgress.total) * 100 : 0
+                }
+                className="h-1.5"
+              />
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[11px] text-muted-foreground">
+                  {zipProgress.failed > 0
+                    ? `${zipProgress.failed} missed so far — retried automatically.`
+                    : "Keep this tab open until the zip saves."}
+                </p>
+                <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]"
+                  onClick={() => zipAbortRef.current?.abort()}>
+                  Cancel
+                </Button>
+              </div>
+            </>
+          )}
+
+          {!zipProgress && singleDownload && (
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <span className="truncate">
+                  {singleDownload.saving ? "Saving…" : "Downloading photo…"}
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {singleDownload.name}
+                {singleDownload.attempt > 1 && !singleDownload.saving
+                  ? ` — retry ${singleDownload.attempt} of ${singleDownload.attempts}`
+                  : ""}
+              </p>
+            </div>
+          )}
+
+          {!zipProgress && failedBatch && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-destructive">
+                {failedBatch.rows.length} file{failedBatch.rows.length === 1 ? "" : "s"} didn't download
+              </p>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="h-7 text-xs"
+                  onClick={() => runZipDownload(failedBatch.rows, `${failedBatch.label}-retry`, 1)}>
+                  <RotateCcw className="h-3.5 w-3.5" /> Retry missed files
+                </Button>
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setFailedBatch(null)}>
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
+      )}
+
       )}
 
     </DashboardLayout>
