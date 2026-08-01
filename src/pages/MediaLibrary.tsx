@@ -352,6 +352,44 @@ export default function MediaLibrary() {
 
   const copyUrl = async (url: string) => { await navigator.clipboard.writeText(url); toast({ title: "URL copied" }); };
 
+  // ---- Downloads -----------------------------------------------------------
+  const handleSingleDownload = async (p: PhotoRow) => {
+    try {
+      await downloadSingleAsset(p);
+    } catch (err: unknown) {
+      toast({ title: "Download failed", description: errorMessage(err), variant: "destructive" });
+    }
+  };
+
+  const runZipDownload = async (rows: PhotoRow[], label: string) => {
+    if (zipProgress) return;
+    if (rows.length === 0) { toast({ title: "Nothing to download" }); return; }
+    if (rows.length === 1) { await handleSingleDownload(rows[0]); return; }
+    if (rows.length > 200 && !window.confirm(`Download ${rows.length} photos as one zip? This may take a few minutes.`)) return;
+
+    setZipProgress({ done: 0, total: rows.length, phase: "fetching", label });
+    try {
+      const { added, failed } = await downloadAssetsAsZip(
+        rows,
+        zipFilename(label),
+        (p) => setZipProgress({ ...p, label }),
+      );
+      if (added === 0) {
+        toast({ title: "Download failed", description: "None of the files could be fetched.", variant: "destructive" });
+      } else {
+        toast({
+          title: `Downloaded ${added} photo${added === 1 ? "" : "s"}`,
+          description: failed.length > 0 ? `${failed.length} could not be fetched and were skipped.` : undefined,
+        });
+      }
+    } catch (err: unknown) {
+      toast({ title: "Download failed", description: errorMessage(err), variant: "destructive" });
+    } finally {
+      setZipProgress(null);
+    }
+  };
+
+
   // Drag-drop on whole grid
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault(); if (e.dataTransfer.types.includes("Files")) setIsDragOver(true);
