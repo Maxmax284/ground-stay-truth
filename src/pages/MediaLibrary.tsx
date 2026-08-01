@@ -87,6 +87,8 @@ export default function MediaLibrary() {
   const [customFolders, setCustomFolders] = useState<string[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  // Download state — single flight at a time so the tab never juggles two zips.
+  const [zipProgress, setZipProgress] = useState<(ZipProgress & { label: string }) | null>(null);
 
   // Build photo rows: combine assets with public URLs
   const photos: PhotoRow[] = useMemo(() => {
