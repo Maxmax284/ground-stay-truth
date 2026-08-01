@@ -412,10 +412,31 @@ export default function MediaLibrary() {
             <h1 className="text-2xl font-semibold tracking-tight">Media Library</h1>
             <p className="text-sm text-muted-foreground">Organize, tag, and assign photos to units.</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" disabled={!!zipProgress}>
+                  {zipProgress ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  Download
+                  <ChevronDown className="h-4 w-4 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuItem onClick={() => runZipDownload(displayPhotos, "everything")}>
+                  Everything ({displayPhotos.length})
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => runZipDownload(inUsePhotos, "in-use")}>
+                  Only photos in use ({inUsePhotos.length})
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => runZipDownload(filtered, "current-view")}>
+                  Current view ({filtered.length})
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="outline" onClick={() => setNewFolderOpen(true)}>
               <FolderPlus className="h-4 w-4" /> New folder
             </Button>
+
             <Button onClick={() => fileRef.current?.click()}>
               <Upload className="h-4 w-4" /> Upload
             </Button>
