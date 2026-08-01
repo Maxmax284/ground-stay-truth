@@ -212,6 +212,19 @@ export default function MediaLibrary() {
 
   const selectedPhotos = useMemo(() => filtered.filter((p) => selected.has(p.id)), [filtered, selected]);
   const allSelectedPaths = useMemo(() => photos.filter((p) => selected.has(p.id)), [photos, selected]);
+
+  // Drop selections whose asset vanished (deleted elsewhere, or a stale refetch)
+  // so the "Download (N)" count always matches what actually gets zipped.
+  useEffect(() => {
+    if (!assets) return;
+    setSelected((prev) => {
+      if (prev.size === 0) return prev;
+      const live = new Set(assets.map((a) => a.id));
+      const next = new Set(Array.from(prev).filter((id) => live.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [assets]);
+
   const uploadStats = useMemo(() => {
     const done = uploadJobs.filter((j) => j.status === "done").length;
     const failed = uploadJobs.filter((j) => j.status === "error").length;
