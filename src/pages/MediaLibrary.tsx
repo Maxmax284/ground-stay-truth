@@ -89,6 +89,11 @@ export default function MediaLibrary() {
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   // Download state — single flight at a time so the tab never juggles two zips.
   const [zipProgress, setZipProgress] = useState<(ZipProgress & { label: string }) | null>(null);
+  const [singleDownload, setSingleDownload] = useState<{ name: string; attempt: number; attempts: number; saving?: boolean } | null>(null);
+  // Files that failed every retry in the last bulk run — offered back as a one-tap retry.
+  const [failedBatch, setFailedBatch] = useState<{ rows: PhotoRow[]; label: string } | null>(null);
+  const zipAbortRef = useRef<AbortController | null>(null);
+
 
   // Build photo rows: combine assets with public URLs
   const photos: PhotoRow[] = useMemo(() => {
