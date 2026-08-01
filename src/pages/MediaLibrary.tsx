@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   Upload, Loader2, Trash2, Link2, Check, ImageOff, Copy, Folder, FolderPlus,
   FolderInput, Filter, X, Tag, Pencil, Unlink, Search, ZoomIn,
-  AlertTriangle, RotateCcw,
+  AlertTriangle, RotateCcw, Download, ChevronDown,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
@@ -23,10 +23,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUnits, useUpdateUnit } from "@/hooks/useUnits";
 import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   useMediaAssets, useUpsertMediaAsset, useUpdateMediaAsset,
   useBulkUpdateFolder, useDeleteMediaAssets,
   DEFAULT_FOLDERS, UNCATEGORIZED, type MediaAsset,
 } from "@/hooks/useMediaLibrary";
+import {
+  downloadSingleAsset, downloadAssetsAsZip, zipFilename, type ZipProgress,
+} from "@/lib/mediaDownload";
 
 const BUCKET = "unit-photos";
 const LIBRARY_PREFIX = "library";
@@ -81,6 +87,8 @@ export default function MediaLibrary() {
   const [customFolders, setCustomFolders] = useState<string[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  // Download state — single flight at a time so the tab never juggles two zips.
+  const [zipProgress, setZipProgress] = useState<(ZipProgress & { label: string }) | null>(null);
 
   // Build photo rows: combine assets with public URLs
   const photos: PhotoRow[] = useMemo(() => {
@@ -130,6 +138,14 @@ export default function MediaLibrary() {
     });
     return m;
   }, [units]);
+
+  // Photos currently assigned to at least one unit — "in use as we speak".
+  const inUsePhotos = useMemo(
+    () => displayPhotos.filter((p) => (usageByUrl.get(p.url) ?? []).length > 0),
+    [displayPhotos, usageByUrl],
+  );
+
+
 
   // Folder list
   const folders = useMemo(() => {
@@ -344,6 +360,44 @@ export default function MediaLibrary() {
 
   const copyUrl = async (url: string) => { await navigator.clipboard.writeText(url); toast({ title: "URL copied" }); };
 
+  // ---- Downloads -----------------------------------------------------------
+  const handleSingleDownload = async (p: PhotoRow) => {
+    try {
+      await downloadSingleAsset(p);
+    } catch (err: unknown) {
+      toast({ title: "Download failed", description: errorMessage(err), variant: "destructive" });
+    }
+  };
+
+  const runZipDownload = async (rows: PhotoRow[], label: string) => {
+    if (zipProgress) return;
+    if (rows.length === 0) { toast({ title: "Nothing to download" }); return; }
+    if (rows.length === 1) { await handleSingleDownload(rows[0]); return; }
+    if (rows.length > 200 && !window.confirm(`Download ${rows.length} photos as one zip? This may take a few minutes.`)) return;
+
+    setZipProgress({ done: 0, total: rows.length, phase: "fetching", label });
+    try {
+      const { added, failed } = await downloadAssetsAsZip(
+        rows,
+        zipFilename(label),
+        (p) => setZipProgress({ ...p, label }),
+      );
+      if (added === 0) {
+        toast({ title: "Download failed", description: "None of the files could be fetched.", variant: "destructive" });
+      } else {
+        toast({
+          title: `Downloaded ${added} photo${added === 1 ? "" : "s"}`,
+          description: failed.length > 0 ? `${failed.length} could not be fetched and were skipped.` : undefined,
+        });
+      }
+    } catch (err: unknown) {
+      toast({ title: "Download failed", description: errorMessage(err), variant: "destructive" });
+    } finally {
+      setZipProgress(null);
+    }
+  };
+
+
   // Drag-drop on whole grid
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault(); if (e.dataTransfer.types.includes("Files")) setIsDragOver(true);
@@ -366,10 +420,31 @@ export default function MediaLibrary() {
             <h1 className="text-2xl font-semibold tracking-tight">Media Library</h1>
             <p className="text-sm text-muted-foreground">Organize, tag, and assign photos to units.</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" disabled={!!zipProgress}>
+                  {zipProgress ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  Download
+                  <ChevronDown className="h-4 w-4 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuItem onClick={() => runZipDownload(displayPhotos, "everything")}>
+                  Everything ({displayPhotos.length})
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => runZipDownload(inUsePhotos, "in-use")}>
+                  Only photos in use ({inUsePhotos.length})
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => runZipDownload(filtered, "current-view")}>
+                  Current view ({filtered.length})
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="outline" onClick={() => setNewFolderOpen(true)}>
               <FolderPlus className="h-4 w-4" /> New folder
             </Button>
+
             <Button onClick={() => fileRef.current?.click()}>
               <Upload className="h-4 w-4" /> Upload
             </Button>
@@ -510,6 +585,11 @@ export default function MediaLibrary() {
                 <Button size="sm" variant="outline" onClick={() => setRemoveUnitOpen(true)}>
                   <Unlink className="h-4 w-4" /> Remove from unit
                 </Button>
+                <Button size="sm" variant="outline" disabled={!!zipProgress}
+                  onClick={() => runZipDownload(allSelectedPaths, `${allSelectedPaths.length}-selected`)}>
+                  {zipProgress ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  Download ({selected.size})
+                </Button>
                 <Button size="sm" variant="outline" onClick={handleBulkDelete}>
                   <Trash2 className="h-4 w-4" /> Delete
                 </Button>
@@ -592,6 +672,10 @@ export default function MediaLibrary() {
                           <button type="button" onClick={(e) => { e.stopPropagation(); copyUrl(p.url); }}
                             className="bg-background/80 rounded p-1" title="Copy URL">
                             <Copy className="h-3.5 w-3.5" />
+                          </button>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); handleSingleDownload(p); }}
+                            className="bg-background/80 rounded p-1" title="Download">
+                            <Download className="h-3.5 w-3.5" />
                           </button>
                         </div>
 
@@ -762,16 +846,38 @@ export default function MediaLibrary() {
           {lightbox && (
             <div className="space-y-2">
               <img src={lightbox.url} alt={lightbox.alt_text ?? ""} className="w-full max-h-[80vh] object-contain rounded" />
-              <div className="px-2 pb-2 text-sm">
-                <p className="font-medium">{lightbox.caption || lightbox.original_filename}</p>
-                <p className="text-xs text-muted-foreground">
-                  {lightbox.folder} · {(lightbox.tags ?? []).join(", ") || "No tags"}
-                </p>
+              <div className="px-2 pb-2 text-sm flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{lightbox.caption || lightbox.original_filename}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {lightbox.folder} · {(lightbox.tags ?? []).join(", ") || "No tags"}
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" className="shrink-0" onClick={() => handleSingleDownload(lightbox)}>
+                  <Download className="h-4 w-4" /> Download
+                </Button>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Download progress — bottom-left so it never fights the upload tray */}
+      {zipProgress && (
+        <Card className="fixed bottom-4 left-4 z-50 w-[min(320px,calc(100vw-2rem))] p-3 space-y-2 shadow-2xl border-primary/30 bg-card/95 backdrop-blur">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span className="truncate">
+              {zipProgress.phase === "zipping"
+                ? "Building zip…"
+                : `Downloading ${zipProgress.done} of ${zipProgress.total}…`}
+            </span>
+          </div>
+          <Progress value={zipProgress.total ? (zipProgress.done / zipProgress.total) * 100 : 0} className="h-1.5" />
+          <p className="text-[11px] text-muted-foreground">Keep this tab open until the zip saves.</p>
+        </Card>
+      )}
+
     </DashboardLayout>
   );
 }
