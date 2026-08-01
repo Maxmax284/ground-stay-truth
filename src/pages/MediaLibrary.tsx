@@ -23,10 +23,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUnits, useUpdateUnit } from "@/hooks/useUnits";
 import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   useMediaAssets, useUpsertMediaAsset, useUpdateMediaAsset,
   useBulkUpdateFolder, useDeleteMediaAssets,
   DEFAULT_FOLDERS, UNCATEGORIZED, type MediaAsset,
 } from "@/hooks/useMediaLibrary";
+import {
+  downloadSingleAsset, downloadAssetsAsZip, zipFilename, type ZipProgress,
+} from "@/lib/mediaDownload";
 
 const BUCKET = "unit-photos";
 const LIBRARY_PREFIX = "library";
