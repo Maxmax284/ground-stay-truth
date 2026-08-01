@@ -42,13 +42,13 @@ const LIBRARY_PREFIX = "library";
 type PhotoRow = MediaAsset & { url: string; thumbUrl: string };
 
 /**
- * Grid thumbnail URL. Originals are 300KB-4MB phone photos; the storage image
- * transformer serves a ~60KB version instead, which is what made the grid crawl.
- * Downloads always use the full-size `url`.
+ * Grid thumbnail URL. The storage image transformer was tried here to shrink
+ * 300KB-4MB phone photos, but it doesn't serve reliably for this bucket in the
+ * browser (blank tiles across the whole grid), so the grid loads the original
+ * and leans on lazy loading instead. Correct beats clever.
  */
-const thumbFor = (url: string) =>
-  url.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/") +
-  "?width=420&quality=65";
+const thumbFor = (url: string) => url;
+
 
 
 type UploadJob = {
