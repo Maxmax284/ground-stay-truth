@@ -432,24 +432,34 @@ export default function MediaLibrary() {
     setFailedBatch(null);
     setZipProgress({ done: 0, total: rows.length, phase: "fetching", failed: 0, pass, label });
     try {
-      const { added, failedAssets, aborted } = await downloadAssetsAsZip(
+      const { added, failedAssets, missingAssets, aborted } = await downloadAssetsAsZip(
         rows,
         zipFilename(label),
         (p) => setZipProgress({ ...p, label }),
         { signal: controller.signal, pass },
       );
+      // Missing files are gone from storage — retrying can't fix them, so they
+      // are reported separately instead of being offered as a retry.
+      const missingNote = missingAssets.length > 0
+        ? `${missingAssets.length} photo${missingAssets.length === 1 ? "" : "s"} no longer exist in storage and were skipped.`
+        : "";
+      const retryNote = failedAssets.length > 0
+        ? `${failedAssets.length} could not be fetched. Use Retry missed files to grab just those.`
+        : "";
       if (aborted) {
         toast({ title: "Download cancelled" });
       } else if (added === 0) {
-        setFailedBatch({ rows: failedAssets as PhotoRow[], label });
-        toast({ title: "Download failed", description: "None of the files could be fetched. Use Retry to try again.", variant: "destructive" });
+        if (failedAssets.length > 0) setFailedBatch({ rows: failedAssets as PhotoRow[], label });
+        toast({
+          title: "Nothing was downloaded",
+          description: [missingNote, retryNote].filter(Boolean).join(" ") || "None of the files could be fetched.",
+          variant: "destructive",
+        });
       } else {
         if (failedAssets.length > 0) setFailedBatch({ rows: failedAssets as PhotoRow[], label });
         toast({
-          title: `Downloaded ${added} photo${added === 1 ? "" : "s"}`,
-          description: failedAssets.length > 0
-            ? `${failedAssets.length} could not be fetched. Use Retry missed files to grab just those.`
-            : undefined,
+          title: `Downloaded ${added} of ${rows.length} photo${rows.length === 1 ? "" : "s"}`,
+          description: [missingNote, retryNote].filter(Boolean).join(" ") || undefined,
         });
       }
     } catch (err: unknown) {
