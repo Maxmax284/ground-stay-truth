@@ -39,7 +39,17 @@ import { buildMediaCsv, downloadCsv, fetchUploaderNames } from "@/lib/mediaCsv";
 const BUCKET = "unit-photos";
 const LIBRARY_PREFIX = "library";
 
-type PhotoRow = MediaAsset & { url: string };
+type PhotoRow = MediaAsset & { url: string; thumbUrl: string };
+
+/**
+ * Grid thumbnail URL. Originals are 300KB-4MB phone photos; the storage image
+ * transformer serves a ~60KB version instead, which is what made the grid crawl.
+ * Downloads always use the full-size `url`.
+ */
+const thumbFor = (url: string) =>
+  url.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/") +
+  "?width=420&quality=65";
+
 
 type UploadJob = {
   id: string;
