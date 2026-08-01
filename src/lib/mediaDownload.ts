@@ -183,8 +183,8 @@ export async function downloadAssetsAsZip(
   }
 
 
-  if (opts.signal?.aborted) return { added, failedAssets, aborted: true };
-  if (added === 0) return { added, failedAssets, aborted: false };
+  if (opts.signal?.aborted) return { added, failedAssets, missingAssets, aborted: true };
+  if (added === 0) return { added, failedAssets, missingAssets, aborted: false };
 
   report("zipping", 0);
   const blob = await zip.generateAsync(
@@ -193,7 +193,7 @@ export async function downloadAssetsAsZip(
   );
   report("saving");
   triggerBlobDownload(blob, zipName);
-  return { added, failedAssets, aborted: false };
+  return { added, failedAssets, missingAssets, aborted: false };
 }
 
 /** `lmt-media-2026-08-01.zip` style names. */
