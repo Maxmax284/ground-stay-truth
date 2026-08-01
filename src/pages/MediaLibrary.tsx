@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   Upload, Loader2, Trash2, Link2, Check, ImageOff, Copy, Folder, FolderPlus,
   FolderInput, Filter, X, Tag, Pencil, Unlink, Search, ZoomIn,
-  AlertTriangle, RotateCcw,
+  AlertTriangle, RotateCcw, Download, ChevronDown,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
