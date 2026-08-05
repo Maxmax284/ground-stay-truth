@@ -88,6 +88,18 @@ export const PAYMENT_STATUSES = [
 ] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
+// ── Airport Pickup Statuses ──
+// CHECK: requested | assigned | confirmed | completed | failed | cancelled
+export const PICKUP_STATUSES = [
+  "requested",
+  "assigned",
+  "confirmed",
+  "completed",
+  "failed",
+  "cancelled",
+] as const;
+export type PickupStatus = (typeof PICKUP_STATUSES)[number];
+
 // ── Assist Modes (airport pickups) ──
 export const ASSIST_MODES = [
   "healthy",

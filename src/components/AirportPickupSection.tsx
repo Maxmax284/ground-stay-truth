@@ -25,6 +25,7 @@ const STATUS_COLORS: Record<string, string> = {
   assigned: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   confirmed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
   completed: "bg-muted text-muted-foreground",
+  failed: "bg-destructive/15 text-destructive",
   cancelled: "bg-destructive/10 text-destructive",
 };
 
