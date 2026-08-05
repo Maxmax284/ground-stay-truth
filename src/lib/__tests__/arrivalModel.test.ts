@@ -24,7 +24,7 @@ describe("resolvePickupStatus", () => {
 });
 
 describe("normalizeArrival", () => {
-  it("normalizes a flight arrival with all fields", () => {
+  it("a bare guest request is Requested, not Scheduled", () => {
     const result = normalizeArrival({
       arrival_type: "flight",
       arrival_location_type: "airport",
@@ -34,13 +34,29 @@ describe("normalizeArrival", () => {
       transport_intent: "pickup",
       pickup_enabled: true,
       status: "requested",
+      driver_id: null,
     });
 
     expect(result.arrivalType).toBe("flight");
     expect(result.locationType).toBe("airport");
     expect(result.confidence).toBe("high");
-    expect(result.pickupResolution).toBe("pickup_scheduled");
+    expect(result.driverAssigned).toBe(false);
+    expect(result.pickupResolution).toBe("pickup_requested");
     expect(result.requiresStaffAction).toBe(true);
+  });
+
+  it("driver assigned + arrival time + confirmation is Scheduled", () => {
+    const result = normalizeArrival({
+      arrival_type: "flight",
+      arrival_datetime: "2026-04-10T14:00:00Z",
+      transport_intent: "pickup",
+      pickup_enabled: true,
+      status: "assigned",
+      driver_id: "d1",
+    });
+
+    expect(result.driverAssigned).toBe(true);
+    expect(result.pickupResolution).toBe("pickup_scheduled");
   });
 
   it("normalizes a ferry arrival with defaults", () => {
@@ -48,6 +64,7 @@ describe("normalizeArrival", () => {
       arrival_type: "ferry",
       transport_intent: "pickup",
       pickup_enabled: true,
+      status: "confirmed",
     });
 
     expect(result.arrivalType).toBe("ferry");
@@ -86,7 +103,7 @@ describe("normalizeArrival", () => {
     expect(result.requiresStaffAction).toBe(false);
   });
 
-  it("completed status means no staff action even with pickup scheduled", () => {
+  it("completed status means no staff action", () => {
     const result = normalizeArrival({
       arrival_type: "flight",
       transport_intent: "pickup",
@@ -94,8 +111,72 @@ describe("normalizeArrival", () => {
       status: "completed",
     });
 
-    expect(result.pickupResolution).toBe("pickup_scheduled");
+    expect(result.pickupResolution).toBe("pickup_completed");
     expect(result.requiresStaffAction).toBe(false);
+  });
+
+  it("failed pickup is surfaced as not completed", () => {
+    const result = normalizeArrival({
+      arrival_type: "flight",
+      transport_intent: "pickup",
+      pickup_enabled: true,
+      status: "failed",
+    });
+
+    expect(result.pickupResolution).toBe("pickup_failed");
+    expect(result.requiresStaffAction).toBe(false);
+  });
+});
+
+describe("getPickupWarnings", () => {
+  const base = {
+    arrival_type: "flight",
+    transport_intent: "pickup",
+    pickup_enabled: true,
+    status: "requested",
+    driver_id: null as string | null,
+  };
+
+  it("warns when no driver is assigned far out", () => {
+    const now = new Date("2026-08-01T00:00:00Z");
+    const w = getPickupWarnings(
+      normalizeArrival({ ...base, arrival_datetime: "2026-08-05T07:45:00Z" }),
+      { now },
+    );
+    expect(w.some((x) => x.message.includes("no driver assigned"))).toBe(true);
+    expect(w.every((x) => x.severity === "warning")).toBe(true);
+  });
+
+  it("escalates to critical within 3 hours", () => {
+    const now = new Date("2026-08-05T06:00:00Z");
+    const w = getPickupWarnings(
+      normalizeArrival({ ...base, arrival_datetime: "2026-08-05T07:45:00Z" }),
+      { now },
+    );
+    expect(w.some((x) => x.severity === "critical")).toBe(true);
+  });
+
+  it("flags a passed arrival for reconciliation", () => {
+    const now = new Date("2026-08-05T12:00:00Z");
+    const w = getPickupWarnings(
+      normalizeArrival({ ...base, arrival_datetime: "2026-08-05T07:45:00Z" }),
+      { now },
+    );
+    expect(w.some((x) => x.message.includes("Arrival time has passed"))).toBe(true);
+  });
+
+  it("stays quiet for self arrival", () => {
+    const w = getPickupWarnings(
+      normalizeArrival({ ...base, transport_intent: "self_arrival" }),
+    );
+    expect(w).toHaveLength(0);
+  });
+});
+
+describe("camp timezone formatting", () => {
+  it("renders 07:45 UTC as 2:45 PM Thailand time", () => {
+    expect(formatCampLabeled("2026-08-05T07:45:00Z")).toBe("Aug 5, 2:45 PM Thailand time");
+    expect(formatCampTime("2026-08-05T07:45:00Z")).toBe("2:45 PM");
   });
 });
 
