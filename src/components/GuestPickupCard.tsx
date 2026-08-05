@@ -183,9 +183,7 @@ export function GuestPickupCard({ bookingId, guestName }: Props) {
           {pickup.arrival_datetime && (
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {new Date(pickup.arrival_datetime).toLocaleDateString([], { month: "short", day: "numeric" })}
-              {" "}
-              {new Date(pickup.arrival_datetime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              {formatCampLabeled(pickup.arrival_datetime)}
             </span>
           )}
           {(pickup.passenger_count ?? 0) > 1 && (
