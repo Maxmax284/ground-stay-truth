@@ -87,3 +87,27 @@ export function formatCampLabeled(
   const base = kind === "datetime" ? formatCampShort(date) : formatInPropertyTimezone(date, kind);
   return `${base} ${CAMP_TIMEZONE_LABEL}`;
 }
+
+/** Camp timezone is a fixed +07:00 offset (Thailand has no DST). */
+const CAMP_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+/**
+ * Convert a stored timestamp into the value for a <input type="datetime-local">
+ * expressed in Thailand time — never the viewer's device timezone.
+ */
+export function toCampInputValue(date: string | Date | null | undefined): string {
+  const d = date ? parse(date) : null;
+  if (!d) return "";
+  return new Date(d.getTime() + CAMP_OFFSET_MS).toISOString().slice(0, 16);
+}
+
+/**
+ * Convert a datetime-local value that the staff member typed in Thailand time
+ * back into a UTC ISO string for storage.
+ */
+export function fromCampInputValue(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const d = new Date(`${value.length === 16 ? value : value.slice(0, 16)}:00Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Date(d.getTime() - CAMP_OFFSET_MS).toISOString();
+}

@@ -17,7 +17,7 @@ import { formatPrice } from "@/lib/currency";
 import { Plane, Car, MessageSquare, User, Clock, AlertTriangle, ArrowRight, CheckCircle2, MapPin, UserCheck, Ship, Bus, Route, ShieldOff } from "lucide-react";
 import { getTravelState } from "@/lib/travelState";
 import { normalizeArrival, ARRIVAL_TYPE_CONFIG, PICKUP_RESOLUTION_LABELS, ARRIVAL_TYPES, isActivePickup, getPickupWarnings, type ArrivalType } from "@/lib/arrivalModel";
-import { formatCampLabeled } from "@/lib/timezone";
+import { CAMP_TIMEZONE_LABEL, toCampInputValue, fromCampInputValue, formatCampLabeled } from "@/lib/timezone";
 import { ManualAssistBanner } from "@/components/ManualAssistBanner";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -207,7 +207,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
       const updates: any = { booking_id: bookingId };
       updates.international_flight_number = intlFlight.trim().toUpperCase() || null;
       updates.flight_number = domesticFlight.trim().toUpperCase() || null;
-      updates.arrival_datetime = arrivalDt ? new Date(arrivalDt).toISOString() : null;
+      updates.arrival_datetime = fromCampInputValue(arrivalDt);
       updates.passenger_count = Math.max(1, parseInt(paxCount) || 1);
       if (domesticFlight.trim()) {
         updates.final_flight_confirmed = true;
@@ -218,7 +218,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
         bookingId,
         pickupId: pickup.id,
         action: `${manualPrefix}flights_updated`,
-        note: `${manualPrefix}Flights updated: Int'l ${intlFlight.trim().toUpperCase() || "—"}, Final ${domesticFlight.trim().toUpperCase() || "—"}, Arrival ${arrivalDt || "—"}, Pax ${paxCount}`,
+        note: `${manualPrefix}Flights updated: Int'l ${intlFlight.trim().toUpperCase() || "—"}, Final ${domesticFlight.trim().toUpperCase() || "—"}, Arrival ${arrivalDt ? `${arrivalDt.replace("T", " ")} ${CAMP_TIMEZONE_LABEL}` : "—"}, Pax ${paxCount}`,
       });
       toast({ title: isManualAssist ? "Flight details updated (manual)" : "Flight details updated" });
       setEditingFlights(false);
@@ -369,7 +369,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
                 onClick={() => {
                   setIntlFlight(internationalFlight ?? "");
                   setDomesticFlight(pickup.flight_number ?? "");
-                  setArrivalDt(pickup.arrival_datetime ? pickup.arrival_datetime.slice(0, 16) : "");
+                  setArrivalDt(toCampInputValue(pickup.arrival_datetime));
                   setPaxCount(String(pickup.passenger_count ?? 1));
                   setEditingFlights(true);
                 }}
