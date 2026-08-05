@@ -2269,6 +2269,66 @@ export type Database = {
         }
         Relationships: []
       }
+      override_audit_log: {
+        Row: {
+          action_type: string
+          actor_email: string | null
+          actor_name: string | null
+          actor_role: string | null
+          actor_user_id: string | null
+          after_state: Json
+          attribution_missing: boolean
+          before_state: Json
+          booking_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          reason: string | null
+          room_id: string | null
+          source: string
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          action_type: string
+          actor_email?: string | null
+          actor_name?: string | null
+          actor_role?: string | null
+          actor_user_id?: string | null
+          after_state?: Json
+          attribution_missing?: boolean
+          before_state?: Json
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          reason?: string | null
+          room_id?: string | null
+          source?: string
+          target_id?: string | null
+          target_type: string
+        }
+        Update: {
+          action_type?: string
+          actor_email?: string | null
+          actor_name?: string | null
+          actor_role?: string | null
+          actor_user_id?: string | null
+          after_state?: Json
+          attribution_missing?: boolean
+          before_state?: Json
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          reason?: string | null
+          room_id?: string | null
+          source?: string
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: []
+      }
       payment_events: {
         Row: {
           created_at: string
@@ -4114,6 +4174,7 @@ export type Database = {
       }
       can_view_guest_documents: { Args: { _user_id: string }; Returns: boolean }
       cleanup_expired_link_codes: { Args: never; Returns: undefined }
+      count_overrides_missing_attribution: { Args: never; Returns: number }
       create_recovery_snapshot: {
         Args: { _kind?: string; _label: string; _notes?: string }
         Returns: string
@@ -4259,6 +4320,21 @@ export type Database = {
       lock_payment_link_abuse: {
         Args: { _link_id: string; _reason: string }
         Returns: undefined
+      }
+      log_override_event: {
+        Args: {
+          _action_type: string
+          _after_state?: Json
+          _before_state?: Json
+          _booking_id?: string
+          _metadata?: Json
+          _reason?: string
+          _room_id?: string
+          _source?: string
+          _target_id?: string
+          _target_type: string
+        }
+        Returns: string
       }
       log_staff_audit_event: {
         Args: {
