@@ -166,6 +166,8 @@ export interface NormalizedArrival {
   pickupEnabled: boolean;
   /** Resolved pickup status */
   pickupResolution: PickupResolution;
+  /** Whether a specific driver is attached to this pickup */
+  driverAssigned: boolean;
   /** Whether staff needs to act on this arrival */
   requiresStaffAction: boolean;
 }
