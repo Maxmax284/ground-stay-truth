@@ -427,6 +427,22 @@ export function useCreatePayment() {
         .single();
       if (error) throw error;
 
+      // Attribution — a hand-recorded payment bypasses the Stripe trail, so name the staffer.
+      await logOverrideEvent({
+        actionType: "manual_payment_recorded",
+        targetType: "payment",
+        targetId: (data as any)?.id ?? payment.booking_id,
+        bookingId: payment.booking_id,
+        beforeState: {},
+        afterState: {
+          amount: payment.amount,
+          method: payment.method,
+          payment_type: payment_type ?? "deposit",
+        },
+        reason: payment.notes ?? description ?? null,
+      });
+
+
       // If the booking is in pending_deposit, notify guest about deposit receipt
       const { data: booking } = await supabase
         .from("bookings")
