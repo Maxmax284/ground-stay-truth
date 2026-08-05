@@ -232,9 +232,14 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
     : null;
 
   const nextStatuses: string[] = [];
+  if (pickup.status === "requested" && pickup.driver_id) nextStatuses.push("confirmed");
   if (pickup.status === "assigned") nextStatuses.push("confirmed");
   if (pickup.status === "confirmed") nextStatuses.push("completed");
-  if (pickup.status !== "cancelled" && pickup.status !== "completed") nextStatuses.push("cancelled");
+  if (pickup.status !== "cancelled" && pickup.status !== "completed" && pickup.status !== "failed") {
+    nextStatuses.push("failed", "cancelled");
+  }
+
+  const pickupWarnings = getPickupWarnings(arrival, { guestOnSite: !!guestLandedAt });
 
   const isManualAssist = pickup.assist_mode === "manual_assist";
 
@@ -312,7 +317,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
               </span>
               {guestLandedAt && (
                 <span className="block text-muted-foreground mt-0.5">
-                  {new Date(guestLandedAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  Landed {formatCampLabeled(guestLandedAt)}
                 </span>
               )}
             </div>
@@ -443,9 +448,9 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
         </div>
 
         {/* Arrival time & passengers */}
-        <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
           {pickup.arrival_datetime && (
-            <div className="flex items-center gap-1"><Clock className="h-3 w-3" /> {new Date(pickup.arrival_datetime).toLocaleString()}</div>
+            <div className="flex items-center gap-1"><Clock className="h-3 w-3" /> Arrival {formatCampLabeled(pickup.arrival_datetime)}</div>
           )}
           {(pickup.passenger_count ?? 0) > 1 && (
             <div className="flex items-center gap-1"><User className="h-3 w-3" /> {pickup.passenger_count} pax</div>
@@ -588,7 +593,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
         )}
 
         {/* Status actions */}
-        {canManage && nextStatuses.length > 0 && arrival.pickupResolution === "pickup_scheduled" && (
+        {canManage && nextStatuses.length > 0 && isActivePickup(arrival.pickupResolution) && (
           <>
             <Separator />
             <div className="flex flex-wrap gap-1.5">
@@ -601,7 +606,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
                   onClick={() => handleStatusChange(s)}
                   disabled={upsert.isPending}
                 >
-                  {s === "confirmed" ? "Confirm Pickup" : s === "completed" ? "Mark Complete" : "Cancel Pickup"}
+                  {s === "confirmed" ? "Confirm Pickup" : s === "completed" ? "Mark Complete" : s === "failed" ? "Mark Not Completed" : "Cancel Pickup"}
                 </Button>
               ))}
             </div>
