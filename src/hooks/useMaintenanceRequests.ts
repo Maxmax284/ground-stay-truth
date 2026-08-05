@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification, createNotifications } from "@/hooks/useNotifications";
 import { useProperty } from "@/hooks/useProperty";
+import { logOverrideEvent } from "@/lib/overrideAudit";
 
 export interface MaintenanceRequest {
   id: string;
@@ -269,6 +270,17 @@ export function useOverrideMaintenanceStatus() {
         note: params.reason,
         change_type: "override",
       });
+
+      await logOverrideEvent({
+        actionType: "maintenance_status_override",
+        targetType: "maintenance_request",
+        targetId: params.id,
+        bookingId: params.booking_id,
+        beforeState: { status: params.current_status },
+        afterState: { status: params.target_status, resolution_note: params.resolution_note ?? null },
+        reason: params.reason,
+      });
+
 
       // Notify admins about override
       const { data: profile } = await supabase
