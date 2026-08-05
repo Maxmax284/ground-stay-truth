@@ -81,7 +81,7 @@ export function GuestPickupCard({ bookingId, guestName }: Props) {
   const pickupLabel = PICKUP_RESOLUTION_LABELS[arrival.pickupResolution];
 
   // Self-arrival or pickup disabled — show simplified card
-  if (arrival.pickupResolution !== "pickup_scheduled") {
+  if (!isActivePickup(arrival.pickupResolution)) {
     return (
       <Card className="border-border bg-muted/30">
         <CardContent className="p-3 space-y-2">
@@ -95,9 +95,7 @@ export function GuestPickupCard({ bookingId, guestName }: Props) {
           {arrival.arrivalTime && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
-              {new Date(arrival.arrivalTime).toLocaleDateString([], { month: "short", day: "numeric" })}
-              {" "}
-              {new Date(arrival.arrivalTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              {formatCampLabeled(arrival.arrivalTime)}
               {arrival.confidence === "flexible" && <Badge variant="outline" className="text-[9px] ml-1">Flexible</Badge>}
             </div>
           )}
