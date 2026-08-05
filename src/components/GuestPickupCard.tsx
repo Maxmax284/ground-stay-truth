@@ -2,7 +2,8 @@ import { useAirportPickup } from "@/hooks/useAirportPickups";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
 import { getTravelState, type TravelStateInfo } from "@/lib/travelState";
-import { normalizeArrival, ARRIVAL_TYPE_CONFIG, PICKUP_RESOLUTION_LABELS, type PickupResolution } from "@/lib/arrivalModel";
+import { normalizeArrival, ARRIVAL_TYPE_CONFIG, PICKUP_RESOLUTION_LABELS, isActivePickup, type PickupResolution } from "@/lib/arrivalModel";
+import { formatCampLabeled } from "@/lib/timezone";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,7 +54,7 @@ export function GuestPickupCard({ bookingId, guestName }: Props) {
   if (isLoading || !pickup) return null;
   if (pickup.status === "cancelled") return null;
 
-  const arrival = normalizeArrival(pickup);
+  const arrival = normalizeArrival({ ...pickup, driver_id: pickup.driver_id ?? null, confirmed_at: pickup.confirmed_at ?? null });
   const config = STATUS_CONFIG[pickup.status] ?? STATUS_CONFIG.requested;
   const driver = pickup.drivers;
 
