@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification, createNotifications } from "@/hooks/useNotifications";
 import { useProperty } from "@/hooks/useProperty";
+import { logOverrideEvent } from "@/lib/overrideAudit";
 
 export interface LaundryRequest {
   id: string;
@@ -237,6 +238,18 @@ export function useOverrideLaundryStatus() {
         note: params.reason,
         change_type: "override",
       });
+
+      await logOverrideEvent({
+        actionType: "laundry_status_override",
+        targetType: "laundry_request",
+        targetId: params.id,
+        bookingId: params.booking_id,
+        beforeState: { status: params.current_status },
+        afterState: { status: params.target_status },
+        reason: params.reason,
+      });
+
+
 
       // Notify admins about override
       const { data: profile } = await supabase
