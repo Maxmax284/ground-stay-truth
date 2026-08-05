@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { logOverrideEvent } from "@/lib/overrideAudit";
 
 /**
  * BUSINESS-CRITICAL — staff override of a booking's hold / deposit deadline.
@@ -37,6 +38,17 @@ export function useOverrideBookingDeadline() {
         })
         .eq("id", bookingId);
       if (error) throw error;
+
+      // Attribution — who extended this, and from what to what.
+      await logOverrideEvent({
+        actionType: hours == null ? "booking_deadline_override_cleared" : "booking_deadline_override",
+        targetType: "booking",
+        targetId: bookingId,
+        bookingId,
+        beforeState: { hold_deadline_at: "policy timing or previous override" },
+        afterState: { hold_deadline_at: newDeadline, extended_hours: hours },
+        reason: reason || null,
+      });
 
       // Audit trail — same timeline staff already read for state changes.
       await supabase.from("booking_state_log").insert({

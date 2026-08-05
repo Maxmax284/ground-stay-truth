@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { logOverrideEvent } from "@/lib/overrideAudit";
 
 export interface MaintenanceBlock {
   id: string;
@@ -63,12 +64,34 @@ export function useDeleteMaintenanceBlock() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      const { data: prior } = await supabase
+        .from("maintenance_blocks")
+        .select("unit_id, start_date, end_date, reason")
+        .eq("id", id)
+        .maybeSingle();
+
       const { error } = await supabase
         .from("maintenance_blocks")
         .delete()
         .eq("id", id);
       if (error) throw error;
+
+      // Attribution — freeing up a room by hand is an availability override.
+      await logOverrideEvent({
+        actionType: "maintenance_block_removed",
+        targetType: "maintenance_block",
+        targetId: id,
+        roomId: (prior as any)?.unit_id ?? null,
+        beforeState: {
+          blocked: true,
+          start_date: (prior as any)?.start_date ?? null,
+          end_date: (prior as any)?.end_date ?? null,
+        },
+        afterState: { blocked: false },
+        reason: (prior as any)?.reason ?? null,
+      });
     },
+
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["maintenance_blocks"] });
     },
