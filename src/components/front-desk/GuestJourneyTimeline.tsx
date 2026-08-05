@@ -6,6 +6,7 @@
 import type { FrontDeskBooking } from "@/hooks/useFrontDesk";
 import { CheckCircle2, Circle, AlertCircle, Plane, Bed, LogIn, LogOut, FileText, CreditCard, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatCampLabeled } from "@/lib/timezone";
 
 type StepState = "done" | "active" | "problem" | "todo" | "skipped";
 
@@ -65,7 +66,7 @@ export function GuestJourneyTimeline({
                 ? "active"
                 : "todo",
           hint: pickup.arrival_datetime
-            ? new Date(pickup.arrival_datetime).toISOString().slice(11, 16) + " UTC"
+            ? formatCampLabeled(pickup.arrival_datetime, "time")
             : pickup.status ?? undefined,
         }
       : null,
