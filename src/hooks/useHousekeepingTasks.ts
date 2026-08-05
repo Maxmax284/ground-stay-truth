@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useProperty } from "@/hooks/useProperty";
 import { notifyViaMessaging } from "@/lib/notifyMessaging";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
+import { logOverrideEvent } from "@/lib/overrideAudit";
 
 export function useHousekeepingTasks() {
   const { activePropertyId } = useProperty();
@@ -30,6 +31,14 @@ export function useUpdateHousekeepingTask() {
       if (notes !== undefined) updates.notes = notes;
       if (assigned_to !== undefined) updates.assigned_to = assigned_to;
       if (status === "completed") updates.completed_at = new Date().toISOString();
+
+      // Snapshot before the write so the audit trail has a real "before".
+      const { data: prior } = await supabase
+        .from("housekeeping_tasks")
+        .select("status, assigned_to, booking_in_id, unit_id")
+        .eq("id", id)
+        .maybeSingle();
+
       const { data, error } = await supabase
         .from("housekeeping_tasks")
         .update(updates)
@@ -37,6 +46,21 @@ export function useUpdateHousekeepingTask() {
         .select("*, units(name), booking_in:bookings!housekeeping_tasks_booking_in_id_fkey(id, guest_id, check_in, profiles:manual_guest_name, manual_guest_email, manual_guest_phone, profiles!bookings_guest_id_profiles_fkey(full_name, email))")
         .single();
       if (error) throw error;
+
+      // Attribution — who moved this task, and from what to what.
+      if (status !== undefined && status !== (prior as any)?.status) {
+        await logOverrideEvent({
+          actionType: "housekeeping_status_override",
+          targetType: "housekeeping_task",
+          targetId: id,
+          bookingId: (prior as any)?.booking_in_id ?? null,
+          roomId: (prior as any)?.unit_id ?? null,
+          beforeState: { status: (prior as any)?.status ?? null },
+          afterState: { status, assigned_to: assigned_to ?? (prior as any)?.assigned_to ?? null },
+          reason: notes ?? null,
+        });
+      }
+
 
       // ── Outbound bridge: room ready (only on completion) ──
       if (status === "completed") {
