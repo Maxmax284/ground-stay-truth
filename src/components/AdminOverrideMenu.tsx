@@ -178,7 +178,22 @@ export function AdminOverrideMenu({ bookingId, pickupId }: Props) {
         }
       }
 
+      // Checklist-only overrides have no pickup record to log against, so record
+      // attribution directly — every override needs a name attached.
+      if (!pickupId && (activeAction === "mark_tdac" || activeAction === "assume_connectivity")) {
+        await logOverrideEvent({
+          actionType: activeAction === "mark_tdac" ? "pickup_tdac_confirmed" : "pickup_connectivity_assumed",
+          targetType: "pre_arrival_checklist",
+          targetId: bookingId,
+          bookingId,
+          beforeState: { completed: false },
+          afterState: { completed: true },
+          reason: "Admin override from arrival panel",
+        });
+      }
+
       toast({ title: "Override applied", description: `${action?.label} completed successfully.` });
+
       setActiveAction(null);
       setInputValue("");
     } catch (err: any) {
