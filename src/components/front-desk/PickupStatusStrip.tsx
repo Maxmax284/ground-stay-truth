@@ -8,6 +8,7 @@ import { Plane, Clock } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import type { FrontDeskBooking } from "@/hooks/useFrontDesk";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
+import { formatCampLabeled } from "@/lib/timezone";
 
 type PickupMap = Map<string, { status: string | null; arrival_datetime: string | null }>;
 
@@ -64,7 +65,7 @@ export function PickupStatusStrip({ bookings, pickupByBooking, onOpen }: Props) 
               <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 {pickup!.arrival_datetime
-                  ? format(parseISO(pickup!.arrival_datetime), "MMM d · HH:mm")
+                  ? formatCampLabeled(pickup!.arrival_datetime)
                   : "—"}
                 <span className="ml-2">· {b.units?.name ?? "—"}</span>
               </div>

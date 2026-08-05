@@ -1,0 +1,2 @@
+ALTER TABLE public.airport_pickups DROP CONSTRAINT IF EXISTS valid_pickup_status;
+ALTER TABLE public.airport_pickups ADD CONSTRAINT valid_pickup_status CHECK (status = ANY (ARRAY['requested','assigned','confirmed','completed','failed','cancelled']));

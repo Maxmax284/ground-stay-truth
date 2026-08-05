@@ -54,19 +54,6 @@ export const HOUSEKEEPING_STATUSES = [
 ] as const;
 export type HousekeepingStatus = (typeof HOUSEKEEPING_STATUSES)[number];
 
-// ── Airport Pickups ──
-export const PICKUP_STATUSES = [
-  "requested",
-  "confirmed",
-  "driver_assigned",
-  "en_route",
-  "arrived",
-  "completed",
-  "cancelled",
-  "no_show",
-] as const;
-export type PickupStatus = (typeof PICKUP_STATUSES)[number];
-
 // ── Guest Documents ──
 export const DOCUMENT_VERIFICATION_STATUSES = [
   "pending",
@@ -87,6 +74,18 @@ export const PAYMENT_STATUSES = [
   "recorded",
 ] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+
+// ── Airport Pickup Statuses ──
+// CHECK: requested | assigned | confirmed | completed | failed | cancelled
+export const PICKUP_STATUSES = [
+  "requested",
+  "assigned",
+  "confirmed",
+  "completed",
+  "failed",
+  "cancelled",
+] as const;
+export type PickupStatus = (typeof PICKUP_STATUSES)[number];
 
 // ── Assist Modes (airport pickups) ──
 export const ASSIST_MODES = [

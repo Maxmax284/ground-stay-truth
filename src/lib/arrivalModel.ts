@@ -112,23 +112,44 @@ export const ARRIVAL_TYPE_CONFIG: Record<ArrivalType, ArrivalTypeConfig> = {
 
 // ── Pickup Resolution ────────────────────────────────────────────────────────
 
-export type PickupResolution = "pickup_scheduled" | "self_arrival" | "pickup_disabled";
+export type PickupResolution =
+  | "pickup_requested"
+  | "pickup_scheduled"
+  | "pickup_completed"
+  | "pickup_failed"
+  | "self_arrival"
+  | "pickup_disabled";
 
 /**
  * Resolve the final pickup status.
  * Admin override (pickup_enabled) ALWAYS wins.
+ *
+ * "Pickup Scheduled" is an operational promise — it requires a driver AND a
+ * verified arrival time. A bare guest request stays "Pickup Requested".
  */
 export function resolvePickupStatus(
   transportIntent: TransportIntent,
   pickupEnabled: boolean,
+  scheduled: boolean = true,
+  status?: string | null,
 ): PickupResolution {
   if (!pickupEnabled) return "pickup_disabled";
   if (transportIntent === "self_arrival") return "self_arrival";
-  return "pickup_scheduled";
+  if (status === "completed") return "pickup_completed";
+  if (status === "failed") return "pickup_failed";
+  return scheduled ? "pickup_scheduled" : "pickup_requested";
+}
+
+/** Any resolution where a pickup is still an operational obligation. */
+export function isActivePickup(resolution: PickupResolution): boolean {
+  return resolution === "pickup_requested" || resolution === "pickup_scheduled";
 }
 
 export const PICKUP_RESOLUTION_LABELS: Record<PickupResolution, { label: string; color: string }> = {
+  pickup_requested: { label: "Pickup Requested", color: "bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200" },
   pickup_scheduled: { label: "Pickup Scheduled", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300" },
+  pickup_completed: { label: "Pickup Completed", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300" },
+  pickup_failed: { label: "Pickup Not Completed", color: "bg-destructive/15 text-destructive" },
   self_arrival: { label: "Self Arrival", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" },
   pickup_disabled: { label: "Pickup Disabled by Admin", color: "bg-muted text-muted-foreground" },
 };
@@ -145,6 +166,8 @@ export interface NormalizedArrival {
   pickupEnabled: boolean;
   /** Resolved pickup status */
   pickupResolution: PickupResolution;
+  /** Whether a specific driver is attached to this pickup */
+  driverAssigned: boolean;
   /** Whether staff needs to act on this arrival */
   requiresStaffAction: boolean;
 }
@@ -162,6 +185,8 @@ export function normalizeArrival(pickup: {
   transport_intent?: string;
   pickup_enabled?: boolean;
   status?: string;
+  driver_id?: string | null;
+  confirmed_at?: string | null;
 }): NormalizedArrival {
   const arrivalType = (ARRIVAL_TYPES.includes(pickup.arrival_type as ArrivalType)
     ? pickup.arrival_type
@@ -180,7 +205,21 @@ export function normalizeArrival(pickup: {
     : "pickup") as TransportIntent;
 
   const pickupEnabled = pickup.pickup_enabled !== false;
-  const resolution = resolvePickupStatus(transportIntent, pickupEnabled);
+
+  // A pickup only counts as "scheduled" once a driver is attached and a
+  // concrete arrival time exists (or staff explicitly confirmed it).
+  const driverAssigned = !!pickup.driver_id;
+  const hasArrivalTime = !!pickup.arrival_datetime;
+  const staffConfirmed = !!pickup.confirmed_at ||
+    ["assigned", "confirmed", "in_progress", "completed"].includes(pickup.status ?? "");
+  // Legacy rows carry neither driver nor confirmation info in the payload —
+  // when the caller passes no driver field at all, fall back to status only.
+  const driverFieldProvided = "driver_id" in pickup;
+  const scheduled = driverFieldProvided
+    ? driverAssigned && hasArrivalTime && staffConfirmed
+    : staffConfirmed;
+
+  const resolution = resolvePickupStatus(transportIntent, pickupEnabled, scheduled, pickup.status);
 
   return {
     arrivalType,
@@ -191,6 +230,58 @@ export function normalizeArrival(pickup: {
     transportIntent,
     pickupEnabled,
     pickupResolution: resolution,
-    requiresStaffAction: resolution === "pickup_scheduled" && pickup.status !== "completed" && pickup.status !== "cancelled",
+    driverAssigned,
+    requiresStaffAction: isActivePickup(resolution),
   };
+}
+
+// ── Operational warnings ─────────────────────────────────────────────────────
+
+export interface PickupWarning {
+  severity: "warning" | "critical";
+  message: string;
+}
+
+/**
+ * Driver-assignment and arrival-reconciliation warnings.
+ * Escalates as the arrival gets closer, and after it has passed.
+ */
+export function getPickupWarnings(
+  arrival: NormalizedArrival,
+  opts: { now?: Date; guestOnSite?: boolean } = {},
+): PickupWarning[] {
+  const out: PickupWarning[] = [];
+  if (!isActivePickup(arrival.pickupResolution)) return out;
+
+  const now = opts.now ?? new Date();
+  const at = arrival.arrivalTime ? new Date(arrival.arrivalTime) : null;
+  const hoursOut = at ? (at.getTime() - now.getTime()) / 3_600_000 : null;
+
+  if (!at) {
+    out.push({ severity: "warning", message: "No arrival time on file — confirm the flight or transfer details." });
+  }
+
+  if (!arrival.driverAssigned) {
+    if (hoursOut !== null && hoursOut <= 3) {
+      out.push({
+        severity: "critical",
+        message: hoursOut < 0
+          ? "Arrival time has passed and no driver was ever assigned. This pickup did not happen — record the outcome."
+          : "Arrival is within 3 hours and no driver has accepted. Assign and notify a driver now.",
+      });
+    } else if (hoursOut !== null && hoursOut <= 24) {
+      out.push({ severity: "warning", message: "Arrival is within 24 hours and no driver is assigned yet." });
+    } else {
+      out.push({ severity: "warning", message: "Pickup requested — no driver assigned yet." });
+    }
+  }
+
+  if (hoursOut !== null && hoursOut < 0 && !opts.guestOnSite) {
+    out.push({
+      severity: "warning",
+      message: "Arrival time has passed. Confirm whether the guest has arrived, is delayed, or is a no-show.",
+    });
+  }
+
+  return out;
 }

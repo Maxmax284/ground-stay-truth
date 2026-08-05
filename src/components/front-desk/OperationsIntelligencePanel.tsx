@@ -31,6 +31,7 @@ import { formatPrice } from "@/lib/currency";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { getRequiredDocsForBooking, DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/requiredDocuments";
+import { formatCampLabeled } from "@/lib/timezone";
 
 function missingDocTypesFor(b: FrontDeskBooking): DocumentType[] {
   const required = getRequiredDocsForBooking({ checkIn: b.check_in, checkOut: b.check_out });
@@ -434,7 +435,7 @@ function DrillRow({
       line = (
         <>
           {pickup?.arrival_datetime
-            ? `Arrival ${format(parseISO(pickup.arrival_datetime), "MMM d, HH:mm")}`
+            ? `Arrival ${formatCampLabeled(pickup.arrival_datetime)}`
             : "Pickup scheduled"}
           {pickup?.status ? ` · ${pickup.status}` : ""}
         </>

@@ -12,6 +12,7 @@ import { Plane, MessageSquare, Car, Clock, User, RefreshCw, Loader2, AlertTriang
 import { useToast } from "@/hooks/use-toast";
 import { ManualAssistBanner } from "@/components/ManualAssistBanner";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
+import { formatCampTime } from "@/lib/timezone";
 
 const STATUS_COLORS: Record<string, string> = {
   requested: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
@@ -92,10 +93,10 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
           const unitName = p.bookings?.units?.name ?? "";
           const driverName = p.drivers?.name;
           const time = p.arrival_datetime
-            ? new Date(p.arrival_datetime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+            ? formatCampTime(p.arrival_datetime)
             : null;
 
-          const arrival = normalizeArrival(p);
+          const arrival = normalizeArrival({ ...p, driver_id: p.driver_id ?? null, confirmed_at: p.confirmed_at ?? null });
           const arrivalConfig = ARRIVAL_TYPE_CONFIG[arrival.arrivalType];
           const ArrivalIcon = arrival.arrivalType === "ferry" ? Ship : arrival.arrivalType === "bus" ? Bus : Plane;
 
@@ -242,7 +243,7 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
                     ⏱ Delayed {ft.delay_minutes} min
                     {ft.estimated_arrival && (
                       <span>
-                        · ETA {new Date(ft.estimated_arrival).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        · ETA {formatCampTime(ft.estimated_arrival)}
                       </span>
                     )}
                   </div>
@@ -259,7 +260,7 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
                         </Badge>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="text-xs">
-                        <p>Last checked: {ft ? new Date(ft.last_checked_at).toLocaleTimeString() : "—"}</p>
+                        <p>Last checked: {formatCampTime(ft?.last_checked_at)}</p>
                         {ft?.airline_name && <p>{ft.airline_name}</p>}
                         {ft?.terminal && <p>Terminal {ft.terminal}</p>}
                         {ft?.gate && <p>Gate {ft.gate}</p>}

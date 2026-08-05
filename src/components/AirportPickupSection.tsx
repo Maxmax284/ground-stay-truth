@@ -16,7 +16,8 @@ import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
 import { Plane, Car, MessageSquare, User, Clock, AlertTriangle, ArrowRight, CheckCircle2, MapPin, UserCheck, Ship, Bus, Route, ShieldOff } from "lucide-react";
 import { getTravelState } from "@/lib/travelState";
-import { normalizeArrival, ARRIVAL_TYPE_CONFIG, PICKUP_RESOLUTION_LABELS, ARRIVAL_TYPES, type ArrivalType } from "@/lib/arrivalModel";
+import { normalizeArrival, ARRIVAL_TYPE_CONFIG, PICKUP_RESOLUTION_LABELS, ARRIVAL_TYPES, isActivePickup, getPickupWarnings, type ArrivalType } from "@/lib/arrivalModel";
+import { CAMP_TIMEZONE_LABEL, toCampInputValue, fromCampInputValue, formatCampLabeled } from "@/lib/timezone";
 import { ManualAssistBanner } from "@/components/ManualAssistBanner";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -24,6 +25,7 @@ const STATUS_COLORS: Record<string, string> = {
   assigned: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   confirmed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
   completed: "bg-muted text-muted-foreground",
+  failed: "bg-destructive/15 text-destructive",
   cancelled: "bg-destructive/10 text-destructive",
 };
 
@@ -105,7 +107,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
   const hasConnection = !!internationalFlight;
 
   // Unified arrival model
-  const arrival = normalizeArrival(pickup);
+  const arrival = normalizeArrival({ ...pickup, driver_id: pickup.driver_id ?? null, confirmed_at: pickup.confirmed_at ?? null });
   const arrivalTypeConfig = ARRIVAL_TYPE_CONFIG[arrival.arrivalType];
   const pickupLabel = PICKUP_RESOLUTION_LABELS[arrival.pickupResolution];
 
@@ -205,7 +207,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
       const updates: any = { booking_id: bookingId };
       updates.international_flight_number = intlFlight.trim().toUpperCase() || null;
       updates.flight_number = domesticFlight.trim().toUpperCase() || null;
-      updates.arrival_datetime = arrivalDt ? new Date(arrivalDt).toISOString() : null;
+      updates.arrival_datetime = fromCampInputValue(arrivalDt);
       updates.passenger_count = Math.max(1, parseInt(paxCount) || 1);
       if (domesticFlight.trim()) {
         updates.final_flight_confirmed = true;
@@ -216,7 +218,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
         bookingId,
         pickupId: pickup.id,
         action: `${manualPrefix}flights_updated`,
-        note: `${manualPrefix}Flights updated: Int'l ${intlFlight.trim().toUpperCase() || "—"}, Final ${domesticFlight.trim().toUpperCase() || "—"}, Arrival ${arrivalDt || "—"}, Pax ${paxCount}`,
+        note: `${manualPrefix}Flights updated: Int'l ${intlFlight.trim().toUpperCase() || "—"}, Final ${domesticFlight.trim().toUpperCase() || "—"}, Arrival ${arrivalDt ? `${arrivalDt.replace("T", " ")} ${CAMP_TIMEZONE_LABEL}` : "—"}, Pax ${paxCount}`,
       });
       toast({ title: isManualAssist ? "Flight details updated (manual)" : "Flight details updated" });
       setEditingFlights(false);
@@ -232,9 +234,14 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
     : null;
 
   const nextStatuses: string[] = [];
+  if (pickup.status === "requested" && pickup.driver_id) nextStatuses.push("confirmed");
   if (pickup.status === "assigned") nextStatuses.push("confirmed");
   if (pickup.status === "confirmed") nextStatuses.push("completed");
-  if (pickup.status !== "cancelled" && pickup.status !== "completed") nextStatuses.push("cancelled");
+  if (pickup.status !== "cancelled" && pickup.status !== "completed" && pickup.status !== "failed") {
+    nextStatuses.push("failed", "cancelled");
+  }
+
+  const pickupWarnings = getPickupWarnings(arrival, { guestOnSite: !!guestLandedAt });
 
   const isManualAssist = pickup.assist_mode === "manual_assist";
 
@@ -254,9 +261,30 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
           </div>
           <div className="flex items-center gap-1.5">
             <Badge className={pickupLabel.color}>{pickupLabel.label}</Badge>
-            <Badge className={STATUS_COLORS[pickup.status] ?? ""}>{pickup.status}</Badge>
+            {arrival.driverAssigned && driver?.name && (
+              <Badge variant="outline" className="text-[9px]">Driver: {driver.name}</Badge>
+            )}
           </div>
         </div>
+
+        {/* Driver-assignment & arrival reconciliation warnings */}
+        {pickupWarnings.length > 0 && (
+          <div className="space-y-1.5">
+            {pickupWarnings.map((w, i) => (
+              <div
+                key={i}
+                className={`flex items-start gap-2 rounded-lg border p-2 text-xs ${
+                  w.severity === "critical"
+                    ? "border-destructive/40 bg-destructive/10 text-destructive"
+                    : "border-warning/40 bg-warning/10 text-warning-foreground"
+                }`}
+              >
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                <span className="leading-relaxed">{w.message}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Arrival location & confidence */}
         {arrival.locationName && (
@@ -312,7 +340,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
               </span>
               {guestLandedAt && (
                 <span className="block text-muted-foreground mt-0.5">
-                  {new Date(guestLandedAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  Landed {formatCampLabeled(guestLandedAt)}
                 </span>
               )}
             </div>
@@ -341,7 +369,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
                 onClick={() => {
                   setIntlFlight(internationalFlight ?? "");
                   setDomesticFlight(pickup.flight_number ?? "");
-                  setArrivalDt(pickup.arrival_datetime ? pickup.arrival_datetime.slice(0, 16) : "");
+                  setArrivalDt(toCampInputValue(pickup.arrival_datetime));
                   setPaxCount(String(pickup.passenger_count ?? 1));
                   setEditingFlights(true);
                 }}
@@ -411,7 +439,9 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[11px] text-muted-foreground">Arrival Date & Time</Label>
+                <Label className="text-[11px] text-muted-foreground">
+                  Arrival Date &amp; Time ({CAMP_TIMEZONE_LABEL})
+                </Label>
                 <Input
                   type="datetime-local"
                   value={arrivalDt}
@@ -443,9 +473,9 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
         </div>
 
         {/* Arrival time & passengers */}
-        <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
           {pickup.arrival_datetime && (
-            <div className="flex items-center gap-1"><Clock className="h-3 w-3" /> {new Date(pickup.arrival_datetime).toLocaleString()}</div>
+            <div className="flex items-center gap-1"><Clock className="h-3 w-3" /> Arrival {formatCampLabeled(pickup.arrival_datetime)}</div>
           )}
           {(pickup.passenger_count ?? 0) > 1 && (
             <div className="flex items-center gap-1"><User className="h-3 w-3" /> {pickup.passenger_count} pax</div>
@@ -588,7 +618,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
         )}
 
         {/* Status actions */}
-        {canManage && nextStatuses.length > 0 && arrival.pickupResolution === "pickup_scheduled" && (
+        {canManage && nextStatuses.length > 0 && isActivePickup(arrival.pickupResolution) && (
           <>
             <Separator />
             <div className="flex flex-wrap gap-1.5">
@@ -601,7 +631,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
                   onClick={() => handleStatusChange(s)}
                   disabled={upsert.isPending}
                 >
-                  {s === "confirmed" ? "Confirm Pickup" : s === "completed" ? "Mark Complete" : "Cancel Pickup"}
+                  {s === "confirmed" ? "Confirm Pickup" : s === "completed" ? "Mark Complete" : s === "failed" ? "Mark Not Completed" : "Cancel Pickup"}
                 </Button>
               ))}
             </div>

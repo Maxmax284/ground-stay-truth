@@ -2,7 +2,8 @@ import { useAirportPickup } from "@/hooks/useAirportPickups";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
 import { getTravelState, type TravelStateInfo } from "@/lib/travelState";
-import { normalizeArrival, ARRIVAL_TYPE_CONFIG, PICKUP_RESOLUTION_LABELS, type PickupResolution } from "@/lib/arrivalModel";
+import { normalizeArrival, ARRIVAL_TYPE_CONFIG, PICKUP_RESOLUTION_LABELS, isActivePickup, type PickupResolution } from "@/lib/arrivalModel";
+import { formatCampLabeled } from "@/lib/timezone";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,7 +54,7 @@ export function GuestPickupCard({ bookingId, guestName }: Props) {
   if (isLoading || !pickup) return null;
   if (pickup.status === "cancelled") return null;
 
-  const arrival = normalizeArrival(pickup);
+  const arrival = normalizeArrival({ ...pickup, driver_id: pickup.driver_id ?? null, confirmed_at: pickup.confirmed_at ?? null });
   const config = STATUS_CONFIG[pickup.status] ?? STATUS_CONFIG.requested;
   const driver = pickup.drivers;
 
@@ -80,7 +81,7 @@ export function GuestPickupCard({ bookingId, guestName }: Props) {
   const pickupLabel = PICKUP_RESOLUTION_LABELS[arrival.pickupResolution];
 
   // Self-arrival or pickup disabled — show simplified card
-  if (arrival.pickupResolution !== "pickup_scheduled") {
+  if (!isActivePickup(arrival.pickupResolution)) {
     return (
       <Card className="border-border bg-muted/30">
         <CardContent className="p-3 space-y-2">
@@ -94,9 +95,7 @@ export function GuestPickupCard({ bookingId, guestName }: Props) {
           {arrival.arrivalTime && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
-              {new Date(arrival.arrivalTime).toLocaleDateString([], { month: "short", day: "numeric" })}
-              {" "}
-              {new Date(arrival.arrivalTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              {formatCampLabeled(arrival.arrivalTime)}
               {arrival.confidence === "flexible" && <Badge variant="outline" className="text-[9px] ml-1">Flexible</Badge>}
             </div>
           )}
@@ -184,9 +183,7 @@ export function GuestPickupCard({ bookingId, guestName }: Props) {
           {pickup.arrival_datetime && (
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {new Date(pickup.arrival_datetime).toLocaleDateString([], { month: "short", day: "numeric" })}
-              {" "}
-              {new Date(pickup.arrival_datetime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              {formatCampLabeled(pickup.arrival_datetime)}
             </span>
           )}
           {(pickup.passenger_count ?? 0) > 1 && (
