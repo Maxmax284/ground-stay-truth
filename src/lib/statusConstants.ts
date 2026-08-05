@@ -54,19 +54,6 @@ export const HOUSEKEEPING_STATUSES = [
 ] as const;
 export type HousekeepingStatus = (typeof HOUSEKEEPING_STATUSES)[number];
 
-// ── Airport Pickups ──
-export const PICKUP_STATUSES = [
-  "requested",
-  "confirmed",
-  "driver_assigned",
-  "en_route",
-  "arrived",
-  "completed",
-  "cancelled",
-  "no_show",
-] as const;
-export type PickupStatus = (typeof PICKUP_STATUSES)[number];
-
 // ── Guest Documents ──
 export const DOCUMENT_VERIFICATION_STATUSES = [
   "pending",
