@@ -16,7 +16,8 @@ import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
 import { Plane, Car, MessageSquare, User, Clock, AlertTriangle, ArrowRight, CheckCircle2, MapPin, UserCheck, Ship, Bus, Route, ShieldOff } from "lucide-react";
 import { getTravelState } from "@/lib/travelState";
-import { normalizeArrival, ARRIVAL_TYPE_CONFIG, PICKUP_RESOLUTION_LABELS, ARRIVAL_TYPES, type ArrivalType } from "@/lib/arrivalModel";
+import { normalizeArrival, ARRIVAL_TYPE_CONFIG, PICKUP_RESOLUTION_LABELS, ARRIVAL_TYPES, isActivePickup, getPickupWarnings, type ArrivalType } from "@/lib/arrivalModel";
+import { formatCampLabeled } from "@/lib/timezone";
 import { ManualAssistBanner } from "@/components/ManualAssistBanner";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -105,7 +106,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
   const hasConnection = !!internationalFlight;
 
   // Unified arrival model
-  const arrival = normalizeArrival(pickup);
+  const arrival = normalizeArrival({ ...pickup, driver_id: pickup.driver_id ?? null, confirmed_at: pickup.confirmed_at ?? null });
   const arrivalTypeConfig = ARRIVAL_TYPE_CONFIG[arrival.arrivalType];
   const pickupLabel = PICKUP_RESOLUTION_LABELS[arrival.pickupResolution];
 
