@@ -173,6 +173,11 @@ export function useTodaysPickups() {
   });
 }
 
+/**
+ * Pickup/arrival action log. Always stamps the signed-in user, and mirrors
+ * anything that looks like a manual override into the override audit trail so
+ * "who forced this?" has an answer.
+ */
 export async function logPickupAction(params: {
   bookingId: string;
   pickupId: string;
@@ -181,6 +186,7 @@ export async function logPickupAction(params: {
   toStatus?: string | null;
   note?: string | null;
 }) {
+  const { data: { user } } = await supabase.auth.getUser();
   await supabase.from("stay_support_log").insert({
     booking_id: params.bookingId,
     request_type: "airport_pickup",
@@ -189,5 +195,20 @@ export async function logPickupAction(params: {
     from_status: params.fromStatus ?? null,
     to_status: params.toStatus ?? null,
     note: params.note ?? null,
-  });
+    changed_by: user?.id ?? null,
+    change_type: /\[ADMIN\]|override|manual|force/i.test(params.action) ? "override" : "normal",
+  } as any);
+
+  if (/\[ADMIN\]|override|manual|force/i.test(params.action)) {
+    await logOverrideEvent({
+      actionType: `pickup_${params.action.replace(/\[ADMIN\]\s*/i, "").trim() || "override"}`,
+      targetType: "airport_pickup",
+      targetId: params.pickupId,
+      bookingId: params.bookingId,
+      beforeState: params.fromStatus ? { status: params.fromStatus } : {},
+      afterState: params.toStatus ? { status: params.toStatus } : {},
+      reason: params.note ?? null,
+    });
+  }
 }
+
