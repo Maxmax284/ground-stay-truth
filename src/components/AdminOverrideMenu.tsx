@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUpsertAirportPickup, logPickupAction } from "@/hooks/useAirportPickups";
 import { useToggleChecklistItem } from "@/hooks/usePreArrivalChecklist";
 import { supabase } from "@/integrations/supabase/client";
+import { logOverrideEvent } from "@/lib/overrideAudit";
 import { Shield, Plane, Clock, FileCheck, Wifi, MapPin, Loader2 } from "lucide-react";
 
 type OverrideAction =
