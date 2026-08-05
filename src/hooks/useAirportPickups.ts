@@ -136,8 +136,21 @@ export function useUpdateAssistMode() {
         .select()
         .single() as any);
       if (error) throw error;
+
+      // Attribution — flipping a pickup into (or out of) manual assist is an override.
+      await logOverrideEvent({
+        actionType: "pickup_assist_mode_override",
+        targetType: "airport_pickup",
+        targetId: params.pickup_id,
+        bookingId: params.booking_id,
+        beforeState: {},
+        afterState: { assist_mode: params.assist_mode },
+        reason: params.assist_reason ?? null,
+      });
+
       return data as AirportPickup;
     },
+
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["airport_pickup", vars.booking_id] });
       qc.invalidateQueries({ queryKey: ["todays_pickups"] });
