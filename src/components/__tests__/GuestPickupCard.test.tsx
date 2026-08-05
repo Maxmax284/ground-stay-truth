@@ -115,7 +115,7 @@ describe("GuestPickupCard — Travel State Guidance", () => {
   it("completed: shows completed badge, no guidance message", () => {
     mockPickup.status = "completed";
     renderCard();
-    expect(screen.getByText("Completed")).toBeInTheDocument();
+    expect(screen.getByText("Pickup Completed")).toBeInTheDocument();
     // Guidance is suppressed for arrived/completed state
     expect(screen.queryByText(/driver is on the way/i)).not.toBeInTheDocument();
   });
