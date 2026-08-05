@@ -439,7 +439,9 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[11px] text-muted-foreground">Arrival Date & Time</Label>
+                <Label className="text-[11px] text-muted-foreground">
+                  Arrival Date &amp; Time ({CAMP_TIMEZONE_LABEL})
+                </Label>
                 <Input
                   type="datetime-local"
                   value={arrivalDt}
