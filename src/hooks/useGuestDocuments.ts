@@ -254,6 +254,19 @@ export function useReviewGuestDocument() {
         action: "review",
         detail: [status, reason, note].filter(Boolean).join(" — "),
       });
+
+      // Attribution — a staff decision on somebody's ID is an override worth naming.
+      await logOverrideEvent({
+        actionType: "guest_document_review_override",
+        targetType: "guest_document",
+        targetId: doc.id,
+        bookingId: doc.booking_id,
+        beforeState: { review_status: (doc as any).review_status ?? null },
+        afterState: { review_status: status },
+        reason: reason ?? note ?? null,
+        metadata: { document_type: (doc as any).document_type ?? null },
+      });
+
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["guestDocuments", vars.doc.booking_id] });
