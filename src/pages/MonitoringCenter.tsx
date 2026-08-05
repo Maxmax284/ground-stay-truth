@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { GuestPortalHealth } from "@/components/monitoring/GuestPortalHealth";
 import { StaffActivity } from "@/components/monitoring/StaffActivity";
+import { OverrideAuditPanel } from "@/components/monitoring/OverrideAuditPanel";
 import { PushHealth } from "@/components/monitoring/PushHealth";
 import { AdminEmailHealth } from "@/components/monitoring/AdminEmailHealth";
 
@@ -465,6 +466,10 @@ export default function MonitoringCenter() {
 
         {/* Staff activity — the other side: who on the team changed what. */}
         <StaffActivity />
+
+        {/* Overrides — every manual override, attributed to a person. */}
+        <OverrideAuditPanel />
+
 
         {/* Overall status */}
 
