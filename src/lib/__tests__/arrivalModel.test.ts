@@ -8,7 +8,7 @@ import {
   ARRIVAL_TYPE_CONFIG,
   getPickupWarnings,
 } from "@/lib/arrivalModel";
-import { formatCampLabeled, formatCampTime } from "@/lib/timezone";
+import { formatCampLabeled, formatCampTime, toCampInputValue, fromCampInputValue } from "@/lib/timezone";
 
 describe("resolvePickupStatus", () => {
   it("returns pickup_disabled when admin disables pickup regardless of guest intent", () => {
@@ -240,5 +240,19 @@ describe("ARRIVAL_TYPE_CONFIG", () => {
   it("flight has high confidence by default", () => {
     expect(ARRIVAL_TYPE_CONFIG.flight.defaultConfidence).toBe("high");
     expect(ARRIVAL_TYPE_CONFIG.flight.precisionExpected).toBe(true);
+  });
+});
+
+describe("camp time input round-trip", () => {
+  it("shows 07:45 UTC as 14:45 in the editor and saves it back unchanged", () => {
+    const stored = "2026-08-05T07:45:00+00:00";
+    const input = toCampInputValue(stored);
+    expect(input).toBe("2026-08-05T14:45");
+    expect(fromCampInputValue(input)).toBe("2026-08-05T07:45:00.000Z");
+  });
+
+  it("handles empty values", () => {
+    expect(toCampInputValue(null)).toBe("");
+    expect(fromCampInputValue("")).toBeNull();
   });
 });
