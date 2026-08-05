@@ -260,9 +260,30 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
           </div>
           <div className="flex items-center gap-1.5">
             <Badge className={pickupLabel.color}>{pickupLabel.label}</Badge>
-            <Badge className={STATUS_COLORS[pickup.status] ?? ""}>{pickup.status}</Badge>
+            {arrival.driverAssigned && driver?.name && (
+              <Badge variant="outline" className="text-[9px]">Driver: {driver.name}</Badge>
+            )}
           </div>
         </div>
+
+        {/* Driver-assignment & arrival reconciliation warnings */}
+        {pickupWarnings.length > 0 && (
+          <div className="space-y-1.5">
+            {pickupWarnings.map((w, i) => (
+              <div
+                key={i}
+                className={`flex items-start gap-2 rounded-lg border p-2 text-xs ${
+                  w.severity === "critical"
+                    ? "border-destructive/40 bg-destructive/10 text-destructive"
+                    : "border-warning/40 bg-warning/10 text-warning-foreground"
+                }`}
+              >
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                <span className="leading-relaxed">{w.message}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Arrival location & confidence */}
         {arrival.locationName && (
