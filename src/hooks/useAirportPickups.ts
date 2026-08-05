@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useProperty } from "@/hooks/useProperty";
+import { logOverrideEvent } from "@/lib/overrideAudit";
 
 export type AssistMode = "healthy" | "degraded" | "manual_assist" | "recovery_pending";
 
