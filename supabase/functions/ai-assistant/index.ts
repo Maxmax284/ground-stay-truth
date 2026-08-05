@@ -914,6 +914,31 @@ Honest budget-route answer: "DMK is usually the cheaper Bangkok airport. From th
       if (failedEvents.length > 0) {
         contextData += `\nHeads up: ${failedEvents.length} payment event(s) are marked unprocessed. Investigate webhook delivery.`;
       }
+
+      // Override attribution roll-up — named actors, plus anything unattributable.
+      try {
+        const { data: recentOverrides } = await adminClient
+          .from("override_audit_log")
+          .select("action_type, target_type, actor_name, actor_role, source, attribution_missing, reason, booking_id, created_at")
+          .gte("created_at", sevenDaysAgo)
+          .order("created_at", { ascending: false })
+          .limit(25);
+        const ovr = recentOverrides ?? [];
+        const missing = ovr.filter((o: any) => o.attribution_missing).length;
+        contextData += `\n\nOVERRIDES (last 7 days): ${ovr.length} recorded, ${missing} missing attribution.`;
+        for (const o of ovr.slice(0, 12) as any[]) {
+          const who = o.attribution_missing
+            ? "Unknown user (attribution missing)"
+            : o.source === "system" || o.source === "automation"
+              ? `System/${o.source}`
+              : `${o.actor_name || "Unknown user"}${o.actor_role ? ` (${o.actor_role})` : ""}`;
+          contextData += `\n- ${o.action_type} on ${o.target_type}${o.booking_id ? ` [booking ${o.booking_id}]` : ""} by ${who} at ${o.created_at}${o.reason ? ` — ${o.reason}` : ""}`;
+        }
+        contextData += `\nWhen asked who performed an override, answer with these names and roles. Only say attribution is unavailable for rows explicitly marked "attribution missing".`;
+      } catch (e) {
+        console.error("Admin override roll-up failed:", e);
+      }
+
     }
 
     if (role === "maintenance") {
@@ -1307,6 +1332,32 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
             if (log.length > 0) {
               contextData += `\nRecent state changes: ${log.map((l: any) => `${l.from_state}→${l.to_state}${l.reason ? ` (${l.reason})` : ""}`).join("; ")}.`;
             }
+
+            // Override attribution — who forced what on this booking, by name and role.
+            try {
+              const { data: overrides } = await adminClient
+                .from("override_audit_log")
+                .select("action_type, actor_name, actor_email, actor_role, source, attribution_missing, before_state, after_state, reason, created_at")
+                .eq("booking_id", fb.id)
+                .order("created_at", { ascending: false })
+                .limit(10);
+              if ((overrides ?? []).length > 0) {
+                contextData += `\nOVERRIDES ON THIS BOOKING (newest first) — use these exact names when asked who overrode something:`;
+                for (const o of overrides as any[]) {
+                  const who = o.attribution_missing || o.source === "unknown"
+                    ? "Unknown user (attribution missing — override predates audit logging or actor could not be resolved)"
+                    : o.source === "system" || o.source === "automation"
+                      ? `System/${o.source}`
+                      : `${o.actor_name || o.actor_email || "Unknown user"}${o.actor_role ? ` (${o.actor_role})` : ""}`;
+                  contextData += `\n- ${o.action_type} by ${who} at ${o.created_at}${o.reason ? ` — reason: ${o.reason}` : ""}. Before: ${JSON.stringify(o.before_state ?? {})} After: ${JSON.stringify(o.after_state ?? {})}`;
+                }
+              } else {
+                contextData += `\nOverrides on this booking: none recorded in the override audit log.`;
+              }
+            } catch (e) {
+              console.error("Override attribution fetch failed:", e);
+            }
+
             if ((fb as any).admin_notes && role !== "front_desk") {
               contextData += `\nAdmin notes: ${(fb as any).admin_notes}`;
             }
