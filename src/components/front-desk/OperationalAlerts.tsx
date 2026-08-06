@@ -11,6 +11,7 @@ import type { FrontDeskBooking } from "@/hooks/useFrontDesk";
 import { format } from "date-fns";
 import { formatPrice } from "@/lib/currency";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
+import { isAcknowledged, isMoneyGapMuted } from "@/lib/staffMarkers";
 
 interface AlertItem {
   bookingId: string;
