@@ -307,32 +307,42 @@ function BookingRow({
       : null;
 
   const warnings: string[] = [];
-  if (booking.outstanding > 0) warnings.push(`Balance owed: ${formatPrice(booking.outstanding)}`);
-  if (!booking.depositPaid && (variant === "arriving" || variant === "waiting"))
-    warnings.push("Deposit unpaid");
+  const notes: string[] = [];
+  const moneyMuted = isMoneyGapMuted(booking);
+  const docsMuted = isAcknowledged(booking, "id_document");
+  const secDepMuted = isAcknowledged(booking, "security_deposit");
+
+  if (isPayOnArrival(booking)) notes.push("Paying on arrival");
+  if (booking.outstanding > 0) {
+    if (moneyMuted) {
+      notes.push(`Balance ${formatPrice(booking.outstanding)} — collect at desk`);
+    } else {
+      warnings.push(
+        `Balance owed: ${formatPrice(booking.outstanding)} — collect at check-in or mark as paying on arrival`,
+      );
+    }
+  }
+  if (!booking.depositPaid && !moneyMuted && (variant === "arriving" || variant === "waiting"))
+    warnings.push("Deposit not recorded — take payment or mark it handled offline");
   if (
     variant !== "upcoming" &&
+    !secDepMuted &&
     (!booking.securityDeposit || booking.securityDeposit.status !== "held")
   ) {
     if (variant === "arriving" || variant === "waiting")
-      warnings.push("Security deposit not collected");
+      warnings.push("Security deposit not collected yet");
   }
-  if (booking.docCount === 0 && (variant === "arriving" || variant === "waiting"))
-    warnings.push("ID document missing");
-  if (
-    variant === "departing" &&
-    booking.turnover?.status !== "completed" &&
-    booking.turnover?.status
-  ) {
-    // departure cards lead into turnover handoff
-  }
+  if (booking.docCount === 0 && !docsMuted && (variant === "arriving" || variant === "waiting"))
+    warnings.push("No ID on file — upload it or tick 'ID checked in person'");
+  if (docsMuted) notes.push("ID checked in person");
   if (
     variant === "arriving" &&
     booking.turnover &&
     booking.turnover.status !== "completed"
   ) {
-    warnings.push("Turnover not ready");
+    warnings.push("Room not cleaned yet");
   }
+
 
   const opStatus = computeOperationalStatus(booking);
 
