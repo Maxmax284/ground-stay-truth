@@ -1,29 +1,62 @@
-## Goal
-Make downloading media dead simple: one click for a single photo, one click for everything selected, and a "Download all" that grabs the whole library (or just the photos actually in use).
+# Staff Workflow Fixes — Nikki's Onboarding Findings
 
-## What gets added
+Six issues, each traced to a specific code path. Nothing about the booking state machine, pricing, or payment math changes — the fixes are about what staff are shown and how manual/legacy bookings are treated.
 
-**1. Per-photo download button**
-In the hover toolbar on each tile (next to Preview / Edit / Copy URL), add a download icon. Saves the original file with a clean filename (original filename, falling back to the storage path name).
+## 1. Manual / legacy bookings throw too many warnings
 
-**2. Bulk download in the selection bar**
-When photos are selected, the action bar gets a `Download (N)` button. Fetches each file and packages them into a single ZIP, organized into folders matching the media library folders (`Exterior/`, `Interior/`, `Uncategorized/`, etc.). Shows progress ("12 of 40…") and a toast when done.
+Right now every arriving booking gets flagged for "Deposit unpaid", "ID document missing", and "Security deposit not collected" regardless of how it was created. Bookings Nikki entered by hand (guest paid by bank transfer, ID checked in person) light up red for things that were already handled offline.
 
-**3. "Download all" dropdown in the header**
-Always visible next to Upload, no selection needed:
-- **Everything** — full library as one ZIP
-- **Only photos in use** — just the assets currently assigned to a unit (uses the existing usage map already computed on the page)
-- **Current view** — whatever the folder/search/sort filters are showing
+Fix:
+- Add a staff-set "handled offline" acknowledgement per booking (stored on the booking, set from Booking Detail with a reason, logged to the override audit trail with the actor).
+- Front Desk warnings and the operational status badge respect that acknowledgement: acknowledged items stop showing as red problems and show as a quiet "Confirmed by staff" note instead.
+- Documents stay advisory as they are today — no new blocking.
 
-**4. Lightbox download**
-Add a download button to the preview lightbox too, so you can eyeball then grab.
+## 2. Checkout still asks for an override when everything is done
+
+Confirmed root cause: `completed` is only a valid transition out of `checked_in`. Any booking that was never checked in (manual bookings that went straight to `confirmed`, or the guest left before staff pressed check-in) can only reach `completed` through the admin override toggle.
+
+Fix:
+- Allow `confirmed → completed` as a normal transition for staff with checkout permission, with a required short reason ("guest already departed"), logged to the override audit trail as an attributed staff action.
+- Remove the override requirement for the ordinary `checked_in → completed` case where balance is settled or the balance has been acknowledged as collected offline.
+
+## 3. Cleaning schedule shows on the dashboard but not on Front Desk
+
+Confirmed root cause: the Front Desk data hook only loads bookings that are `checked_in` or have a check-in inside the next 7 days. Once a guest checks out the booking becomes `completed` and drops out entirely, so its turnover task disappears from the Turnover Board even though the room still needs cleaning.
+
+Fix:
+- Load today's housekeeping tasks for the property directly (not only through bookings), so the Turnover Board shows every open task for today including rooms whose guest already checked out.
+- Show unit name, task type (turnover vs scheduled), and status, matching what the dashboard shows so the two screens agree.
+
+## 4. Pay-on-arrival bookings show as payment overdue
+
+There is currently no concept of "guest is paying on arrival" anywhere in the system, so any unpaid confirmed booking reads as a problem — "Arrival Problem — Deposit Unpaid" in red.
+
+Fix:
+- Add a "Paying on arrival" marker staff can set on a booking.
+- When set, Front Desk and the status badge show "Paying on arrival" in neutral tone instead of an overdue/red warning, and the pre-arrival alert roll-up skips it.
+- Payment obligations and the ledger are untouched — the balance is still owed and still visible; only the alarm framing changes.
+
+## 5. Flight arrival date/time mismatch
+
+Confirmed root cause: the guest-facing arrival form converts the typed time using the guest's device timezone (`new Date(value).toISOString()`) and redisplays the stored value by string-slicing UTC. A guest typing 14:30 from Europe stores the wrong absolute time, and staff see a shifted value.
+
+Fix:
+- Route the guest arrival form and the guest booking request form through the existing Thailand-time helpers (`toCampInputValue` / `fromCampInputValue`) so typed times are always read as Thailand time, matching the staff side.
+- Label the field explicitly as Thailand time on the guest side.
+- Add tests covering the round trip from several device timezones.
+
+## 6. Audit trail, Kru Glitch, and staff clarity
+
+- Every new action above (offline acknowledgement, early completion, pay-on-arrival marker) writes an attributed entry through the existing `log_override_event` path, so the Monitoring Center "who did what" panel picks them up with no extra work.
+- Kru Glitch booking context gains the three new markers so it stops telling staff a booking is at risk when staff already resolved it offline.
+- Warning copy gets rewritten in plain English with what to actually do, e.g. "Balance owed — collect at check-in or mark as paying on arrival" instead of a bare red flag.
 
 ## Technical notes
-- Add `jszip` for client-side zipping; files are fetched from the public `unit-photos` bucket URLs already used for display, so no new backend or edge function.
-- Single-file download uses a blob fetch + object URL (same resilient pattern as the booking-confirmation PDF download) rather than a raw `<a href>`, so it works in PWA/in-app browsers instead of just navigating away.
-- Downloads run in small batches (~5 concurrent) with a progress counter so a 100-photo ZIP doesn't stall the tab silently. Very large sets (>200 files) prompt a confirm first.
-- Filename collisions inside a ZIP get a numeric suffix.
-- No schema changes, no RLS changes, no changes to upload/delete/assign logic.
 
-## Out of scope
-Zipping server-side, downloading guest ID documents (that stays in the audited private-bucket flow), and any change to how photos are stored.
+- New booking columns: `pay_on_arrival` (boolean), `offline_acknowledgements` (jsonb: which items staff confirmed, who, when, why). Guest-write guard trigger updated so guests cannot set them.
+- `src/lib/bookingStateMachine.ts`: add `completed` to `confirmed` transitions.
+- `src/hooks/useFrontDesk.ts`: new today's-housekeeping query keyed on active property, independent of booking window.
+- `src/lib/operationalStatus.ts` and `src/pages/FrontDesk.tsx` warning builder: consume the new markers.
+- `src/components/GuestArrivalSelector.tsx`, `src/components/GuestBookingRequestForm.tsx`: timezone helpers.
+- `supabase/functions/ai-assistant/index.ts`: include markers in booking context.
+- Tests: timezone round trip, status badge behaviour with markers set, transition validity.
