@@ -321,6 +321,28 @@ function buildSystemPrompt(role: string, language: string, contextData: string, 
   return layers.join("\n\n");
 }
 
+/** Plain-English label for who category performed an override. */
+function actorKind(source: string | null | undefined, missing?: boolean): string {
+  if (missing || !source || source === "unknown") return "attribution missing";
+  if (source === "human_admin") return "admin action";
+  if (source === "staff_user") return "staff action";
+  if (source === "system") return "system (automatic)";
+  if (source === "automation") return "automation (scheduled job)";
+  return source;
+}
+
+/** Render a stored UTC timestamp in Thailand time so the AI never quotes UTC. */
+function campTime(value: string | null | undefined): string {
+  if (!value) return "unknown time";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return `${new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric", month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit", hour12: true,
+  }).format(d)} Thailand time`;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: getCorsHeaders(req) });
@@ -932,7 +954,7 @@ Honest budget-route answer: "DMK is usually the cheaper Bangkok airport. From th
             : o.source === "system" || o.source === "automation"
               ? `System/${o.source}`
               : `${o.actor_name || "Unknown user"}${o.actor_role ? ` (${o.actor_role})` : ""}`;
-          contextData += `\n- ${o.action_type} on ${o.target_type}${o.booking_id ? ` [booking ${o.booking_id}]` : ""} by ${who} at ${o.created_at}${o.reason ? ` — ${o.reason}` : ""}`;
+          contextData += `\n- ${o.action_type} on ${o.target_type}${o.booking_id ? ` [booking ${o.booking_id}]` : ""} by ${who} [${actorKind(o.source, o.attribution_missing)}] at ${campTime(o.created_at)}${o.reason ? ` — ${o.reason}` : ""}`;
         }
         contextData += `\nWhen asked who performed an override, answer with these names and roles. Only say attribution is unavailable for rows explicitly marked "attribution missing".`;
       } catch (e) {
@@ -1245,7 +1267,7 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
           let fbQ = adminClient
             .from("bookings")
             .select(
-              "id, state, check_in, check_out, num_guests, total_price, guest_type, guest_id, manual_guest_name, manual_guest_email, manual_guest_phone, admin_notes, units(name), profiles!bookings_guest_id_profiles_fkey(full_name, email, phone), property_id"
+              "id, state, check_in, check_out, num_guests, total_price, guest_type, guest_id, manual_guest_name, manual_guest_email, manual_guest_phone, admin_notes, pay_on_arrival, offline_acknowledgements, units(name), profiles!bookings_guest_id_profiles_fkey(full_name, email, phone), property_id"
             )
             .eq("id", focused_context.booking_id);
           if (property_id) fbQ = fbQ.eq("property_id", property_id);
@@ -1333,6 +1355,30 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
               contextData += `\nRecent state changes: ${log.map((l: any) => `${l.from_state}→${l.to_state}${l.reason ? ` (${l.reason})` : ""}`).join("; ")}.`;
             }
 
+            // Staff handling markers — "handled in person" acknowledgements, with
+            // who confirmed each one and when. This is what answers
+            // "who marked this handled by staff?".
+            const ACK_LABELS: Record<string, string> = {
+              deposit: "Deposit handled offline",
+              balance: "Balance collected offline",
+              id_document: "ID checked in person",
+              security_deposit: "Security deposit handled offline",
+            };
+            const acks = ((fb as any).offline_acknowledgements ?? {}) as Record<string, any>;
+            const ackKeys = Object.keys(acks).filter((k) => acks[k]?.at);
+            if ((fb as any).pay_on_arrival) {
+              contextData += `\nPAY ON ARRIVAL: staff marked this booking as settling payment at the desk. The balance is still owed but is not overdue.`;
+            }
+            if (ackKeys.length > 0) {
+              contextData += `\nHANDLED IN PERSON BY STAFF (use these names when asked who marked something handled):`;
+              for (const k of ackKeys) {
+                const a = acks[k];
+                contextData += `\n- ${ACK_LABELS[k] ?? k}: confirmed by ${a.by || "Unknown user (attribution missing)"} at ${campTime(a.at)}${a.reason ? ` — reason: ${a.reason}` : " — no reason given"}`;
+              }
+            } else {
+              contextData += `\nHandled-in-person markers: none on this booking.`;
+            }
+
             // Override attribution — who forced what on this booking, by name and role.
             try {
               const { data: overrides } = await adminClient
@@ -1342,14 +1388,14 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
                 .order("created_at", { ascending: false })
                 .limit(10);
               if ((overrides ?? []).length > 0) {
-                contextData += `\nOVERRIDES ON THIS BOOKING (newest first) — use these exact names when asked who overrode something:`;
+                contextData += `\nOVERRIDES ON THIS BOOKING (newest first) — use these exact names when asked who overrode something. "source" tells you whether it was a staff member, an admin action, or the system:`;
                 for (const o of overrides as any[]) {
                   const who = o.attribution_missing || o.source === "unknown"
                     ? "Unknown user (attribution missing — override predates audit logging or actor could not be resolved)"
                     : o.source === "system" || o.source === "automation"
                       ? `System/${o.source}`
                       : `${o.actor_name || o.actor_email || "Unknown user"}${o.actor_role ? ` (${o.actor_role})` : ""}`;
-                  contextData += `\n- ${o.action_type} by ${who} at ${o.created_at}${o.reason ? ` — reason: ${o.reason}` : ""}. Before: ${JSON.stringify(o.before_state ?? {})} After: ${JSON.stringify(o.after_state ?? {})}`;
+                  contextData += `\n- ${o.action_type} by ${who} [${actorKind(o.source, o.attribution_missing)}] at ${campTime(o.created_at)}${o.reason ? ` — reason: ${o.reason}` : " — no reason recorded"}. Before: ${JSON.stringify(o.before_state ?? {})} After: ${JSON.stringify(o.after_state ?? {})}`;
                 }
               } else {
                 contextData += `\nOverrides on this booking: none recorded in the override audit log.`;
