@@ -480,6 +480,14 @@ function BookingRow({
           </div>
         )}
 
+        {/* Quiet notes — things staff already handled */}
+        {notes.length > 0 && (
+          <div className="mt-2 flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md p-2 border border-border/60">
+            <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <div>Confirmed by staff: {notes.join(" · ")}</div>
+          </div>
+        )}
+
 
         {/* Actions */}
         <div className="flex gap-2 mt-3 flex-wrap">
