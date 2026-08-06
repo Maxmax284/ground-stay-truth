@@ -321,6 +321,16 @@ function buildSystemPrompt(role: string, language: string, contextData: string, 
   return layers.join("\n\n");
 }
 
+/** Plain-English label for who category performed an override. */
+function actorKind(source: string | null | undefined, missing?: boolean): string {
+  if (missing || !source || source === "unknown") return "attribution missing";
+  if (source === "human_admin") return "admin action";
+  if (source === "staff_user") return "staff action";
+  if (source === "system") return "system (automatic)";
+  if (source === "automation") return "automation (scheduled job)";
+  return source;
+}
+
 /** Render a stored UTC timestamp in Thailand time so the AI never quotes UTC. */
 function campTime(value: string | null | undefined): string {
   if (!value) return "unknown time";
@@ -944,7 +954,7 @@ Honest budget-route answer: "DMK is usually the cheaper Bangkok airport. From th
             : o.source === "system" || o.source === "automation"
               ? `System/${o.source}`
               : `${o.actor_name || "Unknown user"}${o.actor_role ? ` (${o.actor_role})` : ""}`;
-          contextData += `\n- ${o.action_type} on ${o.target_type}${o.booking_id ? ` [booking ${o.booking_id}]` : ""} by ${who} at ${campTime(o.created_at)}${o.reason ? ` — ${o.reason}` : ""}`;
+          contextData += `\n- ${o.action_type} on ${o.target_type}${o.booking_id ? ` [booking ${o.booking_id}]` : ""} by ${who} [${actorKind(o.source, o.attribution_missing)}] at ${campTime(o.created_at)}${o.reason ? ` — ${o.reason}` : ""}`;
         }
         contextData += `\nWhen asked who performed an override, answer with these names and roles. Only say attribution is unavailable for rows explicitly marked "attribution missing".`;
       } catch (e) {
@@ -1385,7 +1395,7 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
                     : o.source === "system" || o.source === "automation"
                       ? `System/${o.source}`
                       : `${o.actor_name || o.actor_email || "Unknown user"}${o.actor_role ? ` (${o.actor_role})` : ""}`;
-                  contextData += `\n- ${o.action_type} by ${who} at ${campTime(o.created_at)}${o.reason ? ` — reason: ${o.reason}` : ""}. Before: ${JSON.stringify(o.before_state ?? {})} After: ${JSON.stringify(o.after_state ?? {})}`;
+                  contextData += `\n- ${o.action_type} by ${who} [${actorKind(o.source, o.attribution_missing)}] at ${campTime(o.created_at)}${o.reason ? ` — reason: ${o.reason}` : " — no reason recorded"}. Before: ${JSON.stringify(o.before_state ?? {})} After: ${JSON.stringify(o.after_state ?? {})}`;
                 }
               } else {
                 contextData += `\nOverrides on this booking: none recorded in the override audit log.`;
