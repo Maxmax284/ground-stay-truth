@@ -46,19 +46,26 @@ export function OperationalAlerts({ sections, onOpen }: Props) {
     };
 
     for (const b of sections.arrivingToday) {
-      if (!b.depositPaid) push(b, "red", "Arriving today · deposit unpaid");
-      if (b.outstanding > 0)
+      const moneyMuted = isMoneyGapMuted(b);
+      const docsMuted = isAcknowledged(b, "id_document");
+      if (!b.depositPaid && !moneyMuted)
+        push(b, "red", "Arriving today · deposit not recorded");
+      if (b.outstanding > 0 && !moneyMuted)
         push(b, "orange", `Arriving today · ${formatPrice(b.outstanding)} owed`);
-      if (b.docCount === 0) push(b, "orange", "Arriving today · ID document missing");
+      if (b.docCount === 0 && !docsMuted)
+        push(b, "orange", "Arriving today · no ID on file");
       if (b.turnover && b.turnover.status !== "completed")
-        push(b, "orange", "Arriving today · turnover not ready");
+        push(b, "orange", "Arriving today · room not cleaned yet");
     }
 
     for (const b of sections.arrivedNotCheckedIn) {
-      if (b.outstanding > 0)
+      const moneyMuted = isMoneyGapMuted(b);
+      if (b.outstanding > 0 && !moneyMuted)
         push(b, "orange", `Arrived · ${formatPrice(b.outstanding)} owed before check-in`);
-      if (b.docCount === 0) push(b, "orange", "Arrived · ID document still missing");
+      if (b.docCount === 0 && !isAcknowledged(b, "id_document"))
+        push(b, "orange", "Arrived · no ID on file yet");
     }
+
 
     for (const b of sections.departingToday) {
       if (b.outstanding > 0)
