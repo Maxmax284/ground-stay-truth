@@ -321,6 +321,18 @@ function buildSystemPrompt(role: string, language: string, contextData: string, 
   return layers.join("\n\n");
 }
 
+/** Render a stored UTC timestamp in Thailand time so the AI never quotes UTC. */
+function campTime(value: string | null | undefined): string {
+  if (!value) return "unknown time";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return `${new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric", month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit", hour12: true,
+  }).format(d)} Thailand time`;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: getCorsHeaders(req) });
