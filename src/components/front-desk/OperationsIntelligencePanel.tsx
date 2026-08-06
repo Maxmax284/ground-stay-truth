@@ -32,12 +32,15 @@ import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { getRequiredDocsForBooking, DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/requiredDocuments";
 import { formatCampLabeled } from "@/lib/timezone";
+import { isAcknowledged, isMoneyGapMuted, isPayOnArrival } from "@/lib/staffMarkers";
 
 function missingDocTypesFor(b: FrontDeskBooking): DocumentType[] {
   const required = getRequiredDocsForBooking({ checkIn: b.check_in, checkOut: b.check_out });
   const have = new Set(b.docTypes ?? []);
   // TM30 is confirmation-only (no upload); treat as present when staff has marked it filed.
   if (b.tm30Filed) have.add("tm30");
+  // Staff confirmed the ID at the desk — stop asking for an upload.
+  if (isAcknowledged(b, "id_document")) { have.add("passport"); have.add("national_id"); }
   return required.filter((d) => !have.has(d.type)).map((d) => d.type);
 }
 
@@ -100,7 +103,9 @@ export function OperationsIntelligencePanel({
     return missingDocTypesFor(b).length > 0;
   });
   const issuesList = sections.arrivingToday.filter(
-    (b) => !b.depositPaid || b.outstanding > 0 || missingDocTypesFor(b).length > 0,
+    (b) =>
+      (!isMoneyGapMuted(b) && (!b.depositPaid || b.outstanding > 0)) ||
+      missingDocTypesFor(b).length > 0,
   );
   const turnoverList = [
     ...sections.departingToday,
@@ -415,8 +420,10 @@ function DrillRow({
     }
     case "issues": {
       const flags: string[] = [];
-      if (!booking.depositPaid) flags.push("Deposit unpaid");
-      if (booking.outstanding > 0) flags.push(`${formatPrice(booking.outstanding)} owed`);
+      const moneyMuted = isMoneyGapMuted(booking);
+      if (!booking.depositPaid && !moneyMuted) flags.push("Deposit not recorded");
+      if (booking.outstanding > 0 && !moneyMuted) flags.push(`${formatPrice(booking.outstanding)} owed`);
+      if (booking.outstanding > 0 && isPayOnArrival(booking)) flags.push("paying on arrival");
       const missingDocs = missingDocTypesFor(booking);
       if (missingDocs.length > 0)
         flags.push(`${missingDocs.map((t) => DOCUMENT_TYPE_LABELS[t]).join("/")} missing`);
