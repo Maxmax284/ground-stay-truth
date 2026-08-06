@@ -368,8 +368,9 @@ export function useFrontDeskData() {
     sections,
     intelligence: {
       todaysPickupCount: pickupTodayCount,
-      turnoverPendingCount,
+      turnoverPendingCount: Math.max(turnoverPendingCount, todaysTasks.length),
     },
+    todaysTasks,
     pickupByBooking,
     lastMessageByBooking,
     isLoading:
@@ -385,6 +386,7 @@ export function useFrontDeskData() {
       docsQuery.refetch();
       pickupsTodayQuery.refetch();
       lastMessagesQuery.refetch();
+      todaysTasksQuery.refetch();
     },
   };
 }
