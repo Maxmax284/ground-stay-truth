@@ -57,7 +57,8 @@ export type TodayTask = {
   unit_name: string;
   task_type: string | null;
   status: string;
-  scheduled_date: string | null;
+  due_by: string | null;
+  notes: string | null;
   booking_in_id: string | null;
   booking_out_id: string | null;
 };
