@@ -13,7 +13,9 @@ export const STATE_TRANSITIONS: Record<BookingState, BookingState[]> = {
   soft_hold: ["pending_deposit", "cancelled"],
   pending_approval: ["pending_deposit", "cancelled"],
   pending_deposit: ["confirmed", "cancelled"],
-  confirmed: ["checked_in", "cancelled", "no_show"],
+  // `confirmed → completed` covers stays where nobody pressed check-in
+  // (manual/legacy bookings, or the guest left before staff got to it).
+  confirmed: ["checked_in", "completed", "cancelled", "no_show"],
   checked_in: ["completed"],
   completed: [],
   cancelled: [],
