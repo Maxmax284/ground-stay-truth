@@ -19,6 +19,7 @@ import {
 } from "@/lib/arrivalModel";
 import { useUpsertAirportPickup, type AirportPickup } from "@/hooks/useAirportPickups";
 import { useToast } from "@/hooks/use-toast";
+import { toCampInputValue, fromCampInputValue } from "@/lib/timezone";
 
 const TYPE_ICONS: Record<ArrivalType, typeof Plane> = {
   flight: Plane,
@@ -47,7 +48,7 @@ export function GuestArrivalSelector({ bookingId, pickup, baseFee }: Props) {
   );
   const [locationName, setLocationName] = useState(pickup?.arrival_location_name ?? "");
   const [arrivalTime, setArrivalTime] = useState(
-    pickup?.arrival_datetime ? pickup.arrival_datetime.slice(0, 16) : ""
+    toCampInputValue(pickup?.arrival_datetime)
   );
   // Flight-specific
   const [intlFlight, setIntlFlight] = useState(pickup?.international_flight_number ?? "");
@@ -58,7 +59,7 @@ export function GuestArrivalSelector({ bookingId, pickup, baseFee }: Props) {
       setArrivalType((pickup.arrival_type as ArrivalType) ?? "flight");
       setTransportIntent((pickup.transport_intent as TransportIntent) ?? "pickup");
       setLocationName(pickup.arrival_location_name ?? "");
-      setArrivalTime(pickup.arrival_datetime ? pickup.arrival_datetime.slice(0, 16) : "");
+      setArrivalTime(toCampInputValue(pickup.arrival_datetime));
       setIntlFlight(pickup.international_flight_number ?? "");
       setDomesticFlight(pickup.flight_number ?? "");
     }
@@ -80,7 +81,7 @@ export function GuestArrivalSelector({ bookingId, pickup, baseFee }: Props) {
           : locationName || defaultLoc.name,
         arrival_confidence: config.defaultConfidence,
         transport_intent: transportIntent,
-        arrival_datetime: arrivalTime ? new Date(arrivalTime).toISOString() : null,
+        arrival_datetime: fromCampInputValue(arrivalTime),
         fee: baseFee,
         status: pickup?.status ?? "requested",
       };
@@ -194,7 +195,7 @@ export function GuestArrivalSelector({ bookingId, pickup, baseFee }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-[11px] text-muted-foreground">Arrival Date & Time</Label>
+              <Label className="text-[11px] text-muted-foreground">Arrival Date &amp; Time (Thailand time)</Label>
               <Input
                 type="datetime-local"
                 value={arrivalTime}
@@ -222,7 +223,7 @@ export function GuestArrivalSelector({ bookingId, pickup, baseFee }: Props) {
               </Select>
             </div>
             <div className="space-y-1">
-              <Label className="text-[11px] text-muted-foreground">Approximate arrival time</Label>
+              <Label className="text-[11px] text-muted-foreground">Approximate arrival time (Thailand time)</Label>
               <Input
                 type="datetime-local"
                 value={arrivalTime}
@@ -246,7 +247,7 @@ export function GuestArrivalSelector({ bookingId, pickup, baseFee }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-[11px] text-muted-foreground">Approximate arrival time</Label>
+              <Label className="text-[11px] text-muted-foreground">Approximate arrival time (Thailand time)</Label>
               <Input
                 type="datetime-local"
                 value={arrivalTime}

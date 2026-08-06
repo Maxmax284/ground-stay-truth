@@ -658,7 +658,9 @@ export type Database = {
           manual_guest_phone: string | null
           notes: string | null
           num_guests: number
+          offline_acknowledgements: Json
           original_total: number | null
+          pay_on_arrival: boolean
           pre_arrival_status: string
           price_override: number | null
           property_id: string | null
@@ -695,7 +697,9 @@ export type Database = {
           manual_guest_phone?: string | null
           notes?: string | null
           num_guests?: number
+          offline_acknowledgements?: Json
           original_total?: number | null
+          pay_on_arrival?: boolean
           pre_arrival_status?: string
           price_override?: number | null
           property_id?: string | null
@@ -732,7 +736,9 @@ export type Database = {
           manual_guest_phone?: string | null
           notes?: string | null
           num_guests?: number
+          offline_acknowledgements?: Json
           original_total?: number | null
+          pay_on_arrival?: boolean
           pre_arrival_status?: string
           price_override?: number | null
           property_id?: string | null

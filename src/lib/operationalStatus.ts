@@ -7,6 +7,7 @@
  */
 import type { FrontDeskBooking } from "@/hooks/useFrontDesk";
 import { format } from "date-fns";
+import { isAcknowledged, isMoneyGapMuted, isPayOnArrival } from "@/lib/staffMarkers";
 
 export type OpStatusTone = "green" | "yellow" | "orange" | "red" | "muted";
 
@@ -23,12 +24,14 @@ export function computeOperationalStatus(b: FrontDeskBooking): OpStatus {
   const today = TODAY();
   const arrivingToday = b.check_in === today;
   const departingToday = b.check_out === today;
+  const moneyMuted = isMoneyGapMuted(b);
+  const docsMuted = isAcknowledged(b, "id_document");
 
-  // 🔴 Hard problems first
-  if (arrivingToday && !b.depositPaid && b.state !== "checked_in") {
+  // 🔴 Hard problems first — unless staff already settled the money offline
+  if (arrivingToday && !b.depositPaid && !moneyMuted && b.state !== "checked_in") {
     return { label: "Arrival Problem — Deposit Unpaid", tone: "red", severity: 90 };
   }
-  if (b.state === "checked_in" && b.outstanding > 0 && departingToday) {
+  if (b.state === "checked_in" && b.outstanding > 0 && departingToday && !moneyMuted) {
     return { label: "Checkout Blocked — Balance Owed", tone: "red", severity: 85 };
   }
 
@@ -45,20 +48,26 @@ export function computeOperationalStatus(b: FrontDeskBooking): OpStatus {
     return { label: "Arrived — Awaiting Check-In", tone: "yellow", severity: 50 };
   }
   if (arrivingToday) {
-    if (b.outstanding > 0) {
+    if (b.outstanding > 0 && isPayOnArrival(b)) {
+      return { label: "Arriving Today — Paying On Arrival", tone: "yellow", severity: 35 };
+    }
+    if (b.outstanding > 0 && !moneyMuted) {
       return { label: "Arriving Today — Balance Owed", tone: "orange", severity: 65 };
     }
-    if (b.docCount === 0) {
+    if (b.docCount === 0 && !docsMuted) {
       return { label: "Arriving Today — Docs Missing", tone: "orange", severity: 60 };
     }
     return { label: "Arriving Today", tone: "yellow", severity: 40 };
   }
 
   // 🟠 Pre-arrival risk
-  if (b.outstanding > 0 && b.state !== "completed" && b.state !== "cancelled") {
+  if (b.outstanding > 0 && isPayOnArrival(b) && b.state !== "completed" && b.state !== "cancelled") {
+    return { label: "Paying On Arrival", tone: "muted", severity: 8 };
+  }
+  if (b.outstanding > 0 && !moneyMuted && b.state !== "completed" && b.state !== "cancelled") {
     return { label: "Outstanding Balance", tone: "orange", severity: 55 };
   }
-  if (b.docCount === 0 && (b.state === "confirmed" || b.state === "pending_deposit")) {
+  if (b.docCount === 0 && !docsMuted && (b.state === "confirmed" || b.state === "pending_deposit")) {
     return { label: "Missing Documents", tone: "orange", severity: 45 };
   }
 

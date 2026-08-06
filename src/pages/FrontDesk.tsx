@@ -47,6 +47,7 @@ import { TodaysBriefing } from "@/components/front-desk/TodaysBriefing";
 import { PickupStatusStrip } from "@/components/front-desk/PickupStatusStrip";
 import { TurnoverBoard } from "@/components/front-desk/TurnoverBoard";
 import { computeOperationalStatus, TONE_CLASS } from "@/lib/operationalStatus";
+import { isAcknowledged, isMoneyGapMuted, isPayOnArrival } from "@/lib/staffMarkers";
 import { formatDistanceToNow } from "date-fns";
 
 const TURNOVER_LABELS: Record<string, { label: string; tone: string }> = {
@@ -59,7 +60,7 @@ export default function FrontDesk() {
   const { role } = useAuth();
   const isAdmin = role === "admin";
   const isManagerPlus = role === "admin" || role === "manager";
-  const { sections, intelligence, pickupByBooking, lastMessageByBooking, isLoading, refetch } = useFrontDeskData();
+  const { sections, intelligence, todaysTasks, pickupByBooking, lastMessageByBooking, isLoading, refetch } = useFrontDeskData();
   const { data: overrides } = useRecentOverrides(isManagerPlus);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [arrivedDialogFor, setArrivedDialogFor] = useState<FrontDeskBooking | null>(null);
@@ -114,9 +115,9 @@ export default function FrontDesk() {
           onOpen={setDetailId}
         />
 
-        {/* Turnover Board — rooms awaiting flip today */}
+        {/* Cleaning Today — open housekeeping tasks straight from the source */}
         <TurnoverBoard
-          departing={sections.departingToday}
+          tasks={todaysTasks}
           arriving={sections.arrivingToday}
           onOpen={setDetailId}
         />
@@ -307,32 +308,42 @@ function BookingRow({
       : null;
 
   const warnings: string[] = [];
-  if (booking.outstanding > 0) warnings.push(`Balance owed: ${formatPrice(booking.outstanding)}`);
-  if (!booking.depositPaid && (variant === "arriving" || variant === "waiting"))
-    warnings.push("Deposit unpaid");
+  const notes: string[] = [];
+  const moneyMuted = isMoneyGapMuted(booking);
+  const docsMuted = isAcknowledged(booking, "id_document");
+  const secDepMuted = isAcknowledged(booking, "security_deposit");
+
+  if (isPayOnArrival(booking)) notes.push("Paying on arrival");
+  if (booking.outstanding > 0) {
+    if (moneyMuted) {
+      notes.push(`Balance ${formatPrice(booking.outstanding)} — collect at desk`);
+    } else {
+      warnings.push(
+        `Balance owed: ${formatPrice(booking.outstanding)} — collect at check-in or mark as paying on arrival`,
+      );
+    }
+  }
+  if (!booking.depositPaid && !moneyMuted && (variant === "arriving" || variant === "waiting"))
+    warnings.push("Deposit not recorded — take payment or mark it handled offline");
   if (
     variant !== "upcoming" &&
+    !secDepMuted &&
     (!booking.securityDeposit || booking.securityDeposit.status !== "held")
   ) {
     if (variant === "arriving" || variant === "waiting")
-      warnings.push("Security deposit not collected");
+      warnings.push("Security deposit not collected yet");
   }
-  if (booking.docCount === 0 && (variant === "arriving" || variant === "waiting"))
-    warnings.push("ID document missing");
-  if (
-    variant === "departing" &&
-    booking.turnover?.status !== "completed" &&
-    booking.turnover?.status
-  ) {
-    // departure cards lead into turnover handoff
-  }
+  if (booking.docCount === 0 && !docsMuted && (variant === "arriving" || variant === "waiting"))
+    warnings.push("No ID on file — upload it or tick 'ID checked in person'");
+  if (docsMuted) notes.push("ID checked in person");
   if (
     variant === "arriving" &&
     booking.turnover &&
     booking.turnover.status !== "completed"
   ) {
-    warnings.push("Turnover not ready");
+    warnings.push("Room not cleaned yet");
   }
+
 
   const opStatus = computeOperationalStatus(booking);
 
@@ -467,6 +478,14 @@ function BookingRow({
           <div className="mt-3 flex items-start gap-2 text-xs text-warning-foreground bg-warning/10 rounded-md p-2 border border-warning/30">
             <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
             <div>{warnings.join(" · ")}</div>
+          </div>
+        )}
+
+        {/* Quiet notes — things staff already handled */}
+        {notes.length > 0 && (
+          <div className="mt-2 flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md p-2 border border-border/60">
+            <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <div>Confirmed by staff: {notes.join(" · ")}</div>
           </div>
         )}
 

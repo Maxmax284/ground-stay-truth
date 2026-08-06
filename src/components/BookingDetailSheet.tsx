@@ -23,6 +23,7 @@ import { format, differenceInHours } from "date-fns";
 import { formatInPropertyTimezone } from "@/lib/timezone";
 import { useBooking, useBookingStateLog, useBookingPayments, useBookingMessages, useCreatePayment, useRefundPayment, useCreateMessage, useMarkMessagesRead } from "@/hooks/useBookings";
 import { BookingStateTransition } from "@/components/BookingStateTransition";
+import { StaffHandlingPanel } from "@/components/StaffHandlingPanel";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { formatPrice } from "@/lib/currency";
@@ -353,6 +354,8 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
           open={extendOpen}
           onOpenChange={setExtendOpen}
         />
+        <Separator />
+        <div className="py-4"><StaffHandlingPanel bookingId={booking.id} booking={booking} canEdit={canRecordPay} /></div>
         <Separator />
         <div className="py-4"><BookingStateTransition bookingId={booking.id} currentState={booking.state as BookingState} isAdmin={isAdmin} checkInDate={booking.check_in} totalPrice={booking.total_price} unitId={booking.unit_id} /></div>
         <Tabs defaultValue="history" className="mt-2" onValueChange={(val) => {

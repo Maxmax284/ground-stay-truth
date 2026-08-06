@@ -45,6 +45,22 @@ export type FrontDeskBooking = {
   docTypes: string[];
   nights: number;
   tm30Filed: boolean;
+  // Staff markers (presentation only — never affect money owed)
+  pay_on_arrival: boolean;
+  offline_acknowledgements: Record<string, any> | null;
+};
+
+/** One open housekeeping task for today, independent of any booking window. */
+export type TodayTask = {
+  id: string;
+  unit_id: string | null;
+  unit_name: string;
+  task_type: string | null;
+  status: string;
+  due_by: string | null;
+  notes: string | null;
+  booking_in_id: string | null;
+  booking_out_id: string | null;
 };
 
 
@@ -52,6 +68,7 @@ const SELECT_BOOKING = `
   id, guest_id, unit_id, check_in, check_out, num_guests, state, total_price,
   notes, pre_arrival_status, arrived_at, arrived_by, arrival_note, arrival_details,
   manual_guest_name, manual_guest_email, manual_guest_phone, manual_guest_note,
+  pay_on_arrival, offline_acknowledgements,
   units(name),
   profiles!bookings_guest_id_profiles_fkey(full_name, email, phone)
 `;
@@ -257,6 +274,50 @@ export function useFrontDeskData() {
     (t: any) => t.status === "pending" || t.status === "in_progress",
   ).length;
 
+  /**
+   * Today's cleaning work, loaded straight from housekeeping_tasks.
+   *
+   * Deliberately NOT derived from the booking window: once a guest checks out
+   * their booking leaves the front-desk slice, and the room still needs a flip.
+   * This is the same source the dashboard reads, so the two screens agree.
+   */
+  const todaysTasksQuery = useQuery({
+    queryKey: ["front-desk", "housekeeping-today", activePropertyId, today],
+    queryFn: async () => {
+      let q: any = supabase
+        .from("housekeeping_tasks")
+        .select("id, unit_id, status, due_by, notes, booking_in_id, booking_out_id, units(name)")
+        .in("status", ["pending", "in_progress"]);
+      if (activePropertyId) q = q.eq("property_id", activePropertyId);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+    refetchInterval: 60_000,
+  });
+
+  const todaysTasks: TodayTask[] = useMemo(() => {
+    const rows = (todaysTasksQuery.data ?? []) as any[];
+    return rows
+      .filter((t) => {
+        // Open work due today or already overdue. No due date = still open work.
+        if (!t.due_by) return true;
+        return t.due_by.slice(0, 10) <= today;
+      })
+      .map((t) => ({
+        id: t.id,
+        unit_id: t.unit_id ?? null,
+        unit_name: t.units?.name ?? "—",
+        task_type: t.booking_out_id ? "turnover" : "scheduled",
+        status: t.status,
+        due_by: t.due_by ?? null,
+        notes: t.notes ?? null,
+        booking_in_id: t.booking_in_id ?? null,
+        booking_out_id: t.booking_out_id ?? null,
+      }));
+  }, [todaysTasksQuery.data, today]);
+
+
   // Per-booking pickup map (read-only)
   const pickupByBooking = useMemo(() => {
     const map = new Map<string, { status: string | null; arrival_datetime: string | null }>();
@@ -307,8 +368,9 @@ export function useFrontDeskData() {
     sections,
     intelligence: {
       todaysPickupCount: pickupTodayCount,
-      turnoverPendingCount,
+      turnoverPendingCount: Math.max(turnoverPendingCount, todaysTasks.length),
     },
+    todaysTasks,
     pickupByBooking,
     lastMessageByBooking,
     isLoading:
@@ -324,6 +386,7 @@ export function useFrontDeskData() {
       docsQuery.refetch();
       pickupsTodayQuery.refetch();
       lastMessagesQuery.refetch();
+      todaysTasksQuery.refetch();
     },
   };
 }
