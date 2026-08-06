@@ -114,9 +114,9 @@ export default function FrontDesk() {
           onOpen={setDetailId}
         />
 
-        {/* Turnover Board — rooms awaiting flip today */}
+        {/* Cleaning Today — open housekeeping tasks straight from the source */}
         <TurnoverBoard
-          departing={sections.departingToday}
+          tasks={todaysTasks}
           arriving={sections.arrivingToday}
           onOpen={setDetailId}
         />
