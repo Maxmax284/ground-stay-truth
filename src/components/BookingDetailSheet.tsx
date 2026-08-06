@@ -354,6 +354,8 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
           onOpenChange={setExtendOpen}
         />
         <Separator />
+        <div className="py-4"><StaffHandlingPanel booking={booking as any} /></div>
+        <Separator />
         <div className="py-4"><BookingStateTransition bookingId={booking.id} currentState={booking.state as BookingState} isAdmin={isAdmin} checkInDate={booking.check_in} totalPrice={booking.total_price} unitId={booking.unit_id} /></div>
         <Tabs defaultValue="history" className="mt-2" onValueChange={(val) => {
           if (val === "messages" && bookingId) {
