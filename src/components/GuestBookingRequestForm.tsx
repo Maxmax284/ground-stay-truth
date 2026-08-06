@@ -20,6 +20,7 @@ import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { useAuth } from "@/hooks/useAuth";
 import { useUnitGroups, useAutoAssignUnit } from "@/hooks/useAutoAssignUnit";
 import { supabase } from "@/integrations/supabase/client";
+import { fromCampInputValue } from "@/lib/timezone";
 import { calculatePricing, type PricingSummary } from "@/lib/pricingCalculator";
 import { formatPrice } from "@/lib/currency";
 import { GUEST_MESSAGES, RETRYABLE_STATUSES } from "@/lib/availability/types";
@@ -262,7 +263,7 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
           status: "requested",
           fee,
           flight_number: data.pickup_flight_number || null,
-          arrival_datetime: data.pickup_arrival_datetime || null,
+          arrival_datetime: fromCampInputValue(data.pickup_arrival_datetime),
           passenger_count: Number(data.pickup_passenger_count) || 1,
           luggage_notes: data.pickup_luggage_notes || null,
           special_instructions: data.pickup_special_instructions || null,
@@ -485,7 +486,7 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
                     <Input {...register("pickup_flight_number")} placeholder="TG 925" className="h-8 text-sm" />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Arrival Date & Time</Label>
+                    <Label className="text-xs">Arrival Date &amp; Time (Thailand time)</Label>
                     <Input type="datetime-local" {...register("pickup_arrival_datetime")} className="h-8 text-sm" />
                   </div>
                 </div>
