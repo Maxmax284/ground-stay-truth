@@ -45,6 +45,21 @@ export type FrontDeskBooking = {
   docTypes: string[];
   nights: number;
   tm30Filed: boolean;
+  // Staff markers (presentation only — never affect money owed)
+  pay_on_arrival: boolean;
+  offline_acknowledgements: Record<string, any> | null;
+};
+
+/** One open housekeeping task for today, independent of any booking window. */
+export type TodayTask = {
+  id: string;
+  unit_id: string | null;
+  unit_name: string;
+  task_type: string | null;
+  status: string;
+  scheduled_date: string | null;
+  booking_in_id: string | null;
+  booking_out_id: string | null;
 };
 
 
@@ -52,6 +67,7 @@ const SELECT_BOOKING = `
   id, guest_id, unit_id, check_in, check_out, num_guests, state, total_price,
   notes, pre_arrival_status, arrived_at, arrived_by, arrival_note, arrival_details,
   manual_guest_name, manual_guest_email, manual_guest_phone, manual_guest_note,
+  pay_on_arrival, offline_acknowledgements,
   units(name),
   profiles!bookings_guest_id_profiles_fkey(full_name, email, phone)
 `;
