@@ -23,6 +23,7 @@ import { format, differenceInHours } from "date-fns";
 import { formatInPropertyTimezone } from "@/lib/timezone";
 import { useBooking, useBookingStateLog, useBookingPayments, useBookingMessages, useCreatePayment, useRefundPayment, useCreateMessage, useMarkMessagesRead } from "@/hooks/useBookings";
 import { BookingStateTransition } from "@/components/BookingStateTransition";
+import { StaffHandlingPanel } from "@/components/StaffHandlingPanel";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { formatPrice } from "@/lib/currency";
