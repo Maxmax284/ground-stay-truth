@@ -75,7 +75,8 @@ export function useSetPayOnArrival() {
 export function useSetOfflineAcknowledgement() {
   const qc = useQueryClient();
   const { user } = useAuth();
-  const { data: profile } = useProfile();
+  const { profile: profileQuery } = useProfile();
+  const profile = profileQuery.data;
 
   return useMutation({
     mutationFn: async ({
