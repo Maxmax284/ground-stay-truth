@@ -4303,6 +4303,8 @@ export type Database = {
           wifi_password: string
         }[]
       }
+      has_ops_read: { Args: { _user_id: string }; Returns: boolean }
+      has_ops_write: { Args: { _user_id: string }; Returns: boolean }
       has_property_access: {
         Args: { _property_id: string; _user_id: string }
         Returns: boolean
