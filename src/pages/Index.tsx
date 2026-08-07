@@ -22,6 +22,7 @@ import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { TodaysPickupsWidget } from "@/components/TodaysPickupsWidget";
 import { FlightForecastWidget } from "@/components/FlightForecastWidget";
 import { CornerTalkPanel } from "@/components/CornerTalkPanel";
+import { SessionIdentityStrip } from "@/components/SessionIdentityStrip";
 import { StaffIntelStrip } from "@/components/StaffIntelStrip";
 import { StaffQuickActionsWidget } from "@/components/StaffQuickActionsWidget";
 import { ReconcilePaymentsCard } from "@/components/ReconcilePaymentsCard";
@@ -72,6 +73,10 @@ const Index = () => {
           <h1 className="text-2xl font-bold text-foreground">{t("dashboard.welcome")}</h1>
           <p className="text-muted-foreground mt-1">{t("dashboard.overview")}</p>
         </div>
+
+        {/* Which account / which build — kills the "my screen shows different
+            numbers" confusion across phones and browsers. */}
+        <SessionIdentityStrip />
 
         {/* Corner Talk — role-based intelligence briefing */}
         <CornerTalkPanel
