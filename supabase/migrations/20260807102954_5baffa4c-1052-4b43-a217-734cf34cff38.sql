@@ -1,0 +1,1 @@
+DELETE FROM public.suppressed_emails WHERE email IN ('ralphbeale21@gmail.com', 'info@lmtcampstay.com');
