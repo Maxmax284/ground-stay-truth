@@ -5,7 +5,7 @@
  */
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/currency";
-import { formatInPropertyTimezone } from "@/lib/timezone";
+import { formatCampShort } from "@/lib/timezone";
 import { History, ArrowRight } from "lucide-react";
 import { useStayModifications } from "@/hooks/useStayModifications";
 
@@ -68,7 +68,7 @@ export function StayModificationHistory({
             <p className="text-xs text-muted-foreground">
               {m.reason_code.replace(/_/g, " ")} · {m.actor_email ?? "staff"}
               {m.actor_role ? ` (${m.actor_role.replace(/_/g, " ")})` : ""} ·{" "}
-              {formatInPropertyTimezone(m.created_at, "MMM d, HH:mm")}
+              {formatCampShort(m.created_at)}
             </p>
             {m.notes && <p className="text-xs italic text-muted-foreground">"{m.notes}"</p>}
           </div>
