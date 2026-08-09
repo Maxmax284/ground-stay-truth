@@ -11,6 +11,8 @@ export interface Property {
   timezone: string;
   settings: Record<string, any>;
   is_active: boolean;
+  /** True for the fake practice camp — no emails, alerts or Stripe links fire. */
+  is_sandbox?: boolean;
 }
 
 interface PropertyAssignment {

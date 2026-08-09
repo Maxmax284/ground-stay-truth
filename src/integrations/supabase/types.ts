@@ -4364,10 +4364,10 @@ export type Database = {
       emit_admin_alert: {
         Args: {
           _context?: Json
-          _deep_link: string
+          _deep_link?: string
           _event_type: string
           _message: string
-          _reference_id: string
+          _reference_id?: string
         }
         Returns: undefined
       }
@@ -4495,6 +4495,8 @@ export type Database = {
         Args: { _link_id: string }
         Returns: number
       }
+      is_sandbox_booking: { Args: { _booking_id: string }; Returns: boolean }
+      is_sandbox_property: { Args: { _property_id: string }; Returns: boolean }
       is_secret_configured: { Args: { _key: string }; Returns: boolean }
       lock_payment_link_abuse: {
         Args: { _link_id: string; _reason: string }
@@ -4547,6 +4549,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      reset_sandbox: { Args: never; Returns: Json }
       sync_booking_from_segments: {
         Args: { _booking_id: string }
         Returns: undefined

@@ -149,6 +149,28 @@ Deno.serve(async (req) => {
   // Create Supabase client with service role (bypasses RLS)
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+  // SANDBOX ISOLATION — a fake stay must never reach a real inbox.
+  // Any booking belonging to a property flagged is_sandbox is logged and dropped.
+  const sandboxBookingId = logMeta.booking_id as string | null
+  if (sandboxBookingId) {
+    const { data: isSandbox } = await supabase.rpc('is_sandbox_booking', {
+      _booking_id: sandboxBookingId,
+    })
+    if (isSandbox === true) {
+      console.log('sandbox: email suppressed', { templateName, sandboxBookingId })
+      await supabase.from('email_send_log').insert({
+        template_name: templateName,
+        recipient_email: effectiveRecipient,
+        status: 'suppressed',
+        metadata: { ...logMeta, sandbox: true, reason: 'sandbox_property' },
+      })
+      return new Response(
+        JSON.stringify({ skipped: true, reason: 'sandbox', sandbox: true }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+  }
+
   // 2. Check suppression list (fail-closed: if we can't verify, don't send)
   const { data: suppressed, error: suppressionError } = await supabase
     .from('suppressed_emails')
