@@ -65,6 +65,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Lock, Percent as PercentIcon } from "lucide-react";
 import { getBookingDeadline, describeDeadline } from "@/lib/bookingDeadline";
 import { ExtendDeadlineDialog } from "@/components/ExtendDeadlineDialog";
+import { ModifyStayDialog } from "@/components/ModifyStayDialog";
+import { StayModificationHistory } from "@/components/StayModificationHistory";
 
 interface BookingDetailSheetProps { bookingId: string | null; open: boolean; onOpenChange: (open: boolean) => void; isAdmin: boolean; }
 
@@ -122,6 +124,13 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
     : null;
   const canOverrideDeadline = permissions.canOverrideDeposit(role);
   const [extendOpen, setExtendOpen] = useState(false);
+
+  // Modify Stay — extend / shorten / move rooms. Ops-write staff only, and only
+  // once the stay actually holds inventory (deposit pending onwards).
+  const [modifyOpen, setModifyOpen] = useState(false);
+  const canModifyStay =
+    role === "admin" || role === "manager" || role === "front_desk_supervisor" || role === "front_desk";
+  const isModifiableState = ["pending_deposit", "confirmed", "checked_in"].includes(String(booking?.state));
 
   const { data: maintenanceReqs } = useMaintenanceRequests(bookingId);
   const { data: laundryReqs } = useLaundryRequests(bookingId);
@@ -289,6 +298,20 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
         {isAdmin && <AdminOverrideMenu bookingId={booking.id} pickupId={pickup?.id ?? null} />}
         <SecurityDepositSection bookingId={booking.id} bookingState={booking.state} />
         <BookingTrainingSection bookingId={booking.id} />
+        {canModifyStay && isModifiableState && (
+          <div className="pt-3 flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
+            <div>
+              <p className="text-sm font-medium">Dates or room changing?</p>
+              <p className="text-xs text-muted-foreground">
+                Checks live availability and charges the guest the difference only.
+              </p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => setModifyOpen(true)}>
+              <CalendarDays className="h-4 w-4 mr-1" /> Modify stay
+            </Button>
+          </div>
+        )}
+        {canSeeAmounts && <div className="pt-3"><StayModificationHistory bookingId={booking.id} policies={policies} /></div>}
         <div className="pt-3 space-y-2">
           <BookingFinancialSummary
             bookingId={booking.id}
