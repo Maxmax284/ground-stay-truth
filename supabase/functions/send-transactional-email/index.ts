@@ -161,8 +161,7 @@ Deno.serve(async (req) => {
       await supabase.from('email_send_log').insert({
         template_name: templateName,
         recipient_email: effectiveRecipient,
-        status: 'skipped',
-        idempotency_key: idempotencyKey,
+        status: 'suppressed',
         metadata: { ...logMeta, sandbox: true, reason: 'sandbox_property' },
       })
       return new Response(
