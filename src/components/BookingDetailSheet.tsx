@@ -377,6 +377,23 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
           open={extendOpen}
           onOpenChange={setExtendOpen}
         />
+        {canModifyStay && isModifiableState && (
+          <ModifyStayDialog
+            open={modifyOpen}
+            onOpenChange={setModifyOpen}
+            booking={{
+              id: booking.id,
+              unit_id: booking.unit_id,
+              check_in: booking.check_in,
+              check_out: booking.check_out,
+              num_guests: booking.num_guests,
+              total_price: Number(booking.total_price ?? 0),
+              state: booking.state as string,
+            }}
+            completedStays={(guestHistory as any)?.completedStays ?? 0}
+          />
+        )}
+
         <Separator />
         <div className="py-4"><StaffHandlingPanel bookingId={booking.id} booking={booking} canEdit={canRecordPay} /></div>
         <Separator />
