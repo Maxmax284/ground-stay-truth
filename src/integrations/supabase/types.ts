@@ -443,6 +443,7 @@ export type Database = {
           id: string
           internal_note: string | null
           label: string
+          modification_id: string | null
           status: string
           value: number
           value_type: string
@@ -461,6 +462,7 @@ export type Database = {
           id?: string
           internal_note?: string | null
           label: string
+          modification_id?: string | null
           status?: string
           value: number
           value_type: string
@@ -479,6 +481,7 @@ export type Database = {
           id?: string
           internal_note?: string | null
           label?: string
+          modification_id?: string | null
           status?: string
           value?: number
           value_type?: string
@@ -492,6 +495,13 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_adjustments_modification_id_fkey"
+            columns: ["modification_id"]
+            isOneToOne: false
+            referencedRelation: "stay_modifications"
             referencedColumns: ["id"]
           },
         ]
@@ -539,6 +549,87 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_segments: {
+        Row: {
+          booking_id: string
+          created_at: string
+          created_by: string | null
+          ends_on: string
+          hold_expires_at: string | null
+          id: string
+          modification_id: string | null
+          property_id: string | null
+          starts_on: string
+          status: string
+          unit_id: string
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          created_by?: string | null
+          ends_on: string
+          hold_expires_at?: string | null
+          id?: string
+          modification_id?: string | null
+          property_id?: string | null
+          starts_on: string
+          status?: string
+          unit_id: string
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          created_by?: string | null
+          ends_on?: string
+          hold_expires_at?: string | null
+          id?: string
+          modification_id?: string | null
+          property_id?: string | null
+          starts_on?: string
+          status?: string
+          unit_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_segments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_segments_modification_id_fkey"
+            columns: ["modification_id"]
+            isOneToOne: false
+            referencedRelation: "stay_modifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_segments_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_segments_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_segments_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2968,6 +3059,7 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          is_sandbox: boolean
           name: string
           operational_mode: string
           settings: Json
@@ -2978,6 +3070,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          is_sandbox?: boolean
           name: string
           operational_mode?: string
           settings?: Json
@@ -2988,6 +3081,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          is_sandbox?: boolean
           name?: string
           operational_mode?: string
           settings?: Json
@@ -3401,6 +3495,83 @@ export type Database = {
           user_agent?: string | null
         }
         Relationships: []
+      }
+      stay_modifications: {
+        Row: {
+          actor_email: string | null
+          actor_id: string | null
+          actor_role: string | null
+          after_snapshot: Json
+          before_snapshot: Json
+          booking_id: string
+          calculated_amount: number
+          created_at: string
+          final_amount: number
+          hold_expires_at: string | null
+          id: string
+          kind: string
+          notes: string | null
+          payment_status: string
+          pricing_after: number
+          pricing_before: number
+          reason_code: string
+          status: string
+          updated_at: string
+          waived_amount: number
+        }
+        Insert: {
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          after_snapshot?: Json
+          before_snapshot?: Json
+          booking_id: string
+          calculated_amount?: number
+          created_at?: string
+          final_amount?: number
+          hold_expires_at?: string | null
+          id?: string
+          kind?: string
+          notes?: string | null
+          payment_status?: string
+          pricing_after?: number
+          pricing_before?: number
+          reason_code?: string
+          status?: string
+          updated_at?: string
+          waived_amount?: number
+        }
+        Update: {
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          after_snapshot?: Json
+          before_snapshot?: Json
+          booking_id?: string
+          calculated_amount?: number
+          created_at?: string
+          final_amount?: number
+          hold_expires_at?: string | null
+          id?: string
+          kind?: string
+          notes?: string | null
+          payment_status?: string
+          pricing_after?: number
+          pricing_before?: number
+          reason_code?: string
+          status?: string
+          updated_at?: string
+          waived_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stay_modifications_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stay_support_log: {
         Row: {
@@ -4375,6 +4546,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      sync_booking_from_segments: {
+        Args: { _booking_id: string }
+        Returns: undefined
       }
     }
     Enums: {
