@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { SecurityFreezeBanner } from "@/components/SecurityFreezeBanner";
 import { PropertyIndicator } from "@/components/PropertyIndicator";
 import { useFenrirConfig } from "@/lib/fenrir";
+import { SandboxModeBanner } from "@/components/SandboxModeBanner";
 
 const routeTitleKeys: Record<string, string> = {
   "/dashboard": "nav.dashboard",
@@ -59,6 +60,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="thai-stripe" />
           {/* Security freeze banner */}
           <SecurityFreezeBanner />
+          {/* Sandbox / practice camp banner */}
+          <SandboxModeBanner />
           {/* Preview mode banner */}
           {isPreviewMode && (
             <div className="bg-amber-500/90 text-amber-950 px-4 py-2 flex items-center justify-between text-sm font-medium">
