@@ -143,11 +143,26 @@ serve(async (req) => {
     // Fetch the booking + guest profile (for email auto-send) + unit name
     const { data: booking } = await adminClient
       .from("bookings")
-      .select("id, state, total_price, check_in, check_out, num_guests, unit_id, guest_id, units(name), profiles:guest_id(full_name, email, preferred_language)")
+      .select("id, state, total_price, check_in, check_out, num_guests, unit_id, guest_id, property_id, units(name), profiles:guest_id(full_name, email, preferred_language)")
       .eq("id", bookingId)
       .single();
 
     if (!booking) return jsonResponse(req, { error: "Booking not found" }, 404);
+
+    // SANDBOX ISOLATION — no Stripe object, no guest email, ever, for a fake stay.
+    if ((booking as any).property_id) {
+      const { data: isSandbox } = await adminClient.rpc("is_sandbox_property", {
+        _property_id: (booking as any).property_id,
+      });
+      if (isSandbox === true) {
+        return jsonResponse(req, {
+          sandbox: true,
+          simulated: true,
+          message: "Sandbox booking — payment request simulated, no Stripe link created and no email sent.",
+        }, 200);
+      }
+    }
+
 
     // What's payable depends on what we're collecting.
     // - deposit: only pre-arrival states (soft_hold | pending_approval | pending_deposit)
