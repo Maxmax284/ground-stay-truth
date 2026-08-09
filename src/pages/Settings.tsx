@@ -16,6 +16,7 @@ import PropertyManagementPanel from "@/components/PropertyManagementPanel";
 import { VantaIntegrationPanel } from "@/components/VantaIntegrationPanel";
 import NotificationSettings from "@/components/settings/NotificationSettings";
 import { AppStatusPanel } from "@/components/settings/AppStatusPanel";
+import { SandboxPanel } from "@/components/SandboxPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -57,6 +58,7 @@ const Settings = () => {
             {isAdmin && <TabsTrigger value="intelligence" className="text-xs sm:text-sm">Intel</TabsTrigger>}
             {isAdmin && <TabsTrigger value="vanta" className="text-xs sm:text-sm">Vanta</TabsTrigger>}
             {canSeeNotifications && <TabsTrigger value="notifications" className="text-xs sm:text-sm">Notifications</TabsTrigger>}
+            {canSeeNotifications && <TabsTrigger value="sandbox" className="text-xs sm:text-sm">Sandbox</TabsTrigger>}
             <TabsTrigger value="app" className="text-xs sm:text-sm">App</TabsTrigger>
           </TabsList>
 
@@ -76,6 +78,7 @@ const Settings = () => {
           {isAdmin && <TabsContent value="intelligence"><ErrorBoundary inline label="Intel"><IntelligenceEditor /></ErrorBoundary></TabsContent>}
           {isAdmin && <TabsContent value="vanta"><ErrorBoundary inline label="Vanta"><VantaIntegrationPanel /></ErrorBoundary></TabsContent>}
           {canSeeNotifications && <TabsContent value="notifications"><ErrorBoundary inline label="Notifications"><NotificationSettings /></ErrorBoundary></TabsContent>}
+          {canSeeNotifications && <TabsContent value="sandbox"><ErrorBoundary inline label="Sandbox"><SandboxPanel /></ErrorBoundary></TabsContent>}
           <TabsContent value="app"><ErrorBoundary inline label="App status"><AppStatusPanel /></ErrorBoundary></TabsContent>
 
         </Tabs>
