@@ -94,7 +94,7 @@ async function findConflicts(
     admin.from("units").select("id, name, is_active").in("id", unitIds),
     admin
       .from("booking_segments")
-      .select("id, booking_id, unit_id, starts_on, ends_on, status, bookings(state, guest_name)")
+      .select("id, booking_id, unit_id, starts_on, ends_on, status, bookings(state)")
       .in("unit_id", unitIds)
       .neq("booking_id", bookingId)
       .in("status", ["active", "pending"])
@@ -131,9 +131,7 @@ async function findConflicts(
         ...seg,
         unit_name: unit.name,
         reason: "booked",
-        detail: `${unit.name} is already held ${other.starts_on} → ${other.ends_on}${
-          (other as any).bookings?.guest_name ? ` for ${(other as any).bookings.guest_name}` : ""
-        }.`,
+        detail: `${unit.name} is already held ${other.starts_on} → ${other.ends_on} by another stay.`,
       });
     }
 
@@ -186,7 +184,7 @@ serve(async (req) => {
 
     const { data: booking } = await admin
       .from("bookings")
-      .select("id, state, unit_id, property_id, check_in, check_out, num_guests, total_price, guest_name, guest_id")
+      .select("id, state, unit_id, property_id, check_in, check_out, num_guests, total_price, guest_id")
       .eq("id", bookingId)
       .maybeSingle();
     if (!booking) return jsonResponse(req, { error: "Booking not found" }, 404);
