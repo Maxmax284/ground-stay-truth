@@ -99,7 +99,7 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
           >
             <Target className="h-4 w-4" />
           </Link>
-          <LanguageSelector compact />
+          <LanguageToggle />
           <ThemeToggle />
           <NotificationBell />
           <span className="text-sm text-muted-foreground hidden sm:inline">
