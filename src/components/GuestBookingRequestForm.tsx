@@ -436,8 +436,9 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
                 <p className="text-xs text-muted-foreground italic">
                   {t("pricing.minBillableNote", {
                     count: pricing.billableGuests,
-                    defaultValue: `Pricing is based on a ${pricing.billableGuests}-person minimum charge.`,
+                    defaultValue: "Pricing is based on a {{count}}-person minimum charge.",
                   })}
+
                 </p>
               )}
             </div>
