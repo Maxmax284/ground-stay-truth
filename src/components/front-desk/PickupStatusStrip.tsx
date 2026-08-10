@@ -2,6 +2,7 @@
  * Pickup Status Strip — read-only view of today's airport pickups.
  * Surfaces existing airport_pickups rows. No mutations, no new workflows.
  */
+import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plane, Clock } from "lucide-react";
@@ -28,6 +29,7 @@ interface Props {
 }
 
 export function PickupStatusStrip({ bookings, pickupByBooking, onOpen }: Props) {
+  const { t } = useTranslation();
   const rows = bookings
     .map((b) => ({ b, pickup: pickupByBooking.get(b.id) }))
     .filter((r) => r.pickup && r.pickup.arrival_datetime);
@@ -43,7 +45,7 @@ export function PickupStatusStrip({ bookings, pickupByBooking, onOpen }: Props) 
       <CardContent className="p-4">
         <div className="flex items-center gap-2 mb-3">
           <Plane className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-semibold text-foreground">Today's Pickups</h2>
+          <h2 className="text-sm font-semibold text-foreground">{t("frontDesk.pickups.title")}</h2>
           <Badge variant="outline" className="text-[10px]">{rows.length}</Badge>
         </div>
         <div className="grid gap-2 sm:grid-cols-2">

@@ -52,7 +52,8 @@
     "days": "วัน",
     "filters": "ตัวกรอง",
     "processing": "กำลังดำเนินการ...",
-    "tryAgain": "ลองอีกครั้ง"
+    "tryAgain": "ลองอีกครั้ง",
+    "refresh": "รีเฟรช"
   },
   "nav": {
     "dashboard": "แดชบอร์ด",
@@ -468,7 +469,49 @@
     "noHistory": "ยังไม่มีประวัติ",
     "adminOverride": "แทนที่โดยผู้ดูแล",
     "system": "ระบบ",
-    "softHoldDisclaimer": "การกันห้องนี้ยังไม่การันตีห้องว่าง จนกว่าจะยืนยันการจองด้วยเงินมัดจำ"
+    "softHoldDisclaimer": "การกันห้องนี้ยังไม่การันตีห้องว่าง จนกว่าจะยืนยันการจองด้วยเงินมัดจำ",
+    "stayTools": {
+      "title": "เครื่องมือจอง",
+      "description": "ขยาย ลด หรือย้ายห้องพัก ตรวจสอบห้องว่างแบบเรียลไทม์และคิดเงินต่างตามจริง",
+      "extend": "ขยายวันพัก",
+      "change": "เปลี่ยนวันหรือห้อง"
+    },
+    "deadline": {
+      "extendedByStaff": " · ขยายโดยสตาฟ",
+      "overrideExpiry": "แทรกแซงวันหมดอายุ",
+      "extendDeadline": "ขยายเดดไลน์",
+      "label": "เดดไลน์: {date} · {description}",
+      "hoursLeft": "เหลือ {{count}} ชม.",
+      "underOneHour": "เหลือน้อยกว่า 1 ชม.",
+      "hoursOverdue": "เกิน {{count}} ชม.",
+      "justExpired": "เพิ่งหมดอายุ"
+    },
+    "discount": {
+      "apply": "ใช้ส่วนลด",
+      "blockedReason": "{{reason}}"
+    },
+    "payments": {
+      "offlineMoneyNote": "สำหรับเงินออฟไลน์เท่านั้น — เงินสด โอนเงิน หรือช่องทางอื่นที่จัดการหน้างาน หากแขกจ่ายผ่านลิงก์ Stripe ด้านบนแล้ว ระบบจะบันทึกอัตโนมัติ ไม่ต้องแตะตรงนี้",
+      "cardNote": "การจ่ายด้วยบัตรต้องผ่าน Stripe เท่านั้น — ใช้ Generate Payment Link ด้านบน",
+      "refundPrefix": "คืนเงิน: {{amount}}"
+    },
+    "tabs": {
+      "portal": "พอร์ทัล"
+    },
+    "attachment": {
+      "pdf": "เอกสาร PDF",
+      "file": "ไฟล์แนบ",
+      "image": "รูปภาพ",
+      "document": "เอกสาร",
+      "attached": "แนบแล้ว"
+    },
+    "uploadFailed": "อัปโหลดไม่สำเร็จ",
+    "flightLabel": "เที่ยวบิน: {{flight}}",
+    "arrivalDetails": {
+      "flightInfo": "🛬 {{info}}",
+      "arrivalTime": "🕐 {{time}}",
+      "emergencyContact": "🚨 {{contact}}"
+    }
   },
   "payments": {
     "paid": "ชำระแล้ว",
@@ -1792,6 +1835,169 @@
       "deadline_override": "ขยายเวลาโดยสตาฟ",
       "attribution_missing": "ไม่ได้บันทึกผู้ทำรายการ",
       "sandbox": "การจองสำหรับซ้อม"
+    }
+  },
+  "frontDesk": {
+    "title": "ฟรอนต์",
+    "subtitle": "ข่าวสารการดำเนินงาน — แขกทุกคน สัญญาณทุกอย่าง ในหน้าจอเดียว",
+    "tabs": {
+      "arriving": "กำลังมาถึง ({{count}})",
+      "upcoming": "ที่จะถึง ({{count}})",
+      "staying": "กำลังพัก ({{count}})",
+      "departing": "กำลังออก ({{count}})",
+      "overrides": "การแทรกแซง"
+    },
+    "empty": {
+      "arriving": "ไม่มีแขกมาถึงวันนี้",
+      "staying": "ไม่มีแขกพักอยู่ในขณะนี้",
+      "departing": "ไม่มีแขกออกวันนี้",
+      "upcoming": "ไม่มีแขกที่จะมาถึงใน 7 วันข้างหน้า"
+    },
+    "total": "รวม",
+    "owed": "ค้าง {{amount}}",
+    "paidInFull": "ชำระครบแล้ว",
+    "guestCount": "{{count}} ผู้เข้าพัก{{count_plural}}",
+    "nightsRemaining": "เหลือ {{count}} คืน",
+    "dateRangeNights": "{{from}} → {{to}} · {{count}} คืน",
+    "arrivedAt": "มาถึง {{time}}",
+    "confirmedByStaff": "ยืนยันโดยสตาฟ: {{notes}}",
+    "confirmNoShow": "ทำเครื่องหมายแขกรายนี้ว่าไม่มาตามนัด? ย้อนกลับได้เฉพาะแอดมิน",
+    "actions": {
+      "markArrived": "บันทึกมาถึง",
+      "checkIn": "เช็คอิน",
+      "checkOut": "เช็คเอาท์",
+      "openBooking": "เปิดการจอง",
+      "noShow": "ไม่มาตามนัด",
+      "call": "โทร",
+      "whatsapp": "WhatsApp",
+      "sms": "SMS"
+    },
+    "chips": {
+      "depositPaid": "มัดจำแล้ว",
+      "depositPending": "รอมัดจำ",
+      "secDeposit": "เงินประกัน: {{status}}",
+      "secDepositNotCollected": "ยังไม่ได้รับเงินประกัน",
+      "docsCount": "{{count}} เอกสาร{{count_plural}}",
+      "docsMissing": "ขาดเอกสาร",
+      "note": "หมายเหตุ: {{note}}"
+    },
+    "warnings": {
+      "balanceOwed": "ค้างชำระ: {{amount}} — เก็บตอนเช็คอินหรือทำเครื่องหมายจ่ายที่ที่พัก",
+      "depositNotRecorded": "ยังไม่บันทึกมัดจำ — รับเงินหรือทำเครื่องหมายจัดการออฟไลน์",
+      "securityDepositNotCollected": "ยังไม่ได้รับเงินประกัน",
+      "noIdOnFile": "ไม่มีบัตรประจำตัวในระบบ — อัปโหลดหรือติ๊ก 'ตรวจบัตรที่หน้างาน'",
+      "roomNotCleaned": "ห้องยังทำความสะอาดไม่เสร็จ"
+    },
+    "notes": {
+      "payingOnArrival": "จ่ายที่ที่พัก",
+      "balanceCollectAtDesk": "ค้าง {{amount}} — เก็บที่หน้างาน",
+      "idCheckedInPerson": "ตรวจบัตรที่หน้างาน"
+    },
+    "messages": {
+      "guest": "แขก",
+      "staff": "สตาฟ",
+      "unread": "ยังไม่ได้อ่าน",
+      "attachment": "ไฟล์แนบ"
+    },
+    "turnover": {
+      "pending": "รอทำความสะอาด",
+      "inProgress": "กำลังทำความสะอาด",
+      "completed": "พร้อมเข้าพัก"
+    },
+    "turnoverBoard": {
+      "title": "ทำความสะอาดวันนี้",
+      "subtitle": "งานแม่บ้านที่เปิดอยู่",
+      "needsCleaning": "รอทำความสะอาด",
+      "beingCleaned": "กำลังทำความสะอาด",
+      "ready": "พร้อม",
+      "turnoverType": "เปลี่ยนผู้เข้าพัก",
+      "scheduledClean": "ทำความสะอาดตามกำหนด",
+      "cleaning": "ทำความสะอาด",
+      "due": "กำหนด {{time}}",
+      "nextGuestToday": "มีแขกต่อวันนี้"
+    },
+    "alerts": {
+      "title": "การแจ้งเตือนการดำเนินงาน",
+      "allClear": "วันนี้ไม่มีปัญหาสำหรับแขกที่มาและออก",
+      "critical": "วิกฤต",
+      "warning": "เตือน",
+      "arrivingDepositNotRecorded": "แขกที่จะมาถึงยังไม่มีมัดจำ",
+      "arrivingOwed": "แขกที่จะมาถึงค้างชำระ: {{amount}}",
+      "arrivingNoId": "แขกที่จะมาถึงไม่มีบัตรประจำตัว",
+      "arrivingRoomNotCleaned": "แขกที่จะมาถึงแต่ห้องยังไม่สะอาด",
+      "arrivedOwedBeforeCheckIn": "มาถึงแล้ว ค้างชำระ: {{amount}}",
+      "arrivedNoId": "มาถึงแล้ว ไม่มีบัตรประจำตัว",
+      "departingUnresolved": "ออกวันนี้แต่ยังค้างชำระ: {{amount}}",
+      "checkingOutUnresolved": "เช็คเอาท์วันนี้แต่ยังค้างชำระ: {{amount}}"
+    },
+    "pickups": {
+      "title": "รถรับสนามบินวันนี้"
+    },
+    "briefing": {
+      "title": "วันนี้ — {{date}}",
+      "aiNarration": "บรรยายโดย AI",
+      "drafting": "กำลังร่างบรรยาย…",
+      "quietDay": "วันนี้เงียบ — ไม่มีแขกมา ออก หรือรถรับสนามบิน",
+      "parts": {
+        "arriving": "มาถึง {{count}}",
+        "waiting": "มาถึงแล้วรอเช็คอิน {{count}}",
+        "staying": "พักอยู่ {{count}}",
+        "departing": "ออก {{count}}",
+        "pickups": "รถรับสนามบิน {{count}}",
+        "turnover": "ห้องรอทำความสะอาด {{count}}",
+        "balances": "ยอดค้าง {{count}}",
+        "issues": "ปัญหาแขกที่มาถึง {{count}}"
+      }
+    },
+    "journey": {
+      "booked": "จองแล้ว",
+      "deposit": "มัดจำ",
+      "depositPaid": "มัดจำแล้ว",
+      "unpaid": "ยังไม่จ่าย",
+      "idDocs": "บัตรประจำตัว",
+      "onFile": "มี {{count}} ไฟล์",
+      "missing": "ขาด",
+      "pickup": "รถรับ",
+      "arrival": "มาถึง",
+      "checkIn": "เช็คอิน",
+      "stay": "พัก",
+      "checkOut": "เช็คเอาท์",
+      "balanceOwed": "ค้างชำระ",
+      "halted": "หยุด: {{state}}"
+    },
+    "markArrivedDialog": {
+      "title": "บันทึกแขกมาถึง",
+      "bodyBefore": "บันทึกว่า",
+      "bodyAfter": "มาถึงตัวจริงแล้ว สถานะปัจจุบัน:",
+      "noteLabel": "หมายเหตุเพิ่มเติม",
+      "notePlaceholder": "เช่น มาก่อนเวลา ห้องยังไม่พร้อม",
+      "confirm": "ยืนยันมาถึง"
+    },
+    "overrides": {
+      "title": "การแทรกแซงล่าสุด",
+      "empty": "ไม่มีการแทรกแซงล่าสุด"
+    }
+  },
+  "staffHandling": {
+    "title": "จัดการโดยสตาฟ",
+    "subtitle": "เปิดตัวเลือกเหล่านี้สำหรับสิ่งที่เคลียร์กันแล้วในตัว เพื่อให้ฟรอนต์หยุดแจ้งเตือน ยอดค้างยังคงเดิม",
+    "payOnArrival": {
+      "title": "จ่ายที่ที่พัก",
+      "help": "แขกจะจ่ายที่หน้างาน ยอดค้างยังแสดงอยู่ แต่จะไม่ขึ้นเป็นค้างชำระระหว่างรอแขกมาถึง",
+      "notePlaceholder": "หมายเหตุเพิ่มเติม (เช่น ตกลงกับแขกทาง WhatsApp)",
+      "badge": "ฟรอนต์แสดง \"จ่ายที่ที่พัก\""
+    },
+    "ack": {
+      "deposit": "มัดจำจัดการออฟไลน์",
+      "depositHelp": "แขกจ่ายมัดจำผ่านโอนเงิน เงินสด หรือช่องทางนอกแอป",
+      "balance": "ยอดคงเหลือเก็บออฟไลน์",
+      "balanceHelp": "เก็บยอดคงเหลือด้วยตนเอง บัญชียังแสดงยอดที่ค้างอยู่",
+      "id_document": "ตรวจบัตรที่หน้างาน",
+      "id_documentHelp": "สตาฟตรวจพาสปอร์ตหรือบัตรประจำตัวที่หน้างาน — ไม่ต้องอัปโหลด",
+      "security_deposit": "เงินประกันจัดการออฟไลน์",
+      "security_depositHelp": "เงินประกันรับหรือยกเว้นในตัว",
+      "confirmedBy": "ยืนยันโดย {{by}} · {{at}}",
+      "notePlaceholder": "หมายเหตุเพิ่มเติม (เช่น ได้รับโอนเงิน 3 ส.ค.)"
     }
   }
 }

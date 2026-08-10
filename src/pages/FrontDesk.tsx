@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -50,13 +51,8 @@ import { computeOperationalStatus, TONE_CLASS } from "@/lib/operationalStatus";
 import { isAcknowledged, isMoneyGapMuted, isPayOnArrival } from "@/lib/staffMarkers";
 import { formatDistanceToNow } from "date-fns";
 
-const TURNOVER_LABELS: Record<string, { label: string; tone: string }> = {
-  pending: { label: "Turnover Pending", tone: "bg-warning/20 text-warning-foreground" },
-  in_progress: { label: "Cleaning", tone: "bg-info/20 text-[hsl(var(--info))]" },
-  completed: { label: "Turnover Ready", tone: "bg-success/20 text-[hsl(var(--success))]" },
-};
-
 export default function FrontDesk() {
+  const { t } = useTranslation();
   const { role } = useAuth();
   const isAdmin = role === "admin";
   const isManagerPlus = role === "admin" || role === "manager";
@@ -79,14 +75,14 @@ export default function FrontDesk() {
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <UserCheck className="h-6 w-6 text-primary" /> Front Desk
+              <UserCheck className="h-6 w-6 text-primary" /> {t("frontDesk.title")}
             </h1>
             <p className="text-muted-foreground mt-1 text-sm">
-              Operations Intelligence — every guest, every signal, one screen.
+              {t("frontDesk.subtitle")}
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={refetch}>
-            <RefreshCcw className="h-4 w-4 mr-2" /> Refresh
+            <RefreshCcw className="h-4 w-4 mr-2" /> {t("common.refresh")}
           </Button>
         </div>
 
@@ -125,21 +121,20 @@ export default function FrontDesk() {
 
 
 
-
         <Tabs defaultValue="arriving" className="w-full">
           <TabsList className="flex-wrap h-auto">
-            <TabsTrigger value="arriving">Arriving ({totals.arriving})</TabsTrigger>
-            <TabsTrigger value="upcoming">Upcoming ({totals.upcoming})</TabsTrigger>
-            <TabsTrigger value="staying">Staying ({totals.staying})</TabsTrigger>
-            <TabsTrigger value="departing">Departing ({totals.departing})</TabsTrigger>
-            {isManagerPlus && <TabsTrigger value="overrides">Overrides</TabsTrigger>}
+            <TabsTrigger value="arriving">{t("frontDesk.tabs.arriving", { count: totals.arriving })}</TabsTrigger>
+            <TabsTrigger value="upcoming">{t("frontDesk.tabs.upcoming", { count: totals.upcoming })}</TabsTrigger>
+            <TabsTrigger value="staying">{t("frontDesk.tabs.staying", { count: totals.staying })}</TabsTrigger>
+            <TabsTrigger value="departing">{t("frontDesk.tabs.departing", { count: totals.departing })}</TabsTrigger>
+            {isManagerPlus && <TabsTrigger value="overrides">{t("frontDesk.tabs.overrides")}</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="arriving" className="space-y-3 mt-4">
             <SectionList
               isLoading={isLoading}
               bookings={sections.arrivingToday}
-              emptyText="No arrivals today."
+              emptyText={t("frontDesk.empty.arriving")}
               variant="arriving"
               onOpen={setDetailId}
               onMarkArrived={setArrivedDialogFor}
@@ -151,7 +146,7 @@ export default function FrontDesk() {
             <SectionList
               isLoading={isLoading}
               bookings={sections.currentlyStaying}
-              emptyText="No one is currently staying."
+              emptyText={t("frontDesk.empty.staying")}
               variant="staying"
               onOpen={setDetailId}
               pickupByBooking={pickupByBooking}
@@ -162,7 +157,7 @@ export default function FrontDesk() {
             <SectionList
               isLoading={isLoading}
               bookings={sections.departingToday}
-              emptyText="No departures today."
+              emptyText={t("frontDesk.empty.departing")}
               variant="departing"
               onOpen={setDetailId}
               pickupByBooking={pickupByBooking}
@@ -173,7 +168,7 @@ export default function FrontDesk() {
             <SectionList
               isLoading={isLoading}
               bookings={sections.upcoming}
-              emptyText="No upcoming arrivals in the next 7 days."
+              emptyText={t("frontDesk.empty.upcoming")}
               variant="upcoming"
               onOpen={setDetailId}
               pickupByBooking={pickupByBooking}
@@ -296,6 +291,12 @@ function BookingRow({
   pickup?: { status: string | null; arrival_datetime: string | null } | null;
   lastMessage?: { content: string; created_at: string; is_read: boolean | null; from_guest: boolean } | null;
 }) {
+  const { t } = useTranslation();
+  const TURNOVER_LABELS: Record<string, { label: string; tone: string }> = {
+    pending: { label: t("frontDesk.turnover.pending"), tone: "bg-warning/20 text-warning-foreground" },
+    in_progress: { label: t("frontDesk.turnover.inProgress"), tone: "bg-info/20 text-[hsl(var(--info))]" },
+    completed: { label: t("frontDesk.turnover.completed"), tone: "bg-success/20 text-[hsl(var(--success))]" },
+  };
   const guestName = resolveGuestDisplayName(booking as any);
   const unitName = booking.units?.name ?? "—";
   const nights = differenceInCalendarDays(
@@ -313,35 +314,33 @@ function BookingRow({
   const docsMuted = isAcknowledged(booking, "id_document");
   const secDepMuted = isAcknowledged(booking, "security_deposit");
 
-  if (isPayOnArrival(booking)) notes.push("Paying on arrival");
+  if (isPayOnArrival(booking)) notes.push(t("frontDesk.notes.payingOnArrival"));
   if (booking.outstanding > 0) {
     if (moneyMuted) {
-      notes.push(`Balance ${formatPrice(booking.outstanding)} — collect at desk`);
+      notes.push(t("frontDesk.notes.balanceCollectAtDesk", { amount: formatPrice(booking.outstanding) }));
     } else {
-      warnings.push(
-        `Balance owed: ${formatPrice(booking.outstanding)} — collect at check-in or mark as paying on arrival`,
-      );
+      warnings.push(t("frontDesk.warnings.balanceOwed", { amount: formatPrice(booking.outstanding) }));
     }
   }
   if (!booking.depositPaid && !moneyMuted && (variant === "arriving" || variant === "waiting"))
-    warnings.push("Deposit not recorded — take payment or mark it handled offline");
+    warnings.push(t("frontDesk.warnings.depositNotRecorded"));
   if (
     variant !== "upcoming" &&
     !secDepMuted &&
     (!booking.securityDeposit || booking.securityDeposit.status !== "held")
   ) {
     if (variant === "arriving" || variant === "waiting")
-      warnings.push("Security deposit not collected yet");
+      warnings.push(t("frontDesk.warnings.securityDepositNotCollected"));
   }
   if (booking.docCount === 0 && !docsMuted && (variant === "arriving" || variant === "waiting"))
-    warnings.push("No ID on file — upload it or tick 'ID checked in person'");
-  if (docsMuted) notes.push("ID checked in person");
+    warnings.push(t("frontDesk.warnings.noIdOnFile"));
+  if (docsMuted) notes.push(t("frontDesk.notes.idCheckedInPerson"));
   if (
     variant === "arriving" &&
     booking.turnover &&
     booking.turnover.status !== "completed"
   ) {
-    warnings.push("Room not cleaned yet");
+    warnings.push(t("frontDesk.warnings.roomNotCleaned"));
   }
 
 
@@ -364,32 +363,35 @@ function BookingRow({
               </Badge>
               {booking.arrived_at && (
                 <Badge className="text-[10px] bg-info/20 text-[hsl(var(--info))]">
-                  Arrived {format(parseISO(booking.arrived_at), "HH:mm")}
+                  {t("frontDesk.arrivedAt", { time: format(parseISO(booking.arrived_at), "HH:mm") })}
                 </Badge>
               )}
             </div>
             <div className="text-xs text-muted-foreground mt-1 flex items-center gap-3 flex-wrap">
               <span>
-                {format(parseISO(booking.check_in), "MMM d")} →{" "}
-                {format(parseISO(booking.check_out), "MMM d")} · {nights} nights
+                {t("frontDesk.dateRangeNights", {
+                  from: format(parseISO(booking.check_in), "MMM d"),
+                  to: format(parseISO(booking.check_out), "MMM d"),
+                  count: nights,
+                })}
               </span>
               {nightsLeft !== null && (
-                <span className="text-foreground">{nightsLeft} nights remaining</span>
+                <span className="text-foreground">{t("frontDesk.nightsRemaining", { count: nightsLeft })}</span>
               )}
-              <span>· {booking.num_guests} guest{booking.num_guests > 1 ? "s" : ""}</span>
+              <span>· {t("frontDesk.guestCount", { count: booking.num_guests })}</span>
             </div>
           </div>
 
           {/* Financials */}
           <div className="text-right shrink-0">
-            <div className="text-xs text-muted-foreground">Total</div>
+            <div className="text-xs text-muted-foreground">{t("frontDesk.total")}</div>
             <div className="font-semibold">{formatPrice(booking.total_price ?? 0)}</div>
             {booking.outstanding > 0 ? (
               <div className="text-xs text-destructive font-medium mt-0.5">
-                {formatPrice(booking.outstanding)} owed
+                {t("frontDesk.owed", { amount: formatPrice(booking.outstanding) })}
               </div>
             ) : (
-              <div className="text-xs text-[hsl(var(--success))] font-medium mt-0.5">Paid in full</div>
+              <div className="text-xs text-[hsl(var(--success))] font-medium mt-0.5">{t("frontDesk.paidInFull")}</div>
             )}
           </div>
         </div>
@@ -400,7 +402,7 @@ function BookingRow({
             variant="outline"
             className={booking.depositPaid ? "border-[hsl(var(--success))] text-[hsl(var(--success))]" : "border-warning text-warning-foreground"}
           >
-            {booking.depositPaid ? "Deposit paid" : "Deposit pending"}
+            {booking.depositPaid ? t("frontDesk.chips.depositPaid") : t("frontDesk.chips.depositPending")}
           </Badge>
           {booking.securityDeposit ? (
             <Badge
@@ -413,12 +415,12 @@ function BookingRow({
                   : "border-warning text-warning-foreground"
               }
             >
-              Sec. deposit: {booking.securityDeposit.status}
+              {t("frontDesk.chips.secDeposit", { status: booking.securityDeposit.status })}
             </Badge>
           ) : (
             (variant === "arriving" || variant === "waiting") && (
               <Badge variant="outline" className="border-warning text-warning-foreground">
-                Sec. deposit not collected
+                {t("frontDesk.chips.secDepositNotCollected")}
               </Badge>
             )
           )}
@@ -427,7 +429,7 @@ function BookingRow({
             className={booking.docCount > 0 ? "" : "border-warning text-warning-foreground"}
           >
             <FileText className="h-3 w-3 mr-1" />
-            {booking.docCount > 0 ? `${booking.docCount} doc${booking.docCount > 1 ? "s" : ""}` : "Docs missing"}
+            {booking.docCount > 0 ? t("frontDesk.chips.docsCount", { count: booking.docCount }) : t("frontDesk.chips.docsMissing")}
           </Badge>
           {booking.turnover && (
             <Badge
@@ -442,7 +444,7 @@ function BookingRow({
           )}
           {booking.arrival_note && (
             <Badge variant="outline" className="text-[10px]">
-              Note: {booking.arrival_note}
+              {t("frontDesk.chips.note", { note: booking.arrival_note })}
             </Badge>
           )}
         </div>
@@ -462,13 +464,13 @@ function BookingRow({
             <MessageSquare className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${lastMessage.from_guest && lastMessage.is_read === false ? "text-[hsl(var(--info))]" : "text-muted-foreground"}`} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-wide">
-                <span>{lastMessage.from_guest ? "Guest" : "Staff"}</span>
+                <span>{lastMessage.from_guest ? t("frontDesk.messages.guest") : t("frontDesk.messages.staff")}</span>
                 <span>· {formatDistanceToNow(new Date(lastMessage.created_at), { addSuffix: true })}</span>
                 {lastMessage.from_guest && lastMessage.is_read === false && (
-                  <span className="text-[hsl(var(--info))] font-medium">· Unread</span>
+                  <span className="text-[hsl(var(--info))] font-medium">· {t("frontDesk.messages.unread")}</span>
                 )}
               </div>
-              <div className="text-foreground truncate mt-0.5">{lastMessage.content || "(attachment)"}</div>
+              <div className="text-foreground truncate mt-0.5">{lastMessage.content || t("frontDesk.messages.attachment")}</div>
             </div>
           </button>
         )}
@@ -485,7 +487,7 @@ function BookingRow({
         {notes.length > 0 && (
           <div className="mt-2 flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md p-2 border border-border/60">
             <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            <div>Confirmed by staff: {notes.join(" · ")}</div>
+            <div>{t("frontDesk.confirmedByStaff", { notes: notes.join(" · ") })}</div>
           </div>
         )}
 
@@ -495,10 +497,10 @@ function BookingRow({
           {variant === "arriving" && (
             <>
               <Button size="sm" variant="default" onClick={() => onMarkArrived?.(booking)}>
-                <UserCheck className="h-4 w-4 mr-1" /> Mark Arrived
+                <UserCheck className="h-4 w-4 mr-1" /> {t("frontDesk.actions.markArrived")}
               </Button>
               <Button size="sm" variant="secondary" onClick={() => onOpen(booking.id)}>
-                <LogIn className="h-4 w-4 mr-1" /> Check In
+                <LogIn className="h-4 w-4 mr-1" /> {t("frontDesk.actions.checkIn")}
               </Button>
               <MarkNoShowButton bookingId={booking.id} currentState={booking.state as BookingState} />
             </>
@@ -506,28 +508,28 @@ function BookingRow({
           {variant === "waiting" && (
             <>
               <Button size="sm" variant="default" onClick={() => onOpen(booking.id)}>
-                <LogIn className="h-4 w-4 mr-1" /> Check In
+                <LogIn className="h-4 w-4 mr-1" /> {t("frontDesk.actions.checkIn")}
               </Button>
             </>
           )}
           {variant === "staying" && (
             <Button size="sm" variant="default" onClick={() => onOpen(booking.id)}>
-              <LogOut className="h-4 w-4 mr-1" /> Check Out
+              <LogOut className="h-4 w-4 mr-1" /> {t("frontDesk.actions.checkOut")}
             </Button>
           )}
           {variant === "departing" && (
             <Button size="sm" variant="default" onClick={() => onOpen(booking.id)}>
-              <LogOut className="h-4 w-4 mr-1" /> Check Out
+              <LogOut className="h-4 w-4 mr-1" /> {t("frontDesk.actions.checkOut")}
             </Button>
           )}
           <Button size="sm" variant="outline" onClick={() => onOpen(booking.id)}>
-            Open Booking
+            {t("frontDesk.actions.openBooking")}
           </Button>
           {booking.profiles?.phone && (
             <>
               <Button size="sm" variant="ghost" asChild>
                 <a href={`tel:${booking.profiles.phone}`}>
-                  <Phone className="h-4 w-4 mr-1" /> Call
+                  <Phone className="h-4 w-4 mr-1" /> {t("frontDesk.actions.call")}
                 </a>
               </Button>
               <Button size="sm" variant="ghost" asChild>
@@ -536,12 +538,12 @@ function BookingRow({
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <MessageSquare className="h-4 w-4 mr-1" /> WhatsApp
+                  <MessageSquare className="h-4 w-4 mr-1" /> {t("frontDesk.actions.whatsapp")}
                 </a>
               </Button>
               <Button size="sm" variant="ghost" asChild>
                 <a href={`sms:${booking.profiles.phone}`}>
-                  <MessageSquare className="h-4 w-4 mr-1" /> SMS
+                  <MessageSquare className="h-4 w-4 mr-1" /> {t("frontDesk.actions.sms")}
                 </a>
               </Button>
             </>
@@ -554,9 +556,10 @@ function BookingRow({
 
 // ─── Mark No-Show ───
 function MarkNoShowButton({ bookingId, currentState }: { bookingId: string; currentState: BookingState }) {
+  const { t } = useTranslation();
   const transition = useTransitionBookingState();
   const handle = () => {
-    if (!confirm("Mark this booking as no-show? This cancels the arrival.")) return;
+    if (!confirm(t("frontDesk.confirmNoShow"))) return;
     transition.mutate({
       bookingId,
       currentState,
@@ -566,7 +569,7 @@ function MarkNoShowButton({ bookingId, currentState }: { bookingId: string; curr
   };
   return (
     <Button size="sm" variant="ghost" onClick={handle} className="text-destructive">
-      <XCircle className="h-4 w-4 mr-1" /> No-Show
+      <XCircle className="h-4 w-4 mr-1" /> {t("frontDesk.actions.noShow")}
     </Button>
   );
 }
@@ -579,6 +582,7 @@ function MarkArrivedDialog({
   booking: FrontDeskBooking | null;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const markArrived = useMarkArrived();
   const [note, setNote] = useState("");
 
@@ -593,36 +597,36 @@ function MarkArrivedDialog({
     <Dialog open={!!booking} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Mark guest as arrived</DialogTitle>
+          <DialogTitle>{t("frontDesk.markArrivedDialog.title")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3 text-sm">
           <p className="text-muted-foreground">
             <span className="font-medium text-foreground">
               {resolveGuestDisplayName(booking as any)}
             </span>{" "}
-            is physically here. Their booking stays in{" "}
+            {t("frontDesk.markArrivedDialog.bodyBefore")}{" "}
             <Badge className="text-[10px] mx-1">
               {booking ? STATE_LABELS[booking.state as BookingState] : ""}
             </Badge>{" "}
-            until you complete check-in.
+            {t("frontDesk.markArrivedDialog.bodyAfter")}
           </p>
           <div>
-            <label className="text-xs text-muted-foreground">Optional note</label>
+            <label className="text-xs text-muted-foreground">{t("frontDesk.markArrivedDialog.noteLabel")}</label>
             <Textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="e.g. waiting in lobby, room not ready yet"
+              placeholder={t("frontDesk.markArrivedDialog.notePlaceholder")}
               rows={2}
             />
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button onClick={handleConfirm} disabled={markArrived.isPending}>
             <CheckCircle2 className="h-4 w-4 mr-1" />
-            Confirm Arrival
+            {t("frontDesk.markArrivedDialog.confirm")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -632,11 +636,12 @@ function MarkArrivedDialog({
 
 // ─── Overrides panel ───
 function OverridesPanel({ rows }: { rows: any[] }) {
+  const { t } = useTranslation();
   if (rows.length === 0) {
     return (
       <Card>
         <CardContent className="p-8 text-center text-muted-foreground text-sm">
-          No override events found.
+          {t("frontDesk.overrides.empty")}
         </CardContent>
       </Card>
     );
@@ -645,7 +650,7 @@ function OverridesPanel({ rows }: { rows: any[] }) {
     <Card>
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
-          <ShieldAlert className="h-4 w-4 text-warning" /> Recent overrides
+          <ShieldAlert className="h-4 w-4 text-warning" /> {t("frontDesk.overrides.title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">

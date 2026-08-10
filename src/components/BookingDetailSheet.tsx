@@ -63,7 +63,7 @@ import { BookingAdjustmentsCard } from "@/components/BookingAdjustmentsCard";
 import { getDiscountEligibility, DISCOUNT_TOOLTIP_HELP } from "@/lib/discountEligibility";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Lock, Percent as PercentIcon } from "lucide-react";
-import { getBookingDeadline, describeDeadline } from "@/lib/bookingDeadline";
+import { getBookingDeadline } from "@/lib/bookingDeadline";
 import { ExtendDeadlineDialog } from "@/components/ExtendDeadlineDialog";
 import { ModifyStayDialog } from "@/components/ModifyStayDialog";
 import { StayModificationHistory } from "@/components/StayModificationHistory";
@@ -262,12 +262,17 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
           {deadlineInfo && (
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span>
-                Deadline: {format(deadlineInfo.deadline, "MMM d, HH:mm")} · {describeDeadline(deadlineInfo)}
-                {deadlineInfo.source === "override" && " · extended by staff"}
+                {t("bookingDetail.deadline.label", {
+                  date: format(deadlineInfo.deadline, "MMM d, HH:mm"),
+                  description: deadlineInfo.isExpired
+                    ? (deadlineInfo.hoursOverdue >= 1 ? t("bookingDetail.deadline.hoursOverdue", { count: deadlineInfo.hoursOverdue }) : t("bookingDetail.deadline.justExpired"))
+                    : (deadlineInfo.hoursRemaining >= 1 ? t("bookingDetail.deadline.hoursLeft", { count: deadlineInfo.hoursRemaining }) : t("bookingDetail.deadline.underOneHour")),
+                })}
+                {deadlineInfo.source === "override" && t("bookingDetail.deadline.extendedByStaff")}
               </span>
               {canOverrideDeadline && (
                 <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setExtendOpen(true)}>
-                  {deadlineInfo.isExpired ? "Override expiry" : "Extend deadline"}
+                  {deadlineInfo.isExpired ? t("bookingDetail.deadline.overrideExpiry") : t("bookingDetail.deadline.extendDeadline")}
                 </Button>
               )}
             </div>
@@ -279,14 +284,14 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
             {t("bookings.guestCount", { count: booking.num_guests })}
             {booking.guest_type && <Badge variant="outline" className="ml-2 text-xs">{t(`guestBooking.guestTypes.${booking.guest_type}`, { defaultValue: booking.guest_type })}</Badge>}
             {booking.notes && <span className="block mt-1 italic">"{booking.notes}"</span>}
-            {(booking as any).flight_number && <span className="block mt-1 text-xs">✈️ Flight: <strong>{(booking as any).flight_number}</strong></span>}
+            {(booking as any).flight_number && <span className="block mt-1 text-xs">✈️ {t("bookingDetail.flightLabel", { flight: (booking as any).flight_number })}</span>}
           </div>
           {booking.arrival_details && typeof booking.arrival_details === "object" && Object.keys(booking.arrival_details).length > 0 && (
             <div className="text-sm space-y-1 bg-muted/30 rounded-md p-2">
               <p className="font-medium text-xs text-muted-foreground">{t("guestBooking.arrivalDetails")}</p>
-              {(booking.arrival_details as any).flight_info && <p className="text-xs">✈️ {(booking.arrival_details as any).flight_info}</p>}
-              {(booking.arrival_details as any).arrival_time && <p className="text-xs">🕐 {(booking.arrival_details as any).arrival_time}</p>}
-              {(booking.arrival_details as any).emergency_contact && <p className="text-xs">🚨 {(booking.arrival_details as any).emergency_contact}</p>}
+              {(booking.arrival_details as any).flight_info && <p className="text-xs">{t("bookingDetail.arrivalDetails.flightInfo", { info: (booking.arrival_details as any).flight_info })}</p>}
+              {(booking.arrival_details as any).arrival_time && <p className="text-xs">{t("bookingDetail.arrivalDetails.arrivalTime", { time: (booking.arrival_details as any).arrival_time })}</p>}
+              {(booking.arrival_details as any).emergency_contact && <p className="text-xs">{t("bookingDetail.arrivalDetails.emergencyContact", { contact: (booking.arrival_details as any).emergency_contact })}</p>}
               {(booking.arrival_details as any).airport_pickup && <p className="text-xs">🛬 {t("guestBooking.airportPickup", { defaultValue: "Airport Pickup Requested" })}</p>}
             </div>
           )}
@@ -295,16 +300,16 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
             scroll past pickup/deposit/training to change dates or rooms. */}
         {canModifyStay && isModifiableState && (
           <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2.5 space-y-2">
-            <p className="text-sm font-medium">Stay tools</p>
+            <p className="text-sm font-medium">{t("bookingDetail.stayTools.title")}</p>
             <p className="text-xs text-muted-foreground">
-              Extend, shorten or move this stay. Checks live availability and charges the difference only.
+              {t("bookingDetail.stayTools.description")}
             </p>
             <div className="flex flex-wrap gap-2">
               <Button size="sm" onClick={() => setModifyOpen(true)}>
-                <CalendarDays className="h-4 w-4 mr-1" /> Extend stay
+                <CalendarDays className="h-4 w-4 mr-1" /> {t("bookingDetail.stayTools.extend")}
               </Button>
               <Button size="sm" variant="outline" onClick={() => setModifyOpen(true)}>
-                Change dates or room
+                {t("bookingDetail.stayTools.change")}
               </Button>
             </div>
           </div>
@@ -343,14 +348,14 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
                         size="sm"
                         onClick={() => setDiscountOpen(true)}
                         disabled={!!discountBlockedReason}
-                        aria-label="Apply discount"
+                        aria-label={t("bookingDetail.discount.apply")}
                       >
                         {discountBlockedReason ? (
                           <Lock className="h-3.5 w-3.5 mr-1.5" />
                         ) : (
                           <PercentIcon className="h-3.5 w-3.5 mr-1.5" />
                         )}
-                        Apply discount
+                        {t("bookingDetail.discount.apply")}
                       </Button>
                     </span>
                   </TooltipTrigger>
@@ -415,7 +420,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
             <TabsTrigger value="messages" className="flex-1"><MessageSquare className="h-4 w-4 mr-1" /> {t("bookingDetail.notesTab")}</TabsTrigger>
             <TabsTrigger value="documents" className="flex-1"><FileText className="h-4 w-4 mr-1" /> {t("bookingDetail.documentsTab")}</TabsTrigger>
             {canSeePortalActivity && (
-              <TabsTrigger value="portal" className="flex-1"><Activity className="h-4 w-4 mr-1" /> Portal</TabsTrigger>
+              <TabsTrigger value="portal" className="flex-1"><Activity className="h-4 w-4 mr-1" /> {t("bookingDetail.tabs.portal")}</TabsTrigger>
             )}
             {isCheckedIn && (
               <TabsTrigger value="support" className="flex-1"><Wrench className="h-4 w-4 mr-1" /> {t("staySupport.tabLabel")}</TabsTrigger>
@@ -585,7 +590,7 @@ function PaymentsTab({ payments, bookingId, bookingState, canSeeAmounts, canReco
                     {p.description && canSeeAmounts && <p className="text-xs text-muted-foreground">{p.description}</p>}
                     {p.notes && canSeeAmounts && <p className="text-xs text-muted-foreground italic">{p.notes}</p>}
                     {p.refund_amount != null && Number(p.refund_amount) > 0 && canSeeAmounts && (
-                      <p className="text-xs text-[hsl(var(--info))]">↩ Refund: {formatPrice(p.refund_amount, policies)}{p.refund_reason ? ` — ${p.refund_reason}` : ""}</p>
+                      <p className="text-xs text-[hsl(var(--info))]">{t("bookingDetail.payments.refundPrefix", { amount: formatPrice(p.refund_amount, policies) })}{p.refund_reason ? ` — ${p.refund_reason}` : ""}</p>
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-1">
@@ -620,7 +625,7 @@ function PaymentsTab({ payments, bookingId, bookingState, canSeeAmounts, canReco
           <Separator />
           <h4 className="text-sm font-semibold">{t("payments.recordPayment")}</h4>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            This is only for offline money — cash, bank transfer, or whatever else happens face-to-face. If the guest already paid through the Stripe link up top, it&apos;s already in the system. You do not need to touch this.
+            {t("bookingDetail.payments.offlineMoneyNote")}
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1"><Label className="text-xs">{t("payments.amount")} *</Label><Input type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={balance.outstanding > 0 ? balance.outstanding.toFixed(2) : ""} /></div>
@@ -632,7 +637,7 @@ function PaymentsTab({ payments, bookingId, bookingState, canSeeAmounts, canReco
                   <SelectItem value="other">{t("payments.methods.other", { defaultValue: "Other (offline)" })}</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-[10px] text-muted-foreground">Card payments go through Stripe only — use Generate Payment Link above.</p>
+              <p className="text-[10px] text-muted-foreground">{t("bookingDetail.payments.cardNote")}</p>
             </div>
           </div>
           <div className="space-y-1">
@@ -699,7 +704,7 @@ function MessageBubble({ msg, translate, clearTranslation, translations, isTrans
               className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline border rounded-md px-2 py-1"
             >
               <File className="h-3 w-3" />
-              {msg.attachment_type?.includes("pdf") ? "PDF Document" : "Attachment"}
+              {msg.attachment_type?.includes("pdf") ? t("bookingDetail.attachment.pdf") : t("bookingDetail.attachment.file")}
             </a>
           )}
         </div>
@@ -765,7 +770,7 @@ function MessagesTab({ messages, bookingId }: { messages: any[]; bookingId: stri
         setContent(`📎 ${file.name}`);
       }
     } catch (err: any) {
-      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+      toast({ title: t("bookingDetail.uploadFailed"), description: err.message, variant: "destructive" });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -812,7 +817,7 @@ function MessagesTab({ messages, bookingId }: { messages: any[]; bookingId: stri
       {attachment && (
         <div className="flex items-center gap-2 text-xs bg-muted/50 rounded-md px-2 py-1.5">
           {attachment.type.startsWith("image/") ? <ImageIcon className="h-3 w-3" /> : <File className="h-3 w-3" />}
-          <span className="truncate flex-1">{attachment.type.startsWith("image/") ? "Image" : "Document"} attached</span>
+          <span className="truncate flex-1">{attachment.type.startsWith("image/") ? t("bookingDetail.attachment.image") : t("bookingDetail.attachment.document")} {t("bookingDetail.attachment.attached")}</span>
           <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => setAttachment(null)}>
             <X className="h-3 w-3" />
           </Button>
