@@ -9,6 +9,7 @@ import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { ReinstallPrompt } from "@/components/ReinstallPrompt";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { TutorialOverlay } from "@/components/TutorialOverlay";
 import { useRolePreview } from "@/hooks/useRolePreview";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
