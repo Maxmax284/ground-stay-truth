@@ -3,6 +3,7 @@
  * Derives every step status from data already loaded on the booking.
  * No new business rules; no mutations.
  */
+import { useTranslation } from "react-i18next";
 import type { FrontDeskBooking } from "@/hooks/useFrontDesk";
 import { CheckCircle2, Circle, AlertCircle, Plane, Bed, LogIn, LogOut, FileText, CreditCard, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ export function GuestJourneyTimeline({
   booking: FrontDeskBooking;
   pickup?: { status: string | null; arrival_datetime: string | null } | null;
 }) {
+  const { t } = useTranslation();
   const today = new Date().toISOString().slice(0, 10);
   const isArrived = !!booking.arrived_at;
   const isCheckedIn = booking.state === "checked_in";
@@ -34,18 +36,18 @@ export function GuestJourneyTimeline({
 
   const steps: Step[] = [
     {
-      label: "Booked",
+      label: t("frontDesk.journey.booked"),
       icon: CheckCircle2,
       state: "done",
     },
     {
-      label: booking.depositPaid ? "Deposit Paid" : "Deposit",
+      label: booking.depositPaid ? t("frontDesk.journey.depositPaid") : t("frontDesk.journey.deposit"),
       icon: CreditCard,
       state: booking.depositPaid ? "done" : "problem",
-      hint: booking.depositPaid ? undefined : "Unpaid",
+      hint: booking.depositPaid ? undefined : t("frontDesk.journey.unpaid"),
     },
     {
-      label: "ID Docs",
+      label: t("frontDesk.journey.idDocs"),
       icon: FileText,
       state:
         booking.docCount > 0
@@ -53,11 +55,11 @@ export function GuestJourneyTimeline({
           : arrivingTodayOrPast
             ? "problem"
             : "todo",
-      hint: booking.docCount > 0 ? `${booking.docCount} on file` : "Missing",
+      hint: booking.docCount > 0 ? t("frontDesk.journey.onFile", { count: booking.docCount }) : t("frontDesk.journey.missing"),
     },
     pickup
       ? {
-          label: "Pickup",
+          label: t("frontDesk.journey.pickup"),
           icon: Plane,
           state:
             pickup.status === "completed"
@@ -71,22 +73,22 @@ export function GuestJourneyTimeline({
         }
       : null,
     {
-      label: "Arrival",
+      label: t("frontDesk.journey.arrival"),
       icon: Bed,
       state: isArrived || isCheckedIn || isDeparted ? "done" : arrivingTodayOrPast ? "active" : "todo",
     },
     {
-      label: "Check-In",
+      label: t("frontDesk.journey.checkIn"),
       icon: LogIn,
       state: isCheckedIn || isDeparted ? "done" : isArrived ? "active" : "todo",
     },
     {
-      label: "Stay",
+      label: t("frontDesk.journey.stay"),
       icon: Sparkles,
       state: isDeparted ? "done" : isCheckedIn ? "active" : "todo",
     },
     {
-      label: "Check-Out",
+      label: t("frontDesk.journey.checkOut"),
       icon: LogOut,
       state: isDeparted
         ? "done"
@@ -95,14 +97,14 @@ export function GuestJourneyTimeline({
           : booking.outstanding > 0 && isCheckedIn
             ? "problem"
             : "todo",
-      hint: booking.outstanding > 0 && isCheckedIn ? "Balance owed" : undefined,
+      hint: booking.outstanding > 0 && isCheckedIn ? t("frontDesk.journey.balanceOwed") : undefined,
     },
   ].filter(Boolean) as Step[];
 
   if (isCancelled) {
     return (
       <div className="text-[11px] text-muted-foreground italic">
-        Journey halted — booking {booking.state.replace("_", " ")}.
+        {t("frontDesk.journey.halted", { state: booking.state.replace("_", " ") })}
       </div>
     );
   }

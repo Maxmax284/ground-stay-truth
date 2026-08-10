@@ -13,6 +13,7 @@ import { Sparkles, Sun, Loader2 } from "lucide-react";
 import type { FrontDeskBooking } from "@/hooks/useFrontDesk";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
 
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 
@@ -31,6 +32,7 @@ interface Props {
 const STORAGE_KEY = "front-desk.briefing.narrative";
 
 export function TodaysBriefing({ sections, todaysPickupCount, turnoverPendingCount }: Props) {
+  const { t } = useTranslation();
   const { data: policies } = usePolicySettings();
   const policyDefault = useMemo(() => {
     const s = policies?.find((p) => p.key === "front_desk_briefing_narrative_default");
@@ -50,7 +52,8 @@ export function TodaysBriefing({ sections, todaysPickupCount, turnoverPendingCou
     }
   }, [policyDefault]);
 
-  const stats = useMemo(() => buildStats(sections, todaysPickupCount, turnoverPendingCount), [
+  const stats = useMemo(() => buildStats(t, sections, todaysPickupCount, turnoverPendingCount), [
+    t,
     sections,
     todaysPickupCount,
     turnoverPendingCount,
@@ -106,13 +109,13 @@ export function TodaysBriefing({ sections, todaysPickupCount, turnoverPendingCou
             <Sun className="h-4 w-4 text-primary mt-0.5 shrink-0" />
             <div className="min-w-0">
               <div className="text-xs text-muted-foreground uppercase tracking-wide">
-                Today's Briefing · {format(new Date(), "EEE, MMM d")}
+                {t("frontDesk.briefing.title", { date: format(new Date(), "EEE, MMM d") })}
               </div>
               <div className="text-sm text-foreground mt-1 leading-relaxed">
                 {narrative ? (
                   loadingAi ? (
                     <span className="inline-flex items-center gap-2 text-muted-foreground">
-                      <Loader2 className="h-3 w-3 animate-spin" /> Drafting narration…
+                      <Loader2 className="h-3 w-3 animate-spin" /> {t("frontDesk.briefing.drafting")}
                     </span>
                   ) : (
                     aiText ?? stats.deterministic
@@ -125,7 +128,7 @@ export function TodaysBriefing({ sections, todaysPickupCount, turnoverPendingCou
           </div>
           <label className="flex items-center gap-2 text-[11px] text-muted-foreground shrink-0 cursor-pointer">
             <Sparkles className="h-3 w-3" />
-            AI narration
+            {t("frontDesk.briefing.aiNarration")}
             <Switch checked={narrative} onCheckedChange={toggle} />
           </label>
         </div>
@@ -135,6 +138,7 @@ export function TodaysBriefing({ sections, todaysPickupCount, turnoverPendingCou
 }
 
 function buildStats(
+  t: (key: string, options?: Record<string, unknown>) => string,
   sections: Props["sections"],
   pickupCount: number,
   turnoverPending: number,
@@ -152,18 +156,18 @@ function buildStats(
   ).length;
 
   const parts: string[] = [];
-  if (a > 0) parts.push(`${a} arriving today`);
-  if (w > 0) parts.push(`${w} waiting to check in`);
-  if (s > 0) parts.push(`${s} currently staying`);
-  if (d > 0) parts.push(`${d} departing`);
-  if (pickupCount > 0) parts.push(`${pickupCount} airport pickup${pickupCount > 1 ? "s" : ""}`);
-  if (turnoverPending > 0) parts.push(`${turnoverPending} room${turnoverPending > 1 ? "s" : ""} pending turnover`);
-  if (balances > 0) parts.push(`${balances} outstanding balance${balances > 1 ? "s" : ""}`);
-  if (issues > 0) parts.push(`${issues} arrival issue${issues > 1 ? "s" : ""}`);
+  if (a > 0) parts.push(t("frontDesk.briefing.parts.arriving", { count: a }));
+  if (w > 0) parts.push(t("frontDesk.briefing.parts.waiting", { count: w }));
+  if (s > 0) parts.push(t("frontDesk.briefing.parts.staying", { count: s }));
+  if (d > 0) parts.push(t("frontDesk.briefing.parts.departing", { count: d }));
+  if (pickupCount > 0) parts.push(t("frontDesk.briefing.parts.pickups", { count: pickupCount }));
+  if (turnoverPending > 0) parts.push(t("frontDesk.briefing.parts.turnover", { count: turnoverPending }));
+  if (balances > 0) parts.push(t("frontDesk.briefing.parts.balances", { count: balances }));
+  if (issues > 0) parts.push(t("frontDesk.briefing.parts.issues", { count: issues }));
 
   const deterministic =
     parts.length === 0
-      ? "Quiet day. Nothing urgent on the board."
+      ? t("frontDesk.briefing.quietDay")
       : parts.join(" · ") + ".";
 
   const facts =

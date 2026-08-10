@@ -52,7 +52,8 @@
     "processing": "Processing...",
     "days": "days",
     "filters": "Filters",
-    "all": "All types"
+    "all": "All types",
+    "refresh": "Refresh"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -468,7 +469,49 @@
     "noHistory": "No history yet.",
     "adminOverride": "Admin Override",
     "system": "System",
-    "softHoldDisclaimer": "This hold does not guarantee availability until the booking is confirmed with a deposit."
+    "softHoldDisclaimer": "This hold does not guarantee availability until the booking is confirmed with a deposit.",
+    "stayTools": {
+      "title": "Stay tools",
+      "description": "Extend, shorten or move this stay. Checks live availability and charges the difference only.",
+      "extend": "Extend stay",
+      "change": "Change dates or room"
+    },
+    "deadline": {
+      "extendedByStaff": " · extended by staff",
+      "overrideExpiry": "Override expiry",
+      "extendDeadline": "Extend deadline",
+      "label": "Deadline: {date} · {description}",
+      "hoursLeft": "{{count}}h left",
+      "underOneHour": "under 1h left",
+      "hoursOverdue": "{{count}}h overdue",
+      "justExpired": "just expired"
+    },
+    "discount": {
+      "apply": "Apply discount",
+      "blockedReason": "{{reason}}"
+    },
+    "payments": {
+      "offlineMoneyNote": "This is only for offline money — cash, bank transfer, or whatever else happens face-to-face. If the guest already paid through the Stripe link up top, it's already in the system. You do not need to touch this.",
+      "cardNote": "Card payments go through Stripe only — use Generate Payment Link above.",
+      "refundPrefix": "Refund: {{amount}}"
+    },
+    "tabs": {
+      "portal": "Portal"
+    },
+    "attachment": {
+      "pdf": "PDF Document",
+      "file": "Attachment",
+      "image": "Image",
+      "document": "Document",
+      "attached": "attached"
+    },
+    "uploadFailed": "Upload failed",
+    "flightLabel": "Flight: {{flight}}",
+    "arrivalDetails": {
+      "flightInfo": "🛬 {{info}}",
+      "arrivalTime": "🕐 {{time}}",
+      "emergencyContact": "🚨 {{contact}}"
+    }
   },
   "payments": {
     "paid": "Paid",
@@ -1792,6 +1835,169 @@
       "deadline_override": "Deadline overridden",
       "attribution_missing": "Actor not recorded",
       "sandbox": "Practice booking"
+    }
+  },
+  "frontDesk": {
+    "title": "Front Desk",
+    "subtitle": "Operations Intelligence — every guest, every signal, one screen.",
+    "tabs": {
+      "arriving": "Arriving ({{count}})",
+      "upcoming": "Upcoming ({{count}})",
+      "staying": "Staying ({{count}})",
+      "departing": "Departing ({{count}})",
+      "overrides": "Overrides"
+    },
+    "empty": {
+      "arriving": "No arrivals today.",
+      "staying": "No one is currently staying.",
+      "departing": "No departures today.",
+      "upcoming": "No upcoming arrivals in the next 7 days."
+    },
+    "total": "Total",
+    "owed": "{{amount}} owed",
+    "paidInFull": "Paid in full",
+    "guestCount": "{{count}} guest{{count_plural}}",
+    "nightsRemaining": "{{count}} nights remaining",
+    "dateRangeNights": "{{from}} → {{to}} · {{count}} nights",
+    "arrivedAt": "Arrived {{time}}",
+    "confirmedByStaff": "Confirmed by staff: {{notes}}",
+    "confirmNoShow": "Mark this guest as no-show? This is reversible only by an admin.",
+    "actions": {
+      "markArrived": "Mark arrived",
+      "checkIn": "Check in",
+      "checkOut": "Check out",
+      "openBooking": "Open booking",
+      "noShow": "No-show",
+      "call": "Call",
+      "whatsapp": "WhatsApp",
+      "sms": "SMS"
+    },
+    "chips": {
+      "depositPaid": "Deposit paid",
+      "depositPending": "Deposit pending",
+      "secDeposit": "Sec. deposit: {{status}}",
+      "secDepositNotCollected": "Sec. deposit not collected",
+      "docsCount": "{{count}} doc{{count_plural}}",
+      "docsMissing": "Docs missing",
+      "note": "Note: {{note}}"
+    },
+    "warnings": {
+      "balanceOwed": "Balance owed: {{amount}} — collect at check-in or mark as paying on arrival",
+      "depositNotRecorded": "Deposit not recorded — take payment or mark it handled offline",
+      "securityDepositNotCollected": "Security deposit not collected yet",
+      "noIdOnFile": "No ID on file — upload it or tick 'ID checked in person'",
+      "roomNotCleaned": "Room not cleaned yet"
+    },
+    "notes": {
+      "payingOnArrival": "Paying on arrival",
+      "balanceCollectAtDesk": "Balance {{amount}} — collect at desk",
+      "idCheckedInPerson": "ID checked in person"
+    },
+    "messages": {
+      "guest": "Guest",
+      "staff": "Staff",
+      "unread": "Unread",
+      "attachment": "Attachment"
+    },
+    "turnover": {
+      "pending": "Turnover Pending",
+      "inProgress": "Cleaning",
+      "completed": "Turnover Ready"
+    },
+    "turnoverBoard": {
+      "title": "Cleaning today",
+      "subtitle": "Open housekeeping tasks",
+      "needsCleaning": "Needs cleaning",
+      "beingCleaned": "Being cleaned",
+      "ready": "Ready",
+      "turnoverType": "Turnover",
+      "scheduledClean": "Scheduled clean",
+      "cleaning": "Cleaning",
+      "due": "due {{time}}",
+      "nextGuestToday": "next guest today"
+    },
+    "alerts": {
+      "title": "Operational alerts",
+      "allClear": "All clear for today's arrivals and departures.",
+      "critical": "Critical",
+      "warning": "Warning",
+      "arrivingDepositNotRecorded": "Arriving without deposit recorded",
+      "arrivingOwed": "Arriving with balance owed: {{amount}}",
+      "arrivingNoId": "Arriving with no ID on file",
+      "arrivingRoomNotCleaned": "Arriving but room not cleaned yet",
+      "arrivedOwedBeforeCheckIn": "Arrived, balance owed: {{amount}}",
+      "arrivedNoId": "Arrived, no ID on file",
+      "departingUnresolved": "Departing today with unresolved balance: {{amount}}",
+      "checkingOutUnresolved": "Checking out today with unresolved balance: {{amount}}"
+    },
+    "pickups": {
+      "title": "Airport pickups today"
+    },
+    "briefing": {
+      "title": "Today — {{date}}",
+      "aiNarration": "AI narration",
+      "drafting": "Drafting briefing…",
+      "quietDay": "Quiet day ahead — no arrivals, departures, or pickups on the books.",
+      "parts": {
+        "arriving": "{{count}} arriving",
+        "waiting": "{{count}} arrived, waiting check-in",
+        "staying": "{{count}} currently staying",
+        "departing": "{{count}} departing",
+        "pickups": "{{count}} airport pickups",
+        "turnover": "{{count}} rooms pending turnover",
+        "balances": "{{count}} outstanding balances",
+        "issues": "{{count}} arrival problems"
+      }
+    },
+    "journey": {
+      "booked": "Booked",
+      "deposit": "Deposit",
+      "depositPaid": "Deposit paid",
+      "unpaid": "Unpaid",
+      "idDocs": "ID docs",
+      "onFile": "{{count}} on file",
+      "missing": "Missing",
+      "pickup": "Pickup",
+      "arrival": "Arrival",
+      "checkIn": "Check in",
+      "stay": "Stay",
+      "checkOut": "Check out",
+      "balanceOwed": "Balance owed",
+      "halted": "Halted: {{state}}"
+    },
+    "markArrivedDialog": {
+      "title": "Mark guest arrived",
+      "bodyBefore": "Record that",
+      "bodyAfter": "has physically arrived. Current state:",
+      "noteLabel": "Optional note",
+      "notePlaceholder": "e.g. arrived early, room not ready yet",
+      "confirm": "Confirm arrival"
+    },
+    "overrides": {
+      "title": "Recent overrides",
+      "empty": "No recent overrides."
+    }
+  },
+  "staffHandling": {
+    "title": "Handled by staff",
+    "subtitle": "Turn these on for anything already sorted in person. It stops the Front Desk flagging it as a problem. Amounts owed do not change.",
+    "payOnArrival": {
+      "title": "Paying on arrival",
+      "help": "Guest settles at the desk. The balance stays visible, but it stops reading as overdue before they get here.",
+      "notePlaceholder": "Optional note (e.g. agreed with guest over WhatsApp)",
+      "badge": "Front Desk shows \"Paying on arrival\""
+    },
+    "ack": {
+      "deposit": "Deposit handled offline",
+      "depositHelp": "Guest paid the deposit by bank transfer, cash, or another channel outside the app.",
+      "balance": "Balance collected offline",
+      "balanceHelp": "The remaining balance was collected in person. The ledger still shows what is owed.",
+      "id_document": "ID checked in person",
+      "id_documentHelp": "Staff saw the passport or ID at the desk — no upload needed.",
+      "security_deposit": "Security deposit handled offline",
+      "security_depositHelp": "Security deposit was taken or waived in person.",
+      "confirmedBy": "Confirmed by {{by}} · {{at}}",
+      "notePlaceholder": "Optional note (e.g. bank transfer received 3 Aug)"
     }
   }
 }
