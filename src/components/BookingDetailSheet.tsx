@@ -291,26 +291,32 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
             </div>
           )}
         </SheetHeader>
+        {/* Stay tools — top of the sheet on purpose. Staff shouldn't have to
+            scroll past pickup/deposit/training to change dates or rooms. */}
+        {canModifyStay && isModifiableState && (
+          <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2.5 space-y-2">
+            <p className="text-sm font-medium">Stay tools</p>
+            <p className="text-xs text-muted-foreground">
+              Extend, shorten or move this stay. Checks live availability and charges the difference only.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => setModifyOpen(true)}>
+                <CalendarDays className="h-4 w-4 mr-1" /> Extend stay
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setModifyOpen(true)}>
+                Change dates or room
+              </Button>
+            </div>
+          </div>
+        )}
         <div className="mt-2">
           <AIBriefingCard bookingId={booking.id} variant="compact" />
         </div>
+
         <AirportPickupSection bookingId={booking.id} guestName={guestName} />
         {isAdmin && <AdminOverrideMenu bookingId={booking.id} pickupId={pickup?.id ?? null} />}
         <SecurityDepositSection bookingId={booking.id} bookingState={booking.state} />
         <BookingTrainingSection bookingId={booking.id} />
-        {canModifyStay && isModifiableState && (
-          <div className="pt-3 flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
-            <div>
-              <p className="text-sm font-medium">Dates or room changing?</p>
-              <p className="text-xs text-muted-foreground">
-                Checks live availability and charges the guest the difference only.
-              </p>
-            </div>
-            <Button size="sm" variant="outline" onClick={() => setModifyOpen(true)}>
-              <CalendarDays className="h-4 w-4 mr-1" /> Modify stay
-            </Button>
-          </div>
-        )}
         {canSeeAmounts && <div className="pt-3"><StayModificationHistory bookingId={booking.id} policies={policies} /></div>}
         <div className="pt-3 space-y-2">
           <BookingFinancialSummary
