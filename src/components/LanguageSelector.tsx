@@ -17,8 +17,15 @@ interface LanguageSelectorProps {
 export function LanguageSelector({ compact = false, className }: LanguageSelectorProps) {
   const { i18n } = useTranslation();
 
+  const handleChange = (code: string) => {
+    // Explicit device choice wins over the stored profile preference.
+    markLanguageChosenByUser();
+    void changeLanguage(code);
+  };
+
   return (
-    <Select value={i18n.language} onValueChange={changeLanguage}>
+    <Select value={i18n.language} onValueChange={handleChange}>
+
       <SelectTrigger className={className ?? (compact ? "w-[52px] h-8 px-2" : "w-[150px] h-8")}>
         {compact ? (
           <Globe className="h-3.5 w-3.5" />
