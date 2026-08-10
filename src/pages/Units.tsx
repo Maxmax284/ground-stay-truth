@@ -84,7 +84,7 @@ const Units = () => {
   };
 
   const handleDelete = async (unit: Unit) => {
-    if (!confirm(t("units.deactivateConfirm", { defaultValue: `Deactivate "${unit.name}"? It will remain on the calendar but won't be available for new bookings.` }).replace("{name}", unit.name))) return;
+    if (!confirm(t("units.deactivateConfirm", { name: unit.name, defaultValue: `Deactivate "{{name}}"? It will remain on the calendar but won't be available for new bookings.` }))) return;
     try {
       await updateUnit.mutateAsync({ id: unit.id, is_active: false });
       toast({ title: t("units.unitDeactivated", { defaultValue: "Unit deactivated" }) });
