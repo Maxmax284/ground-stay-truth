@@ -8,7 +8,7 @@ import { AIAssistantPanel } from "@/components/AIAssistantPanel";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { ReinstallPrompt } from "@/components/ReinstallPrompt";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { TutorialOverlay } from "@/components/TutorialOverlay";
+import { LanguageToggle } from "@/components/LanguageToggle";
 import { useRolePreview } from "@/hooks/useRolePreview";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
