@@ -46,7 +46,13 @@
     "perNight": "/คืน",
     "propertyManagement": "การจัดการที่พัก",
     "next": "ถัดไป",
-    "menu": "เมนู"
+    "menu": "เมนู",
+    "all": "ทุกประเภท",
+    "checking": "กำลังตรวจห้องว่าง...",
+    "days": "วัน",
+    "filters": "ตัวกรอง",
+    "processing": "กำลังดำเนินการ...",
+    "tryAgain": "ลองอีกครั้ง"
   },
   "nav": {
     "dashboard": "แดชบอร์ด",
@@ -58,7 +64,9 @@
     "messages": "ข้อความ",
     "settings": "ตั้งค่า",
     "navigation": "เมนูนำทาง",
-    "previewGuestPortal": "ดูตัวอย่างพอร์ทัลผู้เข้าพัก"
+    "previewGuestPortal": "ดูตัวอย่างพอร์ทัลผู้เข้าพัก",
+    "platformGuide": "คู่มือการใช้งาน",
+    "warRoomSim": "ห้องซ้อมสถานการณ์"
   },
   "auth": {
     "signIn": "เข้าสู่ระบบ",
@@ -128,7 +136,16 @@
     "checkOuts": "เช็คเอาท์",
     "housekeeping": "แม่บ้าน",
     "maintenance": "ซ่อมบำรุง",
-    "laundry": "ซักผ้า"
+    "laundry": "ซักผ้า",
+    "arrivingThisWeek": "ใกล้ถึงแล้ว",
+    "issuesTracked": "เรื่องที่ติดตามอยู่",
+    "longTermGuests": "พักอยู่ตอนนี้",
+    "openMaintenance": "งานซ่อมค้าง",
+    "pendingTasks": "งานค้าง",
+    "scheduledHousekeeping": "แม่บ้าน",
+    "upcomingArrivals": "แขกที่กำลังจะมา",
+    "awaitingResponse": "รอสตาฟตอบ",
+    "openInquiries": "คำถามที่ยังไม่ปิด"
   },
   "bookings": {
     "title": "การจอง",
@@ -231,7 +248,15 @@
     "minNightsLabel": "ขั้นต่ำ {{count}} คืน",
     "minNightsLabel_other": "ขั้นต่ำ {{count}} คืน",
     "reviewsEnabled": "เปิดรีวิว",
-    "reviewsDisabled": "ปิดรีวิว"
+    "reviewsDisabled": "ปิดรีวิว",
+    "customAmenityPlaceholder": "เพิ่มสิ่งอำนวยความสะดวกเอง…",
+    "deactivateConfirm": "ปิดใช้งาน \"{{name}}\"? ห้องจะยังอยู่บนปฏิทิน แต่จะไม่ให้จองใหม่",
+    "monthlyRate": "ราคารายเดือน",
+    "noResults": "ไม่มีห้องตรงกับตัวกรอง",
+    "restore": "เปิดใช้งานอีกครั้ง",
+    "searchPlaceholder": "ค้นหาห้อง…",
+    "sortOrder": "ลำดับการแสดง",
+    "weeklyRate": "ราคารายสัปดาห์"
   },
   "pricing": {
     "title": "ราคาและนโยบาย",
@@ -271,7 +296,10 @@
       "seasonal": "ตามฤดูกาล",
       "weekend": "วันหยุด",
       "base": "ราคาพื้นฐาน"
-    }
+    },
+    "minBillableNote": "ราคาคิดจากขั้นต่ำ {{count}} คน",
+    "longStayDiscount": "พักยาว ({{tier}}, {{pct}}%)",
+    "loyaltyDiscount": "ลูกค้าเก่า ({{tier}}, {{pct}}%)"
   },
   "policyLabels": {
     "soft_hold_expiration_hours": "หมดอายุการพักชั่วคราว (ชั่วโมง)",
@@ -359,7 +387,14 @@
     "deleteAccountConfirmDesc": "การดำเนินการนี้จะลบบัญชี โปรไฟล์ การจอง ข้อความ และข้อมูลทั้งหมดอย่างถาวร ไม่สามารถย้อนกลับได้",
     "deleteAccountConfirm": "ใช่ ลบบัญชีของฉัน",
     "accountDeleted": "ลบบัญชีของคุณแล้ว",
-    "preferredLanguage": "ภาษาที่ต้องการ"
+    "preferredLanguage": "ภาษาที่ต้องการ",
+    "consentDesc": "คุณยอมรับนโยบายความเป็นส่วนตัวและเงื่อนไขการใช้งานตอนสร้างบัญชี คุณถอนความยินยอมได้ทุกเมื่อ — การถอนจะลบบัญชีและข้อมูลทั้งหมดของคุณ",
+    "consentManagement": "การจัดการความยินยอม",
+    "withdrawConsentNote": "ถ้าต้องการถอนความยินยอม ใช้ปุ่ม 'ลบบัญชี' ด้านล่าง ข้อมูลทั้งหมดจะถูกลบถาวร",
+    "lineId": "LINE ID",
+    "lineIdPlaceholder": "your_line_id",
+    "whatsapp": "WhatsApp",
+    "whatsappPlaceholder": "+66 XX XXX XXXX"
   },
   "userRoles": {
     "title": "บทบาทผู้ใช้",
@@ -374,7 +409,8 @@
     "assign": "กำหนด",
     "noRoles": "ยังไม่มีบทบาทที่กำหนด",
     "supervisorCap": "อนุญาตหัวหน้างานสูงสุด 2 คน กรุณาลบหัวหน้างานที่มีอยู่ก่อน",
-    "userId": "ID ผู้ใช้"
+    "userId": "ID ผู้ใช้",
+    "lastAdmin": "ต้องเหลือแอดมินอย่างน้อยหนึ่งคนในระบบ"
   },
   "roles": {
     "admin": "ผู้ดูแลระบบ",
@@ -393,7 +429,10 @@
     "role": "บทบาท",
     "createAccount": "สร้างบัญชี",
     "minPassword": "ต้องมีอย่างน้อย 6 ตัวอักษร",
-    "supervisorCap": "อนุญาตหัวหน้างานสูงสุด 2 คน"
+    "supervisorCap": "อนุญาตหัวหน้างานสูงสุด 2 คน",
+    "emailExplainerBody": "ถ้าสตาฟหลายคนใช้อีเมลกล่องเดียวกัน (เช่น train@lamaimuaythai.com) ให้ใส่เครื่องหมาย + แล้วตามด้วยชื่อคนก่อนเครื่องหมาย @ แต่ละคนจะได้ล็อกอินและรหัสผ่านของตัวเอง แต่อีเมลยังเข้ากล่องเดิม ตัวอย่าง: train+nikki@lamaimuaythai.com",
+    "emailExplainerTitle": "ใช้กับอีเมลกล่องรวมได้อย่างไร",
+    "emailHint": "ทิป: ถ้าเป็นอีเมลกล่องรวม ให้ใช้แบบ + (เช่น name+person@domain.com) แต่ละคนได้ล็อกอินของตัวเอง อีเมลยังเข้ากล่องเดิม"
   },
   "bookingDetail": {
     "unknownUnit": "ห้องพักไม่ทราบ",
@@ -419,7 +458,8 @@
     "documentsTab": "เอกสาร",
     "noHistory": "ยังไม่มีประวัติ",
     "adminOverride": "แทนที่โดยผู้ดูแล",
-    "system": "ระบบ"
+    "system": "ระบบ",
+    "softHoldDisclaimer": "การกันห้องนี้ยังไม่การันตีห้องว่าง จนกว่าจะยืนยันการจองด้วยเงินมัดจำ"
   },
   "payments": {
     "paid": "ชำระแล้ว",
@@ -435,8 +475,36 @@
       "offline": "ออฟไลน์",
       "bank_transfer": "โอนเงิน",
       "cash": "เงินสด",
-      "card": "บัตร"
-    }
+      "card": "บัตร",
+      "other": "อื่น ๆ (นอกระบบ)",
+      "in_person": "จ่ายหน้าเคาน์เตอร์"
+    },
+    "addonsLabel": "รายการเสริม (รถรับสนามบิน อื่น ๆ)",
+    "alreadyRefunded": "คืนเงินไปแล้ว",
+    "confirmRefund": "ยืนยันการคืนเงิน",
+    "exceedsMax": "เกินยอดที่คืนได้สูงสุด",
+    "fullRefundNote": "รายการนี้จะเป็นการคืนเงินเต็มจำนวน",
+    "fullyPaid": "ชำระครบแล้ว",
+    "history": "ประวัติการชำระ",
+    "issueRefund": "ทำเรื่องคืนเงิน",
+    "maxRefundable": "คืนได้สูงสุด",
+    "netPaid": "ยอดสุทธิที่รับ",
+    "originalAmount": "ยอดเดิม",
+    "outstanding": "ค้างชำระ",
+    "paymentSummary": "สรุปการชำระเงิน",
+    "paymentType": "ประเภทการชำระ",
+    "refund": "คืนเงิน",
+    "refundAmount": "ยอดคืนเงิน",
+    "refundDescriptionManual": "คืนเงินแบบบันทึกเอง — อัปเดตเฉพาะข้อมูลในระบบ ไม่มีการตัดเงินจากผู้ให้บริการ ต้องคืนเงินจริงแยกเอง",
+    "refundDescriptionStripe": "Stripe จะตัดรายการทันที ข้อมูลในระบบจะอัปเดตหลัง Stripe ยืนยันการคืนเงินแล้ว",
+    "refundIssued": "ทำเรื่องคืนเงินสำเร็จ",
+    "refundLabel": "คืนเงิน",
+    "refundReason": "เหตุผล",
+    "refundReasonPlaceholder": "ระบุเหตุผลที่คืนเงินครั้งนี้...",
+    "totalPaid": "ชำระแล้วทั้งหมด",
+    "totalRefunded": "คืนเงินแล้ว",
+    "totalStayCost": "ค่าที่พักทั้งหมด",
+    "viewReceipt": "ดูใบเสร็จ"
   },
   "messages": {
     "title": "ข้อความ",
@@ -456,7 +524,8 @@
     "newCount": "{{count}} ใหม่",
     "messageSent": "ส่งข้อความแล้ว",
     "messageFailed": "ส่งข้อความไม่สำเร็จ",
-    "typeMessage": "พิมพ์ข้อความ..."
+    "typeMessage": "พิมพ์ข้อความ...",
+    "noContent": "(ไม่มีตัวอย่างข้อความ)"
   },
   "stateTransition": {
     "changeState": "เปลี่ยนสถานะ",
@@ -474,7 +543,11 @@
     "movedTo": "การจองย้ายไปที่ {{state}}",
     "transitionFailed": "การเปลี่ยนสถานะล้มเหลว",
     "supervisorCheckIn": "หัวหน้างานต้องดำเนินการเช็คอินสำหรับการจองนี้",
-    "supervisorCheckOut": "หัวหน้างานต้องดำเนินการเช็คเอาท์สำหรับการจองนี้"
+    "supervisorCheckOut": "หัวหน้างานต้องดำเนินการเช็คเอาท์สำหรับการจองนี้",
+    "adminApprovalRequired": "ขั้นตอนนี้ต้องให้แอดมินอนุมัติ คำขอจะถูกส่งไปให้ตรวจ",
+    "approvalRequested": "ส่งคำขออนุมัติแล้ว",
+    "approvalRequestedDesc": "แจ้งแอดมินแล้ว รอตรวจสอบ",
+    "requestApproval": "ขออนุมัติจากแอดมิน"
   },
   "refund": {
     "fullRefund": "คืนเงินเต็มจำนวน ({{days}} วันก่อนเช็คอิน)",
@@ -494,7 +567,20 @@
     "invalidFileType": "ประเภทไฟล์ไม่ถูกต้อง",
     "invalidFileTypeDesc": "กรุณาอัปโหลดไฟล์ JPG, PNG, WebP หรือ PDF",
     "fileTooLarge": "ไฟล์ใหญ่เกินไป",
-    "fileTooLargeDesc": "ขนาดไฟล์สูงสุด 10 MB"
+    "fileTooLargeDesc": "ขนาดไฟล์สูงสุด 10 MB",
+    "guidanceBad1": "✗ Thai Digital Arrival Card / QR code ของ TDAC",
+    "guidanceBad2": "✗ บอร์ดดิ้งพาส ตั๋วเครื่องบิน หรือใบยืนยันการจอง",
+    "guidanceBad3": "✗ หน้าวีซ่าเพียงหน้าเดียว",
+    "guidanceOk1": "✓ หน้าที่มีรูปถ่าย ชื่อ และเลขพาสปอร์ตของคุณ",
+    "guidanceOk2": "✓ เห็นครบทั้งสี่มุม ภาพชัด ไม่มีแสงสะท้อน",
+    "guidanceTitle": "สิ่งที่เราต้องการ: หน้าพาสปอร์ตที่มีรูปคุณ",
+    "needsReplacement": "กรุณาอัปโหลดหน้าพาสปอร์ตหลักที่มีรูปและข้อมูลของคุณ",
+    "needsReplacementTitle": "เราต้องการเอกสารอีกแบบ",
+    "received": "ได้รับเอกสารยืนยันตัวตนแล้ว",
+    "retryUpload": "รีเฟรชแล้วลองใหม่",
+    "uploadFailedRecovery": "อัปโหลดเอกสารไม่สำเร็จ ลองอีกครั้ง หรือติดต่อฟรอนต์",
+    "uploadNotVisible": "บันทึกไฟล์แล้วแต่ยังไม่ขึ้นในรายการ กดรีเฟรชเพื่อตรวจอีกครั้ง — ถ้ายังไม่ขึ้น อัปโหลดใหม่หรือติดต่อฟรอนต์",
+    "uploadStalled": "การอัปโหลดใช้เวลานานกว่าปกติ ตรวจสัญญาณอินเทอร์เน็ตแล้วลองใหม่ — ถ้ายังไม่สำเร็จ ติดต่อฟรอนต์ เรารับเอกสารทางอื่นได้"
   },
   "verification": {
     "analyzing": "กำลังวิเคราะห์…",
@@ -521,7 +607,15 @@
     "actionFailed": "ดำเนินการไม่สำเร็จ",
     "rejectTitle": "ปฏิเสธการจอง",
     "reasonPlaceholder": "เหตุผลในการปฏิเสธ…",
-    "confirmReject": "ยืนยันการปฏิเสธ"
+    "confirmReject": "ยืนยันการปฏิเสธ",
+    "recommend": "เสนอความเห็น",
+    "recommendApproveTitle": "เสนอให้อนุมัติ",
+    "recommendDesc": "ความเห็นของคุณจะถูกบันทึกและส่งให้แอดมินตัดสินใจครั้งสุดท้าย",
+    "recommendNotePlaceholder": "เหตุผลที่เสนอเรื่องนี้",
+    "recommendReject": "เสนอให้ปฏิเสธ",
+    "recommendRejectTitle": "เสนอให้ปฏิเสธ",
+    "recommendationSent": "ส่งความเห็นให้แอดมินแล้ว",
+    "sendRecommendation": "ส่งความเห็น"
   },
   "maintenanceBlock": {
     "title": "ปิดวันที่เพื่อซ่อมบำรุง",
@@ -583,7 +677,8 @@
       "cta": "CTA เท่านั้น",
       "ctaDesc": "ชื่อ ราคา และปุ่มดำเนินการ"
     },
-    "cleaning": "ทำความสะอาด"
+    "cleaning": "ทำความสะอาด",
+    "ctaTargetListings": "ดูห้องทั้งหมด"
   },
   "guestPortal": {
     "myStay": "การเข้าพักของฉัน",
@@ -620,7 +715,13 @@
     "confirmCancel": "ใช่ ยกเลิกการจอง",
     "bookingCancelled": "ยกเลิกการจองแล้ว",
     "campInfo": "ข้อมูลค่าย",
-    "noCampInfo": "ยังไม่ได้ตั้งค่าข้อมูลค่าย กรุณากลับมาตรวจสอบภายหลัง"
+    "noCampInfo": "ยังไม่ได้ตั้งค่าข้อมูลค่าย กรุณากลับมาตรวจสอบภายหลัง",
+    "contactFrontDesk": "ติดต่อฟรอนต์",
+    "departureMessage": "หวังว่าคุณจะประทับใจการพักครั้งนี้ เดินทางปลอดภัย และเรารอต้อนรับคุณกลับมาอีกครั้ง",
+    "frontDesk": "ฟรอนต์",
+    "frontDeskReplied": "ฟรอนต์ตอบกลับแล้ว",
+    "roomsAvailable": "ห้องว่าง",
+    "thankYou": "ขอบคุณที่มาพักกับเรา"
   },
   "campInfo": {
     "trainingSchedule": "ตารางฝึกซ้อม",
@@ -648,7 +749,10 @@
     "emergencyContact": "ผู้ติดต่อฉุกเฉิน",
     "emergencyPlaceholder": "ชื่อและเบอร์โทรศัพท์",
     "dietaryRestrictions": "ข้อจำกัดด้านอาหาร",
-    "dietaryPlaceholder": "อาการแพ้ มังสวิรัติ ฯลฯ"
+    "dietaryPlaceholder": "อาการแพ้ มังสวิรัติ ฯลฯ",
+    "airportPickup": "ขอรถรับที่สนามบิน",
+    "airportPickupDesc": "เราจัดรถไปรับคุณที่สนามบินให้",
+    "airportPickupFeeNote": "ค่ารถรับส่งจะถูกรวมเข้าในยอดการจองของคุณ"
   },
   "notFound": {
     "title": "404",
@@ -687,7 +791,14 @@
     "minStay": "จำนวนคืนขั้นต่ำคือ {{count}} คืนสำหรับห้องพักนี้",
     "maxCapacity": "ความจุสูงสุดคือ {{count}} คนสำหรับห้องพักนี้",
     "maintenanceConflict": "ห้องพักถูกปิดเพื่อซ่อมบำรุงตั้งแต่ {{start}} ถึง {{end}}{{reason}}",
-    "bufferConflict": "เช็คอินขัดกับระยะเวลาทำความสะอาด {{hours}} ชม. หลังเช็คเอาท์วันที่ {{date}}"
+    "bufferConflict": "เช็คอินขัดกับระยะเวลาทำความสะอาด {{hours}} ชม. หลังเช็คเอาท์วันที่ {{date}}",
+    "guestType": "ประเภทแขก",
+    "noRoomsAvailable": "ขออภัย ห้องประเภทนี้ไม่ว่างในวันที่เลือกแล้ว",
+    "occupancyError": "จำนวนแขกเกินที่ห้องนี้รับได้",
+    "roomType": "ประเภทห้อง",
+    "roomsAvailable": "ห้องว่าง",
+    "selectRoomType": "เลือกประเภทห้อง",
+    "seasonalMinStay": "{{ruleName}} พักขั้นต่ำ {{count}} คืน"
   },
   "filters": {
     "state": "สถานะ",
@@ -695,7 +806,9 @@
     "from": "จาก",
     "to": "ถึง",
     "allStates": "ทุกสถานะ",
-    "allUnits": "ทุกห้องพัก"
+    "allUnits": "ทุกห้องพัก",
+    "showCancelled": "แสดงที่ยกเลิก",
+    "sort": "เรียงตาม"
   },
   "language": {
     "label": "ภาษา",
@@ -768,7 +881,15 @@
   "notifications": {
     "title": "การแจ้งเตือน",
     "empty": "ยังไม่มีการแจ้งเตือน",
-    "markAllRead": "ทำเครื่องหมายอ่านทั้งหมด"
+    "markAllRead": "ทำเครื่องหมายอ่านทั้งหมด",
+    "centerSubtitle": "ตรวจ กรอง และจัดการแจ้งเตือนในระบบ",
+    "centerTitle": "ศูนย์แจ้งเตือน",
+    "hideRead": "ซ่อนที่อ่านแล้ว",
+    "markRead": "ทำเป็นอ่านแล้ว",
+    "read": "อ่านแล้ว",
+    "showRead": "แสดงที่อ่านแล้ว",
+    "type": "ประเภท",
+    "unread": "ยังไม่อ่าน"
   },
   "ai": {
     "title": "Kru Glitch",
@@ -791,7 +912,11 @@
     "draftWithAI": "ร่างด้วย AI",
     "drafting": "กำลังร่าง…",
     "preFlightTitle": "ตรวจสอบก่อนดำเนินการ",
-    "preFlightLoading": "กำลังตรวจสอบ…"
+    "preFlightLoading": "กำลังตรวจสอบ…",
+    "acknowledge": "รับทราบแล้ว",
+    "acknowledgeOverride": "รับทราบและดำเนินการต่อ",
+    "acknowledged": "✓ รับทราบคำแนะนำแล้ว — ดำเนินการเปลี่ยนสถานะต่อได้",
+    "advisory": "คำแนะนำ"
   },
   "translation": {
     "translate": "แปล",
@@ -804,7 +929,9 @@
     "bySigningUp": "การสมัครสมาชิกหมายความว่าคุณยอมรับ",
     "and": "และ",
     "reviewOur": "ตรวจสอบ",
-    "forDataDetails": "เพื่อเรียนรู้เกี่ยวกับการจัดการข้อมูลของคุณ"
+    "forDataDetails": "เพื่อเรียนรู้เกี่ยวกับการจัดการข้อมูลของคุณ",
+    "consentCheckbox": "ฉันยอมรับ",
+    "consentDataProcessing": "ฉันยินยอมให้ประมวลผลข้อมูลส่วนบุคคลของฉันตามที่ระบุในนโยบายความเป็นส่วนตัว"
   },
   "deposit": {
     "collectPrompt": "ได้รับเงินมัดจำแล้วหรือยัง?",
@@ -827,7 +954,26 @@
       "front_desk": "แผนกต้อนรับ",
       "guest_portal": "พอร์ทัลผู้เข้าพัก",
       "supervisor_override": "การอนุมัติพิเศษ"
-    }
+    },
+    "accountName": "ชื่อบัญชี",
+    "accountNumber": "เลขที่บัญชี",
+    "alreadyPaid": "การจองนี้มีการชำระบันทึกไว้แล้ว",
+    "bankName": "ธนาคาร",
+    "bankTransferNote": "กรุณาใส่รหัสอ้างอิงตอนโอน การจองจะยืนยันเมื่อตรวจยอดแล้ว",
+    "bankTransferTab": "โอนเงิน",
+    "bankTransferTitle": "รายละเอียดการโอนเงิน",
+    "checkoutTimeout": "หน้าชำระเงินใช้เวลานานกว่าปกติ ตรวจสัญญาณอินเทอร์เน็ตแล้วลองใหม่ หรือติดต่อฟรอนต์เพื่อขอลิงก์ชำระเงิน",
+    "noCheckoutUrl": "เปิดหน้าชำระเงินไม่ได้ กรุณาติดต่อฟรอนต์",
+    "onlineInstructions": "ชำระอย่างปลอดภัยด้วยบัตรเครดิตหรือบัตรเดบิต",
+    "onlineNotConfigured": "ยังชำระออนไลน์ไม่ได้ กรุณาติดต่อฟรอนต์",
+    "openCheckoutManually": "เปิดหน้าชำระเงินที่ปลอดภัย",
+    "openingCheckout": "กำลังเปิดหน้าชำระเงิน — อาจใช้เวลาสักครู่...",
+    "payOnline": "จ่ายมัดจำออนไลน์",
+    "payOnlineTab": "จ่ายออนไลน์",
+    "redirectBlocked": "เบราว์เซอร์ของคุณไม่เปิดหน้าชำระเงินอัตโนมัติ กดปุ่มด้านล่างเพื่อเปิด หรือคัดลอกลิงก์ไปเปิดใน Safari หรือ Chrome",
+    "reference": "รหัสอ้างอิง",
+    "sessionExpired": "การจองนี้หมดเวลาหรือสถานะเปลี่ยนไปแล้ว กรุณารีเฟรชแล้วลองใหม่",
+    "tempUnavailable": "ชำระด้วยบัตรใช้ไม่ได้ชั่วคราว กรุณาติดต่อฟรอนต์ เราจะส่งลิงก์ชำระเงินให้"
   },
   "override": {
     "title": "แก้ไขสถานะ",
@@ -1173,12 +1319,20 @@
         "point2": "เลือกภาษาที่ต้องการ",
         "point3": "จัดการข้อมูล WhatsApp และ LINE"
       }
-    }
+    },
+    "goThere": "ไปที่นั่น",
+    "welcomeSubtitle": "ระบบจัดการที่พักของคุณเอง ทั้งหมดในที่เดียว"
   },
   "cornerTalk": {
     "allClear": "เรียบร้อย",
     "comingUp": "กำลังจะมาถึง",
-    "allOperationsNormal": "ทุกอย่างดำเนินไปตามปกติ"
+    "allOperationsNormal": "ทุกอย่างดำเนินไปตามปกติ",
+    "confirmRemoveDesc": "จะซ่อนแจ้งเตือนนี้ถาวรสำหรับคุณ และไม่กลับมา ยกเว้นมีข้อมูลใหม่ทำให้เตือนอีก",
+    "confirmRemoveTitle": "ลบแจ้งเตือนนี้?",
+    "markRead": "ทำเครื่องหมายว่าอ่านแล้ว",
+    "readItems": "อ่านแล้ว",
+    "removeForGood": "ลบถาวร",
+    "undoRead": "ทำเป็นยังไม่อ่าน"
   },
   "guestStay": {
     "inquirySent": "ส่งคำขอแล้ว",
@@ -1212,7 +1366,20 @@
     "checkinPassed": "วันเช็คอินผ่านแล้ว กรุณาติดต่อเจ้าหน้าที่",
     "unitNotAssigned": "รอกำหนดห้อง",
     "contactStaff": "มีคำถาม? ส่งข้อความถึงทีมงานของเรา",
-    "landed": "ถึงแล้ว ✓",
+    "landed": {
+      "confirm": "ฉันถึงที่นี่แล้ว",
+      "confirmAnyway": "ยืนยันตามที่เลือก",
+      "confirmDescV2": "เลือกที่ใกล้เคียงที่สุด เฉพาะเกาะสมุย (USM) ที่ถือว่าถึงจุดหมายแล้ว ที่อื่นเป็นจุดต่อเครื่องบนแผ่นดินใหญ่",
+      "confirmTitle": "คุณลงเครื่องที่ไหน?",
+      "confirmTransit": "เข้าใจแล้ว — ฉันกำลังต่อเครื่อง",
+      "connectingTitle": "ตอนนี้คุณอยู่ที่ไหน?",
+      "flightHint": "ไฟลต์ {{flight}} ถึงที่ {{airport}}",
+      "mismatchDesc": "ข้อมูลของเราระบุว่าไฟลต์ {{flight}} ถึงที่ {{expected}} แต่คุณเลือก {{selected}} ถ้าแน่ใจให้กดยืนยัน สตาฟจะตรวจสอบอีกครั้ง",
+      "mismatchTitle": "ข้อมูลไม่ตรงกับไฟลต์ของคุณ",
+      "suggested": "แนะนำ",
+      "transitDesc": "คุณยังไม่ถึงเกาะสมุย เราบันทึกไว้แล้ว และจะส่งคนขับไปรับเมื่อคุณถึงเกาะ",
+      "transitTitle": "คุณยังอยู่ระหว่างเดินทาง"
+    },
     "actions": {
       "payDeposit": "ชำระมัดจำ",
       "uploadId": "อัปโหลดบัตรประจำตัว",
@@ -1220,8 +1387,19 @@
       "reportIssue": "ต้องการความช่วยเหลือ",
       "askGlitch": "ถาม Kru Glitch",
       "landedSuccess": "ยืนยันแล้ว! เจ้าหน้าที่ได้รับแจ้ง คนขับกำลังมา",
-      "alreadyLanded": "คุณได้ยืนยันการมาถึงแล้ว"
-    }
+      "alreadyLanded": "คุณได้ยืนยันการมาถึงแล้ว",
+      "depositNotFound": "ไม่พบยอดมัดจำที่ต้องชำระของการจองนี้ กรุณาติดต่อฟรอนต์",
+      "uploadNotAvailable": "การจองนี้ยังอัปโหลดเอกสารไม่ได้ กรุณาติดต่อฟรอนต์"
+    },
+    "arrivalSaved": "บันทึกข้อมูลการเดินทางมาถึงแล้ว",
+    "essentials": {
+      "emergency": "ฉุกเฉิน",
+      "rules": "กฎของที่พัก",
+      "title": "ข้อมูลจำเป็นระหว่างพัก",
+      "wifi": "WiFi"
+    },
+    "howArriving": "คุณเดินทางมาถึงแบบไหน?",
+    "transportIntent": "ต้องการรถรับไหม?"
   },
   "arrivalFAQ": {
     "title": "การเดินทางไปเกาะสมุย — คำถามที่พบบ่อย",
@@ -1310,6 +1488,244 @@
       "arrived": "ถึงแล้ว",
       "cheatTitle": "สิ่งที่ควรส่งเจ้าหน้าที่ในแต่ละช่วง",
       "footer": "พิมพ์ใบนี้หรือบันทึกเป็น PDF — เก็บไว้ในมือถือระหว่างเดินทาง"
+    }
+  },
+  "checkin": {
+    "balanceDueWarning": "แขกยังค้างอยู่ {{amount}} ก่อนเช็คอินจะสมบูรณ์",
+    "confirmPayment": "ยืนยันการชำระตอนเช็คอิน",
+    "confirmPaymentDesc": "บันทึกเงินสดหรือเงินที่รับหน้าเคาน์เตอร์ตอนเช็คอิน",
+    "outstanding": "ยอดค้างชำระ",
+    "paymentNotes": "โน้ตการชำระ (เช่น เลขที่ใบเสร็จ)",
+    "recordAndCheckIn": "บันทึกเงินและเช็คอิน"
+  },
+  "noShow": {
+    "depositConsequence": "ไม่มาเข้าพัก — {{consequence}}",
+    "consequenceForfeited": "ยึดเงินมัดจำ",
+    "consequencePartial": "คืนเงินบางส่วน",
+    "consequenceFull": "คืนเงินเต็มจำนวน",
+    "refundAmount": "ยอดที่ต้องคืน"
+  },
+  "preArrival": {
+    "complete": "เสร็จสิ้น",
+    "completed": "ทำแล้ว",
+    "hint": "ทำรายการให้ครบก่อนเช็คอิน เพื่อให้ถึงที่พักได้ราบรื่น",
+    "title": "รายการก่อนเดินทางมาถึง"
+  },
+  "training": {
+    "programLinked": "โปรแกรมเทรน"
+  },
+  "adminActions": {
+    "discard": "ทิ้งร่าง",
+    "draftDesc": "ข้อความที่สตาฟร่างไว้ส่งให้แขก รอแอดมินอนุมัติก่อนส่งออก",
+    "messageApproved": "อนุมัติแล้ว ส่งให้แขกเรียบร้อย",
+    "messageRejected": "ทิ้งร่างข้อความแล้ว",
+    "send": "ส่ง",
+    "title": "รออนุมัติจากแอดมิน"
+  },
+  "embedBuilder": {
+    "accentColor": "สีเน้น",
+    "borderRadius": "ความโค้งขอบ",
+    "ctaConfig": "ตั้งค่าปุ่ม CTA",
+    "ctaLabelNote": "เว้นว่างไว้เพื่อใช้ข้อความปุ่มตามค่าเริ่มต้นของเป้าหมาย CTA",
+    "ctaLabelOverride": "ข้อความปุ่มแบบกำหนดเอง",
+    "darkMode": "โหมดมืด",
+    "fontSize": "ขนาดตัวอักษร",
+    "maxWidth": "ความกว้างสูงสุด (px)",
+    "selectUnitPrompt": "เลือกห้องด้านซ้ายเพื่อดูตัวอย่าง widget",
+    "shadow": "เงาการ์ด",
+    "style": "ปรับสไตล์",
+    "visibility": "แสดง/ซ่อนส่วนต่าง ๆ"
+  },
+  "guests": {
+    "addNote": "เพิ่มโน้ต",
+    "allStatuses": "ทุกสถานะ",
+    "bookingsCount": "{{count}} การจอง",
+    "colContact": "ติดต่อ",
+    "colGuest": "แขก",
+    "colNext": "เข้าพักครั้งถัดไป",
+    "colOutstanding": "ค้างชำระ",
+    "colSpend": "ยอดใช้จ่ายรวม",
+    "colStatus": "สถานะ",
+    "colStays": "จำนวนครั้งที่พัก",
+    "confirmMerge": "รวมข้อมูล",
+    "copied": "คัดลอกแล้ว",
+    "empty": "ไม่มีแขกตรงกับตัวกรองนี้",
+    "exportCsv": "ออกไฟล์ CSV",
+    "filterOwing": "ค้างจ่าย",
+    "filterReturning": "แขกเก่ากลับมา",
+    "lifetimeSpend": "ยอดใช้จ่ายรวม",
+    "loadFailed": "โหลดรายชื่อแขกไม่ได้",
+    "manualRecord": "บันทึกด้วยมือ",
+    "mergeAction": "รวมข้อมูลซ้ำ",
+    "mergeDescription": "ย้ายการจองทั้งหมดของ {{name}} ไปเข้าบัญชีแขกที่ลงทะเบียนแล้ว ระบบบันทึกไว้และย้อนกลับอัตโนมัติไม่ได้",
+    "mergeDone": "รวมแล้ว — ย้าย {{count}} การจอง",
+    "mergeFailed": "รวมข้อมูลไม่สำเร็จ",
+    "mergeSearchPlaceholder": "ค้นหาบัญชีที่จะเก็บไว้",
+    "mergeTitle": "รวมข้อมูลแขก",
+    "nights": "คืน",
+    "noMergeTargets": "ไม่พบบัญชีที่ลงทะเบียนตรงกัน",
+    "noNotes": "ยังไม่มีโน้ตจากสตาฟ",
+    "noStays": "ยังไม่มีการจอง",
+    "noteAdded": "เพิ่มโน้ตแล้ว",
+    "noteFailed": "บันทึกโน้ตไม่ได้",
+    "notePlaceholder": "โน้ตภายใน — แขกไม่เห็น",
+    "outstanding": "ค้างชำระ",
+    "owed": "ยอดค้าง",
+    "owes": "ค้าง {{amount}}",
+    "paid": "จ่ายแล้ว",
+    "possibleDuplicate": "อาจเป็นข้อมูลซ้ำ",
+    "registered": "บัญชีที่ลงทะเบียน",
+    "resultCount": "{{count}} แขก",
+    "searchPlaceholder": "ค้นหาชื่อ อีเมล หรือเบอร์โทร",
+    "sortNameAz": "ชื่อ A-Z",
+    "sortOwed": "ค้างจ่ายมากสุด",
+    "sortRecent": "เคลื่อนไหวล่าสุด",
+    "sortSpend": "ใช้จ่ายมากสุด",
+    "sortStays": "พักบ่อยสุด",
+    "status": {
+      "in_house": "พักอยู่ในแคมป์"
+    },
+    "stays": "ครั้งที่พัก",
+    "staysCount": "{{count}} ครั้ง",
+    "tabBookings": "การจอง",
+    "tabDirectory": "รายชื่อแขก",
+    "tabNotes": "โน้ตสตาฟ",
+    "tabStays": "ประวัติการพัก",
+    "total": "รวม"
+  },
+  "inquiry": {
+    "actionFailed": "ทำรายการไม่สำเร็จ",
+    "confirmDismiss": "ยืนยันปิดเรื่อง",
+    "dismiss": "ปิดเรื่อง",
+    "dismissTitle": "ปิดคำถามนี้",
+    "dismissed": "ปิดคำถามแล้ว",
+    "held": "ขอมัดจำแล้ว — การจองย้ายไปสถานะรอมัดจำ",
+    "hold": "รับเรื่องและขอมัดจำ",
+    "noItems": "ไม่มีคำถามใหม่",
+    "queueTitle": "คำถามใหม่",
+    "reasonPlaceholder": "เหตุผลที่ปิดเรื่อง…",
+    "waiting": "รออยู่"
+  },
+  "labels": {
+    "bookingState": {
+      "inquiry": "สอบถาม",
+      "soft_hold": "กันห้องชั่วคราว",
+      "pending_approval": "รออนุมัติ",
+      "pending_deposit": "รอมัดจำ",
+      "confirmed": "ยืนยันแล้ว",
+      "checked_in": "เช็คอินแล้ว",
+      "completed": "จบการพัก",
+      "cancelled": "ยกเลิก",
+      "no_show": "ไม่มาเข้าพัก"
+    },
+    "paymentStatus": {
+      "pending": "รอชำระ",
+      "recorded": "ชำระแล้ว",
+      "failed": "ไม่สำเร็จ",
+      "cancelled": "ยกเลิก",
+      "refunded": "คืนเงินแล้ว",
+      "partially_refunded": "คืนเงินบางส่วน",
+      "waived": "ยกเว้นให้"
+    },
+    "paymentType": {
+      "deposit": "มัดจำ",
+      "balance": "ยอดคงเหลือ",
+      "addon": "รายการเสริม",
+      "security_deposit": "เงินประกันความเสียหาย",
+      "booking_fee": "ค่าธรรมเนียมการจอง"
+    },
+    "paymentMethod": {
+      "stripe": "บัตร (Stripe)",
+      "cash": "เงินสด",
+      "bank_transfer": "โอนธนาคาร",
+      "in_person": "จ่ายหน้าเคาน์เตอร์",
+      "manual": "สตาฟบันทึกเอง",
+      "other": "อื่น ๆ (นอกระบบ)"
+    },
+    "depositState": {
+      "not_required": "ไม่ต้องมัดจำ",
+      "awaiting": "รอมัดจำ",
+      "paid": "จ่ายมัดจำแล้ว",
+      "handled_offline": "จัดการนอกระบบแล้ว",
+      "refunded": "คืนมัดจำแล้ว",
+      "forfeited": "ยึดมัดจำ"
+    },
+    "pickupResolution": {
+      "pickup_requested": "ขอรถรับแล้ว",
+      "pickup_scheduled": "จัดรถรับแล้ว",
+      "pickup_completed": "รับถึงที่พักแล้ว",
+      "pickup_failed": "รับไม่สำเร็จ",
+      "self_arrival": "เดินทางมาเอง",
+      "pickup_disabled": "แอดมินปิดบริการรถรับ"
+    },
+    "documentStatus": {
+      "pending": "รอตรวจ",
+      "verified": "ตรวจผ่านแล้ว",
+      "rejected": "ต้องส่งใหม่",
+      "needs_replacement": "ต้องส่งใหม่",
+      "checked_in_person": "ตรวจหน้างานแล้ว"
+    },
+    "documentType": {
+      "passport": "พาสปอร์ต / บัตรประชาชน",
+      "national_id": "บัตรประชาชน",
+      "visa": "วีซ่า",
+      "tm30": "TM30",
+      "other": "อื่น ๆ"
+    },
+    "tm30Status": {
+      "not_required": "ไม่ต้องยื่น TM30",
+      "pending": "รอยื่น TM30",
+      "tm30_submitted": "ยื่น TM30 แล้ว",
+      "tm30_confirmed": "TM30 ยืนยันแล้ว",
+      "tm30_failed": "TM30 ไม่สำเร็จ"
+    },
+    "cleaningStatus": {
+      "clean": "สะอาดแล้ว",
+      "dirty": "ต้องทำความสะอาด",
+      "in_progress": "กำลังทำความสะอาด",
+      "inspected": "ตรวจแล้ว",
+      "blocked": "ปิดใช้งาน"
+    },
+    "housekeepingStatus": {
+      "pending": "รอทำ",
+      "in_progress": "กำลังทำ",
+      "completed": "เสร็จแล้ว",
+      "skipped": "ข้ามไป"
+    },
+    "unitStatus": {
+      "available": "ว่าง",
+      "occupied": "มีแขกพัก",
+      "maintenance": "ปิดซ่อม",
+      "inactive": "ปิดใช้งาน"
+    },
+    "driverAssignment": {
+      "unassigned": "ยังไม่มีคนขับ",
+      "assigned": "จัดคนขับแล้ว",
+      "en_route": "คนขับกำลังไป",
+      "arrived": "คนขับถึงแล้ว",
+      "completed": "ส่งถึงที่พักแล้ว"
+    },
+    "checkoutBlocker": {
+      "outstanding_balance": "ยังมียอดค้างชำระ",
+      "security_deposit_held": "ยังไม่คืนเงินประกัน",
+      "open_maintenance": "ห้องมีงานซ่อมค้าง",
+      "unreturned_key": "ยังไม่คืนกุญแจ",
+      "pending_documents": "ยังไม่มีเอกสารยืนยันตัวตน"
+    },
+    "offlineAck": {
+      "deposit": "รับมัดจำนอกระบบแล้ว",
+      "balance": "เก็บยอดคงเหลือนอกระบบแล้ว",
+      "id_document": "ตรวจเอกสารหน้างานแล้ว",
+      "security_deposit": "จัดการเงินประกันนอกระบบแล้ว"
+    },
+    "marker": {
+      "pay_on_arrival": "จ่ายตอนมาถึง",
+      "manual_booking": "บันทึกด้วยมือ",
+      "legacy_booking": "ข้อมูลเก่า",
+      "handled_by_staff": "สตาฟจัดการแล้ว",
+      "deadline_override": "ขยายเวลาโดยสตาฟ",
+      "attribution_missing": "ไม่ได้บันทึกผู้ทำรายการ",
+      "sandbox": "การจองสำหรับซ้อม"
     }
   }
 }
