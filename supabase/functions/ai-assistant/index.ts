@@ -311,7 +311,10 @@ function buildSystemPrompt(role: string, language: string, contextData: string, 
   layers.push(SAFETY_RULES);
   layers.push(ACCURACY);
   layers.push(RESPONSE_STRUCTURE);
-  layers.push(`LANGUAGE: Respond in ${language}.`);
+  layers.push(
+    `LANGUAGE: Respond in ${language}. Never translate or alter system status codes, booking IDs, unit names, currency figures, dates or times — quote those exactly as given and explain them in ${language}.`,
+  );
+
 
   if (contextData) {
     // F-53: Minimize PII before including in AI prompt
