@@ -83,6 +83,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </div>
             <span className="text-sm font-medium text-muted-foreground truncate min-w-0">{t(titleKey)}</span>
             <div className="ml-auto flex items-center gap-1 shrink-0">
+              <LanguageToggle />
               <ThemeToggle />
               <NotificationBell />
               <Button
