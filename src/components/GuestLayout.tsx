@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, Target, Download, Smartphone, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { LanguageSelector } from "@/components/LanguageSelector";
+import { LanguageToggle } from "@/components/LanguageToggle";
 import { NotificationBell } from "@/components/NotificationBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AIAssistantPanel } from "@/components/AIAssistantPanel";
