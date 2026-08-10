@@ -85,7 +85,7 @@ function snapToCorner(x: number, y: number): { x: number; y: number } {
 }
 
 function AIAssistantPanelInner() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { role } = useAuth();
   const { profile } = useProfile();
   const { isAIEnabled, isLoading: settingsLoading } = useAISettings(role);
