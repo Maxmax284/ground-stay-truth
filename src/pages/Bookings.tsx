@@ -28,7 +28,7 @@ import { useTranslation } from "react-i18next";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GuestDirectory } from "@/components/guests/GuestDirectory";
-import { getBookingDeadline, describeDeadline } from "@/lib/bookingDeadline";
+import { getBookingDeadline } from "@/lib/bookingDeadline";
 import { ExtendDeadlineDialog } from "@/components/ExtendDeadlineDialog";
 import { Clock, IdCard } from "lucide-react";
 import { useBookingDocumentFlags, REVIEW_STATUS_LABELS, type DocumentReviewStatus } from "@/hooks/useGuestDocuments";
