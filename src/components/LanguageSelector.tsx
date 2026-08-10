@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { SUPPORTED_LANGUAGES, changeLanguage } from "@/i18n";
+import { markLanguageChosenByUser } from "@/hooks/useLanguagePreference";
+
 import {
   Select,
   SelectContent,
