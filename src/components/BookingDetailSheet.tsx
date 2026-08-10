@@ -317,19 +317,6 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
         {isAdmin && <AdminOverrideMenu bookingId={booking.id} pickupId={pickup?.id ?? null} />}
         <SecurityDepositSection bookingId={booking.id} bookingState={booking.state} />
         <BookingTrainingSection bookingId={booking.id} />
-        {canModifyStay && isModifiableState && (
-          <div className="pt-3 flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
-            <div>
-              <p className="text-sm font-medium">Dates or room changing?</p>
-              <p className="text-xs text-muted-foreground">
-                Checks live availability and charges the guest the difference only.
-              </p>
-            </div>
-            <Button size="sm" variant="outline" onClick={() => setModifyOpen(true)}>
-              <CalendarDays className="h-4 w-4 mr-1" /> Modify stay
-            </Button>
-          </div>
-        )}
         {canSeeAmounts && <div className="pt-3"><StayModificationHistory bookingId={booking.id} policies={policies} /></div>}
         <div className="pt-3 space-y-2">
           <BookingFinancialSummary
