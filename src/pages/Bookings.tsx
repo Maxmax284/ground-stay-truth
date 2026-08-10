@@ -72,10 +72,12 @@ function BookingStatusBadge({ booking }: { booking: any }) {
             <AlertTriangle className="h-3 w-3 mr-0.5" /> {t("bookings.expired")}
           </Badge>
         ) : (
-          <span className="text-[10px] text-muted-foreground">{describeDeadline(deadlineInfo)}</span>
+          <span className="text-[10px] text-muted-foreground">
+            {deadlineInfo.hoursRemaining >= 1 ? t("bookingDetail.deadline.hoursLeft", { count: deadlineInfo.hoursRemaining }) : t("bookingDetail.deadline.underOneHour")}
+          </span>
         )}
         {deadlineInfo.source === "override" && (
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0">Extended</Badge>
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0">{t("bookingDetail.deadline.extendedByStaff")}</Badge>
         )}
       </div>
     );
