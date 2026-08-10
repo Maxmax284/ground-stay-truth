@@ -71,8 +71,10 @@ const App = () => (
         <AuthProvider>
           <RolePreviewProvider>
           <PropertyProvider>
+            <LanguagePreferenceSync />
             <Toaster />
             <Sonner />
+
             <BrowserRouter>
               <ForegroundNotificationBanner />
               <AIFocusHighlighter />
