@@ -8,6 +8,7 @@ import { AIAssistantPanel } from "@/components/AIAssistantPanel";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { ReinstallPrompt } from "@/components/ReinstallPrompt";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
 import { TutorialOverlay } from "@/components/TutorialOverlay";
 import { useRolePreview } from "@/hooks/useRolePreview";
 import { useAuth } from "@/hooks/useAuth";
@@ -82,6 +83,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </div>
             <span className="text-sm font-medium text-muted-foreground truncate min-w-0">{t(titleKey)}</span>
             <div className="ml-auto flex items-center gap-1 shrink-0">
+              <LanguageToggle />
               <ThemeToggle />
               <NotificationBell />
               <Button
