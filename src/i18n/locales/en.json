@@ -46,7 +46,13 @@
     "perNight": "/night",
     "propertyManagement": "Property Management",
     "next": "Next",
-    "menu": "Menu"
+    "menu": "Menu",
+    "checking": "Checking availability...",
+    "tryAgain": "Try Again",
+    "processing": "Processing...",
+    "days": "days",
+    "filters": "Filters",
+    "all": "All types"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -63,7 +69,9 @@
     "embeds": "Embeds",
     "settings": "Settings",
     "navigation": "Navigation",
-    "previewGuestPortal": "Preview Guest Portal"
+    "previewGuestPortal": "Preview Guest Portal",
+    "warRoomSim": "War Room Sim",
+    "platformGuide": "Platform Guide"
   },
   "auth": {
     "signIn": "Sign in",
@@ -135,7 +143,14 @@
     "checkOuts": "Check-outs",
     "housekeeping": "Housekeeping",
     "maintenance": "Maintenance",
-    "laundry": "Laundry"
+    "laundry": "Laundry",
+    "longTermGuests": "Currently staying",
+    "upcomingArrivals": "Upcoming Arrivals",
+    "arrivingThisWeek": "Arriving soon",
+    "scheduledHousekeeping": "Housekeeping",
+    "pendingTasks": "Pending tasks",
+    "openMaintenance": "Open Maintenance",
+    "issuesTracked": "Issues tracked"
   },
   "bookings": {
     "title": "Bookings",
@@ -238,7 +253,15 @@
     "minNightsLabel": "Min {{count}} night",
     "minNightsLabel_other": "Min {{count}} nights",
     "reviewsEnabled": "Reviews Enabled",
-    "reviewsDisabled": "Reviews Disabled"
+    "reviewsDisabled": "Reviews Disabled",
+    "weeklyRate": "Weekly Rate",
+    "monthlyRate": "Monthly Rate",
+    "sortOrder": "Sort Order",
+    "customAmenityPlaceholder": "Add custom amenity…",
+    "restore": "Restore",
+    "searchPlaceholder": "Search units…",
+    "noResults": "No units match your filters.",
+    "deactivateConfirm": "Deactivate \"{{name}}\"? It will remain on the calendar but won't be available for new bookings."
   },
   "pricing": {
     "title": "Pricing & Policies",
@@ -280,7 +303,8 @@
       "base": "Base Rate"
     },
     "longStayDiscount": "Long-stay ({{tier}}, {{pct}}%)",
-    "loyaltyDiscount": "Loyalty ({{tier}}, {{pct}}%)"
+    "loyaltyDiscount": "Loyalty ({{tier}}, {{pct}}%)",
+    "minBillableNote": "Pricing is based on a {{count}}-person minimum charge."
   },
   "policyLabels": {
     "soft_hold_expiration_hours": "Soft Hold Expiration (hours)",
@@ -376,7 +400,10 @@
     "deleteAccountConfirmDesc": "This will permanently delete your account, profile, bookings, messages, and all associated data. This action cannot be reversed.",
     "deleteAccountConfirm": "Yes, delete my account",
     "accountDeleted": "Your account has been deleted.",
-    "preferredLanguage": "Preferred Language"
+    "preferredLanguage": "Preferred Language",
+    "consentManagement": "Consent Management",
+    "consentDesc": "You consented to our Privacy Policy and Terms of Service when you created your account. You may withdraw consent at any time — note that this will delete your account and all associated data.",
+    "withdrawConsentNote": "To withdraw consent, use the 'Delete Account' option below. This permanently removes all your data."
   },
   "userRoles": {
     "title": "User Roles",
@@ -391,7 +418,8 @@
     "assign": "Assign",
     "noRoles": "No roles assigned yet.",
     "supervisorCap": "Maximum of 2 supervisors allowed. Remove an existing supervisor first.",
-    "userId": "User ID"
+    "userId": "User ID",
+    "lastAdmin": "Last admin"
   },
   "roles": {
     "admin": "Admin",
@@ -439,7 +467,8 @@
     "documentsTab": "ID",
     "noHistory": "No history yet.",
     "adminOverride": "Admin Override",
-    "system": "System"
+    "system": "System",
+    "softHoldDisclaimer": "This hold does not guarantee availability until the booking is confirmed with a deposit."
   },
   "payments": {
     "paid": "Paid",
@@ -456,8 +485,35 @@
       "in_person": "In Person",
       "bank_transfer": "Bank Transfer",
       "cash": "Cash",
-      "card": "Card"
-    }
+      "card": "Card",
+      "other": "Other (offline)"
+    },
+    "refundIssued": "Refund issued successfully",
+    "totalStayCost": "Total Stay Cost",
+    "totalPaid": "Total Paid",
+    "totalRefunded": "Refunded",
+    "netPaid": "Net Paid",
+    "outstanding": "Outstanding",
+    "fullyPaid": "Fully Paid",
+    "refund": "Refund",
+    "paymentType": "Payment Type",
+    "paymentSummary": "Payment Summary",
+    "addonsLabel": "Add-ons (airport pickup, extras)",
+    "history": "Payment History",
+    "refundLabel": "Refund",
+    "viewReceipt": "View Receipt",
+    "issueRefund": "Issue Refund",
+    "refundDescriptionStripe": "Stripe will be charged immediately. The database record updates only after Stripe confirms the refund.",
+    "refundDescriptionManual": "Manual refund — this updates the database record only. No provider will be charged. Process the actual refund separately.",
+    "originalAmount": "Original Amount",
+    "alreadyRefunded": "Already Refunded",
+    "maxRefundable": "Max Refundable",
+    "refundAmount": "Refund Amount",
+    "exceedsMax": "Exceeds maximum refundable amount",
+    "fullRefundNote": "This will be a full refund",
+    "refundReason": "Reason",
+    "refundReasonPlaceholder": "Explain why this refund is being issued...",
+    "confirmRefund": "Confirm Refund"
   },
   "messages": {
     "title": "Messages",
@@ -477,7 +533,8 @@
     "newCount": "{{count}} new",
     "messageSent": "Message sent",
     "messageFailed": "Failed to send message",
-    "typeMessage": "Type a message..."
+    "typeMessage": "Type a message...",
+    "noContent": "(no preview)"
   },
   "stateTransition": {
     "changeState": "Change State",
@@ -519,7 +576,20 @@
     "invalidFileType": "Invalid file type",
     "invalidFileTypeDesc": "Please upload a JPG, PNG, WebP, or PDF file.",
     "fileTooLarge": "File too large",
-    "fileTooLargeDesc": "Maximum file size is 10 MB."
+    "fileTooLargeDesc": "Maximum file size is 10 MB.",
+    "uploadStalled": "Your ID upload is taking longer than expected. Check your connection and try again — if it keeps failing, contact the front desk and we can take it another way.",
+    "uploadNotVisible": "We saved your upload but it hasn't appeared yet. Refresh to check again — if it still isn't listed, upload it once more or contact the front desk.",
+    "uploadFailedRecovery": "Your ID upload didn't go through. Try again, or contact the front desk.",
+    "received": "ID document received.",
+    "needsReplacementTitle": "We need a different document",
+    "needsReplacement": "Please upload the main passport page with your photo and details.",
+    "guidanceTitle": "What we need: your passport photo page",
+    "guidanceOk1": "✓ The page with your photo, name and passport number",
+    "guidanceOk2": "✓ All four corners visible, in focus, no glare",
+    "guidanceBad1": "✗ Thai Digital Arrival Card / TDAC QR code",
+    "guidanceBad2": "✗ Boarding pass, flight ticket or booking confirmation",
+    "guidanceBad3": "✗ Visa sticker page on its own",
+    "retryUpload": "Refresh & try again"
   },
   "verification": {
     "analyzing": "Analyzing…",
@@ -629,7 +699,8 @@
       "cta": "CTA Only",
       "ctaDesc": "Name, price, and call-to-action button"
     },
-    "cleaning": "cleaning"
+    "cleaning": "cleaning",
+    "ctaTargetListings": "View All Listings"
   },
   "embedBuilder": {
     "visibility": "Component Visibility",
@@ -680,7 +751,13 @@
     "confirmCancel": "Yes, cancel booking",
     "bookingCancelled": "Booking cancelled",
     "campInfo": "Camp Info",
-    "noCampInfo": "Camp information has not been configured yet. Please check back later."
+    "noCampInfo": "Camp information has not been configured yet. Please check back later.",
+    "frontDeskReplied": "Front Desk replied",
+    "contactFrontDesk": "Contact Front Desk",
+    "frontDesk": "Front Desk",
+    "roomsAvailable": "rooms available",
+    "thankYou": "Thank you for staying with us!",
+    "departureMessage": "We hope you had a wonderful stay. Safe travels, and we'd love to welcome you back anytime!"
   },
   "campInfo": {
     "trainingSchedule": "Training Schedule",
@@ -712,7 +789,10 @@
     "emergencyContact": "Emergency Contact",
     "emergencyPlaceholder": "Name & phone number",
     "dietaryRestrictions": "Dietary Restrictions",
-    "dietaryPlaceholder": "Allergies, vegetarian, etc."
+    "dietaryPlaceholder": "Allergies, vegetarian, etc.",
+    "airportPickup": "Arrange Airport Pickup",
+    "airportPickupDesc": "We'll arrange a pickup from the airport for you",
+    "airportPickupFeeNote": "A transfer fee is added to your booking total."
   },
   "notFound": {
     "title": "404",
@@ -752,7 +832,13 @@
     "seasonalMinStay": "{{ruleName}} minimum: {{count}} night(s).",
     "maxCapacity": "Maximum capacity is {{count}} guest(s) for this unit.",
     "maintenanceConflict": "Unit is blocked for maintenance from {{start}} to {{end}}{{reason}}.",
-    "bufferConflict": "Check-in conflicts with {{hours}}h cleaning buffer after a checkout on {{date}}."
+    "bufferConflict": "Check-in conflicts with {{hours}}h cleaning buffer after a checkout on {{date}}.",
+    "guestType": "Guest Type",
+    "occupancyError": "Guest count exceeds the maximum allowed for this unit.",
+    "noRoomsAvailable": "Sorry — that room type is no longer available for those dates.",
+    "roomType": "Room Type",
+    "selectRoomType": "Select room type",
+    "roomsAvailable": "rooms available"
   },
   "filters": {
     "state": "State",
@@ -846,7 +932,15 @@
     "statusChanged": "Your booking{{unit}} status changed to {{state}}",
     "newGuestInquiry": "New guest inquiry: {{unit}} {{dates}} — action needed",
     "bookingCreated": "New booking created: {{unit}} {{dates}}",
-    "transitionStaff": "Booking transitioned from {{from}} to {{to}}"
+    "transitionStaff": "Booking transitioned from {{from}} to {{to}}",
+    "hideRead": "Hide read",
+    "showRead": "Show read",
+    "centerTitle": "Notification Center",
+    "centerSubtitle": "Review, filter, and manage in-app alerts.",
+    "unread": "unread",
+    "type": "Type",
+    "read": "Read",
+    "markRead": "Mark read"
   },
   "ai": {
     "title": "Kru Glitch",
@@ -869,7 +963,11 @@
     "draftWithAI": "Draft with AI",
     "drafting": "Drafting…",
     "preFlightTitle": "AI Pre-Flight Check",
-    "preFlightLoading": "Checking…"
+    "preFlightLoading": "Checking…",
+    "advisory": "Advisory",
+    "acknowledgeOverride": "Acknowledge & Override",
+    "acknowledge": "Acknowledged",
+    "acknowledged": "✓ Advisory acknowledged — proceed with transition"
   },
   "translation": {
     "translate": "Translate",
@@ -882,7 +980,9 @@
     "bySigningUp": "By signing up, you agree to our",
     "and": "and",
     "reviewOur": "Review our",
-    "forDataDetails": "to learn how your data is handled."
+    "forDataDetails": "to learn how your data is handled.",
+    "consentCheckbox": "I agree to the",
+    "consentDataProcessing": "I consent to the processing of my personal data as described in the Privacy Policy."
   },
   "deposit": {
     "collectPrompt": "Has the deposit been collected?",
@@ -905,7 +1005,26 @@
       "front_desk": "Front Desk",
       "guest_portal": "Guest Portal",
       "supervisor_override": "Manager Override"
-    }
+    },
+    "payOnlineTab": "Pay Online",
+    "bankTransferTab": "Bank Transfer",
+    "onlineInstructions": "Pay securely with your credit or debit card.",
+    "bankTransferTitle": "Bank Transfer Details",
+    "bankName": "Bank",
+    "accountName": "Account Name",
+    "accountNumber": "Account Number",
+    "reference": "Reference",
+    "bankTransferNote": "Please include the reference when making your transfer. Your booking will be confirmed once payment is verified.",
+    "openingCheckout": "Opening secure checkout — this can take a few seconds...",
+    "tempUnavailable": "Card payment is temporarily unavailable. Please contact the front desk and we'll send you a payment link.",
+    "onlineNotConfigured": "Online payments are not available yet. Please contact the front desk.",
+    "sessionExpired": "This booking session has expired or the status has changed. Please refresh and try again.",
+    "alreadyPaid": "A payment has already been recorded for this booking.",
+    "redirectBlocked": "Your browser didn't open the secure checkout automatically. Tap the button below to open it, or copy the link into Safari or Chrome.",
+    "noCheckoutUrl": "Checkout could not be opened. Please contact the front desk.",
+    "checkoutTimeout": "Checkout is taking longer than usual. Please check your connection and try again, or contact the front desk for a payment link.",
+    "payOnline": "Pay Deposit Online",
+    "openCheckoutManually": "Open secure checkout"
   },
   "override": {
     "title": "Status Override",
@@ -1296,7 +1415,13 @@
   "cornerTalk": {
     "allClear": "All clear",
     "comingUp": "Coming up",
-    "allOperationsNormal": "All operations running normally"
+    "allOperationsNormal": "All operations running normally",
+    "markRead": "Mark as read",
+    "readItems": "Read",
+    "undoRead": "Mark unread",
+    "removeForGood": "Remove for good",
+    "confirmRemoveTitle": "Remove this alert?",
+    "confirmRemoveDesc": "This will permanently hide this alert for you. It won't come back unless new data triggers it."
   },
   "guestStay": {
     "inquirySent": "Inquiry Sent",
@@ -1330,7 +1455,20 @@
     "checkinPassed": "Check-in date has passed. Please contact staff.",
     "unitNotAssigned": "Unit pending",
     "contactStaff": "Questions? Message our team for help.",
-    "landed": "Landed ✓",
+    "landed": {
+      "connectingTitle": "Where are you right now?",
+      "confirmTitle": "Where did you land?",
+      "confirmDescV2": "Tap the closest match. Only Koh Samui (USM) means you've truly arrived — the others are mainland transit points.",
+      "flightHint": "Flight {{flight}} arrives at {{airport}}",
+      "suggested": "Suggested",
+      "transitTitle": "You're still in transit",
+      "transitDesc": "You haven't reached Koh Samui yet. We'll log this and your driver will be sent when you arrive on the island.",
+      "mismatchTitle": "This doesn't match your flight",
+      "mismatchDesc": "Our records show flight {{flight}} arrives at {{expected}}. You selected {{selected}}. If you're sure, tap confirm — staff will double-check.",
+      "confirmTransit": "Got it — I'm in transit",
+      "confirmAnyway": "Confirm anyway",
+      "confirm": "I've landed here"
+    },
     "actions": {
       "payDeposit": "Pay Deposit",
       "uploadId": "Upload ID",
@@ -1338,7 +1476,18 @@
       "reportIssue": "Need Help",
       "askGlitch": "Ask Kru Glitch",
       "landedSuccess": "Confirmed! Staff has been notified. Your driver is on the way.",
-      "alreadyLanded": "You've already confirmed your landing."
+      "alreadyLanded": "You've already confirmed your landing.",
+      "depositNotFound": "We couldn't find a deposit due on this booking. Please contact the front desk.",
+      "uploadNotAvailable": "ID upload isn't available for this booking yet. Please contact the front desk."
+    },
+    "arrivalSaved": "Arrival details saved",
+    "howArriving": "How are you arriving?",
+    "transportIntent": "Do you need a pickup?",
+    "essentials": {
+      "title": "Stay Essentials",
+      "wifi": "WiFi",
+      "rules": "House Rules",
+      "emergency": "Emergency"
     }
   },
   "arrivalFAQ": {
@@ -1498,5 +1647,151 @@
     "mergeDone": "Merged - {{count}} booking moved",
     "mergeDone_other": "Merged - {{count}} bookings moved",
     "mergeFailed": "Merge failed"
+  },
+  "noShow": {
+    "refundAmount": "Refund due",
+    "depositConsequence": "No-show — {{consequence}}",
+    "consequenceForfeited": "deposit forfeited",
+    "consequencePartial": "partial refund applies",
+    "consequenceFull": "full refund applies"
+  },
+  "checkin": {
+    "confirmPayment": "Confirm Payment at Check-in",
+    "confirmPaymentDesc": "Record cash or in-person payment received during check-in",
+    "outstanding": "Outstanding balance",
+    "paymentNotes": "Payment notes (e.g. receipt number)",
+    "recordAndCheckIn": "Record Payment & Check In",
+    "balanceDueWarning": "Guest has {{amount}} still owed before check-in is complete."
+  },
+  "training": {
+    "programLinked": "Training Program"
+  },
+  "preArrival": {
+    "title": "Pre-Arrival Checklist",
+    "complete": "Complete",
+    "completed": "completed",
+    "hint": "Complete all items before check-in for a smooth arrival."
+  },
+  "labels": {
+    "bookingState": {
+      "inquiry": "Inquiry",
+      "soft_hold": "Soft Hold",
+      "pending_approval": "Pending Approval",
+      "pending_deposit": "Pending Deposit",
+      "confirmed": "Confirmed",
+      "checked_in": "Checked In",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "no_show": "No-Show"
+    },
+    "paymentStatus": {
+      "pending": "Pending",
+      "recorded": "Paid",
+      "failed": "Failed",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded",
+      "partially_refunded": "Partially Refunded",
+      "waived": "Waived"
+    },
+    "paymentType": {
+      "deposit": "Deposit",
+      "balance": "Balance",
+      "addon": "Add-on",
+      "security_deposit": "Security Deposit",
+      "booking_fee": "Booking Fee"
+    },
+    "paymentMethod": {
+      "stripe": "Card (Stripe)",
+      "cash": "Cash",
+      "bank_transfer": "Bank Transfer",
+      "in_person": "In Person",
+      "manual": "Recorded by staff",
+      "other": "Other (offline)"
+    },
+    "depositState": {
+      "not_required": "No deposit required",
+      "awaiting": "Awaiting deposit",
+      "paid": "Deposit paid",
+      "handled_offline": "Handled offline",
+      "refunded": "Deposit refunded",
+      "forfeited": "Deposit forfeited"
+    },
+    "pickupResolution": {
+      "pickup_requested": "Pickup Requested",
+      "pickup_scheduled": "Pickup Scheduled",
+      "pickup_completed": "Pickup Completed",
+      "pickup_failed": "Pickup Not Completed",
+      "self_arrival": "Self Arrival",
+      "pickup_disabled": "Pickup Disabled by Admin"
+    },
+    "documentStatus": {
+      "pending": "Awaiting review",
+      "verified": "Verified",
+      "rejected": "Needs replacement",
+      "needs_replacement": "Needs replacement",
+      "checked_in_person": "Checked in person"
+    },
+    "documentType": {
+      "passport": "Passport / ID",
+      "national_id": "National ID",
+      "visa": "Visa",
+      "tm30": "TM30",
+      "other": "Other"
+    },
+    "tm30Status": {
+      "not_required": "TM30 not required",
+      "pending": "TM30 pending",
+      "tm30_submitted": "TM30 submitted",
+      "tm30_confirmed": "TM30 confirmed",
+      "tm30_failed": "TM30 failed"
+    },
+    "cleaningStatus": {
+      "clean": "Clean",
+      "dirty": "Needs cleaning",
+      "in_progress": "Being cleaned",
+      "inspected": "Inspected",
+      "blocked": "Blocked"
+    },
+    "housekeepingStatus": {
+      "pending": "Pending",
+      "in_progress": "In progress",
+      "completed": "Completed",
+      "skipped": "Skipped"
+    },
+    "unitStatus": {
+      "available": "Available",
+      "occupied": "Occupied",
+      "maintenance": "Maintenance",
+      "inactive": "Inactive"
+    },
+    "driverAssignment": {
+      "unassigned": "No driver yet",
+      "assigned": "Driver assigned",
+      "en_route": "Driver on the way",
+      "arrived": "Driver arrived",
+      "completed": "Drop-off done"
+    },
+    "checkoutBlocker": {
+      "outstanding_balance": "Balance still owed",
+      "security_deposit_held": "Security deposit not released",
+      "open_maintenance": "Open maintenance on the room",
+      "unreturned_key": "Key not returned",
+      "pending_documents": "ID document still missing"
+    },
+    "offlineAck": {
+      "deposit": "Deposit handled offline",
+      "balance": "Balance collected offline",
+      "id_document": "ID checked in person",
+      "security_deposit": "Security deposit handled offline"
+    },
+    "marker": {
+      "pay_on_arrival": "Paying on arrival",
+      "manual_booking": "Manual booking",
+      "legacy_booking": "Legacy record",
+      "handled_by_staff": "Handled by staff",
+      "deadline_override": "Deadline overridden",
+      "attribution_missing": "Actor not recorded",
+      "sandbox": "Practice booking"
+    }
   }
 }

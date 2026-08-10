@@ -427,7 +427,16 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
               <div>
                 <p className="font-medium">
                   {targetState === "no_show"
-                    ? t("noShow.depositConsequence", { defaultValue: `No-show — ${refundInfo.tier === "none" ? "deposit forfeited" : refundInfo.tier === "partial" ? "partial refund applies" : "full refund applies"}` })
+                    ? t("noShow.depositConsequence", {
+                        consequence:
+                          refundInfo.tier === "none"
+                            ? t("noShow.consequenceForfeited", { defaultValue: "deposit forfeited" })
+                            : refundInfo.tier === "partial"
+                              ? t("noShow.consequencePartial", { defaultValue: "partial refund applies" })
+                              : t("noShow.consequenceFull", { defaultValue: "full refund applies" }),
+                        defaultValue: "No-show — {{consequence}}",
+                      })
+
                     : refundInfo.label}
                 </p>
                 {refundInfo.refundAmount != null && <p className="text-xs mt-1">{targetState === "no_show" ? t("noShow.refundAmount", { defaultValue: "Refund due" }) : t("refund.refundAmount")}: <strong>{formatPrice(refundInfo.refundAmount, policies)}</strong>{totalPrice != null && ` ${t("refund.ofTotal", { total: formatPrice(totalPrice, policies) })}`}</p>}

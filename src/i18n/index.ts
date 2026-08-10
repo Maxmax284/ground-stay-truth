@@ -1,6 +1,8 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import en from "./locales/en.json";
+import { humanizeKey, recordMissingKey } from "./missingKeys";
+
 
 export const SUPPORTED_LANGUAGES = [
   { code: "en", label: "English", flag: "🇬🇧" },
@@ -23,7 +25,14 @@ i18n.use(initReactI18next).init({
   lng: savedLang,
   fallbackLng: "en",
   interpolation: { escapeValue: false },
+  // Safety net: a key missing everywhere must never render as a raw path.
+  saveMissing: true,
+  missingKeyHandler: (lngs, _ns, key) => {
+    recordMissingKey(Array.isArray(lngs) ? lngs : [String(lngs)], key);
+  },
+  parseMissingKeyHandler: (key) => humanizeKey(key),
 });
+
 
 // Lazy-load non-English languages
 async function loadLanguage(code: string) {

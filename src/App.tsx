@@ -9,6 +9,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import { RolePreviewProvider } from "@/hooks/useRolePreview";
+import { LanguagePreferenceSync } from "@/hooks/useLanguagePreference";
+
 import { PropertyProvider } from "@/hooks/useProperty";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleRedirect from "@/components/RoleRedirect";
@@ -71,8 +73,10 @@ const App = () => (
         <AuthProvider>
           <RolePreviewProvider>
           <PropertyProvider>
+            <LanguagePreferenceSync />
             <Toaster />
             <Sonner />
+
             <BrowserRouter>
               <ForegroundNotificationBanner />
               <AIFocusHighlighter />
