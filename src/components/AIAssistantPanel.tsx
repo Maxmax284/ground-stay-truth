@@ -187,12 +187,13 @@ function AIAssistantPanelInner() {
     isDraggingRef.current = false;
   }, []);
 
-  // Set default language from profile
+  // Kru Glitch answers in the language the UI is currently in. The selected UI
+  // language is the strongest signal; the stored profile preference is the
+  // fallback for the first render before i18n has settled.
   useEffect(() => {
-    if (profile.data?.preferred_language) {
-      setLanguage(profile.data.preferred_language);
-    }
-  }, [profile.data?.preferred_language]);
+    setLanguage(i18n.language || profile.data?.preferred_language || "en");
+  }, [i18n.language, profile.data?.preferred_language]);
+
 
   // Listen for external "ask Kru Glitch" events (from Corner Talk)
   useEffect(() => {
