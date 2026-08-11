@@ -134,7 +134,7 @@ function AIAssistantPanelInner() {
     : focus && role !== "guest"
       ? FOCUSED_BOOKING_PROMPTS
       : baseQuickPrompts;
-  const staffName = (profile?.full_name || "").split(" ")[0] || "boss";
+  const staffName = (profile.data?.full_name || "").split(" ")[0] || "boss";
   const [language, setLanguage] = useState<string>("en");
   // Optional spoken replies (off by default). When on, each finished assistant
   // reply is read out once; the toggle persists per browser.
