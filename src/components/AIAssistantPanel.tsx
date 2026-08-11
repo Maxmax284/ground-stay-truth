@@ -499,9 +499,21 @@ function AIAssistantPanelInner() {
               <VolumeX className="h-4 w-4" />
             </Button>
           )}
+          {/* Always-visible rescue: snap back to the default readable spot. */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            title="Reset layout"
+            aria-label="Reset Kru Glitch layout"
+            onClick={resetLayout}
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
           {/* Size toggle — hops between the current size and expanded. */}
           <Button
             variant="ghost"
+
             size="icon"
             className="h-8 w-8"
             aria-pressed={expanded}
