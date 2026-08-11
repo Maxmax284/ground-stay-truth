@@ -4,13 +4,24 @@ import { useProperty } from "@/hooks/useProperty";
 import { supabase } from "@/integrations/supabase/client";
 import { getAIFocus, getAIRouteFocus } from "@/lib/aiFocusStore";
 
-export type AIMode = "explain" | "summarize" | "validate" | "draft" | "digest" | "camp";
+/**
+ * "agent" is the deep, tool-calling ops mode (edge function `ai-agent`). Unlike
+ * the other modes it is NOT streamed: the model may call several read tools
+ * before it answers, so the reply arrives in one piece. It is staff-only and
+ * can propose actions as drafts — it never executes anything.
+ */
+export type AIMode = "explain" | "summarize" | "validate" | "draft" | "digest" | "camp" | "agent";
 
 export interface AIMessage {
   role: "user" | "assistant";
   content: string;
   createdAt: number;
+  /** Read tools the agent called for this reply (agent mode only). */
+  toolsUsed?: string[];
+  /** Draft IDs the agent queued for approval (agent mode only). */
+  draftIds?: string[];
 }
+
 
 function newSessionId(): string {
   try {
