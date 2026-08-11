@@ -34,6 +34,8 @@ import { toast } from "@/hooks/use-toast";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { ToastAction } from "@/components/ui/toast";
 import type { DragResult } from "@/hooks/useCalendarDragDrop";
+import { canMoveBookingRoom } from "@/lib/roomMove";
+import { MoveRoomDialog } from "@/components/MoveRoomDialog";
 
 type ViewMode = "timeline" | "month" | "day";
 
@@ -51,7 +53,7 @@ const CalendarView = () => {
   const queryClient = useQueryClient();
 
   // Drag-and-drop permission: admin or manager only
-  const canDragDrop = !isMobile && (role === "admin" || role === "manager");
+  const canDragDrop = !isMobile && canMoveBookingRoom(role);
 
   // Undo state for drag-drop
   const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -195,9 +197,21 @@ const CalendarView = () => {
   // Confirmation dialog for checked-in bookings
   const [pendingDrag, setPendingDrag] = useState<DragResult | null>(null);
   const [showDragConfirm, setShowDragConfirm] = useState(false);
+  // Pure room move (dates unchanged) goes through the confirmed move flow.
+  const [moveRequest, setMoveRequest] = useState<{ bookingId: string; targetUnitId: string } | null>(null);
 
   const handleBookingDragEnd = useCallback((result: DragResult) => {
     const booking = (bookings ?? []).find(b => b.id === result.bookingId);
+    const datesUnchanged =
+      !!booking &&
+      booking.check_in.slice(0, 10) === result.newCheckIn &&
+      booking.check_out.slice(0, 10) === result.newCheckOut;
+
+    if (datesUnchanged && result.newUnitId !== booking!.unit_id) {
+      setMoveRequest({ bookingId: result.bookingId, targetUnitId: result.newUnitId });
+      return;
+    }
+
     if (booking?.state === "checked_in") {
       setPendingDrag(result);
       setShowDragConfirm(true);
@@ -206,11 +220,26 @@ const CalendarView = () => {
     dragUpdateMutation.mutate(result);
   }, [dragUpdateMutation, bookings]);
 
+  const moveBooking = useMemo(() => {
+    if (!moveRequest) return null;
+    const b = (bookings ?? []).find((x) => x.id === moveRequest.bookingId);
+    if (!b) return null;
+    return {
+      id: b.id,
+      unit_id: b.unit_id,
+      check_in: b.check_in,
+      check_out: b.check_out,
+      unitName: (b as any).units?.name ?? allUnits.find((u) => u.id === b.unit_id)?.name ?? null,
+      guestName: resolveGuestDisplayName(b as any),
+    };
+  }, [moveRequest, bookings, allUnits]);
+
   const confirmDragMove = useCallback(() => {
     if (pendingDrag) dragUpdateMutation.mutate(pendingDrag);
     setShowDragConfirm(false);
     setPendingDrag(null);
   }, [pendingDrag, dragUpdateMutation]);
+
 
   const cancelDragMove = useCallback(() => {
     setShowDragConfirm(false);
@@ -522,6 +551,14 @@ const CalendarView = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <MoveRoomDialog
+        open={!!moveRequest}
+        onOpenChange={(o) => { if (!o) setMoveRequest(null); }}
+        booking={moveBooking}
+        units={allUnits}
+        fixedTargetUnitId={moveRequest?.targetUnitId ?? null}
+      />
     </DashboardLayout>
   );
 };
