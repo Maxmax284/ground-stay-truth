@@ -1,5 +1,5 @@
 /**
- * AIOpsPanel — the admin's single setup surface for the AI ops layer.
+ * AIOpsPanel — the admin's single setup surface for the Ops layer (label: "Ops").
  *
  * Three things live here:
  *  1. Readiness checklist — what is configured and what still needs a decision.
@@ -60,7 +60,7 @@ export function AIOpsPanel() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            AI ops setup
+            Ops setup
             {pendingCount > 0 && <Badge variant="secondary">{pendingCount} drafts waiting</Badge>}
           </CardTitle>
           <CardDescription>
@@ -123,7 +123,7 @@ export function AIOpsPanel() {
         </Card>
       )}
 
-      <OpsUnlockDialog open={unlockOpen} onOpenChange={setUnlockOpen} surface="AI ops" />
+      <OpsUnlockDialog open={unlockOpen} onOpenChange={setUnlockOpen} surface="Ops" />
     </div>
   );
 }

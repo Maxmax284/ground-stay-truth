@@ -1,5 +1,5 @@
 /**
- * AISandboxToggle — explicit practice-mode switch for Settings → AI Ops.
+ * AISandboxToggle — explicit practice-mode switch for Settings → Ops.
  *
  * Flipping this switches the active property to the sandbox camp, so the whole
  * deep-ops loop (agent reads -> drafts -> approve) runs against fake inventory.
@@ -84,7 +84,7 @@ export function AISandboxToggle() {
               Practice mode (sandbox)
             </CardTitle>
             <CardDescription>
-              Run the whole AI ops loop against fake data before touching the live camp.
+              Run the whole Ops loop against fake data before touching the live camp.
             </CardDescription>
           </div>
           {inSandbox ? (

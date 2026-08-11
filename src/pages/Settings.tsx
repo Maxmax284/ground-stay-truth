@@ -55,7 +55,7 @@ const Settings = () => {
             {isAdmin && <TabsTrigger value="arrival" className="text-xs sm:text-sm">Arrival</TabsTrigger>}
             {isAdmin && <TabsTrigger value="integrations" className="text-xs sm:text-sm">Integrations</TabsTrigger>}
             {canManageReviews && <TabsTrigger value="reviews" className="text-xs sm:text-sm">{t("settings.reviewsTab")}</TabsTrigger>}
-            {isAdmin && <TabsTrigger value="aiops" className="text-xs sm:text-sm">AI Ops</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="aiops" className="text-xs sm:text-sm">Ops</TabsTrigger>}
             {isAdmin && <TabsTrigger value="security" className="text-xs sm:text-sm">Security</TabsTrigger>}
             {isAdmin && <TabsTrigger value="intelligence" className="text-xs sm:text-sm">Intel</TabsTrigger>}
             {isAdmin && <TabsTrigger value="vanta" className="text-xs sm:text-sm">Vanta</TabsTrigger>}
@@ -76,7 +76,7 @@ const Settings = () => {
           {isAdmin && <TabsContent value="arrival"><ErrorBoundary inline label="Arrival"><ArrivalWelcomeEditor /></ErrorBoundary></TabsContent>}
           {isAdmin && <TabsContent value="integrations"><ErrorBoundary inline label="Integrations"><IntegrationSettings /></ErrorBoundary></TabsContent>}
           {canManageReviews && <TabsContent value="reviews"><ErrorBoundary inline label="Reviews"><ReviewsManager /></ErrorBoundary></TabsContent>}
-          {isAdmin && <TabsContent value="aiops"><ErrorBoundary inline label="AI Ops"><AIOpsPanel /></ErrorBoundary></TabsContent>}
+          {isAdmin && <TabsContent value="aiops"><ErrorBoundary inline label="Ops"><AIOpsPanel /></ErrorBoundary></TabsContent>}
           {isAdmin && <TabsContent value="security"><ErrorBoundary inline label="Security"><SecurityEventLog /></ErrorBoundary></TabsContent>}
           {isAdmin && <TabsContent value="intelligence"><ErrorBoundary inline label="Intel"><IntelligenceEditor /></ErrorBoundary></TabsContent>}
           {isAdmin && <TabsContent value="vanta"><ErrorBoundary inline label="Vanta"><VantaIntegrationPanel /></ErrorBoundary></TabsContent>}
