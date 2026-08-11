@@ -34,6 +34,20 @@ export type StaffAuditEventType =
   // Settings
   | "security_setting_changed"
   | "mfa_policy_changed"
+  // Device recognition / trusted devices
+  | "device_recognition_enabled"
+  | "device_recognition_disabled"
+  | "device_detected"
+  | "device_approved"
+  | "device_self_approved"
+  | "device_revoked"
+  | "device_blocked"
+  | "device_unblocked"
+  | "device_renamed"
+  | "device_removed"
+  | "device_action_failed"
+  | "device_access_denied"
+  | "device_trust_bulk_revoked"
   // Guest portal preview
   | "guest_portal_view_as";
 
