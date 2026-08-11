@@ -6,7 +6,7 @@
  * the plan as accepted and stamps the override audit log with who accepted it.
  */
 import { useState } from "react";
-import { Bot, Check, X, Clock, ClipboardList } from "lucide-react";
+import { Bot, Check, X, Clock, ClipboardList, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAIDrafts, aiDraftActionLabel, type AIDraft, type AIDraftStatus } from "@/hooks/useAIDrafts";
 import { formatCampDateTime } from "@/lib/timezone";
+import { planDraftExecution } from "@/lib/aiDraftExecutors";
 
 const STATUS_TONE: Record<string, string> = {
   pending: "bg-amber-500/15 text-amber-600 border-amber-500/30",
