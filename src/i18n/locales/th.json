@@ -72,6 +72,7 @@
     "frontDesk": "ฟรอนต์",
     "notifications": "แจ้งเตือน",
     "adjustments": "ปรับยอด/ส่วนลด",
+    "opsConsole": "ศูนย์ควบคุมปฏิบัติการ",
     "embeds": "วิดเจ็ตฝังเว็บ"
   },
   "auth": {
