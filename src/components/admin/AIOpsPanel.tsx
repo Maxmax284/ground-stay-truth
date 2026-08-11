@@ -13,6 +13,8 @@ import { CheckCircle2, CircleDashed, Sparkles } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ElevationPanel } from "@/components/admin/ElevationPanel";
+import { AISandboxToggle } from "@/components/admin/AISandboxToggle";
+
 import { AIDraftsPanel } from "@/components/admin/AIDraftsPanel";
 import { useAIDrafts } from "@/hooks/useAIDrafts";
 import { useElevationGrants } from "@/hooks/useAdminElevation";
