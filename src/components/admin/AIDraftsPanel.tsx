@@ -138,11 +138,18 @@ export function AIDraftsPanel() {
     draft: AIDraft,
     decision: "approved" | "rejected" | "applied",
     note: string,
+    execute?: boolean,
   ) => {
     try {
-      await review({ draft, decision, note });
+      const result = await review({ draft, decision, note, execute });
       toast.success(
-        decision === "rejected" ? "Draft rejected" : decision === "applied" ? "Marked done" : "Plan approved",
+        result?.executed
+          ? `Applied — ${result.describe}`
+          : decision === "rejected"
+            ? "Draft rejected"
+            : decision === "applied"
+              ? "Marked done"
+              : "Plan approved",
       );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not save the decision");
