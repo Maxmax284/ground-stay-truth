@@ -1003,7 +1003,6 @@
       "digest": "Digest",
       "camp": "Camp",
       "agent": "Deep ops"
-
     },
     "draftWithAI": "Draft with AI",
     "drafting": "Drafting…",
@@ -1012,7 +1011,11 @@
     "advisory": "Advisory",
     "acknowledgeOverride": "Acknowledge & Override",
     "acknowledge": "Acknowledged",
-    "acknowledged": "✓ Advisory acknowledged — proceed with transition"
+    "acknowledged": "✓ Advisory acknowledged — proceed with transition",
+    "speakOn": "Spoken replies on",
+    "speakOff": "Spoken replies off",
+    "stopSpeaking": "Stop speaking",
+    "readAloud": "Read aloud"
   },
   "translation": {
     "translate": "Translate",

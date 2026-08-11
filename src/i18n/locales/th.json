@@ -976,7 +976,6 @@
       "digest": "สรุปรวม",
       "camp": "ค่าย",
       "agent": "โหมดลึก"
-
     },
     "draftWithAI": "ร่างด้วย AI",
     "drafting": "กำลังร่าง…",
@@ -985,7 +984,11 @@
     "acknowledge": "รับทราบแล้ว",
     "acknowledgeOverride": "รับทราบและดำเนินการต่อ",
     "acknowledged": "✓ รับทราบคำแนะนำแล้ว — ดำเนินการเปลี่ยนสถานะต่อได้",
-    "advisory": "คำแนะนำ"
+    "advisory": "คำแนะนำ",
+    "speakOn": "เปิดเสียงตอบกลับ",
+    "speakOff": "ปิดเสียงตอบกลับ",
+    "stopSpeaking": "หยุดพูด",
+    "readAloud": "อ่านออกเสียง"
   },
   "translation": {
     "translate": "แปล",
