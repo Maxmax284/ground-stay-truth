@@ -106,7 +106,16 @@ function AIAssistantPanelInner() {
   const [showPrompts, setShowPrompts] = useState(true);
   const [mode, setMode] = useState<AIMode>("explain");
   const [language, setLanguage] = useState<string>("en");
+  // Optional spoken replies (off by default). When on, each finished assistant
+  // reply is read out once; the toggle persists per browser.
+  const [speakReplies, setSpeakReplies] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("ai.speakReplies") === "1";
+  });
+  const { state: speechState, speak, stop: stopSpeech } = useSpokenReply((m) => toast.error(m));
+  const spokenRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
 
   const [bubbleDragging, setBubbleDragging] = useState(false);
   const bubbleRef = useRef<HTMLDivElement>(null);
