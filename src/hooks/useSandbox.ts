@@ -56,10 +56,17 @@ export function useSandbox() {
     mutationFn: async () => {
       const { data, error } = await supabase.rpc("reset_sandbox" as any);
       if (error) throw error;
+      // The sandbox is a real property, so the person who reset it also needs an
+      // assignment to it — otherwise the practice toggle can see the camp exists
+      // but cannot switch into it.
+      const { error: assignError } = await supabase.rpc("assign_sandbox_to_caller" as any);
+      if (assignError) throw assignError;
       return data as any;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sandbox-status"] });
+      // Refresh property access so the sandbox appears in the switcher immediately.
+      queryClient.invalidateQueries({ queryKey: ["user_property_assignments"] });
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       queryClient.invalidateQueries({ queryKey: ["units"] });
     },
