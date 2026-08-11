@@ -116,6 +116,54 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_action_drafts: {
+        Row: {
+          action_type: string
+          booking_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          id: string
+          payload: Json
+          property_id: string | null
+          rationale: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by_user_id: string | null
+          status: string
+          summary: string
+        }
+        Insert: {
+          action_type: string
+          booking_id?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          payload?: Json
+          property_id?: string | null
+          rationale?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          status?: string
+          summary: string
+        }
+        Update: {
+          action_type?: string
+          booking_id?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          payload?: Json
+          property_id?: string | null
+          rationale?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          status?: string
+          summary?: string
+        }
+        Relationships: []
+      }
       ai_assistant_audit: {
         Row: {
           assistant_response_at: string
