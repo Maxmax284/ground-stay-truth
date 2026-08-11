@@ -9,15 +9,21 @@
  * Admins can rehearse the whole flow against the sandbox property, so nothing
  * they test touches live inventory, guests, money or email.
  */
-import { CheckCircle2, CircleDashed, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, CircleDashed, Lock, Sparkles } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ElevationPanel } from "@/components/admin/ElevationPanel";
 import { AISandboxToggle } from "@/components/admin/AISandboxToggle";
+import { OpsPasscodePanel } from "@/components/admin/OpsPasscodePanel";
+import { OpsUnlockDialog } from "@/components/admin/OpsUnlockDialog";
+import { useOpsUnlock } from "@/hooks/useOpsUnlock";
 
 import { AIDraftsPanel } from "@/components/admin/AIDraftsPanel";
 import { useAIDrafts } from "@/hooks/useAIDrafts";
 import { useElevationGrants } from "@/hooks/useAdminElevation";
+
 
 function ChecklistRow({ done, label, detail }: { done: boolean; label: string; detail: string }) {
   return (
@@ -38,9 +44,15 @@ function ChecklistRow({ done, label, detail }: { done: boolean; label: string; d
 export function AIOpsPanel() {
   const { drafts, pendingCount } = useAIDrafts("all", 1);
   const { grants } = useElevationGrants();
+  const { configured, unlocked } = useOpsUnlock();
+  const [unlockOpen, setUnlockOpen] = useState(false);
+
+  // No code configured means the gate is open by design.
+  const gateOpen = !configured || unlocked;
 
   const hasDrafts = (drafts.data?.length ?? 0) > 0;
   const hasUsedElevation = (grants?.length ?? 0) > 0;
+
 
   return (
     <div className="space-y-6">
@@ -85,12 +97,36 @@ export function AIOpsPanel() {
         </CardContent>
       </Card>
 
+      <OpsPasscodePanel />
       <AISandboxToggle />
-      <ElevationPanel />
-      <AIDraftsPanel />
 
+      {/* Approvals and break-glass sit behind the same security code as chat. */}
+      {gateOpen ? (
+        <>
+          <ElevationPanel />
+          <AIDraftsPanel />
+        </>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5 text-muted-foreground" />
+              Approvals and break-glass are locked
+            </CardTitle>
+            <CardDescription>
+              Enter the ops security code to review AI drafts or grant a break-glass window.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => setUnlockOpen(true)}>Enter security code</Button>
+          </CardContent>
+        </Card>
+      )}
+
+      <OpsUnlockDialog open={unlockOpen} onOpenChange={setUnlockOpen} surface="AI ops" />
     </div>
   );
 }
+
 
 export default AIOpsPanel;
