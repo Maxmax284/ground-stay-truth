@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Swords, X, Send, Trash2, Sparkles, AlertTriangle, Globe, GripVertical, Lightbulb, ChevronDown, ChevronUp, Volume2, VolumeX, Loader2, Lock } from "lucide-react";
+import { Swords, X, Send, Trash2, Sparkles, AlertTriangle, Globe, GripVertical, Lightbulb, ChevronDown, ChevronUp, Maximize2, Minimize2, KeyRound, Volume2, VolumeX, Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { VoiceInputButton } from "@/components/VoiceInputButton";
@@ -21,7 +21,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AssistantMessage, UserMessage } from "@/components/ai/AssistantMessage";
 import { LoadingIndicator } from "@/components/ai/LoadingIndicator";
-import { getQuickPromptsForRole, FOCUSED_BOOKING_PROMPTS } from "@/components/ai/QuickPrompts";
+import { getQuickPromptsForRole, FOCUSED_BOOKING_PROMPTS, CONTROL_MODE_PROMPTS } from "@/components/ai/QuickPrompts";
 import { useAIFocus } from "@/lib/aiFocusStore";
 import { OpsUnlockDialog } from "@/components/admin/OpsUnlockDialog";
 import { useOpsUnlock, formatCountdown } from "@/hooks/useOpsUnlock";
@@ -103,7 +103,17 @@ function AIAssistantPanelInner() {
   const focus = useAIFocus();
   const baseQuickPrompts = getQuickPromptsForRole(role);
   // Phase 5: when the user has a booking sheet open, surface booking-focused prompts.
-  const quickPrompts = focus && role !== "guest" ? FOCUSED_BOOKING_PROMPTS : baseQuickPrompts;
+  // Bubble deck: Control Mode gets the ops deck, a focused booking gets booking
+  // prompts, otherwise the role default. Set after `mode` below.
+  const [expanded, setExpanded] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("ai.expanded") === "1";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("ai.expanded", expanded ? "1" : "0");
+    }
+  }, [expanded]);
   const [input, setInput] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [showPrompts, setShowPrompts] = useState(true);
@@ -118,6 +128,13 @@ function AIAssistantPanelInner() {
   } = useOpsUnlock();
   const opsGateOpen = !opsCodeConfigured || opsUnlocked;
   const [unlockOpen, setUnlockOpen] = useState(false);
+  const inControlMode = mode === "agent" && role !== "guest";
+  const quickPrompts = inControlMode
+    ? CONTROL_MODE_PROMPTS
+    : focus && role !== "guest"
+      ? FOCUSED_BOOKING_PROMPTS
+      : baseQuickPrompts;
+  const staffName = (profile.data?.full_name || "").split(" ")[0] || "boss";
   const [language, setLanguage] = useState<string>("en");
   // Optional spoken replies (off by default). When on, each finished assistant
   // reply is read out once; the toggle persists per browser.
@@ -330,14 +347,18 @@ function AIAssistantPanelInner() {
     );
   }
 
-  // On mobile, ignore drag position and render as bottom sheet
-  const panelStyle: React.CSSProperties = !isMobile && position
+  // On mobile, ignore drag position and render as bottom sheet.
+  // Expanded mode ignores the drag position entirely and fills the screen; the
+  // choice is remembered per browser.
+  const panelStyle: React.CSSProperties = !isMobile && position && !expanded
     ? { position: "fixed", left: position.x, top: position.y, bottom: "auto", right: "auto", zIndex: 50 }
     : {};
 
-  const mobileClasses = isMobile
-    ? "fixed inset-x-0 bottom-0 z-50 w-full max-w-full rounded-t-2xl rounded-b-none border-b-0 max-h-[85dvh] shadow-2xl"
-    : `${!position ? "fixed bottom-6 right-6 md:bottom-6 bottom-20" : ""} z-50 w-[380px] max-w-[calc(100vw-2rem)] rounded-2xl max-h-[min(32rem,calc(100vh-8rem))] shadow-2xl`;
+  const mobileClasses = expanded
+    ? "fixed inset-0 z-50 w-full max-w-full h-full max-h-none rounded-none shadow-2xl"
+    : isMobile
+      ? "fixed inset-x-0 bottom-0 z-50 w-full max-w-full rounded-t-2xl rounded-b-none border-b-0 max-h-[85dvh] shadow-2xl"
+      : `${!position ? "fixed bottom-6 right-6 md:bottom-6 bottom-20" : ""} z-50 w-[380px] max-w-[calc(100vw-2rem)] rounded-2xl max-h-[min(32rem,calc(100vh-8rem))] shadow-2xl`;
 
   return (
     <div
@@ -350,7 +371,7 @@ function AIAssistantPanelInner() {
       {/* Header with drag handle (desktop only) */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div className="flex items-center gap-2">
-          {!isMobile && (
+          {!isMobile && !expanded && (
             <div
               className="cursor-grab active:cursor-grabbing p-2 -ml-2 rounded hover:bg-accent/50"
               onPointerDown={handlePointerDown}
@@ -364,6 +385,33 @@ function AIAssistantPanelInner() {
           <Badge variant="secondary" className="text-[10px]">{t("ai.assistOnly")}</Badge>
         </div>
         <div className="flex items-center gap-1">
+          {/* Control Mode key — the obvious way in. Locked shows the code prompt. */}
+          {role !== "guest" && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-7 w-7 ${inControlMode ? "text-primary" : ""}`}
+              title={inControlMode ? "Control Mode is live" : "Enter Control Mode"}
+              onClick={() => {
+                if (inControlMode) return;
+                if (!opsGateOpen) setUnlockOpen(true);
+                else setMode("agent");
+              }}
+            >
+              <KeyRound className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          {/* Expand / shrink — remembered per browser. */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            aria-pressed={expanded}
+            title={expanded ? "Shrink chat" : "Expand to full screen"}
+            onClick={() => setExpanded((v) => !v)}
+          >
+            {expanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-7 w-7" title={t("ai.language")}>
@@ -457,7 +505,7 @@ function AIAssistantPanelInner() {
 
       {/* Control Mode strip — makes the borrowed-authority window visible and
           gives a one-tap way to close it or go review queued drafts. */}
-      {mode === "agent" && role !== "guest" && (
+      {inControlMode && (
         <div className="border-b bg-primary/5 px-3 py-1.5 flex items-center gap-2 text-[11px]">
           <Lock className="h-3 w-3 text-primary shrink-0" />
           <span className="font-medium text-foreground shrink-0">Control Mode</span>
@@ -511,15 +559,32 @@ function AIAssistantPanelInner() {
         <div className="px-4 py-3 space-y-4">
           {messages.length === 0 && (
             <div className="py-4 animate-fade-up">
-              <div className="text-center mb-4">
-                <Sparkles className="h-8 w-8 mx-auto text-muted-foreground/40 mb-3" />
-                <p className="text-sm text-muted-foreground">{t("ai.welcomeMessage")}</p>
-                <p className="text-xs text-muted-foreground mt-1">{t("ai.disclaimer")}</p>
-              </div>
+              {inControlMode ? (
+                <div className="mb-4 rounded-lg border border-primary/30 bg-primary/5 px-3 py-3">
+                  <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                    <KeyRound className="h-3.5 w-3.5 text-primary" />
+                    Code accepted — welcome back, {staffName}.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {opsCodeConfigured && opsMsLeft > 0
+                      ? `Control Mode is live for ${formatCountdown(opsMsLeft)}. `
+                      : "Control Mode is live. "}
+                    Ask me anything, or tap one below. Reads happen right away; anything that changes
+                    data comes back as a draft for approval.
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center mb-4">
+                  <Sparkles className="h-8 w-8 mx-auto text-muted-foreground/40 mb-3" />
+                  <p className="text-sm text-muted-foreground">{t("ai.welcomeMessage")}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("ai.disclaimer")}</p>
+                </div>
+              )}
+
               {quickPrompts.length > 0 && (
                 <div className="space-y-1.5">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1">
-                    Try asking
+                    {inControlMode ? "Control Mode actions" : "Try asking"}
                   </p>
                   {quickPrompts.map((qp) => (
                     <button

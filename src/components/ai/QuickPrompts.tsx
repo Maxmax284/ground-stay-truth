@@ -1,4 +1,4 @@
-import { Wifi, Users, AlertTriangle, Coins, PlaneTakeoff, ClipboardList, HelpCircle, FileText, ListChecks, MessageSquare, Compass, BookOpen, Wrench, MapPin } from "lucide-react";
+import { KeyRound, ShieldCheck, Bed, PlaneLanding, Wifi, Users, AlertTriangle, Coins, PlaneTakeoff, ClipboardList, HelpCircle, FileText, ListChecks, MessageSquare, Compass, BookOpen, Wrench, MapPin } from "lucide-react";
 
 export interface QuickPrompt {
   icon: React.ReactNode;
@@ -51,3 +51,18 @@ export function getQuickPromptsForRole(role: string | null | undefined): QuickPr
   return STAFF_PROMPTS;
 }
 
+
+/**
+ * Control Mode (deep ops) bubbles — the taps staff actually need once the
+ * security gate is open. Read-only asks stay instant; anything that changes
+ * data comes back as a draft for approval.
+ */
+export const CONTROL_MODE_PROMPTS: QuickPrompt[] = [
+  { icon: <ClipboardList className="h-3 w-3" />, label: "Today's board", prompt: "Give me today's operational board: arrivals, departures, in-house count, and anything blocking a smooth day." },
+  { icon: <Coins className="h-3 w-3" />, label: "Who owes money", prompt: "List bookings with outstanding balances right now — guest, amount owed, and check-in date. Sort by soonest arrival." },
+  { icon: <Bed className="h-3 w-3" />, label: "Rooms not ready", prompt: "Which rooms are not clean or not ready right now, and what turnover work is still open?" },
+  { icon: <PlaneLanding className="h-3 w-3" />, label: "Flights landing", prompt: "Which guests are landing in the next 48 hours and are any pickups missing details?" },
+  { icon: <AlertTriangle className="h-3 w-3" />, label: "What broke overnight", prompt: "What failed or needs attention in the last 24 hours — payments, emails, documents, maintenance? Plain English." },
+  { icon: <ShieldCheck className="h-3 w-3" />, label: "Recent overrides", prompt: "Show me the recent staff overrides — who did what and when." },
+  { icon: <KeyRound className="h-3 w-3" />, label: "Open drafts", prompt: "What actions are currently drafted and waiting for admin approval?" },
+];
