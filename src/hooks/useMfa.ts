@@ -9,22 +9,37 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import type { AppRole } from "@/lib/permissions";
+import {
+  DEFAULT_TRUST_WINDOW_HOURS,
+  clampTrustWindowHours,
+  clearMfaTrust,
+  isDeviceTrusted,
+  markMfaVerified,
+  trustExpiresAt,
+} from "@/lib/mfaTrust";
 
 export interface MfaPolicy {
+  /** Always true — admin-level MFA cannot be switched off. */
   requiredForAdmin: boolean;
   requiredForManager: boolean;
   requiredForStaff: boolean;
   gracePeriodDays: number;
   requireForSensitiveActions: boolean;
+  /** Hours a device stays trusted before another 6-digit code is asked for. */
+  trustWindowHours: number;
 }
 
 const DEFAULT_POLICY: MfaPolicy = {
   requiredForAdmin: true,
-  requiredForManager: true,
+  requiredForManager: false,
   requiredForStaff: false,
   gracePeriodDays: 7,
   requireForSensitiveActions: true,
+  trustWindowHours: DEFAULT_TRUST_WINDOW_HOURS,
 };
+
+/** Roles that always require MFA, no matter what the policy rows say. */
+export const MFA_MANDATORY_ROLES: AppRole[] = ["admin"];
 
 function readBool(map: Map<string, unknown>, key: string, fallback: boolean): boolean {
   const raw = map.get(key);
@@ -47,18 +62,22 @@ export function useMfaPolicy(): MfaPolicy {
     if (!policies) return DEFAULT_POLICY;
     const map = new Map(policies.map((p: any) => [p.key, p.value]));
     return {
-      requiredForAdmin: readBool(map, "mfa_required_admin", true),
-      requiredForManager: readBool(map, "mfa_required_manager", true),
+      // Hard-locked on: high-privilege access always needs a second factor.
+      requiredForAdmin: true,
+      requiredForManager: readBool(map, "mfa_required_manager", false),
       requiredForStaff: readBool(map, "mfa_required_staff", false),
       gracePeriodDays: readNum(map, "mfa_grace_period_days", 7),
       requireForSensitiveActions: readBool(map, "mfa_required_sensitive_actions", true),
+      trustWindowHours: clampTrustWindowHours(
+        readNum(map, "mfa_trust_window_hours", DEFAULT_TRUST_WINDOW_HOURS)
+      ),
     };
   }, [policies]);
 }
 
 export function mfaRequiredForRole(role: AppRole | null, policy: MfaPolicy): boolean {
   if (!role) return false;
-  if (role === "admin") return policy.requiredForAdmin;
+  if (MFA_MANDATORY_ROLES.includes(role)) return true;
   if (role === "manager") return policy.requiredForManager;
   if (role === "guest") return false;
   return policy.requiredForStaff;
