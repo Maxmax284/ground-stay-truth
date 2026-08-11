@@ -134,6 +134,55 @@ export function useAIAssistant() {
       const { data: freshSession } = await supabase.auth.getSession();
       const accessToken = freshSession?.session?.access_token ?? session.access_token;
 
+      // ── Agent mode: tool-calling, non-streamed, draft-only ───────────────
+      // The agent decides which read tools to call, so the round trip is longer
+      // and arrives as one JSON reply instead of an SSE stream.
+      if (mode === "agent") {
+        const agentResp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-agent`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({
+              messages: trimmedHistory.map((m) => ({ role: m.role, content: m.content })),
+              language,
+              property_id: activePropertyId,
+            }),
+            signal: controller.signal,
+          }
+        );
+
+        const agentBody = await agentResp.json().catch(() => ({}));
+        if (!agentResp.ok) {
+          if (agentResp.status === 429) setError("Rate limit exceeded. Please try again later.");
+          else if (agentResp.status === 402) setError("AI credits exhausted. Please add credits.");
+          else if (agentResp.status === 403) setError("Deep ops mode is staff only.");
+          else setError(agentBody.error || "Ops agent error");
+          setIsStreaming(false);
+          return;
+        }
+
+        assistantSoFar = agentBody.reply || "";
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: assistantSoFar || "I couldn't put an answer together for that.",
+            createdAt: Date.now(),
+            toolsUsed: Array.isArray(agentBody.tools_used) ? agentBody.tools_used : [],
+            draftIds: Array.isArray(agentBody.draft_ids) ? agentBody.draft_ids : [],
+          },
+        ]);
+        setIsStreaming(false);
+        return;
+      }
+
+
+
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`,
         {
