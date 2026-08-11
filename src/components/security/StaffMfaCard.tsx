@@ -10,14 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { ShieldCheck, ShieldAlert, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useMfaStatus, useMfaPolicy, mfaRequiredForRole, useMfaEnrollmentRequirement } from "@/hooks/useMfa";
+import { useMfaStatus, useMfaPolicy, mfaRequiredForRole, useMfaEnrollmentRequirement, revokeDeviceTrust } from "@/hooks/useMfa";
 import { useLogStaffAudit } from "@/hooks/useStaffAudit";
 import { MfaEnrollDialog } from "./MfaEnrollDialog";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
 export function StaffMfaCard() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const status = useMfaStatus();
   const policy = useMfaPolicy();
   const req = useMfaEnrollmentRequirement();
@@ -30,6 +30,10 @@ export function StaffMfaCard() {
 
   const handleUnenroll = async () => {
     if (!status.factorId) return;
+    if (required) {
+      toast.error("Your role requires MFA, so it can't be turned off.");
+      return;
+    }
     if (!confirm("Disable two-factor authentication? You can re-enable it later.")) return;
     setUnenrolling(true);
     try {
@@ -43,6 +47,7 @@ export function StaffMfaCard() {
         severity: "high",
         reason: "User unenrolled TOTP factor",
       });
+      revokeDeviceTrust(user?.id);
       toast.success("MFA disabled.");
       await status.refresh();
     } finally {
@@ -74,9 +79,20 @@ export function StaffMfaCard() {
           ) : status.verified ? (
             <>
               <p className="text-sm text-muted-foreground">
-                Your account is protected by an authenticator app.
+                Your account is protected by an authenticator app. This device stays trusted for{" "}
+                {policy.trustWindowHours} hours, so you won't be asked for a code on every page.
               </p>
-              <Button variant="outline" size="sm" onClick={handleUnenroll} disabled={unenrolling}>
+              {required && (
+                <p className="text-xs text-muted-foreground">
+                  Admin accounts require MFA, so it can't be turned off here.
+                </p>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleUnenroll}
+                disabled={unenrolling || required}
+              >
                 {unenrolling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 Disable MFA
               </Button>
