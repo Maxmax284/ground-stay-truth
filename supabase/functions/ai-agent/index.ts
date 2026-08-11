@@ -707,6 +707,16 @@ serve(async (req) => {
     const langName = typeof body.language === "string" ? body.language : "English";
     if (messages.length === 0) return json({ error: "No messages" }, 400);
 
+    // ── Ops passcode gate ───────────────────────────────────────────────────
+    // Deep ops is behind the security code when one is configured. The UI shows
+    // the prompt, but the real enforcement is here so the API cannot be poked
+    // directly. Token is issued by the `ops-passcode` function.
+    const gate = await checkOpsUnlock(userId, typeof body.unlock_token === "string" ? body.unlock_token : "");
+    if (!gate.unlocked) {
+      return json({ error: "ops_locked", detail: "Ops security code required" }, 403);
+    }
+
+
     // ── Tool-calling loop ───────────────────────────────────────────────────
     const convo: Array<Record<string, unknown>> = [
       { role: "system", content: buildSystemPrompt(role, langName) },
