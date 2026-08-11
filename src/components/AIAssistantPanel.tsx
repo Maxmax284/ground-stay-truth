@@ -704,9 +704,18 @@ function AIAssistantPanelInner() {
 
 
 
-      {/* Messages - fixed scroll */}
-      <div ref={scrollRef} className={`flex-1 min-h-0 overflow-y-auto ${expanded ? "text-[15px] leading-relaxed" : ""}`}>
-        <div className={`px-4 py-3 space-y-4 ${expanded ? "mx-auto w-full max-w-3xl md:px-6 md:py-6" : ""}`}>
+      {/* Messages — single vertical scroller, roomier text in bigger modes */}
+      <div
+        ref={scrollRef}
+        className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-thin ${
+          isCompact ? "text-[13px] leading-relaxed" : "text-sm leading-[1.65]"
+        } ${expanded ? "md:text-[15px]" : ""}`}
+      >
+        <div
+          className={`px-4 py-4 space-y-5 ${
+            expanded ? "mx-auto w-full max-w-3xl md:px-8 md:py-6 md:space-y-6" : ""
+          }`}
+        >
           {messages.length === 0 && (
             <div className="py-4 animate-fade-up">
               {inControlMode ? (
