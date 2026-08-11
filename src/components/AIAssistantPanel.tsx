@@ -276,12 +276,15 @@ function AIAssistantPanelInner() {
     e.preventDefault();
     const newX = e.clientX - dragOffset.current.x;
     const newY = e.clientY - dragOffset.current.y;
-    const maxX = window.innerWidth - (panelRef.current?.offsetWidth ?? 380);
-    const maxY = window.innerHeight - (panelRef.current?.offsetHeight ?? 400);
-    setPosition({
-      x: Math.max(0, Math.min(newX, maxX)),
-      y: Math.max(0, Math.min(newY, maxY)),
-    });
+    setPosition(
+      clampPos(
+        { x: newX, y: newY },
+        {
+          width: panelRef.current?.offsetWidth ?? 500,
+          height: panelRef.current?.offsetHeight ?? 600,
+        },
+      ),
+    );
   }, []);
 
   const handlePointerUp = useCallback(() => {
