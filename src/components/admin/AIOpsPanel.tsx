@@ -83,8 +83,10 @@ export function AIOpsPanel() {
         </CardContent>
       </Card>
 
+      <AISandboxToggle />
       <ElevationPanel />
       <AIDraftsPanel />
+
     </div>
   );
 }
