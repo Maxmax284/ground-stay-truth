@@ -1001,7 +1001,9 @@
       "validate": "Validate",
       "draft": "Draft",
       "digest": "Digest",
-      "camp": "Camp"
+      "camp": "Camp",
+      "agent": "Deep ops"
+
     },
     "draftWithAI": "Draft with AI",
     "drafting": "Drafting…",
