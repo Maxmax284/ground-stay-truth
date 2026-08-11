@@ -82,6 +82,8 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
   const isAdmin = isRealAdmin || isElevated;
   const { t } = useTranslation();
   const { role } = useAuth();
+  const { data: allUnitsForMove } = useUnits();
+  const [showMoveRoom, setShowMoveRoom] = useState(false);
 
   // Context isolation: clear Kru Glitch chat when switching between bookings
   const prevBookingRef = useRef<string | null>(null);
@@ -469,6 +471,19 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
             </TabsContent>
           )}
         </Tabs>
+        <MoveRoomDialog
+          open={showMoveRoom}
+          onOpenChange={setShowMoveRoom}
+          booking={{
+            id: booking.id,
+            unit_id: booking.unit_id,
+            check_in: booking.check_in,
+            check_out: booking.check_out,
+            unitName: booking.units?.name ?? null,
+            guestName: guestName ?? null,
+          }}
+          units={allUnitsForMove ?? []}
+        />
       </SheetContent>
     </Sheet>
   );
