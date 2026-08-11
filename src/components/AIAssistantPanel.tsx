@@ -116,18 +116,13 @@ function AIAssistantPanelInner() {
   // Phase 5: when the user has a booking sheet open, surface booking-focused prompts.
   // Bubble deck: Control Mode gets the ops deck, a focused booking gets booking
   // prompts, otherwise the role default. Set after `mode` below.
-  const [expanded, setExpanded] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem("ai.expanded") === "1";
-  });
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("ai.expanded", expanded ? "1" : "0");
-    }
-  }, [expanded]);
+  // Display mode: compact / normal / expanded. Remembered per browser.
+  const { mode: panelMode, setMode: setPanelMode, cycleMode: cyclePanelMode } = useAIPanelMode();
+  const expanded = panelMode === "expanded";
+  const isCompact = panelMode === "compact";
   const [input, setInput] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const [showPrompts, setShowPrompts] = useState(true);
+  const [showPrompts, setShowPrompts] = useState(panelMode !== "compact");
   const [mode, setMode] = useState<AIMode>("explain");
   // Ops security-code gate for Control Mode (deep ops).
   const {
