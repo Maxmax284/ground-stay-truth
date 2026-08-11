@@ -6,7 +6,7 @@
  * the plan as accepted and stamps the override audit log with who accepted it.
  */
 import { useState } from "react";
-import { Bot, Check, X, Clock, ClipboardList } from "lucide-react";
+import { Bot, Check, X, Clock, ClipboardList, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAIDrafts, aiDraftActionLabel, type AIDraft, type AIDraftStatus } from "@/hooks/useAIDrafts";
 import { formatCampDateTime } from "@/lib/timezone";
+import { planDraftExecution } from "@/lib/aiDraftExecutors";
 
 const STATUS_TONE: Record<string, string> = {
   pending: "bg-amber-500/15 text-amber-600 border-amber-500/30",
@@ -30,11 +31,16 @@ function DraftRow({
   busy,
 }: {
   draft: AIDraft;
-  onReview: (decision: "approved" | "rejected" | "applied", note: string) => void;
+  onReview: (
+    decision: "approved" | "rejected" | "applied",
+    note: string,
+    execute?: boolean,
+  ) => void;
   busy: boolean;
 }) {
   const [note, setNote] = useState("");
   const details = draft.payload && Object.keys(draft.payload).length > 0 ? draft.payload : null;
+  const plan = planDraftExecution(draft);
 
   return (
     <div className="rounded-lg border border-border p-4 space-y-3 transition-transform duration-300 hover:-translate-y-1">
@@ -45,7 +51,13 @@ function DraftRow({
             <Badge variant="outline" className={`text-xs ${STATUS_TONE[draft.status] ?? ""}`}>
               {draft.status}
             </Badge>
+            {plan.ok && draft.status === "pending" && (
+              <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30 flex items-center gap-1">
+                <Zap className="h-3 w-3" /> Applies on approve
+              </Badge>
+            )}
           </div>
+
           <p className="font-medium text-sm text-foreground break-words">{draft.summary}</p>
           {draft.rationale && (
             <p className="text-xs text-muted-foreground break-words">{draft.rationale}</p>
@@ -72,10 +84,24 @@ function DraftRow({
             rows={2}
             className="text-sm"
           />
+          {plan.ok && (
+            <p className="text-xs text-primary">
+              Approving applies this automatically — {plan.describe}.
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" disabled={busy} onClick={() => onReview("approved", note)}>
-              <Check className="h-4 w-4 mr-1" /> Approve plan
+            <Button size="sm" disabled={busy} onClick={() => onReview("approved", note, plan.ok)}>
+              {plan.ok ? (
+                <>
+                  <Zap className="h-4 w-4 mr-1" /> Approve &amp; apply
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 mr-1" /> Approve plan
+                </>
+              )}
             </Button>
+
             <Button
               size="sm"
               variant="outline"
@@ -112,11 +138,18 @@ export function AIDraftsPanel() {
     draft: AIDraft,
     decision: "approved" | "rejected" | "applied",
     note: string,
+    execute?: boolean,
   ) => {
     try {
-      await review({ draft, decision, note });
+      const result = await review({ draft, decision, note, execute });
       toast.success(
-        decision === "rejected" ? "Draft rejected" : decision === "applied" ? "Marked done" : "Plan approved",
+        result?.executed
+          ? `Applied — ${result.describe}`
+          : decision === "rejected"
+            ? "Draft rejected"
+            : decision === "applied"
+              ? "Marked done"
+              : "Plan approved",
       );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not save the decision");
@@ -165,7 +198,7 @@ export function AIDraftsPanel() {
                 key={d.id}
                 draft={d}
                 busy={isReviewing}
-                onReview={(decision, note) => handleReview(d, decision, note)}
+                onReview={(decision, note, execute) => handleReview(d, decision, note, execute)}
               />
             ))}
           </div>
