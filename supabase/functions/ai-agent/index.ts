@@ -242,7 +242,7 @@ const TOOLS = [
           action_type: {
             type: "string",
             description:
-              "One of: extend_stay, change_dates, change_room, request_payment, apply_discount, assign_housekeeping, contact_guest, flag_booking, add_internal_note, other.",
+              "One of: extend_stay, change_dates, change_room, request_payment, apply_discount, assign_housekeeping, update_housekeeping, complete_housekeeping, contact_guest, flag_booking, add_internal_note, other.",
           },
           summary: {
             type: "string",
@@ -255,7 +255,8 @@ const TOOLS = [
           booking_id: { type: "string", description: "Related booking UUID if there is one." },
           details: {
             type: "object",
-            description: "Structured specifics (dates, amounts, unit, etc.).",
+            description:
+              "Structured specifics (dates, amounts, unit, etc.). For assign_housekeeping / update_housekeeping / complete_housekeeping use ONLY these keys so a human's approval can apply it directly: task_id (uuid, required), status (pending|in_progress|completed|skipped), assigned_to (staff uuid or null), notes (string), due_by (ISO timestamp). Any extra key makes it manual-only.",
             properties: {},
           },
         },
