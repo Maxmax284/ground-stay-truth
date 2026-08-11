@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useTransitionBookingState, useBookingPayments, useCreatePayment } from "@/hooks/useBookings";
+import { friendlyPaymentError } from "@/lib/offlinePayments";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 import { useGuestDocuments } from "@/hooks/useGuestDocuments";
@@ -320,7 +321,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
           );
         }
       } catch (err: any) {
-        toast({ title: t("stateTransition.transitionFailed"), description: err.message, variant: "destructive" });
+        toast({ title: t("payments.paymentFailed", { defaultValue: "Payment not recorded" }), description: friendlyPaymentError(err), variant: "destructive" });
         return;
       }
     }
@@ -336,7 +337,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
           source_channel: "front_desk",
         });
       } catch (err: any) {
-        toast({ title: t("stateTransition.transitionFailed"), description: err.message, variant: "destructive" });
+        toast({ title: t("payments.paymentFailed", { defaultValue: "Payment not recorded" }), description: friendlyPaymentError(err), variant: "destructive" });
         return;
       }
     }
