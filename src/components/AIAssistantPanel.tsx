@@ -484,6 +484,19 @@ function AIAssistantPanelInner() {
                       timestamp={msg.createdAt}
                       isStreaming={i === messages.length - 1 && isStreaming}
                     />
+                    {/* Read any single reply out loud on demand, even with the
+                        auto-speaker off. */}
+                    {!(i === messages.length - 1 && isStreaming) && !!msg.content.trim() && (
+                      <button
+                        onClick={() => (speechState === "playing" ? stopSpeech() : void speak(msg.content, language))}
+                        className="ml-3 mt-1 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent transition-colors"
+                        aria-label={t("ai.readAloud", "Read aloud")}
+                      >
+                        <Volume2 className="h-3 w-3" />
+                        {t("ai.readAloud", "Read aloud")}
+                      </button>
+                    )}
+
                     {/* Deep ops mode: show what the agent actually read, and
                         flag any action it queued for approval. Nothing here has
                         been executed — drafts wait for a human. */}
