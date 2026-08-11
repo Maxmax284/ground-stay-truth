@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Swords, X, Send, Trash2, Sparkles, AlertTriangle, Globe, GripVertical, Lightbulb, ChevronDown, ChevronUp, Maximize2, Minimize2, KeyRound, Volume2, VolumeX, Loader2, Lock, MoreVertical, RotateCcw, Columns2 } from "lucide-react";
@@ -216,6 +216,23 @@ function AIAssistantPanelInner() {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  // Self-rescue: whenever the panel opens or changes size mode, pull it back
+  // inside the viewport so the header controls are always reachable. Without
+  // this, a stored position from a bigger window/mode leaves the panel (and its
+  // drag handle) stranded off-screen with no way back.
+  useLayoutEffect(() => {
+    if (!isOpen || isMobile) return;
+    const el = panelRef.current;
+    if (!el) return;
+    const size = { width: el.offsetWidth, height: el.offsetHeight };
+    setPosition((prev) => {
+      if (!prev) return prev;
+      const next = clampPos(prev, size);
+      return next.x === prev.x && next.y === prev.y ? prev : next;
+    });
+  }, [isOpen, panelMode, isMobile]);
+
 
   // Restore the default readable layout: normal mode, default corner position.
   const resetLayout = useCallback(() => {
