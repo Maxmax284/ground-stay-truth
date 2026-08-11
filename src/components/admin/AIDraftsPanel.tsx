@@ -83,10 +83,24 @@ function DraftRow({
             rows={2}
             className="text-sm"
           />
+          {plan.ok && (
+            <p className="text-xs text-primary">
+              Approving applies this automatically — {plan.describe}.
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" disabled={busy} onClick={() => onReview("approved", note)}>
-              <Check className="h-4 w-4 mr-1" /> Approve plan
+            <Button size="sm" disabled={busy} onClick={() => onReview("approved", note, plan.ok)}>
+              {plan.ok ? (
+                <>
+                  <Zap className="h-4 w-4 mr-1" /> Approve &amp; apply
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 mr-1" /> Approve plan
+                </>
+              )}
             </Button>
+
             <Button
               size="sm"
               variant="outline"
