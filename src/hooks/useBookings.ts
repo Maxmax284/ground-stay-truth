@@ -6,6 +6,7 @@ import type { BookingState } from "@/lib/bookingStateMachine";
 import { createNotification, createNotifications } from "@/hooks/useNotifications";
 import { formatPrice } from "@/lib/currency";
 import { calculateOutstanding } from "@/lib/paymentTypes";
+import { assertRecordableOfflinePayment, friendlyPaymentError } from "@/lib/offlinePayments";
 import { emitPaymentProcessed, emitRefundIssued } from "@/lib/fenrir/events";
 import { useProperty } from "@/hooks/useProperty";
 import { logOverrideEvent } from "@/lib/overrideAudit";
