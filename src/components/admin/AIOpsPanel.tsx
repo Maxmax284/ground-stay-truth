@@ -38,7 +38,7 @@ export function AIOpsPanel() {
   const { grants } = useElevationGrants();
 
   const hasDrafts = (drafts.data?.length ?? 0) > 0;
-  const hasUsedElevation = (grants.data?.length ?? 0) > 0;
+  const hasUsedElevation = (grants?.length ?? 0) > 0;
 
   return (
     <div className="space-y-6">
