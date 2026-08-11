@@ -51,7 +51,7 @@ const CalendarView = () => {
   const queryClient = useQueryClient();
 
   // Drag-and-drop permission: admin or manager only
-  const canDragDrop = !isMobile && (role === "admin" || role === "manager");
+  const canDragDrop = !isMobile && canMoveBookingRoom(role);
 
   // Undo state for drag-drop
   const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
