@@ -555,8 +555,8 @@ function AIAssistantPanelInner() {
 
 
       {/* Messages - fixed scroll */}
-      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
-        <div className="px-4 py-3 space-y-4">
+      <div ref={scrollRef} className={`flex-1 min-h-0 overflow-y-auto ${expanded ? "text-[15px] leading-relaxed" : ""}`}>
+        <div className={`px-4 py-3 space-y-4 ${expanded ? "mx-auto w-full max-w-3xl md:px-6 md:py-6" : ""}`}>
           {messages.length === 0 && (
             <div className="py-4 animate-fade-up">
               {inControlMode ? (
