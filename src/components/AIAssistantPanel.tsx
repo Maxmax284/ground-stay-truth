@@ -387,18 +387,24 @@ function AIAssistantPanelInner() {
     );
   }
 
-  // On mobile, ignore drag position and render as bottom sheet.
-  // Expanded mode ignores the drag position entirely and fills the screen; the
-  // choice is remembered per browser.
-  const panelStyle: React.CSSProperties = !isMobile && position && !expanded
+  // Sizing rules:
+  //  - phone: bottom sheet (compact = short, normal = tall), expanded = fullscreen
+  //  - desktop/laptop: real readable window per display mode, dragged position
+  //    honoured for compact/normal, expanded centres itself.
+  const draggable = !isMobile && !expanded;
+  const panelStyle: React.CSSProperties = draggable && position
     ? { position: "fixed", left: position.x, top: position.y, bottom: "auto", right: "auto", zIndex: 50 }
     : {};
 
-  const mobileClasses = expanded
-    ? "fixed inset-0 z-50 w-full max-w-full h-full max-h-none rounded-none shadow-2xl"
-    : isMobile
-      ? "fixed inset-x-0 bottom-0 z-50 w-full max-w-full rounded-t-2xl rounded-b-none border-b-0 max-h-[85dvh] shadow-2xl"
-      : `${!position ? "fixed bottom-6 right-6 md:bottom-6 bottom-20" : ""} z-50 w-[380px] max-w-[calc(100vw-2rem)] rounded-2xl max-h-[min(32rem,calc(100vh-8rem))] shadow-2xl`;
+  const mobileClasses = isMobile
+    ? expanded
+      ? "fixed inset-0 z-50 w-full max-w-full h-[100dvh] rounded-none shadow-2xl"
+      : `fixed inset-x-0 bottom-0 z-50 w-full max-w-full rounded-t-2xl rounded-b-none border-b-0 shadow-2xl ${
+          isCompact ? "h-[62dvh]" : "h-[90dvh]"
+        }`
+    : expanded
+      ? "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 rounded-2xl shadow-2xl w-[min(1100px,calc(100vw-3rem))] h-[calc(100dvh-3rem)]"
+      : `${!position ? "fixed bottom-6 right-6" : ""} z-50 rounded-2xl shadow-2xl ${panelBoxClasses(panelMode)}`;
 
   return (
     <div
