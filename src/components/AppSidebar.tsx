@@ -25,6 +25,7 @@ import {
   UserCheck,
   Bell,
   Percent,
+  KeyRound,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
