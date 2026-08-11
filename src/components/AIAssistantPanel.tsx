@@ -579,7 +579,8 @@ function AIAssistantPanelInner() {
                   <p className="text-sm text-muted-foreground">{t("ai.welcomeMessage")}</p>
                   <p className="text-xs text-muted-foreground mt-1">{t("ai.disclaimer")}</p>
                 </div>
-              )
+              )}
+
               {quickPrompts.length > 0 && (
                 <div className="space-y-1.5">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1">
