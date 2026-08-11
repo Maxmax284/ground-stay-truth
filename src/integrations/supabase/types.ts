@@ -4617,6 +4617,11 @@ export type Database = {
           unit_name: string
         }[]
       }
+      can_read_payments: { Args: { _user_id: string }; Returns: boolean }
+      can_record_offline_payment: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       can_view_guest_documents: { Args: { _user_id: string }; Returns: boolean }
       cleanup_expired_link_codes: { Args: never; Returns: undefined }
       count_overrides_missing_attribution: { Args: never; Returns: number }
@@ -4770,6 +4775,20 @@ export type Database = {
         Args: { _link_id: string }
         Returns: number
       }
+      is_manual_offline_payment_row: {
+        Args: {
+          _method: string
+          _provider: string
+          _provider_session_id: string
+          _provider_status: string
+          _provider_transaction_id: string
+          _receipt_url: string
+          _source_channel: string
+          _status: string
+        }
+        Returns: boolean
+      }
+      is_offline_payment_method: { Args: { _method: string }; Returns: boolean }
       is_ops_passcode_set: { Args: never; Returns: boolean }
       is_sandbox_booking: { Args: { _booking_id: string }; Returns: boolean }
       is_sandbox_property: { Args: { _property_id: string }; Returns: boolean }
@@ -4836,6 +4855,17 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      record_offline_payment: {
+        Args: {
+          _amount: number
+          _booking_id: string
+          _method: string
+          _notes?: string
+          _payment_type?: string
+          _recovery_note?: string
+        }
+        Returns: string
       }
       reset_sandbox: { Args: never; Returns: Json }
       revoke_admin_elevation: { Args: { _grant_id: string }; Returns: boolean }
