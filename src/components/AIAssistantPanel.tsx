@@ -116,6 +116,25 @@ function AIAssistantPanelInner() {
   const spokenRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Persist the speaker preference.
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("ai.speakReplies", speakReplies ? "1" : "0");
+    }
+  }, [speakReplies]);
+
+  // Read the newest completed assistant reply out loud when the speaker is on.
+  useEffect(() => {
+    if (!speakReplies || isStreaming) return;
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "assistant" || !last.content.trim()) return;
+    const key = `${messages.length}:${last.content.length}`;
+    if (spokenRef.current === key) return;
+    spokenRef.current = key;
+    void speak(last.content, language);
+  }, [messages, isStreaming, speakReplies, speak, language]);
+
+
 
   const [bubbleDragging, setBubbleDragging] = useState(false);
   const bubbleRef = useRef<HTMLDivElement>(null);
