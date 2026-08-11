@@ -362,9 +362,41 @@ function AIAssistantPanelInner() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+          {/* Optional spoken replies — off by default, persists per browser. */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-7 w-7 ${speakReplies ? "text-primary" : ""}`}
+            aria-pressed={speakReplies}
+            title={speakReplies ? t("ai.speakOn", "Spoken replies on") : t("ai.speakOff", "Spoken replies off")}
+            onClick={() => {
+              if (speakReplies) stopSpeech();
+              setSpeakReplies((v) => !v);
+            }}
+          >
+            {speechState === "loading" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : speakReplies ? (
+              <Volume2 className="h-3.5 w-3.5" />
+            ) : (
+              <VolumeX className="h-3.5 w-3.5" />
+            )}
+          </Button>
+          {speechState === "playing" && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-destructive"
+              title={t("ai.stopSpeaking", "Stop speaking")}
+              onClick={stopSpeech}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={clearChat} title={t("ai.clearChat")}>
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
+
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setIsOpen(false); setPosition(null); }}>
             <X className="h-4 w-4" />
           </Button>
