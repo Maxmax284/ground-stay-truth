@@ -271,6 +271,11 @@ export function AppSidebar() {
                     <Activity className="h-4 w-4" /> Operations Monitor
                   </Link>
                 )}
+                {canAccessRoute(role, "/ops-console") && (
+                  <Link to="/ops-console" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent">
+                    <KeyRound className="h-4 w-4" /> {t("nav.opsConsole", "Ops Console")}
+                  </Link>
+                )}
                 {isAdmin && (
                   <Link to="/ops-control-tower" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent">
                     <Activity className="h-4 w-4" /> Ops Control Tower

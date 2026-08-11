@@ -52,6 +52,8 @@ const NAV_ACCESS: Record<string, AppRole[]> = {
   "/security-center": ["admin"],
   "/monitoring": ["manager", "admin"],
   "/ops-control-tower": ["admin"],
+  // Ops Console: staff can read and ask; the code gate and RLS decide what they may act on.
+  "/ops-console": ["front_desk", "front_desk_supervisor", "manager", "admin"],
 };
 
 export function canAccessRoute(role: AppRole | null, path: string): boolean {
