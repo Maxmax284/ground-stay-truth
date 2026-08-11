@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Swords, X, Send, Trash2, Sparkles, AlertTriangle, Globe, GripVertical, Lightbulb, ChevronDown, ChevronUp, Volume2, VolumeX, Loader2 } from "lucide-react";
+import { Swords, X, Send, Trash2, Sparkles, AlertTriangle, Globe, GripVertical, Lightbulb, ChevronDown, ChevronUp, Volume2, VolumeX, Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { VoiceInputButton } from "@/components/VoiceInputButton";
@@ -23,6 +23,8 @@ import { AssistantMessage, UserMessage } from "@/components/ai/AssistantMessage"
 import { LoadingIndicator } from "@/components/ai/LoadingIndicator";
 import { getQuickPromptsForRole, FOCUSED_BOOKING_PROMPTS } from "@/components/ai/QuickPrompts";
 import { useAIFocus } from "@/lib/aiFocusStore";
+import { OpsUnlockDialog } from "@/components/admin/OpsUnlockDialog";
+import { useOpsUnlock } from "@/hooks/useOpsUnlock";
 import { Focus } from "lucide-react";
 import React from "react";
 
@@ -105,6 +107,10 @@ function AIAssistantPanelInner() {
   const [isOpen, setIsOpen] = useState(false);
   const [showPrompts, setShowPrompts] = useState(true);
   const [mode, setMode] = useState<AIMode>("explain");
+  // Ops security-code gate for Deep ops mode.
+  const { configured: opsCodeConfigured, unlocked: opsUnlocked, keepAlive: opsKeepAlive } = useOpsUnlock();
+  const opsGateOpen = !opsCodeConfigured || opsUnlocked;
+  const [unlockOpen, setUnlockOpen] = useState(false);
   const [language, setLanguage] = useState<string>("en");
   // Optional spoken replies (off by default). When on, each finished assistant
   // reply is read out once; the toggle persists per browser.
@@ -265,6 +271,13 @@ function AIAssistantPanelInner() {
     const trimmed = input.trim();
     if (!trimmed || isStreaming) return;
     setInput("");
+    if (mode === "agent") {
+      if (!opsGateOpen) {
+        setUnlockOpen(true);
+        return;
+      }
+      void opsKeepAlive();
+    }
     sendMessage(trimmed, mode, undefined, langCodeToName(language));
   };
 
