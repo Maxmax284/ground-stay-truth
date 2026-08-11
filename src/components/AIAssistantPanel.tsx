@@ -414,108 +414,157 @@ function AIAssistantPanelInner() {
       onPointerUp={isMobile ? undefined : handlePointerUp}
       className={`${mobileClasses} bg-card border border-border flex flex-col animate-slide-up`}
     >
-      {/* Header with drag handle (desktop only) */}
-      <div className="flex items-center justify-between px-4 py-3 border-b">
-        <div className="flex items-center gap-2">
-          {!isMobile && !expanded && (
+      {/* Header — primary controls stay visible, everything else lives in the
+          overflow menu so nothing crowds or clips at narrow widths. */}
+      <div className="flex items-center justify-between gap-2 px-3 py-2.5 border-b">
+        <div className="flex min-w-0 items-center gap-1.5">
+          {draggable && (
             <div
-              className="cursor-grab active:cursor-grabbing p-2 -ml-2 rounded hover:bg-accent/50"
+              className="cursor-grab active:cursor-grabbing p-1.5 -ml-1 rounded hover:bg-accent/50 touch-none"
               onPointerDown={handlePointerDown}
               title="Drag to move"
+              aria-label="Drag to move Kru Glitch"
             >
               <GripVertical className="h-4 w-4 text-muted-foreground" />
             </div>
           )}
-          <Swords className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold">{t("ai.title")}</span>
-          <Badge variant="secondary" className="text-[10px]">{t("ai.assistOnly")}</Badge>
+          <Swords className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-sm font-semibold truncate">{t("ai.title")}</span>
+          {!isCompact && (
+            <Badge variant="secondary" className="text-[10px] shrink-0 hidden sm:inline-flex">
+              {t("ai.assistOnly")}
+            </Badge>
+          )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 shrink-0">
           {/* Control Mode key — the obvious way in. Locked shows the code prompt. */}
           {role !== "guest" && (
             <Button
               variant="ghost"
               size="icon"
-              className={`h-7 w-7 ${inControlMode ? "text-primary" : ""}`}
+              className={`h-8 w-8 ${inControlMode ? "text-primary" : ""}`}
               title={inControlMode ? "Control Mode is live" : "Enter Control Mode"}
+              aria-label={inControlMode ? "Control Mode is live" : "Enter Control Mode"}
               onClick={() => {
                 if (inControlMode) return;
                 if (!opsGateOpen) setUnlockOpen(true);
                 else setMode("agent");
               }}
             >
-              <KeyRound className="h-3.5 w-3.5" />
+              <KeyRound className="h-4 w-4" />
             </Button>
           )}
-          {/* Expand / shrink — remembered per browser. */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            aria-pressed={expanded}
-            title={expanded ? "Shrink chat" : "Expand to full screen"}
-            onClick={() => setExpanded((v) => !v)}
-          >
-            {expanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7" title={t("ai.language")}>
-                <Globe className="h-3.5 w-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="z-[60]">
-              {LANGUAGES.map((lang) => (
-                <DropdownMenuItem
-                  key={lang.code}
-                  onClick={() => setLanguage(lang.code)}
-                  className={language === lang.code ? "bg-accent" : ""}
-                >
-                  {lang.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          {/* Optional spoken replies — off by default, persists per browser. */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`h-7 w-7 ${speakReplies ? "text-primary" : ""}`}
-            aria-pressed={speakReplies}
-            title={speakReplies ? t("ai.speakOn", "Spoken replies on") : t("ai.speakOff", "Spoken replies off")}
-            onClick={() => {
-              if (speakReplies) stopSpeech();
-              setSpeakReplies((v) => !v);
-            }}
-          >
-            {speechState === "loading" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : speakReplies ? (
-              <Volume2 className="h-3.5 w-3.5" />
-            ) : (
-              <VolumeX className="h-3.5 w-3.5" />
-            )}
-          </Button>
           {speechState === "playing" && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-destructive"
+              className="h-8 w-8 text-destructive"
               title={t("ai.stopSpeaking", "Stop speaking")}
+              aria-label={t("ai.stopSpeaking", "Stop speaking")}
               onClick={stopSpeech}
             >
-              <X className="h-3.5 w-3.5" />
+              <VolumeX className="h-4 w-4" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={clearChat} title={t("ai.clearChat")}>
-            <Trash2 className="h-3.5 w-3.5" />
+          {/* Size toggle — hops between the current size and expanded. */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-pressed={expanded}
+            title={expanded ? "Shrink Kru Glitch" : "Expand Kru Glitch"}
+            aria-label={expanded ? "Shrink Kru Glitch" : "Expand Kru Glitch"}
+            onClick={() => setPanelMode(expanded ? "normal" : "expanded")}
+          >
+            {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
-
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setIsOpen(false); setPosition(null); }}>
+          {/* Overflow: size modes, language, speaker, clear, reset layout. */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                title="More options"
+                aria-label="More Kru Glitch options"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="z-[60] w-52">
+              <DropdownMenuLabel className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Size
+              </DropdownMenuLabel>
+              {AI_PANEL_MODES.map((m) => (
+                <DropdownMenuItem
+                  key={m}
+                  onClick={() => {
+                    setPanelMode(m);
+                    if (m === "compact") setShowPrompts(false);
+                  }}
+                  className={panelMode === m ? "bg-accent" : ""}
+                >
+                  <Columns2 className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                  {AI_PANEL_MODE_LABELS[m]}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                {t("ai.language")}
+              </DropdownMenuLabel>
+              <div className="max-h-52 overflow-y-auto">
+                {LANGUAGES.map((lang) => (
+                  <DropdownMenuItem
+                    key={lang.code}
+                    onClick={() => setLanguage(lang.code)}
+                    className={language === lang.code ? "bg-accent" : ""}
+                  >
+                    <Globe className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                    {lang.label}
+                  </DropdownMenuItem>
+                ))}
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  if (speakReplies) stopSpeech();
+                  setSpeakReplies((v) => !v);
+                }}
+              >
+                {speechState === "loading" ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+                ) : speakReplies ? (
+                  <Volume2 className="h-3.5 w-3.5 mr-2 text-primary" />
+                ) : (
+                  <VolumeX className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                )}
+                {speakReplies
+                  ? t("ai.speakOn", "Spoken replies on")
+                  : t("ai.speakOff", "Spoken replies off")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={clearChat}>
+                <Trash2 className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                {t("ai.clearChat")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={resetLayout}>
+                <RotateCcw className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                Reset layout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            title={t("common.close", "Close")}
+            aria-label={t("common.close", "Close")}
+            onClick={() => setIsOpen(false)}
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
       </div>
+
 
       {/* Mode selector — filter staff-only modes for guests */}
       <div className="flex gap-1 px-3 py-2 border-b overflow-x-auto">
