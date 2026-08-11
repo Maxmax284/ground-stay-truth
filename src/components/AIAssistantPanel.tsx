@@ -107,8 +107,14 @@ function AIAssistantPanelInner() {
   const [isOpen, setIsOpen] = useState(false);
   const [showPrompts, setShowPrompts] = useState(true);
   const [mode, setMode] = useState<AIMode>("explain");
-  // Ops security-code gate for Deep ops mode.
-  const { configured: opsCodeConfigured, unlocked: opsUnlocked, keepAlive: opsKeepAlive } = useOpsUnlock();
+  // Ops security-code gate for Control Mode (deep ops).
+  const {
+    configured: opsCodeConfigured,
+    unlocked: opsUnlocked,
+    keepAlive: opsKeepAlive,
+    msLeft: opsMsLeft,
+    lock: opsLock,
+  } = useOpsUnlock();
   const opsGateOpen = !opsCodeConfigured || opsUnlocked;
   const [unlockOpen, setUnlockOpen] = useState(false);
   const [language, setLanguage] = useState<string>("en");
