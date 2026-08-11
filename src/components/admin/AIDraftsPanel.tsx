@@ -198,7 +198,7 @@ export function AIDraftsPanel() {
                 key={d.id}
                 draft={d}
                 busy={isReviewing}
-                onReview={(decision, note) => handleReview(d, decision, note)}
+                onReview={(decision, note, execute) => handleReview(d, decision, note, execute)}
               />
             ))}
           </div>
