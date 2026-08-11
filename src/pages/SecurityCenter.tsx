@@ -52,6 +52,8 @@ export default function SecurityCenter() {
               <MfaAdminResetCard />
               <WebhookHealthCard />
             </div>
+            <DeviceRecognitionCard />
+            <TrustedDevicesCard />
             <PaymentLinkAbuseCard />
             <AIUsageDashboard />
             <MfaPolicyForm />
