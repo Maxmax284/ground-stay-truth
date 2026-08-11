@@ -17,6 +17,8 @@ import { SecurityFreezeBanner } from "@/components/SecurityFreezeBanner";
 import { PropertyIndicator } from "@/components/PropertyIndicator";
 import { useFenrirConfig } from "@/lib/fenrir";
 import { SandboxModeBanner } from "@/components/SandboxModeBanner";
+import { ElevationBanner } from "@/components/admin/ElevationBanner";
+
 
 const routeTitleKeys: Record<string, string> = {
   "/dashboard": "nav.dashboard",
