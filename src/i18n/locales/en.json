@@ -557,7 +557,8 @@
     "fullRefundNote": "This will be a full refund",
     "refundReason": "Reason",
     "refundReasonPlaceholder": "Explain why this refund is being issued...",
-    "confirmRefund": "Confirm Refund"
+    "confirmRefund": "Confirm Refund",
+    "paymentFailed": "Payment not recorded"
   },
   "messages": {
     "title": "Messages",
