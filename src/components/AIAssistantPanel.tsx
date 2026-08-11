@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Swords, X, Send, Trash2, Sparkles, AlertTriangle, Globe, GripVertical, Lightbulb, ChevronDown, ChevronUp, Volume2, VolumeX, Loader2, Lock } from "lucide-react";
+import { Swords, X, Send, Trash2, Sparkles, AlertTriangle, Globe, GripVertical, Lightbulb, ChevronDown, ChevronUp, Maximize2, Minimize2, KeyRound, Volume2, VolumeX, Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { VoiceInputButton } from "@/components/VoiceInputButton";
@@ -21,7 +21,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AssistantMessage, UserMessage } from "@/components/ai/AssistantMessage";
 import { LoadingIndicator } from "@/components/ai/LoadingIndicator";
-import { getQuickPromptsForRole, FOCUSED_BOOKING_PROMPTS } from "@/components/ai/QuickPrompts";
+import { getQuickPromptsForRole, FOCUSED_BOOKING_PROMPTS, CONTROL_MODE_PROMPTS } from "@/components/ai/QuickPrompts";
 import { useAIFocus } from "@/lib/aiFocusStore";
 import { OpsUnlockDialog } from "@/components/admin/OpsUnlockDialog";
 import { useOpsUnlock, formatCountdown } from "@/hooks/useOpsUnlock";
@@ -103,7 +103,17 @@ function AIAssistantPanelInner() {
   const focus = useAIFocus();
   const baseQuickPrompts = getQuickPromptsForRole(role);
   // Phase 5: when the user has a booking sheet open, surface booking-focused prompts.
-  const quickPrompts = focus && role !== "guest" ? FOCUSED_BOOKING_PROMPTS : baseQuickPrompts;
+  // Bubble deck: Control Mode gets the ops deck, a focused booking gets booking
+  // prompts, otherwise the role default. Set after `mode` below.
+  const [expanded, setExpanded] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("ai.expanded") === "1";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("ai.expanded", expanded ? "1" : "0");
+    }
+  }, [expanded]);
   const [input, setInput] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [showPrompts, setShowPrompts] = useState(true);
@@ -118,6 +128,13 @@ function AIAssistantPanelInner() {
   } = useOpsUnlock();
   const opsGateOpen = !opsCodeConfigured || opsUnlocked;
   const [unlockOpen, setUnlockOpen] = useState(false);
+  const inControlMode = mode === "agent" && role !== "guest";
+  const quickPrompts = inControlMode
+    ? CONTROL_MODE_PROMPTS
+    : focus && role !== "guest"
+      ? FOCUSED_BOOKING_PROMPTS
+      : baseQuickPrompts;
+  const staffName = (profile?.full_name || "").split(" ")[0] || "boss";
   const [language, setLanguage] = useState<string>("en");
   // Optional spoken replies (off by default). When on, each finished assistant
   // reply is read out once; the toggle persists per browser.
