@@ -44,9 +44,15 @@ function ChecklistRow({ done, label, detail }: { done: boolean; label: string; d
 export function AIOpsPanel() {
   const { drafts, pendingCount } = useAIDrafts("all", 1);
   const { grants } = useElevationGrants();
+  const { configured, unlocked } = useOpsUnlock();
+  const [unlockOpen, setUnlockOpen] = useState(false);
+
+  // No code configured means the gate is open by design.
+  const gateOpen = !configured || unlocked;
 
   const hasDrafts = (drafts.data?.length ?? 0) > 0;
   const hasUsedElevation = (grants?.length ?? 0) > 0;
+
 
   return (
     <div className="space-y-6">
