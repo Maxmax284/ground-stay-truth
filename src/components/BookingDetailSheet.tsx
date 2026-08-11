@@ -19,6 +19,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
+import { canMoveBookingRoom } from "@/lib/roomMove";
+import { MoveRoomDialog } from "@/components/MoveRoomDialog";
+import { useUnits } from "@/hooks/useUnits";
 import { format, differenceInHours } from "date-fns";
 import { formatInPropertyTimezone } from "@/lib/timezone";
 import { useBooking, useBookingStateLog, useBookingPayments, useBookingMessages, useCreatePayment, useRefundPayment, useCreateMessage, useMarkMessagesRead } from "@/hooks/useBookings";
@@ -28,7 +31,7 @@ import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { formatPrice } from "@/lib/currency";
 import { calculateOutstanding, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_VARIANTS, PAYMENT_TYPE_LABELS, getPaymentProvenance, type PaymentStatus, type PaymentType } from "@/lib/paymentTypes";
-import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText, Info, Wrench, Shirt, Globe, Sparkles, RotateCcw, Paperclip, Image as ImageIcon, File, X, Loader2, Activity } from "lucide-react";
+import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText, Info, Wrench, Shirt, Globe, Sparkles, RotateCcw, Paperclip, Image as ImageIcon, File, X, Loader2, Activity, ArrowRightLeft } from "lucide-react";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { RefundDialog } from "@/components/RefundDialog";
 import { GuestPortalActivityTimeline } from "@/components/GuestPortalActivityTimeline";
@@ -238,6 +241,11 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
         <SheetHeader className="pb-4">
           <SheetTitle className="flex items-center gap-3 flex-wrap">
             <span>{booking.units?.name ?? t("bookingDetail.unknownUnit")}</span>
+            {canMoveBookingRoom(role) && (
+              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowMoveRoom(true)}>
+                <ArrowRightLeft className="h-3.5 w-3.5 mr-1" /> Move room
+              </Button>
+            )}
             <Badge className={STATE_VARIANTS[booking.state as BookingState]}>{t(`states.${booking.state}`)}</Badge>
             {travelInfo && travelInfo.state !== "cancelled" && (
               <Badge className={`text-[10px] ${TRAVEL_BADGE_STYLES[travelInfo.severity]}`} title={travelInfo.staffDetail}>
