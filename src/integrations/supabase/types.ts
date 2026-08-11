@@ -4864,6 +4864,7 @@ export type Database = {
           _notes?: string
           _payment_type?: string
           _recovery_note?: string
+          _source_channel?: string
         }
         Returns: string
       }
