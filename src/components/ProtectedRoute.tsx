@@ -3,6 +3,7 @@ import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { canAccessRoute, permissions } from "@/lib/permissions";
 import { useTranslation } from "react-i18next";
+import MfaGate from "@/components/security/MfaGate";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -111,7 +112,8 @@ const ProtectedRoute = ({ children, requiredPath, guestOnly = false }: Protected
     );
   }
 
-  return <>{children}</>;
+  // High-privilege roles must satisfy MFA before any staff surface mounts.
+  return <MfaGate>{children}</MfaGate>;
 };
 
 export default ProtectedRoute;
