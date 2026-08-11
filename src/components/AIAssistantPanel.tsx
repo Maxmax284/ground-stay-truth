@@ -29,7 +29,9 @@ const MODE_LABELS: Record<AIMode, string> = {
   draft: "ai.modes.draft",
   digest: "ai.modes.digest",
   camp: "ai.modes.camp",
+  agent: "ai.modes.agent",
 };
+
 
 const LANGUAGES = [
   { code: "en", label: "English" },
