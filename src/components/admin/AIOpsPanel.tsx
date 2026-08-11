@@ -85,12 +85,36 @@ export function AIOpsPanel() {
         </CardContent>
       </Card>
 
+      <OpsPasscodePanel />
       <AISandboxToggle />
-      <ElevationPanel />
-      <AIDraftsPanel />
 
+      {/* Approvals and break-glass sit behind the same security code as chat. */}
+      {gateOpen ? (
+        <>
+          <ElevationPanel />
+          <AIDraftsPanel />
+        </>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5 text-muted-foreground" />
+              Approvals and break-glass are locked
+            </CardTitle>
+            <CardDescription>
+              Enter the ops security code to review AI drafts or grant a break-glass window.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => setUnlockOpen(true)}>Enter security code</Button>
+          </CardContent>
+        </Card>
+      )}
+
+      <OpsUnlockDialog open={unlockOpen} onOpenChange={setUnlockOpen} surface="AI ops" />
     </div>
   );
 }
+
 
 export default AIOpsPanel;
