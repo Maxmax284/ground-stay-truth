@@ -34,6 +34,8 @@ import { toast } from "@/hooks/use-toast";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { ToastAction } from "@/components/ui/toast";
 import type { DragResult } from "@/hooks/useCalendarDragDrop";
+import { canMoveBookingRoom } from "@/lib/roomMove";
+import { MoveRoomDialog } from "@/components/MoveRoomDialog";
 
 type ViewMode = "timeline" | "month" | "day";
 
@@ -549,6 +551,14 @@ const CalendarView = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <MoveRoomDialog
+        open={!!moveRequest}
+        onOpenChange={(o) => { if (!o) setMoveRequest(null); }}
+        booking={moveBooking}
+        units={allUnits}
+        fixedTargetUnitId={moveRequest?.targetUnitId ?? null}
+      />
     </DashboardLayout>
   );
 };
