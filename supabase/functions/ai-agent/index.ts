@@ -6,12 +6,22 @@
 // happened to include.
 //
 // ARCHITECTURE LAW — Plan -> Approve -> Execute:
-//   The agent has exactly ONE write tool, `propose_action`, and it does not
-//   execute anything. It writes a row into `ai_action_drafts` that a human
-//   reviews and approves inside the platform. No booking, payment, inventory,
-//   or guest-facing side effect can originate from this function.
+//   The agent has exactly ONE write tool, `propose_action`, and it executes
+//   nothing. It writes a row into `ai_action_drafts` that a human reviews and
+//   approves inside the platform. No booking, payment, inventory, or
+//   guest-facing side effect can originate from this function.
 //
 // Staff only. Guests are rejected — they keep the scoped concierge.
+//
+// SCHEMA NOTES (this codebase, not generic):
+//   bookings.state (not status): pending_deposit | confirmed | checked_in |
+//     completed | cancelled. Guest name = profiles.full_name via guest_id, or
+//     manual_guest_name for staff-entered legacy bookings.
+//   bookings.hold_deadline_at is the payment/hold deadline.
+//   payments: status 'recorded' means money received; payment_type buckets
+//     deposit | balance | addon.
+//   housekeeping_tasks: due_by + status (no scheduled_date).
+//   units.listing_category is the public category.
 // -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -51,12 +61,15 @@ const MAX_STEPS = 6;
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
+const LIVE_STATES = ["pending_deposit", "confirmed", "checked_in"];
+const GUEST_JOIN = "profiles!bookings_guest_id_profiles_fkey(full_name, email)";
+
 /** Bangkok-local YYYY-MM-DD for "today" from the property's point of view. */
 function campToday(): string {
   return new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
-function campTime(iso: string | null): string {
+function campTime(iso: string | null | undefined): string {
   if (!iso) return "unknown";
   return new Date(iso).toLocaleString("en-US", {
     timeZone: "Asia/Bangkok",
@@ -67,16 +80,54 @@ function campTime(iso: string | null): string {
   });
 }
 
+/** Booking rows carry either a linked profile or a staff-typed manual name. */
+function guestNameOf(row: Record<string, any>): string {
+  return (
+    row.manual_guest_name ||
+    row.profiles?.full_name ||
+    row.profiles?.email ||
+    row.manual_guest_email ||
+    "Unnamed guest"
+  );
+}
+
+function isReceived(status: string): boolean {
+  return status === "recorded" || status === "partially_refunded";
+}
+
+/** Mirrors src/lib/paymentTypes.ts calculateOutstanding — add-ons are real money. */
+function outstandingFor(
+  totalPrice: number | null,
+  payments: Array<{ amount: number; status: string; refund_amount?: number | null; payment_type?: string | null }>,
+) {
+  const paid = payments.filter((p) => isReceived(p.status)).reduce((s, p) => s + Number(p.amount || 0), 0);
+  const refunded = payments
+    .filter((p) => p.status === "refunded" || p.status === "partially_refunded")
+    .reduce((s, p) => s + Number(p.refund_amount ?? 0), 0);
+  const addon = payments
+    .filter(
+      (p) =>
+        (p.payment_type ?? "") === "addon" &&
+        ["pending", "recorded", "partially_refunded", "waived"].includes(p.status),
+    )
+    .reduce((s, p) => s + Number(p.amount || 0), 0);
+  const grandTotal = Math.round(((totalPrice ?? 0) + addon) * 100) / 100;
+  return {
+    paid: Math.round(paid * 100) / 100,
+    addon_total: Math.round(addon * 100) / 100,
+    grand_total: grandTotal,
+    outstanding: Math.max(0, Math.round((grandTotal - paid + refunded) * 100) / 100),
+  };
+}
+
 // ─── TOOL DEFINITIONS ────────────────────────────────────────────────────────
-// Read tools are safe by construction: they only SELECT, always bounded, and
-// never return raw contact details for guests (staff can open the record).
 const TOOLS = [
   {
     type: "function",
     function: {
       name: "get_today_board",
       description:
-        "Today's operational board: arrivals, departures, in-house count, and unassigned units. Use this for 'what's happening today' style questions.",
+        "Today's operational board: arrivals, departures, in-house count, and arrivals with no unit assigned. Use for 'what's happening today' questions.",
       parameters: { type: "object", properties: {}, required: [] },
     },
   },
@@ -85,14 +136,14 @@ const TOOLS = [
     function: {
       name: "list_bookings",
       description:
-        "List bookings with filters. Use for questions about a date range, a status, or a specific guest name.",
+        "List bookings with filters. Use for a date range, a state, or a guest name search.",
       parameters: {
         type: "object",
         properties: {
-          status: {
+          state: {
             type: "string",
             description:
-              "Booking status filter, e.g. pending, confirmed, checked_in, checked_out, cancelled, no_show.",
+              "Booking state: pending_deposit, confirmed, checked_in, completed, or cancelled.",
           },
           from_date: { type: "string", description: "Earliest check-in date, YYYY-MM-DD." },
           to_date: { type: "string", description: "Latest check-in date, YYYY-MM-DD." },
@@ -108,12 +159,10 @@ const TOOLS = [
     function: {
       name: "get_money_exposure",
       description:
-        "Bookings with money still owed: outstanding balances, unpaid deposits, and overdue payment deadlines. Use for revenue-risk questions.",
+        "Live bookings with money still owed, including add-on obligations like airport pickup. Use for revenue-risk questions.",
       parameters: {
         type: "object",
-        properties: {
-          limit: { type: "number", description: "Max rows, default 20, hard cap 50." },
-        },
+        properties: { limit: { type: "number", description: "Max rows, default 25, hard cap 50." } },
         required: [],
       },
     },
@@ -123,7 +172,7 @@ const TOOLS = [
     function: {
       name: "get_exceptions",
       description:
-        "Everything currently off-script: expired holds, missing documents, unassigned units, arrivals with no flight info, no-shows awaiting a decision.",
+        "Everything currently off-script: expired holds, arrivals with no unit assigned, documents awaiting review, and open housekeeping past its due time.",
       parameters: { type: "object", properties: {}, required: [] },
     },
   },
@@ -132,7 +181,7 @@ const TOOLS = [
     function: {
       name: "get_booking_detail",
       description:
-        "Full detail for one booking: dates, unit, guests, money, pickup, documents, and its override history.",
+        "Full detail for one booking: dates, unit, guest, money breakdown, airport pickup, documents, and override history.",
       parameters: {
         type: "object",
         properties: { booking_id: { type: "string", description: "The booking UUID." } },
@@ -144,7 +193,7 @@ const TOOLS = [
     type: "function",
     function: {
       name: "get_housekeeping",
-      description: "Housekeeping and turnover tasks, optionally for a specific date.",
+      description: "Housekeeping / turnover tasks, optionally for a specific date (by due time).",
       parameters: {
         type: "object",
         properties: { date: { type: "string", description: "YYYY-MM-DD, defaults to today." } },
@@ -157,7 +206,7 @@ const TOOLS = [
     function: {
       name: "get_availability",
       description:
-        "Which units are free across a date range. Use before proposing any date or room change.",
+        "Which units are free across a date range. Always call this before proposing any date or room change.",
       parameters: {
         type: "object",
         properties: {
@@ -232,28 +281,29 @@ async function runTool(
   switch (name) {
     case "get_today_board": {
       const today = campToday();
+      const cols = `id, check_in, check_out, state, unit_id, num_guests, manual_guest_name, manual_guest_email, units(name), ${GUEST_JOIN}`;
       const [arrivals, departures, inHouse] = await Promise.all([
-        admin
-          .from("bookings")
-          .select("id, guest_name, check_in, check_out, status, unit_id, num_guests")
-          .eq("check_in", today)
-          .not("status", "in", "(cancelled,no_show)"),
-        admin
-          .from("bookings")
-          .select("id, guest_name, check_in, check_out, status, unit_id")
-          .eq("check_out", today)
-          .not("status", "in", "(cancelled,no_show)"),
-        admin
-          .from("bookings")
-          .select("id, guest_name, check_in, check_out, unit_id")
-          .eq("status", "checked_in"),
+        admin.from("bookings").select(cols).eq("check_in", today).in("state", LIVE_STATES),
+        admin.from("bookings").select(cols).eq("check_out", today).in("state", LIVE_STATES),
+        admin.from("bookings").select("id").eq("state", "checked_in"),
       ]);
+      const shape = (rows: any[] | null) =>
+        (rows ?? []).map((b) => ({
+          booking_id: b.id,
+          guest: guestNameOf(b),
+          unit: b.units?.name ?? null,
+          check_in: b.check_in,
+          check_out: b.check_out,
+          state: b.state,
+          guests: b.num_guests,
+        }));
+      const arrivalRows = shape(arrivals.data as any[]);
       return {
         date_bangkok: today,
-        arrivals: arrivals.data ?? [],
-        departures: departures.data ?? [],
+        arrivals: arrivalRows,
+        departures: shape(departures.data as any[]),
         in_house_count: (inHouse.data ?? []).length,
-        arrivals_without_unit: (arrivals.data ?? []).filter((b) => !b.unit_id).length,
+        arrivals_without_unit: arrivalRows.filter((a) => !a.unit).length,
       };
     }
 
@@ -261,122 +311,243 @@ async function runTool(
       let q = admin
         .from("bookings")
         .select(
-          "id, guest_name, check_in, check_out, status, unit_id, total_price, num_guests, created_at",
+          `id, check_in, check_out, state, unit_id, total_price, num_guests, created_at, manual_guest_name, manual_guest_email, units(name), ${GUEST_JOIN}`,
         )
         .order("check_in", { ascending: true })
         .limit(cap(args.limit, 20, 50));
-      if (typeof args.status === "string") q = q.eq("status", args.status);
+      if (typeof args.state === "string") q = q.eq("state", args.state);
       if (typeof args.from_date === "string") q = q.gte("check_in", args.from_date);
       if (typeof args.to_date === "string") q = q.lte("check_in", args.to_date);
-      if (typeof args.guest_name === "string" && args.guest_name.trim()) {
-        q = q.ilike("guest_name", `%${args.guest_name.trim()}%`);
-      }
       const { data, error } = await q;
       if (error) return { error: error.message };
-      return { count: (data ?? []).length, bookings: data ?? [] };
+
+      let rows = (data ?? []) as any[];
+      // Guest name lives in two places (linked profile vs manual entry), so the
+      // name filter is applied in memory rather than as a single SQL ilike.
+      if (typeof args.guest_name === "string" && args.guest_name.trim()) {
+        const needle = args.guest_name.trim().toLowerCase();
+        rows = rows.filter((b) => guestNameOf(b).toLowerCase().includes(needle));
+      }
+      return {
+        count: rows.length,
+        bookings: rows.map((b) => ({
+          booking_id: b.id,
+          guest: guestNameOf(b),
+          unit: b.units?.name ?? null,
+          check_in: b.check_in,
+          check_out: b.check_out,
+          state: b.state,
+          guests: b.num_guests,
+          total_price_thb: b.total_price,
+        })),
+      };
     }
 
     case "get_money_exposure": {
-      const limit = cap(args.limit, 20, 50);
       const { data, error } = await admin
         .from("bookings")
         .select(
-          "id, guest_name, check_in, check_out, status, total_price, deposit_paid, payment_deadline, pay_on_arrival",
+          `id, check_in, check_out, state, total_price, hold_deadline_at, pay_on_arrival, manual_guest_name, manual_guest_email, units(name), ${GUEST_JOIN}`,
         )
-        .not("status", "in", "(cancelled,no_show,checked_out)")
+        .in("state", LIVE_STATES)
         .order("check_in", { ascending: true })
-        .limit(limit);
+        .limit(cap(args.limit, 25, 50));
       if (error) return { error: error.message };
-      const ids = (data ?? []).map((b) => b.id);
+
+      const rows = (data ?? []) as any[];
+      const ids = rows.map((b) => b.id);
       const { data: payments } = ids.length
-        ? await admin.from("payments").select("booking_id, amount, status, kind").in("booking_id", ids)
-        : { data: [] as Array<Record<string, unknown>> };
-      const paidBy = new Map<string, number>();
-      for (const p of payments ?? []) {
-        if ((p as { status?: string }).status !== "paid") continue;
-        const bid = (p as { booking_id: string }).booking_id;
-        paidBy.set(bid, (paidBy.get(bid) ?? 0) + Number((p as { amount: number }).amount ?? 0));
+        ? await admin
+            .from("payments")
+            .select("booking_id, amount, status, payment_type, refund_amount")
+            .in("booking_id", ids)
+        : { data: [] as any[] };
+      const byBooking = new Map<string, any[]>();
+      for (const p of (payments ?? []) as any[]) {
+        const list = byBooking.get(p.booking_id) ?? [];
+        list.push(p);
+        byBooking.set(p.booking_id, list);
       }
+
+      const out = rows
+        .map((b) => {
+          const money = outstandingFor(b.total_price, byBooking.get(b.id) ?? []);
+          return {
+            booking_id: b.id,
+            guest: guestNameOf(b),
+            unit: b.units?.name ?? null,
+            check_in: b.check_in,
+            state: b.state,
+            pay_on_arrival: !!b.pay_on_arrival,
+            hold_deadline: campTime(b.hold_deadline_at),
+            hold_expired:
+              !!b.hold_deadline_at && new Date(b.hold_deadline_at).getTime() < Date.now(),
+            ...money,
+          };
+        })
+        .filter((r) => r.outstanding > 0);
+
       return {
-        note: "Amounts in THB. pay_on_arrival bookings are expected to settle at the camp — not overdue.",
-        rows: (data ?? []).map((b) => ({
-          ...b,
-          paid_total: paidBy.get(b.id) ?? 0,
-          outstanding: Number(b.total_price ?? 0) - (paidBy.get(b.id) ?? 0),
-        })),
+        note:
+          "Amounts in THB. pay_on_arrival = true means the guest settles at the camp; that is expected, not overdue.",
+        total_outstanding_thb: Math.round(out.reduce((s, r) => s + r.outstanding, 0) * 100) / 100,
+        rows: out,
       };
     }
 
     case "get_exceptions": {
       const today = campToday();
-      const [expired, unassigned, docs, noShows] = await Promise.all([
+      const nowIso = new Date().toISOString();
+      const cols = `id, check_in, check_out, state, hold_deadline_at, manual_guest_name, manual_guest_email, units(name), ${GUEST_JOIN}`;
+      const [expired, unassigned, docs, hk] = await Promise.all([
         admin
           .from("bookings")
-          .select("id, guest_name, check_in, status, payment_deadline")
-          .eq("status", "pending")
-          .lt("payment_deadline", new Date().toISOString())
+          .select(cols)
+          .eq("state", "pending_deposit")
+          .lt("hold_deadline_at", nowIso)
           .limit(25),
         admin
           .from("bookings")
-          .select("id, guest_name, check_in, status")
+          .select(cols)
           .is("unit_id", null)
           .gte("check_in", today)
-          .not("status", "in", "(cancelled,no_show)")
+          .in("state", LIVE_STATES)
           .limit(25),
         admin
           .from("guest_documents")
-          .select("id, booking_id, document_type, status, created_at")
-          .eq("status", "pending")
+          .select("id, booking_id, document_type, review_status, created_at")
+          .eq("review_status", "pending")
           .limit(25),
         admin
-          .from("bookings")
-          .select("id, guest_name, check_in, status")
-          .eq("status", "no_show")
+          .from("housekeeping_tasks")
+          .select("id, unit_id, status, due_by, notes")
+          .neq("status", "completed")
+          .lt("due_by", nowIso)
           .limit(25),
       ]);
+      const shape = (rows: any[] | null) =>
+        (rows ?? []).map((b) => ({
+          booking_id: b.id,
+          guest: guestNameOf(b),
+          unit: b.units?.name ?? null,
+          check_in: b.check_in,
+          state: b.state,
+          hold_deadline: campTime(b.hold_deadline_at),
+        }));
       return {
-        expired_holds: expired.data ?? [],
-        arrivals_without_unit: unassigned.data ?? [],
-        documents_awaiting_review: docs.data ?? [],
-        no_shows_awaiting_decision: noShows.data ?? [],
+        expired_holds: shape(expired.data as any[]),
+        arrivals_without_unit: shape(unassigned.data as any[]),
+        documents_awaiting_review: (docs.data ?? []).map((d: any) => ({
+          document_id: d.id,
+          booking_id: d.booking_id,
+          type: d.document_type,
+          uploaded: campTime(d.created_at),
+        })),
+        housekeeping_overdue: (hk.data ?? []).map((t: any) => ({
+          task_id: t.id,
+          unit_id: t.unit_id,
+          status: t.status,
+          due: campTime(t.due_by),
+        })),
       };
     }
 
     case "get_booking_detail": {
       const id = String(args.booking_id ?? "");
       if (!id) return { error: "booking_id required" };
-      const [booking, payments, overrides, pickup] = await Promise.all([
-        admin.from("bookings").select("*").eq("id", id).maybeSingle(),
-        admin.from("payments").select("amount, status, kind, created_at").eq("booking_id", id),
+      const [booking, payments, overrides, pickup, docs] = await Promise.all([
+        admin
+          .from("bookings")
+          .select(
+            `id, check_in, check_out, state, num_guests, total_price, price_override, notes, guest_type, pay_on_arrival, offline_acknowledgements, hold_deadline_at, deadline_override_reason, confirmation_number, flight_number, arrived_at, manual_guest_name, manual_guest_email, manual_guest_phone, units(name, listing_category), ${GUEST_JOIN}`,
+          )
+          .eq("id", id)
+          .maybeSingle(),
+        admin
+          .from("payments")
+          .select("amount, status, payment_type, method, refund_amount, created_at")
+          .eq("booking_id", id),
         admin
           .from("override_audit_log")
           .select("action_type, actor_name, actor_role, reason, created_at, elevated")
           .eq("booking_id", id)
           .order("created_at", { ascending: false })
           .limit(15),
-        admin.from("airport_pickups").select("*").eq("booking_id", id).maybeSingle(),
+        admin
+          .from("airport_pickups")
+          .select(
+            "status, fee, flight_number, arrival_datetime, arrival_type, arrival_location_name, guest_landed_at, pickup_enabled",
+          )
+          .eq("booking_id", id)
+          .maybeSingle(),
+        admin
+          .from("guest_documents")
+          .select("document_type, review_status, used_for_tm30, created_at")
+          .eq("booking_id", id)
+          .eq("superseded", false),
       ]);
-      if (!booking.data) return { error: "Booking not found" };
+      const b = booking.data as any;
+      if (!b) return { error: "Booking not found" };
       return {
-        booking: booking.data,
-        payments: payments.data ?? [],
-        pickup: pickup.data ?? null,
-        overrides: (overrides.data ?? []).map((o) => ({
+        booking_id: b.id,
+        guest: guestNameOf(b),
+        unit: b.units?.name ?? null,
+        category: b.units?.listing_category ?? null,
+        check_in: b.check_in,
+        check_out: b.check_out,
+        state: b.state,
+        guests: b.num_guests,
+        pay_on_arrival: !!b.pay_on_arrival,
+        offline_acknowledgements: b.offline_acknowledgements ?? null,
+        hold_deadline: campTime(b.hold_deadline_at),
+        deadline_override_reason: b.deadline_override_reason ?? null,
+        confirmation_number: b.confirmation_number ?? null,
+        notes: b.notes ?? null,
+        money: outstandingFor(b.total_price, (payments.data ?? []) as any[]),
+        payments: (payments.data ?? []).map((p: any) => ({
+          amount_thb: p.amount,
+          status: p.status,
+          type: p.payment_type,
+          method: p.method,
+          when: campTime(p.created_at),
+        })),
+        pickup: pickup.data
+          ? {
+              ...(pickup.data as any),
+              arrival_time: campTime((pickup.data as any).arrival_datetime),
+            }
+          : null,
+        documents: docs.data ?? [],
+        overrides: (overrides.data ?? []).map((o: any) => ({
           ...o,
-          when: campTime(o.created_at as string),
+          when: campTime(o.created_at),
         })),
       };
     }
 
     case "get_housekeeping": {
       const date = typeof args.date === "string" ? args.date : campToday();
+      // due_by is a timestamp; bound it to the Bangkok-local calendar day.
+      const dayStart = `${date}T00:00:00+07:00`;
+      const dayEnd = `${date}T23:59:59+07:00`;
       const { data, error } = await admin
         .from("housekeeping_tasks")
-        .select("id, unit_id, task_type, status, scheduled_date, notes")
-        .eq("scheduled_date", date)
+        .select("id, unit_id, status, due_by, notes, assigned_to, booking_out_id, booking_in_id")
+        .gte("due_by", dayStart)
+        .lte("due_by", dayEnd)
         .limit(60);
       if (error) return { error: error.message };
-      return { date, tasks: data ?? [] };
+      return {
+        date,
+        tasks: (data ?? []).map((t: any) => ({
+          task_id: t.id,
+          unit_id: t.unit_id,
+          status: t.status,
+          due: campTime(t.due_by),
+          notes: t.notes,
+          turnover: !!(t.booking_out_id && t.booking_in_id),
+        })),
+      };
     }
 
     case "get_availability": {
@@ -384,19 +555,29 @@ async function runTool(
       const checkOut = String(args.check_out ?? "");
       if (!checkIn || !checkOut) return { error: "check_in and check_out required" };
       const [units, overlapping] = await Promise.all([
-        admin.from("units").select("id, name, category, group_id, is_active").eq("is_active", true),
+        admin
+          .from("units")
+          .select("id, name, listing_category, group_id, capacity")
+          .eq("is_active", true),
+        // Overlap semantics: a stay conflicts when it starts before our checkout
+        // and ends after our check-in. Same-day turnover is NOT a conflict.
         admin
           .from("bookings")
-          .select("unit_id, check_in, check_out, status")
-          .not("status", "in", "(cancelled,no_show)")
+          .select("unit_id")
+          .in("state", LIVE_STATES)
           .lt("check_in", checkOut)
           .gt("check_out", checkIn),
       ]);
-      const taken = new Set((overlapping.data ?? []).map((b) => b.unit_id).filter(Boolean));
-      const free = (units.data ?? []).filter((u) => !taken.has(u.id));
+      const taken = new Set(((overlapping.data ?? []) as any[]).map((b) => b.unit_id).filter(Boolean));
+      const free = ((units.data ?? []) as any[]).filter((u) => !taken.has(u.id));
       return {
         range: { check_in: checkIn, check_out: checkOut },
-        free_units: free.map((u) => ({ id: u.id, name: u.name, category: u.category })),
+        free_units: free.map((u) => ({
+          unit_id: u.id,
+          name: u.name,
+          category: u.listing_category,
+          capacity: u.capacity,
+        })),
         occupied_count: taken.size,
       };
     }
@@ -411,7 +592,7 @@ async function runTool(
         .limit(cap(args.limit, 15, 40));
       if (error) return { error: error.message };
       return {
-        overrides: (data ?? []).map((o) => ({ ...o, when: campTime(o.created_at as string) })),
+        overrides: (data ?? []).map((o: any) => ({ ...o, when: campTime(o.created_at) })),
       };
     }
 
@@ -421,6 +602,17 @@ async function runTool(
       const rationale = String(args.rationale ?? "").trim();
       if (!summary) return { error: "summary required" };
 
+      let propertyId: string | null = null;
+      const bookingId = typeof args.booking_id === "string" && args.booking_id ? args.booking_id : null;
+      if (bookingId) {
+        const { data: b } = await admin
+          .from("bookings")
+          .select("property_id")
+          .eq("id", bookingId)
+          .maybeSingle();
+        propertyId = (b as any)?.property_id ?? null;
+      }
+
       const { data, error } = await admin
         .from("ai_action_drafts")
         .insert({
@@ -428,7 +620,8 @@ async function runTool(
           action_type: actionType,
           summary,
           rationale,
-          booking_id: typeof args.booking_id === "string" ? args.booking_id : null,
+          booking_id: bookingId,
+          property_id: propertyId,
           payload: (args.details as Record<string, unknown>) ?? {},
           status: "pending",
         })
@@ -440,7 +633,7 @@ async function runTool(
         drafted: true,
         draft_id: data.id,
         note:
-          "Draft created in the approval queue. Nothing has been executed. Tell the staff member it is waiting for their approval.",
+          "Draft created in the approval queue. Nothing was executed. Tell the staff member it is waiting for their approval.",
       };
     }
 
@@ -456,18 +649,20 @@ WHO YOU ARE TALKING TO: a staff member with the role "${role}".
 LANGUAGE: reply in ${langName}. Match the user's language if they switch.
 
 HOW YOU WORK
-- You have read tools. USE THEM. Never guess at numbers, dates, names, or money — call a tool and cite what it returned.
+- You have read tools. USE THEM. Never guess at numbers, dates, names, or money — call a tool and answer from what it returned.
 - Chain tools when needed: check availability before suggesting a room move; read the booking before proposing anything about it.
 - All times are Thailand time (UTC+7). Money is Thai Baht (THB).
+- Booking states here are: pending_deposit, confirmed, checked_in, completed, cancelled.
+- A booking marked pay_on_arrival settles at the camp — do NOT call it overdue.
 
 ACTIONS — PLAN, APPROVE, EXECUTE
-- You cannot execute anything. Ever. If the staff member asks you to do something operational, call propose_action to put a draft in the approval queue, then tell them plainly it is waiting for approval and what it will do.
-- Never claim something has been done, sent, charged, booked, or changed. It hasn't.
+- You cannot execute anything. Ever. If the staff member asks you to do something operational, call propose_action to put a draft in the approval queue, then say plainly that it is waiting for approval and what it will do.
+- Never claim something has been done, sent, charged, booked, or changed. It has not.
 - Do not propose an action you have not verified with a read tool first.
 
 STYLE
 - Brevity first. Lead with the answer. No preamble, no "Great question", no filler.
-- Short lines and tight lists. A staff member is reading this on a phone while walking.
+- Short lines and tight lists. Staff read this on a phone while walking.
 - Flag risk explicitly: money owed, missing documents, an arrival with no unit assigned.
 - If a tool returns nothing, say so. Never invent a fallback answer.`;
 }
@@ -498,18 +693,16 @@ serve(async (req) => {
     const { data: canRead } = await admin.rpc("has_ops_read", { _user_id: userId });
     if (!canRead) return json({ error: "Staff access required" }, 403);
 
-    const { data: roleRow } = await admin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    const role = (roleRow?.role as string) ?? "front_desk";
+    const { data: roleRows } = await admin.from("user_roles").select("role").eq("user_id", userId);
+    const roles = ((roleRows ?? []) as any[]).map((r) => r.role as string);
+    const role =
+      ["admin", "manager", "front_desk_supervisor", "front_desk"].find((r) => roles.includes(r)) ??
+      roles[0] ??
+      "staff";
 
     const body = await req.json().catch(() => ({}));
     const messages: Array<Record<string, unknown>> = Array.isArray(body.messages)
-      ? body.messages
+      ? body.messages.slice(-20)
       : [];
     const langName = typeof body.language === "string" ? body.language : "English";
     if (messages.length === 0) return json({ error: "No messages" }, 400);
@@ -577,12 +770,7 @@ serve(async (req) => {
           console.error(`tool ${name} failed`, e);
           output = { error: e instanceof Error ? e.message : "Tool failed" };
         }
-        if (
-          name === "propose_action" &&
-          output &&
-          typeof output === "object" &&
-          "draft_id" in output
-        ) {
+        if (name === "propose_action" && output && typeof output === "object" && "draft_id" in output) {
           draftIds.push(String((output as { draft_id: string }).draft_id));
         }
         convo.push({
