@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import { emitStaffLogin, emitStaffLoginFailed, emitAfterHoursAccess } from "@/lib/fenrir/events";
 import type { AppRole } from "@/lib/permissions";
+import { clearMfaTrust } from "@/lib/mfaTrust";
 
 interface AuthContextType {
   user: User | null;
@@ -217,6 +218,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // Sign-out ends the trusted-device window: the next sign-in is challenged.
+    clearMfaTrust(user?.id);
     await supabase.auth.signOut();
   };
 
