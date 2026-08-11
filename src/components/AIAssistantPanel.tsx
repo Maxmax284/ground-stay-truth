@@ -432,8 +432,12 @@ function AIAssistantPanelInner() {
           isCompact ? "h-[62dvh]" : "h-[90dvh]"
         }`
     : expanded
-      ? "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 rounded-2xl shadow-2xl w-[min(1100px,calc(100vw-3rem))] h-[calc(100dvh-3rem)]"
+      // Centered with inset + auto margins, NOT translate: the panel's own
+      // slide-up animation owns `transform`, so a translate-based centering
+      // gets overridden and the window ends up hanging off the corner.
+      ? "fixed inset-y-6 left-0 right-0 mx-auto z-50 rounded-2xl shadow-2xl w-[min(1100px,calc(100vw-3rem))]"
       : `${!position ? "fixed bottom-6 right-6" : ""} z-50 rounded-2xl shadow-2xl ${panelBoxClasses(panelMode)}`;
+
 
   return (
     <div
