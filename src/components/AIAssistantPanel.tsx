@@ -12,8 +12,19 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  useAIPanelMode,
+  panelBoxClasses,
+  clampPos,
+  readStoredPos,
+  writeStoredPos,
+  AI_PANEL_MODES,
+  AI_PANEL_MODE_LABELS,
+} from "@/lib/aiPanelLayout";
 import { useAIAssistant, type AIMode } from "@/hooks/useAIAssistant";
 import { useAISettings } from "@/hooks/useAISettings";
 import { useAuth } from "@/hooks/useAuth";
