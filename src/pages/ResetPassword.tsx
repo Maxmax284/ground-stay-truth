@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { clearAllMfaTrust } from "@/lib/mfaTrust";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -112,6 +113,8 @@ const ResetPassword = () => {
       toast({ title: "Reset failed", description: error.message, variant: "destructive" });
       return;
     }
+    // A password change invalidates every trusted device: challenge again.
+    clearAllMfaTrust();
     toast({ title: "Password updated", description: "Signing you in…" });
     setTimeout(() => navigate("/index", { replace: true }), 600);
   };
