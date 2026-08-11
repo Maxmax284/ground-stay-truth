@@ -151,6 +151,18 @@ function AIAssistantPanelInner() {
   const { state: speechState, speak, stop: stopSpeech } = useSpokenReply((m) => toast.error(m));
   const spokenRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const tabsRef = useRef<HTMLDivElement>(null);
+
+  // Modes this role may use — guests never see staff tooling.
+  const availableModes = (Object.keys(MODE_LABELS) as AIMode[]).filter((m) =>
+    role === "guest" ? ["explain", "summarize", "camp"].includes(m) : true,
+  );
+
+  // Always keep the active mode chip in view instead of hidden past the fade.
+  useEffect(() => {
+    const el = tabsRef.current?.querySelector<HTMLElement>(`[data-mode="${mode}"]`);
+    el?.scrollIntoView({ inline: "nearest", block: "nearest" });
+  }, [mode, panelMode]);
 
   // Persist the speaker preference.
   useEffect(() => {
