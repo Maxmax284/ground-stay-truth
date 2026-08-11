@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { canAccessRoute, permissions } from "@/lib/permissions";
 import { useTranslation } from "react-i18next";
 import MfaGate from "@/components/security/MfaGate";
+import DeviceGate from "@/components/security/DeviceGate";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -112,8 +113,12 @@ const ProtectedRoute = ({ children, requiredPath, guestOnly = false }: Protected
     );
   }
 
-  // High-privilege roles must satisfy MFA before any staff surface mounts.
-  return <MfaGate>{children}</MfaGate>;
+  // High-privilege roles must satisfy MFA, then device recognition (default OFF).
+  return (
+    <MfaGate>
+      <DeviceGate>{children}</DeviceGate>
+    </MfaGate>
+  );
 };
 
 export default ProtectedRoute;

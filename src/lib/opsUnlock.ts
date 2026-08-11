@@ -1,3 +1,4 @@
+import { isCurrentDeviceRestricted } from "@/lib/deviceRecognition";
 /**
  * Ops passcode client — BUSINESS-CRITICAL
  * -----------------------------------------------------------------------------
@@ -97,6 +98,11 @@ export async function fetchOpsStatus(): Promise<OpsPasscodeStatus> {
 
 /** Verify a code and open a 15-minute idle window for this tab. */
 export async function unlockOps(code: string): Promise<OpsPasscodeStatus> {
+  // Device recognition (when enabled) protects Ops Control Mode: an unapproved
+  // admin device cannot unlock it even with the correct passcode.
+  if (isCurrentDeviceRestricted()) {
+    throw new Error("This device is not approved for admin access. Approve it in Security Operations first.");
+  }
   const raw = await call("unlock", { code });
   if (typeof raw.token === "string" && raw.token) setOpsUnlockToken(raw.token);
   return toStatus(raw);

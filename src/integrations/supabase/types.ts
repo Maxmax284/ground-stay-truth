@@ -3964,6 +3964,72 @@ export type Database = {
         }
         Relationships: []
       }
+      trusted_devices: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          browser: string | null
+          created_at: string
+          device_key: string
+          device_type: string
+          expires_at: string | null
+          first_seen_at: string
+          id: string
+          ip_address: string | null
+          is_sandbox: boolean
+          label: string
+          last_mfa_verified_at: string | null
+          last_seen_at: string
+          os: string | null
+          status: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          browser?: string | null
+          created_at?: string
+          device_key: string
+          device_type?: string
+          expires_at?: string | null
+          first_seen_at?: string
+          id?: string
+          ip_address?: string | null
+          is_sandbox?: boolean
+          label?: string
+          last_mfa_verified_at?: string | null
+          last_seen_at?: string
+          os?: string | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          browser?: string | null
+          created_at?: string
+          device_key?: string
+          device_type?: string
+          expires_at?: string | null
+          first_seen_at?: string
+          id?: string
+          ip_address?: string | null
+          is_sandbox?: boolean
+          label?: string
+          last_mfa_verified_at?: string | null
+          last_seen_at?: string
+          os?: string | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       unit_groups: {
         Row: {
           created_at: string
@@ -4562,6 +4628,7 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      device_self_approval_allowed: { Args: never; Returns: boolean }
       email_queue_dispatch: { Args: never; Returns: undefined }
       emit_admin_alert: {
         Args: {

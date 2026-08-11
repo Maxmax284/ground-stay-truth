@@ -14,6 +14,8 @@ import { StaffMfaCard } from "@/components/security/StaffMfaCard";
 import { MfaBackupCodesCard } from "@/components/security/MfaBackupCodesCard";
 import { MfaAdminResetCard } from "@/components/security/MfaAdminResetCard";
 import { PaymentLinkAbuseCard } from "@/components/security/PaymentLinkAbuseCard";
+import { DeviceRecognitionCard } from "@/components/security/DeviceRecognitionCard";
+import { TrustedDevicesCard } from "@/components/security/TrustedDevicesCard";
 import { AIUsageDashboard } from "@/components/security/AIUsageDashboard";
 import { ComplianceCenter } from "@/components/security/ComplianceCenter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -52,6 +54,8 @@ export default function SecurityCenter() {
               <MfaAdminResetCard />
               <WebhookHealthCard />
             </div>
+            <DeviceRecognitionCard />
+            <TrustedDevicesCard />
             <PaymentLinkAbuseCard />
             <AIUsageDashboard />
             <MfaPolicyForm />
