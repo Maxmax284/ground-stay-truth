@@ -743,12 +743,12 @@ function AIAssistantPanelInner() {
       {/* Input */}
       <div className="border-t px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
 
-        <div className="flex gap-2">
+        <div className={`flex gap-2 ${expanded ? "mx-auto w-full max-w-3xl" : ""}`}>
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={t("ai.inputPlaceholder")}
-            className="min-h-[40px] max-h-[80px] text-sm resize-none"
+            className={`resize-none ${expanded ? "min-h-[56px] max-h-[160px] text-[15px]" : "min-h-[40px] max-h-[80px] text-sm"}`}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
             }}
