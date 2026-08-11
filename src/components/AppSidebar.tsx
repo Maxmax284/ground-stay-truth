@@ -25,6 +25,7 @@ import {
   UserCheck,
   Bell,
   Percent,
+  KeyRound,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -269,6 +270,11 @@ export function AppSidebar() {
                 {canAccessRoute(role, "/monitoring") && (
                   <Link to="/monitoring" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent">
                     <Activity className="h-4 w-4" /> Operations Monitor
+                  </Link>
+                )}
+                {canAccessRoute(role, "/ops-console") && (
+                  <Link to="/ops-console" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent">
+                    <KeyRound className="h-4 w-4" /> {t("nav.opsConsole", "Ops Console")}
                   </Link>
                 )}
                 {isAdmin && (

@@ -41,6 +41,7 @@ import SecurityCenter from "./pages/SecurityCenter";
 import MonitoringCenter from "./pages/MonitoringCenter";
 import ResetPassword from "./pages/ResetPassword";
 import OpsControlTower from "./pages/OpsControlTower";
+import OpsConsole from "./pages/OpsConsole";
 import GuidanceLab from "./pages/GuidanceLab";
 import OAuthConsent from "./pages/OAuthConsent";
 import NotificationCenter from "./pages/NotificationCenter";
@@ -113,6 +114,7 @@ const App = () => (
                 <Route path="/disaster-recovery" element={<ProtectedRoute requiredPath="/disaster-recovery"><DisasterRecovery /></ProtectedRoute>} />
                 <Route path="/security-center" element={<ProtectedRoute requiredPath="/security-center"><SecurityCenter /></ProtectedRoute>} />
                 <Route path="/monitoring" element={<ProtectedRoute requiredPath="/monitoring"><MonitoringCenter /></ProtectedRoute>} />
+                <Route path="/ops-console" element={<ProtectedRoute requiredPath="/ops-console"><OpsConsole /></ProtectedRoute>} />
                 <Route path="/ops-control-tower" element={<ProtectedRoute requiredPath="/ops-control-tower"><OpsControlTower /></ProtectedRoute>} />
                 <Route path="/guidance-lab" element={<ProtectedRoute><GuidanceLab /></ProtectedRoute>} />
                 <Route path="/admin/payment-report" element={<ProtectedRoute><PaymentReport /></ProtectedRoute>} />
