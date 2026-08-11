@@ -176,11 +176,42 @@ function AIAssistantPanelInner() {
   const bubbleRef = useRef<HTMLDivElement>(null);
   // Draggable position — used for BOTH bubble and open panel
   const [bubblePos, setBubblePos] = useState<{ x: number; y: number } | null>(null);
-  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(() => readStoredPos());
   const isDraggingRef = useRef(false);
   const hasDraggedRef = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // Remember where the panel was dragged to, and never let it end up stranded
+  // off-screen after a resize / rotation.
+  useEffect(() => {
+    writeStoredPos(position);
+  }, [position]);
+
+  useEffect(() => {
+    const onResize = () => {
+      setPosition((prev) => {
+        if (!prev) return prev;
+        const el = panelRef.current;
+        const size = {
+          width: el?.offsetWidth ?? 500,
+          height: el?.offsetHeight ?? 600,
+        };
+        const next = clampPos(prev, size);
+        return next.x === prev.x && next.y === prev.y ? prev : next;
+      });
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // Restore the default readable layout: normal mode, default corner position.
+  const resetLayout = useCallback(() => {
+    setPanelMode("normal");
+    setPosition(null);
+    setShowPrompts(true);
+    toast.success("Kru Glitch layout reset");
+  }, [setPanelMode]);
 
   // --- Bubble drag handlers ---
   const handleBubblePointerDown = useCallback((e: React.PointerEvent) => {
