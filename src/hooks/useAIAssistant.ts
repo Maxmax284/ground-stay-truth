@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProperty } from "@/hooks/useProperty";
 import { supabase } from "@/integrations/supabase/client";
 import { getAIFocus, getAIRouteFocus } from "@/lib/aiFocusStore";
+import { getOpsUnlockToken } from "@/lib/opsUnlock";
 
 /**
  * "agent" is the deep, tool-calling ops mode (edge function `ai-agent`). Unlike
@@ -151,6 +152,9 @@ export function useAIAssistant() {
               messages: trimmedHistory.map((m) => ({ role: m.role, content: m.content })),
               language,
               property_id: activePropertyId,
+              // Deep ops is gated by the ops security code. The backend is the
+              // real enforcement point, so the unlock token travels with every call.
+              unlock_token: getOpsUnlockToken(),
             }),
             signal: controller.signal,
           }
@@ -160,6 +164,8 @@ export function useAIAssistant() {
         if (!agentResp.ok) {
           if (agentResp.status === 429) setError("Rate limit exceeded. Please try again later.");
           else if (agentResp.status === 402) setError("AI credits exhausted. Please add credits.");
+          else if (agentResp.status === 403 && agentBody.error === "ops_locked")
+            setError("Deep ops is locked. Enter the ops security code to continue.");
           else if (agentResp.status === 403) setError("Deep ops mode is staff only.");
           else setError(agentBody.error || "Ops agent error");
           setIsStreaming(false);
