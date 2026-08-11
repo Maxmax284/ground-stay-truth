@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Swords, X, Send, Trash2, Sparkles, AlertTriangle, Globe, GripVertical, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
+import { toast } from "sonner";
+import { Swords, X, Send, Trash2, Sparkles, AlertTriangle, Globe, GripVertical, Lightbulb, ChevronDown, ChevronUp, Volume2, VolumeX, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { VoiceInputButton } from "@/components/VoiceInputButton";
+import { useSpokenReply } from "@/hooks/useSpokenReply";
+
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -103,7 +106,35 @@ function AIAssistantPanelInner() {
   const [showPrompts, setShowPrompts] = useState(true);
   const [mode, setMode] = useState<AIMode>("explain");
   const [language, setLanguage] = useState<string>("en");
+  // Optional spoken replies (off by default). When on, each finished assistant
+  // reply is read out once; the toggle persists per browser.
+  const [speakReplies, setSpeakReplies] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("ai.speakReplies") === "1";
+  });
+  const { state: speechState, speak, stop: stopSpeech } = useSpokenReply((m) => toast.error(m));
+  const spokenRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Persist the speaker preference.
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("ai.speakReplies", speakReplies ? "1" : "0");
+    }
+  }, [speakReplies]);
+
+  // Read the newest completed assistant reply out loud when the speaker is on.
+  useEffect(() => {
+    if (!speakReplies || isStreaming) return;
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "assistant" || !last.content.trim()) return;
+    const key = `${messages.length}:${last.content.length}`;
+    if (spokenRef.current === key) return;
+    spokenRef.current = key;
+    void speak(last.content, language);
+  }, [messages, isStreaming, speakReplies, speak, language]);
+
+
 
   const [bubbleDragging, setBubbleDragging] = useState(false);
   const bubbleRef = useRef<HTMLDivElement>(null);
@@ -331,9 +362,41 @@ function AIAssistantPanelInner() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+          {/* Optional spoken replies — off by default, persists per browser. */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-7 w-7 ${speakReplies ? "text-primary" : ""}`}
+            aria-pressed={speakReplies}
+            title={speakReplies ? t("ai.speakOn", "Spoken replies on") : t("ai.speakOff", "Spoken replies off")}
+            onClick={() => {
+              if (speakReplies) stopSpeech();
+              setSpeakReplies((v) => !v);
+            }}
+          >
+            {speechState === "loading" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : speakReplies ? (
+              <Volume2 className="h-3.5 w-3.5" />
+            ) : (
+              <VolumeX className="h-3.5 w-3.5" />
+            )}
+          </Button>
+          {speechState === "playing" && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-destructive"
+              title={t("ai.stopSpeaking", "Stop speaking")}
+              onClick={stopSpeech}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={clearChat} title={t("ai.clearChat")}>
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
+
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setIsOpen(false); setPosition(null); }}>
             <X className="h-4 w-4" />
           </Button>
@@ -421,6 +484,19 @@ function AIAssistantPanelInner() {
                       timestamp={msg.createdAt}
                       isStreaming={i === messages.length - 1 && isStreaming}
                     />
+                    {/* Read any single reply out loud on demand, even with the
+                        auto-speaker off. */}
+                    {!(i === messages.length - 1 && isStreaming) && !!msg.content.trim() && (
+                      <button
+                        onClick={() => (speechState === "playing" ? stopSpeech() : void speak(msg.content, language))}
+                        className="ml-3 mt-1 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent transition-colors"
+                        aria-label={t("ai.readAloud", "Read aloud")}
+                      >
+                        <Volume2 className="h-3 w-3" />
+                        {t("ai.readAloud", "Read aloud")}
+                      </button>
+                    )}
+
                     {/* Deep ops mode: show what the agent actually read, and
                         flag any action it queued for approval. Nothing here has
                         been executed — drafts wait for a human. */}
