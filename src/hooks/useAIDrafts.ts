@@ -102,7 +102,7 @@ export function useAIDrafts(status: AIDraftStatus | "all" = "pending", limit = 5
       // code window is closed — say so plainly instead of looking like a no-op.
       if (!data || data.length === 0) {
         throw new Error(
-          "Could not save that decision. Enter the ops security code in Settings → AI Ops and try again.",
+          "Could not save that decision. Enter the ops security code in Settings → Ops and try again.",
         );
       }
 

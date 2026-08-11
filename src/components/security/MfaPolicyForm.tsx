@@ -18,14 +18,35 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { StepUpDialog } from "./StepUpDialog";
 import { isStepUpFresh } from "@/hooks/useMfa";
+import { Badge } from "@/components/ui/badge";
+import {
+  DEFAULT_TRUST_WINDOW_HOURS,
+  MAX_TRUST_WINDOW_HOURS,
+  MIN_TRUST_WINDOW_HOURS,
+  clampTrustWindowHours,
+} from "@/lib/mfaTrust";
 
 const FIELDS = [
-  { key: "mfa_required_admin", label: "Require MFA for admins/owners", kind: "bool" as const },
   { key: "mfa_required_manager", label: "Require MFA for managers", kind: "bool" as const },
   { key: "mfa_required_staff", label: "Require MFA for all staff", kind: "bool" as const },
   { key: "mfa_required_sensitive_actions", label: "Require MFA for sensitive actions (refunds, role changes, security settings)", kind: "bool" as const },
   { key: "mfa_grace_period_days", label: "Grace period (days)", kind: "num" as const },
+  { key: "mfa_trust_window_hours", label: "Trusted device window (hours)", kind: "num" as const },
 ] as const;
+
+/** Roles that always require MFA — not configurable. */
+const MANDATORY_ROLE_LABELS = ["Admin / owner"];
+/** Roles never forced by default. */
+const OPTIONAL_ROLE_LABELS = [
+  "Manager",
+  "Front desk supervisor",
+  "Front desk",
+  "Viewer",
+  "Maintenance",
+  "Housekeeping",
+  "Driver",
+  "Guest",
+];
 
 export function MfaPolicyForm() {
   const { user, isAdmin } = useAuth();
@@ -34,22 +55,22 @@ export function MfaPolicyForm() {
   const logAudit = useLogStaffAudit();
 
   const [local, setLocal] = useState({
-    mfa_required_admin: true,
-    mfa_required_manager: true,
+    mfa_required_manager: false,
     mfa_required_staff: false,
     mfa_required_sensitive_actions: true,
     mfa_grace_period_days: 7,
+    mfa_trust_window_hours: DEFAULT_TRUST_WINDOW_HOURS,
   });
   const [saving, setSaving] = useState(false);
   const [stepUpOpen, setStepUpOpen] = useState(false);
 
   useEffect(() => {
     setLocal({
-      mfa_required_admin: policy.requiredForAdmin,
       mfa_required_manager: policy.requiredForManager,
       mfa_required_staff: policy.requiredForStaff,
       mfa_required_sensitive_actions: policy.requireForSensitiveActions,
       mfa_grace_period_days: policy.gracePeriodDays,
+      mfa_trust_window_hours: policy.trustWindowHours,
     });
   }, [policy]);
 
@@ -63,7 +84,9 @@ export function MfaPolicyForm() {
         const value =
           f.kind === "bool"
             ? (local[f.key] as boolean)
-            : Number(local[f.key]);
+            : f.key === "mfa_trust_window_hours"
+              ? clampTrustWindowHours(Number(local[f.key]))
+              : Number(local[f.key]);
         // Find existing global row
         const { data: existing } = await supabase
           .from("policy_settings")
@@ -116,6 +139,41 @@ export function MfaPolicyForm() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+            <p className="font-medium">Admin MFA is required and cannot be disabled.</p>
+            <p className="text-muted-foreground mt-1">
+              MFA protects bookings, payments, guest documents, and admin settings. Lower roles are not
+              forced unless you switch them on below.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Always requires MFA
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {MANDATORY_ROLE_LABELS.map((r) => (
+                  <Badge key={r} variant="outline" className="border-primary/40 text-primary text-xs">
+                    {r}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Not forced by default
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {OPTIONAL_ROLE_LABELS.map((r) => (
+                  <Badge key={r} variant="secondary" className="text-xs">
+                    {r}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {FIELDS.filter((f) => f.kind === "bool").map((f) => (
             <div key={f.key} className="flex items-center justify-between gap-4">
               <Label htmlFor={f.key} className="text-sm leading-snug">
@@ -141,6 +199,29 @@ export function MfaPolicyForm() {
               value={local.mfa_grace_period_days}
               onChange={(e) =>
                 setLocal((s) => ({ ...s, mfa_grace_period_days: Number(e.target.value) || 0 }))
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <Label htmlFor="mfa_trust_window_hours" className="text-sm leading-snug">
+              Trusted device window (hours)
+              <Badge variant="outline" className="ml-2 text-[10px] align-middle">
+                Recommended: {DEFAULT_TRUST_WINDOW_HOURS}h
+              </Badge>
+              <span className="block text-xs text-muted-foreground mt-1">
+                After a code is entered, this device stays trusted for this long. Sign-out, password
+                changes, MFA resets and role changes end it early.
+              </span>
+            </Label>
+            <Input
+              id="mfa_trust_window_hours"
+              type="number"
+              min={MIN_TRUST_WINDOW_HOURS}
+              max={MAX_TRUST_WINDOW_HOURS}
+              className="w-24"
+              value={local.mfa_trust_window_hours}
+              onChange={(e) =>
+                setLocal((s) => ({ ...s, mfa_trust_window_hours: Number(e.target.value) || 0 }))
               }
             />
           </div>

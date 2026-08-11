@@ -2426,6 +2426,30 @@ export type Database = {
         }
         Relationships: []
       }
+      mfa_backup_codes: {
+        Row: {
+          code_hash: string
+          created_at: string
+          id: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          code_hash: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          code_hash?: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -4717,6 +4741,7 @@ export type Database = {
         Args: { _source_key: string; _target_key: string }
         Returns: number
       }
+      mfa_backup_codes_remaining: { Args: never; Returns: number }
       move_to_dlq: {
         Args: {
           dlq_name: string

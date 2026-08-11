@@ -11,6 +11,8 @@ import { MfaPolicyForm } from "@/components/security/MfaPolicyForm";
 import { SecurityDashboard } from "@/components/security/SecurityDashboard";
 import { WebhookHealthCard } from "@/components/WebhookHealthCard";
 import { StaffMfaCard } from "@/components/security/StaffMfaCard";
+import { MfaBackupCodesCard } from "@/components/security/MfaBackupCodesCard";
+import { MfaAdminResetCard } from "@/components/security/MfaAdminResetCard";
 import { PaymentLinkAbuseCard } from "@/components/security/PaymentLinkAbuseCard";
 import { AIUsageDashboard } from "@/components/security/AIUsageDashboard";
 import { ComplianceCenter } from "@/components/security/ComplianceCenter";
@@ -44,6 +46,10 @@ export default function SecurityCenter() {
             <SecurityCenterOverview />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <StaffMfaCard />
+              <MfaBackupCodesCard />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <MfaAdminResetCard />
               <WebhookHealthCard />
             </div>
             <PaymentLinkAbuseCard />

@@ -49,6 +49,7 @@ export function MfaEnrollDialog({ open, onOpenChange, onEnrolled }: MfaEnrollDia
         return;
       }
       setFactorId(data.id);
+      logAudit.mutate({ eventType: "mfa_enrollment_started", severity: "info" });
       setQr((data as any).totp?.qr_code ?? null);
       setSecret((data as any).totp?.secret ?? null);
       const ch = await supabase.auth.mfa.challenge({ factorId: data.id });
@@ -106,7 +107,9 @@ export function MfaEnrollDialog({ open, onOpenChange, onEnrolled }: MfaEnrollDia
             Enable two-factor authentication
           </DialogTitle>
           <DialogDescription>
-            Scan the QR code with an authenticator app (1Password, Authy, Google Authenticator), then enter the 6-digit code it shows.
+            Use an authenticator app to scan this QR code — Google Authenticator, Microsoft
+            Authenticator, Authy, 1Password, Bitwarden or Apple Passwords all work. Then enter the
+            6-digit code from your app.
           </DialogDescription>
         </DialogHeader>
 

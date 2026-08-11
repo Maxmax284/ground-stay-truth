@@ -1,0 +1,1 @@
+UPDATE public.policy_settings SET value = 'false'::jsonb WHERE key = 'mfa_required_manager' AND property_id IS NULL;

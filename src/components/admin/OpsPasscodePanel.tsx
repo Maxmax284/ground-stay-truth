@@ -1,5 +1,5 @@
 /**
- * OpsPasscodePanel — admin control for the AI ops security code.
+ * OpsPasscodePanel — admin control for the Ops security code.
  *
  * Admins set, rotate or remove the code here. The code is never shown back:
  * only a hash lives in the database, so "reveal" is impossible by design.
