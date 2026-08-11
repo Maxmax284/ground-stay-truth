@@ -30,11 +30,16 @@ function DraftRow({
   busy,
 }: {
   draft: AIDraft;
-  onReview: (decision: "approved" | "rejected" | "applied", note: string) => void;
+  onReview: (
+    decision: "approved" | "rejected" | "applied",
+    note: string,
+    execute?: boolean,
+  ) => void;
   busy: boolean;
 }) {
   const [note, setNote] = useState("");
   const details = draft.payload && Object.keys(draft.payload).length > 0 ? draft.payload : null;
+  const plan = planDraftExecution(draft);
 
   return (
     <div className="rounded-lg border border-border p-4 space-y-3 transition-transform duration-300 hover:-translate-y-1">
@@ -45,7 +50,13 @@ function DraftRow({
             <Badge variant="outline" className={`text-xs ${STATUS_TONE[draft.status] ?? ""}`}>
               {draft.status}
             </Badge>
+            {plan.ok && draft.status === "pending" && (
+              <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30 flex items-center gap-1">
+                <Zap className="h-3 w-3" /> Applies on approve
+              </Badge>
+            )}
           </div>
+
           <p className="font-medium text-sm text-foreground break-words">{draft.summary}</p>
           {draft.rationale && (
             <p className="text-xs text-muted-foreground break-words">{draft.rationale}</p>
