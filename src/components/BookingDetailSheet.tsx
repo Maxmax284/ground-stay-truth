@@ -66,11 +66,17 @@ import { Lock, Percent as PercentIcon } from "lucide-react";
 import { getBookingDeadline } from "@/lib/bookingDeadline";
 import { ExtendDeadlineDialog } from "@/components/ExtendDeadlineDialog";
 import { ModifyStayDialog } from "@/components/ModifyStayDialog";
+import { useMyElevation } from "@/hooks/useAdminElevation";
+import { ElevatedAction } from "@/components/admin/ElevatedAction";
 import { StayModificationHistory } from "@/components/StayModificationHistory";
 
 interface BookingDetailSheetProps { bookingId: string | null; open: boolean; onOpenChange: (open: boolean) => void; isAdmin: boolean; }
 
-export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: BookingDetailSheetProps) {
+export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isRealAdmin }: BookingDetailSheetProps) {
+  // A live break-glass window lends admin-only controls to non-admin staff.
+  // The real authority check lives in the database; this only reveals the UI.
+  const { isActive: isElevated } = useMyElevation();
+  const isAdmin = isRealAdmin || isElevated;
   const { t } = useTranslation();
   const { role } = useAuth();
 
@@ -319,7 +325,17 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin }: B
         </div>
 
         <AirportPickupSection bookingId={booking.id} guestName={guestName} />
-        {isAdmin && <AdminOverrideMenu bookingId={booking.id} pickupId={pickup?.id ?? null} />}
+        {isRealAdmin ? (
+          <AdminOverrideMenu bookingId={booking.id} pickupId={pickup?.id ?? null} />
+        ) : (
+          isElevated && (
+            <ElevatedAction label="Admin overrides on this booking" className="w-full">
+              <div className="w-full">
+                <AdminOverrideMenu bookingId={booking.id} pickupId={pickup?.id ?? null} />
+              </div>
+            </ElevatedAction>
+          )
+        )}
         <SecurityDepositSection bookingId={booking.id} bookingState={booking.state} />
         <BookingTrainingSection bookingId={booking.id} />
         {canSeeAmounts && <div className="pt-3"><StayModificationHistory bookingId={booking.id} policies={policies} /></div>}
