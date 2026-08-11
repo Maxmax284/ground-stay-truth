@@ -24,6 +24,7 @@ import { MoveRoomDialog } from "@/components/MoveRoomDialog";
 import { useUnits } from "@/hooks/useUnits";
 import { format, differenceInHours } from "date-fns";
 import { formatInPropertyTimezone } from "@/lib/timezone";
+import { friendlyPaymentError } from "@/lib/offlinePayments";
 import { useBooking, useBookingStateLog, useBookingPayments, useBookingMessages, useCreatePayment, useRefundPayment, useCreateMessage, useMarkMessagesRead } from "@/hooks/useBookings";
 import { BookingStateTransition } from "@/components/BookingStateTransition";
 import { StaffHandlingPanel } from "@/components/StaffHandlingPanel";
