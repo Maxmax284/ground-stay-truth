@@ -667,7 +667,44 @@ STYLE
 - If a tool returns nothing, say so. Never invent a fallback answer.`;
 }
 
+/**
+ * Verify the caller holds a live ops-passcode unlock window.
+ * Open when no passcode is configured. The token must match the hash stored on
+ * the session row, so a stolen session id alone is useless.
+ */
+async function checkOpsUnlock(userId: string, token: string): Promise<{ unlocked: boolean }> {
+  const { data: pass } = await admin.from("ops_passcode").select("id").eq("id", true).maybeSingle();
+  if (!pass) return { unlocked: true };
+  if (!token) return { unlocked: false };
+
+  const { data: session } = await admin
+    .from("ops_unlock_sessions")
+    .select("id, token_hash")
+    .eq("user_id", userId)
+    .is("revoked_at", null)
+    .gt("expires_at", new Date().toISOString())
+    .order("expires_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!session) return { unlocked: false };
+
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  const hex = Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  if (hex !== (session as { token_hash: string }).token_hash) return { unlocked: false };
+
+  // Using Deep ops counts as activity — slide the idle window forward.
+  await admin
+    .from("ops_unlock_sessions")
+    .update({ expires_at: new Date(Date.now() + 15 * 60_000).toISOString(), last_used_at: new Date().toISOString() })
+    .eq("id", (session as { id: string }).id);
+
+  return { unlocked: true };
+}
+
 serve(async (req) => {
+
   const cors = getCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
