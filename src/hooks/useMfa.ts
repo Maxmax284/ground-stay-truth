@@ -168,3 +168,122 @@ export function useMfaEnrollmentRequirement() {
     loading: status.loading,
   };
 }
+
+/* -------------------------------------------------------------------------- */
+/* Session gate: is this admin's session MFA-satisfied right now?             */
+/* -------------------------------------------------------------------------- */
+
+export type MfaGateState =
+  | "loading"
+  /** No MFA requirement for this user */
+  | "not_required"
+  /** Requirement satisfied (verified factor + fresh session/trusted device) */
+  | "satisfied"
+  /** Must enroll an authenticator app before continuing */
+  | "enroll_required"
+  /** Enrolled, but this session/device needs a fresh 6-digit code */
+  | "challenge_required";
+
+export interface MfaGate {
+  state: MfaGateState;
+  required: boolean;
+  enrolled: boolean;
+  /** Supabase assurance level of the live session: aal1 (password) or aal2 (MFA) */
+  assuranceLevel: string | null;
+  trustWindowHours: number;
+  trustExpiresAt: number | null;
+  /** Call after a successful challenge to trust this device for the window */
+  confirmVerified: () => void;
+  refresh: () => Promise<void>;
+}
+
+/**
+ * Decides whether the current user may see admin surfaces.
+ *
+ * Order of authority:
+ *  1. Policy + current role decide *whether* MFA is required.
+ *  2. A verified TOTP factor must exist (otherwise: enroll).
+ *  3. The live session must be AAL2 (server-side proof the code was entered)
+ *     OR the device must be inside the trust window from an earlier AAL2
+ *     verification in this browser.
+ */
+export function useMfaGate(): MfaGate {
+  const { role, user } = useAuth();
+  const policy = useMfaPolicy();
+  const status = useMfaStatus();
+  const [aal, setAal] = useState<string | null>(null);
+  const [aalLoading, setAalLoading] = useState(true);
+  const [tick, setTick] = useState(0);
+
+  const readAal = useCallback(async () => {
+    setAalLoading(true);
+    try {
+      const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      setAal(data?.currentLevel ?? null);
+    } catch {
+      setAal(null);
+    } finally {
+      setAalLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void readAal();
+  }, [readAal, user?.id, tick]);
+
+  const required = mfaRequiredForRole(role, policy);
+  const trusted = isDeviceTrusted({
+    userId: user?.id,
+    role: role ?? null,
+    windowHours: policy.trustWindowHours,
+  });
+
+  const confirmVerified = useCallback(() => {
+    markMfaVerified(user?.id, role ?? null);
+    setTick((n) => n + 1);
+    void status.refresh();
+  }, [user?.id, role, status]);
+
+  const refresh = useCallback(async () => {
+    await Promise.all([readAal(), status.refresh()]);
+  }, [readAal, status]);
+
+  let state: MfaGateState = "loading";
+  if (!status.loading && !aalLoading) {
+    if (!required) state = "not_required";
+    else if (!status.verified) state = "enroll_required";
+    else if (aal === "aal2" || trusted) state = "satisfied";
+    else state = "challenge_required";
+  }
+
+  return {
+    state,
+    required,
+    enrolled: status.verified,
+    assuranceLevel: aal,
+    trustWindowHours: policy.trustWindowHours,
+    trustExpiresAt: trustExpiresAt({ userId: user?.id, windowHours: policy.trustWindowHours }),
+    confirmVerified,
+    refresh,
+  };
+}
+
+/** Drop this device's trust — used on MFA reset, disable, and sign-out. */
+export function revokeDeviceTrust(userId: string | null | undefined) {
+  clearMfaTrust(userId);
+  clearStepUp();
+}
+
+/** Unused single-use recovery codes left for the signed-in user. */
+export function useBackupCodeCount() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["mfa-backup-codes-remaining", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("mfa_backup_codes_remaining");
+      if (error) throw error;
+      return Number(data ?? 0);
+    },
+  });
+}
