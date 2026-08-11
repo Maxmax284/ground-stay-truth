@@ -85,13 +85,40 @@ export function useAIDrafts(status: AIDraftStatus | "all" = "pending", limit = 5
       draft: AIDraft;
       decision: Exclude<AIDraftStatus, "pending" | "expired">;
       note?: string;
-    }) => {
+      /** Approve + auto-apply, for the low-risk housekeeping category only. */
+      execute?: boolean;
+    }): Promise<{ executed: boolean; describe?: string; executionError?: string }> => {
       const { draft, decision, note } = input;
+      const shouldExecute =
+        input.execute === true && decision === "approved" && isDraftAutoApplicable(draft);
+
+      let executed = false;
+      let describe: string | undefined;
+      let executionError: string | undefined;
+
+      // Do the real work FIRST. If it fails, the draft stays pending so nobody
+      // sees "approved" for something that never landed.
+      if (shouldExecute) {
+        try {
+          const result = await executeDraft(draft);
+          executed = true;
+          describe = result.describe;
+        } catch (e) {
+          executionError = e instanceof Error ? e.message : "Could not apply the change.";
+          throw new Error(executionError);
+        }
+      }
+
+      const finalStatus: AIDraftStatus = executed ? "applied" : decision;
+      const finalNote = [note?.trim() || null, executed ? `Auto-applied: ${describe}` : null]
+        .filter(Boolean)
+        .join(" — ") || null;
+
       const { data, error } = await supabase
         .from("ai_action_drafts")
         .update({
-          status: decision,
-          review_note: note?.trim() || null,
+          status: finalStatus,
+          review_note: finalNote,
           reviewed_by_user_id: user?.id ?? null,
           reviewed_at: new Date().toISOString(),
         })
@@ -107,19 +134,28 @@ export function useAIDrafts(status: AIDraftStatus | "all" = "pending", limit = 5
       }
 
       await logOverrideEvent({
-        actionType: `ai_draft_${decision}`,
+        actionType: `ai_draft_${finalStatus}`,
         targetType: "ai_action_draft",
         targetId: draft.id,
         bookingId: draft.booking_id,
         beforeState: { status: draft.status },
-        afterState: { status: decision },
+        afterState: { status: finalStatus },
         reason: note?.trim() || null,
-        metadata: { action_type: draft.action_type, summary: draft.summary },
+        metadata: {
+          action_type: draft.action_type,
+          summary: draft.summary,
+          auto_applied: executed,
+          change: describe ?? null,
+        },
       });
+
+      return { executed, describe, executionError };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ai-action-drafts"] });
       queryClient.invalidateQueries({ queryKey: ["override-audit"] });
+      queryClient.invalidateQueries({ queryKey: ["housekeeping-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["housekeeping"] });
     },
   });
 
