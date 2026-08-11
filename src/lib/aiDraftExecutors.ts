@@ -141,7 +141,7 @@ export function isDraftAutoApplicable(draft: Pick<AIDraft, "action_type" | "payl
  */
 export async function executeDraft(draft: AIDraft): Promise<{ applied: true; describe: string }> {
   const plan = planDraftExecution(draft);
-  if (!plan.ok) throw new Error(plan.reason);
+  if (plan.ok !== true) throw new Error(plan.reason);
 
   const { data: before } = await supabase
     .from("housekeeping_tasks")
