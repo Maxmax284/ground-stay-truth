@@ -187,16 +187,22 @@ function validate(
   const nights = differenceInDays(checkOut, checkIn);
   if (nights < 1) return { type: "min_nights", message: "Stay must be at least 1 night" };
 
+  const original = bookings.find((b) => b.id === bookingId);
+  const datesChanged =
+    !original ||
+    format(checkIn, "yyyy-MM-dd") !== original.check_in.slice(0, 10) ||
+    format(checkOut, "yyyy-MM-dd") !== original.check_out.slice(0, 10);
+
+  // Minimum-nights only applies when the stay length is actually being changed.
+  // A pure room move keeps the stored dates and must never be blocked by it.
   const unit = flatUnits.find((u) => u.id === unitId);
-  if (unit && nights < unit.min_nights) {
+  if (datesChanged && unit && nights < unit.min_nights) {
     return { type: "min_nights", message: `Minimum ${unit.min_nights} nights required for ${unit.name}` };
   }
 
-  // Check bounds
-  const gridEnd = addDays(gridStart, days);
-  if (checkIn < gridStart || checkOut > gridEnd) {
-    return { type: "out_of_bounds", message: "Booking dates must stay within the visible calendar range" };
-  }
+  // NOTE: no viewport/range check here on purpose. The booking's stored dates
+  // are the source of truth — a bar clipped by the visible window is still a
+  // valid booking and must stay movable.
 
   // Check overlap with other bookings on same unit
   const activeStates = ["pending_approval", "pending_deposit", "confirmed", "checked_in"];
@@ -206,7 +212,7 @@ function validate(
     const bIn = startOfDay(new Date(b.check_in));
     const bOut = startOfDay(new Date(b.check_out));
     if (checkIn < bOut && checkOut > bIn) {
-      return { type: "overlap", message: `Overlaps with existing booking (${format(bIn, "MMM d")}–${format(bOut, "MMM d")})` };
+      return { type: "overlap", message: `${unit?.name ?? "That room"} is not available for this booking's full stay (${format(bIn, "MMM d")}–${format(bOut, "MMM d")} is taken).` };
     }
   }
 
@@ -216,9 +222,10 @@ function validate(
     const mbStart = startOfDay(new Date(mb.start_date));
     const mbEnd = addDays(startOfDay(new Date(mb.end_date)), 1);
     if (checkIn < mbEnd && checkOut > mbStart) {
-      return { type: "maintenance", message: `Conflicts with maintenance block (${format(mbStart, "MMM d")}–${format(new Date(mb.end_date), "MMM d")})` };
+      return { type: "maintenance", message: `${unit?.name ?? "That room"} is blocked for maintenance (${format(mbStart, "MMM d")}–${format(new Date(mb.end_date), "MMM d")}).` };
     }
   }
 
   return null;
 }
+
