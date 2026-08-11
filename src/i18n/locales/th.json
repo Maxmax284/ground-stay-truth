@@ -557,7 +557,8 @@
     "totalPaid": "ชำระแล้วทั้งหมด",
     "totalRefunded": "คืนเงินแล้ว",
     "totalStayCost": "ค่าที่พักทั้งหมด",
-    "viewReceipt": "ดูใบเสร็จ"
+    "viewReceipt": "ดูใบเสร็จ",
+    "paymentFailed": "ไม่ได้บันทึกการชำระเงิน"
   },
   "messages": {
     "title": "ข้อความ",

@@ -24,6 +24,7 @@ import { MoveRoomDialog } from "@/components/MoveRoomDialog";
 import { useUnits } from "@/hooks/useUnits";
 import { format, differenceInHours } from "date-fns";
 import { formatInPropertyTimezone } from "@/lib/timezone";
+import { friendlyPaymentError } from "@/lib/offlinePayments";
 import { useBooking, useBookingStateLog, useBookingPayments, useBookingMessages, useCreatePayment, useRefundPayment, useCreateMessage, useMarkMessagesRead } from "@/hooks/useBookings";
 import { BookingStateTransition } from "@/components/BookingStateTransition";
 import { StaffHandlingPanel } from "@/components/StaffHandlingPanel";
@@ -547,8 +548,12 @@ function PaymentsTab({ payments, bookingId, bookingState, canSeeAmounts, canReco
     try {
       await createPayment.mutateAsync({ booking_id: bookingId, amount: Number(amount), method, notes: notes || undefined, payment_type: paymentType });
       toast({ title: t("payments.paymentRecorded") }); setAmount(""); setNotes("");
-    } catch (err: any) { toast({ title: t("common.error"), description: err.message, variant: "destructive" }); }
+    } catch (err: any) {
+      // Never show a raw RLS rejection to the desk — say what's wrong and who can fix it.
+      toast({ title: t("payments.paymentFailed", { defaultValue: "Payment not recorded" }), description: friendlyPaymentError(err), variant: "destructive" });
+    }
   };
+
 
   const handleRefund = async (paymentId: string, refundAmount: number, reason: string) => {
     try {

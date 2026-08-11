@@ -6,6 +6,7 @@ import type { BookingState } from "@/lib/bookingStateMachine";
 import { createNotification, createNotifications } from "@/hooks/useNotifications";
 import { formatPrice } from "@/lib/currency";
 import { calculateOutstanding } from "@/lib/paymentTypes";
+import { assertRecordableOfflinePayment, friendlyPaymentError } from "@/lib/offlinePayments";
 import { emitPaymentProcessed, emitRefundIssued } from "@/lib/fenrir/events";
 import { useProperty } from "@/hooks/useProperty";
 import { logOverrideEvent } from "@/lib/overrideAudit";
@@ -413,34 +414,35 @@ export function useCreatePayment() {
       description?: string;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
-      const { source_channel, payment_type, description, ...rest } = payment;
-      const { data, error } = await supabase
-        .from("payments")
-        .insert({
-          ...rest,
-          recorded_by: user?.id ?? null,
-          source_channel: source_channel ?? "front_desk",
-          payment_type: payment_type ?? "deposit",
-          description: description ?? undefined,
-        } as any)
-        .select()
-        .single();
-      if (error) throw error;
+      const { source_channel, payment_type, description } = payment;
 
-      // Attribution — a hand-recorded payment bypasses the Stripe trail, so name the staffer.
-      await logOverrideEvent({
-        actionType: "manual_payment_recorded",
-        targetType: "payment",
-        targetId: (data as any)?.id ?? payment.booking_id,
-        bookingId: payment.booking_id,
-        beforeState: {},
-        afterState: {
-          amount: payment.amount,
-          method: payment.method,
-          payment_type: payment_type ?? "deposit",
-        },
-        reason: payment.notes ?? description ?? null,
+      // Offline money goes through the recorder RPC — it derives the actor
+      // server-side, enforces role + property scope, stamps the provider
+      // fields so a hand-recorded row can never masquerade as Stripe, and
+      // writes the audit receipt in the same transaction as the insert.
+      assertRecordableOfflinePayment({
+        amount: payment.amount,
+        method: payment.method,
+        source_channel,
       });
+
+      const { data: paymentId, error } = await supabase.rpc("record_offline_payment", {
+        _booking_id: payment.booking_id,
+        _amount: payment.amount,
+        _method: payment.method,
+        _payment_type: payment_type ?? "deposit",
+        _notes: payment.notes ?? description ?? null,
+        _source_channel: source_channel ?? "front_desk",
+      } as any);
+      if (error) throw new Error(friendlyPaymentError(error));
+
+      const { data } = await supabase
+        .from("payments")
+        .select("*")
+        .eq("id", paymentId as any)
+        .maybeSingle();
+
+
 
 
       // If the booking is in pending_deposit, notify guest about deposit receipt
