@@ -2456,6 +2456,87 @@ export type Database = {
         }
         Relationships: []
       }
+      ops_passcode: {
+        Row: {
+          hash: string
+          id: boolean
+          iterations: number
+          salt: string
+          updated_at: string
+          updated_by_user_id: string | null
+        }
+        Insert: {
+          hash: string
+          id?: boolean
+          iterations?: number
+          salt: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Update: {
+          hash?: string
+          id?: boolean
+          iterations?: number
+          salt?: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Relationships: []
+      }
+      ops_unlock_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string | null
+          succeeded: boolean
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          succeeded: boolean
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          succeeded?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      ops_unlock_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          last_used_at: string
+          revoked_at: string | null
+          token_hash: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          last_used_at?: string
+          revoked_at?: string | null
+          token_hash: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          last_used_at?: string
+          revoked_at?: string | null
+          token_hash?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       override_audit_log: {
         Row: {
           action_type: string
@@ -4571,11 +4652,12 @@ export type Database = {
         }[]
       }
       grant_admin_elevation: {
-        Args: { _minutes?: number; _reason: string; _subject_user_id: string }
+        Args: { _minutes?: number; _reason?: string; _subject_user_id?: string }
         Returns: string
       }
       has_active_elevation: { Args: { _user_id: string }; Returns: boolean }
       has_ops_read: { Args: { _user_id: string }; Returns: boolean }
+      has_ops_unlock: { Args: { _user_id: string }; Returns: boolean }
       has_ops_write: { Args: { _user_id: string }; Returns: boolean }
       has_property_access: {
         Args: { _property_id: string; _user_id: string }
@@ -4596,6 +4678,7 @@ export type Database = {
         Args: { _link_id: string }
         Returns: number
       }
+      is_ops_passcode_set: { Args: never; Returns: boolean }
       is_sandbox_booking: { Args: { _booking_id: string }; Returns: boolean }
       is_sandbox_property: { Args: { _property_id: string }; Returns: boolean }
       is_secret_configured: { Args: { _key: string }; Returns: boolean }
