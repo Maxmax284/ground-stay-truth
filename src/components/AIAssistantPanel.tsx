@@ -24,7 +24,8 @@ import { LoadingIndicator } from "@/components/ai/LoadingIndicator";
 import { getQuickPromptsForRole, FOCUSED_BOOKING_PROMPTS } from "@/components/ai/QuickPrompts";
 import { useAIFocus } from "@/lib/aiFocusStore";
 import { OpsUnlockDialog } from "@/components/admin/OpsUnlockDialog";
-import { useOpsUnlock } from "@/hooks/useOpsUnlock";
+import { useOpsUnlock, formatCountdown } from "@/hooks/useOpsUnlock";
+import { Link } from "react-router-dom";
 import { Focus } from "lucide-react";
 import React from "react";
 
@@ -107,8 +108,14 @@ function AIAssistantPanelInner() {
   const [isOpen, setIsOpen] = useState(false);
   const [showPrompts, setShowPrompts] = useState(true);
   const [mode, setMode] = useState<AIMode>("explain");
-  // Ops security-code gate for Deep ops mode.
-  const { configured: opsCodeConfigured, unlocked: opsUnlocked, keepAlive: opsKeepAlive } = useOpsUnlock();
+  // Ops security-code gate for Control Mode (deep ops).
+  const {
+    configured: opsCodeConfigured,
+    unlocked: opsUnlocked,
+    keepAlive: opsKeepAlive,
+    msLeft: opsMsLeft,
+    lock: opsLock,
+  } = useOpsUnlock();
   const opsGateOpen = !opsCodeConfigured || opsUnlocked;
   const [unlockOpen, setUnlockOpen] = useState(false);
   const [language, setLanguage] = useState<string>("en");
@@ -448,10 +455,41 @@ function AIAssistantPanelInner() {
         ))}
       </div>
 
+      {/* Control Mode strip — makes the borrowed-authority window visible and
+          gives a one-tap way to close it or go review queued drafts. */}
+      {mode === "agent" && role !== "guest" && (
+        <div className="border-b bg-primary/5 px-3 py-1.5 flex items-center gap-2 text-[11px]">
+          <Lock className="h-3 w-3 text-primary shrink-0" />
+          <span className="font-medium text-foreground shrink-0">Control Mode</span>
+          {opsCodeConfigured && opsUnlocked && opsMsLeft > 0 && (
+            <span className="text-muted-foreground shrink-0">locks in {formatCountdown(opsMsLeft)}</span>
+          )}
+          {!opsCodeConfigured && (
+            <span className="text-muted-foreground truncate">no security code set</span>
+          )}
+          <div className="ml-auto flex items-center gap-2 shrink-0">
+            <Link to="/ops-console" className="text-primary hover:underline">
+              Review drafts
+            </Link>
+            {opsCodeConfigured && opsUnlocked && (
+              <button
+                onClick={() => {
+                  void opsLock();
+                  setMode("explain");
+                }}
+                className="text-muted-foreground hover:text-destructive transition-colors"
+              >
+                Lock now
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <OpsUnlockDialog
         open={unlockOpen}
         onOpenChange={setUnlockOpen}
-        surface="Deep ops"
+        surface="Control Mode"
         onUnlocked={() => setMode("agent")}
       />
 
@@ -545,9 +583,11 @@ function AIAssistantPanelInner() {
                     {!!msg.draftIds?.length && (
                       <div className="ml-3 mt-1.5 flex items-center gap-1.5 rounded-md bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary">
                         <AlertTriangle className="h-3 w-3 shrink-0" />
-                        {msg.draftIds.length === 1
-                          ? "1 action drafted — waiting for your approval"
-                          : `${msg.draftIds.length} actions drafted — waiting for your approval`}
+                        <Link to="/ops-console" className="hover:underline">
+                          {msg.draftIds.length === 1
+                            ? "1 action drafted — approve it in the Ops Console"
+                            : `${msg.draftIds.length} actions drafted — approve them in the Ops Console`}
+                        </Link>
                       </div>
                     )}
                     {isShortResponse && (
