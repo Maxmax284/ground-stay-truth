@@ -87,7 +87,7 @@ export function useAIDrafts(status: AIDraftStatus | "all" = "pending", limit = 5
       note?: string;
     }) => {
       const { draft, decision, note } = input;
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("ai_action_drafts")
         .update({
           status: decision,
@@ -95,8 +95,16 @@ export function useAIDrafts(status: AIDraftStatus | "all" = "pending", limit = 5
           reviewed_by_user_id: user?.id ?? null,
           reviewed_at: new Date().toISOString(),
         })
-        .eq("id", draft.id);
+        .eq("id", draft.id)
+        .select("id");
       if (error) throw error;
+      // RLS blocks the update silently (no error, no rows) when the ops security
+      // code window is closed — say so plainly instead of looking like a no-op.
+      if (!data || data.length === 0) {
+        throw new Error(
+          "Could not save that decision. Enter the ops security code in Settings → AI Ops and try again.",
+        );
+      }
 
       await logOverrideEvent({
         actionType: `ai_draft_${decision}`,
