@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Swords, X, Send, Trash2, Sparkles, AlertTriangle, Globe, GripVertical, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { VoiceInputButton } from "@/components/VoiceInputButton";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -540,6 +541,13 @@ function AIAssistantPanelInner() {
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
             }}
+          />
+          <VoiceInputButton
+            language={language}
+            disabled={isStreaming}
+            onTranscript={(text) =>
+              setInput((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text))
+            }
           />
           <Button
             size="icon"
