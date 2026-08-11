@@ -11,6 +11,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { logOverrideEvent } from "@/lib/overrideAudit";
+import { executeDraft, isDraftAutoApplicable } from "@/lib/aiDraftExecutors";
 
 export type AIDraftStatus = "pending" | "approved" | "rejected" | "applied" | "expired";
 
