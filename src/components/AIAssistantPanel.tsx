@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Swords, X, Send, Trash2, Sparkles, AlertTriangle, Globe, GripVertical, Lightbulb, ChevronDown, ChevronUp, Maximize2, Minimize2, KeyRound, Volume2, VolumeX, Loader2, Lock } from "lucide-react";
+import { Swords, X, Send, Trash2, Sparkles, AlertTriangle, Globe, GripVertical, Lightbulb, ChevronDown, ChevronUp, Maximize2, Minimize2, KeyRound, Volume2, VolumeX, Loader2, Lock, MoreVertical, RotateCcw, Columns2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { VoiceInputButton } from "@/components/VoiceInputButton";
@@ -12,8 +12,19 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  useAIPanelMode,
+  panelBoxClasses,
+  clampPos,
+  readStoredPos,
+  writeStoredPos,
+  AI_PANEL_MODES,
+  AI_PANEL_MODE_LABELS,
+} from "@/lib/aiPanelLayout";
 import { useAIAssistant, type AIMode } from "@/hooks/useAIAssistant";
 import { useAISettings } from "@/hooks/useAISettings";
 import { useAuth } from "@/hooks/useAuth";
@@ -105,18 +116,13 @@ function AIAssistantPanelInner() {
   // Phase 5: when the user has a booking sheet open, surface booking-focused prompts.
   // Bubble deck: Control Mode gets the ops deck, a focused booking gets booking
   // prompts, otherwise the role default. Set after `mode` below.
-  const [expanded, setExpanded] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem("ai.expanded") === "1";
-  });
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("ai.expanded", expanded ? "1" : "0");
-    }
-  }, [expanded]);
+  // Display mode: compact / normal / expanded. Remembered per browser.
+  const { mode: panelMode, setMode: setPanelMode, cycleMode: cyclePanelMode } = useAIPanelMode();
+  const expanded = panelMode === "expanded";
+  const isCompact = panelMode === "compact";
   const [input, setInput] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const [showPrompts, setShowPrompts] = useState(true);
+  const [showPrompts, setShowPrompts] = useState(panelMode !== "compact");
   const [mode, setMode] = useState<AIMode>("explain");
   // Ops security-code gate for Control Mode (deep ops).
   const {
@@ -145,6 +151,18 @@ function AIAssistantPanelInner() {
   const { state: speechState, speak, stop: stopSpeech } = useSpokenReply((m) => toast.error(m));
   const spokenRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const tabsRef = useRef<HTMLDivElement>(null);
+
+  // Modes this role may use — guests never see staff tooling.
+  const availableModes = (Object.keys(MODE_LABELS) as AIMode[]).filter((m) =>
+    role === "guest" ? ["explain", "summarize", "camp"].includes(m) : true,
+  );
+
+  // Always keep the active mode chip in view instead of hidden past the fade.
+  useEffect(() => {
+    const el = tabsRef.current?.querySelector<HTMLElement>(`[data-mode="${mode}"]`);
+    el?.scrollIntoView({ inline: "nearest", block: "nearest" });
+  }, [mode, panelMode]);
 
   // Persist the speaker preference.
   useEffect(() => {
@@ -170,11 +188,42 @@ function AIAssistantPanelInner() {
   const bubbleRef = useRef<HTMLDivElement>(null);
   // Draggable position — used for BOTH bubble and open panel
   const [bubblePos, setBubblePos] = useState<{ x: number; y: number } | null>(null);
-  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(() => readStoredPos());
   const isDraggingRef = useRef(false);
   const hasDraggedRef = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // Remember where the panel was dragged to, and never let it end up stranded
+  // off-screen after a resize / rotation.
+  useEffect(() => {
+    writeStoredPos(position);
+  }, [position]);
+
+  useEffect(() => {
+    const onResize = () => {
+      setPosition((prev) => {
+        if (!prev) return prev;
+        const el = panelRef.current;
+        const size = {
+          width: el?.offsetWidth ?? 500,
+          height: el?.offsetHeight ?? 600,
+        };
+        const next = clampPos(prev, size);
+        return next.x === prev.x && next.y === prev.y ? prev : next;
+      });
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // Restore the default readable layout: normal mode, default corner position.
+  const resetLayout = useCallback(() => {
+    setPanelMode("normal");
+    setPosition(null);
+    setShowPrompts(true);
+    toast.success("Kru Glitch layout reset");
+  }, [setPanelMode]);
 
   // --- Bubble drag handlers ---
   const handleBubblePointerDown = useCallback((e: React.PointerEvent) => {
@@ -239,12 +288,15 @@ function AIAssistantPanelInner() {
     e.preventDefault();
     const newX = e.clientX - dragOffset.current.x;
     const newY = e.clientY - dragOffset.current.y;
-    const maxX = window.innerWidth - (panelRef.current?.offsetWidth ?? 380);
-    const maxY = window.innerHeight - (panelRef.current?.offsetHeight ?? 400);
-    setPosition({
-      x: Math.max(0, Math.min(newX, maxX)),
-      y: Math.max(0, Math.min(newY, maxY)),
-    });
+    setPosition(
+      clampPos(
+        { x: newX, y: newY },
+        {
+          width: panelRef.current?.offsetWidth ?? 500,
+          height: panelRef.current?.offsetHeight ?? 600,
+        },
+      ),
+    );
   }, []);
 
   const handlePointerUp = useCallback(() => {
@@ -347,18 +399,24 @@ function AIAssistantPanelInner() {
     );
   }
 
-  // On mobile, ignore drag position and render as bottom sheet.
-  // Expanded mode ignores the drag position entirely and fills the screen; the
-  // choice is remembered per browser.
-  const panelStyle: React.CSSProperties = !isMobile && position && !expanded
+  // Sizing rules:
+  //  - phone: bottom sheet (compact = short, normal = tall), expanded = fullscreen
+  //  - desktop/laptop: real readable window per display mode, dragged position
+  //    honoured for compact/normal, expanded centres itself.
+  const draggable = !isMobile && !expanded;
+  const panelStyle: React.CSSProperties = draggable && position
     ? { position: "fixed", left: position.x, top: position.y, bottom: "auto", right: "auto", zIndex: 50 }
     : {};
 
-  const mobileClasses = expanded
-    ? "fixed inset-0 z-50 w-full max-w-full h-full max-h-none rounded-none shadow-2xl"
-    : isMobile
-      ? "fixed inset-x-0 bottom-0 z-50 w-full max-w-full rounded-t-2xl rounded-b-none border-b-0 max-h-[85dvh] shadow-2xl"
-      : `${!position ? "fixed bottom-6 right-6 md:bottom-6 bottom-20" : ""} z-50 w-[380px] max-w-[calc(100vw-2rem)] rounded-2xl max-h-[min(32rem,calc(100vh-8rem))] shadow-2xl`;
+  const mobileClasses = isMobile
+    ? expanded
+      ? "fixed inset-0 z-50 w-full max-w-full h-[100dvh] rounded-none shadow-2xl"
+      : `fixed inset-x-0 bottom-0 z-50 w-full max-w-full rounded-t-2xl rounded-b-none border-b-0 shadow-2xl ${
+          isCompact ? "h-[62dvh]" : "h-[90dvh]"
+        }`
+    : expanded
+      ? "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 rounded-2xl shadow-2xl w-[min(1100px,calc(100vw-3rem))] h-[calc(100dvh-3rem)]"
+      : `${!position ? "fixed bottom-6 right-6" : ""} z-50 rounded-2xl shadow-2xl ${panelBoxClasses(panelMode)}`;
 
   return (
     <div
@@ -368,140 +426,232 @@ function AIAssistantPanelInner() {
       onPointerUp={isMobile ? undefined : handlePointerUp}
       className={`${mobileClasses} bg-card border border-border flex flex-col animate-slide-up`}
     >
-      {/* Header with drag handle (desktop only) */}
-      <div className="flex items-center justify-between px-4 py-3 border-b">
-        <div className="flex items-center gap-2">
-          {!isMobile && !expanded && (
+      {/* Header — primary controls stay visible, everything else lives in the
+          overflow menu so nothing crowds or clips at narrow widths. */}
+      <div className="flex items-center justify-between gap-2 px-3 py-2.5 border-b">
+        <div className="flex min-w-0 items-center gap-1.5">
+          {draggable && (
             <div
-              className="cursor-grab active:cursor-grabbing p-2 -ml-2 rounded hover:bg-accent/50"
+              className="cursor-grab active:cursor-grabbing p-1.5 -ml-1 rounded hover:bg-accent/50 touch-none"
               onPointerDown={handlePointerDown}
               title="Drag to move"
+              aria-label="Drag to move Kru Glitch"
             >
               <GripVertical className="h-4 w-4 text-muted-foreground" />
             </div>
           )}
-          <Swords className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold">{t("ai.title")}</span>
-          <Badge variant="secondary" className="text-[10px]">{t("ai.assistOnly")}</Badge>
+          <Swords className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-sm font-semibold truncate">{t("ai.title")}</span>
+          {!isCompact && (
+            <Badge variant="secondary" className="text-[10px] shrink-0 hidden sm:inline-flex">
+              {t("ai.assistOnly")}
+            </Badge>
+          )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 shrink-0">
           {/* Control Mode key — the obvious way in. Locked shows the code prompt. */}
           {role !== "guest" && (
             <Button
               variant="ghost"
               size="icon"
-              className={`h-7 w-7 ${inControlMode ? "text-primary" : ""}`}
+              className={`h-8 w-8 ${inControlMode ? "text-primary" : ""}`}
               title={inControlMode ? "Control Mode is live" : "Enter Control Mode"}
+              aria-label={inControlMode ? "Control Mode is live" : "Enter Control Mode"}
               onClick={() => {
                 if (inControlMode) return;
                 if (!opsGateOpen) setUnlockOpen(true);
                 else setMode("agent");
               }}
             >
-              <KeyRound className="h-3.5 w-3.5" />
+              <KeyRound className="h-4 w-4" />
             </Button>
           )}
-          {/* Expand / shrink — remembered per browser. */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            aria-pressed={expanded}
-            title={expanded ? "Shrink chat" : "Expand to full screen"}
-            onClick={() => setExpanded((v) => !v)}
-          >
-            {expanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7" title={t("ai.language")}>
-                <Globe className="h-3.5 w-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="z-[60]">
-              {LANGUAGES.map((lang) => (
-                <DropdownMenuItem
-                  key={lang.code}
-                  onClick={() => setLanguage(lang.code)}
-                  className={language === lang.code ? "bg-accent" : ""}
-                >
-                  {lang.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          {/* Optional spoken replies — off by default, persists per browser. */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`h-7 w-7 ${speakReplies ? "text-primary" : ""}`}
-            aria-pressed={speakReplies}
-            title={speakReplies ? t("ai.speakOn", "Spoken replies on") : t("ai.speakOff", "Spoken replies off")}
-            onClick={() => {
-              if (speakReplies) stopSpeech();
-              setSpeakReplies((v) => !v);
-            }}
-          >
-            {speechState === "loading" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : speakReplies ? (
-              <Volume2 className="h-3.5 w-3.5" />
-            ) : (
-              <VolumeX className="h-3.5 w-3.5" />
-            )}
-          </Button>
           {speechState === "playing" && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-destructive"
+              className="h-8 w-8 text-destructive"
               title={t("ai.stopSpeaking", "Stop speaking")}
+              aria-label={t("ai.stopSpeaking", "Stop speaking")}
               onClick={stopSpeech}
             >
-              <X className="h-3.5 w-3.5" />
+              <VolumeX className="h-4 w-4" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={clearChat} title={t("ai.clearChat")}>
-            <Trash2 className="h-3.5 w-3.5" />
+          {/* Size toggle — hops between the current size and expanded. */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-pressed={expanded}
+            title={expanded ? "Shrink Kru Glitch" : "Expand Kru Glitch"}
+            aria-label={expanded ? "Shrink Kru Glitch" : "Expand Kru Glitch"}
+            onClick={() => setPanelMode(expanded ? "normal" : "expanded")}
+          >
+            {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
-
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setIsOpen(false); setPosition(null); }}>
+          {/* Overflow: size modes, language, speaker, clear, reset layout. */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                title="More options"
+                aria-label="More Kru Glitch options"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="z-[60] w-52">
+              <DropdownMenuLabel className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Size
+              </DropdownMenuLabel>
+              {AI_PANEL_MODES.map((m) => (
+                <DropdownMenuItem
+                  key={m}
+                  onClick={() => {
+                    setPanelMode(m);
+                    if (m === "compact") setShowPrompts(false);
+                  }}
+                  className={panelMode === m ? "bg-accent" : ""}
+                >
+                  <Columns2 className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                  {AI_PANEL_MODE_LABELS[m]}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                {t("ai.language")}
+              </DropdownMenuLabel>
+              <div className="max-h-52 overflow-y-auto">
+                {LANGUAGES.map((lang) => (
+                  <DropdownMenuItem
+                    key={lang.code}
+                    onClick={() => setLanguage(lang.code)}
+                    className={language === lang.code ? "bg-accent" : ""}
+                  >
+                    <Globe className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                    {lang.label}
+                  </DropdownMenuItem>
+                ))}
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  if (speakReplies) stopSpeech();
+                  setSpeakReplies((v) => !v);
+                }}
+              >
+                {speechState === "loading" ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+                ) : speakReplies ? (
+                  <Volume2 className="h-3.5 w-3.5 mr-2 text-primary" />
+                ) : (
+                  <VolumeX className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                )}
+                {speakReplies
+                  ? t("ai.speakOn", "Spoken replies on")
+                  : t("ai.speakOff", "Spoken replies off")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={clearChat}>
+                <Trash2 className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                {t("ai.clearChat")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={resetLayout}>
+                <RotateCcw className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                Reset layout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            title={t("common.close", "Close")}
+            aria-label={t("common.close", "Close")}
+            onClick={() => setIsOpen(false)}
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      {/* Mode selector — filter staff-only modes for guests */}
-      <div className="flex gap-1 px-3 py-2 border-b overflow-x-auto">
-        {(Object.keys(MODE_LABELS) as AIMode[])
-          .filter((m) => {
-            if (role === "guest") {
-              return ["explain", "summarize", "camp"].includes(m);
-            }
-            return true;
-          })
-          .map((m) => (
-          <button
-            key={m}
-            onClick={() => {
-              // Deep ops sits behind the ops security code. The chip stays
-              // visible so staff know it exists, but tapping it while locked
-              // asks for the code first.
-              if (m === "agent" && !opsGateOpen) {
-                setUnlockOpen(true);
-                return;
-              }
-              setMode(m);
-            }}
-            className={`text-[11px] px-2 py-1 rounded-md whitespace-nowrap transition-all duration-200 inline-flex items-center gap-1 ${
-              mode === m ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-accent"
-            }`}
+
+      {/* Mode selector — dropdown when the panel is compact, otherwise a
+          scrollable chip row with fade edges so nothing clips or overlaps. */}
+      {isCompact ? (
+        <div className="px-3 py-2 border-b">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 w-full justify-between text-xs">
+                <span className="flex items-center gap-1.5 truncate">
+                  {mode === "agent" && !opsGateOpen && <Lock className="h-3 w-3" />}
+                  {t(MODE_LABELS[mode])}
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="z-[60] w-48">
+              {availableModes.map((m) => (
+                <DropdownMenuItem
+                  key={m}
+                  className={mode === m ? "bg-accent" : ""}
+                  onClick={() => {
+                    if (m === "agent" && !opsGateOpen) {
+                      setUnlockOpen(true);
+                      return;
+                    }
+                    setMode(m);
+                  }}
+                >
+                  {m === "agent" && !opsGateOpen && <Lock className="h-3 w-3 mr-2" />}
+                  {t(MODE_LABELS[m])}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ) : (
+        <div className="relative border-b">
+          <div
+            ref={tabsRef}
+            role="tablist"
+            aria-label="Assistant mode"
+            className="flex gap-1.5 px-3 py-2 overflow-x-auto scrollbar-thin scroll-smooth"
           >
-            {m === "agent" && !opsGateOpen && <Lock className="h-3 w-3" />}
-            {t(MODE_LABELS[m])}
-          </button>
-        ))}
-      </div>
+            {availableModes.map((m) => (
+              <button
+                key={m}
+                role="tab"
+                aria-selected={mode === m}
+                data-mode={m}
+                onClick={() => {
+                  // Deep ops sits behind the ops security code. The chip stays
+                  // visible so staff know it exists, but tapping it while locked
+                  // asks for the code first.
+                  if (m === "agent" && !opsGateOpen) {
+                    setUnlockOpen(true);
+                    return;
+                  }
+                  setMode(m);
+                }}
+                className={`text-xs px-3 min-h-[32px] rounded-md whitespace-nowrap transition-all duration-200 inline-flex items-center gap-1 shrink-0 ${
+                  mode === m
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted text-muted-foreground hover:bg-accent"
+                }`}
+              >
+                {m === "agent" && !opsGateOpen && <Lock className="h-3 w-3" />}
+                {t(MODE_LABELS[m])}
+              </button>
+            ))}
+          </div>
+          {/* Fade hint that there is more to scroll. */}
+          <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-card to-transparent" />
+        </div>
+      )}
+
 
       {/* Control Mode strip — makes the borrowed-authority window visible and
           gives a one-tap way to close it or go review queued drafts. */}
@@ -554,9 +704,18 @@ function AIAssistantPanelInner() {
 
 
 
-      {/* Messages - fixed scroll */}
-      <div ref={scrollRef} className={`flex-1 min-h-0 overflow-y-auto ${expanded ? "text-[15px] leading-relaxed" : ""}`}>
-        <div className={`px-4 py-3 space-y-4 ${expanded ? "mx-auto w-full max-w-3xl md:px-6 md:py-6" : ""}`}>
+      {/* Messages — single vertical scroller, roomier text in bigger modes */}
+      <div
+        ref={scrollRef}
+        className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-thin ${
+          isCompact ? "text-[13px] leading-relaxed" : "text-sm leading-[1.65]"
+        } ${expanded ? "md:text-[15px]" : ""}`}
+      >
+        <div
+          className={`px-4 py-4 space-y-5 ${
+            expanded ? "mx-auto w-full max-w-3xl md:px-8 md:py-6 md:space-y-6" : ""
+          }`}
+        >
           {messages.length === 0 && (
             <div className="py-4 animate-fade-up">
               {inControlMode ? (
@@ -700,38 +859,47 @@ function AIAssistantPanelInner() {
         </div>
       </div>
 
-      {/* Persistent quick actions — sticky, always visible, thumb-friendly */}
+      {/* Quick actions — wrap cleanly in normal/expanded, collapsed by default
+          in compact so they never crowd out the input. */}
       {quickPrompts.length > 0 && (
-        <div className="border-t bg-muted/40 sticky bottom-0 z-10 shadow-[0_-2px_8px_-4px_rgba(0,0,0,0.08)]">
+        <div className="border-t bg-muted/40 shrink-0">
           <button
             onClick={() => setShowPrompts((v) => !v)}
-            className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors min-h-[36px]"
+            className="w-full flex items-center justify-between gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors min-h-[36px]"
             aria-expanded={showPrompts}
             aria-controls="ai-quick-prompts"
           >
-            <span className="flex items-center gap-1.5">
-              <Lightbulb className="h-3.5 w-3.5 text-primary" />
-              {focus && role !== "guest" ? "Booking actions & help" : "Quick actions & help"}
-              <span className="ml-1 rounded-full bg-primary/10 text-primary px-1.5 py-0.5 text-[9px] normal-case tracking-normal">
+            <span className="flex min-w-0 items-center gap-1.5">
+              <Lightbulb className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span className="truncate">
+                {focus && role !== "guest" ? "Booking actions & help" : "Quick actions & help"}
+              </span>
+              <span className="rounded-full bg-primary/10 text-primary px-1.5 py-0.5 text-[9px] normal-case tracking-normal shrink-0">
                 {quickPrompts.length}
               </span>
             </span>
-            {showPrompts ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+            {showPrompts ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronUp className="h-3.5 w-3.5 shrink-0" />}
           </button>
           {showPrompts && (
             <div
               id="ai-quick-prompts"
-              className="px-2 pb-2 flex gap-1.5 overflow-x-auto scrollbar-thin snap-x"
+              className={`px-3 pb-2.5 ${
+                isCompact
+                  ? "flex gap-1.5 overflow-x-auto scrollbar-thin snap-x"
+                  : "flex flex-wrap gap-1.5 max-h-[7.5rem] overflow-y-auto scrollbar-thin"
+              } ${expanded ? "mx-auto w-full max-w-3xl md:px-8" : ""}`}
             >
               {quickPrompts.map((qp) => (
                 <button
                   key={qp.label}
                   onClick={() => sendMessage(qp.prompt, mode, undefined, langCodeToName(language))}
                   disabled={isStreaming}
-                  className="flex items-center gap-1.5 rounded-full bg-background border border-border px-3 py-2 text-[12px] font-medium whitespace-nowrap hover:bg-accent hover:border-primary/40 active:scale-95 disabled:opacity-50 transition-all shrink-0 snap-start min-h-[36px]"
+                  className={`flex items-center gap-1.5 rounded-full bg-background border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent hover:border-primary/40 active:scale-95 disabled:opacity-50 transition-all min-h-[36px] ${
+                    isCompact ? "whitespace-nowrap shrink-0 snap-start" : "max-w-full"
+                  }`}
                 >
-                  <span className="text-primary">{qp.icon}</span>
-                  {qp.label}
+                  <span className="text-primary shrink-0">{qp.icon}</span>
+                  <span className={isCompact ? "" : "truncate"}>{qp.label}</span>
                 </button>
               ))}
             </div>
@@ -740,15 +908,21 @@ function AIAssistantPanelInner() {
       )}
 
 
-      {/* Input */}
-      <div className="border-t px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-
-        <div className={`flex gap-2 ${expanded ? "mx-auto w-full max-w-3xl" : ""}`}>
+      {/* Input — always visible, never pushed off-screen */}
+      <div className="border-t px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] shrink-0 bg-card">
+        <div className={`flex items-end gap-2 ${expanded ? "mx-auto w-full max-w-3xl md:px-5" : ""}`}>
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={t("ai.inputPlaceholder")}
-            className={`resize-none ${expanded ? "min-h-[56px] max-h-[160px] text-[15px]" : "min-h-[40px] max-h-[80px] text-sm"}`}
+            aria-label={t("ai.inputPlaceholder")}
+            className={`flex-1 min-w-0 resize-none ${
+              expanded
+                ? "min-h-[60px] max-h-[180px] text-[15px]"
+                : isCompact
+                  ? "min-h-[40px] max-h-[96px] text-sm"
+                  : "min-h-[48px] max-h-[140px] text-sm"
+            }`}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
             }}
@@ -764,7 +938,8 @@ function AIAssistantPanelInner() {
             size="icon"
             onClick={isStreaming ? cancel : handleSend}
             disabled={!isStreaming && !input.trim()}
-            className="shrink-0 self-end"
+            aria-label={isStreaming ? t("common.cancel", "Stop") : t("ai.send", "Send")}
+            className="shrink-0"
           >
             {isStreaming ? <X className="h-4 w-4" /> : <Send className="h-4 w-4" />}
           </Button>
