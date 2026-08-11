@@ -4517,6 +4517,7 @@ export type Database = {
       }
     }
     Functions: {
+      assign_sandbox_to_caller: { Args: never; Returns: string }
       assign_unit_for_group: {
         Args: { _check_in: string; _check_out: string; _group_id: string }
         Returns: {
