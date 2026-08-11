@@ -420,7 +420,31 @@ function AIAssistantPanelInner() {
                       timestamp={msg.createdAt}
                       isStreaming={i === messages.length - 1 && isStreaming}
                     />
+                    {/* Deep ops mode: show what the agent actually read, and
+                        flag any action it queued for approval. Nothing here has
+                        been executed — drafts wait for a human. */}
+                    {!!msg.toolsUsed?.length && (
+                      <div className="ml-3 mt-1.5 flex flex-wrap gap-1">
+                        {Array.from(new Set(msg.toolsUsed)).map((tool) => (
+                          <span
+                            key={tool}
+                            className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground"
+                          >
+                            {tool.replace(/_/g, " ")}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {!!msg.draftIds?.length && (
+                      <div className="ml-3 mt-1.5 flex items-center gap-1.5 rounded-md bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary">
+                        <AlertTriangle className="h-3 w-3 shrink-0" />
+                        {msg.draftIds.length === 1
+                          ? "1 action drafted — waiting for your approval"
+                          : `${msg.draftIds.length} actions drafted — waiting for your approval`}
+                      </div>
+                    )}
                     {isShortResponse && (
+
                       <button
                         onClick={() => sendMessage("Go deeper — give me the full details on that.", mode, undefined, langCodeToName(language))}
                         className="ml-3 mt-1.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
