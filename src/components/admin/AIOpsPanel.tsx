@@ -9,15 +9,21 @@
  * Admins can rehearse the whole flow against the sandbox property, so nothing
  * they test touches live inventory, guests, money or email.
  */
-import { CheckCircle2, CircleDashed, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, CircleDashed, Lock, Sparkles } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ElevationPanel } from "@/components/admin/ElevationPanel";
 import { AISandboxToggle } from "@/components/admin/AISandboxToggle";
+import { OpsPasscodePanel } from "@/components/admin/OpsPasscodePanel";
+import { OpsUnlockDialog } from "@/components/admin/OpsUnlockDialog";
+import { useOpsUnlock } from "@/hooks/useOpsUnlock";
 
 import { AIDraftsPanel } from "@/components/admin/AIDraftsPanel";
 import { useAIDrafts } from "@/hooks/useAIDrafts";
 import { useElevationGrants } from "@/hooks/useAdminElevation";
+
 
 function ChecklistRow({ done, label, detail }: { done: boolean; label: string; detail: string }) {
   return (
