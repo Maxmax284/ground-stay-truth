@@ -974,7 +974,9 @@
       "validate": "ตรวจสอบ",
       "draft": "ร่าง",
       "digest": "สรุปรวม",
-      "camp": "ค่าย"
+      "camp": "ค่าย",
+      "agent": "โหมดลึก"
+
     },
     "draftWithAI": "ร่างด้วย AI",
     "drafting": "กำลังร่าง…",

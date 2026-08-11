@@ -74,6 +74,96 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_elevation_grants: {
+        Row: {
+          created_at: string
+          expires_at: string
+          granted_by_user_id: string
+          id: string
+          minutes: number
+          reason: string
+          revoked_at: string | null
+          revoked_by_user_id: string | null
+          self_issued: boolean
+          subject_user_id: string
+          used_count: number
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          granted_by_user_id: string
+          id?: string
+          minutes: number
+          reason: string
+          revoked_at?: string | null
+          revoked_by_user_id?: string | null
+          self_issued?: boolean
+          subject_user_id: string
+          used_count?: number
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          granted_by_user_id?: string
+          id?: string
+          minutes?: number
+          reason?: string
+          revoked_at?: string | null
+          revoked_by_user_id?: string | null
+          self_issued?: boolean
+          subject_user_id?: string
+          used_count?: number
+        }
+        Relationships: []
+      }
+      ai_action_drafts: {
+        Row: {
+          action_type: string
+          booking_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          id: string
+          payload: Json
+          property_id: string | null
+          rationale: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by_user_id: string | null
+          status: string
+          summary: string
+        }
+        Insert: {
+          action_type: string
+          booking_id?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          payload?: Json
+          property_id?: string | null
+          rationale?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          status?: string
+          summary: string
+        }
+        Update: {
+          action_type?: string
+          booking_id?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          payload?: Json
+          property_id?: string | null
+          rationale?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          status?: string
+          summary?: string
+        }
+        Relationships: []
+      }
       ai_assistant_audit: {
         Row: {
           assistant_response_at: string
@@ -2378,6 +2468,8 @@ export type Database = {
           before_state: Json
           booking_id: string | null
           created_at: string
+          elevated: boolean
+          elevation_grant_id: string | null
           id: string
           metadata: Json
           reason: string | null
@@ -2397,6 +2489,8 @@ export type Database = {
           before_state?: Json
           booking_id?: string | null
           created_at?: string
+          elevated?: boolean
+          elevation_grant_id?: string | null
           id?: string
           metadata?: Json
           reason?: string | null
@@ -2416,6 +2510,8 @@ export type Database = {
           before_state?: Json
           booking_id?: string | null
           created_at?: string
+          elevated?: boolean
+          elevation_grant_id?: string | null
           id?: string
           metadata?: Json
           reason?: string | null
@@ -4474,6 +4570,11 @@ export type Database = {
           wifi_password: string
         }[]
       }
+      grant_admin_elevation: {
+        Args: { _minutes?: number; _reason: string; _subject_user_id: string }
+        Returns: string
+      }
+      has_active_elevation: { Args: { _user_id: string }; Returns: boolean }
       has_ops_read: { Args: { _user_id: string }; Returns: boolean }
       has_ops_write: { Args: { _user_id: string }; Returns: boolean }
       has_property_access: {
@@ -4541,6 +4642,17 @@ export type Database = {
         }
         Returns: number
       }
+      my_active_elevation: {
+        Args: never
+        Returns: {
+          expires_at: string
+          granted_by_user_id: string
+          id: string
+          minutes: number
+          reason: string
+          self_issued: boolean
+        }[]
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -4550,6 +4662,7 @@ export type Database = {
         }[]
       }
       reset_sandbox: { Args: never; Returns: Json }
+      revoke_admin_elevation: { Args: { _grant_id: string }; Returns: boolean }
       sync_booking_from_segments: {
         Args: { _booking_id: string }
         Returns: undefined

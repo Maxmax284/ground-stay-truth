@@ -4,13 +4,24 @@ import { useProperty } from "@/hooks/useProperty";
 import { supabase } from "@/integrations/supabase/client";
 import { getAIFocus, getAIRouteFocus } from "@/lib/aiFocusStore";
 
-export type AIMode = "explain" | "summarize" | "validate" | "draft" | "digest" | "camp";
+/**
+ * "agent" is the deep, tool-calling ops mode (edge function `ai-agent`). Unlike
+ * the other modes it is NOT streamed: the model may call several read tools
+ * before it answers, so the reply arrives in one piece. It is staff-only and
+ * can propose actions as drafts — it never executes anything.
+ */
+export type AIMode = "explain" | "summarize" | "validate" | "draft" | "digest" | "camp" | "agent";
 
 export interface AIMessage {
   role: "user" | "assistant";
   content: string;
   createdAt: number;
+  /** Read tools the agent called for this reply (agent mode only). */
+  toolsUsed?: string[];
+  /** Draft IDs the agent queued for approval (agent mode only). */
+  draftIds?: string[];
 }
+
 
 function newSessionId(): string {
   try {
@@ -122,6 +133,55 @@ export function useAIAssistant() {
       // Fetch fresh session to avoid expired token 401s
       const { data: freshSession } = await supabase.auth.getSession();
       const accessToken = freshSession?.session?.access_token ?? session.access_token;
+
+      // ── Agent mode: tool-calling, non-streamed, draft-only ───────────────
+      // The agent decides which read tools to call, so the round trip is longer
+      // and arrives as one JSON reply instead of an SSE stream.
+      if (mode === "agent") {
+        const agentResp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-agent`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({
+              messages: trimmedHistory.map((m) => ({ role: m.role, content: m.content })),
+              language,
+              property_id: activePropertyId,
+            }),
+            signal: controller.signal,
+          }
+        );
+
+        const agentBody = await agentResp.json().catch(() => ({}));
+        if (!agentResp.ok) {
+          if (agentResp.status === 429) setError("Rate limit exceeded. Please try again later.");
+          else if (agentResp.status === 402) setError("AI credits exhausted. Please add credits.");
+          else if (agentResp.status === 403) setError("Deep ops mode is staff only.");
+          else setError(agentBody.error || "Ops agent error");
+          setIsStreaming(false);
+          return;
+        }
+
+        assistantSoFar = agentBody.reply || "";
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: assistantSoFar || "I couldn't put an answer together for that.",
+            createdAt: Date.now(),
+            toolsUsed: Array.isArray(agentBody.tools_used) ? agentBody.tools_used : [],
+            draftIds: Array.isArray(agentBody.draft_ids) ? agentBody.draft_ids : [],
+          },
+        ]);
+        setIsStreaming(false);
+        return;
+      }
+
+
 
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`,

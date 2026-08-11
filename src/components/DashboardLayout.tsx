@@ -17,6 +17,8 @@ import { SecurityFreezeBanner } from "@/components/SecurityFreezeBanner";
 import { PropertyIndicator } from "@/components/PropertyIndicator";
 import { useFenrirConfig } from "@/lib/fenrir";
 import { SandboxModeBanner } from "@/components/SandboxModeBanner";
+import { ElevationBanner } from "@/components/admin/ElevationBanner";
+
 
 const routeTitleKeys: Record<string, string> = {
   "/dashboard": "nav.dashboard",
@@ -97,7 +99,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </Button>
             </div>
           </header>
+          <ElevationBanner />
           <main className="flex-1 p-4 sm:p-6 overflow-y-auto overflow-x-hidden ring-rope-pattern min-w-0">
+
             <div key={location.pathname} className="animate-page-entry min-w-0 max-w-full">
               {children}
             </div>
