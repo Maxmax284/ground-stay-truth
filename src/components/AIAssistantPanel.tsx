@@ -415,15 +415,32 @@ function AIAssistantPanelInner() {
           .map((m) => (
           <button
             key={m}
-            onClick={() => setMode(m)}
-            className={`text-[11px] px-2 py-1 rounded-md whitespace-nowrap transition-all duration-200 ${
+            onClick={() => {
+              // Deep ops sits behind the ops security code. The chip stays
+              // visible so staff know it exists, but tapping it while locked
+              // asks for the code first.
+              if (m === "agent" && !opsGateOpen) {
+                setUnlockOpen(true);
+                return;
+              }
+              setMode(m);
+            }}
+            className={`text-[11px] px-2 py-1 rounded-md whitespace-nowrap transition-all duration-200 inline-flex items-center gap-1 ${
               mode === m ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-accent"
             }`}
           >
+            {m === "agent" && !opsGateOpen && <Lock className="h-3 w-3" />}
             {t(MODE_LABELS[m])}
           </button>
         ))}
       </div>
+
+      <OpsUnlockDialog
+        open={unlockOpen}
+        onOpenChange={setUnlockOpen}
+        surface="Deep ops"
+        onUnlocked={() => setMode("agent")}
+      />
 
       {/* Focus chip — shows what booking Kru Glitch is grounded to */}
       {focus && role !== "guest" && (
