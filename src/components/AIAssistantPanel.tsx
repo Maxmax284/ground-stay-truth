@@ -566,37 +566,80 @@ function AIAssistantPanelInner() {
       </div>
 
 
-      {/* Mode selector — filter staff-only modes for guests */}
-      <div className="flex gap-1 px-3 py-2 border-b overflow-x-auto">
-        {(Object.keys(MODE_LABELS) as AIMode[])
-          .filter((m) => {
-            if (role === "guest") {
-              return ["explain", "summarize", "camp"].includes(m);
-            }
-            return true;
-          })
-          .map((m) => (
-          <button
-            key={m}
-            onClick={() => {
-              // Deep ops sits behind the ops security code. The chip stays
-              // visible so staff know it exists, but tapping it while locked
-              // asks for the code first.
-              if (m === "agent" && !opsGateOpen) {
-                setUnlockOpen(true);
-                return;
-              }
-              setMode(m);
-            }}
-            className={`text-[11px] px-2 py-1 rounded-md whitespace-nowrap transition-all duration-200 inline-flex items-center gap-1 ${
-              mode === m ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-accent"
-            }`}
+      {/* Mode selector — dropdown when the panel is compact, otherwise a
+          scrollable chip row with fade edges so nothing clips or overlaps. */}
+      {isCompact ? (
+        <div className="px-3 py-2 border-b">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 w-full justify-between text-xs">
+                <span className="flex items-center gap-1.5 truncate">
+                  {mode === "agent" && !opsGateOpen && <Lock className="h-3 w-3" />}
+                  {t(MODE_LABELS[mode])}
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="z-[60] w-48">
+              {availableModes.map((m) => (
+                <DropdownMenuItem
+                  key={m}
+                  className={mode === m ? "bg-accent" : ""}
+                  onClick={() => {
+                    if (m === "agent" && !opsGateOpen) {
+                      setUnlockOpen(true);
+                      return;
+                    }
+                    setMode(m);
+                  }}
+                >
+                  {m === "agent" && !opsGateOpen && <Lock className="h-3 w-3 mr-2" />}
+                  {t(MODE_LABELS[m])}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ) : (
+        <div className="relative border-b">
+          <div
+            ref={tabsRef}
+            role="tablist"
+            aria-label="Assistant mode"
+            className="flex gap-1.5 px-3 py-2 overflow-x-auto scrollbar-thin scroll-smooth"
           >
-            {m === "agent" && !opsGateOpen && <Lock className="h-3 w-3" />}
-            {t(MODE_LABELS[m])}
-          </button>
-        ))}
-      </div>
+            {availableModes.map((m) => (
+              <button
+                key={m}
+                role="tab"
+                aria-selected={mode === m}
+                data-mode={m}
+                onClick={() => {
+                  // Deep ops sits behind the ops security code. The chip stays
+                  // visible so staff know it exists, but tapping it while locked
+                  // asks for the code first.
+                  if (m === "agent" && !opsGateOpen) {
+                    setUnlockOpen(true);
+                    return;
+                  }
+                  setMode(m);
+                }}
+                className={`text-xs px-3 min-h-[32px] rounded-md whitespace-nowrap transition-all duration-200 inline-flex items-center gap-1 shrink-0 ${
+                  mode === m
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted text-muted-foreground hover:bg-accent"
+                }`}
+              >
+                {m === "agent" && !opsGateOpen && <Lock className="h-3 w-3" />}
+                {t(MODE_LABELS[m])}
+              </button>
+            ))}
+          </div>
+          {/* Fade hint that there is more to scroll. */}
+          <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-card to-transparent" />
+        </div>
+      )}
+
 
       {/* Control Mode strip — makes the borrowed-authority window visible and
           gives a one-tap way to close it or go review queued drafts. */}
