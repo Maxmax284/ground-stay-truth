@@ -196,7 +196,39 @@ export default function Stay() {
   return (
     <div className="min-h-screen bg-background">
       <OfflineBanner />
-      {/* SEO metadata handled by index.html; content structure for crawlers */}
+      <Seo
+        path="/stay"
+        title="Camp Rooms & Villas — LMT CampStay Koh Samui"
+        description="Browse Lamai Muay Thai camp accommodation on Koh Samui: on-site rooms, premium and luxury villas, and long-stay options with nightly rates."
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: "LMT CampStay accommodation",
+          itemListElement: units.slice(0, 25).map((u, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            item: {
+              "@type": "Accommodation",
+              name: u.name,
+              description: u.description ?? undefined,
+              image: u.photos?.[0] ?? undefined,
+              occupancy: { "@type": "QuantitativeValue", maxValue: u.capacity },
+              amenityFeature: (u.amenities ?? []).map((a) => ({
+                "@type": "LocationFeatureSpecification",
+                name: a,
+              })),
+              offers: {
+                "@type": "Offer",
+                price: u.base_price,
+                priceCurrency: "THB",
+                availability: "https://schema.org/InStock",
+              },
+            },
+          })),
+        }}
+      />
+
+
       
       {/* Hero */}
       <header className="relative auth-hero-bg text-primary-foreground overflow-hidden">
