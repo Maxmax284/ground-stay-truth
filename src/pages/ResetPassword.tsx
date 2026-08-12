@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { consumeRecoveryPayload, recoveryRedirectTo } from "@/lib/recoveryLink";
 import { Loader2 } from "lucide-react";
+import Seo from "@/components/Seo";
+
 
 type Phase = "validating" | "ready" | "invalid";
 
@@ -138,7 +140,14 @@ const ResetPassword = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center auth-hero-bg px-4">
+      <Seo
+        path="/reset-password"
+        title="Reset Your Password — LMT CampStay"
+        description="Set a new password for your LMT CampStay account."
+        noindex
+      />
       <Card className="w-full max-w-md border-border/50 shadow-2xl">
+
         <CardHeader>
           <h1 className="text-2xl font-semibold leading-none tracking-tight">Reset your password</h1>
 
