@@ -19,6 +19,8 @@ import { FetchErrorState } from "@/components/FetchErrorState";
 import { logClientError } from "@/lib/errorLogging";
 import { getStayCacheVersion, subscribeToStayCacheBust } from "@/lib/stayCacheBust";
 import lamaiLogo from "@/assets/lamai-logo.png";
+import Seo from "@/components/Seo";
+
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
