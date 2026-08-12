@@ -10,6 +10,8 @@ import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { recoveryRedirectTo } from "@/lib/recoveryLink";
+import Seo from "@/components/Seo";
+
 
 const Auth = () => {
   const { t } = useTranslation();
@@ -64,7 +66,14 @@ const Auth = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center auth-hero-bg px-4 relative overflow-hidden corner-accent">
+      <Seo
+        path="/auth"
+        title="Staff Login — LMT CampStay Operations"
+        description="Sign in to the LMT CampStay staff console to manage bookings, arrivals, payments and daily camp operations."
+        noindex
+      />
       <div className="absolute top-4 right-4 z-10">
+
         <LanguageSelector />
       </div>
       <div className="w-full max-w-md space-y-6 relative z-10">
@@ -73,7 +82,9 @@ const Auth = () => {
             className="font-stat text-4xl sm:text-5xl font-bold uppercase tracking-tight text-primary-foreground animate-title-in"
           >
             {t("auth.groundStay")}
+            <span className="sr-only"> — staff login for camp stay operations</span>
           </h1>
+
 
           <p className="mt-1 text-sm text-primary-foreground/60 font-stat tracking-wider uppercase animate-fade-up animate-stagger-2">
             Train. Stay. Compete.

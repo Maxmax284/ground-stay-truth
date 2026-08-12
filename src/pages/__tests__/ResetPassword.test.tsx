@@ -34,13 +34,17 @@ vi.mock("@/lib/recoveryLink", () => ({
 vi.mock("@/hooks/use-toast", () => ({ useToast: () => ({ toast: vi.fn() }) }));
 
 import ResetPassword from "../ResetPassword";
+import { HelmetProvider } from "react-helmet-async";
 
 const renderPage = () =>
   render(
-    <MemoryRouter initialEntries={["/reset-password"]}>
-      <ResetPassword />
-    </MemoryRouter>,
+    <HelmetProvider>
+      <MemoryRouter initialEntries={["/reset-password"]}>
+        <ResetPassword />
+      </MemoryRouter>
+    </HelmetProvider>,
   );
+
 
 const expectReadyForm = async () => {
   await waitFor(() => expect(screen.getByLabelText(/new password/i)).toBeInTheDocument());

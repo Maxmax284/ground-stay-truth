@@ -5,6 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { Shield, FileText, ArrowLeft } from "lucide-react";
+import Seo from "@/components/Seo";
+
 
 const Legal = () => {
   const { t } = useTranslation();
@@ -18,7 +20,13 @@ const Legal = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        path="/legal"
+        title="Privacy Policy & Terms — LMT CampStay"
+        description="How LMT CampStay collects, stores and protects guest data, plus the terms of service covering bookings, deposits and cancellations."
+      />
       <div className="thai-stripe" />
+
       <header className="h-14 flex items-center justify-between border-b border-border px-6 bg-card">
         <Link
           to="/"

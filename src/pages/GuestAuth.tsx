@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { supabase } from "@/integrations/supabase/client";
+import Seo from "@/components/Seo";
+
 
 const GuestAuth = () => {
   const { t } = useTranslation();
@@ -85,7 +87,13 @@ const GuestAuth = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center auth-hero-bg-guest px-4 relative overflow-hidden corner-accent">
+      <Seo
+        path="/auth/guest"
+        title="Guest Login — Manage Your Camp Stay"
+        description="Log in to your LMT CampStay guest account to view your booking, pay deposits, upload documents and prepare for arrival on Koh Samui."
+      />
       <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+
         <a href="/auth" className="inline-flex items-center gap-1 text-xs font-medium text-primary-foreground/70 hover:text-primary-foreground transition-colors">
           Staff Login
         </a>
@@ -97,7 +105,9 @@ const GuestAuth = () => {
             className="font-serif text-3xl font-bold text-primary-foreground animate-title-in"
           >
             {t("auth.groundStay")}
+            <span className="sr-only"> — guest login for your Lamai Muay Thai camp stay</span>
           </h1>
+
           <p className="mt-1 text-sm text-primary-foreground/60 font-stat tracking-wider uppercase animate-fade-up animate-stagger-2">
             Fighter's Quarters
           </p>

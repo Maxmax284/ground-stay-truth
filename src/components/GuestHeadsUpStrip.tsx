@@ -302,8 +302,9 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
                       onClick={(e) => { e.stopPropagation(); setDetailEntry(entry); }}
                       className="text-xs text-primary hover:underline inline-flex items-center gap-0.5"
                     >
-                      Learn more <ChevronRight className="h-3 w-3" />
+                      Read more about this tip <ChevronRight className="h-3 w-3" />
                     </button>
+
                     {entry.location?.filter((l) => l !== "global").slice(0, 2).map((loc) => (
                       <Badge key={loc} variant="outline" className="text-[9px] px-1 py-0">
                         {LOCATION_LABELS[loc] ?? loc}
@@ -321,11 +322,13 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
                 {i === 0 && (
                   <button
                     onClick={(e) => { e.stopPropagation(); dismiss(entry.id); handlePause(); }}
+                    aria-label="Dismiss this tip"
                     className="p-1 rounded hover:bg-accent/60 shrink-0 text-muted-foreground/40 hover:text-muted-foreground transition-colors absolute top-2 right-2"
                   >
                     <X className="h-3 w-3" />
                   </button>
                 )}
+
               </div>
             </div>
             );
@@ -336,16 +339,19 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
             <>
               <button
                 onClick={() => { handlePause(); goPrev(); }}
+                aria-label="Previous tip"
                 className="absolute left-1 top-8 -translate-y-1/2 p-1 rounded-full bg-background/80 shadow-sm hover:bg-accent/60 transition-colors hidden sm:flex"
               >
                 <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
               <button
                 onClick={() => { handlePause(); goNext(); }}
+                aria-label="Next tip"
                 className="absolute right-1 top-8 -translate-y-1/2 p-1 rounded-full bg-background/80 shadow-sm hover:bg-accent/60 transition-colors hidden sm:flex"
               >
                 <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
+
             </>
           )}
         </div>
@@ -358,7 +364,7 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
             <div className="flex flex-col h-full">
               <SheetHeader className="px-5 pb-3 border-b">
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setDetailEntry(null)} className="p-1 -ml-1 rounded-md hover:bg-accent/60 text-muted-foreground">
+                  <button onClick={() => setDetailEntry(null)} aria-label="Back to tips" className="p-1 -ml-1 rounded-md hover:bg-accent/60 text-muted-foreground">
                     <ArrowLeft className="h-4 w-4" />
                   </button>
                   <Badge variant={detailEntry.severity === "urgent" ? "destructive" : "outline"} className="text-[10px]">

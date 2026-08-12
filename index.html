@@ -3,8 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LMT CampStay — Official Lamai Muay Thai Accommodation Booking</title>
-    <meta name="description" content="LMT CampStay — the official booking platform for Lamai Muay Thai training camp accommodation in Koh Samui, Thailand. Reserve your camp stay, manage deposits, and prepare for arrival.">
+    <title>LMT CampStay — Lamai Muay Thai Camp Stays</title>
+    <meta name="description" content="Book official Lamai Muay Thai camp accommodation in Koh Samui. Reserve rooms, pay deposits, and get arrival coordination in one place.">
+
     <meta name="author" content="Lamai Muay Thai" />
     <meta name="theme-color" content="#dc2626" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -26,7 +27,31 @@
   <meta name="twitter:title" content="LMT CampStay — Official Lamai Muay Thai Accommodation">
   <meta property="og:description" content="Official Lamai Muay Thai camp stay booking. Reserve accommodation, pay deposits, prepare for arrival.">
   <meta name="twitter:description" content="Official Lamai Muay Thai camp stay booking. Reserve accommodation, pay deposits, prepare for arrival.">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://lmtcampstay.com/#organization",
+          "name": "LMT CampStay",
+          "url": "https://lmtcampstay.com",
+          "logo": "https://lmtcampstay.com/pwa-512x512.png",
+          "parentOrganization": { "@type": "Organization", "name": "Lamai Muay Thai", "url": "https://lamaimuaythai.com" },
+          "address": { "@type": "PostalAddress", "addressLocality": "Koh Samui", "addressRegion": "Surat Thani", "addressCountry": "TH" }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://lmtcampstay.com/#website",
+          "name": "LMT CampStay",
+          "url": "https://lmtcampstay.com",
+          "publisher": { "@id": "https://lmtcampstay.com/#organization" }
+        }
+      ]
+    }
+  </script>
 </head>
+
 
   <body>
     <div id="root"></div>
