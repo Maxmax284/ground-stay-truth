@@ -364,7 +364,7 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
             <div className="flex flex-col h-full">
               <SheetHeader className="px-5 pb-3 border-b">
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setDetailEntry(null)} className="p-1 -ml-1 rounded-md hover:bg-accent/60 text-muted-foreground">
+                  <button onClick={() => setDetailEntry(null)} aria-label="Back to tips" className="p-1 -ml-1 rounded-md hover:bg-accent/60 text-muted-foreground">
                     <ArrowLeft className="h-4 w-4" />
                   </button>
                   <Badge variant={detailEntry.severity === "urgent" ? "destructive" : "outline"} className="text-[10px]">

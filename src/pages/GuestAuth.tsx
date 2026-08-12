@@ -97,7 +97,9 @@ const GuestAuth = () => {
             className="font-serif text-3xl font-bold text-primary-foreground animate-title-in"
           >
             {t("auth.groundStay")}
+            <span className="sr-only"> — guest login for your Lamai Muay Thai camp stay</span>
           </h1>
+
           <p className="mt-1 text-sm text-primary-foreground/60 font-stat tracking-wider uppercase animate-fade-up animate-stagger-2">
             Fighter's Quarters
           </p>

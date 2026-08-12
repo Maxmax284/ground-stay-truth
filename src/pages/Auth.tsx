@@ -73,7 +73,9 @@ const Auth = () => {
             className="font-stat text-4xl sm:text-5xl font-bold uppercase tracking-tight text-primary-foreground animate-title-in"
           >
             {t("auth.groundStay")}
+            <span className="sr-only"> — staff login for camp stay operations</span>
           </h1>
+
 
           <p className="mt-1 text-sm text-primary-foreground/60 font-stat tracking-wider uppercase animate-fade-up animate-stagger-2">
             Train. Stay. Compete.

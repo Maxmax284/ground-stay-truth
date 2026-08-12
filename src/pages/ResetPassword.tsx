@@ -140,9 +140,8 @@ const ResetPassword = () => {
     <div className="flex min-h-screen items-center justify-center auth-hero-bg px-4">
       <Card className="w-full max-w-md border-border/50 shadow-2xl">
         <CardHeader>
-          <CardTitle asChild>
-            <h1 className="text-2xl font-semibold leading-none tracking-tight">Reset your password</h1>
-          </CardTitle>
+          <h1 className="text-2xl font-semibold leading-none tracking-tight">Reset your password</h1>
+
 
           <CardDescription>
             {phase === "validating" && "Checking your reset link…"}
