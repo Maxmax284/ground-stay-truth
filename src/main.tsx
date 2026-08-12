@@ -56,7 +56,10 @@ navigator.serviceWorker?.addEventListener("message", (event) => {
 
 createRoot(document.getElementById("root")!).render(
   <ErrorBoundary>
-    <App />
+    <HelmetProvider>
+      <App />
+    </HelmetProvider>
   </ErrorBoundary>
 );
+
 
