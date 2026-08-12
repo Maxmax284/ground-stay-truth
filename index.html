@@ -27,7 +27,31 @@
   <meta name="twitter:title" content="LMT CampStay — Official Lamai Muay Thai Accommodation">
   <meta property="og:description" content="Official Lamai Muay Thai camp stay booking. Reserve accommodation, pay deposits, prepare for arrival.">
   <meta name="twitter:description" content="Official Lamai Muay Thai camp stay booking. Reserve accommodation, pay deposits, prepare for arrival.">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://lmtcampstay.com/#organization",
+          "name": "LMT CampStay",
+          "url": "https://lmtcampstay.com",
+          "logo": "https://lmtcampstay.com/pwa-512x512.png",
+          "parentOrganization": { "@type": "Organization", "name": "Lamai Muay Thai", "url": "https://lamaimuaythai.com" },
+          "address": { "@type": "PostalAddress", "addressLocality": "Koh Samui", "addressRegion": "Surat Thani", "addressCountry": "TH" }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://lmtcampstay.com/#website",
+          "name": "LMT CampStay",
+          "url": "https://lmtcampstay.com",
+          "publisher": { "@id": "https://lmtcampstay.com/#organization" }
+        }
+      ]
+    }
+  </script>
 </head>
+
 
   <body>
     <div id="root"></div>
