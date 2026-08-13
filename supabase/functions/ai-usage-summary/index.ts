@@ -1,13 +1,13 @@
 // Admin-only AI usage aggregations for the Security Center dashboard.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders } from "../_shared/cors.ts";
+import { corsPreflight, jsonResponse } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS") return corsPreflight(req);
 
   try {
     const auth = req.headers.get("Authorization");
-    if (!auth) return json({ error: "unauthorized" }, 401);
+    if (!auth) return jsonResponse(req, { error: "unauthorized" }, 401);
 
     const sb = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -16,11 +16,11 @@ Deno.serve(async (req) => {
 
     const userRes = await sb.auth.getUser(auth.replace("Bearer ", ""));
     const user = userRes.data.user;
-    if (!user) return json({ error: "unauthorized" }, 401);
+    if (!user) return jsonResponse(req, { error: "unauthorized" }, 401);
 
     const { data: roleRow } = await sb
       .from("user_roles").select("role").eq("user_id", user.id).limit(1).maybeSingle();
-    if (roleRow?.role !== "admin") return json({ error: "forbidden" }, 403);
+    if (roleRow?.role !== "admin") return jsonResponse(req, { error: "forbidden" }, 403);
 
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
       .from("policy_settings").select("value").eq("key", "ai_monthly_budget_micro_usd").is("property_id", null).maybeSingle();
     const monthlyBudget = budgetRow ? parseInt(String(budgetRow.value).replace(/"/g, ""), 10) || 0 : 0;
 
-    return json({
+    return jsonResponse(req, {
       mtd: { totalCalls, totalCost, totalTokensIn, totalTokensOut, monthlyBudget },
       daily: Object.entries(days).sort().map(([day, v]) => ({ day, ...v })),
       byFunction,
@@ -109,13 +109,6 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error("[ai-usage-summary]", e);
-    return json({ error: String(e) }, 500);
+    return jsonResponse(req, { error: String(e) }, 500);
   }
 });
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
