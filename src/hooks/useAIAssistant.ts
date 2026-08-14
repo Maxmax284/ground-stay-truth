@@ -105,8 +105,13 @@ export function useAIAssistant() {
     return [summaryMessage, ...recentMessages];
   }
 
-  const sendMessage = useCallback(async (input: string, mode: AIMode = "explain", context?: Record<string, any>, language?: string) => {
+  const sendMessage = useCallback(async (input: string, mode: AIMode = "explain", context?: Record<string, any>, language?: string, intentOverride?: AIIntent) => {
     if (!session) return;
+    // Answer discipline: classify depth so the backend can pick a response
+    // contract — compact list for lookups, full structure for deep questions.
+    const intent: AIIntent = intentOverride ?? classifyIntent(input);
+    const globalScope = isGlobalScopeRequest(input);
+
 
     // Enforce client-side rate limit
     const now = Date.now();
