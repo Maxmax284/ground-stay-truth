@@ -1017,7 +1017,9 @@
     "speakOn": "Spoken replies on",
     "speakOff": "Spoken replies off",
     "stopSpeaking": "Stop speaking",
+    "speechLoading": "Loading…",
     "readAloud": "Read aloud"
+
   },
   "translation": {
     "translate": "Translate",
