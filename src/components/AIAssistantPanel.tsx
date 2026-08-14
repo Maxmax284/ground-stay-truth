@@ -150,7 +150,12 @@ function AIAssistantPanelInner() {
     return window.localStorage.getItem("ai.speakReplies") === "1";
   });
   const { state: speechState, speak, stop: stopSpeech } = useSpokenReply((m) => toast.error(m));
+  // Which message the speaker is busy with, so only that row shows the
+  // loading / stop affordance.
+  const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);
+  const speechBusy = speechState !== "idle";
   const spokenRef = useRef<string | null>(null);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
 
