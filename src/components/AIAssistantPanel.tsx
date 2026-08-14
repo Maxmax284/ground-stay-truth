@@ -185,8 +185,15 @@ function AIAssistantPanelInner() {
     const key = `${messages.length}:${last.content.length}`;
     if (spokenRef.current === key) return;
     spokenRef.current = key;
+    setSpeakingIdx(messages.length - 1);
     void speak(last.content, language);
   }, [messages, isStreaming, speakReplies, speak, language]);
+
+  // Drop the per-row indicator as soon as playback finishes or is stopped.
+  useEffect(() => {
+    if (speechState === "idle") setSpeakingIdx(null);
+  }, [speechState]);
+
 
 
 
