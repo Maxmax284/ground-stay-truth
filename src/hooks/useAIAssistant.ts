@@ -158,6 +158,9 @@ export function useAIAssistant() {
             body: JSON.stringify({
               messages: trimmedHistory.map((m) => ({ role: m.role, content: m.content })),
               language,
+              intent,
+              global_scope: globalScope,
+
               property_id: activePropertyId,
               // Deep ops is gated by the ops security code. The backend is the
               // real enforcement point, so the unlock token travels with every call.
