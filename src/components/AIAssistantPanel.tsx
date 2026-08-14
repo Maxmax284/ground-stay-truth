@@ -500,7 +500,8 @@ function AIAssistantPanelInner() {
               <KeyRound className="h-4 w-4" />
             </Button>
           )}
-          {speechState === "playing" && (
+          {/* Speaker is warming up or talking — one tap kills it either way. */}
+          {speechBusy && (
             <Button
               variant="ghost"
               size="icon"
@@ -509,9 +510,14 @@ function AIAssistantPanelInner() {
               aria-label={t("ai.stopSpeaking", "Stop speaking")}
               onClick={stopSpeech}
             >
-              <VolumeX className="h-4 w-4" />
+              {speechState === "loading" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <VolumeX className="h-4 w-4" />
+              )}
             </Button>
           )}
+
           {/* Always-visible rescue: snap back to the default readable spot. */}
           <Button
             variant="ghost"
