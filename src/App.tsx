@@ -82,6 +82,8 @@ const App = () => (
               <ForegroundNotificationBanner />
               <AIFocusHighlighter />
               <AIRouteFocusTracker />
+              <SpotlightLayer />
+
               <Routes>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/guest" element={<GuestAuth />} />
