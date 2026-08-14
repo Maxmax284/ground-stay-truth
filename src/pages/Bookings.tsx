@@ -154,6 +154,9 @@ const Bookings = () => {
     dateFrom,
     dateTo,
   });
+  // Used to tag rows for Kru Glitch spotlights (presentation metadata only).
+  const todaySpotlightKey = format(new Date(), "yyyy-MM-dd");
+
 
   // Cancelled bookings are hidden unless explicitly toggled on (or explicitly
   // filtered for). Completed stays remain visible — they're operational history.
