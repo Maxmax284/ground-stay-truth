@@ -33,6 +33,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { AssistantMessage, UserMessage } from "@/components/ai/AssistantMessage";
 import { LoadingIndicator } from "@/components/ai/LoadingIndicator";
 import { getQuickPromptsForRole, FOCUSED_BOOKING_PROMPTS, CONTROL_MODE_PROMPTS } from "@/components/ai/QuickPrompts";
+import { ShortcutChips } from "@/components/ai/ShortcutChips";
 import { useAIFocus } from "@/lib/aiFocusStore";
 import { OpsUnlockDialog } from "@/components/admin/OpsUnlockDialog";
 import { useOpsUnlock, formatCountdown } from "@/hooks/useOpsUnlock";
@@ -773,6 +774,16 @@ function AIAssistantPanelInner() {
                 </div>
               )}
 
+              {role !== "guest" && !inControlMode && (
+                <ShortcutChips
+                  className="mb-3"
+                  onAsk={(prompt) => {
+                    setInput("");
+                    sendMessage(prompt, mode, undefined, langCodeToName(language), "simple_lookup");
+                  }}
+                />
+              )}
+
               {quickPrompts.length > 0 && (
                 <div className="space-y-1.5">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1">
@@ -935,10 +946,20 @@ function AIAssistantPanelInner() {
                   <span className={isCompact ? "" : "truncate"}>{qp.label}</span>
                 </button>
               ))}
+              {role !== "guest" && !inControlMode && (
+                <ShortcutChips
+                  className="w-full pt-1"
+                  onAsk={(prompt) => {
+                    setInput("");
+                    sendMessage(prompt, mode, undefined, langCodeToName(language), "simple_lookup");
+                  }}
+                />
+              )}
             </div>
           )}
         </div>
       )}
+
 
 
       {/* Input — always visible, never pushed off-screen */}

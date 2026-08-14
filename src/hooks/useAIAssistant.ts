@@ -3,6 +3,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProperty } from "@/hooks/useProperty";
 import { supabase } from "@/integrations/supabase/client";
 import { getAIFocus, getAIRouteFocus } from "@/lib/aiFocusStore";
+import { classifyIntent, isGlobalScopeRequest, type AIIntent } from "@/lib/aiIntent";
+
 import { getOpsUnlockToken } from "@/lib/opsUnlock";
 
 /**
@@ -105,8 +107,13 @@ export function useAIAssistant() {
     return [summaryMessage, ...recentMessages];
   }
 
-  const sendMessage = useCallback(async (input: string, mode: AIMode = "explain", context?: Record<string, any>, language?: string) => {
+  const sendMessage = useCallback(async (input: string, mode: AIMode = "explain", context?: Record<string, any>, language?: string, intentOverride?: AIIntent) => {
     if (!session) return;
+    // Answer discipline: classify depth so the backend can pick a response
+    // contract — compact list for lookups, full structure for deep questions.
+    const intent: AIIntent = intentOverride ?? classifyIntent(input);
+    const globalScope = isGlobalScopeRequest(input);
+
 
     // Enforce client-side rate limit
     const now = Date.now();
@@ -151,6 +158,9 @@ export function useAIAssistant() {
             body: JSON.stringify({
               messages: trimmedHistory.map((m) => ({ role: m.role, content: m.content })),
               language,
+              intent,
+              global_scope: globalScope,
+
               property_id: activePropertyId,
               // Deep ops is gated by the ops security code. The backend is the
               // real enforcement point, so the unlock token travels with every call.
@@ -206,6 +216,9 @@ export function useAIAssistant() {
             messages: trimmedHistory.map((m) => ({ role: m.role, content: m.content })),
             context,
             language,
+            intent,
+            global_scope: globalScope,
+
             focused_context: (() => {
               const f = getAIFocus();
               const r = getAIRouteFocus();

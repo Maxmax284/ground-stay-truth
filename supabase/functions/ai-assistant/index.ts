@@ -270,8 +270,70 @@ Use standard markdown for bullets and emphasis. No HTML.
 Never invent booking IDs, guest names, amounts, or unit names.`;
 
 
+export type AnswerIntent = "simple_lookup" | "operational_summary" | "deep_analysis" | "action_request";
+
+const SIMPLE_LOOKUP_CONTRACT = `
+RESPONSE CONTRACT — SIMPLE LOOKUP (this question is a quick operational lookup):
+- Answer in the fewest useful words. NO section headers. No QUICK ANSWER / WHAT I FOUND / SOURCES blocks.
+- Line 1: the count and what it is, e.g. "2 check-ins today:".
+- Then one line per record: name — room — the status flag that matters (paid, balance owed, passport needed, cleaning due, pickup time).
+- Names first, room second, time/status third. Warnings only when they actually matter.
+- No background, no explanation of how the platform works, no restating the question, no recap of system context.
+- BANNED openers and phrasings: "Based on your operational data", "Based on today's operational", "Here is a comprehensive breakdown", "After reviewing the full platform context", "Operationally speaking", "Let me break this down".
+- Nothing found: say it flat — "No check-ins today." Nothing else.
+- Data incomplete: one plain line, e.g. "I don't see any confirmed check-ins today. There may be pending bookings not assigned to rooms yet."
+- Max 8 short lines total. End with exactly "Want more detail?" on its own last line only if there is genuinely more to say.`;
+
+const SUMMARY_CONTRACT = `
+RESPONSE CONTRACT — OPERATIONAL SUMMARY:
+- 3–7 bullets, worst first. No section headers. No preamble, no closing pep talk.
+- Each bullet: what it is, who/which room, and the next action if one is obvious.
+- If nothing needs attention, say so in one line.
+- Only go longer if the user explicitly asks for more.`;
+
+const ACTION_CONTRACT = `
+RESPONSE CONTRACT — ACTION REQUEST:
+- You do not execute. Confirm what you would do in one or two lines, then state it is a draft awaiting approval.
+- Plan → Approve → Execute always happens in the platform. Never claim anything was applied or sent.`;
+
+function responseContractFor(intent: AnswerIntent): string {
+  if (intent === "simple_lookup") return SIMPLE_LOOKUP_CONTRACT;
+  if (intent === "operational_summary") return SUMMARY_CONTRACT;
+  if (intent === "action_request") return ACTION_CONTRACT;
+  return RESPONSE_STRUCTURE;
+}
+
+function pageScopeRule(
+  intent: AnswerIntent,
+  globalScope: boolean,
+  focusedContext: { kind?: string; booking_id?: string; page_key?: string; route?: string } | null,
+): string {
+  if (globalScope) {
+    return `SCOPE: The user explicitly asked platform-wide. Answer across all available data, ignoring the current page.`;
+  }
+  const parts: string[] = ["SCOPE:"];
+  if (focusedContext?.kind === "booking" && focusedContext.booking_id) {
+    parts.push(`A booking is open in front of the user. Default to THAT booking unless they say "all", "everyone", or "across the platform".`);
+  }
+  if (focusedContext?.page_key) {
+    parts.push(`The user is on the "${focusedContext.page_key}" page — prefer that domain's records when the question is ambiguous.`);
+  }
+  if (intent === "simple_lookup") {
+    parts.push(`If the matching records are not on this page, say "I found them, but they're not visible on this page", give the compact list, and name where to open them. Do not tell the user to navigate unless they ask.`);
+  }
+  return parts.length > 1 ? parts.join(" ") : "";
+}
+
 // ─── PROMPT ASSEMBLY ─────────────────────────────────────────────────────────
-function buildSystemPrompt(role: string, language: string, contextData: string, operationalMode: string | null = null): string {
+function buildSystemPrompt(
+  role: string,
+  language: string,
+  contextData: string,
+  operationalMode: string | null = null,
+  intent: AnswerIntent = "deep_analysis",
+  globalScope = false,
+  focusedContext: { kind?: string; booking_id?: string; page_key?: string; route?: string } | null = null,
+): string {
   const layers: string[] = [getIdentity(operationalMode)];
 
   if (role === "admin" || role === "manager") {
@@ -310,7 +372,10 @@ function buildSystemPrompt(role: string, language: string, contextData: string, 
 
   layers.push(SAFETY_RULES);
   layers.push(ACCURACY);
-  layers.push(RESPONSE_STRUCTURE);
+  layers.push(responseContractFor(intent));
+  const scopeRule = pageScopeRule(intent, globalScope, focusedContext);
+  if (scopeRule) layers.push(scopeRule);
+
   layers.push(
     `LANGUAGE: Respond in ${language}. Never translate or alter system status codes, booking IDs, unit names, currency figures, dates or times — quote those exactly as given and explain them in ${language}.`,
   );
@@ -424,6 +489,13 @@ serve(async (req) => {
 
     const body = await req.json();
     const { mode, role: clientRole, messages, context, language, property_id, operational_mode, focused_context } = body;
+    // Answer discipline — depth intent classified client-side. Unknown values
+    // fall back to the full structured contract (never truncate blindly).
+    const rawIntent = typeof body.intent === "string" ? body.intent : "";
+    const intent: AnswerIntent = ["simple_lookup", "operational_summary", "deep_analysis", "action_request"].includes(rawIntent)
+      ? (rawIntent as AnswerIntent)
+      : "deep_analysis";
+    const globalScope = body.global_scope === true;
     // Support both "message" (singular, used by Lookout scan) and "messages" (array, used by chat)
     const singleMessage = body.message as string | undefined;
     const responseLang = language || "English";
@@ -1417,7 +1489,7 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
       }
     }
 
-    const fullSystemPrompt = buildSystemPrompt(role || "", responseLang, contextData, operational_mode || null);
+    const fullSystemPrompt = buildSystemPrompt(role || "", responseLang, contextData, operational_mode || null, intent, globalScope, focused_context ?? null);
 
     // Draft mode (Lookout scan) — non-streaming JSON response with dedicated system prompt
     if (mode === "draft") {
@@ -1477,7 +1549,14 @@ Check for: buffer violations, missing documents, payment gaps, supervisor caps.`
           ...(messages ?? []),
         ],
         stream: true,
-        max_tokens: mode === "digest" || mode === "summarize" ? 600 : 400,
+        max_tokens:
+          intent === "simple_lookup"
+            ? 180
+            : intent === "operational_summary"
+              ? 320
+              : mode === "digest" || mode === "summarize"
+                ? 600
+                : 400,
       }),
     });
 
