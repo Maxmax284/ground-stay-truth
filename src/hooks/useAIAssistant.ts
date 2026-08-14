@@ -216,6 +216,9 @@ export function useAIAssistant() {
             messages: trimmedHistory.map((m) => ({ role: m.role, content: m.content })),
             context,
             language,
+            intent,
+            global_scope: globalScope,
+
             focused_context: (() => {
               const f = getAIFocus();
               const r = getAIRouteFocus();
