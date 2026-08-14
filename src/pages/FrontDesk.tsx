@@ -346,8 +346,24 @@ function BookingRow({
 
   const opStatus = computeOperationalStatus(booking);
 
+  // Spotlight tags — let Kru Glitch shortcuts point at this row without
+  // needing its own data access. Presentation metadata only.
+  const todayKey = format(new Date(), "yyyy-MM-dd");
+  const spotlightTags = [
+    booking.check_in?.slice(0, 10) === todayKey ? "check_in_today" : "",
+    booking.check_out?.slice(0, 10) === todayKey ? "check_out_today" : "",
+    booking.outstanding > 0 ? "balance_due" : "",
+    booking.docCount === 0 ? "missing_documents" : "",
+    warnings.length > 0 ? "needs_attention" : "",
+  ].filter(Boolean).join(" ");
+
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card
+      className="hover:shadow-md transition-shadow"
+      data-spotlight-kind="booking"
+      data-spotlight-id={booking.id}
+      data-spotlight-tags={spotlightTags}
+    >
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           {/* Identity */}
