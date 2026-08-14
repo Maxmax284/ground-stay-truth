@@ -385,3 +385,35 @@
 .intel-stagger-1 { animation-delay: 0ms; }
 .intel-stagger-2 { animation-delay: 80ms; }
 .intel-stagger-3 { animation-delay: 160ms; }
+
+/* ── Kru Glitch spotlight ──────────────────────────────────────────────────
+   Temporary "point at this record" highlight applied by SpotlightLayer to
+   rows already on the page. Semantic tokens only; reduced-motion gets a
+   static outline instead of a pulse. */
+@keyframes kg-spotlight-pulse {
+  0%   { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.45); background-color: hsl(var(--primary) / 0.10); }
+  60%  { box-shadow: 0 0 0 6px hsl(var(--primary) / 0.06); background-color: hsl(var(--primary) / 0.05); }
+  100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); background-color: transparent; }
+}
+
+.kg-spotlight {
+  border-radius: var(--radius);
+  outline: 2px solid hsl(var(--primary) / 0.7);
+  outline-offset: 2px;
+  animation: kg-spotlight-pulse 1.6s ease-out 2;
+  transition: outline-color 300ms ease-out;
+}
+
+.kg-spotlight-static {
+  border-radius: var(--radius);
+  outline: 2px solid hsl(var(--primary) / 0.7);
+  outline-offset: 2px;
+  background-color: hsl(var(--primary) / 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kg-spotlight {
+    animation: none;
+    background-color: hsl(var(--primary) / 0.08);
+  }
+}
