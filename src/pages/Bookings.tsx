@@ -311,6 +311,13 @@ const Bookings = () => {
                     key={b.id}
                     className="cursor-pointer"
                     onClick={() => setSelectedBookingId(b.id)}
+                    data-spotlight-kind="booking"
+                    data-spotlight-id={b.id}
+                    data-spotlight-tags={[
+                      b.check_in?.slice(0, 10) === todaySpotlightKey ? "check_in_today" : "",
+                      b.check_out?.slice(0, 10) === todaySpotlightKey ? "check_out_today" : "",
+                      docFlags?.[b.id] === "missing" ? "missing_documents" : "",
+                    ].filter(Boolean).join(" ")}
                   >
                     <TableCell className="font-medium">{b.units?.name ?? "—"}</TableCell>
                     <TableCell className="text-muted-foreground">
