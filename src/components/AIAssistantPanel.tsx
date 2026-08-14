@@ -946,10 +946,20 @@ function AIAssistantPanelInner() {
                   <span className={isCompact ? "" : "truncate"}>{qp.label}</span>
                 </button>
               ))}
+              {role !== "guest" && !inControlMode && (
+                <ShortcutChips
+                  className="w-full pt-1"
+                  onAsk={(prompt) => {
+                    setInput("");
+                    sendMessage(prompt, mode, undefined, langCodeToName(language), "simple_lookup");
+                  }}
+                />
+              )}
             </div>
           )}
         </div>
       )}
+
 
 
       {/* Input — always visible, never pushed off-screen */}
