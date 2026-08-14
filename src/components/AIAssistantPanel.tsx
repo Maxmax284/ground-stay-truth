@@ -839,17 +839,61 @@ function AIAssistantPanelInner() {
                       isStreaming={i === messages.length - 1 && isStreaming}
                     />
                     {/* Read any single reply out loud on demand, even with the
-                        auto-speaker off. */}
-                    {!(i === messages.length - 1 && isStreaming) && !!msg.content.trim() && (
-                      <button
-                        onClick={() => (speechState === "playing" ? stopSpeech() : void speak(msg.content, language))}
-                        className="ml-3 mt-1 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent transition-colors"
-                        aria-label={t("ai.readAloud", "Read aloud")}
-                      >
-                        <Volume2 className="h-3 w-3" />
-                        {t("ai.readAloud", "Read aloud")}
-                      </button>
-                    )}
+                        auto-speaker off. While it's loading or playing the same
+                        button becomes Stop. */}
+                    {!(i === messages.length - 1 && isStreaming) && !!msg.content.trim() && (() => {
+                      const rowBusy = speechBusy && speakingIdx === i;
+                      const rowLoading = rowBusy && speechState === "loading";
+                      const label = rowLoading
+                        ? t("ai.speechLoading", "Loading…")
+                        : rowBusy
+                          ? t("ai.stopSpeaking", "Stop speaking")
+                          : t("ai.readAloud", "Read aloud");
+                      return (
+                        <button
+                          onClick={() => {
+                            if (speechBusy) {
+                              stopSpeech();
+                              if (!rowBusy) {
+                                setSpeakingIdx(i);
+                                void speak(msg.content, language);
+                              }
+                              return;
+                            }
+                            setSpeakingIdx(i);
+                            void speak(msg.content, language);
+                          }}
+                          className={`ml-3 mt-1 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] transition-colors ${
+                            rowBusy
+                              ? "bg-primary/10 text-primary"
+                              : "text-muted-foreground hover:bg-accent"
+                          }`}
+                          aria-label={label}
+                          aria-busy={rowLoading}
+                        >
+                          {rowLoading ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : rowBusy ? (
+                            <VolumeX className="h-3 w-3" />
+                          ) : (
+                            <Volume2 className="h-3 w-3" />
+                          )}
+                          {rowBusy && !rowLoading ? (
+                            <span className="inline-flex items-center gap-1">
+                              {label}
+                              <span className="flex items-end gap-[2px]">
+                                <span className="h-1.5 w-[2px] rounded-sm bg-primary pulse" />
+                                <span className="h-2.5 w-[2px] rounded-sm bg-primary pulse [animation-delay:150ms]" />
+                                <span className="h-1.5 w-[2px] rounded-sm bg-primary pulse [animation-delay:300ms]" />
+                              </span>
+                            </span>
+                          ) : (
+                            label
+                          )}
+                        </button>
+                      );
+                    })()}
+
 
                     {/* Deep ops mode: show what the agent actually read, and
                         flag any action it queued for approval. Nothing here has
