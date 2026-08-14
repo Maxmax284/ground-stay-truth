@@ -3,6 +3,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProperty } from "@/hooks/useProperty";
 import { supabase } from "@/integrations/supabase/client";
 import { getAIFocus, getAIRouteFocus } from "@/lib/aiFocusStore";
+import { classifyIntent, isGlobalScopeRequest, type AIIntent } from "@/lib/aiIntent";
+
 import { getOpsUnlockToken } from "@/lib/opsUnlock";
 
 /**
