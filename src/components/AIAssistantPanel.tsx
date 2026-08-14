@@ -33,6 +33,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { AssistantMessage, UserMessage } from "@/components/ai/AssistantMessage";
 import { LoadingIndicator } from "@/components/ai/LoadingIndicator";
 import { getQuickPromptsForRole, FOCUSED_BOOKING_PROMPTS, CONTROL_MODE_PROMPTS } from "@/components/ai/QuickPrompts";
+import { ShortcutChips } from "@/components/ai/ShortcutChips";
 import { useAIFocus } from "@/lib/aiFocusStore";
 import { OpsUnlockDialog } from "@/components/admin/OpsUnlockDialog";
 import { useOpsUnlock, formatCountdown } from "@/hooks/useOpsUnlock";
@@ -771,6 +772,16 @@ function AIAssistantPanelInner() {
                   <p className="text-sm text-muted-foreground">{t("ai.welcomeMessage")}</p>
                   <p className="text-xs text-muted-foreground mt-1">{t("ai.disclaimer")}</p>
                 </div>
+              )}
+
+              {role !== "guest" && !inControlMode && (
+                <ShortcutChips
+                  className="mb-3"
+                  onAsk={(prompt) => {
+                    setInput("");
+                    sendMessage(prompt, mode, undefined, langCodeToName(language), "simple_lookup");
+                  }}
+                />
               )}
 
               {quickPrompts.length > 0 && (
