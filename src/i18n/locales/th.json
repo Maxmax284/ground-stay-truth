@@ -990,7 +990,9 @@
     "speakOn": "เปิดเสียงตอบกลับ",
     "speakOff": "ปิดเสียงตอบกลับ",
     "stopSpeaking": "หยุดพูด",
+    "speechLoading": "กำลังโหลด…",
     "readAloud": "อ่านออกเสียง"
+
   },
   "translation": {
     "translate": "แปล",
