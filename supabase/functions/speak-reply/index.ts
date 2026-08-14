@@ -119,10 +119,21 @@ Deno.serve(async (req) => {
       return jsonResponse(req, { error: message, status: upstream.status, details: detail }, upstream.status);
     }
 
+    // Raw mode: return the MP3 bytes straight through. Base64 + JSON inflates the
+    // payload ~33% and forces the browser to decode a giant data URI before the
+    // first sample plays, which is the bulk of the perceived "read aloud" lag.
+    const wantsRaw = body?.raw === true || (req.headers.get("Accept") ?? "").includes("audio/");
+    if (wantsRaw) {
+      return new Response(upstream.body, {
+        headers: { ...getCorsHeaders(req), "Content-Type": "audio/mpeg", "Cache-Control": "no-store" },
+      });
+    }
+
     const audio = bytesToBase64(new Uint8Array(await upstream.arrayBuffer()));
     return new Response(JSON.stringify({ audio, mimeType: "audio/mpeg" }), {
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
+
   } catch (e) {
     console.error("speak-reply error", e);
     return jsonResponse(req, { error: e instanceof Error ? e.message : "Unexpected error" }, 500);
