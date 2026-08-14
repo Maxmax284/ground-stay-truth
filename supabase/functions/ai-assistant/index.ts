@@ -373,7 +373,9 @@ function buildSystemPrompt(
   layers.push(SAFETY_RULES);
   layers.push(ACCURACY);
   layers.push(responseContractFor(intent));
-  layers.push(pageScopeRule(intent, globalScope, focusedContext));
+  const scopeRule = pageScopeRule(intent, globalScope, focusedContext);
+  if (scopeRule) layers.push(scopeRule);
+
   layers.push(
     `LANGUAGE: Respond in ${language}. Never translate or alter system status codes, booking IDs, unit names, currency figures, dates or times — quote those exactly as given and explain them in ${language}.`,
   );
