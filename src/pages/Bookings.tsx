@@ -319,7 +319,7 @@ const Bookings = () => {
                     data-spotlight-tags={[
                       b.check_in?.slice(0, 10) === todaySpotlightKey ? "check_in_today" : "",
                       b.check_out?.slice(0, 10) === todaySpotlightKey ? "check_out_today" : "",
-                      docFlags?.[b.id] === "missing" ? "missing_documents" : "",
+                      !docFlags?.[b.id] ? "missing_documents" : "",
                     ].filter(Boolean).join(" ")}
                   >
                     <TableCell className="font-medium">{b.units?.name ?? "—"}</TableCell>
