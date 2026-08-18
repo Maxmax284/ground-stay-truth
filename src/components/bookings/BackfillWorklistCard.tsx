@@ -39,7 +39,7 @@ function campToday(): string {
 type Row = BackfillCandidate & { raw: any };
 
 export function BackfillWorklistCard({ onOpenBooking }: { onOpenBooking?: (id: string) => void }) {
-  const today = todayInThailand();
+  const today = campToday();
   const [payBooking, setPayBooking] = useState<Row | null>(null);
   const markArrived = useMarkArrived();
   const transition = useTransitionBookingState();
