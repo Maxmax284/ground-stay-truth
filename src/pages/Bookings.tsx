@@ -32,6 +32,10 @@ import { getBookingDeadline } from "@/lib/bookingDeadline";
 import { ExtendDeadlineDialog } from "@/components/ExtendDeadlineDialog";
 import { Clock, IdCard } from "lucide-react";
 import { useBookingDocumentFlags, REVIEW_STATUS_LABELS, type DocumentReviewStatus } from "@/hooks/useGuestDocuments";
+import { BackfillWorklistCard } from "@/components/bookings/BackfillWorklistCard";
+import { QuickOfflinePaymentDialog } from "@/components/bookings/QuickOfflinePaymentDialog";
+import { Banknote } from "lucide-react";
+import { canRecordOfflinePayment } from "@/lib/offlinePayments";
 
 /** Small ID-document indicator for the bookings list. Advisory only. */
 function DocumentFlagBadge({ status }: { status?: DocumentReviewStatus }) {
@@ -91,7 +95,7 @@ function BookingStatusBadge({ booking }: { booking: any }) {
 }
 
 
-function BookingCard({ booking, onClick, onExtend }: { booking: any; onClick: () => void; onExtend?: (b: any) => void }) {
+function BookingCard({ booking, onClick, onExtend, onRecordPayment }: { booking: any; onClick: () => void; onExtend?: (b: any) => void; onRecordPayment?: (b: any) => void }) {
   const { t } = useTranslation();
   const { data: cardPolicies } = usePolicySettings();
   const cardDeadline = getBookingDeadline(booking, cardPolicies as any);
@@ -115,13 +119,20 @@ function BookingCard({ booking, onClick, onExtend }: { booking: any; onClick: ()
         <span>·</span>
         <span>{t("bookings.guestCount", { count: booking.num_guests })}</span>
       </div>
-      {cardDeadline?.isExpired && onExtend && (
-        <div className="mt-3" onClick={(e) => e.stopPropagation()}>
-          <Button size="sm" variant="outline" className="h-7 px-2 text-xs w-full" onClick={() => onExtend(booking)}>
-            <Clock className="h-3 w-3 mr-1" /> Override expiry
-          </Button>
+      {(cardDeadline?.isExpired && onExtend) || onRecordPayment ? (
+        <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
+          {cardDeadline?.isExpired && onExtend && (
+            <Button size="sm" variant="outline" className="h-7 flex-1 px-2 text-xs" onClick={() => onExtend(booking)}>
+              <Clock className="h-3 w-3 mr-1" /> Override expiry
+            </Button>
+          )}
+          {onRecordPayment && (
+            <Button size="sm" variant="outline" className="h-7 flex-1 px-2 text-xs" onClick={() => onRecordPayment(booking)}>
+              <Banknote className="h-3 w-3 mr-1" /> Record payment
+            </Button>
+          )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -146,7 +157,16 @@ const Bookings = () => {
   const [showCancelled, setShowCancelled] = useState(false);
   const [expiredOnly, setExpiredOnly] = useState(false);
   const [extendBooking, setExtendBooking] = useState<any | null>(null);
+  const [payBooking, setPayBooking] = useState<any | null>(null);
   const { data: policiesForDeadlines } = usePolicySettings();
+  // Legacy (pre-platform) bookings carry no money trail — staff with payment
+  // authority get a one-tap recorder on the row instead of digging into the sheet.
+  const canRecordPayment = canRecordOfflinePayment(role ? [role] : []);
+  const needsMoneyBackfill = (b: any) =>
+    canRecordPayment &&
+    !b.pay_on_arrival &&
+    (b.state === "pending_deposit" || b.state === "confirmed") &&
+    String(b.check_in).slice(0, 10) <= format(new Date(), "yyyy-MM-dd");
 
   const { data: rawBookings, isLoading, isError, refetch } = useBookings({
     state: stateFilter,
@@ -256,6 +276,9 @@ const Bookings = () => {
           </TabsContent>
 
           <TabsContent value="bookings" className="space-y-4">
+        {canRecordPayment && (
+          <BackfillWorklistCard onOpenBooking={(id) => setSelectedBookingId(id)} />
+        )}
         <BookingFilters
           state={stateFilter}
           unitId={unitFilter}
@@ -290,7 +313,13 @@ const Bookings = () => {
         ) : isMobile ? (
           <div className="space-y-3">
             {bookings.map((b) => (
-              <BookingCard key={b.id} booking={b} onClick={() => setSelectedBookingId(b.id)} onExtend={canOverrideDeadline ? setExtendBooking : undefined} />
+              <BookingCard
+                key={b.id}
+                booking={b}
+                onClick={() => setSelectedBookingId(b.id)}
+                onExtend={canOverrideDeadline ? setExtendBooking : undefined}
+                onRecordPayment={needsMoneyBackfill(b) ? setPayBooking : undefined}
+              />
             ))}
           </div>
         ) : (
@@ -344,6 +373,11 @@ const Bookings = () => {
                           {canOverrideDeadline && getBookingDeadline(b, policiesForDeadlines as any)?.isExpired && (
                             <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setExtendBooking(b)}>
                               <Clock className="h-3 w-3 mr-1" /> Override expiry
+                            </Button>
+                          )}
+                          {needsMoneyBackfill(b) && (
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setPayBooking(b)}>
+                              <Banknote className="h-3 w-3 mr-1" /> Record payment
                             </Button>
                           )}
                           {b.state === "pending_approval" && (
@@ -423,6 +457,14 @@ const Bookings = () => {
           info={getBookingDeadline(extendBooking, policiesForDeadlines as any)}
           open={!!extendBooking}
           onOpenChange={(o) => !o && setExtendBooking(null)}
+        />
+      )}
+
+      {payBooking && (
+        <QuickOfflinePaymentDialog
+          booking={payBooking}
+          paid={0}
+          onClose={() => { setPayBooking(null); refetch(); }}
         />
       )}
 
