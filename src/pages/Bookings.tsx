@@ -95,7 +95,7 @@ function BookingStatusBadge({ booking }: { booking: any }) {
 }
 
 
-function BookingCard({ booking, onClick, onExtend }: { booking: any; onClick: () => void; onExtend?: (b: any) => void }) {
+function BookingCard({ booking, onClick, onExtend, onRecordPayment }: { booking: any; onClick: () => void; onExtend?: (b: any) => void; onRecordPayment?: (b: any) => void }) {
   const { t } = useTranslation();
   const { data: cardPolicies } = usePolicySettings();
   const cardDeadline = getBookingDeadline(booking, cardPolicies as any);
@@ -119,13 +119,20 @@ function BookingCard({ booking, onClick, onExtend }: { booking: any; onClick: ()
         <span>·</span>
         <span>{t("bookings.guestCount", { count: booking.num_guests })}</span>
       </div>
-      {cardDeadline?.isExpired && onExtend && (
-        <div className="mt-3" onClick={(e) => e.stopPropagation()}>
-          <Button size="sm" variant="outline" className="h-7 px-2 text-xs w-full" onClick={() => onExtend(booking)}>
-            <Clock className="h-3 w-3 mr-1" /> Override expiry
-          </Button>
+      {(cardDeadline?.isExpired && onExtend) || onRecordPayment ? (
+        <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
+          {cardDeadline?.isExpired && onExtend && (
+            <Button size="sm" variant="outline" className="h-7 flex-1 px-2 text-xs" onClick={() => onExtend(booking)}>
+              <Clock className="h-3 w-3 mr-1" /> Override expiry
+            </Button>
+          )}
+          {onRecordPayment && (
+            <Button size="sm" variant="outline" className="h-7 flex-1 px-2 text-xs" onClick={() => onRecordPayment(booking)}>
+              <Banknote className="h-3 w-3 mr-1" /> Record payment
+            </Button>
+          )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
