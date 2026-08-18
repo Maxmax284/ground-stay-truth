@@ -32,6 +32,10 @@ import { getBookingDeadline } from "@/lib/bookingDeadline";
 import { ExtendDeadlineDialog } from "@/components/ExtendDeadlineDialog";
 import { Clock, IdCard } from "lucide-react";
 import { useBookingDocumentFlags, REVIEW_STATUS_LABELS, type DocumentReviewStatus } from "@/hooks/useGuestDocuments";
+import { BackfillWorklistCard } from "@/components/bookings/BackfillWorklistCard";
+import { QuickOfflinePaymentDialog } from "@/components/bookings/QuickOfflinePaymentDialog";
+import { Banknote } from "lucide-react";
+import { canRecordOfflinePayment } from "@/lib/offlinePayments";
 
 /** Small ID-document indicator for the bookings list. Advisory only. */
 function DocumentFlagBadge({ status }: { status?: DocumentReviewStatus }) {
