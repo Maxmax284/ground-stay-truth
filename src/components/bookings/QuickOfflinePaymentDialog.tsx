@@ -41,8 +41,7 @@ export function QuickOfflinePaymentDialog({ booking, paid = 0, onClose }: Props)
 
   if (!booking) return null;
 
-  const submit = async () => {
-    const value = Number(amount);
+  const record = async (value: number, full: boolean) => {
     if (!Number.isFinite(value) || value <= 0) {
       toast.error("Enter an amount greater than zero.");
       return;
@@ -54,14 +53,17 @@ export function QuickOfflinePaymentDialog({ booking, paid = 0, onClose }: Props)
         method,
         notes: notes.trim() || undefined,
         source_channel: "front_desk",
-        payment_type: "deposit",
+        payment_type: full ? "balance" : "deposit",
       });
-      toast.success("Payment recorded");
+      toast.success(full ? "Marked paid in full" : "Payment recorded");
       onClose();
     } catch (e: any) {
       toast.error(e?.message ?? "Could not record the payment");
     }
   };
+
+  const submit = () => record(Number(amount), false);
+  const markPaidInFull = () => record(outstanding, true);
 
   const flagPayOnArrival = async () => {
     try {
