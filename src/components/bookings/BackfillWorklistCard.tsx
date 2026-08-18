@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, Banknote, ChevronRight, UserCheck } from "lucide-react";
 import { format } from "date-fns";
 import { formatPrice } from "@/lib/currency";
+import { isPaymentReceived } from "@/lib/paymentTypes";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { useMarkArrived } from "@/hooks/useFrontDesk";
 import { useTransitionBookingState } from "@/hooks/useBookings";
