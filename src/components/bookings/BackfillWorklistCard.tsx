@@ -29,7 +29,12 @@ import {
   type BackfillCandidate,
 } from "@/lib/backfillWorklist";
 import { toast } from "sonner";
-import { todayInThailand } from "@/lib/timezone";
+import { CAMP_TIMEZONE } from "@/lib/timezone";
+
+/** Today's date in camp (Asia/Bangkok) time as YYYY-MM-DD. */
+function campToday(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: CAMP_TIMEZONE }).format(new Date());
+}
 
 type Row = BackfillCandidate & { raw: any };
 
