@@ -269,6 +269,9 @@ const Bookings = () => {
           </TabsContent>
 
           <TabsContent value="bookings" className="space-y-4">
+        {canRecordPayment && (
+          <BackfillWorklistCard onOpenBooking={(id) => setSelectedBookingId(id)} />
+        )}
         <BookingFilters
           state={stateFilter}
           unitId={unitFilter}
@@ -357,6 +360,11 @@ const Bookings = () => {
                           {canOverrideDeadline && getBookingDeadline(b, policiesForDeadlines as any)?.isExpired && (
                             <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setExtendBooking(b)}>
                               <Clock className="h-3 w-3 mr-1" /> Override expiry
+                            </Button>
+                          )}
+                          {needsMoneyBackfill(b) && (
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setPayBooking(b)}>
+                              <Banknote className="h-3 w-3 mr-1" /> Record payment
                             </Button>
                           )}
                           {b.state === "pending_approval" && (
