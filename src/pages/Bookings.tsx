@@ -463,7 +463,7 @@ const Bookings = () => {
       {payBooking && (
         <QuickOfflinePaymentDialog
           booking={payBooking}
-          paid={0}
+          paid={calculateOutstanding(payBooking.total_price, (payBooking as any).payments ?? []).totalPaid}
           onClose={() => { setPayBooking(null); refetch(); }}
         />
       )}
