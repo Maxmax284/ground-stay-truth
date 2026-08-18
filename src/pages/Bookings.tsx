@@ -460,6 +460,14 @@ const Bookings = () => {
         />
       )}
 
+      {payBooking && (
+        <QuickOfflinePaymentDialog
+          booking={payBooking}
+          paid={0}
+          onClose={() => { setPayBooking(null); refetch(); }}
+        />
+      )}
+
 
 
       {/* Reject dialog */}
