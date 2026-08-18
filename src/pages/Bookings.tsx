@@ -313,7 +313,13 @@ const Bookings = () => {
         ) : isMobile ? (
           <div className="space-y-3">
             {bookings.map((b) => (
-              <BookingCard key={b.id} booking={b} onClick={() => setSelectedBookingId(b.id)} onExtend={canOverrideDeadline ? setExtendBooking : undefined} />
+              <BookingCard
+                key={b.id}
+                booking={b}
+                onClick={() => setSelectedBookingId(b.id)}
+                onExtend={canOverrideDeadline ? setExtendBooking : undefined}
+                onRecordPayment={needsMoneyBackfill(b) ? setPayBooking : undefined}
+              />
             ))}
           </div>
         ) : (
