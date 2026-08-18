@@ -34,6 +34,7 @@ import { Clock, IdCard } from "lucide-react";
 import { useBookingDocumentFlags, REVIEW_STATUS_LABELS, type DocumentReviewStatus } from "@/hooks/useGuestDocuments";
 import { BackfillWorklistCard } from "@/components/bookings/BackfillWorklistCard";
 import { QuickOfflinePaymentDialog } from "@/components/bookings/QuickOfflinePaymentDialog";
+import { calculateOutstanding } from "@/lib/paymentTypes";
 import { Banknote } from "lucide-react";
 import { canRecordOfflinePayment } from "@/lib/offlinePayments";
 
@@ -463,7 +464,7 @@ const Bookings = () => {
       {payBooking && (
         <QuickOfflinePaymentDialog
           booking={payBooking}
-          paid={0}
+          paid={calculateOutstanding(payBooking.total_price, (payBooking as any).payments ?? []).totalPaid}
           onClose={() => { setPayBooking(null); refetch(); }}
         />
       )}

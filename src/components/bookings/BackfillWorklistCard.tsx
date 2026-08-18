@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, Banknote, ChevronRight, UserCheck } from "lucide-react";
 import { format } from "date-fns";
 import { formatPrice } from "@/lib/currency";
+import { isPaymentReceived } from "@/lib/paymentTypes";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { useMarkArrived } from "@/hooks/useFrontDesk";
 import { useTransitionBookingState } from "@/hooks/useBookings";
@@ -63,7 +64,7 @@ export function BackfillWorklistCard({ onOpenBooking }: { onOpenBooking?: (id: s
           .select("booking_id, amount, status")
           .in("booking_id", ids);
         paidById = (payments ?? []).reduce((acc: Record<string, number>, p: any) => {
-          if (p.status !== "paid") return acc;
+          if (!isPaymentReceived(p.status)) return acc;
           acc[p.booking_id] = (acc[p.booking_id] ?? 0) + Number(p.amount ?? 0);
           return acc;
         }, {});
