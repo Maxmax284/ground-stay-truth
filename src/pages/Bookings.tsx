@@ -150,7 +150,16 @@ const Bookings = () => {
   const [showCancelled, setShowCancelled] = useState(false);
   const [expiredOnly, setExpiredOnly] = useState(false);
   const [extendBooking, setExtendBooking] = useState<any | null>(null);
+  const [payBooking, setPayBooking] = useState<any | null>(null);
   const { data: policiesForDeadlines } = usePolicySettings();
+  // Legacy (pre-platform) bookings carry no money trail — staff with payment
+  // authority get a one-tap recorder on the row instead of digging into the sheet.
+  const canRecordPayment = canRecordOfflinePayment(role ? [role] : []);
+  const needsMoneyBackfill = (b: any) =>
+    canRecordPayment &&
+    !b.pay_on_arrival &&
+    (b.state === "pending_deposit" || b.state === "confirmed") &&
+    String(b.check_in).slice(0, 10) <= format(new Date(), "yyyy-MM-dd");
 
   const { data: rawBookings, isLoading, isError, refetch } = useBookings({
     state: stateFilter,
