@@ -171,17 +171,20 @@ export function QuickOfflinePaymentDialog({ booking, paid, onClose }: Props) {
             variant="outline"
             className="w-full sm:w-auto"
             onClick={markPaidInFull}
-            disabled={createPayment.isPending || outstanding <= 0}
+            disabled={createPayment.isPending || loadingMoney || !verified || outstanding <= 0}
           >
-            Mark paid in full ({formatPrice(outstanding)})
+            {loadingMoney || !verified
+              ? "Checking balance…"
+              : `Mark paid in full (${formatPrice(outstanding)})`}
           </Button>
           <Button
             className="w-full sm:w-auto"
             onClick={submit}
-            disabled={createPayment.isPending}
+            disabled={createPayment.isPending || loadingMoney || !verified}
           >
             {createPayment.isPending ? "Recording…" : "Record payment"}
           </Button>
+
         </DialogFooter>
       </DialogContent>
     </Dialog>
