@@ -7,7 +7,8 @@
  * recording the money. This dialog puts the correct action one tap away from
  * the booking row: record what was actually paid, or flag pay-on-arrival.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -18,6 +19,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreatePayment } from "@/hooks/useBookings";
 import { useSetPayOnArrival } from "@/hooks/useBookingMarkers";
+import { supabase } from "@/integrations/supabase/client";
+import { calculateOutstanding } from "@/lib/paymentTypes";
 import { formatPrice } from "@/lib/currency";
 import { toast } from "sonner";
 
@@ -27,19 +30,54 @@ interface Props {
     total_price?: number | null;
     pay_on_arrival?: boolean | null;
   } | null;
+  /** Optional hint from the caller; the dialog still verifies against the database. */
   paid?: number;
   onClose: () => void;
 }
 
-export function QuickOfflinePaymentDialog({ booking, paid = 0, onClose }: Props) {
-  const outstanding = Math.max(0, Number(booking?.total_price ?? 0) - paid);
-  const [amount, setAmount] = useState<string>(outstanding ? String(outstanding) : "");
+export function QuickOfflinePaymentDialog({ booking, paid, onClose }: Props) {
+  const bookingId = booking?.id;
+
+  /**
+   * Never trust a caller-supplied "paid" figure: the Bookings row action has no
+   * payments relation, and a stale zero would offer to charge the guest the full
+   * total a second time. Read the money trail here, and keep every button locked
+   * until it lands.
+   */
+  const { data: money, isLoading: loadingMoney } = useQuery({
+    queryKey: ["quick-offline-payment", bookingId],
+    enabled: !!bookingId,
+    staleTime: 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payments")
+        .select("amount, status, refund_amount, payment_type")
+        .eq("booking_id", bookingId!);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const verified = money
+    ? calculateOutstanding(Number(booking?.total_price ?? 0), money as any)
+    : null;
+  const outstanding = verified
+    ? verified.outstanding
+    : Math.max(0, Number(booking?.total_price ?? 0) - Number(paid ?? 0));
+
+  const [amount, setAmount] = useState<string>("");
   const [method, setMethod] = useState<string>("cash");
   const [notes, setNotes] = useState("Backfilled — payment taken before platform");
   const createPayment = useCreatePayment();
   const setPayOnArrival = useSetPayOnArrival();
 
+  // Pre-fill only once the real outstanding balance is known.
+  useEffect(() => {
+    if (verified) setAmount(verified.outstanding ? String(verified.outstanding) : "");
+  }, [verified?.outstanding]);
+
   if (!booking) return null;
+
 
   const record = async (value: number, full: boolean) => {
     if (!Number.isFinite(value) || value <= 0) {
@@ -82,9 +120,12 @@ export function QuickOfflinePaymentDialog({ booking, paid = 0, onClose }: Props)
         <DialogHeader>
           <DialogTitle>Record payment</DialogTitle>
           <DialogDescription>
-            Money taken outside the platform (cash, bank transfer, OTA). Outstanding:{" "}
-            {formatPrice(outstanding)}
+            Money taken outside the platform (cash, bank transfer, OTA).{" "}
+            {loadingMoney || !verified
+              ? "Checking what's already been paid…"
+              : `Already paid: ${formatPrice(verified.totalPaid)} · Outstanding: ${formatPrice(outstanding)}`}
           </DialogDescription>
+
         </DialogHeader>
 
         <div className="space-y-4">
@@ -130,17 +171,20 @@ export function QuickOfflinePaymentDialog({ booking, paid = 0, onClose }: Props)
             variant="outline"
             className="w-full sm:w-auto"
             onClick={markPaidInFull}
-            disabled={createPayment.isPending || outstanding <= 0}
+            disabled={createPayment.isPending || loadingMoney || !verified || outstanding <= 0}
           >
-            Mark paid in full ({formatPrice(outstanding)})
+            {loadingMoney || !verified
+              ? "Checking balance…"
+              : `Mark paid in full (${formatPrice(outstanding)})`}
           </Button>
           <Button
             className="w-full sm:w-auto"
             onClick={submit}
-            disabled={createPayment.isPending}
+            disabled={createPayment.isPending || loadingMoney || !verified}
           >
             {createPayment.isPending ? "Recording…" : "Record payment"}
           </Button>
+
         </DialogFooter>
       </DialogContent>
     </Dialog>
