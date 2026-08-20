@@ -120,9 +120,12 @@ export function QuickOfflinePaymentDialog({ booking, paid, onClose }: Props) {
         <DialogHeader>
           <DialogTitle>Record payment</DialogTitle>
           <DialogDescription>
-            Money taken outside the platform (cash, bank transfer, OTA). Outstanding:{" "}
-            {formatPrice(outstanding)}
+            Money taken outside the platform (cash, bank transfer, OTA).{" "}
+            {loadingMoney || !verified
+              ? "Checking what's already been paid…"
+              : `Already paid: ${formatPrice(verified.totalPaid)} · Outstanding: ${formatPrice(outstanding)}`}
           </DialogDescription>
+
         </DialogHeader>
 
         <div className="space-y-4">
