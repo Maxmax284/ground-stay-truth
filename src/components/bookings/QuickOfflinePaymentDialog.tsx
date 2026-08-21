@@ -22,6 +22,7 @@ import { useSetPayOnArrival } from "@/hooks/useBookingMarkers";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateOutstanding } from "@/lib/paymentTypes";
 import { formatPrice } from "@/lib/currency";
+import { assertRecordableOfflinePayment, friendlyPaymentError } from "@/lib/offlinePayments";
 import { toast } from "sonner";
 
 interface Props {
@@ -80,8 +81,16 @@ export function QuickOfflinePaymentDialog({ booking, paid, onClose }: Props) {
 
 
   const record = async (value: number, full: boolean) => {
-    if (!Number.isFinite(value) || value <= 0) {
-      toast.error("Enter an amount greater than zero.");
+    try {
+      // Mirror of the server-side guard: never offer to overpay a booking.
+      assertRecordableOfflinePayment({
+        amount: value,
+        method,
+        source_channel: "front_desk",
+        outstanding: verified ? outstanding : null,
+      });
+    } catch (e) {
+      toast.error(friendlyPaymentError(e));
       return;
     }
     try {
@@ -95,8 +104,8 @@ export function QuickOfflinePaymentDialog({ booking, paid, onClose }: Props) {
       });
       toast.success(full ? "Marked paid in full" : "Payment recorded");
       onClose();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Could not record the payment");
+    } catch (e) {
+      toast.error(friendlyPaymentError(e));
     }
   };
 

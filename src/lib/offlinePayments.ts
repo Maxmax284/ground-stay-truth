@@ -50,6 +50,8 @@ export function assertRecordableOfflinePayment(input: {
   amount: number;
   method: string;
   source_channel?: string;
+  /** Verified outstanding balance, when known. Mirrors the SQL overpayment cap. */
+  outstanding?: number | null;
 }): void {
   if (!Number.isFinite(input.amount) || input.amount <= 0) {
     throw new Error("INVALID_AMOUNT");
@@ -59,6 +61,15 @@ export function assertRecordableOfflinePayment(input: {
   }
   if (input.source_channel && !isOfflineSourceChannel(input.source_channel)) {
     throw new Error("INVALID_SOURCE_CHANNEL");
+  }
+  if (typeof input.outstanding === "number" && Number.isFinite(input.outstanding)) {
+    if (input.outstanding <= 0) {
+      throw new Error("BOOKING_ALREADY_SETTLED");
+    }
+    // Same 1-unit rounding tolerance the database allows.
+    if (input.amount > input.outstanding + 1) {
+      throw new Error(`AMOUNT_EXCEEDS_OUTSTANDING: outstanding ${input.outstanding}`);
+    }
   }
 }
 
@@ -93,6 +104,16 @@ export function friendlyPaymentError(err: unknown): string {
   }
   if (code.includes("INVALID_AMOUNT")) {
     return "Enter an amount greater than zero.";
+  }
+  // Server-side overpayment guard — the ceiling is the booking's outstanding balance.
+  if (code.includes("AMOUNT_EXCEEDS_OUTSTANDING")) {
+    const found = text.match(/outstanding\s+([\d.]+)/i)?.[1];
+    return found
+      ? `That's more than this booking still owes (${found}). Record the outstanding amount instead.`
+      : "That's more than this booking still owes. Record the outstanding amount instead.";
+  }
+  if (code.includes("BOOKING_ALREADY_SETTLED")) {
+    return "This booking is already paid in full. No further payment is needed.";
   }
   // The bare RLS rejection — the exact error that blocked Nam's ฿7,100 entry.
   if (code.includes("ROW-LEVEL SECURITY") || code.includes("ROW LEVEL SECURITY") || code.includes("42501")) {
