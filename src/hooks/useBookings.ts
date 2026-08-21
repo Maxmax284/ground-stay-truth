@@ -7,6 +7,8 @@ import { createNotification, createNotifications } from "@/hooks/useNotification
 import { formatPrice } from "@/lib/currency";
 import { calculateOutstanding } from "@/lib/paymentTypes";
 import { assertRecordableOfflinePayment, friendlyPaymentError } from "@/lib/offlinePayments";
+import { reportOfflinePaymentRejection } from "@/lib/paymentRejectionLog";
+
 import { emitPaymentProcessed, emitRefundIssued } from "@/lib/fenrir/events";
 import { useProperty } from "@/hooks/useProperty";
 import { logOverrideEvent } from "@/lib/overrideAudit";
@@ -420,11 +422,23 @@ export function useCreatePayment() {
       // server-side, enforces role + property scope, stamps the provider
       // fields so a hand-recorded row can never masquerade as Stripe, and
       // writes the audit receipt in the same transaction as the insert.
-      assertRecordableOfflinePayment({
-        amount: payment.amount,
-        method: payment.method,
-        source_channel,
-      });
+      try {
+        assertRecordableOfflinePayment({
+          amount: payment.amount,
+          method: payment.method,
+          source_channel,
+        });
+      } catch (guardError) {
+        void reportOfflinePaymentRejection({
+          bookingId: payment.booking_id,
+          attemptedAmount: payment.amount,
+          error: guardError,
+          method: payment.method,
+          sourceChannel: source_channel ?? "front_desk",
+          origin: "client_guard",
+        });
+        throw guardError;
+      }
 
       const { data: paymentId, error } = await supabase.rpc("record_offline_payment", {
         _booking_id: payment.booking_id,
@@ -434,7 +448,19 @@ export function useCreatePayment() {
         _notes: payment.notes ?? description ?? null,
         _source_channel: source_channel ?? "front_desk",
       } as any);
-      if (error) throw new Error(friendlyPaymentError(error));
+      if (error) {
+        // Log the refusal in its own transaction — the rejected call rolled back.
+        await reportOfflinePaymentRejection({
+          bookingId: payment.booking_id,
+          attemptedAmount: payment.amount,
+          error,
+          method: payment.method,
+          sourceChannel: source_channel ?? "front_desk",
+          origin: "server",
+        });
+        throw new Error(friendlyPaymentError(error));
+      }
+
 
       const { data } = await supabase
         .from("payments")

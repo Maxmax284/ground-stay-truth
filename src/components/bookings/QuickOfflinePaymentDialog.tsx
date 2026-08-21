@@ -23,6 +23,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { calculateOutstanding } from "@/lib/paymentTypes";
 import { formatPrice } from "@/lib/currency";
 import { assertRecordableOfflinePayment, friendlyPaymentError } from "@/lib/offlinePayments";
+import { reportOfflinePaymentRejection } from "@/lib/paymentRejectionLog";
+
 import { toast } from "sonner";
 
 interface Props {
@@ -90,9 +92,19 @@ export function QuickOfflinePaymentDialog({ booking, paid, onClose }: Props) {
         outstanding: verified ? outstanding : null,
       });
     } catch (e) {
+      // Managers review these: attempted amount vs the balance we computed.
+      void reportOfflinePaymentRejection({
+        bookingId: booking.id,
+        attemptedAmount: value,
+        error: e,
+        method,
+        sourceChannel: "front_desk",
+        origin: "client_guard",
+      });
       toast.error(friendlyPaymentError(e));
       return;
     }
+
     try {
       await createPayment.mutateAsync({
         booking_id: booking.id,

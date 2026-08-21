@@ -18,6 +18,8 @@ import AccountRoleChart from "@/components/reports/AccountRoleChart";
 import AccountActivityChart from "@/components/reports/AccountActivityChart";
 import AccountDetailTable from "@/components/reports/AccountDetailTable";
 import PaymentAnalytics from "@/components/reports/PaymentAnalytics";
+import PaymentRejectionLog from "@/components/reports/PaymentRejectionLog";
+
 
 const STATE_COLORS: Record<string, string> = {
   inquiry: "hsl(30, 15%, 60%)", soft_hold: "hsl(38, 55%, 65%)", pending_approval: "hsl(38, 90%, 50%)",
@@ -62,9 +64,11 @@ const Reports = () => {
               />
             </TabsContent>
 
-            <TabsContent value="payments">
+            <TabsContent value="payments" className="space-y-6">
               <PaymentAnalytics />
+              <PaymentRejectionLog />
             </TabsContent>
+
 
             <TabsContent value="accounts">
               <AccountsTab role={role} />
