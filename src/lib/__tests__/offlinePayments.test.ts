@@ -99,6 +99,47 @@ describe("Offline payments — pre-flight guard", () => {
   });
 });
 
+describe("Offline payments — overpayment ceiling", () => {
+  it("allows an amount equal to the outstanding balance", () => {
+    expect(() =>
+      assertRecordableOfflinePayment({ amount: 3000, method: "cash", outstanding: 3000 })
+    ).not.toThrow();
+  });
+
+  it("blocks the full-total double charge on a booking with a deposit", () => {
+    // ฿5,000 stay, ฿2,000 deposit already logged — only ฿3,000 may be recorded.
+    expect(() =>
+      assertRecordableOfflinePayment({ amount: 5000, method: "cash", outstanding: 3000 })
+    ).toThrow("AMOUNT_EXCEEDS_OUTSTANDING");
+  });
+
+  it("tolerates 1 unit of rounding drift", () => {
+    expect(() =>
+      assertRecordableOfflinePayment({ amount: 3000.5, method: "cash", outstanding: 3000 })
+    ).not.toThrow();
+  });
+
+  it("blocks anything on a settled booking", () => {
+    expect(() =>
+      assertRecordableOfflinePayment({ amount: 100, method: "cash", outstanding: 0 })
+    ).toThrow("BOOKING_ALREADY_SETTLED");
+  });
+
+  it("stays uncapped when the outstanding balance is unknown", () => {
+    expect(() =>
+      assertRecordableOfflinePayment({ amount: 99999, method: "cash", outstanding: null })
+    ).not.toThrow();
+    expect(() => assertRecordableOfflinePayment({ amount: 99999, method: "cash" })).not.toThrow();
+  });
+
+  it("explains the overpayment rejection with the real ceiling", () => {
+    const msg = friendlyPaymentError(new Error("AMOUNT_EXCEEDS_OUTSTANDING: outstanding 3000"));
+    expect(msg).toContain("3000");
+    expect(msg).toContain("still owes");
+    expect(friendlyPaymentError(new Error("BOOKING_ALREADY_SETTLED"))).toContain("paid in full");
+  });
+});
+
 describe("Offline payments — human-readable failures", () => {
   it("translates the bare RLS rejection that blocked the ฿7,100 entry", () => {
     const msg = friendlyPaymentError(
