@@ -22,6 +22,7 @@ import { useSetPayOnArrival } from "@/hooks/useBookingMarkers";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateOutstanding } from "@/lib/paymentTypes";
 import { formatPrice } from "@/lib/currency";
+import { assertRecordableOfflinePayment, friendlyPaymentError } from "@/lib/offlinePayments";
 import { toast } from "sonner";
 
 interface Props {
