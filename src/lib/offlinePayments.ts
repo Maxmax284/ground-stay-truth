@@ -50,6 +50,8 @@ export function assertRecordableOfflinePayment(input: {
   amount: number;
   method: string;
   source_channel?: string;
+  /** Verified outstanding balance, when known. Mirrors the SQL overpayment cap. */
+  outstanding?: number | null;
 }): void {
   if (!Number.isFinite(input.amount) || input.amount <= 0) {
     throw new Error("INVALID_AMOUNT");
