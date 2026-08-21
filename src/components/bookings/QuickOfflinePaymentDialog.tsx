@@ -80,8 +80,16 @@ export function QuickOfflinePaymentDialog({ booking, paid, onClose }: Props) {
 
 
   const record = async (value: number, full: boolean) => {
-    if (!Number.isFinite(value) || value <= 0) {
-      toast.error("Enter an amount greater than zero.");
+    try {
+      // Mirror of the server-side guard: never offer to overpay a booking.
+      assertRecordableOfflinePayment({
+        amount: value,
+        method,
+        source_channel: "front_desk",
+        outstanding: verified ? outstanding : null,
+      });
+    } catch (e) {
+      toast.error(friendlyPaymentError(e));
       return;
     }
     try {
