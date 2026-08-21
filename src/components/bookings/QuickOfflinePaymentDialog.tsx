@@ -104,8 +104,8 @@ export function QuickOfflinePaymentDialog({ booking, paid, onClose }: Props) {
       });
       toast.success(full ? "Marked paid in full" : "Payment recorded");
       onClose();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Could not record the payment");
+    } catch (e) {
+      toast.error(friendlyPaymentError(e));
     }
   };
 
