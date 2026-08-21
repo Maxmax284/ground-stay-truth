@@ -62,9 +62,11 @@ const Reports = () => {
               />
             </TabsContent>
 
-            <TabsContent value="payments">
+            <TabsContent value="payments" className="space-y-6">
               <PaymentAnalytics />
+              <PaymentRejectionLog />
             </TabsContent>
+
 
             <TabsContent value="accounts">
               <AccountsTab role={role} />
