@@ -62,6 +62,15 @@ export function assertRecordableOfflinePayment(input: {
   if (input.source_channel && !isOfflineSourceChannel(input.source_channel)) {
     throw new Error("INVALID_SOURCE_CHANNEL");
   }
+  if (typeof input.outstanding === "number" && Number.isFinite(input.outstanding)) {
+    if (input.outstanding <= 0) {
+      throw new Error("BOOKING_ALREADY_SETTLED");
+    }
+    // Same 1-unit rounding tolerance the database allows.
+    if (input.amount > input.outstanding + 1) {
+      throw new Error(`AMOUNT_EXCEEDS_OUTSTANDING: outstanding ${input.outstanding}`);
+    }
+  }
 }
 
 /**
