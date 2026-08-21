@@ -2837,6 +2837,62 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_rejection_log: {
+        Row: {
+          actor_id: string | null
+          actor_role: string | null
+          attempted_amount: number
+          booking_id: string | null
+          computed_outstanding: number | null
+          created_at: string
+          id: string
+          message: string | null
+          method: string | null
+          origin: string
+          reason_code: string
+          source_channel: string | null
+          tolerance: number
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_role?: string | null
+          attempted_amount: number
+          booking_id?: string | null
+          computed_outstanding?: number | null
+          created_at?: string
+          id?: string
+          message?: string | null
+          method?: string | null
+          origin?: string
+          reason_code: string
+          source_channel?: string | null
+          tolerance?: number
+        }
+        Update: {
+          actor_id?: string | null
+          actor_role?: string | null
+          attempted_amount?: number
+          booking_id?: string | null
+          computed_outstanding?: number | null
+          created_at?: string
+          id?: string
+          message?: string | null
+          method?: string | null
+          origin?: string
+          reason_code?: string
+          source_channel?: string | null
+          tolerance?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_rejection_log_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -4796,6 +4852,18 @@ export type Database = {
       lock_payment_link_abuse: {
         Args: { _link_id: string; _reason: string }
         Returns: undefined
+      }
+      log_offline_payment_rejection: {
+        Args: {
+          _amount: number
+          _booking_id: string
+          _message?: string
+          _method?: string
+          _origin?: string
+          _reason_code: string
+          _source_channel?: string
+        }
+        Returns: string
       }
       log_override_event: {
         Args: {
