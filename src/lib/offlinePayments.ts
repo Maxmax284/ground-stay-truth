@@ -94,6 +94,16 @@ export function friendlyPaymentError(err: unknown): string {
   if (code.includes("INVALID_AMOUNT")) {
     return "Enter an amount greater than zero.";
   }
+  // Server-side overpayment guard — the ceiling is the booking's outstanding balance.
+  if (code.includes("AMOUNT_EXCEEDS_OUTSTANDING")) {
+    const found = text.match(/outstanding\s+([\d.]+)/i)?.[1];
+    return found
+      ? `That's more than this booking still owes (${found}). Record the outstanding amount instead.`
+      : "That's more than this booking still owes. Record the outstanding amount instead.";
+  }
+  if (code.includes("BOOKING_ALREADY_SETTLED")) {
+    return "This booking is already paid in full. No further payment is needed.";
+  }
   // The bare RLS rejection — the exact error that blocked Nam's ฿7,100 entry.
   if (code.includes("ROW-LEVEL SECURITY") || code.includes("ROW LEVEL SECURITY") || code.includes("42501")) {
     return "You don't have permission to record a payment on this booking. Check that you're assigned to its property, or ask an admin.";
