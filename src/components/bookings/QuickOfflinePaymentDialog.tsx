@@ -92,9 +92,19 @@ export function QuickOfflinePaymentDialog({ booking, paid, onClose }: Props) {
         outstanding: verified ? outstanding : null,
       });
     } catch (e) {
+      // Managers review these: attempted amount vs the balance we computed.
+      void reportOfflinePaymentRejection({
+        bookingId: booking.id,
+        attemptedAmount: value,
+        error: e,
+        method,
+        sourceChannel: "front_desk",
+        origin: "client_guard",
+      });
       toast.error(friendlyPaymentError(e));
       return;
     }
+
     try {
       await createPayment.mutateAsync({
         booking_id: booking.id,
