@@ -23,6 +23,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { calculateOutstanding } from "@/lib/paymentTypes";
 import { formatPrice } from "@/lib/currency";
 import { assertRecordableOfflinePayment, friendlyPaymentError } from "@/lib/offlinePayments";
+import { reportOfflinePaymentRejection } from "@/lib/paymentRejectionLog";
+
 import { toast } from "sonner";
 
 interface Props {
