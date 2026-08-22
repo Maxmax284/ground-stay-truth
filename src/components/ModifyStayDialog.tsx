@@ -267,7 +267,7 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain -mx-6 px-6">
           <div className="space-y-4 pb-2">
             {/* ── Current stay ── */}
             <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
