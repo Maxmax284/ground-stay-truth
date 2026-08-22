@@ -67,6 +67,12 @@ export function QuickOfflinePaymentDialog({ booking, paid, onClose }: Props) {
   const outstanding = verified
     ? verified.outstanding
     : Math.max(0, Number(booking?.total_price ?? 0) - Number(paid ?? 0));
+  /**
+   * A booking with no priced total and no add-on obligations has no computable
+   * ceiling (common for backfilled OG stays). The ledger leaves those uncapped,
+   * so the client mirror must too — otherwise staff can't log cash they took.
+   */
+  const hasCeiling = !!verified && verified.grandTotal > 0;
 
   const [amount, setAmount] = useState<string>("");
   const [method, setMethod] = useState<string>("cash");
@@ -89,8 +95,9 @@ export function QuickOfflinePaymentDialog({ booking, paid, onClose }: Props) {
         amount: value,
         method,
         source_channel: "front_desk",
-        outstanding: verified ? outstanding : null,
+        outstanding: hasCeiling ? outstanding : null,
       });
+
     } catch (e) {
       // Managers review these: attempted amount vs the balance we computed.
       void reportOfflinePaymentRejection({
@@ -144,7 +151,9 @@ export function QuickOfflinePaymentDialog({ booking, paid, onClose }: Props) {
             Money taken outside the platform (cash, bank transfer, OTA).{" "}
             {loadingMoney || !verified
               ? "Checking what's already been paid…"
-              : `Already paid: ${formatPrice(verified.totalPaid)} · Outstanding: ${formatPrice(outstanding)}`}
+              : hasCeiling
+                ? `Already paid: ${formatPrice(verified.totalPaid)} · Outstanding: ${formatPrice(outstanding)}`
+                : `Already paid: ${formatPrice(verified.totalPaid)} · No total priced on this booking — enter the amount taken.`}
           </DialogDescription>
 
         </DialogHeader>
