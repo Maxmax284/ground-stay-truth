@@ -104,7 +104,9 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
 
   const fmt = (n: number) => formatPrice(n, policies);
   const overall = OVERALL_LABEL[fin.overallStatus] ?? OVERALL_LABEL.awaiting_payment;
-
+  // A cancelled / no-show stay owes nothing. What matters is money still held.
+  const isVoid = bookingState === "cancelled" || bookingState === "no_show";
+  const heldAmount = Math.max(0, Math.round((fin.bookingCollected - fin.totalRefunded) * 100) / 100);
 
   return (
     <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
@@ -130,28 +132,62 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
           <div>
             <div className="text-[10px] uppercase text-muted-foreground">Collected</div>
             <div className="text-base font-semibold tabular-nums text-[hsl(var(--success))]">{fmt(fin.bookingCollected)}</div>
+            {fin.totalRefunded > 0 && (
+              <div className="text-[10px] text-[hsl(var(--info))]">−{fmt(fin.totalRefunded)} refunded</div>
+            )}
           </div>
           <div>
             <div className="text-[10px] uppercase text-muted-foreground">
-              {fin.credit > 0 ? "Credit" : fin.outstanding > 0 ? "Outstanding" : "Balance"}
+              {isVoid ? "Held" : fin.credit > 0 ? "Credit" : fin.outstanding > 0 ? "Outstanding" : "Balance"}
             </div>
             <div
               className={`text-base font-semibold tabular-nums ${
-                fin.credit > 0
-                  ? "text-[hsl(var(--info))]"
-                  : fin.outstanding > 0
-                    ? "text-destructive"
-                    : "text-[hsl(var(--success))]"
+                isVoid
+                  ? heldAmount > 0
+                    ? "text-[hsl(var(--info))]"
+                    : "text-muted-foreground"
+                  : fin.credit > 0
+                    ? "text-[hsl(var(--info))]"
+                    : fin.outstanding > 0
+                      ? "text-destructive"
+                      : "text-[hsl(var(--success))]"
               }`}
             >
-              {fin.credit > 0 ? fmt(fin.credit) : fin.outstanding > 0 ? fmt(fin.outstanding) : fmt(0)}
+              {isVoid ? fmt(heldAmount) : fin.credit > 0 ? fmt(fin.credit) : fin.outstanding > 0 ? fmt(fin.outstanding) : fmt(0)}
             </div>
-            {fin.credit > 0 && (
+            {isVoid ? (
+              <div className="text-[10px] text-muted-foreground">Cancelled — nothing due from guest</div>
+            ) : fin.credit > 0 ? (
               <div className="text-[10px] text-muted-foreground">Overpaid — credit on file</div>
-            )}
+            ) : null}
           </div>
 
         </div>
+
+        {/* Cancelled stays: say plainly whether a refund still has to be issued by hand. */}
+        {isVoid && fin.bookingCollected > 0 && (
+          <div
+            className={`rounded-md p-2.5 text-xs leading-relaxed ${
+              heldAmount > 0
+                ? "bg-[hsl(var(--warning))]/10 text-warning-foreground"
+                : "bg-[hsl(var(--info))]/10 text-[hsl(var(--info))]"
+            }`}
+          >
+            {heldAmount > 0 ? (
+              <>
+                <strong>No refund issued yet.</strong> Refunds are never automatic — {fmt(heldAmount)} is
+                still held. To return it, use <strong>Refund</strong> on the payment line below (admin only).
+                It's safe: a payment already refunded loses its Refund button.
+              </>
+            ) : (
+              <>
+                <strong>Refund already issued</strong> — {fmt(fin.totalRefunded)} returned. Nothing further to do.
+              </>
+            )}
+          </div>
+        )}
+
+
 
 
         {/* Breakdown rows */}
