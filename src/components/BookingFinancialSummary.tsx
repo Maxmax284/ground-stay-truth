@@ -50,7 +50,7 @@ const OVERALL_LABEL: Record<string, { text: string; cls: string }> = {
 };
 
 
-export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, canSeeAmounts = true }: Props) {
+export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, canSeeAmounts = true, bookingState }: Props) {
   const { data: payments } = useQuery({
     queryKey: ["booking-financials-payments", bookingId],
     queryFn: async () => {
