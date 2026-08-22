@@ -335,7 +335,9 @@ export function calculateBookingFinancials(
     bookingCollected,
     totalCollected,
     outstanding,
+    credit,
     overallStatus,
+
     trustStatus,
   };
 }
