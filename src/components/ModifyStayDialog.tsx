@@ -151,6 +151,28 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
     setConflicts(null);
   };
 
+  /**
+   * Moving a stay's start date reprices the whole stay — staff usually mean to
+   * add nights on the END. On a live stay we make them confirm.
+   */
+  const stayIsActive = booking.state === "checked_in" || booking.state === "confirmed";
+  const requestStartChange = (key: string, value: string) => {
+    const original = baseline.find((b) => b.key === key)?.starts_on;
+    if (stayIsActive && original && value && value !== original) {
+      setPendingStart({ key, value });
+      return;
+    }
+    updateLeg(key, { starts_on: value });
+  };
+
+  /** Extend the stay: only ever touches the last leg's check-out date. */
+  const extendStay = (nights = 1) => {
+    const last = draft[draft.length - 1];
+    if (!last) return;
+    updateLeg(last.key, { ends_on: addDays(last.ends_on, nights) });
+  };
+
+
   const addLeg = () => {
     const last = draft[draft.length - 1];
     setDraft((prev) => [
