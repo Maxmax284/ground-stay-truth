@@ -151,7 +151,9 @@ export function QuickOfflinePaymentDialog({ booking, paid, onClose }: Props) {
             Money taken outside the platform (cash, bank transfer, OTA).{" "}
             {loadingMoney || !verified
               ? "Checking what's already been paid…"
-              : `Already paid: ${formatPrice(verified.totalPaid)} · Outstanding: ${formatPrice(outstanding)}`}
+              : hasCeiling
+                ? `Already paid: ${formatPrice(verified.totalPaid)} · Outstanding: ${formatPrice(outstanding)}`
+                : `Already paid: ${formatPrice(verified.totalPaid)} · No total priced on this booking — enter the amount taken.`}
           </DialogDescription>
 
         </DialogHeader>
