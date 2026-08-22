@@ -185,7 +185,14 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
               paid={fin.addonCovered}
               status={fin.addonStatus}
               fmt={fmt}
-              hint={fin.addonWaived > 0 ? "Collected with the balance payment" : "Billed on top of the room total"}
+              hint={
+                fin.addonWaived > 0
+                  ? fin.credit > 0
+                    ? "Covered by booking credit"
+                    : "Collected with the balance payment"
+                  : "Billed on top of the room total"
+              }
+
             />
           )}
           {fin.feeStatus !== "not_required" && (
