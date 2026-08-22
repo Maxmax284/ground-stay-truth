@@ -28,7 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -267,7 +267,7 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain -mx-6 px-6">
           <div className="space-y-4 pb-2">
             {/* ── Current stay ── */}
             <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
@@ -475,7 +475,7 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={modify.isPending}>Cancel</Button>
