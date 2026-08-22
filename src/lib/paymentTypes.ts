@@ -281,11 +281,13 @@ export function calculateBookingFinancials(
       : addonCovered >= addonRequired ? "paid"
       : addonCovered > 0 ? "partial" : "pending";
 
-  const overallStatus: "paid_in_full" | "deposit_received" | "awaiting_payment" | "refunded" =
+  const overallStatus: "paid_in_full" | "credit_due" | "deposit_received" | "awaiting_payment" | "refunded" =
     totalRefunded >= bookingCollected && bookingCollected > 0 ? "refunded"
+      : credit > 0 ? "credit_due"
       : outstanding <= 0 && grandTotal > 0 ? "paid_in_full"
       : depositPaid >= depositRequired && depositRequired > 0 ? "deposit_received"
       : "awaiting_payment";
+
 
 
   const hasVerified = payments.some(
