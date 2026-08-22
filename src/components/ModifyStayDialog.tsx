@@ -79,6 +79,9 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
   const [requestPayment, setRequestPayment] = useState(true);
   const [conflicts, setConflicts] = useState<ModifyStayConflict[] | null>(null);
   const [checked, setChecked] = useState(false);
+  /** Pending check-in date edit awaiting staff confirmation on a live stay. */
+  const [pendingStart, setPendingStart] = useState<{ key: string; value: string } | null>(null);
+
 
   // Baseline = the stay as it stands right now (segments, or the legacy
   // single-room shape for stays created before segments existed).
