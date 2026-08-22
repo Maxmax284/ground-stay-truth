@@ -475,7 +475,7 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={modify.isPending}>Cancel</Button>
