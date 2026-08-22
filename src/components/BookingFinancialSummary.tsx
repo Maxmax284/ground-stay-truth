@@ -41,10 +41,12 @@ function TrustPill({ trust }: { trust: "verified" | "mixed" | "manual_only" | "n
 
 const OVERALL_LABEL: Record<string, { text: string; cls: string }> = {
   paid_in_full: { text: "Paid in full", cls: "bg-[hsl(var(--success))]/15 text-[hsl(var(--success))]" },
+  credit_due: { text: "Credit on file", cls: "bg-[hsl(var(--info))]/15 text-[hsl(var(--info))]" },
   deposit_received: { text: "Deposit received", cls: "bg-primary/15 text-primary" },
   awaiting_payment: { text: "Awaiting payment", cls: "bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))]" },
   refunded: { text: "Refunded", cls: "bg-muted text-muted-foreground" },
 };
+
 
 export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, canSeeAmounts = true }: Props) {
   const { data: payments } = useQuery({
