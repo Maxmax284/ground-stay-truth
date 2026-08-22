@@ -124,7 +124,7 @@ export function isPaymentReceived(status: string): boolean {
 export function calculateOutstanding(
   totalPrice: number | null,
   payments: Array<{ amount: number; status: string; refund_amount?: number | null; payment_type?: string | null }>
-): { totalPaid: number; totalRefunded: number; addonTotal: number; grandTotal: number; outstanding: number } {
+): { totalPaid: number; totalRefunded: number; addonTotal: number; grandTotal: number; outstanding: number; credit: number } {
   const totalPaid = payments
     .filter((p) => isPaymentReceived(p.status))
     .reduce((sum, p) => sum + Number(p.amount), 0);
