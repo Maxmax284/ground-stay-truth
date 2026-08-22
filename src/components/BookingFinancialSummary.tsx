@@ -130,11 +130,25 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
             <div className="text-base font-semibold tabular-nums text-[hsl(var(--success))]">{fmt(fin.bookingCollected)}</div>
           </div>
           <div>
-            <div className="text-[10px] uppercase text-muted-foreground">Outstanding</div>
-            <div className={`text-base font-semibold tabular-nums ${fin.outstanding > 0 ? "text-destructive" : "text-[hsl(var(--success))]"}`}>
-              {fin.outstanding > 0 ? fmt(fin.outstanding) : "—"}
+            <div className="text-[10px] uppercase text-muted-foreground">
+              {fin.credit > 0 ? "Credit" : fin.outstanding > 0 ? "Outstanding" : "Balance"}
             </div>
+            <div
+              className={`text-base font-semibold tabular-nums ${
+                fin.credit > 0
+                  ? "text-[hsl(var(--info))]"
+                  : fin.outstanding > 0
+                    ? "text-destructive"
+                    : "text-[hsl(var(--success))]"
+              }`}
+            >
+              {fin.credit > 0 ? fmt(fin.credit) : fin.outstanding > 0 ? fmt(fin.outstanding) : fmt(0)}
+            </div>
+            {fin.credit > 0 && (
+              <div className="text-[10px] text-muted-foreground">Overpaid — credit on file</div>
+            )}
           </div>
+
         </div>
 
 
