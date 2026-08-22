@@ -250,6 +250,11 @@ export function calculateBookingFinancials(
   const securityOutstanding = Math.max(0, secAmount - securityPaid);
   const feeOutstanding = Math.max(0, feeRequired - feePaid);
   const addonOutstanding = Math.max(0, addonRequired - addonCovered);
+  // Overpayment: money in hand against the booking beyond what the booking owes.
+  // Surfaced so staff see "Credit ฿X" instead of a blank dash.
+  const credit = Math.max(0, Math.round((bookingCollected - grandTotal) * 100) / 100);
+
+
 
 
   const depositStatus: "paid" | "partial" | "pending" | "not_required" =
