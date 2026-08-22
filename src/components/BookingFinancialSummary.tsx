@@ -12,6 +12,8 @@ interface Props {
   totalPrice: number | null;
   propertyId?: string | null;
   canSeeAmounts?: boolean;
+  /** Cancelled / no-show stays owe nothing — the money panel says so instead of screaming "Outstanding". */
+  bookingState?: string | null;
 }
 
 function readPolicy(rows: any[] | undefined, key: string, propertyId?: string | null) {
