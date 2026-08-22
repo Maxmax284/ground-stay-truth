@@ -356,6 +356,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
             totalPrice={booking.total_price}
             propertyId={(booking as any).property_id ?? null}
             canSeeAmounts={canSeeAmounts}
+            bookingState={booking.state}
           />
           {canSeeAmounts && (
             <BookingAdjustmentsCard
