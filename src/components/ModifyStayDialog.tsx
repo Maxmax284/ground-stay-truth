@@ -281,12 +281,27 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
 
             {/* ── Draft legs ── */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <Label className="text-sm">New plan</Label>
-                <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={addLeg}>
-                  <Plus className="h-3.5 w-3.5" /> Add room leg
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-7 gap-1 text-xs"
+                    onClick={() => extendStay(1)}
+                    disabled={draft.length === 0}
+                  >
+                    <CalendarDays className="h-3.5 w-3.5" /> Extend stay +1 night
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={addLeg}>
+                    <Plus className="h-3.5 w-3.5" /> Add room leg
+                  </Button>
+                </div>
               </div>
+              <p className="text-xs text-muted-foreground">
+                To extend a stay, change the check-out date only — moving the check-in date shifts the
+                whole stay and reprices it.
+              </p>
 
               {draft.map((leg, idx) => (
                 <div key={leg.key} className="rounded-md border border-border p-3 space-y-2">
@@ -311,13 +326,34 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
                       </Select>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Check-in</Label>
-                      <Input type="date" className="h-9" value={leg.starts_on} onChange={(e) => updateLeg(leg.key, { starts_on: e.target.value })} />
+                      <Label htmlFor={`start-${leg.key}`} className="text-xs text-muted-foreground">
+                        Check-in date / Start date
+                      </Label>
+                      <Input
+                        id={`start-${leg.key}`}
+                        type="date"
+                        className="h-9"
+                        value={leg.starts_on}
+                        onChange={(e) => requestStartChange(leg.key, e.target.value)}
+                      />
+                      <p className="text-[10px] text-muted-foreground">Moves the whole stay.</p>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Check-out</Label>
-                      <Input type="date" className="h-9" value={leg.ends_on} onChange={(e) => updateLeg(leg.key, { ends_on: e.target.value })} />
+                      <Label htmlFor={`end-${leg.key}`} className="text-xs text-muted-foreground">
+                        Check-out date / End date
+                      </Label>
+                      <Input
+                        id={`end-${leg.key}`}
+                        type="date"
+                        className="h-9"
+                        value={leg.ends_on}
+                        onChange={(e) => updateLeg(leg.key, { ends_on: e.target.value })}
+                      />
+                      <p className="text-[10px] text-muted-foreground">
+                        To extend a stay, change this date only.
+                      </p>
                     </div>
+
                   </div>
                   {(() => {
                     const line = afterQuote.lines.find((l) => l.key === leg.key);
