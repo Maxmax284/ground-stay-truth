@@ -107,7 +107,9 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
     setNotes("");
     setReasonCode("guest_request");
     setRequestPayment(true);
+    setPendingStart(null);
   }, [open, baseline]);
+
 
   const activeUnits = useMemo(
     () => (units ?? []).filter((u) => (u as any).is_active !== false),
