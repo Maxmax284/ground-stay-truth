@@ -101,7 +101,8 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
   if (!canSeeAmounts) return null;
 
   const fmt = (n: number) => formatPrice(n, policies);
-  const overall = OVERALL_LABEL[fin.overallStatus];
+  const overall = OVERALL_LABEL[fin.overallStatus] ?? OVERALL_LABEL.awaiting_payment;
+
 
   return (
     <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
