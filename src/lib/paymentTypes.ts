@@ -124,7 +124,7 @@ export function isPaymentReceived(status: string): boolean {
 export function calculateOutstanding(
   totalPrice: number | null,
   payments: Array<{ amount: number; status: string; refund_amount?: number | null; payment_type?: string | null }>
-): { totalPaid: number; totalRefunded: number; addonTotal: number; grandTotal: number; outstanding: number } {
+): { totalPaid: number; totalRefunded: number; addonTotal: number; grandTotal: number; outstanding: number; credit: number } {
   const totalPaid = payments
     .filter((p) => isPaymentReceived(p.status))
     .reduce((sum, p) => sum + Number(p.amount), 0);
@@ -152,8 +152,11 @@ export function calculateOutstanding(
     addonTotal: Math.round(addonTotal * 100) / 100,
     grandTotal,
     outstanding: Math.max(0, Math.round(outstanding * 100) / 100),
+    /** Overpayment sitting on the booking. Never negative. */
+    credit: Math.max(0, Math.round(-outstanding * 100) / 100),
   };
 }
+
 
 
 type PaymentRow = {
@@ -247,6 +250,11 @@ export function calculateBookingFinancials(
   const securityOutstanding = Math.max(0, secAmount - securityPaid);
   const feeOutstanding = Math.max(0, feeRequired - feePaid);
   const addonOutstanding = Math.max(0, addonRequired - addonCovered);
+  // Overpayment: money in hand against the booking beyond what the booking owes.
+  // Surfaced so staff see "Credit ฿X" instead of a blank dash.
+  const credit = Math.max(0, Math.round((bookingCollected - grandTotal) * 100) / 100);
+
+
 
 
   const depositStatus: "paid" | "partial" | "pending" | "not_required" =
@@ -273,11 +281,13 @@ export function calculateBookingFinancials(
       : addonCovered >= addonRequired ? "paid"
       : addonCovered > 0 ? "partial" : "pending";
 
-  const overallStatus: "paid_in_full" | "deposit_received" | "awaiting_payment" | "refunded" =
+  const overallStatus: "paid_in_full" | "credit_due" | "deposit_received" | "awaiting_payment" | "refunded" =
     totalRefunded >= bookingCollected && bookingCollected > 0 ? "refunded"
+      : credit > 0 ? "credit_due"
       : outstanding <= 0 && grandTotal > 0 ? "paid_in_full"
       : depositPaid >= depositRequired && depositRequired > 0 ? "deposit_received"
       : "awaiting_payment";
+
 
 
   const hasVerified = payments.some(
@@ -327,7 +337,9 @@ export function calculateBookingFinancials(
     bookingCollected,
     totalCollected,
     outstanding,
+    credit,
     overallStatus,
+
     trustStatus,
   };
 }

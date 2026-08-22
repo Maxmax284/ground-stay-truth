@@ -16,7 +16,12 @@ import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -79,6 +84,9 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
   const [requestPayment, setRequestPayment] = useState(true);
   const [conflicts, setConflicts] = useState<ModifyStayConflict[] | null>(null);
   const [checked, setChecked] = useState(false);
+  /** Pending check-in date edit awaiting staff confirmation on a live stay. */
+  const [pendingStart, setPendingStart] = useState<{ key: string; value: string } | null>(null);
+
 
   // Baseline = the stay as it stands right now (segments, or the legacy
   // single-room shape for stays created before segments existed).
@@ -107,7 +115,9 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
     setNotes("");
     setReasonCode("guest_request");
     setRequestPayment(true);
+    setPendingStart(null);
   }, [open, baseline]);
+
 
   const activeUnits = useMemo(
     () => (units ?? []).filter((u) => (u as any).is_active !== false),
@@ -150,6 +160,28 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
     setChecked(false);
     setConflicts(null);
   };
+
+  /**
+   * Moving a stay's start date reprices the whole stay — staff usually mean to
+   * add nights on the END. On a live stay we make them confirm.
+   */
+  const stayIsActive = booking.state === "checked_in" || booking.state === "confirmed";
+  const requestStartChange = (key: string, value: string) => {
+    const original = baseline.find((b) => b.key === key)?.starts_on;
+    if (stayIsActive && original && value && value !== original) {
+      setPendingStart({ key, value });
+      return;
+    }
+    updateLeg(key, { starts_on: value });
+  };
+
+  /** Extend the stay: only ever touches the last leg's check-out date. */
+  const extendStay = (nights = 1) => {
+    const last = draft[draft.length - 1];
+    if (!last) return;
+    updateLeg(last.key, { ends_on: addDays(last.ends_on, nights) });
+  };
+
 
   const addLeg = () => {
     const last = draft[draft.length - 1];
@@ -254,12 +286,27 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
 
             {/* ── Draft legs ── */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <Label className="text-sm">New plan</Label>
-                <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={addLeg}>
-                  <Plus className="h-3.5 w-3.5" /> Add room leg
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-7 gap-1 text-xs"
+                    onClick={() => extendStay(1)}
+                    disabled={draft.length === 0}
+                  >
+                    <CalendarDays className="h-3.5 w-3.5" /> Extend stay +1 night
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={addLeg}>
+                    <Plus className="h-3.5 w-3.5" /> Add room leg
+                  </Button>
+                </div>
               </div>
+              <p className="text-xs text-muted-foreground">
+                To extend a stay, change the check-out date only — moving the check-in date shifts the
+                whole stay and reprices it.
+              </p>
 
               {draft.map((leg, idx) => (
                 <div key={leg.key} className="rounded-md border border-border p-3 space-y-2">
@@ -284,13 +331,34 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
                       </Select>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Check-in</Label>
-                      <Input type="date" className="h-9" value={leg.starts_on} onChange={(e) => updateLeg(leg.key, { starts_on: e.target.value })} />
+                      <Label htmlFor={`start-${leg.key}`} className="text-xs text-muted-foreground">
+                        Check-in date / Start date
+                      </Label>
+                      <Input
+                        id={`start-${leg.key}`}
+                        type="date"
+                        className="h-9"
+                        value={leg.starts_on}
+                        onChange={(e) => requestStartChange(leg.key, e.target.value)}
+                      />
+                      <p className="text-[10px] text-muted-foreground">Moves the whole stay.</p>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Check-out</Label>
-                      <Input type="date" className="h-9" value={leg.ends_on} onChange={(e) => updateLeg(leg.key, { ends_on: e.target.value })} />
+                      <Label htmlFor={`end-${leg.key}`} className="text-xs text-muted-foreground">
+                        Check-out date / End date
+                      </Label>
+                      <Input
+                        id={`end-${leg.key}`}
+                        type="date"
+                        className="h-9"
+                        value={leg.ends_on}
+                        onChange={(e) => updateLeg(leg.key, { ends_on: e.target.value })}
+                      />
+                      <p className="text-[10px] text-muted-foreground">
+                        To extend a stay, change this date only.
+                      </p>
                     </div>
+
                   </div>
                   {(() => {
                     const line = afterQuote.lines.find((l) => l.key === leg.key);
@@ -428,9 +496,35 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
           )}
         </DialogFooter>
       </DialogContent>
+
+      <AlertDialog open={!!pendingStart} onOpenChange={(o) => { if (!o) setPendingStart(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-[hsl(var(--warning))]" /> Change the start date?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You are changing the check-in/start date for an active stay. This moves the whole stay and
+              may reprice the booking. If you only want to add nights, change the check-out date instead.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingStart(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingStart) updateLeg(pendingStart.key, { starts_on: pendingStart.value });
+                setPendingStart(null);
+              }}
+            >
+              Continue changing start date
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
+
 
 function Row({ label, value, emphasis }: { label: string; value: string; emphasis?: boolean }) {
   return (
