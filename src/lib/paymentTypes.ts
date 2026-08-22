@@ -152,8 +152,11 @@ export function calculateOutstanding(
     addonTotal: Math.round(addonTotal * 100) / 100,
     grandTotal,
     outstanding: Math.max(0, Math.round(outstanding * 100) / 100),
+    /** Overpayment sitting on the booking. Never negative. */
+    credit: Math.max(0, Math.round(-outstanding * 100) / 100),
   };
 }
+
 
 
 type PaymentRow = {
