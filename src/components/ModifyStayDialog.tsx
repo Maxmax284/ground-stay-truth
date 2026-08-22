@@ -491,9 +491,35 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
           )}
         </DialogFooter>
       </DialogContent>
+
+      <AlertDialog open={!!pendingStart} onOpenChange={(o) => { if (!o) setPendingStart(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-[hsl(var(--warning))]" /> Change the start date?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You are changing the check-in/start date for an active stay. This moves the whole stay and
+              may reprice the booking. If you only want to add nights, change the check-out date instead.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingStart(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingStart) updateLeg(pendingStart.key, { starts_on: pendingStart.value });
+                setPendingStart(null);
+              }}
+            >
+              Continue changing start date
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
+
 
 function Row({ label, value, emphasis }: { label: string; value: string; emphasis?: boolean }) {
   return (
