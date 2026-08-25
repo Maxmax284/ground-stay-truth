@@ -167,7 +167,7 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
         </div>
 
         {/* Cancelled stays: say plainly whether a refund still has to be issued by hand. */}
-        {isVoid && fin.bookingCollected > 0 && (
+        {isVoid && (heldAmount > 0 || fin.totalRefunded > 0) && (
           <div
             className={`rounded-md p-2.5 text-xs leading-relaxed ${
               heldAmount > 0
@@ -177,9 +177,13 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
           >
             {heldAmount > 0 ? (
               <>
-                <strong>No refund issued yet.</strong> Refunds are never automatic — {fmt(heldAmount)} is
-                still held. To return it, use <strong>Refund</strong> on the payment line below (admin only).
-                It's safe: a payment already refunded loses its Refund button.
+                <strong>
+                  {fin.totalRefunded > 0 ? "Partially refunded." : "No refund issued yet."}
+                </strong>{" "}
+                Refunds are never automatic — {fmt(heldAmount)} is still held
+                {fin.totalRefunded > 0 ? ` (${fmt(fin.totalRefunded)} already returned)` : ""}. To return it,
+                use <strong>Refund</strong> on the payment line below (admin only). It's safe: a payment
+                already refunded loses its Refund button.
               </>
             ) : (
               <>
