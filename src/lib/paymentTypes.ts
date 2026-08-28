@@ -236,8 +236,6 @@ export function calculateBookingFinancials(
   // Add-ons (airport pickup, transfers, extras) are real obligations created as
   // payment rows — the required amount is whatever is pending plus what's paid.
   const addonRequired = Math.round((addonPaid + addonPending + addonWaived) * 100) / 100;
-  const addonCovered = Math.round((addonPaid + addonWaived) * 100) / 100;
-
 
   const totalRefunded = payments
     .filter((p) => p.status === "refunded" || p.status === "partially_refunded")
@@ -246,10 +244,22 @@ export function calculateBookingFinancials(
   const bookingCollected = depositPaid + balancePaid + addonPaid;
   const totalCollected = bookingCollected + securityPaid + feePaid;
   const grandTotal = Math.round((total + addonRequired) * 100) / 100;
+
+  // Staff often take one lump cash/transfer that already includes the add-on and
+  // record it as `balance`, leaving the standalone add-on row `pending`. If the
+  // money in hand covers the whole grand total, the add-on is settled — don't
+  // keep shouting "Awaiting payment" at staff for baht already collected.
+  const addonAbsorbed = Math.max(
+    0,
+    Math.min(addonRequired, Math.round((bookingCollected - total) * 100) / 100)
+  );
+  const addonCovered = Math.round(Math.max(addonPaid + addonWaived, addonAbsorbed) * 100) / 100;
+
   const outstanding = Math.max(0, grandTotal - bookingCollected);
   const securityOutstanding = Math.max(0, secAmount - securityPaid);
   const feeOutstanding = Math.max(0, feeRequired - feePaid);
-  const addonOutstanding = Math.max(0, addonRequired - addonCovered);
+  const addonOutstanding = Math.max(0, Math.round((addonRequired - addonCovered) * 100) / 100);
+
   // Overpayment: money in hand against the booking beyond what the booking owes.
   // Surfaced so staff see "Credit ฿X" instead of a blank dash.
   const credit = Math.max(0, Math.round((bookingCollected - grandTotal) * 100) / 100);
