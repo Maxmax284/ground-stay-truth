@@ -133,10 +133,19 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
     [draft, units, pricingRules, policies, booking.num_guests, completedStays],
   );
 
-  // "Before" is the price actually on the booking — that's the number the guest
-  // has been quoted, even if a re-quote of the old dates differs today.
-  const pricingBefore = Number(booking.total_price ?? 0) || beforeQuote.total;
+  // Money must be apples-to-apples: the difference is a fresh quote of the OLD
+  // legs against a fresh quote of the NEW legs, both run through the same
+  // calculator with the same guests and policies. Using the stored booking total
+  // as the baseline mixed two pricing bases together and silently absorbed the
+  // gap into the guest's bill (an added night could vanish behind a long-stay
+  // tier shift). The stored total is still shown, as a reference, and any drift
+  // between it and today's re-quote is surfaced instead of billed.
+  const onRecordTotal = Number(booking.total_price ?? 0);
+  const pricingBefore = beforeQuote.total || onRecordTotal;
+  const recordDrift = Math.round((onRecordTotal - pricingBefore) * 100) / 100;
+  const hasDrift = Math.abs(recordDrift) >= 0.01 && onRecordTotal > 0;
   const delta = useMemo(() => summarizeDelta(pricingBefore, afterQuote.total), [pricingBefore, afterQuote.total]);
+
 
   const waived = Math.min(Math.max(0, Number(waiveInput) || 0), Math.max(0, delta.calculated));
   const finalAmount = Math.round((delta.calculated - waived) * 100) / 100;
