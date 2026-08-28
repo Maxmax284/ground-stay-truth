@@ -220,13 +220,12 @@ export function calculateBookingFinancials(
   const addonPaid = sumReceived(payments, "addon");
 
   // Room money is fungible once received. Legacy and front-desk payments are
-  // often recorded entirely as `balance`; allocate any amount above the
-  // balance bucket to the deposit so a mostly/fully paid stay never says
-  // "Deposit ฿0 / Pending" just because staff chose a different label.
-  const balanceSurplus = Math.max(0, recordedBalancePaid - balanceRequired);
-  const depositSurplus = Math.max(0, recordedDepositPaid - depositRequired);
-  const depositPaid = Math.min(depositRequired, recordedDepositPaid + balanceSurplus);
-  const balancePaid = Math.min(balanceRequired, recordedBalancePaid + depositSurplus);
+  // often recorded entirely as `balance`, so present all room money through the
+  // normal waterfall: deposit first, then remaining balance. The ledger keeps
+  // its original labels; this only stops a paid deposit from looking unpaid.
+  const roomCollected = recordedDepositPaid + recordedBalancePaid;
+  const depositPaid = Math.min(depositRequired, roomCollected);
+  const balancePaid = Math.min(balanceRequired, Math.max(0, roomCollected - depositRequired));
 
   const depositPending = sumPending(payments, "deposit");
   const balancePending = sumPending(payments, "balance");
