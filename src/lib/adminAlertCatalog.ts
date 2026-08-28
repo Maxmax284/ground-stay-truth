@@ -359,12 +359,17 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
     key: "admin_discount_applied", label: "Admin discount applied",
     description: "A discount or adjustment was applied to a booking.",
     category: "operations", severity: "warning", defaultEmail: true, defaultInApp: true, wired: true,
+    // A price change nobody downstream heard about is how a manager ends up
+    // reverse-engineering a balance weeks later. This one always gets through,
+    // even in critical-only mode.
+    bypassCriticalOnly: true,
     where: "Booking → Adjustments", nextAction: "Confirm the adjustment matches what was agreed with the guest.",
   },
   {
     key: "booking_adjustment_voided", label: "Booking adjustment voided",
     description: "A previously applied adjustment was voided.",
-    category: "operations", severity: "warning", defaultEmail: false, defaultInApp: true, wired: true,
+    category: "operations", severity: "warning", defaultEmail: true, defaultInApp: true, wired: true,
+    bypassCriticalOnly: true,
     where: "Booking → Adjustments", nextAction: "Check the balance recalculated correctly.",
   },
   {
