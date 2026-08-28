@@ -423,7 +423,6 @@ serve(async (req) => {
           body: JSON.stringify({
             booking_id: bookingId,
             collect: "balance",
-            amount: Math.round(finalAmount),
             regenerate: true,
           }),
         });
