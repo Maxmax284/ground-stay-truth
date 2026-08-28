@@ -5,6 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/currency";
 import { calculateBookingFinancials } from "@/lib/paymentTypes";
+import { PriceStoryBadge } from "@/components/PriceStoryBadge";
+import { useBookingDiscountFlags, type PriceStoryBooking } from "@/hooks/usePriceStory";
 import { Check, Clock, AlertCircle, ShieldCheck, ShieldAlert, Shield } from "lucide-react";
 
 interface Props {
@@ -14,7 +16,10 @@ interface Props {
   canSeeAmounts?: boolean;
   /** Cancelled / no-show stays owe nothing — the money panel says so instead of screaming "Outstanding". */
   bookingState?: string | null;
+  /** Enables the Price Story emblem — explains any discount behind these numbers. */
+  booking?: PriceStoryBooking | null;
 }
+
 
 function readPolicy(rows: any[] | undefined, key: string, propertyId?: string | null) {
   if (!rows) return undefined;
