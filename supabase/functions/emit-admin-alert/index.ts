@@ -27,6 +27,7 @@ import {
   passesCriticalOnly,
   type AdminAlertEvent,
 } from "../_shared/adminAlertCatalog.ts";
+import { sendAppEmail } from "../_shared/appEmail.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",

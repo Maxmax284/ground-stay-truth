@@ -17,6 +17,7 @@ import {
   jsonResponse,
   getCanonicalSiteUrl,
 } from "../_shared/cors.ts";
+import { sendAppEmail } from "../_shared/appEmail.ts";
 
 const DEFAULT_EXPIRY_HOURS = 72;
 const MIN_EXPIRY_HOURS = 1;

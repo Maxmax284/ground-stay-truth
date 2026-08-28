@@ -13,6 +13,7 @@
 //   - Every send is written to `admin_alert_log` with is_test = true.
 // -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendAppEmail } from "../_shared/appEmail.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",

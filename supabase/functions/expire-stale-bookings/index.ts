@@ -9,6 +9,7 @@
 // opened, message from guest, etc. — leave it alone.
 // -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendAppEmail } from "../_shared/appEmail.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
