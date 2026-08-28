@@ -527,7 +527,7 @@ function StateHistoryTab({ logs }: { logs: any[] }) {
   );
 }
 
-function PaymentsTab({ payments, bookingId, bookingState, canSeeAmounts, canRecord, policies, totalPrice }: { payments: any[]; bookingId: string; bookingState: string; canSeeAmounts: boolean; canRecord: boolean; policies?: any[]; totalPrice?: number | null }) {
+function PaymentsTab({ payments, bookingId, bookingState, canSeeAmounts, canRecord, policies, totalPrice, booking }: { payments: any[]; bookingId: string; bookingState: string; canSeeAmounts: boolean; canRecord: boolean; policies?: any[]; totalPrice?: number | null; booking?: PriceStoryBooking | null }) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const { role } = useAuth();
