@@ -5,6 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/currency";
 import { calculateBookingFinancials } from "@/lib/paymentTypes";
+import { PriceStoryBadge } from "@/components/PriceStoryBadge";
+import { useBookingDiscountFlags, type PriceStoryBooking } from "@/hooks/usePriceStory";
 import { Check, Clock, AlertCircle, ShieldCheck, ShieldAlert, Shield } from "lucide-react";
 
 interface Props {
@@ -14,7 +16,10 @@ interface Props {
   canSeeAmounts?: boolean;
   /** Cancelled / no-show stays owe nothing — the money panel says so instead of screaming "Outstanding". */
   bookingState?: string | null;
+  /** Enables the Price Story emblem — explains any discount behind these numbers. */
+  booking?: PriceStoryBooking | null;
 }
+
 
 function readPolicy(rows: any[] | undefined, key: string, propertyId?: string | null) {
   if (!rows) return undefined;
@@ -50,7 +55,9 @@ const OVERALL_LABEL: Record<string, { text: string; cls: string }> = {
 };
 
 
-export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, canSeeAmounts = true, bookingState }: Props) {
+export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, canSeeAmounts = true, bookingState, booking }: Props) {
+  const { data: discountFlags } = useBookingDiscountFlags(booking ? [booking.id] : []);
+
   const { data: payments } = useQuery({
     queryKey: ["booking-financials-payments", bookingId],
     queryFn: async () => {
@@ -118,8 +125,12 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
           <div className="flex items-center gap-2">
             <span className="text-xs uppercase tracking-wide text-muted-foreground">Money</span>
             <Badge className={`text-xs border-0 ${overall.cls}`}>{overall.text}</Badge>
+            {booking && (
+              <PriceStoryBadge booking={booking} policies={policies} flag={discountFlags?.[booking.id]} />
+            )}
           </div>
           <TrustPill trust={fin.trustStatus} />
+
         </div>
 
         {/* Big numbers — Total / Collected / Outstanding */}
