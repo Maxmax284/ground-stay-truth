@@ -262,8 +262,6 @@ export function useTransitionBookingState() {
           .catch(console.error);
       }
 
-      }
-
       return data;
     },
     onSuccess: () => {
