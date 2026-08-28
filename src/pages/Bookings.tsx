@@ -19,6 +19,8 @@ import { useUnits } from "@/hooks/useUnits";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
+import { PriceStoryBadge } from "@/components/PriceStoryBadge";
+import { useBookingDiscountFlags } from "@/hooks/usePriceStory";
 import { BookingFilters, type BookingSort } from "@/components/BookingFilters";
 import { BookingFormDialog } from "@/components/BookingFormDialog";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
@@ -96,7 +98,7 @@ function BookingStatusBadge({ booking }: { booking: any }) {
 }
 
 
-function BookingCard({ booking, onClick, onExtend, onRecordPayment }: { booking: any; onClick: () => void; onExtend?: (b: any) => void; onRecordPayment?: (b: any) => void }) {
+function BookingCard({ booking, onClick, onExtend, onRecordPayment, discountFlag }: { booking: any; onClick: () => void; onExtend?: (b: any) => void; onRecordPayment?: (b: any) => void; discountFlag?: any }) {
   const { t } = useTranslation();
   const { data: cardPolicies } = usePolicySettings();
   const cardDeadline = getBookingDeadline(booking, cardPolicies as any);
@@ -119,6 +121,7 @@ function BookingCard({ booking, onClick, onExtend, onRecordPayment }: { booking:
         <span>{format(new Date(booking.check_in), "MMM d")} – {format(new Date(booking.check_out), "MMM d")}</span>
         <span>·</span>
         <span>{t("bookings.guestCount", { count: booking.num_guests })}</span>
+        <PriceStoryBadge booking={booking} policies={cardPolicies} flag={discountFlag} />
       </div>
       {(cardDeadline?.isExpired && onExtend) || onRecordPayment ? (
         <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
@@ -250,6 +253,8 @@ const Bookings = () => {
   };
 
   const { data: docFlags } = useBookingDocumentFlags((bookings ?? []).map((b) => b.id));
+  // One query for the whole page — tells each row whether a human moved the price.
+  const { data: discountFlags } = useBookingDiscountFlags((bookings ?? []).map((b) => b.id));
 
   return (
     <DashboardLayout>
@@ -320,6 +325,7 @@ const Bookings = () => {
                 onClick={() => setSelectedBookingId(b.id)}
                 onExtend={canOverrideDeadline ? setExtendBooking : undefined}
                 onRecordPayment={needsMoneyBackfill(b) ? setPayBooking : undefined}
+                discountFlag={discountFlags?.[b.id]}
               />
             ))}
           </div>
@@ -363,7 +369,10 @@ const Bookings = () => {
                     <TableCell>{format(new Date(b.check_out), "MMM d, yyyy")}</TableCell>
                     <TableCell>{b.num_guests}</TableCell>
                     <TableCell>
-                      <BookingStatusBadge booking={b} />
+                      <div className="flex items-center gap-1.5">
+                        <BookingStatusBadge booking={b} />
+                        <PriceStoryBadge booking={b as any} policies={policiesForDeadlines as any} flag={discountFlags?.[b.id]} />
+                      </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {format(new Date(b.created_at), "MMM d")}

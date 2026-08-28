@@ -70,22 +70,39 @@ export function PriceStoryBadge({ booking, policies, flag, variant = "pill", cla
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
+        {/* A span, not a button: this badge lives inside clickable rows and cards,
+            and a nested button is invalid markup. Clicks are swallowed so opening
+            the receipt never also opens the booking. */}
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            setOpen((v) => !v);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.stopPropagation();
+              e.preventDefault();
+              setOpen((v) => !v);
+            }
+          }}
           onMouseEnter={() => {
             if (window.matchMedia?.("(hover: hover)").matches) setOpen(true);
           }}
-          aria-label="This booking has a discount applied — see why"
-          className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none transition-colors hover:brightness-110 ${tone} ${className ?? ""}`}
+          aria-label="This booking has a price adjustment — see why"
+          className={`inline-flex cursor-pointer items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none transition-colors hover:brightness-110 ${tone} ${className ?? ""}`}
         >
           <Icon className="h-2.5 w-2.5 shrink-0" />
           {label}
-        </button>
+        </span>
       </PopoverTrigger>
       <PopoverContent
         align="start"
         side="bottom"
         className="w-[300px] p-3 text-xs"
+        onClick={(e) => e.stopPropagation()}
         onMouseLeave={() => setOpen(false)}
       >
         <PriceStoryReceipt story={story} policies={policies} loading={!story} isHuman={isHuman} />
