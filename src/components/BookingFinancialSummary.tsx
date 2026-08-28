@@ -128,8 +128,9 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
             {booking && (
               <PriceStoryBadge booking={booking} policies={policies} flag={discountFlags?.[booking.id]} />
             )}
-
+          </div>
           <TrustPill trust={fin.trustStatus} />
+
         </div>
 
         {/* Big numbers — Total / Collected / Outstanding */}
