@@ -213,11 +213,20 @@ export function calculateBookingFinancials(
   const depositRequired = total > 0 ? Math.round(total * depositPct) / 100 : 0;
   const balanceRequired = Math.max(0, total - depositRequired);
 
-  const depositPaid = sumReceived(payments, "deposit");
-  const balancePaid = sumReceived(payments, "balance");
+  const recordedDepositPaid = sumReceived(payments, "deposit");
+  const recordedBalancePaid = sumReceived(payments, "balance");
   const securityPaid = sumReceived(payments, "security_deposit");
   const feePaid = sumReceived(payments, "booking_fee");
   const addonPaid = sumReceived(payments, "addon");
+
+  // Room money is fungible once received. Legacy and front-desk payments are
+  // often recorded entirely as `balance`; allocate any amount above the
+  // balance bucket to the deposit so a mostly/fully paid stay never says
+  // "Deposit ฿0 / Pending" just because staff chose a different label.
+  const balanceSurplus = Math.max(0, recordedBalancePaid - balanceRequired);
+  const depositSurplus = Math.max(0, recordedDepositPaid - depositRequired);
+  const depositPaid = Math.min(depositRequired, recordedDepositPaid + balanceSurplus);
+  const balancePaid = Math.min(balanceRequired, recordedBalancePaid + depositSurplus);
 
   const depositPending = sumPending(payments, "deposit");
   const balancePending = sumPending(payments, "balance");
@@ -241,7 +250,7 @@ export function calculateBookingFinancials(
     .filter((p) => p.status === "refunded" || p.status === "partially_refunded")
     .reduce((s, p) => s + Number(p.refund_amount ?? 0), 0);
 
-  const bookingCollected = depositPaid + balancePaid + addonPaid;
+  const bookingCollected = recordedDepositPaid + recordedBalancePaid + addonPaid;
   const totalCollected = bookingCollected + securityPaid + feePaid;
   const grandTotal = Math.round((total + addonRequired) * 100) / 100;
 
