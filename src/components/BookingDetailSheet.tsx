@@ -41,6 +41,8 @@ import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { RequiredDocumentsCard } from "@/components/RequiredDocumentsCard";
 import { SecurityDepositSection } from "@/components/SecurityDepositSection";
 import { BookingFinancialSummary } from "@/components/BookingFinancialSummary";
+import { PriceStoryBadge } from "@/components/PriceStoryBadge";
+import { useBookingDiscountFlags, type PriceStoryBooking } from "@/hooks/usePriceStory";
 import { PaymentGuideLink } from "@/components/PaymentGuideLink";
 import { BookingTrainingSection } from "@/components/BookingTrainingSection";
 import { useBookingTrainingLinks } from "@/hooks/useTrainingPackages";
@@ -461,7 +463,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
           )}
 
           <TabsContent value="history"><StateHistoryTab logs={stateLog ?? []} /></TabsContent>
-          <TabsContent value="payments"><PaymentsTab payments={payments ?? []} bookingId={booking.id} bookingState={booking.state as string} canSeeAmounts={canSeeAmounts} canRecord={canRecordPay} policies={policies} totalPrice={booking.total_price} /></TabsContent>
+          <TabsContent value="payments"><PaymentsTab payments={payments ?? []} bookingId={booking.id} bookingState={booking.state as string} canSeeAmounts={canSeeAmounts} canRecord={canRecordPay} policies={policies} totalPrice={booking.total_price} booking={booking as any} /></TabsContent>
           <TabsContent value="messages"><MessagesTab messages={messages ?? []} bookingId={booking.id} /></TabsContent>
           <TabsContent value="documents"><div className="py-3"><RequiredDocumentsCard bookingId={booking.id} checkIn={booking.check_in} checkOut={booking.check_out} /></div></TabsContent>
           {isCheckedIn && (
@@ -540,6 +542,7 @@ function PaymentsTab({ payments, bookingId, bookingState, canSeeAmounts, canReco
   const [refundTarget, setRefundTarget] = useState<any>(null);
 
   const isAdmin = role === "admin";
+  const { data: priceFlags } = useBookingDiscountFlags(booking ? [booking.id] : []);
 
   const balance = useMemo(
     () => calculateOutstanding(totalPrice ?? null, payments),
@@ -576,7 +579,10 @@ function PaymentsTab({ payments, bookingId, bookingState, canSeeAmounts, canReco
         <div className="rounded-md border border-border bg-muted/30 p-3 space-y-1.5">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">{t("payments.totalStayCost", { defaultValue: "Total Stay Cost" })}</span>
-            <span className="font-semibold">{formatPrice(totalPrice, policies)}</span>
+            <span className="flex items-center gap-1.5 font-semibold">
+              {booking && <PriceStoryBadge booking={booking} policies={policies} flag={priceFlags?.[booking.id]} />}
+              {formatPrice(totalPrice, policies)}
+            </span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">{t("payments.totalPaid", { defaultValue: "Total Paid" })}</span>
