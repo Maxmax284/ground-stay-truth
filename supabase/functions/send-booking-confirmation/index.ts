@@ -145,44 +145,35 @@ Deno.serve(async (req) => {
     const portalUrl = `${siteUrl}/guest${confirmationNumber ? `?ref=${encodeURIComponent(confirmationNumber)}` : ""}`;
     const sendTo = overrideTo || guestEmail;
 
-    // Send via send-transactional-email.
-    // NOTE: the internal email engine does not support file attachments — the
-    // guest gets a prominent signed PDF *link* in the email instead.
-    const emailResp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${serviceRoleKey}`,
-        "Content-Type": "application/json",
+    // NOTE: email does not support file attachments — the guest gets a
+    // prominent signed PDF *link* in the email instead.
+    const emailResult = await sendAppEmail({
+      templateName: "booking_confirmed",
+      recipientEmail: sendTo,
+      bookingId: booking_id,
+      language: guestLang,
+      source: isResend ? "staff_resend" : "auto_confirm",
+      // Resends must not collide with the original send's idempotency key.
+      idempotencyKey: isResend
+        ? `booking_confirmed-${booking_id}-resend-${Date.now()}`
+        : undefined,
+      templateData: {
+        guest_name: guestName,
+        unit_name: unitName,
+        check_in: booking.check_in,
+        check_out: booking.check_out,
+        checkin_time: checkinTime,
+        checkout_time: checkoutTime,
+        num_guests: booking.num_guests,
+        total_formatted: totalFormatted,
+        confirmation_number: confirmationNumber,
+        confirmation_pdf_url: confirmationPdfUrl,
+        contact_email: contactEmail,
+        portal_url: portalUrl,
+        qr_target: portalUrl,
       },
-      body: JSON.stringify({
-        template_key: "booking_confirmed",
-        recipient_email: sendTo,
-        booking_id: booking_id,
-        language: guestLang,
-        source: isResend ? "staff_resend" : "auto_confirm",
-        // Resends must not collide with the original send's idempotency key.
-        idempotency_key: isResend
-          ? `booking_confirmed-${booking_id}-resend-${Date.now()}`
-          : undefined,
-        data: {
-          guest_name: guestName,
-          unit_name: unitName,
-          check_in: booking.check_in,
-          check_out: booking.check_out,
-          checkin_time: checkinTime,
-          checkout_time: checkoutTime,
-          num_guests: booking.num_guests,
-          total_formatted: totalFormatted,
-          confirmation_number: confirmationNumber,
-          confirmation_pdf_url: confirmationPdfUrl,
-          contact_email: contactEmail,
-          portal_url: portalUrl,
-          qr_target: portalUrl,
-        },
-      }),
     });
 
-    const emailResult = await emailResp.json();
 
     // In-app notification only on the original confirmation — a staff resend
     // shouldn't re-ring the guest's bell or duplicate the record.
