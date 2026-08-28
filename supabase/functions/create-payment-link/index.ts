@@ -336,32 +336,24 @@ serve(async (req) => {
       try {
         const amountFormatted = `${currencyCode.toUpperCase()} ${amount.toLocaleString()}`;
         const expiresHuman = `in ${expiresInHours}h`;
-        const emailResp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${serviceRoleKey}`,
-            "Content-Type": "application/json",
-            apikey: serviceRoleKey,
+        const emailResult = await sendAppEmail({
+          templateName: "payment_link_sent",
+          recipientEmail: guest.email,
+          bookingId,
+          language: guest.preferred_language || "en",
+          idempotencyKey: `paylink-${link.id}`,
+          templateData: {
+            guest_name: guest.full_name || "",
+            unit_name: unitName,
+            payment_label: collectLabel,
+            amount_formatted: amountFormatted,
+            check_in: booking.check_in,
+            check_out: booking.check_out,
+            payment_url: url,
+            expires_at_human: expiresHuman,
           },
-          body: JSON.stringify({
-            template_key: "payment_link_sent",
-            recipient_email: guest.email,
-            booking_id: bookingId,
-            language: guest.preferred_language || "en",
-            idempotency_key: `paylink-${link.id}`,
-            data: {
-              guest_name: guest.full_name || "",
-              unit_name: unitName,
-              payment_label: collectLabel,
-              amount_formatted: amountFormatted,
-              check_in: booking.check_in,
-              check_out: booking.check_out,
-              payment_url: url,
-              expires_at_human: expiresHuman,
-            },
-          }),
         });
-        emailSent = emailResp.ok;
+        emailSent = emailResult.sent;
       } catch (e) {
         console.error("[create-payment-link] email send failed:", e);
       }
