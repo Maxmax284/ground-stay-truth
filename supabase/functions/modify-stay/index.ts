@@ -384,6 +384,30 @@ serve(async (req) => {
       },
     }).catch?.((e: unknown) => console.error("[modify-stay] override log failed:", e));
 
+    // Price drift: the stored booking total didn't match a fresh re-quote of the
+    // same nights (old rates, a manual edit, a discount). The guest is never
+    // billed that gap — but admins and managers get told it exists.
+    const onRecordTotal = Number(body.on_record_total ?? 0);
+    const drift = Math.round((onRecordTotal - pricingBefore) * 100) / 100;
+    if (onRecordTotal > 0 && Math.abs(drift) >= 0.01) {
+      await admin.rpc("emit_admin_alert", {
+        _event_type: "booking_changed",
+        _message: `Stay changed with a price mismatch: booking total was ${onRecordTotal.toFixed(2)} but today's price for the same nights is ${pricingBefore.toFixed(2)} (${drift > 0 ? "+" : ""}${drift.toFixed(2)}). Guest charged ${finalAmount.toFixed(2)} for the change only.`,
+        _reference_id: bookingId,
+        _deep_link: `/bookings?booking=${bookingId}`,
+        _context: {
+          modification_id: modification.id,
+          kind,
+          on_record_total: onRecordTotal,
+          requoted_before: pricingBefore,
+          drift,
+          pricing_after: pricingAfter,
+          final_amount: finalAmount,
+          actor: user.email ?? user.id,
+        },
+      }).catch?.((e: unknown) => console.error("[modify-stay] drift alert failed:", e));
+    }
+
     // Payment request for the difference only.
     let paymentLink: Record<string, unknown> | null = null;
     let paymentLinkError: string | null = null;
