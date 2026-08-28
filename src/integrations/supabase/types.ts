@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -4685,12 +4685,7 @@ export type Database = {
         Args: { _kind?: string; _label: string; _notes?: string }
         Returns: string
       }
-      delete_email: {
-        Args: { message_id: number; queue_name: string }
-        Returns: boolean
-      }
       device_self_approval_allowed: { Args: never; Returns: boolean }
-      email_queue_dispatch: { Args: never; Returns: undefined }
       emit_admin_alert: {
         Args: {
           _context?: Json
@@ -4700,10 +4695,6 @@ export type Database = {
           _reference_id?: string
         }
         Returns: undefined
-      }
-      enqueue_email: {
-        Args: { payload: Json; queue_name: string }
-        Returns: number
       }
       get_booking_operational_timeline: {
         Args: { _booking_id: string }
@@ -4896,15 +4887,6 @@ export type Database = {
         Returns: number
       }
       mfa_backup_codes_remaining: { Args: never; Returns: number }
-      move_to_dlq: {
-        Args: {
-          dlq_name: string
-          message_id: number
-          payload: Json
-          source_queue: string
-        }
-        Returns: number
-      }
       my_active_elevation: {
         Args: never
         Returns: {
@@ -4914,14 +4896,6 @@ export type Database = {
           minutes: number
           reason: string
           self_issued: boolean
-        }[]
-      }
-      read_email_batch: {
-        Args: { batch_size: number; queue_name: string; vt: number }
-        Returns: {
-          message: Json
-          msg_id: number
-          read_ct: number
         }[]
       }
       record_offline_payment: {
