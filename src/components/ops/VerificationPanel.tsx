@@ -69,21 +69,13 @@ export function VerificationPanel() {
     {
       key: "email_self",
       title: "Email self-test (to me)",
-      desc: `Sends one transactional email only to ${user?.email ?? "your admin address"}.`,
+      desc: `Sends one app email only to ${user?.email ?? "your admin address"}.`,
       run: async () => {
         if (!user?.email) return { ok: false, detail: "No admin email on session." };
-        const { data, error } = await supabase.functions.invoke("send-transactional-email", {
-          body: {
-            template: "ops_self_test",
-            to: user.email,
-            subject: "Ops Control Tower — self test",
-            html: `<p>This is an Ops Control Tower verification email. If you can read it, transactional email is alive.</p>`,
-            text: "Ops Control Tower verification email. If you can read this, transactional email is alive.",
-            message_id: `ops-self-test-${Date.now()}`,
-          },
-        });
+        const { data, error } = await supabase.functions.invoke("ops-email-selftest");
         if (error) return { ok: false, detail: error.message };
-        return { ok: true, detail: `Sent to ${user.email}. Check inbox + email_send_log.` };
+        if (data && data.ok === false) return { ok: false, detail: data.error ?? "Send failed." };
+        return { ok: true, detail: `Sent to ${user.email}. Check inbox + email log.` };
       },
     },
     {

@@ -7,6 +7,7 @@
 // -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendAppEmail } from "../_shared/appEmail.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://lmtcampstay.com",
@@ -83,37 +84,27 @@ serve(async (req) => {
 
     const stamp = new Date().toISOString();
 
-    // Routed through the platform email engine (queued + retried + logged).
-    const resp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${serviceRoleKey}`,
-        "Content-Type": "application/json",
+    // Routed through the platform email service (retries + logging handled there).
+    const result = await sendAppEmail({
+      templateName: "admin_alert_generic",
+      recipientEmail: contactEmail,
+      idempotencyKey: `contact-test-${stamp}`,
+      source: "contact-email-test",
+      templateData: {
+        title: "Deliverability test",
+        message: `One-off test from ${bizName} to confirm ${contactEmail} actually receives mail.`,
+        severity: "info",
+        context: { to: contactEmail, sent_at: stamp },
       },
-      body: JSON.stringify({
-        template_key: "admin_alert_generic",
-        recipient_email: contactEmail,
-        idempotency_key: `contact-test-${stamp}`,
-        data: {
-          title: "Deliverability test",
-          message: `One-off test from ${bizName} to confirm ${contactEmail} actually receives mail.`,
-          severity: "info",
-          context: { to: contactEmail, sent_at: stamp },
-        },
-      }),
     });
 
-    const providerBody = await resp.text();
-    let parsed: any = null;
-    try { parsed = JSON.parse(providerBody); } catch { /* keep raw */ }
-
-    if (!resp.ok || parsed?.success === false) {
-      console.error("[test-contact-email] send failed", resp.status, providerBody);
+    if (!result.sent) {
+      const detail = "error" in result ? result.error : result.reason;
+      console.error("[test-contact-email] send failed", detail);
       return j(req, {
         sent: false,
-        status: resp.status,
         to: contactEmail,
-        error: parsed?.error || parsed?.reason || providerBody.slice(0, 400),
+        error: String(detail).slice(0, 400),
       }, 502);
     }
 
@@ -121,8 +112,8 @@ serve(async (req) => {
       sent: true,
       from: fromEmail,
       to: contactEmail,
-      message_id: parsed?.messageId ?? parsed?.message_id ?? null,
-      note: "Queued by the platform email service. Delivery normally happens within seconds — check the destination inbox (and spam) to confirm it arrived.",
+      message_id: result.messageId,
+      note: "Handed to the platform email service. Delivery normally happens within seconds — check the destination inbox (and spam) to confirm it arrived.",
     });
 
   } catch (e) {

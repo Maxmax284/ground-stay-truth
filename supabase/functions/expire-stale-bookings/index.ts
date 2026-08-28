@@ -9,6 +9,7 @@
 // opened, message from guest, etc. — leave it alone.
 // -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendAppEmail } from "../_shared/appEmail.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
@@ -143,25 +144,18 @@ Deno.serve(async (req) => {
       const depositFormatted = `${currencySymbol}${depositAmount.toLocaleString()}`;
 
       try {
-        await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${serviceRoleKey}`,
-            "Content-Type": "application/json",
+        await sendAppEmail({
+          templateName: "deposit_reminder",
+          recipientEmail: guestEmail,
+          bookingId: booking.id,
+          language: guestLang,
+          templateData: {
+            guest_name: guestName,
+            unit_name: unitName,
+            check_in: booking.check_in,
+            check_out: booking.check_out,
+            deposit_amount: depositFormatted,
           },
-          body: JSON.stringify({
-            template_key: "deposit_reminder",
-            recipient_email: guestEmail,
-            booking_id: booking.id,
-            language: guestLang,
-            data: {
-              guest_name: guestName,
-              unit_name: unitName,
-              check_in: booking.check_in,
-              check_out: booking.check_out,
-              deposit_amount: depositFormatted,
-            },
-          }),
         });
         reminders++;
       } catch (e) {

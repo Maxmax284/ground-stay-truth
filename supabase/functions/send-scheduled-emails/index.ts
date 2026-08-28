@@ -5,6 +5,7 @@
 // (booking_id, template) via `email_log`. Skips if guest opted out.
 // -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendAppEmail } from "../_shared/appEmail.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
@@ -66,13 +67,14 @@ Deno.serve(async (req) => {
     // Helper to send email
     async function sendEmail(templateKey: string, recipientEmail: string, bookingId: string, language: string, data: Record<string, any>) {
       try {
-        const resp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${serviceRoleKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ template_key: templateKey, recipient_email: recipientEmail, booking_id: bookingId, language, data }),
+        const result = await sendAppEmail({
+          templateName: templateKey,
+          recipientEmail,
+          bookingId,
+          language,
+          templateData: data,
         });
-        const result = await resp.json();
-        return result.sent || result.skipped;
+        return result.sent || ("skipped" in result && result.skipped === true);
       } catch (e) {
         console.error(`Email ${templateKey} failed:`, e);
         return false;

@@ -252,87 +252,14 @@ export function useTransitionBookingState() {
       }
 
       // ── Email notification triggers on state changes ──
-      if (data.guest_id) {
-        const { data: guestProfile } = await supabase
-          .from("profiles")
-          .select("email, full_name, preferred_language")
-          .eq("user_id", data.guest_id)
-          .single();
-
-        if (guestProfile?.email) {
-          const lang = guestProfile.preferred_language || "en";
-          const guestName = guestProfile.full_name || "Guest";
-
-          const { data: emailPolicies } = await supabase
-            .from("policy_settings")
-            .select("key, value")
-            .in("key", [
-              "earliest_checkin_time", "checkout_time", "currency_symbol",
-              "wifi_network_name", "wifi_password",
-              "house_rules_summary", "emergency_contact_name", "emergency_contact_phone",
-            ]);
-          const pMap = new Map((emailPolicies ?? []).map((p: any) => [p.key, String(p.value).replace(/^"|"$/g, "")]));
-          const currSym = pMap.get("currency_symbol") || "฿";
-
-          let emailTemplate: string | null = null;
-          let emailData: Record<string, any> = {};
-
-          // 1. Deposit confirmed / booking confirmed
-          if (toState === "confirmed") {
-            emailTemplate = "booking_confirmed";
-            emailData = {
-              guest_name: guestName,
-              unit_name: unitName || "Your Unit",
-              check_in: data.check_in,
-              check_out: data.check_out,
-              checkin_time: pMap.get("earliest_checkin_time") || "16:00",
-              checkout_time: pMap.get("checkout_time") || "11:00",
-              num_guests: data.num_guests,
-              total_formatted: `${currSym}${(data.total_price ?? 0).toLocaleString()}`,
-            };
-          }
-
-          // 2. Check-in welcome email (distinct from pre-arrival)
-          if (toState === "checked_in") {
-            emailTemplate = "welcome_checkin";
-            emailData = {
-              guest_name: guestName,
-              unit_name: unitName || "Your Unit",
-              check_in: data.check_in,
-              check_out: data.check_out,
-              checkin_time: pMap.get("earliest_checkin_time") || "16:00",
-              checkout_time: pMap.get("checkout_time") || "11:00",
-              wifi_network: pMap.get("wifi_network_name") || "",
-              wifi_password: pMap.get("wifi_password") || "",
-              house_rules: pMap.get("house_rules_summary") || "",
-              emergency_name: pMap.get("emergency_contact_name") || "Front Desk",
-              emergency_phone: pMap.get("emergency_contact_phone") || "",
-            };
-          }
-
-          // 3. Post-stay review request
-          if (toState === "completed") {
-            emailTemplate = "checkout_followup";
-            emailData = {
-              guest_name: guestName,
-              unit_name: unitName || "Your Unit",
-              check_in: data.check_in,
-              check_out: data.check_out,
-            };
-          }
-
-          if (emailTemplate) {
-            supabase.functions.invoke("send-transactional-email", {
-              body: {
-                template_key: emailTemplate,
-                recipient_email: guestProfile.email,
-                booking_id: bookingId,
-                language: lang,
-                data: emailData,
-              },
-            }).catch(console.error);
-          }
-        }
+      // Recipient, language and template data are resolved server-side so the
+      // browser can never pick an arbitrary recipient or template.
+      if (data.guest_id && ["confirmed", "checked_in", "completed"].includes(toState)) {
+        supabase.functions
+          .invoke("send-booking-state-email", {
+            body: { booking_id: bookingId, state: toState },
+          })
+          .catch(console.error);
       }
 
       return data;

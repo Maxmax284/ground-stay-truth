@@ -27,6 +27,7 @@ import {
   passesCriticalOnly,
   type AdminAlertEvent,
 } from "../_shared/adminAlertCatalog.ts";
+import { sendAppEmail } from "../_shared/appEmail.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -223,38 +224,40 @@ Deno.serve(async (req) => {
       let ok = false;
       let failure: string | null = null;
       try {
-        const resp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceRoleKey}` },
-          body: JSON.stringify({
-            template_key: "admin_alert_generic",
-            recipient_email: profile.email,
-            language: "en",
-            source: "admin-alert",
-            data: {
-              subject_line: subject,
-              severity: event.severity,
-              severity_label: event.severity,
-              category_label: event.label,
-              recipient_name: profile.full_name || "Team",
-              what_happened: body.message,
-              when_label: `${nowLabel} (Bangkok time)`,
-              where_label: event.where,
-              why_it_matters: event.description,
-              next_action: event.nextAction,
-              context: Object.fromEntries(
-                Object.entries(ctx)
-                  .filter(([k]) => !/token|secret|url|key|password/i.test(k))
-                  .slice(0, 10)
-                  .map(([k, v]) => [prettyKey(k), v]),
-              ),
-              action_url: deepLinkAbsolute,
-              action_label: "Open in CampStay",
-            },
-          }),
+        const result = await sendAppEmail({
+          templateName: "admin_alert_generic",
+          recipientEmail: profile.email,
+          language: "en",
+          source: "admin-alert",
+          bookingId,
+          templateData: {
+            subject_line: subject,
+            severity: event.severity,
+            severity_label: event.severity,
+            category_label: event.label,
+            recipient_name: profile.full_name || "Team",
+            what_happened: body.message,
+            when_label: `${nowLabel} (Bangkok time)`,
+            where_label: event.where,
+            why_it_matters: event.description,
+            next_action: event.nextAction,
+            context: Object.fromEntries(
+              Object.entries(ctx)
+                .filter(([k]) => !/token|secret|url|key|password/i.test(k))
+                .slice(0, 10)
+                .map(([k, v]) => [prettyKey(k), v]),
+            ),
+            action_url: deepLinkAbsolute,
+            action_label: "Open in CampStay",
+          },
         });
-        ok = resp.ok;
-        if (!ok) failure = `${resp.status}: ${(await resp.text()).slice(0, 300)}`;
+        ok = result.sent;
+        if (!ok) {
+          failure =
+            "error" in result
+              ? String(result.error).slice(0, 300)
+              : `not sent: ${result.reason}`;
+        }
       } catch (e) {
         failure = e instanceof Error ? e.message : "dispatch error";
       }
