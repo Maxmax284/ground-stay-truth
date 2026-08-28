@@ -16,6 +16,8 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { formatPrice } from "@/lib/currency";
+import { PriceStoryBadge } from "@/components/PriceStoryBadge";
+import { useBookingDiscountFlags } from "@/hooks/usePriceStory";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { useAuth } from "@/hooks/useAuth";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
@@ -38,6 +40,7 @@ export function GuestProfileSheet({ guest, open, onOpenChange, onOpenBooking, on
   const { data: policies } = usePolicySettings();
   const { data: stays, isLoading } = useGuestBookings(guest?.guest_key ?? null);
   const { data: notes } = useGuestNotes(guest?.guest_key ?? null);
+  const { data: discountFlags } = useBookingDiscountFlags((stays ?? []).map((s: any) => s.booking_id));
   const addNote = useAddGuestNote();
   const [note, setNote] = useState("");
 
@@ -131,7 +134,14 @@ export function GuestProfileSheet({ guest, open, onOpenChange, onOpenBooking, on
                       <Badge className={STATE_VARIANTS[s.state as BookingState]}>{t(`states.${s.state}`)}</Badge>
                     </div>
                     <div className="mt-2 flex gap-3 text-xs text-muted-foreground">
-                      <span>{t("guests.total")}: {formatPrice(s.total_price, policies, { decimals: 0 })}</span>
+                      <span className="flex items-center gap-1.5">
+                        {t("guests.total")}: {formatPrice(s.total_price, policies, { decimals: 0 })}
+                        <PriceStoryBadge
+                          booking={{ id: s.booking_id, check_in: s.check_in, check_out: s.check_out, total_price: s.total_price, num_guests: (s as any).num_guests ?? null, unit_id: (s as any).unit_id ?? null }}
+                          policies={policies}
+                          flag={discountFlags?.[s.booking_id]}
+                        />
+                      </span>
                       <span>{t("guests.paid")}: {formatPrice(s.paid, policies, { decimals: 0 })}</span>
                       {s.owed > 0 && <span className="text-destructive">{t("guests.owed")}: {formatPrice(s.owed, policies, { decimals: 0 })}</span>}
                     </div>
