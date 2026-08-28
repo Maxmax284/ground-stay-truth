@@ -96,6 +96,8 @@ export interface ModifyStayRequest {
   requestPayment?: boolean;
   force?: boolean;
   quote?: unknown;
+  /** Stored booking total at the time of the change, for drift reporting. */
+  onRecordTotal?: number;
 }
 
 export interface ModifyStayResponse {
@@ -144,6 +146,7 @@ export function useModifyStay() {
           request_payment: req.requestPayment,
           force: req.force,
           quote: req.quote,
+          on_record_total: req.onRecordTotal,
         }),
       });
       const json = (await resp.json().catch(() => ({}))) as ModifyStayResponse;

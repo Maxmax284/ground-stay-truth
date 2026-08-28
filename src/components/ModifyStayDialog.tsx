@@ -234,6 +234,7 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
       notes: notes.trim() || undefined,
       pricingBefore,
       pricingAfter: afterQuote.total,
+      onRecordTotal: onRecordTotal || undefined,
       waivedAmount: waived,
       requestPayment: requestPayment && finalAmount > 0,
       force,
@@ -431,7 +432,21 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
             {/* ── Money ── */}
             <div className="rounded-md border border-border p-3 space-y-2 text-sm">
               <p className="text-xs font-medium text-muted-foreground">Financial impact</p>
-              <Row label="Current stay price" value={formatPrice(pricingBefore, policies)} />
+              <Row label={`Current stay (${beforeQuote.nights} night${beforeQuote.nights === 1 ? "" : "s"}, re-priced)`} value={formatPrice(pricingBefore, policies)} />
+              {hasDrift && (
+                <>
+                  <Row label="Total on record" value={formatPrice(onRecordTotal, policies)} />
+                  <p className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400">
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span>
+                      The total on this booking is {formatPrice(Math.abs(recordDrift), policies)}{" "}
+                      {recordDrift > 0 ? "higher" : "lower"} than today's price for the same nights
+                      (old rates, a discount, or a manual edit). The guest is charged only for what
+                      actually changes — this gap is not billed. Admins and managers are notified.
+                    </span>
+                  </p>
+                </>
+              )}
               <Row label={`New stay price (${afterQuote.nights} night${afterQuote.nights === 1 ? "" : "s"})`} value={formatPrice(afterQuote.total, policies)} />
               <Row
                 label={delta.direction === "credit" ? "Credit due to guest" : "Difference"}
