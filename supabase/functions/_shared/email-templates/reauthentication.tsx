@@ -22,8 +22,6 @@ export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => 
     <Preview>Your verification code</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Text style={masthead}>LMT CampStay</Text>
-        <div style={rule} />
         <Heading style={h1}>Confirm reauthentication</Heading>
         <Text style={text}>Use the code below to confirm your identity:</Text>
         <Text style={codeStyle}>{token}</Text>
@@ -39,29 +37,11 @@ export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => 
 export default ReauthenticationEmail
 
 const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = {
-  padding: '24px',
-  maxWidth: '560px',
-  border: '1px solid #eeeeee',
-  borderRadius: '12px',
-}
-const masthead = {
-  fontSize: '13px',
-  fontWeight: 'bold' as const,
-  letterSpacing: '1.5px',
-  color: '#D11919',
-  textTransform: 'uppercase' as const,
-  margin: '0 0 4px',
-}
-const rule = {
-  borderTop: '3px solid #D11919',
-  margin: '0 0 20px',
-  width: '48px',
-}
+const container = { padding: '20px 25px' }
 const h1 = {
   fontSize: '22px',
   fontWeight: 'bold' as const,
-  color: '#111111',
+  color: '#000000',
   margin: '0 0 20px',
 }
 const text = {
