@@ -15,7 +15,7 @@ const corsHeaders = {
 }
 
 // Configuration
-const SITE_NAME = "CampStay LMT"
+const SITE_NAME = "LMT CampStay"
 const SENDER_DOMAIN = "notify.lmtcampstay.com"
 const ROOT_DOMAIN = "lmtcampstay.com"
 const FROM_DOMAIN = "lmtcampstay.com"
