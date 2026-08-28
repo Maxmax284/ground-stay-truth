@@ -125,7 +125,10 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
           <div className="flex items-center gap-2">
             <span className="text-xs uppercase tracking-wide text-muted-foreground">Money</span>
             <Badge className={`text-xs border-0 ${overall.cls}`}>{overall.text}</Badge>
-          </div>
+            {booking && (
+              <PriceStoryBadge booking={booking} policies={policies} flag={discountFlags?.[booking.id]} />
+            )}
+
           <TrustPill trust={fin.trustStatus} />
         </div>
 
