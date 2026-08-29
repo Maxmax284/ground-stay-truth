@@ -11,6 +11,9 @@ import type { UnitGroup } from "@/hooks/useUnitGroups";
 import { useCalendarDragDrop, type DragResult, type DragMode } from "@/hooks/useCalendarDragDrop";
 import { toast } from "@/hooks/use-toast";
 import { resolveGuestDisplayName, hasManualGuestIdentity } from "@/lib/guestDisplay";
+import { PriceStoryBadge } from "@/components/PriceStoryBadge";
+import type { DiscountFlag } from "@/hooks/usePriceStory";
+import type { PolicySetting } from "@/hooks/usePolicySettings";
 
 export const CALENDAR_STATE_COLORS: Record<BookingState, string> = {
   inquiry: "bg-muted", soft_hold: "bg-warning/60", pending_approval: "bg-warning/80",
@@ -35,6 +38,10 @@ interface CalendarGridProps {
   onBookingDragEnd?: (result: DragResult) => void;
   onApplyDiscount?: (booking: BookingWithJoins) => void;
   onMaintenanceClick?: (block: MaintenanceBlock) => void;
+  /** Batch discount flags so every bar shows the Price Story emblem for one query. */
+  priceFlags?: Record<string, DiscountFlag>;
+  /** Policy rows for the badge's long-stay hint — pass the ones the page already loaded. */
+  policies?: PolicySetting[] | any[] | null;
 }
 
 function getPaymentStatus(booking: BookingWithJoins, totalPaid: number): "unpaid" | "deposit" | "fully_paid" {
@@ -63,6 +70,7 @@ export function CalendarGrid({
   units, bookings, maintenanceBlocks = [], startDate, days, cleaningBufferHours,
   onCellClick, onBookingClick, unitGroups = [], paymentSummaries = [],
   canDragDrop = false, onBookingDragEnd, onApplyDiscount, onMaintenanceClick,
+  priceFlags, policies,
 }: CalendarGridProps) {
   const { t } = useTranslation();
   const dates = useMemo(() => Array.from({ length: days }, (_, i) => addDays(startDate, i)), [startDate, days]);
@@ -233,8 +241,21 @@ export function CalendarGrid({
               {barWidth > 2
                 ? (booking.profiles?.full_name || hasManualGuestIdentity(booking as any)
                     ? resolveGuestDisplayName(booking as any).split(" ")[0]
-                    : `${format(checkIn, "d")}–${format(checkOut, "d")}`)
+                  : `${format(checkIn, "d")}–${format(checkOut, "d")}`)
                 : ""}
+            </span>
+            {/* Price Story emblem — pointerdown is swallowed so tapping the dot
+                never starts a drag/resize; the receipt popover opens on click. */}
+            <span
+              className="shrink-0 inline-flex"
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <PriceStoryBadge
+                booking={booking as any}
+                policies={policies}
+                flag={priceFlags?.[booking.id]}
+                variant="dot"
+              />
             </span>
             {/* Quick discount overlay — only for unpaid non-terminal bookings when handler is wired */}
             {onApplyDiscount && paymentStatus === "unpaid"

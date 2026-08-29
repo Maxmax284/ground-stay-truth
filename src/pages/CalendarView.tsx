@@ -36,6 +36,7 @@ import { ToastAction } from "@/components/ui/toast";
 import type { DragResult } from "@/hooks/useCalendarDragDrop";
 import { canMoveBookingRoom } from "@/lib/roomMove";
 import { MoveRoomDialog } from "@/components/MoveRoomDialog";
+import { useBookingDiscountFlags } from "@/hooks/usePriceStory";
 
 type ViewMode = "timeline" | "month" | "day";
 
@@ -192,6 +193,7 @@ const CalendarView = () => {
     [allBookings]
   );
   const bookingIds = useMemo(() => bookings.map((b) => b.id), [bookings]);
+  const { data: priceFlags } = useBookingDiscountFlags(bookingIds);
   const { data: paymentSummaries } = useCalendarPayments(bookingIds);
 
   // Confirmation dialog for checked-in bookings
@@ -469,6 +471,8 @@ const CalendarView = () => {
               canDragDrop={canDragDrop}
               onBookingDragEnd={handleBookingDragEnd}
               onApplyDiscount={canApplyDiscount ? (b) => setDiscountBooking(b) : undefined}
+              priceFlags={priceFlags}
+              policies={policies}
             />
           )
         )}
