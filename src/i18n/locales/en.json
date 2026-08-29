@@ -332,6 +332,9 @@
     "loyalty_3rd_stay_discount_percentage": "3rd+ Stay Discount (%)",
     "loyalty_discount_stacks_with_long_stay": "Loyalty Stacks with Long-Stay"
   },
+  "priceStory": {
+    "badgeLabel": "This booking has a price adjustment — see why"
+  },
   "reports": {
     "title": "Reports",
     "subtitle": "Occupancy, revenue, and booking insights",

@@ -332,6 +332,9 @@
     "loyalty_3rd_stay_discount_percentage": "ส่วนลดครั้งที่ 3 ขึ้นไป (%)",
     "loyalty_discount_stacks_with_long_stay": "รวมส่วนลดลูกค้าเก่ากับส่วนลดพักยาวได้"
   },
+  "priceStory": {
+    "badgeLabel": "การจองนี้มีการปรับราคา — ดูเหตุผล"
+  },
   "reports": {
     "title": "รายงาน",
     "subtitle": "อัตราการเข้าพัก รายได้ และข้อมูลเชิงลึก",

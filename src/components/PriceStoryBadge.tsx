@@ -14,17 +14,19 @@
  * Cheap by default: the full re-quote only runs once the badge is opened.
  */
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Percent, Scissors, Info } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
 import { usePriceStory, useBookingDiscountFlags, type PriceStoryBooking } from "@/hooks/usePriceStory";
 import { detectPolicyDiscountHint, nightsBetweenDates } from "@/lib/priceStory";
 import type { PolicySetting } from "@/hooks/usePolicySettings";
+import { cn } from "@/lib/utils";
 
 interface Props {
   booking: PriceStoryBooking;
   /** Preloaded policy rows — avoids a refetch on list surfaces. */
-  policies?: PolicySetting[] | any[] | null;
+  policies?: PolicySetting[] | null;
   /** Batch flag from `useBookingDiscountFlags` so list rows cost one query. */
   flag?: { count: number; net: number; hasDiscount: boolean; hasSurcharge: boolean };
   /** `pill` shows the amount, `dot` is icon-only for tight rows / calendar bars. */
@@ -33,6 +35,7 @@ interface Props {
 }
 
 export function PriceStoryBadge({ booking, policies, flag, variant = "pill", className }: Props) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const { story } = usePriceStory(booking, open);
 
@@ -76,6 +79,9 @@ export function PriceStoryBadge({ booking, policies, flag, variant = "pill", cla
         <span
           role="button"
           tabIndex={0}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-label={t("priceStory.badgeLabel", "This booking has a price adjustment — see why")}
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
@@ -91,8 +97,11 @@ export function PriceStoryBadge({ booking, policies, flag, variant = "pill", cla
           onMouseEnter={() => {
             if (window.matchMedia?.("(hover: hover)").matches) setOpen(true);
           }}
-          aria-label="This booking has a price adjustment — see why"
-          className={`inline-flex cursor-pointer items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none transition-colors hover:brightness-110 ${tone} ${className ?? ""}`}
+          className={cn(
+            "inline-flex cursor-pointer items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+            tone,
+            className
+          )}
         >
           <Icon className="h-2.5 w-2.5 shrink-0" />
           {label}
@@ -118,7 +127,7 @@ function PriceStoryReceipt({
   isHuman,
 }: {
   story: ReturnType<typeof usePriceStory>["story"];
-  policies?: PolicySetting[] | any[] | null;
+  policies?: PolicySetting[] | null;
   loading: boolean;
   isHuman: boolean;
 }) {
