@@ -14,12 +14,14 @@
  * Cheap by default: the full re-quote only runs once the badge is opened.
  */
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Percent, Scissors, Info } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
 import { usePriceStory, useBookingDiscountFlags, type PriceStoryBooking } from "@/hooks/usePriceStory";
 import { detectPolicyDiscountHint, nightsBetweenDates } from "@/lib/priceStory";
 import type { PolicySetting } from "@/hooks/usePolicySettings";
+import { cn } from "@/lib/utils";
 
 interface Props {
   booking: PriceStoryBooking;
