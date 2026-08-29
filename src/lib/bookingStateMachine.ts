@@ -9,7 +9,10 @@ export type BookingState = Database["public"]["Enums"]["booking_state"];
 export const STATE_TRANSITIONS: Record<BookingState, BookingState[]> = {
   // Streamlined flow: inquiry → pending_deposit → confirmed
   // soft_hold and pending_approval remain valid states (legacy + admin override only)
-  inquiry: ["pending_deposit", "cancelled"],
+  // Walk-ins who already paid at the desk can go inquiry → confirmed directly;
+  // the pending_deposit step exists for money that hasn't landed yet.
+  inquiry: ["pending_deposit", "confirmed", "cancelled"],
+
   soft_hold: ["pending_deposit", "cancelled"],
   pending_approval: ["pending_deposit", "cancelled"],
   pending_deposit: ["confirmed", "cancelled"],
