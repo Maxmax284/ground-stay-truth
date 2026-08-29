@@ -35,6 +35,7 @@ interface Props {
 }
 
 export function PriceStoryBadge({ booking, policies, flag, variant = "pill", className }: Props) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const { story } = usePriceStory(booking, open);
 
