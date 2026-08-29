@@ -1,0 +1,1 @@
+DO $$ BEGIN IF has_function_privilege('anon', 'public.trg_audit_staff_booking_created()', 'EXECUTE') OR has_function_privilege('authenticated', 'public.trg_audit_staff_booking_created()', 'EXECUTE') OR has_function_privilege('public', 'public.trg_audit_staff_booking_created()', 'EXECUTE') THEN RAISE EXCEPTION 'booking audit trigger is still directly executable'; END IF; END $$;
