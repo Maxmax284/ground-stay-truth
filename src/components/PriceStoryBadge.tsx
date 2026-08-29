@@ -79,6 +79,9 @@ export function PriceStoryBadge({ booking, policies, flag, variant = "pill", cla
         <span
           role="button"
           tabIndex={0}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-label={t("priceStory.badgeLabel", "This booking has a price adjustment — see why")}
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
@@ -94,8 +97,11 @@ export function PriceStoryBadge({ booking, policies, flag, variant = "pill", cla
           onMouseEnter={() => {
             if (window.matchMedia?.("(hover: hover)").matches) setOpen(true);
           }}
-          aria-label="This booking has a price adjustment — see why"
-          className={`inline-flex cursor-pointer items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none transition-colors hover:brightness-110 ${tone} ${className ?? ""}`}
+          className={cn(
+            "inline-flex cursor-pointer items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+            tone,
+            className
+          )}
         >
           <Icon className="h-2.5 w-2.5 shrink-0" />
           {label}
