@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 interface Props {
   booking: PriceStoryBooking;
   /** Preloaded policy rows — avoids a refetch on list surfaces. */
-  policies?: PolicySetting[] | any[] | null;
+  policies?: PolicySetting[] | null;
   /** Batch flag from `useBookingDiscountFlags` so list rows cost one query. */
   flag?: { count: number; net: number; hasDiscount: boolean; hasSurcharge: boolean };
   /** `pill` shows the amount, `dot` is icon-only for tight rows / calendar bars. */
