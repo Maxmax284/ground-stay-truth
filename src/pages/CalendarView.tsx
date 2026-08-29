@@ -36,6 +36,7 @@ import { ToastAction } from "@/components/ui/toast";
 import type { DragResult } from "@/hooks/useCalendarDragDrop";
 import { canMoveBookingRoom } from "@/lib/roomMove";
 import { MoveRoomDialog } from "@/components/MoveRoomDialog";
+import { useBookingDiscountFlags } from "@/hooks/usePriceStory";
 
 type ViewMode = "timeline" | "month" | "day";
 
