@@ -11,6 +11,8 @@ import type { UnitGroup } from "@/hooks/useUnitGroups";
 import { useCalendarDragDrop, type DragResult, type DragMode } from "@/hooks/useCalendarDragDrop";
 import { toast } from "@/hooks/use-toast";
 import { resolveGuestDisplayName, hasManualGuestIdentity } from "@/lib/guestDisplay";
+import { PriceStoryBadge, type useBookingDiscountFlags } from "@/components/PriceStoryBadge";
+import type { PolicySetting } from "@/hooks/usePolicySettings";
 
 export const CALENDAR_STATE_COLORS: Record<BookingState, string> = {
   inquiry: "bg-muted", soft_hold: "bg-warning/60", pending_approval: "bg-warning/80",
