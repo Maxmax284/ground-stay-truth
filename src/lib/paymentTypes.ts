@@ -268,7 +268,10 @@ export function calculateBookingFinancials(
   );
   const addonCovered = Math.round(Math.max(addonPaid + addonWaived, addonAbsorbed) * 100) / 100;
 
-  const outstanding = Math.max(0, grandTotal - bookingCollected);
+  // Sub-baht gaps are discount rounding dust, not a real balance.
+  const rawOutstanding = grandTotal - bookingCollected;
+  const outstanding = rawOutstanding < 1 ? 0 : Math.round(rawOutstanding * 100) / 100;
+
   const securityOutstanding = Math.max(0, secAmount - securityPaid);
   const feeOutstanding = Math.max(0, feeRequired - feePaid);
   const addonOutstanding = Math.max(0, Math.round((addonRequired - addonCovered) * 100) / 100);
