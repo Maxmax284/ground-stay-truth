@@ -48,7 +48,6 @@ const CalendarView = () => {
   const { isAdmin, role } = useAuth();
   const { data: units } = useUnits();
   const { data: policies } = usePolicySettings();
-  const { data: priceFlags } = useBookingDiscountFlags((bookings ?? []).map((b) => b.id));
   const { data: unitGroupsData } = useUnitGroups();
   const isMobile = useIsMobile();
   const allUnits = useMemo(() => units ?? [], [units]);
@@ -194,6 +193,7 @@ const CalendarView = () => {
     [allBookings]
   );
   const bookingIds = useMemo(() => bookings.map((b) => b.id), [bookings]);
+  const { data: priceFlags } = useBookingDiscountFlags(bookingIds);
   const { data: paymentSummaries } = useCalendarPayments(bookingIds);
 
   // Confirmation dialog for checked-in bookings
