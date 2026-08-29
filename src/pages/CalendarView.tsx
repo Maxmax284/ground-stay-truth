@@ -48,6 +48,7 @@ const CalendarView = () => {
   const { isAdmin, role } = useAuth();
   const { data: units } = useUnits();
   const { data: policies } = usePolicySettings();
+  const { data: priceFlags } = useBookingDiscountFlags((bookings ?? []).map((b) => b.id));
   const { data: unitGroupsData } = useUnitGroups();
   const isMobile = useIsMobile();
   const allUnits = useMemo(() => units ?? [], [units]);
@@ -470,6 +471,8 @@ const CalendarView = () => {
               canDragDrop={canDragDrop}
               onBookingDragEnd={handleBookingDragEnd}
               onApplyDiscount={canApplyDiscount ? (b) => setDiscountBooking(b) : undefined}
+              priceFlags={priceFlags}
+              policies={policies}
             />
           )
         )}
