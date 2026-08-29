@@ -70,6 +70,7 @@ export function CalendarGrid({
   units, bookings, maintenanceBlocks = [], startDate, days, cleaningBufferHours,
   onCellClick, onBookingClick, unitGroups = [], paymentSummaries = [],
   canDragDrop = false, onBookingDragEnd, onApplyDiscount, onMaintenanceClick,
+  priceFlags, policies,
 }: CalendarGridProps) {
   const { t } = useTranslation();
   const dates = useMemo(() => Array.from({ length: days }, (_, i) => addDays(startDate, i)), [startDate, days]);
