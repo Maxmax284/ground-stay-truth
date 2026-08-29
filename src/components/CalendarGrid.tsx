@@ -38,6 +38,10 @@ interface CalendarGridProps {
   onBookingDragEnd?: (result: DragResult) => void;
   onApplyDiscount?: (booking: BookingWithJoins) => void;
   onMaintenanceClick?: (block: MaintenanceBlock) => void;
+  /** Batch discount flags so every bar shows the Price Story emblem for one query. */
+  priceFlags?: Record<string, DiscountFlag>;
+  /** Policy rows for the badge's long-stay hint — pass the ones the page already loaded. */
+  policies?: PolicySetting[] | any[] | null;
 }
 
 function getPaymentStatus(booking: BookingWithJoins, totalPaid: number): "unpaid" | "deposit" | "fully_paid" {
