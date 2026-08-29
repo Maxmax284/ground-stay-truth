@@ -144,7 +144,11 @@ export function calculateOutstanding(
     .reduce((sum, p) => sum + Number(p.amount), 0);
 
   const grandTotal = Math.round(((totalPrice ?? 0) + addonTotal) * 100) / 100;
-  const outstanding = grandTotal - totalPaid + totalRefunded;
+  const rawOutstanding = grandTotal - totalPaid + totalRefunded;
+  // Cash is handled in whole baht, but percentage discounts produce satang.
+  // Anything under 1 baht either way is rounding dust, not a real balance —
+  // treat it as settled so the desk doesn't chase 34 satang.
+  const outstanding = Math.abs(rawOutstanding) < 1 ? 0 : rawOutstanding;
 
   return {
     totalPaid,
@@ -156,6 +160,7 @@ export function calculateOutstanding(
     credit: Math.max(0, Math.round(-outstanding * 100) / 100),
   };
 }
+
 
 
 
@@ -263,7 +268,10 @@ export function calculateBookingFinancials(
   );
   const addonCovered = Math.round(Math.max(addonPaid + addonWaived, addonAbsorbed) * 100) / 100;
 
-  const outstanding = Math.max(0, grandTotal - bookingCollected);
+  // Sub-baht gaps are discount rounding dust, not a real balance.
+  const rawOutstanding = grandTotal - bookingCollected;
+  const outstanding = rawOutstanding < 1 ? 0 : Math.round(rawOutstanding * 100) / 100;
+
   const securityOutstanding = Math.max(0, secAmount - securityPaid);
   const feeOutstanding = Math.max(0, feeRequired - feePaid);
   const addonOutstanding = Math.max(0, Math.round((addonRequired - addonCovered) * 100) / 100);
@@ -277,12 +285,13 @@ export function calculateBookingFinancials(
 
   const depositStatus: "paid" | "partial" | "pending" | "not_required" =
     depositRequired <= 0 ? "not_required"
-      : depositPaid >= depositRequired ? "paid"
+      : depositPaid >= depositRequired - 1 ? "paid"
       : depositPaid > 0 ? "partial" : "pending";
 
   const balanceStatus: "paid" | "partial" | "pending" =
-    balancePaid >= balanceRequired && balanceRequired > 0 ? "paid"
+    balancePaid >= balanceRequired - 1 && balanceRequired > 0 ? "paid"
       : balancePaid > 0 ? "partial" : "pending";
+
 
   const securityStatus: "paid" | "partial" | "pending" | "not_required" =
     !secRequired || secAmount <= 0 ? "not_required"
