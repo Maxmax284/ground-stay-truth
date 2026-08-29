@@ -285,12 +285,13 @@ export function calculateBookingFinancials(
 
   const depositStatus: "paid" | "partial" | "pending" | "not_required" =
     depositRequired <= 0 ? "not_required"
-      : depositPaid >= depositRequired ? "paid"
+      : depositPaid >= depositRequired - 1 ? "paid"
       : depositPaid > 0 ? "partial" : "pending";
 
   const balanceStatus: "paid" | "partial" | "pending" =
-    balancePaid >= balanceRequired && balanceRequired > 0 ? "paid"
+    balancePaid >= balanceRequired - 1 && balanceRequired > 0 ? "paid"
       : balancePaid > 0 ? "partial" : "pending";
+
 
   const securityStatus: "paid" | "partial" | "pending" | "not_required" =
     !secRequired || secAmount <= 0 ? "not_required"
