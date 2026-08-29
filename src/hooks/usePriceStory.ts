@@ -61,7 +61,8 @@ export function useBookingDiscountFlags(bookingIds: (string | null | undefined)[
     },
   });
 
-  return data ?? {};
+  // Shaped like a react-query result so call sites can `const { data } = ...`.
+  return { data: data ?? ({} as Record<string, DiscountFlag>) };
 }
 
 export interface PriceStoryBooking {
