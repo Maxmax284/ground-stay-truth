@@ -144,7 +144,11 @@ export function calculateOutstanding(
     .reduce((sum, p) => sum + Number(p.amount), 0);
 
   const grandTotal = Math.round(((totalPrice ?? 0) + addonTotal) * 100) / 100;
-  const outstanding = grandTotal - totalPaid + totalRefunded;
+  const rawOutstanding = grandTotal - totalPaid + totalRefunded;
+  // Cash is handled in whole baht, but percentage discounts produce satang.
+  // Anything under 1 baht either way is rounding dust, not a real balance —
+  // treat it as settled so the desk doesn't chase 34 satang.
+  const outstanding = Math.abs(rawOutstanding) < 1 ? 0 : rawOutstanding;
 
   return {
     totalPaid,
@@ -156,6 +160,7 @@ export function calculateOutstanding(
     credit: Math.max(0, Math.round(-outstanding * 100) / 100),
   };
 }
+
 
 
 
