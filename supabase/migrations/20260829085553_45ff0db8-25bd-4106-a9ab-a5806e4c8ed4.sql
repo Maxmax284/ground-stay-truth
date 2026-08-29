@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.trg_audit_staff_booking_created() FROM anon, authenticated, PUBLIC;

@@ -85,6 +85,13 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
     where: "Bookings", nextAction: "Review the booking and confirm the payment step.",
   },
   {
+    key: "booking_created_by_staff", label: "Booking created by staff",
+    description: "A staff member creates a booking manually (walk-in, phone, or OTA reservation).",
+    category: "bookings", severity: "info", defaultEmail: false, defaultInApp: true, wired: true,
+    bypassCriticalOnly: true,
+    where: "Bookings", nextAction: "Confirm the rate and payment step match what the guest was told.",
+  },
+  {
     key: "booking_confirmed", label: "Booking confirmed",
     description: "A booking moves into confirmed state.",
     category: "bookings", severity: "info", defaultEmail: true, defaultInApp: true, wired: true,
