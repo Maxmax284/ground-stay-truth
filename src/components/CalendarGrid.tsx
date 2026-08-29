@@ -241,8 +241,21 @@ export function CalendarGrid({
               {barWidth > 2
                 ? (booking.profiles?.full_name || hasManualGuestIdentity(booking as any)
                     ? resolveGuestDisplayName(booking as any).split(" ")[0]
-                    : `${format(checkIn, "d")}–${format(checkOut, "d")}`)
+                  : `${format(checkIn, "d")}–${format(checkOut, "d")}`)
                 : ""}
+            </span>
+            {/* Price Story emblem — pointerdown is swallowed so tapping the dot
+                never starts a drag/resize; the receipt popover opens on click. */}
+            <span
+              className="shrink-0 inline-flex"
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <PriceStoryBadge
+                booking={booking as any}
+                policies={policies}
+                flag={priceFlags?.[booking.id]}
+                variant="dot"
+              />
             </span>
             {/* Quick discount overlay — only for unpaid non-terminal bookings when handler is wired */}
             {onApplyDiscount && paymentStatus === "unpaid"
