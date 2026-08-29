@@ -127,7 +127,7 @@ function PriceStoryReceipt({
   isHuman,
 }: {
   story: ReturnType<typeof usePriceStory>["story"];
-  policies?: PolicySetting[] | any[] | null;
+  policies?: PolicySetting[] | null;
   loading: boolean;
   isHuman: boolean;
 }) {
