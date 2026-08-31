@@ -257,7 +257,7 @@ export function useTransitionBookingState() {
       // ── Email notification triggers on state changes ──
       // Recipient, language and template data are resolved server-side so the
       // browser can never pick an arbitrary recipient or template.
-      if (data.guest_id && ["confirmed", "checked_in", "completed"].includes(toState)) {
+      if (!skipEmail && data.guest_id && ["confirmed", "checked_in", "completed"].includes(toState)) {
         supabase.functions
           .invoke("send-booking-state-email", {
             body: { booking_id: bookingId, state: toState },
