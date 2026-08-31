@@ -19,7 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useProperty } from "@/hooks/useProperty";
 import { useAuth } from "@/hooks/useAuth";
 import { useTransitionBookingState } from "@/hooks/useBookings";
-import { calculateOutstanding, isSettled } from "@/lib/paymentTypes";
+import { calculateOutstanding } from "@/lib/paymentTypes";
 import { format, addDays } from "date-fns";
 
 export type DeskBooking = {
@@ -118,7 +118,7 @@ export function useCheckInDesk() {
         nights,
         totalPaid,
         outstanding,
-        settled: isSettled(outstanding),
+        settled: outstanding <= 0,
         guestEmail,
         hasGuestAccount: !!b.guest_id,
         overdue: b.state === "confirmed" ? b.check_in < today : b.check_out < today,
