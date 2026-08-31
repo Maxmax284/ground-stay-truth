@@ -144,11 +144,14 @@ export function useTransitionBookingState() {
       fromState,
       toState,
       reason,
+      skipEmail,
     }: {
       bookingId: string;
       fromState: BookingState;
       toState: BookingState;
       reason: string;
+      /** Caller sends the guest email itself and wants delivery feedback. */
+      skipEmail?: boolean;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
 
