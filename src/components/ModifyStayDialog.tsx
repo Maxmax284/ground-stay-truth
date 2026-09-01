@@ -539,7 +539,44 @@ export function ModifyStayDialog({
                 value={`${delta.calculated > 0 ? "+" : ""}${formatPrice(Math.abs(delta.calculated), policies)}`}
                 emphasis
               />
-              {canWaive && delta.calculated > 0 && (
+              {/* ── Discount carry-forward ── */}
+              {carryApplies && (
+                <div className="rounded-md border border-primary/30 bg-primary/5 p-2.5 space-y-2">
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                    <Sparkles className="h-3.5 w-3.5" /> Discount carried forward
+                  </p>
+                  {carry.lines.map((l, i) => (
+                    <Row
+                      key={i}
+                      label={`${l.label}${l.valueType === "percent" ? ` (${l.value}%)` : ""}`}
+                      value={`${formatPrice(Math.abs(l.amountBefore), policies)} → ${formatPrice(Math.abs(l.amountAfter), policies)}`}
+                    />
+                  ))}
+                  <p className="text-xs text-muted-foreground">
+                    The discount is recalculated against the new room price, so the guest pays{" "}
+                    {formatPrice(carry.netAfter, policies)} in total instead of{" "}
+                    {formatPrice(carry.netBefore, policies)} — a real difference of{" "}
+                    {formatPrice(Math.abs(carry.netDelta), policies)}. Don't waive anything by hand on top of
+                    this; it would discount the upgrade twice.
+                  </p>
+                  {canWaive ? (
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm">Apply it automatically</p>
+                        <p className="text-xs text-muted-foreground">
+                          Waives {formatPrice(carry.suggestedWaiver, policies)} of the {formatPrice(delta.calculated, policies)} difference.
+                        </p>
+                      </div>
+                      <Switch checked={autoCarry} onCheckedChange={setAutoCarry} />
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      A manager or admin has to apply the {formatPrice(carry.suggestedWaiver, policies)} carry-forward.
+                    </p>
+                  )}
+                </div>
+              )}
+              {canWaive && delta.calculated > 0 && !autoWaiverActive && (
                 <div className="flex items-center gap-2 pt-1">
                   <Label className="text-xs text-muted-foreground whitespace-nowrap">Waive</Label>
                   <Input
@@ -554,7 +591,12 @@ export function ModifyStayDialog({
                   <span className="text-xs text-muted-foreground">of {formatPrice(delta.calculated, policies)}</span>
                 </div>
               )}
-              {waived > 0 && <Row label="Waived" value={`− ${formatPrice(waived, policies)}`} />}
+              {waived > 0 && (
+                <Row
+                  label={autoWaiverActive ? "Waived (discount carry-forward)" : "Waived"}
+                  value={`− ${formatPrice(waived, policies)}`}
+                />
+              )}
               <Separator />
               <Row
                 label={finalAmount > 0 ? "Guest to pay" : finalAmount < 0 ? "To refund / credit" : "Nothing to collect"}
