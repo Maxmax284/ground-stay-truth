@@ -121,15 +121,17 @@ export function ModifyStayDialog({
 
   useEffect(() => {
     if (!open) return;
+    setMode(initialMode);
     setDraft(baseline.map((s) => ({ ...s })));
     setConflicts(null);
     setChecked(false);
     setWaiveInput("");
+    setAutoCarry(true);
     setNotes("");
-    setReasonCode("guest_request");
+    setReasonCode(initialMode === "upgrade" ? "guest_request" : "guest_request");
     setRequestPayment(true);
     setPendingStart(null);
-  }, [open, baseline]);
+  }, [open, baseline, initialMode]);
 
 
   const activeUnits = useMemo(
