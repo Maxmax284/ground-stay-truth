@@ -501,9 +501,12 @@ serve(async (req) => {
       ok: true,
       modification,
       new_total: newTotal,
+      base_total: baseTotal,
+      carried_adjustments: carried,
       calculated_amount: calculated,
       waived_amount: waived,
       final_amount: finalAmount,
+
       payment_link: paymentLink,
       payment_link_error: paymentLinkError,
       conflicts,
