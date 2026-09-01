@@ -32,7 +32,7 @@ import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { formatPrice } from "@/lib/currency";
 import { calculateOutstanding, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_VARIANTS, PAYMENT_TYPE_LABELS, getPaymentProvenance, type PaymentStatus, type PaymentType } from "@/lib/paymentTypes";
-import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, AlertTriangle, User, FileText, Info, Wrench, Shirt, Globe, Sparkles, RotateCcw, Paperclip, Image as ImageIcon, File, X, Loader2, Activity, ArrowRightLeft } from "lucide-react";
+import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, ArrowUpRight, AlertTriangle, User, FileText, Info, Wrench, Shirt, Globe, Sparkles, RotateCcw, Paperclip, Image as ImageIcon, File, X, Loader2, Activity, ArrowRightLeft } from "lucide-react";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { RefundDialog } from "@/components/RefundDialog";
 import { GuestPortalActivityTimeline } from "@/components/GuestPortalActivityTimeline";
@@ -142,6 +142,12 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
   // Modify Stay — extend / shorten / move rooms. Ops-write staff only, and only
   // once the stay actually holds inventory (deposit pending onwards).
   const [modifyOpen, setModifyOpen] = useState(false);
+  /** "upgrade" opens the room-swap flow that carries discounts forward itself. */
+  const [modifyMode, setModifyMode] = useState<"change" | "upgrade">("change");
+  const openModify = (mode: "change" | "upgrade") => {
+    setModifyMode(mode);
+    setModifyOpen(true);
+  };
   const canModifyStay =
     role === "admin" || role === "manager" || role === "front_desk_supervisor" || role === "front_desk";
   const isModifiableState = ["pending_deposit", "confirmed", "checked_in"].includes(String(booking?.state));
@@ -324,10 +330,13 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
               {t("bookingDetail.stayTools.description")}
             </p>
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => setModifyOpen(true)}>
+              <Button size="sm" onClick={() => openModify("change")}>
                 <CalendarDays className="h-4 w-4 mr-1" /> {t("bookingDetail.stayTools.extend")}
               </Button>
-              <Button size="sm" variant="outline" onClick={() => setModifyOpen(true)}>
+              <Button size="sm" variant="secondary" onClick={() => openModify("upgrade")}>
+                <ArrowUpRight className="h-4 w-4 mr-1" /> {t("bookingDetail.stayTools.upgrade")}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => openModify("change")}>
                 {t("bookingDetail.stayTools.change")}
               </Button>
             </div>
@@ -434,6 +443,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
               state: booking.state as string,
             }}
             completedStays={(guestHistory as any)?.completedStays ?? 0}
+            initialMode={modifyMode}
           />
         )}
 

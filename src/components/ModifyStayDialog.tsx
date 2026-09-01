@@ -33,7 +33,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  AlertTriangle, ArrowRight, CalendarDays, CheckCircle2, Loader2, Plus, ShieldCheck, Trash2,
+  AlertTriangle, ArrowRight, ArrowUpRight, CalendarDays, CheckCircle2, Loader2, Plus, ShieldCheck, Sparkles, Trash2,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUnits } from "@/hooks/useUnits";
@@ -47,6 +47,10 @@ import {
 import {
   useBookingSegments, useModifyStay, type ModifyStayConflict,
 } from "@/hooks/useStayModifications";
+import { useBookingActiveAdjustments } from "@/hooks/useBookingActiveAdjustments";
+import { computeCarryForward } from "@/lib/upgradeCarryForward";
+
+export type ModifyStayMode = "change" | "upgrade";
 
 interface Props {
   open: boolean;
@@ -61,12 +65,16 @@ interface Props {
     state: string;
   };
   completedStays?: number;
+  /** "upgrade" opens the room-swap flow with automatic discount carry-forward. */
+  initialMode?: ModifyStayMode;
 }
 
 let keySeq = 0;
 const nextKey = () => `leg-${++keySeq}`;
 
-export function ModifyStayDialog({ open, onOpenChange, booking, completedStays = 0 }: Props) {
+export function ModifyStayDialog({
+  open, onOpenChange, booking, completedStays = 0, initialMode = "change",
+}: Props) {
   const { role } = useAuth();
   const canWaive = role === "admin" || role === "manager";
   const isAdmin = role === "admin";
@@ -75,17 +83,22 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
   const { data: pricingRules } = usePricingRules();
   const { data: policies } = usePolicySettings();
   const { data: existingSegments } = useBookingSegments(open ? booking.id : null);
+  const { data: activeAdjustments } = useBookingActiveAdjustments(open ? booking.id : null);
   const modify = useModifyStay();
 
+  const [mode, setMode] = useState<ModifyStayMode>(initialMode);
   const [draft, setDraft] = useState<DraftSegment[]>([]);
   const [reasonCode, setReasonCode] = useState<string>("guest_request");
   const [notes, setNotes] = useState("");
   const [waiveInput, setWaiveInput] = useState("");
+  /** Upgrade flow: let the system waive the re-applied discount automatically. */
+  const [autoCarry, setAutoCarry] = useState(true);
   const [requestPayment, setRequestPayment] = useState(true);
   const [conflicts, setConflicts] = useState<ModifyStayConflict[] | null>(null);
   const [checked, setChecked] = useState(false);
   /** Pending check-in date edit awaiting staff confirmation on a live stay. */
   const [pendingStart, setPendingStart] = useState<{ key: string; value: string } | null>(null);
+
 
 
   // Baseline = the stay as it stands right now (segments, or the legacy
@@ -108,15 +121,17 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
 
   useEffect(() => {
     if (!open) return;
+    setMode(initialMode);
     setDraft(baseline.map((s) => ({ ...s })));
     setConflicts(null);
     setChecked(false);
     setWaiveInput("");
+    setAutoCarry(true);
     setNotes("");
-    setReasonCode("guest_request");
+    setReasonCode(initialMode === "upgrade" ? "guest_request" : "guest_request");
     setRequestPayment(true);
     setPendingStart(null);
-  }, [open, baseline]);
+  }, [open, baseline, initialMode]);
 
 
   const activeUnits = useMemo(
@@ -146,8 +161,19 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
   const hasDrift = Math.abs(recordDrift) >= 0.01 && onRecordTotal > 0;
   const delta = useMemo(() => summarizeDelta(pricingBefore, afterQuote.total), [pricingBefore, afterQuote.total]);
 
+  // Discount carry-forward. The server re-applies active human adjustments to
+  // the new base price by itself; this is the same math shown to staff so they
+  // can see the guest's real difference and never hand-waive it a second time.
+  const carry = useMemo(
+    () => computeCarryForward(activeAdjustments, pricingBefore, afterQuote.total),
+    [activeAdjustments, pricingBefore, afterQuote.total],
+  );
+  const carryApplies = carry.lines.length > 0 && delta.calculated > 0 && carry.suggestedWaiver > 0.009;
+  const autoWaiverActive = carryApplies && autoCarry && canWaive;
 
-  const waived = Math.min(Math.max(0, Number(waiveInput) || 0), Math.max(0, delta.calculated));
+  const waived = autoWaiverActive
+    ? Math.min(carry.suggestedWaiver, Math.max(0, delta.calculated))
+    : Math.min(Math.max(0, Number(waiveInput) || 0), Math.max(0, delta.calculated));
   const finalAmount = Math.round((delta.calculated - waived) * 100) / 100;
 
   const structuralErrors = useMemo(() => validateDraft(draft), [draft]);
@@ -225,13 +251,20 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
   };
 
   const commit = async (force = false) => {
+    const carryNote = autoWaiverActive
+      ? `Existing discount re-applied to the new room price automatically (${formatPrice(waived, policies)} carried forward).`
+      : "";
+    const commitNotes = [notes.trim(), carryNote].filter(Boolean).join(" ");
+    const commitKind =
+      mode === "upgrade" ? (delta.calculated >= 0 ? "upgrade" : "downgrade") : kind;
+
     const res = await modify.mutateAsync({
       action: "commit",
       bookingId: booking.id,
       segments: draft,
-      kind,
+      kind: commitKind as typeof kind,
       reasonCode,
-      notes: notes.trim() || undefined,
+      notes: commitNotes || undefined,
       pricingBefore,
       pricingAfter: afterQuote.total,
       onRecordTotal: onRecordTotal || undefined,
@@ -275,13 +308,38 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
       <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CalendarDays className="h-4 w-4" /> Modify stay
+            {mode === "upgrade" ? <ArrowUpRight className="h-4 w-4" /> : <CalendarDays className="h-4 w-4" />}
+            {mode === "upgrade" ? "Upgrade room" : "Modify stay"}
           </DialogTitle>
           <DialogDescription>
-            Change dates or rooms. Availability is checked against live inventory, and the guest is only
-            asked to pay the difference.
+            {mode === "upgrade"
+              ? "Same dates, different room. Any discount already on this booking is re-applied to the new price automatically — no manual maths."
+              : "Change dates or rooms. Availability is checked against live inventory, and the guest is only asked to pay the difference."}
           </DialogDescription>
         </DialogHeader>
+
+        <div className="flex gap-1 rounded-md bg-muted p-1">
+          {([
+            { id: "upgrade" as ModifyStayMode, label: "Upgrade room" },
+            { id: "change" as ModifyStayMode, label: "Dates & legs" },
+          ]).map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                setMode(tab.id);
+                setChecked(false);
+                setConflicts(null);
+                if (tab.id === "upgrade") setDraft(baseline.map((s) => ({ ...s })));
+              }}
+              className={`flex-1 rounded-sm px-3 py-1.5 text-xs font-medium transition-colors ${
+                mode === tab.id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain -mx-6 px-6">
           <div className="space-y-4 pb-2">
@@ -298,43 +356,58 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
                   {i === 0 && <Badge variant="outline" className="ml-auto text-xs">{formatPrice(pricingBefore, policies)}</Badge>}
                 </div>
               ))}
+              {carry.lines.length > 0 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Discounts on this booking:{" "}
+                  {carry.lines
+                    .map((l) => `${l.label}${l.valueType === "percent" ? ` (${l.value}%)` : ""}`)
+                    .join(", ")}{" "}
+                  · guest pays {formatPrice(carry.netBefore, policies)} today
+                </p>
+              )}
             </div>
 
             {/* ── Draft legs ── */}
             <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <Label className="text-sm">New plan</Label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="h-7 gap-1 text-xs"
-                    onClick={() => extendStay(1)}
-                    disabled={draft.length === 0}
-                  >
-                    <CalendarDays className="h-3.5 w-3.5" /> Extend stay +1 night
-                  </Button>
-                  <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={addLeg}>
-                    <Plus className="h-3.5 w-3.5" /> Add room leg
-                  </Button>
-                </div>
+                <Label className="text-sm">{mode === "upgrade" ? "Move to" : "New plan"}</Label>
+                {mode === "change" && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="h-7 gap-1 text-xs"
+                      onClick={() => extendStay(1)}
+                      disabled={draft.length === 0}
+                    >
+                      <CalendarDays className="h-3.5 w-3.5" /> Extend stay +1 night
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={addLeg}>
+                      <Plus className="h-3.5 w-3.5" /> Add room leg
+                    </Button>
+                  </div>
+                )}
               </div>
               <p className="text-xs text-muted-foreground">
-                To extend a stay, change the check-out date only — moving the check-in date shifts the
-                whole stay and reprices it.
+                {mode === "upgrade"
+                  ? "Pick the new room. Dates stay exactly as they are — switch to “Dates & legs” if you also need to change nights."
+                  : "To extend a stay, change the check-out date only — moving the check-in date shifts the whole stay and reprices it."}
               </p>
+
 
               {draft.map((leg, idx) => (
                 <div key={leg.key} className="rounded-md border border-border p-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">Leg {idx + 1}</span>
-                    {draft.length > 1 && (
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {mode === "upgrade" && draft.length === 1 ? "Room" : `Leg ${idx + 1}`}
+                    </span>
+                    {mode === "change" && draft.length > 1 && (
                       <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeLeg(leg.key)}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-3">
+                  <div className={`grid gap-2 ${mode === "upgrade" ? "sm:grid-cols-1" : "sm:grid-cols-3"}`}>
                     <div className="space-y-1 sm:col-span-1">
                       <Label className="text-xs text-muted-foreground">Room</Label>
                       <Select value={leg.unit_id || undefined} onValueChange={(v) => updateLeg(leg.key, { unit_id: v })}>
@@ -346,35 +419,42 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-1">
-                      <Label htmlFor={`start-${leg.key}`} className="text-xs text-muted-foreground">
-                        Check-in date / Start date
-                      </Label>
-                      <Input
-                        id={`start-${leg.key}`}
-                        type="date"
-                        className="h-9"
-                        value={leg.starts_on}
-                        onChange={(e) => requestStartChange(leg.key, e.target.value)}
-                      />
-                      <p className="text-[10px] text-muted-foreground">Moves the whole stay.</p>
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor={`end-${leg.key}`} className="text-xs text-muted-foreground">
-                        Check-out date / End date
-                      </Label>
-                      <Input
-                        id={`end-${leg.key}`}
-                        type="date"
-                        className="h-9"
-                        value={leg.ends_on}
-                        onChange={(e) => updateLeg(leg.key, { ends_on: e.target.value })}
-                      />
-                      <p className="text-[10px] text-muted-foreground">
-                        To extend a stay, change this date only.
+                    {mode === "upgrade" ? (
+                      <p className="text-xs text-muted-foreground">
+                        {leg.starts_on} → {leg.ends_on} (unchanged)
                       </p>
-                    </div>
-
+                    ) : (
+                      <>
+                        <div className="space-y-1">
+                          <Label htmlFor={`start-${leg.key}`} className="text-xs text-muted-foreground">
+                            Check-in date / Start date
+                          </Label>
+                          <Input
+                            id={`start-${leg.key}`}
+                            type="date"
+                            className="h-9"
+                            value={leg.starts_on}
+                            onChange={(e) => requestStartChange(leg.key, e.target.value)}
+                          />
+                          <p className="text-[10px] text-muted-foreground">Moves the whole stay.</p>
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor={`end-${leg.key}`} className="text-xs text-muted-foreground">
+                            Check-out date / End date
+                          </Label>
+                          <Input
+                            id={`end-${leg.key}`}
+                            type="date"
+                            className="h-9"
+                            value={leg.ends_on}
+                            onChange={(e) => updateLeg(leg.key, { ends_on: e.target.value })}
+                          />
+                          <p className="text-[10px] text-muted-foreground">
+                            To extend a stay, change this date only.
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
                   {(() => {
                     const line = afterQuote.lines.find((l) => l.key === leg.key);
@@ -459,7 +539,44 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
                 value={`${delta.calculated > 0 ? "+" : ""}${formatPrice(Math.abs(delta.calculated), policies)}`}
                 emphasis
               />
-              {canWaive && delta.calculated > 0 && (
+              {/* ── Discount carry-forward ── */}
+              {carryApplies && (
+                <div className="rounded-md border border-primary/30 bg-primary/5 p-2.5 space-y-2">
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                    <Sparkles className="h-3.5 w-3.5" /> Discount carried forward
+                  </p>
+                  {carry.lines.map((l, i) => (
+                    <Row
+                      key={i}
+                      label={`${l.label}${l.valueType === "percent" ? ` (${l.value}%)` : ""}`}
+                      value={`${formatPrice(Math.abs(l.amountBefore), policies)} → ${formatPrice(Math.abs(l.amountAfter), policies)}`}
+                    />
+                  ))}
+                  <p className="text-xs text-muted-foreground">
+                    The discount is recalculated against the new room price, so the guest pays{" "}
+                    {formatPrice(carry.netAfter, policies)} in total instead of{" "}
+                    {formatPrice(carry.netBefore, policies)} — a real difference of{" "}
+                    {formatPrice(Math.abs(carry.netDelta), policies)}. Don't waive anything by hand on top of
+                    this; it would discount the upgrade twice.
+                  </p>
+                  {canWaive ? (
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm">Apply it automatically</p>
+                        <p className="text-xs text-muted-foreground">
+                          Waives {formatPrice(carry.suggestedWaiver, policies)} of the {formatPrice(delta.calculated, policies)} difference.
+                        </p>
+                      </div>
+                      <Switch checked={autoCarry} onCheckedChange={setAutoCarry} />
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      A manager or admin has to apply the {formatPrice(carry.suggestedWaiver, policies)} carry-forward.
+                    </p>
+                  )}
+                </div>
+              )}
+              {canWaive && delta.calculated > 0 && !autoWaiverActive && (
                 <div className="flex items-center gap-2 pt-1">
                   <Label className="text-xs text-muted-foreground whitespace-nowrap">Waive</Label>
                   <Input
@@ -474,7 +591,12 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
                   <span className="text-xs text-muted-foreground">of {formatPrice(delta.calculated, policies)}</span>
                 </div>
               )}
-              {waived > 0 && <Row label="Waived" value={`− ${formatPrice(waived, policies)}`} />}
+              {waived > 0 && (
+                <Row
+                  label={autoWaiverActive ? "Waived (discount carry-forward)" : "Waived"}
+                  value={`− ${formatPrice(waived, policies)}`}
+                />
+              )}
               <Separator />
               <Row
                 label={finalAmount > 0 ? "Guest to pay" : finalAmount < 0 ? "To refund / credit" : "Nothing to collect"}
