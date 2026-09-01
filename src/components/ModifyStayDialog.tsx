@@ -161,8 +161,19 @@ export function ModifyStayDialog({
   const hasDrift = Math.abs(recordDrift) >= 0.01 && onRecordTotal > 0;
   const delta = useMemo(() => summarizeDelta(pricingBefore, afterQuote.total), [pricingBefore, afterQuote.total]);
 
+  // Discount carry-forward. The server re-applies active human adjustments to
+  // the new base price by itself; this is the same math shown to staff so they
+  // can see the guest's real difference and never hand-waive it a second time.
+  const carry = useMemo(
+    () => computeCarryForward(activeAdjustments, pricingBefore, afterQuote.total),
+    [activeAdjustments, pricingBefore, afterQuote.total],
+  );
+  const carryApplies = carry.lines.length > 0 && delta.calculated > 0 && carry.suggestedWaiver > 0.009;
+  const autoWaiverActive = carryApplies && autoCarry && canWaive;
 
-  const waived = Math.min(Math.max(0, Number(waiveInput) || 0), Math.max(0, delta.calculated));
+  const waived = autoWaiverActive
+    ? Math.min(carry.suggestedWaiver, Math.max(0, delta.calculated))
+    : Math.min(Math.max(0, Number(waiveInput) || 0), Math.max(0, delta.calculated));
   const finalAmount = Math.round((delta.calculated - waived) * 100) / 100;
 
   const structuralErrors = useMemo(() => validateDraft(draft), [draft]);
