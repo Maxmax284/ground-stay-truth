@@ -230,6 +230,11 @@ Deno.serve(async (req) => {
           language: "en",
           source: "admin-alert",
           bookingId,
+          // One key per (event, recipient). Never share a key across the
+          // fan-out — a shared key gets every recipient after the first
+          // rejected with 403 recipient_mismatch.
+          idempotencyKey: `alert-${eventId}-${uid}`,
+
           templateData: {
             subject_line: subject,
             severity: event.severity,
