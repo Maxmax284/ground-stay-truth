@@ -252,12 +252,18 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
       return;
     }
 
+    const carriedNote = (res.carried_adjustments ?? []).length
+      ? ` Existing discounts carried forward: ${(res.carried_adjustments ?? [])
+          .map((a) => `${a.label} (${formatPrice(a.amount, policies)})`)
+          .join(", ")}.`
+      : "";
+
     if (res.payment_link_error) {
       toast.warning(`Stay updated, but the payment request failed: ${res.payment_link_error}`);
     } else if (res.payment_link?.url) {
-      toast.success(`Stay updated. Payment request for ${formatPrice(res.final_amount ?? 0, policies)} sent.`);
+      toast.success(`Stay updated. Payment request for ${formatPrice(res.final_amount ?? 0, policies)} sent.${carriedNote}`);
     } else {
-      toast.success("Stay updated.");
+      toast.success(`Stay updated.${carriedNote}`);
     }
     onOpenChange(false);
   };
