@@ -33,7 +33,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  AlertTriangle, ArrowRight, CalendarDays, CheckCircle2, Loader2, Plus, ShieldCheck, Trash2,
+  AlertTriangle, ArrowRight, ArrowUpRight, CalendarDays, CheckCircle2, Loader2, Plus, ShieldCheck, Sparkles, Trash2,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUnits } from "@/hooks/useUnits";
@@ -47,6 +47,10 @@ import {
 import {
   useBookingSegments, useModifyStay, type ModifyStayConflict,
 } from "@/hooks/useStayModifications";
+import { useBookingActiveAdjustments } from "@/hooks/useBookingActiveAdjustments";
+import { computeCarryForward } from "@/lib/upgradeCarryForward";
+
+export type ModifyStayMode = "change" | "upgrade";
 
 interface Props {
   open: boolean;
@@ -61,6 +65,8 @@ interface Props {
     state: string;
   };
   completedStays?: number;
+  /** "upgrade" opens the room-swap flow with automatic discount carry-forward. */
+  initialMode?: ModifyStayMode;
 }
 
 let keySeq = 0;
