@@ -142,6 +142,12 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
   // Modify Stay — extend / shorten / move rooms. Ops-write staff only, and only
   // once the stay actually holds inventory (deposit pending onwards).
   const [modifyOpen, setModifyOpen] = useState(false);
+  /** "upgrade" opens the room-swap flow that carries discounts forward itself. */
+  const [modifyMode, setModifyMode] = useState<"change" | "upgrade">("change");
+  const openModify = (mode: "change" | "upgrade") => {
+    setModifyMode(mode);
+    setModifyOpen(true);
+  };
   const canModifyStay =
     role === "admin" || role === "manager" || role === "front_desk_supervisor" || role === "front_desk";
   const isModifiableState = ["pending_deposit", "confirmed", "checked_in"].includes(String(booking?.state));
