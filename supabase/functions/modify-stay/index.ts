@@ -339,11 +339,67 @@ serve(async (req) => {
     const { error: syncErr } = await admin.rpc("sync_booking_from_segments", { _booking_id: bookingId });
     if (syncErr) console.error("[modify-stay] sync_booking_from_segments failed:", syncErr);
 
-    const newTotal = Math.round((pricingAfter - waived) * 100) / 100;
+    // Money. `pricingAfter − waived` is the raw stay price after this change.
+    // Human discounts already on the booking (`booking_adjustments`) must be
+    // carried forward or they are silently deleted by the new total:
+    //  - percent rows are recomputed against the new stay price and the old row
+    //    is superseded so Price Story shows exactly one live discount;
+    //  - fixed rows carry over untouched.
+    const baseTotal = Math.round((pricingAfter - waived) * 100) / 100;
+
+    const { data: liveAdjustments } = await admin
+      .from("booking_adjustments")
+      .select("id, adjustment_type, value_type, value, amount_calculated, label, internal_note, applies_to")
+      .eq("booking_id", bookingId)
+      .eq("status", "active");
+
+    let netAdjustment = 0; // positive = reduces the total
+    const carried: Array<Record<string, unknown>> = [];
+
+    for (const adj of liveAdjustments ?? []) {
+      const sign = adj.adjustment_type === "surcharge" ? -1 : 1;
+      let amount = Math.round(Number(adj.amount_calculated ?? 0) * 100) / 100;
+
+      if (adj.value_type === "percent") {
+        amount = Math.round(baseTotal * (Number(adj.value ?? 0) / 100) * 100) / 100;
+        // Supersede the stale row and re-issue it against the new price.
+        await admin
+          .from("booking_adjustments")
+          .update({
+            status: "superseded",
+            voided_at: new Date().toISOString(),
+            voided_by: user.id,
+            void_reason: `Recomputed for stay change (${kind.replace(/_/g, " ")})`,
+          })
+          .eq("id", adj.id);
+        await admin.from("booking_adjustments").insert({
+          booking_id: bookingId,
+          adjustment_type: adj.adjustment_type,
+          value_type: "percent",
+          value: adj.value,
+          amount_calculated: amount,
+          label: adj.label,
+          internal_note: adj.internal_note,
+          applies_to: adj.applies_to ?? "accommodation_subtotal",
+          status: "active",
+          applied_by: user.id,
+          modification_id: modification.id,
+        });
+        carried.push({ label: adj.label, value_type: "percent", value: Number(adj.value ?? 0), amount });
+      } else {
+        carried.push({ label: adj.label, value_type: "fixed", value: Number(adj.value ?? 0), amount });
+      }
+
+      netAdjustment += sign * amount;
+    }
+
+    // Never let carried discounts push a stay below zero.
+    const newTotal = Math.max(0, Math.round((baseTotal - netAdjustment) * 100) / 100);
     await admin
       .from("bookings")
-      .update({ total_price: newTotal, updated_at: new Date().toISOString() })
+      .update({ original_total: baseTotal, total_price: newTotal, updated_at: new Date().toISOString() })
       .eq("id", bookingId);
+
 
     // A waived difference is real money given away — it belongs in the
     // adjustments ledger next to discounts, not buried in a snapshot.
