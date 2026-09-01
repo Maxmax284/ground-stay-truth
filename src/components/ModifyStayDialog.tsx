@@ -308,13 +308,38 @@ export function ModifyStayDialog({
       <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CalendarDays className="h-4 w-4" /> Modify stay
+            {mode === "upgrade" ? <ArrowUpRight className="h-4 w-4" /> : <CalendarDays className="h-4 w-4" />}
+            {mode === "upgrade" ? "Upgrade room" : "Modify stay"}
           </DialogTitle>
           <DialogDescription>
-            Change dates or rooms. Availability is checked against live inventory, and the guest is only
-            asked to pay the difference.
+            {mode === "upgrade"
+              ? "Same dates, different room. Any discount already on this booking is re-applied to the new price automatically — no manual maths."
+              : "Change dates or rooms. Availability is checked against live inventory, and the guest is only asked to pay the difference."}
           </DialogDescription>
         </DialogHeader>
+
+        <div className="flex gap-1 rounded-md bg-muted p-1">
+          {([
+            { id: "upgrade" as ModifyStayMode, label: "Upgrade room" },
+            { id: "change" as ModifyStayMode, label: "Dates & legs" },
+          ]).map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                setMode(tab.id);
+                setChecked(false);
+                setConflicts(null);
+                if (tab.id === "upgrade") setDraft(baseline.map((s) => ({ ...s })));
+              }}
+              className={`flex-1 rounded-sm px-3 py-1.5 text-xs font-medium transition-colors ${
+                mode === tab.id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain -mx-6 px-6">
           <div className="space-y-4 pb-2">
@@ -331,31 +356,44 @@ export function ModifyStayDialog({
                   {i === 0 && <Badge variant="outline" className="ml-auto text-xs">{formatPrice(pricingBefore, policies)}</Badge>}
                 </div>
               ))}
+              {carry.lines.length > 0 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Discounts on this booking:{" "}
+                  {carry.lines
+                    .map((l) => `${l.label}${l.valueType === "percent" ? ` (${l.value}%)` : ""}`)
+                    .join(", ")}{" "}
+                  · guest pays {formatPrice(carry.netBefore, policies)} today
+                </p>
+              )}
             </div>
 
             {/* ── Draft legs ── */}
             <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <Label className="text-sm">New plan</Label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="h-7 gap-1 text-xs"
-                    onClick={() => extendStay(1)}
-                    disabled={draft.length === 0}
-                  >
-                    <CalendarDays className="h-3.5 w-3.5" /> Extend stay +1 night
-                  </Button>
-                  <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={addLeg}>
-                    <Plus className="h-3.5 w-3.5" /> Add room leg
-                  </Button>
-                </div>
+                <Label className="text-sm">{mode === "upgrade" ? "Move to" : "New plan"}</Label>
+                {mode === "change" && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="h-7 gap-1 text-xs"
+                      onClick={() => extendStay(1)}
+                      disabled={draft.length === 0}
+                    >
+                      <CalendarDays className="h-3.5 w-3.5" /> Extend stay +1 night
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={addLeg}>
+                      <Plus className="h-3.5 w-3.5" /> Add room leg
+                    </Button>
+                  </div>
+                )}
               </div>
               <p className="text-xs text-muted-foreground">
-                To extend a stay, change the check-out date only — moving the check-in date shifts the
-                whole stay and reprices it.
+                {mode === "upgrade"
+                  ? "Pick the new room. Dates stay exactly as they are — switch to “Dates & legs” if you also need to change nights."
+                  : "To extend a stay, change the check-out date only — moving the check-in date shifts the whole stay and reprices it."}
               </p>
+
 
               {draft.map((leg, idx) => (
                 <div key={leg.key} className="rounded-md border border-border p-3 space-y-2">
