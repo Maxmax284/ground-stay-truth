@@ -72,7 +72,9 @@ interface Props {
 let keySeq = 0;
 const nextKey = () => `leg-${++keySeq}`;
 
-export function ModifyStayDialog({ open, onOpenChange, booking, completedStays = 0 }: Props) {
+export function ModifyStayDialog({
+  open, onOpenChange, booking, completedStays = 0, initialMode = "change",
+}: Props) {
   const { role } = useAuth();
   const canWaive = role === "admin" || role === "manager";
   const isAdmin = role === "admin";
@@ -81,17 +83,22 @@ export function ModifyStayDialog({ open, onOpenChange, booking, completedStays =
   const { data: pricingRules } = usePricingRules();
   const { data: policies } = usePolicySettings();
   const { data: existingSegments } = useBookingSegments(open ? booking.id : null);
+  const { data: activeAdjustments } = useBookingActiveAdjustments(open ? booking.id : null);
   const modify = useModifyStay();
 
+  const [mode, setMode] = useState<ModifyStayMode>(initialMode);
   const [draft, setDraft] = useState<DraftSegment[]>([]);
   const [reasonCode, setReasonCode] = useState<string>("guest_request");
   const [notes, setNotes] = useState("");
   const [waiveInput, setWaiveInput] = useState("");
+  /** Upgrade flow: let the system waive the re-applied discount automatically. */
+  const [autoCarry, setAutoCarry] = useState(true);
   const [requestPayment, setRequestPayment] = useState(true);
   const [conflicts, setConflicts] = useState<ModifyStayConflict[] | null>(null);
   const [checked, setChecked] = useState(false);
   /** Pending check-in date edit awaiting staff confirmation on a live stay. */
   const [pendingStart, setPendingStart] = useState<{ key: string; value: string } | null>(null);
+
 
 
   // Baseline = the stay as it stands right now (segments, or the legacy
