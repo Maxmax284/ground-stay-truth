@@ -443,6 +443,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
               state: booking.state as string,
             }}
             completedStays={(guestHistory as any)?.completedStays ?? 0}
+            initialMode={modifyMode}
           />
         )}
 
