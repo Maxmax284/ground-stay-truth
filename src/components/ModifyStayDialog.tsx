@@ -398,14 +398,16 @@ export function ModifyStayDialog({
               {draft.map((leg, idx) => (
                 <div key={leg.key} className="rounded-md border border-border p-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">Leg {idx + 1}</span>
-                    {draft.length > 1 && (
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {mode === "upgrade" && draft.length === 1 ? "Room" : `Leg ${idx + 1}`}
+                    </span>
+                    {mode === "change" && draft.length > 1 && (
                       <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeLeg(leg.key)}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-3">
+                  <div className={`grid gap-2 ${mode === "upgrade" ? "sm:grid-cols-1" : "sm:grid-cols-3"}`}>
                     <div className="space-y-1 sm:col-span-1">
                       <Label className="text-xs text-muted-foreground">Room</Label>
                       <Select value={leg.unit_id || undefined} onValueChange={(v) => updateLeg(leg.key, { unit_id: v })}>
@@ -417,35 +419,42 @@ export function ModifyStayDialog({
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-1">
-                      <Label htmlFor={`start-${leg.key}`} className="text-xs text-muted-foreground">
-                        Check-in date / Start date
-                      </Label>
-                      <Input
-                        id={`start-${leg.key}`}
-                        type="date"
-                        className="h-9"
-                        value={leg.starts_on}
-                        onChange={(e) => requestStartChange(leg.key, e.target.value)}
-                      />
-                      <p className="text-[10px] text-muted-foreground">Moves the whole stay.</p>
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor={`end-${leg.key}`} className="text-xs text-muted-foreground">
-                        Check-out date / End date
-                      </Label>
-                      <Input
-                        id={`end-${leg.key}`}
-                        type="date"
-                        className="h-9"
-                        value={leg.ends_on}
-                        onChange={(e) => updateLeg(leg.key, { ends_on: e.target.value })}
-                      />
-                      <p className="text-[10px] text-muted-foreground">
-                        To extend a stay, change this date only.
+                    {mode === "upgrade" ? (
+                      <p className="text-xs text-muted-foreground">
+                        {leg.starts_on} → {leg.ends_on} (unchanged)
                       </p>
-                    </div>
-
+                    ) : (
+                      <>
+                        <div className="space-y-1">
+                          <Label htmlFor={`start-${leg.key}`} className="text-xs text-muted-foreground">
+                            Check-in date / Start date
+                          </Label>
+                          <Input
+                            id={`start-${leg.key}`}
+                            type="date"
+                            className="h-9"
+                            value={leg.starts_on}
+                            onChange={(e) => requestStartChange(leg.key, e.target.value)}
+                          />
+                          <p className="text-[10px] text-muted-foreground">Moves the whole stay.</p>
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor={`end-${leg.key}`} className="text-xs text-muted-foreground">
+                            Check-out date / End date
+                          </Label>
+                          <Input
+                            id={`end-${leg.key}`}
+                            type="date"
+                            className="h-9"
+                            value={leg.ends_on}
+                            onChange={(e) => updateLeg(leg.key, { ends_on: e.target.value })}
+                          />
+                          <p className="text-[10px] text-muted-foreground">
+                            To extend a stay, change this date only.
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
                   {(() => {
                     const line = afterQuote.lines.find((l) => l.key === leg.key);
