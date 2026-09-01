@@ -251,13 +251,20 @@ export function ModifyStayDialog({
   };
 
   const commit = async (force = false) => {
+    const carryNote = autoWaiverActive
+      ? `Existing discount re-applied to the new room price automatically (${formatPrice(waived, policies)} carried forward).`
+      : "";
+    const commitNotes = [notes.trim(), carryNote].filter(Boolean).join(" ");
+    const commitKind =
+      mode === "upgrade" ? (delta.calculated >= 0 ? "upgrade" : "downgrade") : kind;
+
     const res = await modify.mutateAsync({
       action: "commit",
       bookingId: booking.id,
       segments: draft,
-      kind,
+      kind: commitKind as typeof kind,
       reasonCode,
-      notes: notes.trim() || undefined,
+      notes: commitNotes || undefined,
       pricingBefore,
       pricingAfter: afterQuote.total,
       onRecordTotal: onRecordTotal || undefined,
