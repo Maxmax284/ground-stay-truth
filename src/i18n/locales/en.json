@@ -478,6 +478,7 @@
       "title": "Stay tools",
       "description": "Extend, shorten or move this stay. Checks live availability and charges the difference only.",
       "extend": "Extend stay",
+      "upgrade": "Upgrade room",
       "change": "Change dates or room"
     },
     "deadline": {
