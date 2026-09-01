@@ -330,10 +330,13 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
               {t("bookingDetail.stayTools.description")}
             </p>
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => setModifyOpen(true)}>
+              <Button size="sm" onClick={() => openModify("change")}>
                 <CalendarDays className="h-4 w-4 mr-1" /> {t("bookingDetail.stayTools.extend")}
               </Button>
-              <Button size="sm" variant="outline" onClick={() => setModifyOpen(true)}>
+              <Button size="sm" variant="secondary" onClick={() => openModify("upgrade")}>
+                <ArrowUpRight className="h-4 w-4 mr-1" /> {t("bookingDetail.stayTools.upgrade")}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => openModify("change")}>
                 {t("bookingDetail.stayTools.change")}
               </Button>
             </div>
