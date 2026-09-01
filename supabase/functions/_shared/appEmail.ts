@@ -42,9 +42,17 @@ export async function sendAppEmail(args: SendAppEmailArgs): Promise<SendAppEmail
   if (args.language && !templateData.language) {
     templateData.language = args.language
   }
+  // Idempotency must be scoped to the RECIPIENT. The managed email API binds a
+  // key to the first address it saw, so a shared key across a fan-out makes
+  // every later recipient fail with 403 recipient_mismatch. This is exactly how
+  // admin alert emails silently stopped reaching everyone but the first admin.
+  const recipientScope = (args.recipientEmail ?? 'no-recipient').toLowerCase()
   const idempotencyKey =
     args.idempotencyKey ||
-    (args.bookingId ? `${args.templateName}-${args.bookingId}` : messageId)
+    (args.bookingId
+      ? `${args.templateName}-${args.bookingId}-${recipientScope}`
+      : messageId)
+
 
   const logMeta = {
     booking_id: args.bookingId ?? null,
