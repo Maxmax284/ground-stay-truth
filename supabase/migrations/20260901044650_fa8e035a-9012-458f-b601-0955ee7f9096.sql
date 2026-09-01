@@ -1,0 +1,2 @@
+ALTER TABLE public.booking_adjustments DROP CONSTRAINT IF EXISTS booking_adjustments_status_check;
+ALTER TABLE public.booking_adjustments ADD CONSTRAINT booking_adjustments_status_check CHECK (status = ANY (ARRAY['active'::text, 'voided'::text, 'superseded'::text]));

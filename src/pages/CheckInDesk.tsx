@@ -42,6 +42,7 @@ import {
   type DeskBooking,
   type EmailOutcome,
 } from "@/hooks/useCheckInDesk";
+import { useAuth } from "@/hooks/useAuth";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { FetchErrorState } from "@/components/FetchErrorState";
 import { formatPrice } from "@/lib/currency";
@@ -51,6 +52,7 @@ type Mode = "in" | "out";
 
 export default function CheckInDesk() {
   const { t } = useTranslation();
+  const { isAdmin } = useAuth();
   const { sections, isLoading, isError, refetch } = useCheckInDesk();
   const checkIn = useDeskCheckIn();
   const checkOut = useDeskCheckOut();
@@ -170,6 +172,7 @@ export default function CheckInDesk() {
 
       <BookingDetailSheet
         bookingId={detailId}
+        isAdmin={isAdmin}
         open={!!detailId}
         onOpenChange={(open) => !open && setDetailId(null)}
       />

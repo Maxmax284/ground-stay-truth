@@ -88,3 +88,7 @@ Do not create a second booking. Do not refund and re-charge.
 - Price Story after upgrade: drift zero, human discount shown once with the upgrade reason.
 - Old room released and new room held in `booking_segments`; housekeeping and calendar follow.
 - Non-admin cannot waive; non-ops cannot modify.
+
+## Shipped 2026-09-01
+
+`modify-stay` now carries human adjustments forward: percent rows are recomputed against the new stay price and the old row is marked `superseded` (new status value), fixed rows carry unchanged, `bookings.original_total` is written as `pricing_after − waived`, and `total_price` is that base minus the net carried adjustments (floored at zero). The commit response returns `base_total` and `carried_adjustments`, and the dialog names the carried discounts in its success toast. Price Story reads only `active` rows, so drift goes to zero.

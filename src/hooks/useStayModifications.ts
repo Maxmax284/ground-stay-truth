@@ -107,6 +107,8 @@ export interface ModifyStayResponse {
   conflicts?: ModifyStayConflict[];
   modification?: StayModification;
   new_total?: number;
+  base_total?: number;
+  carried_adjustments?: Array<{ label: string; value_type: "percent" | "fixed"; value: number; amount: number }>;
   calculated_amount?: number;
   waived_amount?: number;
   final_amount?: number;
