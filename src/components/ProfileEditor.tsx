@@ -167,7 +167,7 @@ export default function ProfileEditor() {
         </CardContent>
       </Card>
 
-      <PushNotificationToggle />
+
 
       {/* Consent Management */}
       <Card>
