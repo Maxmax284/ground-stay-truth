@@ -161,6 +161,31 @@ export function ModifyStayDialog({
   const hasDrift = Math.abs(recordDrift) >= 0.01 && onRecordTotal > 0;
   const delta = useMemo(() => summarizeDelta(pricingBefore, afterQuote.total), [pricingBefore, afterQuote.total]);
 
+  // Pricing basis for the new stay: gross room charge plus each automatic
+  // discount, aggregated across every segment of the stay.
+  const afterBasis = useMemo(() => {
+    const priced = afterQuote.lines.filter((l) => l.summary);
+    if (priced.length === 0) return null;
+    let gross = 0;
+    let longStay = 0;
+    let loyalty = 0;
+    for (const l of priced) {
+      const s = l.summary!;
+      gross += Number(s.subtotal ?? 0) + Number(s.extraBedTotal ?? 0);
+      longStay += Number(s.longStayDiscount?.amount ?? 0);
+      loyalty += Number(s.loyaltyDiscount?.amount ?? 0);
+    }
+    const r = (n: number) => Math.round(n * 100) / 100;
+    return {
+      gross: r(gross),
+      longStay: r(longStay),
+      loyalty: r(loyalty),
+      cleaning: r(afterQuote.cleaningFee ?? 0),
+    };
+  }, [afterQuote]);
+
+
+
   // Discount carry-forward. The server re-applies active human adjustments to
   // the new base price by itself; this is the same math shown to staff so they
   // can see the guest's real difference and never hand-waive it a second time.
