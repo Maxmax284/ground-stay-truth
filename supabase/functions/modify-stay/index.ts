@@ -401,8 +401,10 @@ serve(async (req) => {
       netAdjustment += sign * amount;
     }
 
+    // The waiver counts exactly once, here, alongside the carried discounts.
     // Never let carried discounts push a stay below zero.
-    const newTotal = Math.max(0, Math.round((baseTotal - netAdjustment) * 100) / 100);
+    const newTotal = Math.max(0, Math.round((baseTotal - netAdjustment - waived) * 100) / 100);
+
     await admin
       .from("bookings")
       .update({ original_total: baseTotal, total_price: newTotal, updated_at: new Date().toISOString() })
