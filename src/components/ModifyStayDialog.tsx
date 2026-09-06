@@ -161,6 +161,31 @@ export function ModifyStayDialog({
   const hasDrift = Math.abs(recordDrift) >= 0.01 && onRecordTotal > 0;
   const delta = useMemo(() => summarizeDelta(pricingBefore, afterQuote.total), [pricingBefore, afterQuote.total]);
 
+  // Pricing basis for the new stay: gross room charge plus each automatic
+  // discount, aggregated across every segment of the stay.
+  const afterBasis = useMemo(() => {
+    const priced = afterQuote.lines.filter((l) => l.summary);
+    if (priced.length === 0) return null;
+    let gross = 0;
+    let longStay = 0;
+    let loyalty = 0;
+    for (const l of priced) {
+      const s = l.summary!;
+      gross += Number(s.subtotal ?? 0) + Number(s.extraBedTotal ?? 0);
+      longStay += Number(s.longStayDiscount?.amount ?? 0);
+      loyalty += Number(s.loyaltyDiscount?.amount ?? 0);
+    }
+    const r = (n: number) => Math.round(n * 100) / 100;
+    return {
+      gross: r(gross),
+      longStay: r(longStay),
+      loyalty: r(loyalty),
+      cleaning: r(afterQuote.cleaningFee ?? 0),
+    };
+  }, [afterQuote]);
+
+
+
   // Discount carry-forward. The server re-applies active human adjustments to
   // the new base price by itself; this is the same math shown to staff so they
   // can see the guest's real difference and never hand-waive it a second time.
@@ -534,6 +559,25 @@ export function ModifyStayDialog({
                 </>
               )}
               <Row label={`New stay price (${afterQuote.nights} night${afterQuote.nights === 1 ? "" : "s"})`} value={formatPrice(afterQuote.total, policies)} />
+              {/* Pricing basis: room rate before automatic discounts, then each
+                  automatic discount, so staff can see where the number came from
+                  and never re-discount the same thing by hand. */}
+              {afterBasis && (
+                <div className="rounded-md bg-muted/40 p-2 space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">How that price is built</p>
+                  <Row label="Room rate before discounts" value={formatPrice(afterBasis.gross, policies)} />
+                  {afterBasis.longStay > 0 && (
+                    <Row label="Automatic long-stay discount" value={`− ${formatPrice(afterBasis.longStay, policies)}`} />
+                  )}
+                  {afterBasis.loyalty > 0 && (
+                    <Row label="Returning-guest discount" value={`− ${formatPrice(afterBasis.loyalty, policies)}`} />
+                  )}
+                  {afterBasis.cleaning > 0 && (
+                    <Row label="Cleaning fee" value={formatPrice(afterBasis.cleaning, policies)} />
+                  )}
+                </div>
+              )}
+
               <Row
                 label={delta.direction === "credit" ? "Credit due to guest" : "Difference"}
                 value={`${delta.calculated > 0 ? "+" : ""}${formatPrice(Math.abs(delta.calculated), policies)}`}
