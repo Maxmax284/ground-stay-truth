@@ -534,6 +534,25 @@ export function ModifyStayDialog({
                 </>
               )}
               <Row label={`New stay price (${afterQuote.nights} night${afterQuote.nights === 1 ? "" : "s"})`} value={formatPrice(afterQuote.total, policies)} />
+              {/* Pricing basis: room rate before automatic discounts, then each
+                  automatic discount, so staff can see where the number came from
+                  and never re-discount the same thing by hand. */}
+              {afterBasis && (
+                <div className="rounded-md bg-muted/40 p-2 space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">How that price is built</p>
+                  <Row label="Room rate before discounts" value={formatPrice(afterBasis.gross, policies)} />
+                  {afterBasis.longStay > 0 && (
+                    <Row label="Automatic long-stay discount" value={`− ${formatPrice(afterBasis.longStay, policies)}`} />
+                  )}
+                  {afterBasis.loyalty > 0 && (
+                    <Row label="Returning-guest discount" value={`− ${formatPrice(afterBasis.loyalty, policies)}`} />
+                  )}
+                  {afterBasis.cleaning > 0 && (
+                    <Row label="Cleaning fee" value={formatPrice(afterBasis.cleaning, policies)} />
+                  )}
+                </div>
+              )}
+
               <Row
                 label={delta.direction === "credit" ? "Credit due to guest" : "Difference"}
                 value={`${delta.calculated > 0 ? "+" : ""}${formatPrice(Math.abs(delta.calculated), policies)}`}
