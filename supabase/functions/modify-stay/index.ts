@@ -339,13 +339,21 @@ serve(async (req) => {
     const { error: syncErr } = await admin.rpc("sync_booking_from_segments", { _booking_id: bookingId });
     if (syncErr) console.error("[modify-stay] sync_booking_from_segments failed:", syncErr);
 
-    // Money. `pricingAfter − waived` is the raw stay price after this change.
+    // Money. `pricingAfter` is the raw stay price after this change.
+    //
+    // The waiver is deliberately NOT subtracted here. It is booked once, as a
+    // fixed row in the adjustments ledger (see below) and folded into
+    // `netAdjustment`. Subtracting it from the base as well used to double-count
+    // it: the base shrank AND percent discounts were then recomputed on the
+    // shrunken base, quietly handing the guest 10% off the waiver too.
+    //
     // Human discounts already on the booking (`booking_adjustments`) must be
     // carried forward or they are silently deleted by the new total:
     //  - percent rows are recomputed against the new stay price and the old row
     //    is superseded so Price Story shows exactly one live discount;
     //  - fixed rows carry over untouched.
-    const baseTotal = Math.round((pricingAfter - waived) * 100) / 100;
+    const baseTotal = Math.round(pricingAfter * 100) / 100;
+
 
     const { data: liveAdjustments } = await admin
       .from("booking_adjustments")
