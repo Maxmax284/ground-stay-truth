@@ -242,10 +242,14 @@ async function notifyGuestLanded(
         Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
       },
       body: JSON.stringify({
-        user_id: booking.guest_id,
-        type: "flight_landed",
-        message: `✈️ Your flight ${flightNumber} has landed! Tap here to confirm you're ready for pickup.`,
-        reference_id: bookingId,
+        notifications: [
+          {
+            user_id: booking.guest_id,
+            type: "flight",
+            message: `✈️ Your flight ${flightNumber} has landed! Tap here to confirm you're ready for pickup.`,
+            reference_id: bookingId,
+          },
+        ],
       }),
     });
 
