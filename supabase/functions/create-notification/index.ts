@@ -52,45 +52,58 @@ Deno.serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify caller identity and role
-    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
-      });
-    }
-
-    // Only staff (front_desk+) can create notifications
     const serviceClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const { data: callerRoles } = await serviceClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id);
+    // Trusted internal callers (schedulers like poll-flights) present the
+    // service-role key, which is not a user JWT — skip the user/role check.
+    const bearer = authHeader.slice("Bearer ".length).trim();
+    const isServiceCaller = bearer === serviceRoleKey;
 
-    const staffRoles = ["front_desk", "front_desk_supervisor", "manager", "admin"];
-    const hasStaffRole = callerRoles?.some((r: any) => staffRoles.includes(r.role));
+    if (!isServiceCaller) {
+      // Verify caller identity and role
+      const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
 
-    if (!hasStaffRole) {
-      return new Response(
-        JSON.stringify({ error: "Only staff can create notifications" }),
-        { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
-      );
+      const { data: { user }, error: userError } = await userClient.auth.getUser();
+      if (userError || !user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+        });
+      }
+
+      // Only staff (front_desk+) can create notifications
+      const { data: callerRoles } = await serviceClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+
+      const staffRoles = ["front_desk", "front_desk_supervisor", "manager", "admin"];
+      const hasStaffRole = callerRoles?.some((r: any) => staffRoles.includes(r.role));
+
+      if (!hasStaffRole) {
+        return new Response(
+          JSON.stringify({ error: "Only staff can create notifications" }),
+          { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+        );
+      }
     }
 
-    // Parse body
-    const { notifications } = await req.json();
+    // Parse body — accept either { notifications: [...] } or a single flat payload.
+    const body = await req.json();
+    const notifications = Array.isArray(body?.notifications)
+      ? body.notifications
+      : body?.user_id
+        ? [body]
+        : null;
     if (!Array.isArray(notifications) || notifications.length === 0) {
       return new Response(JSON.stringify({ error: "notifications array required" }), {
         status: 400,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
+
 
     // Validate each payload
     for (const n of notifications) {
