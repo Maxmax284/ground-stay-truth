@@ -47,6 +47,7 @@ import { GuestJourneyTimeline } from "@/components/front-desk/GuestJourneyTimeli
 import { TodaysBriefing } from "@/components/front-desk/TodaysBriefing";
 import { PickupStatusStrip } from "@/components/front-desk/PickupStatusStrip";
 import { TurnoverBoard } from "@/components/front-desk/TurnoverBoard";
+import { FlightForecastWidget } from "@/components/FlightForecastWidget";
 import { computeOperationalStatus, TONE_CLASS } from "@/lib/operationalStatus";
 import { isAcknowledged, isMoneyGapMuted, isPayOnArrival } from "@/lib/staffMarkers";
 import { formatDistanceToNow } from "date-fns";
