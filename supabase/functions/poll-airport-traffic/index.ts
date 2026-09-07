@@ -109,7 +109,7 @@ serve(async (req) => {
               results.push({ airport, direction, count: 0, success: false });
               break;
             }
-            console.error(`API error for ${airport} ${direction}:`, apiResp.status);
+            console.error(`API error for ${airport} ${direction}:`, apiResp.status, (await apiResp.text().catch(() => "")).slice(0, 500));
             results.push({ airport, direction, count: 0, success: false });
             continue;
           }
