@@ -274,6 +274,7 @@ export function useDeskCheckIn() {
       qc.invalidateQueries({ queryKey: ["check-in-desk"] });
       qc.invalidateQueries({ queryKey: ["front-desk"] });
       qc.invalidateQueries({ queryKey: ["bookings"] });
+      qc.invalidateQueries({ queryKey: ["airport-pickup"] });
     },
   });
 }
@@ -281,16 +282,23 @@ export function useDeskCheckIn() {
 /** checked_in → completed, with an awaited check-out email. */
 export function useDeskCheckOut() {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const transition = useTransitionBookingState();
 
   return useMutation({
     mutationFn: async ({
       booking,
       note,
+      completePickupToo,
     }: {
       booking: DeskBooking;
       note?: string;
+      completePickupToo?: boolean;
     }): Promise<EmailOutcome> => {
+      if (completePickupToo && booking.pickup?.needsCompletion) {
+        await completePickup(booking.pickup.id, user?.id ?? null);
+      }
+
       await transition.mutateAsync({
         bookingId: booking.id,
         fromState: "checked_in",
