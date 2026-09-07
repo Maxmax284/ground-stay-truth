@@ -139,8 +139,23 @@ export function useCheckInDesk() {
         ),
       );
       const guestEmail = b.profiles?.email ?? b.manual_guest_email ?? null;
+      const raw = pickups.find((p: any) => p.booking_id === b.id) ?? null;
+      const pickup: DeskPickup | null = raw
+        ? {
+            id: raw.id,
+            status: raw.status,
+            fee: raw.fee == null ? null : Number(raw.fee),
+            guest_landed_at: raw.guest_landed_at,
+            completed_at: raw.completed_at,
+            needsCompletion:
+              raw.pickup_enabled !== false &&
+              !raw.completed_at &&
+              !["completed", "cancelled", "declined", "failed"].includes(raw.status ?? ""),
+          }
+        : null;
       return {
         ...b,
+        pickup,
         nights,
         totalPaid,
         outstanding,
