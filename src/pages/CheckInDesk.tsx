@@ -216,6 +216,41 @@ export default function CheckInDesk() {
             </div>
           )}
 
+          {target?.pickup && target.pickup.needsCompletion && (
+            <div className="rounded-md border border-border p-3 space-y-2">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="desk-pickup"
+                  checked={pickupDone}
+                  onCheckedChange={(v) => setPickupDone(v === true)}
+                />
+                <div className="space-y-1">
+                  <label htmlFor="desk-pickup" className="text-sm font-medium flex items-center gap-2">
+                    <Car className="h-4 w-4 text-primary" />
+                    {t("checkInDesk.confirm.pickupLabel")}
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    {t("checkInDesk.confirm.pickupHint")}
+                  </p>
+                  {!!target.pickup.fee && (
+                    <p className="text-xs text-muted-foreground">
+                      {t("checkInDesk.confirm.pickupFee", {
+                        amount: formatPrice(target.pickup.fee),
+                      })}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {target?.pickup?.completed_at && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-[hsl(var(--success))]" />
+              {t("checkInDesk.confirm.pickupDone")}
+            </p>
+          )}
+
           {target && !target.booking.hasGuestAccount && (
             <p className="text-xs text-muted-foreground">
               {t("checkInDesk.confirm.noGuestAccount")}
