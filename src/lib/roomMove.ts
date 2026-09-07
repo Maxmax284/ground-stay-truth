@@ -32,6 +32,8 @@ export interface MoveConflict {
   kind: "booking" | "maintenance" | "unit_inactive";
   message: string;
   detail?: string;
+  /** When the blocker is another booking, its id — enables a room swap. */
+  blockingBookingId?: string;
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -112,6 +114,7 @@ export function findRoomMoveConflict(
         kind: "booking",
         message: `${room} is not available for this booking's full stay.`,
         detail: `Conflicts with ${b.display ? `${b.display}, ` : ""}${bIn} – ${bOut}.`,
+        blockingBookingId: b.id,
       };
     }
   }
@@ -270,4 +273,24 @@ export async function applyRoomMove(input: RoomMoveInput): Promise<BookingDateRa
   });
 
   return dates;
+}
+
+export interface RoomSwapInput {
+  bookingId: string;
+  otherBookingId: string;
+  reason?: string | null;
+}
+
+/**
+ * Swaps the rooms of two bookings in one server-side step. Needed when the two
+ * stays overlap: moving them one at a time is always blocked, because each one
+ * still occupies the room the other needs. Only `unit_id` changes on both.
+ */
+export async function swapBookingRooms(input: RoomSwapInput): Promise<void> {
+  const { error } = await (supabase as any).rpc("swap_booking_rooms", {
+    _booking_a: input.bookingId,
+    _booking_b: input.otherBookingId,
+    _reason: input.reason?.trim() || null,
+  });
+  if (error) throw new Error(error.message);
 }

@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { formatCampDate } from "@/lib/timezone";
-import { applyRoomMove, checkRoomMove, resolveBookingDates, type MoveConflict } from "@/lib/roomMove";
+import { applyRoomMove, checkRoomMove, resolveBookingDates, swapBookingRooms, type MoveConflict } from "@/lib/roomMove";
 import type { Unit } from "@/hooks/useUnits";
 
 export interface MoveRoomBooking {
@@ -40,6 +40,7 @@ export function MoveRoomDialog({ open, onOpenChange, booking, units, fixedTarget
   const [conflict, setConflict] = useState<MoveConflict | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [swapping, setSwapping] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -47,6 +48,7 @@ export function MoveRoomDialog({ open, onOpenChange, booking, units, fixedTarget
     setReason("");
     setConflict(null);
     setLoadError(null);
+    setSwapping(false);
   }, [open, fixedTargetUnitId, booking?.id]);
 
   const dates = useMemo(() => resolveBookingDates(booking ?? undefined), [booking]);
@@ -80,6 +82,36 @@ export function MoveRoomDialog({ open, onOpenChange, booking, units, fixedTarget
     };
   }, [open, booking?.id, targetUnitId]);
 
+  const refreshBoards = () => {
+    queryClient.invalidateQueries({ queryKey: ["bookings"] });
+    queryClient.invalidateQueries({ queryKey: ["booking"] });
+    queryClient.invalidateQueries({ queryKey: ["booking-segments"] });
+    queryClient.invalidateQueries({ queryKey: ["calendar-bookings"] });
+    queryClient.invalidateQueries({ queryKey: ["maintenance_blocks"] });
+    queryClient.invalidateQueries({ queryKey: ["front-desk"] });
+    queryClient.invalidateQueries({ queryKey: ["override-audit"] });
+  };
+
+  const handleSwap = async () => {
+    if (!booking || !targetUnit || !conflict?.blockingBookingId) return;
+    setSwapping(true);
+    try {
+      await swapBookingRooms({
+        bookingId: booking.id,
+        otherBookingId: conflict.blockingBookingId,
+        reason: reason,
+      });
+      refreshBoards();
+      toast({ title: `Rooms swapped. This booking is now in ${targetUnit.name}.` });
+      onOpenChange(false);
+      onMoved?.();
+    } catch (e) {
+      toast({ title: "Could not swap the two bookings", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setSwapping(false);
+    }
+  };
+
   const handleConfirm = async () => {
     if (!booking || !targetUnit) return;
     setSaving(true);
@@ -94,11 +126,7 @@ export function MoveRoomDialog({ open, onOpenChange, booking, units, fixedTarget
         reason,
         source: fixedTargetUnitId ? "calendar_drag_move" : "room_shuffle",
       });
-      queryClient.invalidateQueries({ queryKey: ["bookings"] });
-      queryClient.invalidateQueries({ queryKey: ["booking"] });
-      queryClient.invalidateQueries({ queryKey: ["maintenance_blocks"] });
-      queryClient.invalidateQueries({ queryKey: ["front-desk"] });
-      queryClient.invalidateQueries({ queryKey: ["override-audit"] });
+      refreshBoards();
       toast({ title: `Booking moved to ${targetUnit.name}.` });
       onOpenChange(false);
       onMoved?.();
@@ -178,14 +206,26 @@ export function MoveRoomDialog({ open, onOpenChange, booking, units, fixedTarget
                     "Could not move booking because the booking dates could not be loaded."}
                 </p>
                 {conflict?.detail && <p className="text-muted-foreground mt-0.5">{conflict.detail}</p>}
+                {conflict?.blockingBookingId && (
+                  <div className="mt-2 space-y-1.5">
+                    <p className="text-muted-foreground">
+                      Both stays can trade rooms instead: this booking takes {targetUnit?.name}, and that booking
+                      takes {booking?.unitName ?? "this room"}.
+                    </p>
+                    <Button size="sm" variant="secondary" onClick={handleSwap} disabled={swapping || saving}>
+                      {swapping && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+                      Swap the two bookings
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           )}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-          <Button onClick={handleConfirm} disabled={blocked || saving}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving || swapping}>Cancel</Button>
+          <Button onClick={handleConfirm} disabled={blocked || saving || swapping}>
             {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
             Confirm move
           </Button>
