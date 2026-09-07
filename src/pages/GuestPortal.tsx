@@ -62,6 +62,7 @@ import { MessagingConnectCard } from "@/components/MessagingConnectCard";
 import { GuestPersonalGuideCard } from "@/components/GuestPersonalGuideCard";
 import { GuestStaySummary } from "@/components/GuestStaySummary";
 import { GuestPickupCard } from "@/components/GuestPickupCard";
+import { GuestFlightTracker } from "@/components/GuestFlightTracker";
 import { ArrivalRouteFAQ } from "@/components/ArrivalRouteFAQ";
 import { GuestDepositSection } from "@/components/GuestDepositSection";
 import { GuestPaymentSummary } from "@/components/GuestPaymentSummary";
