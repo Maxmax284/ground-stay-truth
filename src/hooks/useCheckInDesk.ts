@@ -317,6 +317,7 @@ export function useDeskCheckOut() {
       qc.invalidateQueries({ queryKey: ["check-in-desk"] });
       qc.invalidateQueries({ queryKey: ["front-desk"] });
       qc.invalidateQueries({ queryKey: ["bookings"] });
+      qc.invalidateQueries({ queryKey: ["airport-pickup"] });
     },
   });
 }
