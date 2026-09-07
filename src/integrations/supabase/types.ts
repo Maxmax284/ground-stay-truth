@@ -4912,6 +4912,10 @@ export type Database = {
       }
       reset_sandbox: { Args: never; Returns: Json }
       revoke_admin_elevation: { Args: { _grant_id: string }; Returns: boolean }
+      swap_booking_rooms: {
+        Args: { _booking_a: string; _booking_b: string; _reason?: string }
+        Returns: Json
+      }
       sync_booking_from_segments: {
         Args: { _booking_id: string }
         Returns: undefined
