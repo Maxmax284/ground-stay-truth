@@ -46,6 +46,18 @@ export type DeskBooking = {
   guestEmail: string | null;
   hasGuestAccount: boolean;
   overdue: boolean;
+  /** Airport pickup attached to this booking, if any. */
+  pickup: DeskPickup | null;
+};
+
+export type DeskPickup = {
+  id: string;
+  status: string;
+  fee: number | null;
+  guest_landed_at: string | null;
+  completed_at: string | null;
+  /** Pickup is live and still needs a staff sign-off. */
+  needsCompletion: boolean;
 };
 
 const SELECT = `
