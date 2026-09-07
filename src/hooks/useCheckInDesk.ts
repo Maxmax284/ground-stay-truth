@@ -209,6 +209,23 @@ async function sendStateEmail(bookingId: string, state: string): Promise<EmailOu
   return { sent: !!payload.sent, reason: payload.reason };
 }
 
+/**
+ * Signs off a live airport pickup as completed. Staff-only action — the desk is
+ * the last place the pickup can be honestly closed. Fee obligations are left to
+ * the existing payment triggers, so the balance re-reads itself.
+ */
+async function completePickup(pickupId: string, staffId: string | null): Promise<void> {
+  const { error } = await supabase
+    .from("airport_pickups")
+    .update({
+      status: "completed",
+      completed_at: new Date().toISOString(),
+      completed_by: staffId,
+    } as any)
+    .eq("id", pickupId);
+  if (error) throw error;
+}
+
 /** confirmed → checked_in, with arrival stamp and an awaited welcome email. */
 export function useDeskCheckIn() {
   const qc = useQueryClient();
@@ -219,10 +236,16 @@ export function useDeskCheckIn() {
     mutationFn: async ({
       booking,
       note,
+      completePickupToo,
     }: {
       booking: DeskBooking;
       note?: string;
+      completePickupToo?: boolean;
     }): Promise<EmailOutcome> => {
+      if (completePickupToo && booking.pickup?.needsCompletion) {
+        await completePickup(booking.pickup.id, user?.id ?? null);
+      }
+
       // Stamp physical arrival first so the marker survives even if the guest
       // record already had one.
       if (!booking.arrived_at) {
