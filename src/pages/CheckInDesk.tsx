@@ -169,6 +169,7 @@ export default function CheckInDesk() {
               onOpen={setDetailId}
               onAct={(booking) => {
                 setNote("");
+                setPickupDone(true);
                 setTarget({ booking, mode: "out" });
               }}
             />
