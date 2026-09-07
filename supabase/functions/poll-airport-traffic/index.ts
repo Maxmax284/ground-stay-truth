@@ -69,7 +69,9 @@ serve(async (req) => {
       .gte("arrival_datetime", startOfDay)
       .lte("arrival_datetime", endOfDay);
 
-    if (!relevantPickups || relevantPickups.length === 0) {
+    // ?force=1 bypasses the quota-saving short-circuit for manual verification runs.
+    const force = new URL(req.url).searchParams.get("force") === "1";
+    if (!force && (!relevantPickups || relevantPickups.length === 0)) {
       console.log("No pickups today with flight numbers — skipping AviationStack scan to preserve quota.");
       return new Response(JSON.stringify({
         message: "No flights to track today. Skipped provider scan.",
