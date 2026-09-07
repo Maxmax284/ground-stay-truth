@@ -216,7 +216,7 @@ export default function CheckInDesk() {
             </div>
           )}
 
-          {target?.pickup && target.pickup.needsCompletion && (
+          {target?.booking.pickup && target.booking.pickup.needsCompletion && (
             <div className="rounded-md border border-border p-3 space-y-2">
               <div className="flex items-start gap-3">
                 <Checkbox
@@ -232,10 +232,10 @@ export default function CheckInDesk() {
                   <p className="text-xs text-muted-foreground">
                     {t("checkInDesk.confirm.pickupHint")}
                   </p>
-                  {!!target.pickup.fee && (
+                  {!!target.booking.pickup.fee && (
                     <p className="text-xs text-muted-foreground">
                       {t("checkInDesk.confirm.pickupFee", {
-                        amount: formatPrice(target.pickup.fee),
+                        amount: formatPrice(target.booking.pickup.fee),
                       })}
                     </p>
                   )}
@@ -244,7 +244,7 @@ export default function CheckInDesk() {
             </div>
           )}
 
-          {target?.pickup?.completed_at && (
+          {target?.booking.pickup?.completed_at && (
             <p className="text-xs text-muted-foreground flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-[hsl(var(--success))]" />
               {t("checkInDesk.confirm.pickupDone")}
