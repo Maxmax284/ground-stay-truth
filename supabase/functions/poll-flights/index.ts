@@ -245,7 +245,7 @@ async function notifyGuestLanded(
         notifications: [
           {
             user_id: booking.guest_id,
-            type: "flight",
+            type: "flight_landed",
             message: `✈️ Your flight ${flightNumber} has landed! Tap here to confirm you're ready for pickup.`,
             reference_id: bookingId,
           },

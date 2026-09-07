@@ -142,6 +142,7 @@ Deno.serve(async (req) => {
       message: "💬 Message",
       review: "⭐ Review",
       flight: "✈️ Flight",
+      flight_landed: "✈️ Flight",
     };
 
     // Group messages by user for a cleaner push
