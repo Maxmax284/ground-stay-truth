@@ -1023,7 +1023,6 @@
     "stopSpeaking": "Stop speaking",
     "speechLoading": "Loading…",
     "readAloud": "Read aloud"
-
   },
   "translation": {
     "translate": "Translate",
@@ -2011,6 +2010,64 @@
       "security_depositHelp": "Security deposit was taken or waived in person.",
       "confirmedBy": "Confirmed by {{by}} · {{at}}",
       "notePlaceholder": "Optional note (e.g. bank transfer received 3 Aug)"
+    }
+  },
+  "checkInDesk": {
+    "title": "Check-In Desk",
+    "subtitle": "Arrivals, departures and the money still owed.",
+    "nights": "{{count}} night",
+    "nights_plural": "{{count}} nights",
+    "paidInFull": "Paid in full",
+    "owed": "{{amount}} still owed",
+    "noEmail": "No email on file",
+    "stats": {
+      "arrivals": "Arrivals",
+      "departures": "Departures due",
+      "unresolvedMoney": "Balances open"
+    },
+    "tabs": {
+      "arrivals": "Arrivals ({{count}})",
+      "departures": "Departures ({{count}})"
+    },
+    "empty": {
+      "arrivals": "No arrivals waiting.",
+      "departures": "No one is checked in right now."
+    },
+    "badges": {
+      "arrived": "Arrived",
+      "lateArrival": "Late arrival",
+      "lateDeparture": "Late departure",
+      "pickupOpen": "Pickup open",
+      "pickupDone": "Pickup done",
+      "landed": "Landed"
+    },
+    "actions": {
+      "checkIn": "Check in",
+      "checkOut": "Check out",
+      "openBooking": "Open booking"
+    },
+    "confirm": {
+      "inTitle": "Check this guest in",
+      "outTitle": "Close this stay",
+      "body": "{{name}} — {{unit}}",
+      "balanceWarning": "{{amount}} still owed",
+      "balanceHint": "Take payment first if you can. Checking out does not clear the balance.",
+      "noGuestAccount": "This guest has no account, so no email will be sent.",
+      "noteLabel": "Note (optional)",
+      "notePlaceholder": "Anything the next shift should know",
+      "pickupLabel": "Mark airport pickup as completed",
+      "pickupHint": "Signs off the driver run. The pickup fee stays on the bill until it is paid.",
+      "pickupFee": "Pickup fee {{amount}}",
+      "pickupDone": "Pickup already signed off."
+    },
+    "email": {
+      "sent": "Guest email sent",
+      "notSent": "Guest email not sent ({{reason}})"
+    },
+    "toast": {
+      "checkedIn": "{{name}} checked in",
+      "checkedOut": "{{name}} checked out",
+      "failed": "That didn't go through"
     }
   }
 }

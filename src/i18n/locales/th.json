@@ -996,7 +996,6 @@
     "stopSpeaking": "หยุดพูด",
     "speechLoading": "กำลังโหลด…",
     "readAloud": "อ่านออกเสียง"
-
   },
   "translation": {
     "translate": "แปล",
@@ -2011,6 +2010,64 @@
       "security_depositHelp": "เงินประกันรับหรือยกเว้นในตัว",
       "confirmedBy": "ยืนยันโดย {{by}} · {{at}}",
       "notePlaceholder": "หมายเหตุเพิ่มเติม (เช่น ได้รับโอนเงิน 3 ส.ค.)"
+    }
+  },
+  "checkInDesk": {
+    "title": "เคาน์เตอร์เช็คอิน",
+    "subtitle": "ผู้มาถึง ผู้ออก และยอดค้างชำระ",
+    "nights": "{{count}} คืน",
+    "nights_plural": "{{count}} คืน",
+    "paidInFull": "ชำระครบแล้ว",
+    "owed": "ค้างชำระ {{amount}}",
+    "noEmail": "ไม่มีอีเมล",
+    "stats": {
+      "arrivals": "ผู้มาถึง",
+      "departures": "ผู้ออกวันนี้",
+      "unresolvedMoney": "ยอดค้าง"
+    },
+    "tabs": {
+      "arrivals": "ผู้มาถึง ({{count}})",
+      "departures": "ผู้ออก ({{count}})"
+    },
+    "empty": {
+      "arrivals": "ไม่มีผู้มาถึงรอ",
+      "departures": "ยังไม่มีแขกเช็คอินอยู่"
+    },
+    "badges": {
+      "arrived": "มาถึงแล้ว",
+      "lateArrival": "มาถึงล่าช้า",
+      "lateDeparture": "ออกล่าช้า",
+      "pickupOpen": "รอรับสนามบิน",
+      "pickupDone": "รับแล้ว",
+      "landed": "เครื่องลงแล้ว"
+    },
+    "actions": {
+      "checkIn": "เช็คอิน",
+      "checkOut": "เช็คเอาท์",
+      "openBooking": "เปิดการจอง"
+    },
+    "confirm": {
+      "inTitle": "เช็คอินแขกรายนี้",
+      "outTitle": "ปิดการเข้าพัก",
+      "body": "{{name}} — {{unit}}",
+      "balanceWarning": "ค้างชำระ {{amount}}",
+      "balanceHint": "เก็บเงินก่อนถ้าทำได้ การเช็คเอาท์ไม่ล้างยอดค้าง",
+      "noGuestAccount": "แขกรายนี้ไม่มีบัญชี จะไม่มีการส่งอีเมล",
+      "noteLabel": "บันทึก (ไม่บังคับ)",
+      "notePlaceholder": "สิ่งที่กะถัดไปควรรู้",
+      "pickupLabel": "ทำเครื่องหมายว่ารับจากสนามบินเสร็จแล้ว",
+      "pickupHint": "ปิดงานคนขับ ค่ารับส่งยังอยู่ในบิลจนกว่าจะชำระ",
+      "pickupFee": "ค่ารับส่ง {{amount}}",
+      "pickupDone": "ปิดงานรับส่งแล้ว"
+    },
+    "email": {
+      "sent": "ส่งอีเมลให้แขกแล้ว",
+      "notSent": "ไม่ได้ส่งอีเมล ({{reason}})"
+    },
+    "toast": {
+      "checkedIn": "{{name}} เช็คอินแล้ว",
+      "checkedOut": "{{name}} เช็คเอาท์แล้ว",
+      "failed": "ดำเนินการไม่สำเร็จ"
     }
   }
 }

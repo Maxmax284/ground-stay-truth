@@ -158,6 +158,21 @@ Deno.serve(async (req) => {
     const isInTransit = hasConnectingFlight && airportCode && airportCode.toLowerCase() === "bkk";
     const isAtFinalDestination = !isInTransit;
 
+    // Guest tapped "confirm pickup" at their final destination: promote the
+    // pickup to confirmed so the desk sees a live run, not a request. Only
+    // promotes from an un-actioned state — staff decisions are never overwritten,
+    // and the pickup fee obligation is left to the existing payment triggers.
+    let pickupConfirmed = false;
+    if (isAtFinalDestination && ["requested", "pending"].includes(pickup.status ?? "")) {
+      const { error: confirmError } = await serviceClient
+        .from("airport_pickups")
+        .update({ status: "confirmed", confirmed_at: now })
+        .eq("id", pickup.id)
+        .in("status", ["requested", "pending"]);
+      if (!confirmError) pickupConfirmed = true;
+      else console.error("pickup confirm failed", confirmError.message);
+    }
+
     // Cross-check: if flight tracking exists, compare arrival_iata with confirmed airport
     let airportMismatch = false;
     if (airportCode && !isInTransit) {
@@ -232,6 +247,17 @@ Deno.serve(async (req) => {
         message,
       }));
 
+      if (pickupConfirmed) {
+        notifications.push(
+          ...uniqueStaffIds.map((staffId) => ({
+            user_id: staffId,
+            type: "pickup_confirmed",
+            reference_id: booking_id,
+            message: `🚗 Pickup confirmed by ${guestName} at ${airportDisplay} (${unitName}). Driver run is live.`,
+          })),
+        );
+      }
+
       await serviceClient.from("notifications").insert(notifications);
     }
 
@@ -240,6 +266,7 @@ Deno.serve(async (req) => {
       landed_at: now,
       airport_mismatch: airportMismatch,
       in_transit: isInTransit,
+      pickup_confirmed: pickupConfirmed,
     }), {
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });

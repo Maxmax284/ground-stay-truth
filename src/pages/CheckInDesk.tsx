@@ -32,7 +32,9 @@ import {
   MailX,
   CheckCircle2,
   Clock,
+  Car,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import {
@@ -60,6 +62,8 @@ export default function CheckInDesk() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [target, setTarget] = useState<{ booking: DeskBooking; mode: Mode } | null>(null);
   const [note, setNote] = useState("");
+  // Staff sign-off for an airport pickup that is still open on this booking.
+  const [pickupDone, setPickupDone] = useState(true);
 
   const busy = checkIn.isPending || checkOut.isPending;
 
@@ -75,10 +79,11 @@ export default function CheckInDesk() {
     if (!target) return;
     const { booking, mode } = target;
     try {
+      const completePickupToo = !!booking.pickup?.needsCompletion && pickupDone;
       const outcome =
         mode === "in"
-          ? await checkIn.mutateAsync({ booking, note })
-          : await checkOut.mutateAsync({ booking, note });
+          ? await checkIn.mutateAsync({ booking, note, completePickupToo })
+          : await checkOut.mutateAsync({ booking, note, completePickupToo });
       toast.success(
         mode === "in"
           ? t("checkInDesk.toast.checkedIn", { name: resolveGuestDisplayName(booking) })
@@ -148,6 +153,7 @@ export default function CheckInDesk() {
               onOpen={setDetailId}
               onAct={(booking) => {
                 setNote("");
+                setPickupDone(true);
                 setTarget({ booking, mode: "in" });
               }}
             />
@@ -163,6 +169,7 @@ export default function CheckInDesk() {
               onOpen={setDetailId}
               onAct={(booking) => {
                 setNote("");
+                setPickupDone(true);
                 setTarget({ booking, mode: "out" });
               }}
             />
@@ -207,6 +214,41 @@ export default function CheckInDesk() {
                 {t("checkInDesk.confirm.balanceHint")}
               </p>
             </div>
+          )}
+
+          {target?.booking.pickup && target.booking.pickup.needsCompletion && (
+            <div className="rounded-md border border-border p-3 space-y-2">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="desk-pickup"
+                  checked={pickupDone}
+                  onCheckedChange={(v) => setPickupDone(v === true)}
+                />
+                <div className="space-y-1">
+                  <label htmlFor="desk-pickup" className="text-sm font-medium flex items-center gap-2">
+                    <Car className="h-4 w-4 text-primary" />
+                    {t("checkInDesk.confirm.pickupLabel")}
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    {t("checkInDesk.confirm.pickupHint")}
+                  </p>
+                  {!!target.booking.pickup.fee && (
+                    <p className="text-xs text-muted-foreground">
+                      {t("checkInDesk.confirm.pickupFee", {
+                        amount: formatPrice(target.booking.pickup.fee),
+                      })}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {target?.booking.pickup?.completed_at && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-[hsl(var(--success))]" />
+              {t("checkInDesk.confirm.pickupDone")}
+            </p>
           )}
 
           {target && !target.booking.hasGuestAccount && (
@@ -330,6 +372,18 @@ function DeskList({
                 {b.arrived_at && mode === "in" && (
                   <Badge className="bg-info/20 text-[hsl(var(--info))]">
                     {t("checkInDesk.badges.arrived")}
+                  </Badge>
+                )}
+                {b.pickup?.needsCompletion && (
+                  <Badge className="bg-warning/20 text-warning-foreground">
+                    <Car className="h-3 w-3 mr-1" />
+                    {t("checkInDesk.badges.pickupOpen")}
+                  </Badge>
+                )}
+                {b.pickup && !b.pickup.needsCompletion && b.pickup.completed_at && (
+                  <Badge variant="secondary">
+                    <Car className="h-3 w-3 mr-1" />
+                    {t("checkInDesk.badges.pickupDone")}
                   </Badge>
                 )}
               </div>

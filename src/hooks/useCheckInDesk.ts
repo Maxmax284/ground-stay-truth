@@ -46,6 +46,18 @@ export type DeskBooking = {
   guestEmail: string | null;
   hasGuestAccount: boolean;
   overdue: boolean;
+  /** Airport pickup attached to this booking, if any. */
+  pickup: DeskPickup | null;
+};
+
+export type DeskPickup = {
+  id: string;
+  status: string;
+  fee: number | null;
+  guest_landed_at: string | null;
+  completed_at: string | null;
+  /** Pickup is live and still needs a staff sign-off. */
+  needsCompletion: boolean;
 };
 
 const SELECT = `
@@ -92,9 +104,23 @@ export function useCheckInDesk() {
     },
   });
 
+  const pickupsQuery = useQuery({
+    queryKey: ["check-in-desk", "pickups", bookingIds.slice().sort().join(",")],
+    enabled: bookingIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("airport_pickups")
+        .select("id, booking_id, status, fee, guest_landed_at, completed_at, pickup_enabled")
+        .in("booking_id", bookingIds);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const enriched: DeskBooking[] = useMemo(() => {
     const rows = bookingsQuery.data ?? [];
     const pays = paymentsQuery.data ?? [];
+    const pickups = pickupsQuery.data ?? [];
     return rows.map((b: any) => {
       const mine = pays.filter((p: any) => p.booking_id === b.id);
       const { totalPaid, outstanding } = calculateOutstanding(
@@ -113,8 +139,23 @@ export function useCheckInDesk() {
         ),
       );
       const guestEmail = b.profiles?.email ?? b.manual_guest_email ?? null;
+      const raw = pickups.find((p: any) => p.booking_id === b.id) ?? null;
+      const pickup: DeskPickup | null = raw
+        ? {
+            id: raw.id,
+            status: raw.status,
+            fee: raw.fee == null ? null : Number(raw.fee),
+            guest_landed_at: raw.guest_landed_at,
+            completed_at: raw.completed_at,
+            needsCompletion:
+              raw.pickup_enabled !== false &&
+              !raw.completed_at &&
+              !["completed", "cancelled", "declined", "failed"].includes(raw.status ?? ""),
+          }
+        : null;
       return {
         ...b,
+        pickup,
         nights,
         totalPaid,
         outstanding,
@@ -124,7 +165,7 @@ export function useCheckInDesk() {
         overdue: b.state === "confirmed" ? b.check_in < today : b.check_out < today,
       } as DeskBooking;
     });
-  }, [bookingsQuery.data, paymentsQuery.data, today]);
+  }, [bookingsQuery.data, paymentsQuery.data, pickupsQuery.data, today]);
 
   const sections = useMemo(() => {
     // Arrivals the desk can act on: confirmed and due today, or overdue.
@@ -149,6 +190,7 @@ export function useCheckInDesk() {
     refetch: () => {
       bookingsQuery.refetch();
       paymentsQuery.refetch();
+      pickupsQuery.refetch();
     },
   };
 }
@@ -167,6 +209,23 @@ async function sendStateEmail(bookingId: string, state: string): Promise<EmailOu
   return { sent: !!payload.sent, reason: payload.reason };
 }
 
+/**
+ * Signs off a live airport pickup as completed. Staff-only action — the desk is
+ * the last place the pickup can be honestly closed. Fee obligations are left to
+ * the existing payment triggers, so the balance re-reads itself.
+ */
+async function completePickup(pickupId: string, staffId: string | null): Promise<void> {
+  const { error } = await supabase
+    .from("airport_pickups")
+    .update({
+      status: "completed",
+      completed_at: new Date().toISOString(),
+      completed_by: staffId,
+    } as any)
+    .eq("id", pickupId);
+  if (error) throw error;
+}
+
 /** confirmed → checked_in, with arrival stamp and an awaited welcome email. */
 export function useDeskCheckIn() {
   const qc = useQueryClient();
@@ -177,10 +236,16 @@ export function useDeskCheckIn() {
     mutationFn: async ({
       booking,
       note,
+      completePickupToo,
     }: {
       booking: DeskBooking;
       note?: string;
+      completePickupToo?: boolean;
     }): Promise<EmailOutcome> => {
+      if (completePickupToo && booking.pickup?.needsCompletion) {
+        await completePickup(booking.pickup.id, user?.id ?? null);
+      }
+
       // Stamp physical arrival first so the marker survives even if the guest
       // record already had one.
       if (!booking.arrived_at) {
@@ -209,6 +274,7 @@ export function useDeskCheckIn() {
       qc.invalidateQueries({ queryKey: ["check-in-desk"] });
       qc.invalidateQueries({ queryKey: ["front-desk"] });
       qc.invalidateQueries({ queryKey: ["bookings"] });
+      qc.invalidateQueries({ queryKey: ["airport-pickup"] });
     },
   });
 }
@@ -216,16 +282,23 @@ export function useDeskCheckIn() {
 /** checked_in → completed, with an awaited check-out email. */
 export function useDeskCheckOut() {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const transition = useTransitionBookingState();
 
   return useMutation({
     mutationFn: async ({
       booking,
       note,
+      completePickupToo,
     }: {
       booking: DeskBooking;
       note?: string;
+      completePickupToo?: boolean;
     }): Promise<EmailOutcome> => {
+      if (completePickupToo && booking.pickup?.needsCompletion) {
+        await completePickup(booking.pickup.id, user?.id ?? null);
+      }
+
       await transition.mutateAsync({
         bookingId: booking.id,
         fromState: "checked_in",
@@ -244,6 +317,7 @@ export function useDeskCheckOut() {
       qc.invalidateQueries({ queryKey: ["check-in-desk"] });
       qc.invalidateQueries({ queryKey: ["front-desk"] });
       qc.invalidateQueries({ queryKey: ["bookings"] });
+      qc.invalidateQueries({ queryKey: ["airport-pickup"] });
     },
   });
 }
