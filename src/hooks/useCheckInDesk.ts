@@ -165,7 +165,7 @@ export function useCheckInDesk() {
         overdue: b.state === "confirmed" ? b.check_in < today : b.check_out < today,
       } as DeskBooking;
     });
-  }, [bookingsQuery.data, paymentsQuery.data, today]);
+  }, [bookingsQuery.data, paymentsQuery.data, pickupsQuery.data, today]);
 
   const sections = useMemo(() => {
     // Arrivals the desk can act on: confirmed and due today, or overdue.
