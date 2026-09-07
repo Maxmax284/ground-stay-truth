@@ -78,7 +78,7 @@ serve(async (req) => {
     const pickupIds = pickups.map(p => p.id);
     const { data: existingTracking } = await serviceClient
       .from("flight_tracking")
-      .select("pickup_id, flight_status")
+      .select("pickup_id, flight_status, last_checked_at")
       .in("pickup_id", pickupIds);
 
     const terminalStatuses = new Set(["landed", "cancelled", "diverted"]);
@@ -91,10 +91,35 @@ serve(async (req) => {
         .map(([id]) => id)
     );
 
-    const activePickups = pickups.filter(p => !terminalPickupIds.has(p.id));
+    // Per-pickup cooldown: never re-poll the same flight more often than this.
+    // Flights close to arrival get the tight interval, distant ones a lazy one —
+    // so no single guest's flight burns the provider quota.
+    const NEAR_WINDOW_MS = 6 * 60 * 60 * 1000; // within 6h of arrival = "near"
+    const NEAR_COOLDOWN_MIN = 15;
+    const FAR_COOLDOWN_MIN = 120;
+    const lastCheckedMap: Record<string, string | null> = {};
+    (existingTracking ?? []).forEach(ft => { lastCheckedMap[ft.pickup_id] = ft.last_checked_at ?? null; });
+
+    const now = Date.now();
+    let skippedCooldown = 0;
+
+    const activePickups = pickups.filter(p => {
+      if (terminalPickupIds.has(p.id)) return false;
+      const last = lastCheckedMap[p.id];
+      if (!last) return true;
+      const minsSince = (now - new Date(last).getTime()) / 60000;
+      const arrivalMs = p.arrival_datetime ? new Date(p.arrival_datetime).getTime() : Infinity;
+      const isNear = Math.abs(arrivalMs - now) <= NEAR_WINDOW_MS;
+      const cooldown = isNear ? NEAR_COOLDOWN_MIN : FAR_COOLDOWN_MIN;
+      if (minsSince < cooldown) {
+        skippedCooldown++;
+        return false;
+      }
+      return true;
+    });
 
     if (!activePickups.length) {
-      return new Response(JSON.stringify({ message: "All today's flights already in terminal state", checked: 0 }), {
+      return new Response(JSON.stringify({ message: "No flights due for a refresh (terminal state or within cooldown)", checked: 0, skipped_cooldown: skippedCooldown }), {
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
@@ -118,7 +143,8 @@ serve(async (req) => {
     });
 
     const BATCH_SIZE = 10;
-    const MAX_PROCESS = 100; // Hard limit per invocation to stay within timeout
+    // Hard provider-call ceiling per run — protects the monthly quota.
+    const MAX_PROCESS = 25;
     const toProcess = activePickups.slice(0, MAX_PROCESS);
     for (let i = 0; i < toProcess.length; i += BATCH_SIZE) {
       const batch = toProcess.slice(i, i + BATCH_SIZE);
@@ -196,12 +222,13 @@ serve(async (req) => {
 
     const successCount = results.filter(r => r.success).length;
     const skipped = activePickups.length - toProcess.length;
-    console.log(`Poll complete: ${successCount}/${toProcess.length} flights updated${skipped > 0 ? `, ${skipped} deferred` : ""}`);
+    console.log(`Poll complete: ${successCount}/${toProcess.length} flights updated${skipped > 0 ? `, ${skipped} deferred` : ""}${skippedCooldown > 0 ? `, ${skippedCooldown} on cooldown` : ""}`);
 
     return new Response(JSON.stringify({
       message: `Polled ${toProcess.length} flights, ${successCount} updated${skipped > 0 ? `, ${skipped} deferred to next run` : ""}`,
       checked: toProcess.length,
       deferred: skipped,
+      skipped_cooldown: skippedCooldown,
       results,
     }), {
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },

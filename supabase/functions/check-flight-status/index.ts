@@ -38,6 +38,28 @@ function getCorsHeaders(req: Request) {
 
 const AVIATIONSTACK_BASE = "http://api.aviationstack.com/v1";
 const STALE_MINUTES = 10;
+// Hard floor: even a manual "refresh" cannot hit the provider more often than
+// this per pickup. Protects the monthly quota from one guest/flight being
+// hammered by repeated staff refreshes or a stuck UI.
+const FORCE_REFRESH_COOLDOWN_MINUTES = 3;
+
+// ── Per-user + per-pickup rate limiting (in-memory, per isolate) ──
+const RATE_WINDOW_MS = 60 * 1000;
+const USER_LIMIT_PER_MIN = 8;
+const PICKUP_LIMIT_PER_MIN = 3;
+const rateBuckets = new Map<string, { count: number; resetAt: number }>();
+
+function hitLimit(key: string, max: number): boolean {
+  const now = Date.now();
+  const entry = rateBuckets.get(key);
+  if (!entry || now > entry.resetAt) {
+    rateBuckets.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return false;
+  }
+  if (entry.count >= max) return true;
+  entry.count++;
+  return false;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: getCorsHeaders(req) });
@@ -95,6 +117,13 @@ serve(async (req) => {
     // Clean flight number: remove spaces, uppercase
     const cleanFlight = flight_number.replace(/\s+/g, "").toUpperCase();
 
+    // Throttle before any provider work
+    if (hitLimit(`u:${user.id}`, USER_LIMIT_PER_MIN) || hitLimit(`p:${pickup_id}`, PICKUP_LIMIT_PER_MIN)) {
+      return new Response(JSON.stringify({ error: "Too many flight lookups. Try again in a minute.", rate_limited: true }), {
+        status: 429, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+
     // Check cache first
     const { data: cached } = await serviceClient
       .from("flight_tracking")
@@ -102,20 +131,31 @@ serve(async (req) => {
       .eq("pickup_id", pickup_id)
       .maybeSingle();
 
-    if (cached && !force_refresh) {
-      const lastChecked = new Date(cached.last_checked_at).getTime();
-      const now = Date.now();
-      const minutesSinceCheck = (now - lastChecked) / 60000;
+    if (cached) {
+      const lastChecked = cached.last_checked_at ? new Date(cached.last_checked_at).getTime() : 0;
+      const minutesSinceCheck = (Date.now() - lastChecked) / 60000;
 
-      // If landed/cancelled, no need to re-check
+      // Terminal states never need another provider call
       if (["landed", "cancelled", "diverted"].includes(cached.flight_status)) {
         return new Response(JSON.stringify({ flight: cached, source: "cache" }), {
           headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
       }
 
-      // If fresh enough, return cache
-      if (minutesSinceCheck < STALE_MINUTES) {
+      // Manual refresh still respects a hard cooldown per pickup
+      if (force_refresh && minutesSinceCheck < FORCE_REFRESH_COOLDOWN_MINUTES) {
+        return new Response(JSON.stringify({
+          flight: cached,
+          source: "cache",
+          cooldown: true,
+          retry_after_seconds: Math.max(1, Math.ceil((FORCE_REFRESH_COOLDOWN_MINUTES - minutesSinceCheck) * 60)),
+        }), {
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+        });
+      }
+
+      // Normal path: serve cache while fresh
+      if (!force_refresh && minutesSinceCheck < STALE_MINUTES) {
         return new Response(JSON.stringify({ flight: cached, source: "cache" }), {
           headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
