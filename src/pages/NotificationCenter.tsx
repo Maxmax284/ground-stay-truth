@@ -27,6 +27,8 @@ const TYPE_ICONS: Record<string, string> = {
   security_freeze: "🚨",
   security_unfreeze: "✅",
   flight_landed: "✈️",
+  guest_landed: "🛬",
+  pickup_confirmed: "🚗",
   message: "💬",
   review: "⭐",
 };
