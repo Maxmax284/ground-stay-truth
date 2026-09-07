@@ -79,10 +79,11 @@ export default function CheckInDesk() {
     if (!target) return;
     const { booking, mode } = target;
     try {
+      const completePickupToo = !!booking.pickup?.needsCompletion && pickupDone;
       const outcome =
         mode === "in"
-          ? await checkIn.mutateAsync({ booking, note })
-          : await checkOut.mutateAsync({ booking, note });
+          ? await checkIn.mutateAsync({ booking, note, completePickupToo })
+          : await checkOut.mutateAsync({ booking, note, completePickupToo });
       toast.success(
         mode === "in"
           ? t("checkInDesk.toast.checkedIn", { name: resolveGuestDisplayName(booking) })
