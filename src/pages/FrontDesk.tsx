@@ -111,6 +111,9 @@ export default function FrontDesk() {
           onOpen={setDetailId}
         />
 
+        {/* Flight board — today's Samui/Bangkok traffic, guest flights flagged BOOKED */}
+        <FlightForecastWidget onClickBooking={setDetailId} />
+
         {/* Cleaning Today — open housekeeping tasks straight from the source */}
         <TurnoverBoard
           tasks={todaysTasks}
