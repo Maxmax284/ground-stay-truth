@@ -142,6 +142,13 @@ serve(async (req) => {
             const flightIata = fd.flight?.iata;
             if (!flightIata) continue;
 
+            // Only cache flights actually scheduled today (Bangkok-local date via UTC+7).
+            const schedRaw = direction === "arrival" ? fd.arrival?.scheduled : fd.departure?.scheduled;
+            if (schedRaw) {
+              const bkkDate = new Date(new Date(schedRaw).getTime() + 7 * 3600 * 1000).toISOString().split("T")[0];
+              if (bkkDate !== today) continue;
+            }
+
             const cleanFlight = flightIata.replace(/\s+/g, "").toUpperCase();
             const linkedPickupId = pickupByFlight[cleanFlight] ?? null;
 
