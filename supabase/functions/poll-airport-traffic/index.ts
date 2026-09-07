@@ -1,7 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const AVIATIONSTACK_BASE = "https://api.aviationstack.com/v1";
+// AviationStack free plan does not allow HTTPS — must use plain HTTP.
+const AVIATIONSTACK_BASE = "http://api.aviationstack.com/v1";
 const MONITORED_AIRPORTS = ["BKK", "USM"]; // Suvarnabhumi & Samui
 const MAX_API_CALLS_PER_RUN = 4; // Rate limit: 4 calls per 30-min run
 
@@ -68,7 +69,9 @@ serve(async (req) => {
       .gte("arrival_datetime", startOfDay)
       .lte("arrival_datetime", endOfDay);
 
-    if (!relevantPickups || relevantPickups.length === 0) {
+    // ?force=1 bypasses the quota-saving short-circuit for manual verification runs.
+    const force = new URL(req.url).searchParams.get("force") === "1";
+    if (!force && (!relevantPickups || relevantPickups.length === 0)) {
       console.log("No pickups today with flight numbers — skipping AviationStack scan to preserve quota.");
       return new Response(JSON.stringify({
         message: "No flights to track today. Skipped provider scan.",
@@ -91,8 +94,10 @@ serve(async (req) => {
         }
 
         try {
+          // Free plan only supports real-time lookups; flight_date filtering is
+          // paid-only, so we fetch live flights and filter to today ourselves.
           const param = direction === "arrival" ? "arr_iata" : "dep_iata";
-          const apiUrl = `${AVIATIONSTACK_BASE}/flights?access_key=${AVIATIONSTACK_KEY}&${param}=${airport}&flight_date=${today}&limit=100`;
+          const apiUrl = `${AVIATIONSTACK_BASE}/flights?access_key=${AVIATIONSTACK_KEY}&${param}=${airport}&limit=100`;
           
           const apiResp = await fetch(apiUrl);
           apiCallsMade++;
@@ -106,7 +111,7 @@ serve(async (req) => {
               results.push({ airport, direction, count: 0, success: false });
               break;
             }
-            console.error(`API error for ${airport} ${direction}:`, apiResp.status);
+            console.error(`API error for ${airport} ${direction}:`, apiResp.status, (await apiResp.text().catch(() => "")).slice(0, 500));
             results.push({ airport, direction, count: 0, success: false });
             continue;
           }
@@ -136,6 +141,13 @@ serve(async (req) => {
           for (const fd of flights) {
             const flightIata = fd.flight?.iata;
             if (!flightIata) continue;
+
+            // Only cache flights actually scheduled today (Bangkok-local date via UTC+7).
+            const schedRaw = direction === "arrival" ? fd.arrival?.scheduled : fd.departure?.scheduled;
+            if (schedRaw) {
+              const bkkDate = new Date(new Date(schedRaw).getTime() + 7 * 3600 * 1000).toISOString().split("T")[0];
+              if (bkkDate !== today) continue;
+            }
 
             const cleanFlight = flightIata.replace(/\s+/g, "").toUpperCase();
             const linkedPickupId = pickupByFlight[cleanFlight] ?? null;

@@ -175,7 +175,7 @@ async function runStage2Poll(admin: any) {
 
     polled++;
     try {
-      const url = `https://api.aviationstack.com/v1/flights?access_key=${apiKey}&flight_iata=${encodeURIComponent(b.flight_number)}`;
+      const url = `http://api.aviationstack.com/v1/flights?access_key=${apiKey}&flight_iata=${encodeURIComponent(b.flight_number)}`;
       const resp = await fetch(url);
       if (!resp.ok) continue;
       const json = await resp.json();
