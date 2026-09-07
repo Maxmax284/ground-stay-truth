@@ -32,7 +32,9 @@ import {
   MailX,
   CheckCircle2,
   Clock,
+  Car,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import {
