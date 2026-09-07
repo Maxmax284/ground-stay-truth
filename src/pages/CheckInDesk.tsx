@@ -62,6 +62,8 @@ export default function CheckInDesk() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [target, setTarget] = useState<{ booking: DeskBooking; mode: Mode } | null>(null);
   const [note, setNote] = useState("");
+  // Staff sign-off for an airport pickup that is still open on this booking.
+  const [pickupDone, setPickupDone] = useState(true);
 
   const busy = checkIn.isPending || checkOut.isPending;
 
