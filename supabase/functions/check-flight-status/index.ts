@@ -129,7 +129,7 @@ serve(async (req) => {
     const cleanFlight = flight_number.replace(/\s+/g, "").toUpperCase();
 
     // Throttle before any provider work
-    if (hitLimit(`u:${user.id}`, USER_LIMIT_PER_MIN) || hitLimit(`p:${pickup_id}`, PICKUP_LIMIT_PER_MIN)) {
+    if (hitLimit(`u:${user.id}`, isStaff ? USER_LIMIT_PER_MIN : 4) || hitLimit(`p:${pickup_id}`, PICKUP_LIMIT_PER_MIN)) {
       return new Response(JSON.stringify({ error: "Too many flight lookups. Try again in a minute.", rate_limited: true }), {
         status: 429, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
