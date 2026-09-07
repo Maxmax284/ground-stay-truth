@@ -91,7 +91,32 @@ serve(async (req) => {
         .map(([id]) => id)
     );
 
-    const activePickups = pickups.filter(p => !terminalPickupIds.has(p.id));
+    // Per-pickup cooldown: never re-poll the same flight more often than this.
+    // Flights close to arrival get the tight interval, distant ones a lazy one —
+    // so no single guest's flight burns the provider quota.
+    const NEAR_WINDOW_MS = 6 * 60 * 60 * 1000; // within 6h of arrival = "near"
+    const NEAR_COOLDOWN_MIN = 15;
+    const FAR_COOLDOWN_MIN = 120;
+    const lastCheckedMap: Record<string, string | null> = {};
+    (existingTracking ?? []).forEach(ft => { lastCheckedMap[ft.pickup_id] = ft.last_checked_at ?? null; });
+
+    const now = Date.now();
+    let skippedCooldown = 0;
+
+    const activePickups = pickups.filter(p => {
+      if (terminalPickupIds.has(p.id)) return false;
+      const last = lastCheckedMap[p.id];
+      if (!last) return true;
+      const minsSince = (now - new Date(last).getTime()) / 60000;
+      const arrivalMs = p.arrival_datetime ? new Date(p.arrival_datetime).getTime() : Infinity;
+      const isNear = Math.abs(arrivalMs - now) <= NEAR_WINDOW_MS;
+      const cooldown = isNear ? NEAR_COOLDOWN_MIN : FAR_COOLDOWN_MIN;
+      if (minsSince < cooldown) {
+        skippedCooldown++;
+        return false;
+      }
+      return true;
+    });
 
     if (!activePickups.length) {
       return new Response(JSON.stringify({ message: "All today's flights already in terminal state", checked: 0 }), {
