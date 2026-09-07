@@ -119,7 +119,7 @@ serve(async (req) => {
     });
 
     if (!activePickups.length) {
-      return new Response(JSON.stringify({ message: "All today's flights already in terminal state", checked: 0 }), {
+      return new Response(JSON.stringify({ message: "No flights due for a refresh (terminal state or within cooldown)", checked: 0, skipped_cooldown: skippedCooldown }), {
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
@@ -143,7 +143,8 @@ serve(async (req) => {
     });
 
     const BATCH_SIZE = 10;
-    const MAX_PROCESS = 100; // Hard limit per invocation to stay within timeout
+    // Hard provider-call ceiling per run — protects the monthly quota.
+    const MAX_PROCESS = 25;
     const toProcess = activePickups.slice(0, MAX_PROCESS);
     for (let i = 0; i < toProcess.length; i += BATCH_SIZE) {
       const batch = toProcess.slice(i, i + BATCH_SIZE);
@@ -221,12 +222,13 @@ serve(async (req) => {
 
     const successCount = results.filter(r => r.success).length;
     const skipped = activePickups.length - toProcess.length;
-    console.log(`Poll complete: ${successCount}/${toProcess.length} flights updated${skipped > 0 ? `, ${skipped} deferred` : ""}`);
+    console.log(`Poll complete: ${successCount}/${toProcess.length} flights updated${skipped > 0 ? `, ${skipped} deferred` : ""}${skippedCooldown > 0 ? `, ${skippedCooldown} on cooldown` : ""}`);
 
     return new Response(JSON.stringify({
       message: `Polled ${toProcess.length} flights, ${successCount} updated${skipped > 0 ? `, ${skipped} deferred to next run` : ""}`,
       checked: toProcess.length,
       deferred: skipped,
+      skipped_cooldown: skippedCooldown,
       results,
     }), {
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
