@@ -78,7 +78,7 @@ serve(async (req) => {
     const pickupIds = pickups.map(p => p.id);
     const { data: existingTracking } = await serviceClient
       .from("flight_tracking")
-      .select("pickup_id, flight_status")
+      .select("pickup_id, flight_status, last_checked_at")
       .in("pickup_id", pickupIds);
 
     const terminalStatuses = new Set(["landed", "cancelled", "diverted"]);
