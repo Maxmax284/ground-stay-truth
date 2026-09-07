@@ -1070,6 +1070,11 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
           <GuestPickupCard bookingId={booking.id} guestName={guestName} />
         )}
 
+        {/* Live flight tracker — guest owns flight details, staff own the pickup */}
+        {!["completed", "cancelled", "no_show"].includes(state) && (
+          <GuestFlightTracker bookingId={booking.id} guestName={guestName} />
+        )}
+
         {/* Transit vs. Arrival FAQ — clarifies BKK/DMK/URT vs USM, with stage awareness */}
         {!["completed", "cancelled", "no_show"].includes(state) && (
           <ArrivalRouteFAQ bookingId={booking.id} />
