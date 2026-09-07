@@ -190,6 +190,7 @@ export function useCheckInDesk() {
     refetch: () => {
       bookingsQuery.refetch();
       paymentsQuery.refetch();
+      pickupsQuery.refetch();
     },
   };
 }
