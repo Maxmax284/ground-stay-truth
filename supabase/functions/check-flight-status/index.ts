@@ -85,18 +85,14 @@ serve(async (req) => {
       });
     }
 
-    // Role check — staff or admin
+    // Role check — staff, or the guest who owns this pickup's booking
     const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: roles } = await serviceClient
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
       .in("role", ["admin", "manager", "front_desk", "front_desk_supervisor"]);
-    if (!roles?.length) {
-      return new Response(JSON.stringify({ error: "Staff role required" }), {
-        status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
-      });
-    }
+    const isStaff = !!roles?.length;
 
     const AVIATIONSTACK_KEY = Deno.env.get("AVIATIONSTACK_API_KEY");
     if (!AVIATIONSTACK_KEY) {
@@ -114,11 +110,26 @@ serve(async (req) => {
       });
     }
 
+    // Guests may only look up a pickup attached to their own booking.
+    if (!isStaff) {
+      const { data: owned } = await serviceClient
+        .from("airport_pickups")
+        .select("id, bookings!inner(guest_id)")
+        .eq("id", pickup_id)
+        .maybeSingle();
+      const ownerId = (owned as any)?.bookings?.guest_id ?? null;
+      if (!owned || ownerId !== user.id) {
+        return new Response(JSON.stringify({ error: "Not allowed for this pickup" }), {
+          status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // Clean flight number: remove spaces, uppercase
     const cleanFlight = flight_number.replace(/\s+/g, "").toUpperCase();
 
     // Throttle before any provider work
-    if (hitLimit(`u:${user.id}`, USER_LIMIT_PER_MIN) || hitLimit(`p:${pickup_id}`, PICKUP_LIMIT_PER_MIN)) {
+    if (hitLimit(`u:${user.id}`, isStaff ? USER_LIMIT_PER_MIN : 4) || hitLimit(`p:${pickup_id}`, PICKUP_LIMIT_PER_MIN)) {
       return new Response(JSON.stringify({ error: "Too many flight lookups. Try again in a minute.", rate_limited: true }), {
         status: 429, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });

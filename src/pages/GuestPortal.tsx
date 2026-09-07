@@ -62,6 +62,7 @@ import { MessagingConnectCard } from "@/components/MessagingConnectCard";
 import { GuestPersonalGuideCard } from "@/components/GuestPersonalGuideCard";
 import { GuestStaySummary } from "@/components/GuestStaySummary";
 import { GuestPickupCard } from "@/components/GuestPickupCard";
+import { GuestFlightTracker } from "@/components/GuestFlightTracker";
 import { ArrivalRouteFAQ } from "@/components/ArrivalRouteFAQ";
 import { GuestDepositSection } from "@/components/GuestDepositSection";
 import { GuestPaymentSummary } from "@/components/GuestPaymentSummary";
@@ -1068,6 +1069,11 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
         {/* Airport Pickup info */}
         {!["completed", "cancelled", "no_show"].includes(state) && (
           <GuestPickupCard bookingId={booking.id} guestName={guestName} />
+        )}
+
+        {/* Live flight tracker — guest owns flight details, staff own the pickup */}
+        {!["completed", "cancelled", "no_show"].includes(state) && (
+          <GuestFlightTracker bookingId={booking.id} guestName={guestName} />
         )}
 
         {/* Transit vs. Arrival FAQ — clarifies BKK/DMK/URT vs USM, with stage awareness */}
