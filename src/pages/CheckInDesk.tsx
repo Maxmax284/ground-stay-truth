@@ -332,6 +332,18 @@ function DeskList({
                     {t("checkInDesk.badges.arrived")}
                   </Badge>
                 )}
+                {b.pickup?.needsCompletion && (
+                  <Badge className="bg-warning/20 text-warning-foreground">
+                    <Car className="h-3 w-3 mr-1" />
+                    {t("checkInDesk.badges.pickupOpen")}
+                  </Badge>
+                )}
+                {b.pickup && !b.pickup.needsCompletion && b.pickup.completed_at && (
+                  <Badge variant="secondary">
+                    <Car className="h-3 w-3 mr-1" />
+                    {t("checkInDesk.badges.pickupDone")}
+                  </Badge>
+                )}
               </div>
               <p className="text-sm text-muted-foreground">
                 {format(parseISO(b.check_in), "d MMM")} → {format(parseISO(b.check_out), "d MMM")} ·{" "}
