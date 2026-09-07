@@ -94,8 +94,10 @@ serve(async (req) => {
         }
 
         try {
+          // Free plan only supports real-time lookups; flight_date filtering is
+          // paid-only, so we fetch live flights and filter to today ourselves.
           const param = direction === "arrival" ? "arr_iata" : "dep_iata";
-          const apiUrl = `${AVIATIONSTACK_BASE}/flights?access_key=${AVIATIONSTACK_KEY}&${param}=${airport}&flight_date=${today}&limit=100`;
+          const apiUrl = `${AVIATIONSTACK_BASE}/flights?access_key=${AVIATIONSTACK_KEY}&${param}=${airport}&limit=100`;
           
           const apiResp = await fetch(apiUrl);
           apiCallsMade++;
