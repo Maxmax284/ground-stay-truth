@@ -247,6 +247,17 @@ Deno.serve(async (req) => {
         message,
       }));
 
+      if (pickupConfirmed) {
+        notifications.push(
+          ...uniqueStaffIds.map((staffId) => ({
+            user_id: staffId,
+            type: "pickup_confirmed",
+            reference_id: booking_id,
+            message: `🚗 Pickup confirmed by ${guestName} at ${airportDisplay} (${unitName}). Driver run is live.`,
+          })),
+        );
+      }
+
       await serviceClient.from("notifications").insert(notifications);
     }
 
@@ -255,6 +266,7 @@ Deno.serve(async (req) => {
       landed_at: now,
       airport_mismatch: airportMismatch,
       in_transit: isInTransit,
+      pickup_confirmed: pickupConfirmed,
     }), {
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
