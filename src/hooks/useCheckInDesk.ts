@@ -104,9 +104,23 @@ export function useCheckInDesk() {
     },
   });
 
+  const pickupsQuery = useQuery({
+    queryKey: ["check-in-desk", "pickups", bookingIds.slice().sort().join(",")],
+    enabled: bookingIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("airport_pickups")
+        .select("id, booking_id, status, fee, guest_landed_at, completed_at, pickup_enabled")
+        .in("booking_id", bookingIds);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const enriched: DeskBooking[] = useMemo(() => {
     const rows = bookingsQuery.data ?? [];
     const pays = paymentsQuery.data ?? [];
+    const pickups = pickupsQuery.data ?? [];
     return rows.map((b: any) => {
       const mine = pays.filter((p: any) => p.booking_id === b.id);
       const { totalPaid, outstanding } = calculateOutstanding(
