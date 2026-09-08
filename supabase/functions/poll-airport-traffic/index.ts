@@ -3,8 +3,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // AviationStack free plan does not allow HTTPS — must use plain HTTP.
 const AVIATIONSTACK_BASE = "http://api.aviationstack.com/v1";
-const MONITORED_AIRPORTS = ["BKK", "USM"]; // Suvarnabhumi & Samui
-const MAX_API_CALLS_PER_RUN = 4; // Rate limit: 4 calls per 30-min run
+// Gateways we receive guests from. Samui + Bangkok are always watched; the rest
+// are only scanned when a guest actually flies into them today (quota-safe).
+const ALWAYS_MONITORED = ["USM", "BKK"];
+const SUPPORTED_AIRPORTS = ["USM", "BKK", "DMK", "URT", "HKT", "CNX", "KBV", "SIN", "KUL"];
+const MAX_API_CALLS_PER_RUN = 8; // Rate limit: up to 4 airports (arr+dep) per 30-min run
+
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
