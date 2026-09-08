@@ -74,20 +74,22 @@ export function FlightForecastWidget({ onClickBooking }: Props) {
             )}
           </div>
         </div>
-        {/* Airport selector */}
-        <div className="flex gap-1 mt-2">
-          {["USM", "BKK"].map(apt => (
+        {/* Airport selector — all gateways we receive guests from */}
+        <div className="flex gap-1 mt-2 overflow-x-auto pb-1 -mx-1 px-1">
+          {TRACKED_AIRPORTS.map(apt => (
             <Button
-              key={apt}
-              variant={selectedAirport === apt ? "default" : "outline"}
+              key={apt.iata}
+              variant={selectedAirport === apt.iata ? "default" : "outline"}
               size="sm"
-              className="h-7 px-3 text-xs"
-              onClick={() => setSelectedAirport(apt)}
+              className="h-7 px-3 text-xs shrink-0"
+              onClick={() => setSelectedAirport(apt.iata)}
+              aria-pressed={selectedAirport === apt.iata}
             >
-              {apt === "USM" ? "🌴 Samui (USM)" : "🏙 Bangkok (BKK)"}
+              {apt.icon} {apt.label} ({apt.iata})
             </Button>
           ))}
         </div>
+
       </CardHeader>
       <CardContent>
         {isLoading ? (
