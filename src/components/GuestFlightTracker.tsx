@@ -297,7 +297,7 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
             {!tracking && (finalFlight || pickup.international_flight_number) && (
               <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-2.5 text-[11px] text-muted-foreground">
                 <Info className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
-                <p>{t("guestFlight.pending", "We haven't pulled your flight yet. Tap check status for a live read.")}</p>
+                <p>{t("guestFlight.pending", "Looking up your flight now — this card updates itself as soon as the airline data comes through.")}</p>
               </div>
             )}
 
