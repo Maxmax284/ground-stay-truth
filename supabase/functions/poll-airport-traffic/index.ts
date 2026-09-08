@@ -88,11 +88,46 @@ serve(async (req) => {
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
+    // Work out which gateways matter today: the two we always watch, plus any
+    // other supported airport a guest is actually flying into (from their tracked
+    // flight's arrival airport, or their confirmed arrival airport).
+    const extraAirports = new Set<string>();
+    const pickupIds = (relevantPickups ?? []).map((p: any) => p.id);
+    if (pickupIds.length > 0) {
+      const { data: tracked } = await serviceClient
+        .from("flight_tracking")
+        .select("arrival_iata")
+        .in("pickup_id", pickupIds);
+      (tracked ?? []).forEach((t: any) => {
+        const code = (t.arrival_iata ?? "").toUpperCase();
+        if (code && SUPPORTED_AIRPORTS.includes(code) && !ALWAYS_MONITORED.includes(code)) {
+          extraAirports.add(code);
+        }
+      });
+      const { data: confirmed } = await serviceClient
+        .from("airport_pickups")
+        .select("confirmed_airport")
+        .in("id", pickupIds);
+      (confirmed ?? []).forEach((c: any) => {
+        const raw = (c.confirmed_airport ?? "").toUpperCase();
+        const code = raw === "SAMUI" ? "USM" : raw;
+        if (code && SUPPORTED_AIRPORTS.includes(code) && !ALWAYS_MONITORED.includes(code)) {
+          extraAirports.add(code);
+        }
+      });
+    }
 
+    // Budget: 2 calls per airport, so cap the list to what MAX_API_CALLS_PER_RUN allows.
+    const MONITORED_AIRPORTS = [...ALWAYS_MONITORED, ...extraAirports].slice(
+      0,
+      Math.floor(MAX_API_CALLS_PER_RUN / 2),
+    );
+    console.log("Monitoring airports this run:", MONITORED_AIRPORTS.join(", "));
 
     // Fetch arrivals and departures for each airport
     for (const airport of MONITORED_AIRPORTS) {
       if (rateLimited || planBlocked) break;
+
       for (const direction of ["arrival", "departure"] as const) {
         if (rateLimited || planBlocked) break;
         if (apiCallsMade >= MAX_API_CALLS_PER_RUN) {
