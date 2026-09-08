@@ -46,9 +46,12 @@ serve(async (req) => {
     const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const today = new Date().toISOString().split("T")[0];
-    const results: Array<{ airport: string; direction: string; count: number; success: boolean }> = [];
+    const results: Array<{ airport: string; direction: string; count: number; success: boolean; error?: string }> = [];
     let apiCallsMade = 0;
     let rateLimited = false;
+    // Set when the provider refuses the endpoint outright (plan/key problem, not a blip).
+    let planBlocked = false;
+    let lastProviderError: string | null = null;
 
     // Check rate limit: count how many calls we've made today
     const { data: todayRecords } = await serviceClient
@@ -111,8 +114,18 @@ serve(async (req) => {
               results.push({ airport, direction, count: 0, success: false });
               break;
             }
-            console.error(`API error for ${airport} ${direction}:`, apiResp.status, (await apiResp.text().catch(() => "")).slice(0, 500));
-            results.push({ airport, direction, count: 0, success: false });
+            const body = (await apiResp.text().catch(() => "")).slice(0, 500);
+            console.error(`API error for ${airport} ${direction}:`, apiResp.status, body);
+            lastProviderError = `${apiResp.status} ${body}`;
+            // 403 function_access_restricted / usage_limit_reached = the key's plan
+            // cannot serve this endpoint at all. Retrying the other airports just
+            // burns the run, so stop and report the failure loudly.
+            if (apiResp.status === 403 || /function_access_restricted|usage_limit_reached|invalid_access_key/.test(body)) {
+              planBlocked = true;
+              results.push({ airport, direction, count: 0, success: false, error: "provider_rejected" });
+              break;
+            }
+            results.push({ airport, direction, count: 0, success: false, error: `http_${apiResp.status}` });
             continue;
           }
 
