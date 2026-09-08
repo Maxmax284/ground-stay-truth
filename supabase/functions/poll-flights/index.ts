@@ -201,6 +201,30 @@ serve(async (req) => {
               await serviceClient.from("flight_tracking").insert(record);
             }
 
+            // Push the real arrival time (and landing airport) back onto the pickup so the
+            // guest's card reflects the actual flight without anyone typing anything.
+            const realArrival = record.actual_arrival ?? record.estimated_arrival ?? record.scheduled_arrival;
+            const pickupPatch: Record<string, unknown> = {};
+            if (realArrival) {
+              const known = pickup.arrival_datetime ? new Date(pickup.arrival_datetime).getTime() : null;
+              const fresh = new Date(realArrival).getTime();
+              // Only write when it actually moved (>5 min) — avoids churn on every poll.
+              if (!known || Math.abs(fresh - known) > 5 * 60 * 1000) {
+                pickupPatch.arrival_datetime = new Date(realArrival).toISOString();
+              }
+            }
+            if (newStatus === "landed" && record.arrival_iata) {
+              pickupPatch.confirmed_airport = record.arrival_iata.toUpperCase() === "USM" ? "samui" : record.arrival_iata.toUpperCase() === "BKK" ? "bkk" : record.arrival_iata;
+            }
+            if (Object.keys(pickupPatch).length > 0) {
+              const { error: patchError } = await serviceClient
+                .from("airport_pickups")
+                .update(pickupPatch)
+                .eq("id", pickup.id);
+              if (patchError) console.error(`Failed syncing pickup ${pickup.id} from live flight:`, patchError.message);
+            }
+
+
             // Detect landed transition → notify guest
             let notified = false;
             if (newStatus === "landed" && previousStatus !== "landed") {

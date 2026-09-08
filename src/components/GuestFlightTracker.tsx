@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -45,6 +45,42 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
   const [arrival, setArrival] = useState("");
   const [landedOpen, setLandedOpen] = useState(false);
   const [landingPending, setLandingPending] = useState(false);
+
+  // Live wiring: when the flight poller writes a real arrival, the card updates itself.
+  const pickupId = pickup?.id ?? null;
+  useEffect(() => {
+    if (!pickupId) return;
+    const channel = supabase
+      .channel(`guest-flight-${pickupId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "flight_tracking", filter: `pickup_id=eq.${pickupId}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ["flight_tracking_batch"] });
+          qc.invalidateQueries({ queryKey: ["airport_pickup", bookingId] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "airport_pickups", filter: `id=eq.${pickupId}` },
+        () => qc.invalidateQueries({ queryKey: ["airport_pickup", bookingId] })
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [pickupId, bookingId, qc]);
+
+  // First look-up is automatic — the guest shouldn't have to tap anything to see status.
+  const autoChecked = useRef<string | null>(null);
+  const autoFlight = pickup?.flight_number ?? pickup?.international_flight_number ?? null;
+  useEffect(() => {
+    if (!pickupId || !autoFlight || tracking) return;
+    if (autoChecked.current === pickupId) return;
+    autoChecked.current = pickupId;
+    check.mutate({ pickup_id: pickupId, flight_number: autoFlight });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickupId, autoFlight, tracking]);
 
   if (isLoading || !pickup) return null;
   const normalized = normalizeArrival({ ...pickup, driver_id: pickup.driver_id ?? null, confirmed_at: pickup.confirmed_at ?? null });
@@ -261,7 +297,7 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
             {!tracking && (finalFlight || pickup.international_flight_number) && (
               <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-2.5 text-[11px] text-muted-foreground">
                 <Info className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
-                <p>{t("guestFlight.pending", "We haven't pulled your flight yet. Tap check status for a live read.")}</p>
+                <p>{t("guestFlight.pending", "Looking up your flight now — this card updates itself as soon as the airline data comes through.")}</p>
               </div>
             )}
 
