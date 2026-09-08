@@ -88,9 +88,9 @@ serve(async (req) => {
 
     // Fetch arrivals and departures for each airport
     for (const airport of MONITORED_AIRPORTS) {
-      if (rateLimited) break;
+      if (rateLimited || planBlocked) break;
       for (const direction of ["arrival", "departure"] as const) {
-        if (rateLimited) break;
+        if (rateLimited || planBlocked) break;
         if (apiCallsMade >= MAX_API_CALLS_PER_RUN) {
           console.log("Rate limit reached, stopping API calls");
           break;
@@ -211,11 +211,29 @@ serve(async (req) => {
     }
 
     const totalFlights = results.reduce((sum, r) => sum + r.count, 0);
+    const allFailed = results.length > 0 && results.every((r) => !r.success);
+
+    // A run where the provider refused everything is a failure, not a quiet success.
+    if (planBlocked || (allFailed && !rateLimited)) {
+      console.error("poll-airport-traffic: provider refused every lookup. Flight board will go stale until the AviationStack key/plan is fixed.", lastProviderError);
+      return new Response(JSON.stringify({
+        error: "flight_provider_unavailable",
+        reason: planBlocked
+          ? "The flight data provider rejected the request: this API key's plan does not allow airport arrival/departure lookups (or its quota is used up). Update or upgrade the AviationStack key."
+          : "Every flight lookup failed this run.",
+        provider_error: lastProviderError,
+        api_calls_made: apiCallsMade,
+        results,
+      }), {
+        status: 502, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
 
     return new Response(JSON.stringify({
       message: `Airport traffic scan complete: ${totalFlights} flights cached across ${MONITORED_AIRPORTS.join(", ")}`,
       api_calls_made: apiCallsMade,
       rate_limit: MAX_API_CALLS_PER_RUN,
+      degraded: results.some((r) => !r.success) || null,
       results,
     }), {
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
