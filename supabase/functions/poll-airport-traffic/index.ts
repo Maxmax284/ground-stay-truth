@@ -3,8 +3,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // AviationStack free plan does not allow HTTPS — must use plain HTTP.
 const AVIATIONSTACK_BASE = "http://api.aviationstack.com/v1";
-const MONITORED_AIRPORTS = ["BKK", "USM"]; // Suvarnabhumi & Samui
-const MAX_API_CALLS_PER_RUN = 4; // Rate limit: 4 calls per 30-min run
+// Gateways we receive guests from. Samui + Bangkok are always watched; the rest
+// are only scanned when a guest actually flies into them today (quota-safe).
+const ALWAYS_MONITORED = ["USM", "BKK"];
+const SUPPORTED_AIRPORTS = ["USM", "BKK", "DMK", "URT", "HKT", "CNX", "KBV", "SIN", "KUL"];
+const MAX_API_CALLS_PER_RUN = 8; // Rate limit: up to 4 airports (arr+dep) per 30-min run
+
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
@@ -84,11 +88,46 @@ serve(async (req) => {
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
+    // Work out which gateways matter today: the two we always watch, plus any
+    // other supported airport a guest is actually flying into (from their tracked
+    // flight's arrival airport, or their confirmed arrival airport).
+    const extraAirports = new Set<string>();
+    const pickupIds = (relevantPickups ?? []).map((p: any) => p.id);
+    if (pickupIds.length > 0) {
+      const { data: tracked } = await serviceClient
+        .from("flight_tracking")
+        .select("arrival_iata")
+        .in("pickup_id", pickupIds);
+      (tracked ?? []).forEach((t: any) => {
+        const code = (t.arrival_iata ?? "").toUpperCase();
+        if (code && SUPPORTED_AIRPORTS.includes(code) && !ALWAYS_MONITORED.includes(code)) {
+          extraAirports.add(code);
+        }
+      });
+      const { data: confirmed } = await serviceClient
+        .from("airport_pickups")
+        .select("confirmed_airport")
+        .in("id", pickupIds);
+      (confirmed ?? []).forEach((c: any) => {
+        const raw = (c.confirmed_airport ?? "").toUpperCase();
+        const code = raw === "SAMUI" ? "USM" : raw;
+        if (code && SUPPORTED_AIRPORTS.includes(code) && !ALWAYS_MONITORED.includes(code)) {
+          extraAirports.add(code);
+        }
+      });
+    }
 
+    // Budget: 2 calls per airport, so cap the list to what MAX_API_CALLS_PER_RUN allows.
+    const MONITORED_AIRPORTS = [...ALWAYS_MONITORED, ...extraAirports].slice(
+      0,
+      Math.floor(MAX_API_CALLS_PER_RUN / 2),
+    );
+    console.log("Monitoring airports this run:", MONITORED_AIRPORTS.join(", "));
 
     // Fetch arrivals and departures for each airport
     for (const airport of MONITORED_AIRPORTS) {
       if (rateLimited || planBlocked) break;
+
       for (const direction of ["arrival", "departure"] as const) {
         if (rateLimited || planBlocked) break;
         if (apiCallsMade >= MAX_API_CALLS_PER_RUN) {
