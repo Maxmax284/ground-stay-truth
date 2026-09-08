@@ -8,6 +8,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useAirportTraffic, type AirportTrafficFlight } from "@/hooks/useAirportTraffic";
 import { usePickupFlightsFallback } from "@/hooks/usePickupFlightsFallback";
 import { Plane, PlaneLanding, PlaneTakeoff, Clock, Link2, AlertTriangle, Info } from "lucide-react";
+import { TRACKED_AIRPORTS } from "@/lib/airports";
+
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: "bg-muted text-muted-foreground",
