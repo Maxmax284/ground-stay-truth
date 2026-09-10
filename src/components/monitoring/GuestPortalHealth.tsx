@@ -286,7 +286,16 @@ export function GuestPortalHealth() {
     const guests = new Set(rows.map((r) => r.guest_id).filter(Boolean)).size;
 
     const clicked = count("checkout_button_clicked");
-    const reached = count("checkout_redirect_started");
+    // Any of these proves the card page existed and the guest was sent to it.
+    const reached = new Set(
+      rows
+        .filter((r) =>
+          ["checkout_left_for_provider", "checkout_redirect_attempted", "checkout_redirect_started"].includes(
+            r.event_type,
+          ),
+        )
+        .map((r) => `${r.session_id ?? r.guest_id ?? r.id}:${r.booking_id ?? ""}`),
+    ).size;
     const failed = count("checkout_create_failed") + count("checkout_timeout");
     // "Walked away" = started paying, never got to the card page, no error either.
     const abandoned = Math.max(0, clicked - reached - failed);
