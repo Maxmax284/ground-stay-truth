@@ -99,20 +99,26 @@ export function FlightForecastWidget({ onClickBooking }: Props) {
             )}
           </div>
         </div>
-        {/* Airport selector — all gateways we receive guests from */}
+        {/* Airport selector — all gateways we receive guests from.
+            Airports with no live board are dimmed and marked, so an empty
+            board is never mistaken for "no flights today". */}
         <div className="flex gap-1 mt-2 overflow-x-auto pb-1 -mx-1 px-1">
-          {TRACKED_AIRPORTS.map(apt => (
-            <Button
-              key={apt.iata}
-              variant={selectedAirport === apt.iata ? "default" : "outline"}
-              size="sm"
-              className="h-7 px-3 text-xs shrink-0"
-              onClick={() => setSelectedAirport(apt.iata)}
-              aria-pressed={selectedAirport === apt.iata}
-            >
-              {apt.icon} {apt.label} ({apt.iata})
-            </Button>
-          ))}
+          {TRACKED_AIRPORTS.map(apt => {
+            const covered = isCovered(apt.iata);
+            return (
+              <Button
+                key={apt.iata}
+                variant={selectedAirport === apt.iata ? "default" : "outline"}
+                size="sm"
+                className={`h-7 px-3 text-xs shrink-0 ${covered ? "" : "opacity-60 border-dashed"}`}
+                onClick={() => setSelectedAirport(apt.iata)}
+                aria-pressed={selectedAirport === apt.iata}
+                title={covered ? undefined : "No live board for this airport yet — it switches on when a guest flies in through it"}
+              >
+                {apt.icon} {apt.label} ({apt.iata}){covered ? "" : " · off"}
+              </Button>
+            );
+          })}
         </div>
 
       </CardHeader>
@@ -123,7 +129,9 @@ export function FlightForecastWidget({ onClickBooking }: Props) {
           </div>
         ) : !flights?.length ? (
           <p className="text-sm text-muted-foreground py-4 text-center">
-            No flight data yet. Traffic data refreshes every 30 minutes.
+            {isCovered(selectedAirport)
+              ? "No flight data yet. Traffic data refreshes every 30 minutes."
+              : `We don't watch the whole ${selectedAirport} board yet — Samui and Bangkok are always on, and another gateway switches on automatically once a guest has a flight booked into it. Individual guest flights into ${selectedAirport} are still tracked on their pickup.`}
           </p>
         ) : (
           <>
