@@ -103,6 +103,11 @@ const PLAIN_ENGLISH: Record<string, string> = {
   checkout_create_started: "We started building their payment page",
   checkout_create_success: "Payment page was built and ready",
   checkout_redirect_started: "Got handed off to the card payment page",
+  checkout_link_ready: "Their secure card page was ready to open",
+  checkout_redirect_attempted: "We sent them to the card payment page",
+  checkout_left_for_provider: "Left our site for the card payment page",
+  checkout_returned_unpaid: "Came back from the card page without paying",
+  checkout_redirect_stalled: "Their phone refused to open the card page — we showed them a link instead",
   checkout_create_failed: "We couldn't build their payment page",
   checkout_timeout: "Payment page took too long and gave up",
   id_upload_button_clicked: "Tapped Upload ID",
@@ -128,6 +133,10 @@ const RESOLVING_TYPES = new Set([
   "checkout_create_failed",
   "checkout_timeout",
   "checkout_redirect_stalled",
+  "checkout_link_ready",
+  "checkout_redirect_attempted",
+  "checkout_left_for_provider",
+  "checkout_returned_unpaid",
 ]);
 
 function statusTone(r: Row) {
@@ -277,7 +286,16 @@ export function GuestPortalHealth() {
     const guests = new Set(rows.map((r) => r.guest_id).filter(Boolean)).size;
 
     const clicked = count("checkout_button_clicked");
-    const reached = count("checkout_redirect_started");
+    // Any of these proves the card page existed and the guest was sent to it.
+    const reached = new Set(
+      rows
+        .filter((r) =>
+          ["checkout_left_for_provider", "checkout_redirect_attempted", "checkout_redirect_started"].includes(
+            r.event_type,
+          ),
+        )
+        .map((r) => `${r.session_id ?? r.guest_id ?? r.id}:${r.booking_id ?? ""}`),
+    ).size;
     const failed = count("checkout_create_failed") + count("checkout_timeout");
     // "Walked away" = started paying, never got to the card page, no error either.
     const abandoned = Math.max(0, clicked - reached - failed);
@@ -443,12 +461,12 @@ export function GuestPortalHealth() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-rose-700 dark:text-rose-400">
                       {stalledCheckouts.length} guest{stalledCheckouts.length === 1 ? "" : "s"} tapped Pay Deposit and
-                      the button did nothing
+                      we can't confirm they reached the card page
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      They never got to the card payment page, and no error was shown to them either — it just sat
-                      there for more than {STALL_MINUTES} minutes. These guests think they tried to pay and gave up.
-                      Text them a direct payment link.
+                      Nothing more was recorded for more than {STALL_MINUTES} minutes and no payment came in. They may
+                      have been handed to the card page and closed it, or their phone never opened it. Either way they
+                      still owe the deposit — call or text them a direct payment link.
                     </p>
                   </div>
                 </div>

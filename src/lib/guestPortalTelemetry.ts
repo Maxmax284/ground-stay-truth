@@ -35,6 +35,10 @@ export type GuestPortalEvent =
   | "checkout_create_failed"
   | "checkout_redirect_started"
   | "checkout_redirect_stalled"
+  | "checkout_link_ready"
+  | "checkout_redirect_attempted"
+  | "checkout_left_for_provider"
+  | "checkout_returned_unpaid"
   | "checkout_timeout"
   | "id_upload_stalled"
 
@@ -198,6 +202,61 @@ function getSessionId(): string {
 const recent = new Map<string, number>();
 const DEDUPE_MS = 4000;
 
+/** Shape the row once so both the normal and the beacon path agree. */
+export function buildActivityRow(params: LogParams, guestId: string | null): Record<string, unknown> {
+  const info = getBrowserInfo();
+  return {
+    guest_id: guestId,
+    booking_id: params.bookingId ?? null,
+    event_type: params.event,
+    event_status: params.status ?? (FAILURE_EVENTS.includes(params.event) ? "fail" : "info"),
+    severity: params.severity ?? (FAILURE_EVENTS.includes(params.event) ? "error" : "info"),
+    source: "guest_portal",
+    route: typeof window !== "undefined" ? window.location.pathname.slice(0, 200) : null,
+    component: params.component ?? null,
+    action: params.action ?? null,
+    message: params.message?.slice(0, 500) ?? null,
+    error_code: params.errorCode?.slice(0, 120) ?? null,
+    error_message: params.errorMessage?.slice(0, 500) ?? null,
+    metadata: {
+      ...(params.metadata ?? {}),
+      ...(info.inAppLabel ? { in_app_label: info.inAppLabel } : {}),
+    },
+    user_agent: info.userAgent,
+    device_type: info.deviceType,
+    browser_name: info.browserName,
+    os_name: info.osName,
+    is_in_app_browser: info.isInAppBrowser,
+    session_id: getSessionId(),
+  };
+}
+
+/**
+ * Send one row with `keepalive`, so the browser finishes the request even when
+ * the page is navigating away (Stripe hand-off) or being frozen. This is the
+ * reason the old funnel lied: the "payment page is ready" row was started and
+ * then killed by the redirect, so staff saw "tapped Pay, nothing happened" for
+ * guests who actually reached Stripe. Fully synchronous — safe in `pagehide`.
+ */
+export function sendActivityBeacon(row: Record<string, unknown>, accessToken: string): void {
+  try {
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/guest_portal_activity`;
+    void fetch(url, {
+      method: "POST",
+      keepalive: true,
+      headers: {
+        "Content-Type": "application/json",
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        Authorization: `Bearer ${accessToken}`,
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify(row),
+    }).catch(() => {});
+  } catch {
+    // Telemetry must never break the guest flow.
+  }
+}
+
 /** Fire-and-forget portal event log. Never throws. */
 export function logGuestPortalEvent(params: LogParams): void {
   void (async () => {
@@ -208,35 +267,12 @@ export function logGuestPortalEvent(params: LogParams): void {
       if (last && now - last < DEDUPE_MS) return;
       recent.set(key, now);
 
-      const info = getBrowserInfo();
       const { data } = await supabase.auth.getUser();
       const guestId = data?.user?.id ?? null;
 
-      await supabase.from("guest_portal_activity").insert({
-        guest_id: guestId,
-        booking_id: params.bookingId ?? null,
-        event_type: params.event,
-        event_status: params.status ?? (FAILURE_EVENTS.includes(params.event) ? "fail" : "info"),
-        severity:
-          params.severity ?? (FAILURE_EVENTS.includes(params.event) ? "error" : "info"),
-        source: "guest_portal",
-        route: typeof window !== "undefined" ? window.location.pathname.slice(0, 200) : null,
-        component: params.component ?? null,
-        action: params.action ?? null,
-        message: params.message?.slice(0, 500) ?? null,
-        error_code: params.errorCode?.slice(0, 120) ?? null,
-        error_message: params.errorMessage?.slice(0, 500) ?? null,
-        metadata: {
-          ...(params.metadata ?? {}),
-          ...(info.inAppLabel ? { in_app_label: info.inAppLabel } : {}),
-        },
-        user_agent: info.userAgent,
-        device_type: info.deviceType,
-        browser_name: info.browserName,
-        os_name: info.osName,
-        is_in_app_browser: info.isInAppBrowser,
-        session_id: getSessionId(),
-      });
+      await supabase
+        .from("guest_portal_activity")
+        .insert(buildActivityRow(params, guestId) as never);
     } catch {
       // Telemetry must never break the guest flow.
     }
