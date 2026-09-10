@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,6 +41,27 @@ export function FlightForecastWidget({ onClickBooking }: Props) {
   const [selectedAirport, setSelectedAirport] = useState<string>("USM");
   const { data: trafficFlights, isLoading: trafficLoading } = useAirportTraffic(selectedAirport);
 
+  // Which airports do we actually hold a flight board for right now? The
+  // background scan covers Samui and Bangkok plus any airport a guest is
+  // actually flying into, so the rest of the gateways have nothing cached.
+  // Show that honestly instead of an empty board that looks like "no flights".
+  const { data: coveredAirports } = useQuery({
+    queryKey: ["airport-traffic-coverage"],
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const since = new Date(Date.now() - 36 * 3600_000).toISOString();
+      const { data, error } = await supabase
+        .from("airport_traffic")
+        .select("airport_iata")
+        .gte("updated_at", since)
+        .limit(2000);
+      if (error) throw error;
+      return new Set((data ?? []).map((r) => (r.airport_iata as string)?.toUpperCase()));
+    },
+  });
+
+  const isCovered = (iata: string) => !coveredAirports || coveredAirports.has(iata);
+
   // Fallback: when airport-wide scan returns no data, use individual pickup flight lookups
   const trafficEmpty = !trafficLoading && (!trafficFlights || trafficFlights.length === 0);
   const { data: fallbackFlights, isLoading: fallbackLoading } = usePickupFlightsFallback(trafficEmpty);
@@ -76,20 +99,26 @@ export function FlightForecastWidget({ onClickBooking }: Props) {
             )}
           </div>
         </div>
-        {/* Airport selector — all gateways we receive guests from */}
+        {/* Airport selector — all gateways we receive guests from.
+            Airports with no live board are dimmed and marked, so an empty
+            board is never mistaken for "no flights today". */}
         <div className="flex gap-1 mt-2 overflow-x-auto pb-1 -mx-1 px-1">
-          {TRACKED_AIRPORTS.map(apt => (
-            <Button
-              key={apt.iata}
-              variant={selectedAirport === apt.iata ? "default" : "outline"}
-              size="sm"
-              className="h-7 px-3 text-xs shrink-0"
-              onClick={() => setSelectedAirport(apt.iata)}
-              aria-pressed={selectedAirport === apt.iata}
-            >
-              {apt.icon} {apt.label} ({apt.iata})
-            </Button>
-          ))}
+          {TRACKED_AIRPORTS.map(apt => {
+            const covered = isCovered(apt.iata);
+            return (
+              <Button
+                key={apt.iata}
+                variant={selectedAirport === apt.iata ? "default" : "outline"}
+                size="sm"
+                className={`h-7 px-3 text-xs shrink-0 ${covered ? "" : "opacity-60 border-dashed"}`}
+                onClick={() => setSelectedAirport(apt.iata)}
+                aria-pressed={selectedAirport === apt.iata}
+                title={covered ? undefined : "No live board for this airport yet — it switches on when a guest flies in through it"}
+              >
+                {apt.icon} {apt.label} ({apt.iata}){covered ? "" : " · off"}
+              </Button>
+            );
+          })}
         </div>
 
       </CardHeader>
@@ -100,7 +129,9 @@ export function FlightForecastWidget({ onClickBooking }: Props) {
           </div>
         ) : !flights?.length ? (
           <p className="text-sm text-muted-foreground py-4 text-center">
-            No flight data yet. Traffic data refreshes every 30 minutes.
+            {isCovered(selectedAirport)
+              ? "No flight data yet. Traffic data refreshes every 30 minutes."
+              : `We don't watch the whole ${selectedAirport} board yet — Samui and Bangkok are always on, and another gateway switches on automatically once a guest has a flight booked into it. Individual guest flights into ${selectedAirport} are still tracked on their pickup.`}
           </p>
         ) : (
           <>
