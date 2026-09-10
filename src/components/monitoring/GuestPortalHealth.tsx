@@ -103,6 +103,11 @@ const PLAIN_ENGLISH: Record<string, string> = {
   checkout_create_started: "We started building their payment page",
   checkout_create_success: "Payment page was built and ready",
   checkout_redirect_started: "Got handed off to the card payment page",
+  checkout_link_ready: "Their secure card page was ready to open",
+  checkout_redirect_attempted: "We sent them to the card payment page",
+  checkout_left_for_provider: "Left our site for the card payment page",
+  checkout_returned_unpaid: "Came back from the card page without paying",
+  checkout_redirect_stalled: "Their phone refused to open the card page — we showed them a link instead",
   checkout_create_failed: "We couldn't build their payment page",
   checkout_timeout: "Payment page took too long and gave up",
   id_upload_button_clicked: "Tapped Upload ID",
@@ -128,6 +133,10 @@ const RESOLVING_TYPES = new Set([
   "checkout_create_failed",
   "checkout_timeout",
   "checkout_redirect_stalled",
+  "checkout_link_ready",
+  "checkout_redirect_attempted",
+  "checkout_left_for_provider",
+  "checkout_returned_unpaid",
 ]);
 
 function statusTone(r: Row) {
