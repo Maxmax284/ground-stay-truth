@@ -37,6 +37,35 @@ function getCorsHeaders(req: Request) {
 }
 
 const AVIATIONSTACK_BASE = "http://api.aviationstack.com/v1";
+
+/**
+ * `confirmed_airport` is historically mixed: guests/staff store friendly
+ * location ids ("samui", "bkk") while flight data always returns IATA codes
+ * ("USM", "BKK"). Comparing the two raw strings flagged every single Samui
+ * landing as a location mismatch and stuck the pickup in manual assist.
+ * Normalise both sides to IATA before comparing.
+ */
+const AIRPORT_ALIASES: Record<string, string> = {
+  samui: "USM",
+  kohsamui: "USM",
+  koh_samui: "USM",
+  usm: "USM",
+  bkk: "BKK",
+  suvarnabhumi: "BKK",
+  bangkok: "BKK",
+  dmk: "DMK",
+  donmueang: "DMK",
+  don_mueang: "DMK",
+  urt: "URT",
+  suratthani: "URT",
+  surat_thani: "URT",
+};
+
+function normalizeAirport(value?: string | null): string | null {
+  if (!value) return null;
+  const key = value.trim().toLowerCase().replace(/\s+/g, "_");
+  return AIRPORT_ALIASES[key] ?? value.trim().toUpperCase();
+}
 const STALE_MINUTES = 10;
 // Hard floor: even a manual "refresh" cannot hit the provider more often than
 // this per pickup. Protects the monthly quota from one guest/flight being
