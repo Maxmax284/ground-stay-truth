@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Loader2 } from "lucide-react";
+import { CreditCard, ExternalLink, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { logGuestPortalEvent } from "@/lib/guestPortalTelemetry";
+import {
+  logGuestPortalEvent,
+  buildActivityRow,
+  sendActivityBeacon,
+} from "@/lib/guestPortalTelemetry";
 import { GuestRecoveryNotice } from "@/components/GuestRecoveryNotice";
 
 interface GuestPaymentButtonProps {
@@ -14,16 +18,21 @@ interface GuestPaymentButtonProps {
 }
 
 /** If the browser hasn't left the page this long after we set location, the
- *  redirect was blocked (in-app browsers do this) — surface a manual link. */
-const REDIRECT_STALL_MS = 6000;
+ *  redirect was blocked or ignored (iOS Safari and in-app browsers do this) —
+ *  surface a real tappable link instead of leaving the guest staring. */
+const REDIRECT_STALL_MS = 3500;
+
+/** Marks "we handed this guest to Stripe and they came back without paying". */
+const PENDING_KEY = "gp_checkout_pending";
 
 export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = "฿" }: GuestPaymentButtonProps) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [recovery, setRecovery] = useState<{ message: string; url?: string | null } | null>(null);
   const loadingRef = useRef(false);
   const stallTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
+  const tokenRef = useRef<string | null>(null);
 
   const handlePay = useCallback(async (trigger: "button" | "auto" = "button") => {
     if (loadingRef.current) return;
@@ -60,6 +69,7 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
         });
         return;
       }
+      tokenRef.current = session.access_token;
 
       logGuestPortalEvent({
         event: "checkout_create_started",
@@ -128,24 +138,39 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
 
 
       if (data.url) {
-        logGuestPortalEvent({
-          event: "checkout_create_success",
-          bookingId,
-          status: "ok",
-          component: "GuestPaymentButton",
-          metadata: { elapsed_ms: Date.now() - startedAt },
-        });
-        logGuestPortalEvent({
-          event: "checkout_redirect_started",
-          bookingId,
-          status: "ok",
-          component: "GuestPaymentButton",
-        });
-        // Keep the spinner up through the redirect — resetting it makes the
-        // page look idle while the browser is already navigating to Stripe.
-        // If we're still here after REDIRECT_STALL_MS the navigation was
-        // blocked (common in Instagram/Facebook in-app browsers): surface the
-        // checkout URL so the guest can open or copy it manually.
+        // Beacons, not fire-and-forget inserts: the redirect below kills any
+        // in-flight normal insert, which is exactly why the ops funnel used to
+        // report "tapped Pay, nothing happened" for guests who did reach Stripe.
+        const token = session.access_token;
+        sendActivityBeacon(
+          buildActivityRow(
+            {
+              event: "checkout_create_success",
+              bookingId,
+              status: "ok",
+              component: "GuestPaymentButton",
+              metadata: { elapsed_ms: Date.now() - startedAt },
+            },
+            session.user.id,
+          ),
+          token,
+        );
+        sendActivityBeacon(
+          buildActivityRow(
+            { event: "checkout_link_ready", bookingId, status: "ok", component: "GuestPaymentButton" },
+            session.user.id,
+          ),
+          token,
+        );
+
+        // Always give the guest a real tap target before we try to navigate.
+        // iOS Safari sometimes ignores a programmatic navigation that happens
+        // seconds after the tap; a visible link always works.
+        setCheckoutUrl(data.url);
+        try { sessionStorage.setItem(PENDING_KEY, bookingId); } catch { /* private mode */ }
+
+        // If we're still here after REDIRECT_STALL_MS the navigation did not
+        // happen: surface the checkout link so the guest can open or copy it.
         if (stallTimerRef.current) clearTimeout(stallTimerRef.current);
         stallTimerRef.current = setTimeout(() => {
           loadingRef.current = false;
@@ -165,7 +190,15 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
             url: data.url,
           });
         }, REDIRECT_STALL_MS);
-        window.location.href = data.url;
+
+        sendActivityBeacon(
+          buildActivityRow(
+            { event: "checkout_redirect_attempted", bookingId, status: "ok", component: "GuestPaymentButton" },
+            session.user.id,
+          ),
+          token,
+        );
+        window.location.assign(data.url);
         return;
       }
       logGuestPortalEvent({
@@ -227,6 +260,38 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
     return () => window.removeEventListener("guest-start-deposit-checkout", onAuto as EventListener);
   }, [bookingId, handlePay]);
 
+  // Proof the hand-off actually happened: logged as the page unloads, with
+  // keepalive, so "left for the card page" is a fact and not an assumption.
+  useEffect(() => {
+    const onHide = () => {
+      if (!checkoutUrl || !tokenRef.current) return;
+      sendActivityBeacon(
+        buildActivityRow(
+          { event: "checkout_left_for_provider", bookingId, status: "ok", component: "GuestPaymentButton" },
+          null,
+        ),
+        tokenRef.current,
+      );
+    };
+    window.addEventListener("pagehide", onHide);
+    return () => window.removeEventListener("pagehide", onHide);
+  }, [bookingId, checkoutUrl]);
+
+  // Came back to the portal after being sent to the card page, still unpaid.
+  useEffect(() => {
+    let pending: string | null = null;
+    try { pending = sessionStorage.getItem(PENDING_KEY); } catch { /* private mode */ }
+    if (pending !== bookingId) return;
+    try { sessionStorage.removeItem(PENDING_KEY); } catch { /* ignore */ }
+    logGuestPortalEvent({
+      event: "checkout_returned_unpaid",
+      bookingId,
+      component: "GuestPaymentButton",
+      severity: "warning",
+      status: "warn",
+    });
+  }, [bookingId]);
+
   // Never leave a stall timer running after unmount.
   useEffect(() => () => {
     if (stallTimerRef.current) clearTimeout(stallTimerRef.current);
@@ -255,6 +320,17 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
         )}
       </Button>
 
+      {/* A real link, always tappable, once the secure page exists. */}
+      {checkoutUrl && !recovery && (
+        <a
+          href={checkoutUrl}
+          className="flex w-full items-center justify-center gap-2 rounded-md border border-primary/40 bg-background px-3 py-2 text-xs font-medium text-primary hover:bg-primary/5"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          {t("deposit.openCheckoutManually", "Open secure checkout")}
+        </a>
+      )}
+
       {recovery && (
         <GuestRecoveryNotice
           message={recovery.message}
@@ -268,4 +344,3 @@ export function GuestPaymentButton({ bookingId, depositAmount, currencySymbol = 
     </div>
   );
 }
-
