@@ -461,12 +461,12 @@ export function GuestPortalHealth() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-rose-700 dark:text-rose-400">
                       {stalledCheckouts.length} guest{stalledCheckouts.length === 1 ? "" : "s"} tapped Pay Deposit and
-                      the button did nothing
+                      we can't confirm they reached the card page
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      They never got to the card payment page, and no error was shown to them either — it just sat
-                      there for more than {STALL_MINUTES} minutes. These guests think they tried to pay and gave up.
-                      Text them a direct payment link.
+                      Nothing more was recorded for more than {STALL_MINUTES} minutes and no payment came in. They may
+                      have been handed to the card page and closed it, or their phone never opened it. Either way they
+                      still owe the deposit — call or text them a direct payment link.
                     </p>
                   </div>
                 </div>
