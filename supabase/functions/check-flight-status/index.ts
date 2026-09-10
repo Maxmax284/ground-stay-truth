@@ -337,17 +337,18 @@ serve(async (req) => {
           // Build degraded reasons
           const degradedReasons: string[] = [];
 
-          // Location mismatch → hard trigger
-          const locationMismatch = pickup.confirmed_airport &&
-            record.arrival_iata &&
-            pickup.confirmed_airport.toLowerCase() !== record.arrival_iata.toLowerCase();
+          // Location mismatch → hard trigger.
+          // Compare normalised IATA codes: "samui" and "USM" are the same place.
+          const confirmedCode = normalizeAirport(pickup.confirmed_airport);
+          const arrivalCode = normalizeAirport(record.arrival_iata);
+          const locationMismatch = !!confirmedCode && !!arrivalCode && confirmedCode !== arrivalCode;
 
           if (locationMismatch) {
             await serviceClient
               .from("airport_pickups")
               .update({
                 assist_mode: "manual_assist",
-                assist_reason: `Guest confirmed ${pickup.confirmed_airport!.toUpperCase()} but flight data shows ${record.arrival_iata!.toUpperCase()}.`,
+                assist_reason: `Guest confirmed ${confirmedCode} but flight data shows ${arrivalCode}.`,
                 assist_activated_at: new Date().toISOString(),
               })
               .eq("id", pickup_id);
