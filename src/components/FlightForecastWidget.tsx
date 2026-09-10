@@ -41,6 +41,27 @@ export function FlightForecastWidget({ onClickBooking }: Props) {
   const [selectedAirport, setSelectedAirport] = useState<string>("USM");
   const { data: trafficFlights, isLoading: trafficLoading } = useAirportTraffic(selectedAirport);
 
+  // Which airports do we actually hold a flight board for right now? The
+  // background scan covers Samui and Bangkok plus any airport a guest is
+  // actually flying into, so the rest of the gateways have nothing cached.
+  // Show that honestly instead of an empty board that looks like "no flights".
+  const { data: coveredAirports } = useQuery({
+    queryKey: ["airport-traffic-coverage"],
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const since = new Date(Date.now() - 36 * 3600_000).toISOString();
+      const { data, error } = await supabase
+        .from("airport_traffic")
+        .select("airport_iata")
+        .gte("updated_at", since)
+        .limit(2000);
+      if (error) throw error;
+      return new Set((data ?? []).map((r) => (r.airport_iata as string)?.toUpperCase()));
+    },
+  });
+
+  const isCovered = (iata: string) => !coveredAirports || coveredAirports.has(iata);
+
   // Fallback: when airport-wide scan returns no data, use individual pickup flight lookups
   const trafficEmpty = !trafficLoading && (!trafficFlights || trafficFlights.length === 0);
   const { data: fallbackFlights, isLoading: fallbackLoading } = usePickupFlightsFallback(trafficEmpty);
