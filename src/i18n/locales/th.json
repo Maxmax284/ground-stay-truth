@@ -583,7 +583,12 @@
     "messageSent": "ส่งข้อความแล้ว",
     "messageFailed": "ส่งข้อความไม่สำเร็จ",
     "typeMessage": "พิมพ์ข้อความ...",
-    "noContent": "(ไม่มีตัวอย่างข้อความ)"
+    "noContent": "(ไม่มีตัวอย่างข้อความ)",
+    "openBooking": "เปิดการจอง",
+    "replyPlaceholder": "ตอบผู้เข้าพัก…",
+    "guestWillSee": "ผู้เข้าพักจะเห็นข้อความนี้",
+    "readOnly": "บทบาทของคุณอ่านข้อความได้แต่ตอบกลับไม่ได้",
+    "reply": "ตอบกลับ"
   },
   "stateTransition": {
     "changeState": "เปลี่ยนสถานะ",
