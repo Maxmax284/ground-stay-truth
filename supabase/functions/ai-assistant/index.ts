@@ -948,6 +948,27 @@ Honest budget-route answer: "DMK is usually the cheaper Bangkok airport. From th
       }
     }
 
+    // ─── RECENT ALERTS / BULLETIN (staff roles) ────────────────────────────
+    if (["admin", "manager", "front_desk_supervisor", "front_desk"].includes(role)) {
+      try {
+        const { data: notifs } = await adminClient
+          .from("notifications")
+          .select("type, message, reference_id, read, created_at")
+          .eq("user_id", userData.user.id)
+          .order("created_at", { ascending: false })
+          .limit(25);
+        const list = notifs ?? [];
+        contextData += `\n\nYOUR ALERT FEED (most recent first, ${list.filter((n: any) => !n.read).length} unread). Use this for "what notifications do I have", "who landed", "what happened today":`;
+        for (const n of list as any[]) {
+          contextData += `\n- [${n.type}${n.read ? "" : ", UNREAD"}] ${n.message} (${campTime(n.created_at)})${n.reference_id ? ` [booking ${n.reference_id}]` : ""}`;
+        }
+      } catch (e) {
+        console.error("Alert feed build failed:", e);
+      }
+    }
+
+
+
     if (role === "front_desk" || role === "front_desk_supervisor") {
       // Today's arrivals/departures + availability (property-scoped)
       const today = now.toISOString().split("T")[0];
