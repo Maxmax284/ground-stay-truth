@@ -178,6 +178,15 @@ const Messages = () => {
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">{t("messages.messageCount", { count: thread.total_messages })}</span>
                         {thread.unread_count > 0 && <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4">{t("messages.newCount", { count: thread.unread_count })}</Badge>}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 px-2 text-xs gap-1 ml-auto"
+                          onClick={(e) => { e.stopPropagation(); handleOpenThread(thread.booking_id); }}
+                        >
+                          <Reply className="h-3 w-3" />
+                          {t("messages.reply")}
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -187,6 +196,18 @@ const Messages = () => {
           </ScrollArea>
         )}
       </div>
+      <GuestThreadDialog
+        bookingId={threadBookingId}
+        open={!!threadBookingId}
+        onOpenChange={(open) => !open && setThreadBookingId(null)}
+        headline={activeThread?.unit_name}
+        guestName={activeThread?.guest_name}
+        onOpenBooking={() => {
+          const id = threadBookingId;
+          setThreadBookingId(null);
+          setSelectedBookingId(id);
+        }}
+      />
       <BookingDetailSheet bookingId={selectedBookingId} open={!!selectedBookingId} onOpenChange={(open) => !open && setSelectedBookingId(null)} isAdmin={isAdmin} />
     </DashboardLayout>
   );
