@@ -106,10 +106,14 @@ const Messages = () => {
   useMessagesRealtime(handleNewMessage);
   const [search, setSearch] = useState("");
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [threadBookingId, setThreadBookingId] = useState<string | null>(null);
   const markRead = useMarkMessagesRead();
 
+  const activeThread = (threads ?? []).find((th) => th.booking_id === threadBookingId) ?? null;
+
+  // Default click = reply straight away. The full booking sheet stays one tap away.
   const handleOpenThread = (bookingId: string) => {
-    setSelectedBookingId(bookingId);
+    setThreadBookingId(bookingId);
     markRead.mutate(bookingId);
   };
 
