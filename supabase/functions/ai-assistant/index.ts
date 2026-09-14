@@ -851,12 +851,130 @@ Honest budget-route answer: "DMK is usually the cheaper Bangkok airport. From th
       }
     }
 
+    // ─── ARRIVAL BOARD (all staff roles) ──────────────────────────────────
+    // Names + pickup/flight/landed status for the arrival window. Admins and
+    // managers previously had no arrivals context at all, which is why
+    // "who landed?" / "who is arriving?" came back as "I don't know".
+    if (["admin", "manager", "front_desk_supervisor", "front_desk"].includes(role)) {
+      try {
+        const todayISO = now.toISOString().split("T")[0];
+        const winStart = new Date(now.getTime() - 1 * 86400000).toISOString().split("T")[0];
+        const winEnd = new Date(now.getTime() + 2 * 86400000).toISOString().split("T")[0];
+
+        let boardQ = adminClient
+          .from("bookings")
+          .select(
+            "id, state, check_in, check_out, unit_id, units(name), guest_id, manual_guest_name, manual_guest_email, manual_guest_phone, profiles!bookings_guest_id_profiles_fkey(full_name, email, phone)",
+          )
+          .gte("check_in", winStart)
+          .lte("check_in", winEnd)
+          .in("state", ["pending_approval", "pending_deposit", "confirmed", "checked_in"]);
+        if (property_id) boardQ = boardQ.eq("property_id", property_id);
+        const { data: boardBookings } = await boardQ;
+
+        const boardIds = (boardBookings ?? []).map((b: any) => b.id);
+        let pickupRows: any[] = [];
+        let flightRows: any[] = [];
+        if (boardIds.length > 0) {
+          const { data: pData } = await adminClient
+            .from("airport_pickups")
+            .select(
+              "id, booking_id, status, flight_number, international_flight_number, arrival_datetime, confirmed_airport, guest_landed_at, assist_mode, assist_reason, passenger_count, drivers(name, phone)",
+            )
+            .in("booking_id", boardIds);
+          pickupRows = pData ?? [];
+          const pickupIds = pickupRows.map((p: any) => p.id);
+          if (pickupIds.length > 0) {
+            const { data: fData } = await adminClient
+              .from("flight_tracking")
+              .select("pickup_id, flight_number, flight_status, arrival_iata, delay_minutes, estimated_arrival, actual_arrival")
+              .in("pickup_id", pickupIds);
+            flightRows = fData ?? [];
+          }
+        }
+
+        const rows = (boardBookings ?? []).map((b: any) => {
+          const pickup = pickupRows.find((p) => p.booking_id === b.id);
+          const flight = pickup ? flightRows.find((f) => f.pickup_id === pickup.id) : undefined;
+          const name = b.manual_guest_name || b.profiles?.full_name || null;
+          return {
+            booking_id: b.id,
+            guest_name: name ?? "UNNAMED (no manual name, no linked profile)",
+            name_known: !!name,
+            contact: b.manual_guest_phone || b.profiles?.phone || b.manual_guest_email || b.profiles?.email || null,
+            unit: b.units?.name ?? null,
+            state: b.state,
+            check_in: b.check_in,
+            check_out: b.check_out,
+            arriving_today: b.check_in === todayISO,
+            pickup: pickup
+              ? {
+                  status: pickup.status,
+                  flight: pickup.flight_number || pickup.international_flight_number || null,
+                  scheduled_arrival: pickup.arrival_datetime ? campTime(pickup.arrival_datetime) : null,
+                  airport: pickup.confirmed_airport ?? null,
+                  landed: !!pickup.guest_landed_at,
+                  landed_at: pickup.guest_landed_at ? campTime(pickup.guest_landed_at) : null,
+                  driver: pickup.drivers?.name ?? null,
+                  assist_mode: pickup.assist_mode ?? null,
+                  assist_reason: pickup.assist_reason ?? null,
+                }
+              : null,
+            flight_status: flight
+              ? {
+                  flight: flight.flight_number,
+                  status: flight.flight_status,
+                  arrival_iata: flight.arrival_iata,
+                  delay_minutes: flight.delay_minutes,
+                  estimated_arrival: flight.estimated_arrival ? campTime(flight.estimated_arrival) : null,
+                  actual_arrival: flight.actual_arrival ? campTime(flight.actual_arrival) : null,
+                }
+              : null,
+          };
+        });
+
+        const landed = rows.filter((r: any) => r.pickup?.landed || r.flight_status?.status === "landed");
+        contextData += `\n\nARRIVAL BOARD (${winStart} → ${winEnd}, camp time). Use this to answer "who is arriving", "who landed", "who needs pickup", and to name guests:`;
+        contextData += `\nArriving today: ${rows.filter((r: any) => r.arriving_today).length}. Landed/arrived: ${landed.length}.`;
+        contextData += `\n${JSON.stringify(rows)}`;
+        if (landed.length > 0) {
+          contextData += `\nLANDED NOW: ${landed
+            .map((r: any) => `${r.guest_name} (${r.unit ?? "no unit"}${r.pickup?.airport ? `, ${r.pickup.airport}` : ""}${r.pickup?.landed_at ? ` at ${r.pickup.landed_at}` : ""})`)
+            .join("; ")}`;
+        }
+        contextData += `\nNAME RULE: always use guest_name from this board. Only say a guest is unnamed when name_known is false — never claim you lack a name for a row that has one.`;
+      } catch (e) {
+        console.error("Arrival board build failed:", e);
+      }
+    }
+
+    // ─── RECENT ALERTS / BULLETIN (staff roles) ────────────────────────────
+    if (["admin", "manager", "front_desk_supervisor", "front_desk"].includes(role)) {
+      try {
+        const { data: notifs } = await adminClient
+          .from("notifications")
+          .select("type, message, reference_id, read, created_at")
+          .eq("user_id", userData.user.id)
+          .order("created_at", { ascending: false })
+          .limit(25);
+        const list = notifs ?? [];
+        contextData += `\n\nYOUR ALERT FEED (most recent first, ${list.filter((n: any) => !n.read).length} unread). Use this for "what notifications do I have", "who landed", "what happened today":`;
+        for (const n of list as any[]) {
+          contextData += `\n- [${n.type}${n.read ? "" : ", UNREAD"}] ${n.message} (${campTime(n.created_at)})${n.reference_id ? ` [booking ${n.reference_id}]` : ""}`;
+        }
+      } catch (e) {
+        console.error("Alert feed build failed:", e);
+      }
+    }
+
+
+
     if (role === "front_desk" || role === "front_desk_supervisor") {
       // Today's arrivals/departures + availability (property-scoped)
       const today = now.toISOString().split("T")[0];
       let arrivalsQ = adminClient
           .from("bookings")
-          .select("id, check_in, unit_id, units(name), guest_id, profiles!bookings_guest_id_profiles_fkey(full_name), state")
+          .select("id, check_in, unit_id, units(name), guest_id, manual_guest_name, profiles!bookings_guest_id_profiles_fkey(full_name), state")
           .eq("check_in", today)
           .in("state", ["confirmed", "checked_in"]);
       let departuresQ = adminClient
