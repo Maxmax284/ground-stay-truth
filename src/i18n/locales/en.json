@@ -583,7 +583,12 @@
     "messageSent": "Message sent",
     "messageFailed": "Failed to send message",
     "typeMessage": "Type a message...",
-    "noContent": "(no preview)"
+    "noContent": "(no preview)",
+    "openBooking": "Open booking",
+    "replyPlaceholder": "Reply to the guest…",
+    "guestWillSee": "The guest will see this reply",
+    "readOnly": "Your role can read messages but not reply.",
+    "reply": "Reply"
   },
   "stateTransition": {
     "changeState": "Change State",
