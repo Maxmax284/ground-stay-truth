@@ -876,20 +876,21 @@ Honest budget-route answer: "DMK is usually the cheaper Bangkok airport. From th
         let pickupRows: any[] = [];
         let flightRows: any[] = [];
         if (boardIds.length > 0) {
-          const [pRes, fRes] = await Promise.all([
-            adminClient
-              .from("airport_pickups")
-              .select(
-                "id, booking_id, status, flight_number, international_flight_number, arrival_datetime, confirmed_airport, guest_landed_at, assist_mode, assist_reason, passenger_count, drivers(name, phone)",
-              )
-              .in("booking_id", boardIds),
-            adminClient
+          const { data: pData } = await adminClient
+            .from("airport_pickups")
+            .select(
+              "id, booking_id, status, flight_number, international_flight_number, arrival_datetime, confirmed_airport, guest_landed_at, assist_mode, assist_reason, passenger_count, drivers(name, phone)",
+            )
+            .in("booking_id", boardIds);
+          pickupRows = pData ?? [];
+          const pickupIds = pickupRows.map((p: any) => p.id);
+          if (pickupIds.length > 0) {
+            const { data: fData } = await adminClient
               .from("flight_tracking")
               .select("pickup_id, flight_number, flight_status, arrival_iata, delay_minutes, estimated_arrival, actual_arrival")
-              .in("booking_id", boardIds),
-          ]);
-          pickupRows = pRes.data ?? [];
-          flightRows = fRes.data ?? [];
+              .in("pickup_id", pickupIds);
+            flightRows = fData ?? [];
+          }
         }
 
         const rows = (boardBookings ?? []).map((b: any) => {
