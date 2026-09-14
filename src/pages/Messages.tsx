@@ -17,6 +17,9 @@ import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { format, formatDistanceToNow } from "date-fns";
 import { MessageSquare, Search, User, CalendarDays, Circle } from "lucide-react";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
+import { GuestThreadDialog } from "@/components/GuestThreadDialog";
+import { Button } from "@/components/ui/button";
+import { Reply } from "lucide-react";
 
 interface InboxThread {
   booking_id: string;
