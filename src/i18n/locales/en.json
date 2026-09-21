@@ -2144,4 +2144,39 @@
     "empty": "Nothing here right now.",
     "openMessages": "Open the full message inbox"
   }
+,
+  "guestPreview": {
+    "title": "Guest Portal Preview",
+    "adminOnly": "Admin only",
+    "subtitle": "Preview the guest Now card, Metro Echo radar, and While You Wait screen without opening a guest account.",
+    "phoneFrame": "Phone view",
+    "liveSurface": "Guest surface",
+    "preview": "Preview",
+    "live": "Live",
+    "confirmLanding": "I've landed",
+    "radarTab": "Radar",
+    "radarTitle": "Metro Echo route card",
+    "radarSubtitle": "Switch legs to check the landing and transit language.",
+    "waitTitle": "While You Wait",
+    "waitSubtitle": "Same live Samui conditions screen the guest sees while travelling.",
+    "noGuestWrites": "Preview mode uses sample booking data and does not write to guest bookings, messages, payments, pickup records, or flight records.",
+    "radarInbound": "Long haul leg is being tracked. We watch the plane — the guest does not need to keep the page open.",
+    "radarTransit": "Mainland transit — no driver hunt yet. Next move is the Bangkok Airways hop to Samui.",
+    "radarIsland": "Samui landing is live. Once the guest lands, one tap alerts the front desk and driver.",
+    "radarArrived": "On island ground. Bags first, then the meeting point card takes over.",
+    "landed": "Landed",
+    "tracking": "Tracking",
+    "now": {
+      "deposit": "Deposit",
+      "flight": "Flight",
+      "onsite": "On-site",
+      "quiet": "Quiet"
+    },
+    "leg": {
+      "inbound": "Inbound",
+      "transit": "Transit",
+      "island": "Island",
+      "arrived": "Arrived"
+    }
+  }
 }

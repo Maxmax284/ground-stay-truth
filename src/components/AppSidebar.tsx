@@ -65,6 +65,7 @@ const navItems = [
   { titleKey: "nav.dashboard", url: "/dashboard", icon: Home },
   { titleKey: "nav.frontDesk", url: "/front-desk", icon: UserCheck },
   { titleKey: "nav.arrivalsBoard", url: "/arrivals-board", icon: LayoutDashboard },
+  { titleKey: "nav.previewGuestPortal", url: "/guest-preview", icon: Eye },
   { titleKey: "nav.units", url: "/units", icon: Building2 },
   { titleKey: "nav.mediaLibrary", url: "/media-library", icon: Images },
   { titleKey: "nav.bookings", url: "/bookings", icon: BookOpen },
@@ -292,7 +293,7 @@ export function AppSidebar() {
                     <Link to="/disaster-recovery" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent">
                       <ShieldAlert className="h-4 w-4" /> Disaster Recovery
                     </Link>
-                    <Link to="/guest?preview=true" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent">
+                    <Link to="/guest-preview" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent">
                       <Eye className="h-4 w-4" /> {t("nav.previewGuestPortal")}
                     </Link>
                     <div className="flex items-center gap-2 px-2 py-1.5">

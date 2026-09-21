@@ -23,6 +23,7 @@ import { ElevationBanner } from "@/components/admin/ElevationBanner";
 const routeTitleKeys: Record<string, string> = {
   "/dashboard": "nav.dashboard",
   "/bookings": "nav.bookings",
+  "/guest-preview": "nav.previewGuestPortal",
   "/calendar": "nav.calendar",
   "/units": "nav.units",
   "/pricing": "nav.pricing",

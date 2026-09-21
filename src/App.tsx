@@ -27,6 +27,7 @@ import Pricing from "./pages/Pricing";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import GuestPortal from "./pages/GuestPortal";
+import GuestPortalPreview from "./pages/GuestPortalPreview";
 import Messages from "./pages/Messages";
 import NotFound from "./pages/NotFound";
 import Legal from "./pages/Legal";
@@ -105,6 +106,7 @@ const App = () => (
                 <Route path="/media-library" element={<ProtectedRoute requiredPath="/media-library"><MediaLibrary /></ProtectedRoute>} />
                 <Route path="/bookings" element={<ProtectedRoute requiredPath="/bookings"><Bookings /></ProtectedRoute>} />
                 <Route path="/arrivals-board" element={<ProtectedRoute requiredPath="/arrivals-board"><ArrivalsBoard /></ProtectedRoute>} />
+                <Route path="/guest-preview" element={<ProtectedRoute requiredPath="/guest-preview"><GuestPortalPreview /></ProtectedRoute>} />
                 <Route path="/front-desk" element={<ProtectedRoute requiredPath="/front-desk"><FrontDesk /></ProtectedRoute>} />
                 <Route path="/calendar" element={<ProtectedRoute requiredPath="/calendar"><CalendarView /></ProtectedRoute>} />
                 <Route path="/pricing" element={<ProtectedRoute requiredPath="/pricing"><Pricing /></ProtectedRoute>} />
