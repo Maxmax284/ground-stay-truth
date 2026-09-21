@@ -187,6 +187,7 @@ const GuestPortal = () => {
   const [activeTab, setActiveTab] = useState("bookings");
 
   const [focusSection, setFocusSection] = useState<string | null>(null);
+  const [extrasOpen, setExtrasOpen] = useState(false);
 
   // Listen for tab-switch events from action buttons
   useEffect(() => {
