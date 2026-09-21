@@ -35,7 +35,10 @@ function dayLabel(date: string) {
 }
 
 function RowCard({ row, onOpen }: { row: ArrivalsBoardRow; onOpen: (id: string) => void }) {
+  const { t } = useTranslation();
   const flightTone = row.flight?.flight_status ? FLIGHT_TONE[row.flight.flight_status] ?? FLIGHT_TONE.scheduled : null;
+  const progress = useArrivalProgress();
+  const canCollect = !!row.pickup && !row.pickup.collected_at && (!!row.pickup.guest_ready_at || !!row.pickup.guest_landed_at);
   return (
     <button
       onClick={() => onOpen(row.booking_id)}
