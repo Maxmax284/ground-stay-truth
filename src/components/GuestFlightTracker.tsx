@@ -348,12 +348,12 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
                   onClick={() => setLandedOpen(true)}
                 >
                   <PlaneLanding className="h-3 w-3" />
-                  {t("guestFlight.confirmPickup", "I've landed — confirm pickup")}
+                  {t("guestFlight.confirmLanded", "I've landed")}
                 </Button>
               )}
               {pickup.guest_landed_at && (
                 <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 text-[10px] self-center">
-                  {t("guestFlight.landedBadge", "Landing confirmed")}
+                  {t("guestFlight.landedBadge", "Landing logged")}
                 </Badge>
               )}
             </div>
@@ -363,6 +363,18 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
                 driver={handshake ?? (pickup.drivers as HandshakeDriver | null) ?? null}
                 airportCode={pickup.confirmed_airport ?? trackedAirport ?? null}
                 landedAt={pickup.guest_landed_at}
+                readyAt={pickup.guest_ready_at}
+                collectedAt={pickup.collected_at}
+                readyPending={progress.isPending}
+                onReady={() =>
+                  progress.mutate(
+                    { bookingId, action: "guest_ready" },
+                    {
+                      onSuccess: () => toast.success(t("guestFlight.readySaved", "Front desk knows you're waiting.")),
+                      onError: (e: any) => toast.error(e?.message ?? t("common.error", "Something went wrong")),
+                    },
+                  )
+                }
               />
             )}
           </>
