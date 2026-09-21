@@ -246,10 +246,10 @@ Deno.serve(async (req) => {
         message += ` (${unitName}).`;
       } else if (hasConnectingFlight && isAtFinalDestination) {
         // Guest arrived at final destination after connecting
-        message = `✅ ${guestName} has arrived at ${airportDisplay} — final destination reached (${unitName}). Ready for pickup.`;
+        message = `✅ ${guestName} has landed at ${airportDisplay} (${unitName}). Still clearing immigration and bags — not ready for pickup yet.`;
       } else {
         // Direct flight — standard message
-        message = `${guestName} has landed at ${airportDisplay} and is ready for pickup (${unitName}).`;
+        message = `${guestName} has landed at ${airportDisplay} (${unitName}). Still clearing immigration and bags — not ready for pickup yet.`;
       }
 
       if (airportMismatch) {
