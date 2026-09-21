@@ -129,9 +129,27 @@ Deno.serve(async (req) => {
       });
     }
 
+
+    // ── Driver handshake ────────────────────────────────────────────────────
+    // Read-only: staff own the assignment, we only hand the guest the details.
+    const loadDriver = async (driverId: string | null) => {
+      if (!driverId) return null;
+      const { data } = await serviceClient
+        .from("drivers")
+        .select("name, phone, whatsapp, vehicle_type, license_plate, photo_url")
+        .eq("id", driverId)
+        .maybeSingle();
+      return data ?? null;
+    };
+
     // Already landed
     if (pickup.guest_landed_at) {
-      return new Response(JSON.stringify({ ok: true, already: true }), {
+      return new Response(JSON.stringify({
+        ok: true,
+        already: true,
+        landed_at: pickup.guest_landed_at,
+        driver: await loadDriver(pickup.driver_id),
+      }), {
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
@@ -261,12 +279,28 @@ Deno.serve(async (req) => {
       await serviceClient.from("notifications").insert(notifications);
     }
 
+    // Confirmation straight back to the guest's own phone.
+    const handshakeDriver = await loadDriver(pickup.driver_id);
+    const meetingLine = handshakeDriver
+      ? `${handshakeDriver.name}${handshakeDriver.license_plate ? ` (${handshakeDriver.license_plate})` : ""} is your driver.`
+      : "The front desk is assigning your driver now.";
+    await serviceClient.from("notifications").insert({
+      user_id: user.id,
+      type: "pickup_confirmed",
+      reference_id: booking_id,
+      message: isInTransit
+        ? `Landing logged at ${airportDisplay}. Front desk has it — your Samui pickup stays on standby.`
+        : `Landing confirmed at ${airportDisplay}. ${meetingLine} Head to the driver meeting point.`,
+    });
+
     return new Response(JSON.stringify({
       ok: true,
       landed_at: now,
       airport_mismatch: airportMismatch,
       in_transit: isInTransit,
       pickup_confirmed: pickupConfirmed,
+      driver: handshakeDriver,
+      airport: airportCode,
     }), {
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
