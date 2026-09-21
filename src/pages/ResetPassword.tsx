@@ -301,7 +301,7 @@ const ResetPassword = () => {
                     {verifyingMfa ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}
                     Use recovery code
                   </Button>
-                  <Button variant="ghost" className="w-full" disabled={verifyingMfa} onClick={() => setUseRecoveryCode(false)}>
+                  <Button variant="ghost" className="w-full" disabled={verifyingMfa || !factorId} onClick={() => setUseRecoveryCode(false)}>
                     Back to authenticator
                   </Button>
                 </>
