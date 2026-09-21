@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { LandedConfirmationDialog, type LandedAirportCode } from "@/components/LandedConfirmationDialog";
 import { MetroEchoRadar, type MetroLeg } from "@/components/MetroEchoRadar";
+import { DriverHandshakeCard, type HandshakeDriver } from "@/components/DriverHandshakeCard";
 import { Plane, RefreshCcw, Clock, Loader2, PlaneLanding, Pencil, Save, X, Info } from "lucide-react";
 
 interface Props {
@@ -46,6 +47,7 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
   const [arrival, setArrival] = useState("");
   const [landedOpen, setLandedOpen] = useState(false);
   const [landingPending, setLandingPending] = useState(false);
+  const [handshake, setHandshake] = useState<HandshakeDriver | null>(null);
 
   // Live wiring: when the flight poller writes a real arrival, the card updates itself.
   const pickupId = pickup?.id ?? null;
@@ -173,6 +175,7 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
       const body = await resp.json().catch(() => ({}));
       if (!resp.ok) throw new Error(body.error || "Failed to confirm");
       setLandedOpen(false);
+      setHandshake((body.driver as HandshakeDriver) ?? null);
       toast.success(
         body.already
           ? t("guestFlight.alreadyConfirmed", "Already confirmed — the team has it.")
@@ -354,6 +357,14 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
                 </Badge>
               )}
             </div>
+
+            {pickup.guest_landed_at && (
+              <DriverHandshakeCard
+                driver={handshake ?? (pickup.drivers as HandshakeDriver | null) ?? null}
+                airportCode={pickup.confirmed_airport ?? trackedAirport ?? null}
+                landedAt={pickup.guest_landed_at}
+              />
+            )}
           </>
         )}
       </CardContent>
