@@ -521,6 +521,75 @@ export type Database = {
           },
         ]
       }
+      arrival_conflicts: {
+        Row: {
+          booking_id: string
+          detected_at: string
+          existing_source: string | null
+          existing_value: string | null
+          field_name: string
+          id: string
+          incoming_source: string | null
+          incoming_value: string | null
+          leg_id: string | null
+          note: string | null
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string
+        }
+        Insert: {
+          booking_id: string
+          detected_at?: string
+          existing_source?: string | null
+          existing_value?: string | null
+          field_name: string
+          id?: string
+          incoming_source?: string | null
+          incoming_value?: string | null
+          leg_id?: string | null
+          note?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+        }
+        Update: {
+          booking_id?: string
+          detected_at?: string
+          existing_source?: string | null
+          existing_value?: string | null
+          field_name?: string
+          id?: string
+          incoming_source?: string | null
+          incoming_value?: string | null
+          leg_id?: string | null
+          note?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arrival_conflicts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arrival_conflicts_leg_id_fkey"
+            columns: ["leg_id"]
+            isOneToOne: false
+            referencedRelation: "journey_legs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_adjustments: {
         Row: {
           adjustment_type: string
@@ -1230,6 +1299,105 @@ export type Database = {
         }
         Relationships: []
       }
+      flight_facts: {
+        Row: {
+          actual_arrival: string | null
+          actual_departure: string | null
+          airline_name: string | null
+          arrival_airport: string | null
+          arrival_iata: string | null
+          arrival_timezone: string | null
+          created_at: string
+          delay_minutes: number
+          departure_airport: string | null
+          departure_iata: string | null
+          departure_timezone: string | null
+          estimated_arrival: string | null
+          estimated_departure: string | null
+          flight_date: string
+          flight_key: string
+          flight_status: string
+          gate: string | null
+          id: string
+          last_checked_at: string
+          lookup_count: number
+          marketed_carrier: string | null
+          marketed_flight_number: string | null
+          operating_carrier: string | null
+          operating_flight_number: string | null
+          provider: string
+          raw_response: Json | null
+          scheduled_arrival: string | null
+          scheduled_departure: string | null
+          terminal: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_arrival?: string | null
+          actual_departure?: string | null
+          airline_name?: string | null
+          arrival_airport?: string | null
+          arrival_iata?: string | null
+          arrival_timezone?: string | null
+          created_at?: string
+          delay_minutes?: number
+          departure_airport?: string | null
+          departure_iata?: string | null
+          departure_timezone?: string | null
+          estimated_arrival?: string | null
+          estimated_departure?: string | null
+          flight_date: string
+          flight_key: string
+          flight_status?: string
+          gate?: string | null
+          id?: string
+          last_checked_at?: string
+          lookup_count?: number
+          marketed_carrier?: string | null
+          marketed_flight_number?: string | null
+          operating_carrier?: string | null
+          operating_flight_number?: string | null
+          provider?: string
+          raw_response?: Json | null
+          scheduled_arrival?: string | null
+          scheduled_departure?: string | null
+          terminal?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_arrival?: string | null
+          actual_departure?: string | null
+          airline_name?: string | null
+          arrival_airport?: string | null
+          arrival_iata?: string | null
+          arrival_timezone?: string | null
+          created_at?: string
+          delay_minutes?: number
+          departure_airport?: string | null
+          departure_iata?: string | null
+          departure_timezone?: string | null
+          estimated_arrival?: string | null
+          estimated_departure?: string | null
+          flight_date?: string
+          flight_key?: string
+          flight_status?: string
+          gate?: string | null
+          id?: string
+          last_checked_at?: string
+          lookup_count?: number
+          marketed_carrier?: string | null
+          marketed_flight_number?: string | null
+          operating_carrier?: string | null
+          operating_flight_number?: string | null
+          provider?: string
+          raw_response?: Json | null
+          scheduled_arrival?: string | null
+          scheduled_departure?: string | null
+          terminal?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       flight_tracking: {
         Row: {
           actual_arrival: string | null
@@ -1792,6 +1960,115 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_legs: {
+        Row: {
+          arrival_timezone: string | null
+          booking_id: string
+          confidence: string
+          created_at: string
+          departure_timezone: string | null
+          flight_fact_id: string | null
+          from_code: string | null
+          from_name: string | null
+          id: string
+          is_final_leg: boolean
+          leg_order: number
+          leg_status: string
+          leg_type: string
+          marketed_carrier: string | null
+          marketed_flight_number: string | null
+          notes: string | null
+          operating_carrier: string | null
+          operating_flight_number: string | null
+          pickup_id: string | null
+          recorded_by: string | null
+          scheduled_arrival: string | null
+          scheduled_departure: string | null
+          source: string
+          to_code: string | null
+          to_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          arrival_timezone?: string | null
+          booking_id: string
+          confidence?: string
+          created_at?: string
+          departure_timezone?: string | null
+          flight_fact_id?: string | null
+          from_code?: string | null
+          from_name?: string | null
+          id?: string
+          is_final_leg?: boolean
+          leg_order?: number
+          leg_status?: string
+          leg_type?: string
+          marketed_carrier?: string | null
+          marketed_flight_number?: string | null
+          notes?: string | null
+          operating_carrier?: string | null
+          operating_flight_number?: string | null
+          pickup_id?: string | null
+          recorded_by?: string | null
+          scheduled_arrival?: string | null
+          scheduled_departure?: string | null
+          source?: string
+          to_code?: string | null
+          to_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          arrival_timezone?: string | null
+          booking_id?: string
+          confidence?: string
+          created_at?: string
+          departure_timezone?: string | null
+          flight_fact_id?: string | null
+          from_code?: string | null
+          from_name?: string | null
+          id?: string
+          is_final_leg?: boolean
+          leg_order?: number
+          leg_status?: string
+          leg_type?: string
+          marketed_carrier?: string | null
+          marketed_flight_number?: string | null
+          notes?: string | null
+          operating_carrier?: string | null
+          operating_flight_number?: string | null
+          pickup_id?: string | null
+          recorded_by?: string | null
+          scheduled_arrival?: string | null
+          scheduled_departure?: string | null
+          source?: string
+          to_code?: string | null
+          to_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_legs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_legs_flight_fact_id_fkey"
+            columns: ["flight_fact_id"]
+            isOneToOne: false
+            referencedRelation: "flight_facts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_legs_pickup_id_fkey"
+            columns: ["pickup_id"]
+            isOneToOne: false
+            referencedRelation: "airport_pickups"
             referencedColumns: ["id"]
           },
         ]

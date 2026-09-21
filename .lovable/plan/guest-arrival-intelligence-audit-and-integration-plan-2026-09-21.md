@@ -5,6 +5,7 @@ Audit-only pass on the live CampStay LMT code, schema and RLS. Nothing was chang
 ## 1. What actually exists today
 
 **LIVE**
+
 - Pickup record per booking: `airport_pickups` (flight_number = final leg, international_flight_number = first leg, final_flight_confirmed, confirmed_airport, guest_landed_at, arrival_type/location/confidence, transport_intent, pickup_enabled, assist_mode + reason + audit columns).
 - Journey interpretation: `src/lib/travelState.ts` (pre_departure → missing_final_flight → awaiting_departure → in_transit_bkk → arriving → arrived), `src/lib/arrivalModel.ts` (normalizeArrival, pickup resolution, staff warnings). Good bones — reuse, don't replace.
 - Flight cache + polling: `flight_tracking` (one row per pickup), `check-flight-status` (10-min cache, 3-min force cooldown, per-user/per-pickup rate limits, terminal statuses never re-polled), `poll-flights` (15-min cron, 2-day window, 200 cap, 15-min near / 120-min far cooldown), `poll-airport-traffic` + `airport_traffic` (per-airport board, unique on flight_iata+date+airport+direction).
@@ -16,6 +17,7 @@ Audit-only pass on the live CampStay LMT code, schema and RLS. Nothing was chang
 - Messaging: `messages` + `GuestThreadDialog` (staff reply is instant, admin notified), Telegram/LINE/WhatsApp/Twilio capture functions, `notify-via-messaging`, push + email.
 
 **PARTIAL**
+
 - Multi-leg: exactly two legs, by column name only. No leg list, no per-leg status, no onward-connection risk, no ferry leg as a tracked leg.
 - Airport vocabulary: alias map in `check-flight-status` covers USM/BKK/DMK/URT only; `src/lib/airports.ts` lists nine codes. TPE, IAD etc. are unmapped strings.
 - Timezones: `src/lib/timezone.ts` is Asia/Bangkok only. Provider timestamps are stored as-is; no departure-timezone or date-rollover handling.
@@ -23,6 +25,7 @@ Audit-only pass on the live CampStay LMT code, schema and RLS. Nothing was chang
 - Provenance: `flight_tracking.raw_response` exists; there is no per-field source or "who set this" record, so a poll can overwrite a staff-entered value with no trail.
 
 **MISSING**
+
 - Marketed vs operating carrier / codeshare. `flight_tracking` has `airline_name` and one flight number. TG6285 marketed / BR3 operated cannot be represented, and a lookup on the marketed number may miss or mismatch.
 - Shared-aircraft dedupe. Lookups are keyed by `pickup_id`, so five guests on one flight cost five provider calls and can disagree.
 - Screenshot / confirmation-email intake. Only `guest_documents.document_type = 'passport'` exists in production; `verify-document` is ID-only. No flight-evidence upload, no OCR, no extraction review.
@@ -32,6 +35,7 @@ Audit-only pass on the live CampStay LMT code, schema and RLS. Nothing was chang
 - Onward-leg risk (missed BKK→USM connection, ferry fallback) and ferry-leg tracking.
 
 **BLOCKED**
+
 - AviationStack free tier: HTTP only, no `flight_date` filter, tight monthly quota. Codeshare and multi-leg fidelity may need a paid tier or a second provider. Decision needed before build.
 - Driver-facing access needs a decision (login vs tokenised link) — cannot be designed around silently.
 
@@ -46,6 +50,7 @@ Audit-only pass on the live CampStay LMT code, schema and RLS. Nothing was chang
 **Shared flight facts.** Flight data keyed by flight + date + airport, referenced by many pickups. One lookup serves five guests, all see the same fact, quota drops.
 
 **2–3-second role views, no new dashboard.** Same journey, five renderings inside existing pages:
+
 - Guest (`/guest`): one Now card — next action, today's leg, where to stand, who to contact.
 - Reception (`FrontDesk`/`ArrivalsBoard`): who is arriving, what needs doing, one action per row.
 - Driver: a single scoped view — name, meeting point, time, phone. Nothing financial, nothing about other guests.
@@ -78,4 +83,4 @@ Live GPS or continuous location sharing; automatic booking-state changes from fl
 4. Landing behaviour: keep auto-confirming pickup on landing, or require a human "I'm ready"/"Assign"? Recommendation: stop auto-confirming; landing raises an action, a human confirms.
 5. Evidence retention: how long do flight screenshots/confirmations live before purge? Recommendation: 30 days after checkout, then delete.
 
-Nothing gets built until you approve.
+Approved — proceed with the staged architecture only: build the behind-the-scenes read-model, provenance, conflicts, and shared flight facts first, while keeping the current CampStay booking flow intact and making sure flight data never automatically changes bookings, money, rooms, or pickup status without human confirmation..
