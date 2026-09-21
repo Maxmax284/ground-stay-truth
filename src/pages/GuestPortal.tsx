@@ -584,6 +584,10 @@ const GuestPortal = () => {
               <MapPin className="h-3.5 w-3.5" />
               Island Guide
             </TabsTrigger>
+            <TabsTrigger value="while-you-wait" className="flex items-center gap-1.5">
+              <Waves className="h-3.5 w-3.5" />
+              {t("whileYouWait.tab", "While You Wait")}
+            </TabsTrigger>
             <TabsTrigger value="policies">{t("guestPortal.policies")}</TabsTrigger>
             <TabsTrigger value="profile">{t("guestPortal.profile")}</TabsTrigger>
           </TabsList>
@@ -837,6 +841,12 @@ const GuestPortal = () => {
           <TabsContent value="island-guide">
             <GuestPlaybook locations={guestLocations} />
           </TabsContent>
+
+          {/* ── While You Wait: island conditions, sea state, camp basics ── */}
+          <TabsContent value="while-you-wait">
+            <WhileYouWaitTab />
+          </TabsContent>
+
 
           {/* ── Policies Tab ── */}
           <TabsContent value="policies">
