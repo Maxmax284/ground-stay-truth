@@ -29,6 +29,13 @@
       "when": 1790007083150,
       "tag": "0003_journey_evidence_intake",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790008783053,
+      "tag": "0004_arrival_guest_progress_stage3",
+      "breakpoints": true
     }
   ]
 }
