@@ -117,7 +117,28 @@ function RowCard({ row, onOpen }: { row: ArrivalsBoardRow; onOpen: (id: string) 
           </div>
         </div>
       )}
-    </button>
+
+      {canCollect && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="mt-2 h-8 text-xs"
+          disabled={progress.isPending}
+          onClick={(e) => {
+            e.stopPropagation();
+            progress.mutate(
+              { bookingId: row.booking_id, action: "collected" },
+              {
+                onSuccess: () => toast.success(t("arrivalsBoard.collectedDone", "Marked collected.")),
+                onError: (err: any) => toast.error(err?.message ?? t("common.error", "Something went wrong")),
+              },
+            );
+          }}
+        >
+          {t("arrivalsBoard.markCollected", "Collected")}
+        </Button>
+      )}
+    </div>
   );
 }
 
