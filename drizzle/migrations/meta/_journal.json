@@ -15,6 +15,13 @@
       "when": 1790005238040,
       "tag": "0001_arrival_intelligence_read_model",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790005475573,
+      "tag": "0002_flight_facts_guest_read_own_leg",
+      "breakpoints": true
     }
   ]
 }
