@@ -2079,5 +2079,46 @@
       "checkedOut": "{{name}} checked out",
       "failed": "That didn't go through"
     }
+  },
+  "whileYouWait": {
+    "tab": "While You Wait",
+    "title": "While you wait",
+    "subtitle": "Live conditions on the island, straight from the source.",
+    "failed": "Couldn't load island conditions right now. Try again in a minute.",
+    "onIsland": "On the island right now",
+    "feelsLike": "Feels like",
+    "seaState": "Sea state — Lamai Beach",
+    "waveHeight": "Wave height",
+    "period": "Period",
+    "nextTides": "Next tides",
+    "noTides": "No tide turns in the next stretch.",
+    "highTide": "High tide",
+    "lowTide": "Low tide",
+    "campRules": "Camp basics",
+    "source": "Data: Open-Meteo · updated"
+  },
+  "nowCard": {
+    "tagAction": "Action needed",
+    "tagTravel": "On the way",
+    "tagOnsite": "You're checked in",
+    "tagBooked": "Booked",
+    "depositTitle": "Your deposit is still open",
+    "depositBody": "Pay the deposit and your room is locked in. Takes under a minute on your phone.",
+    "depositCta": "Pay deposit",
+    "flightTitle": "Track your flight in",
+    "flightBody": "We watch your flight live. Land, tap \"I've landed\", and your driver moves.",
+    "flightCta": "Open flight radar",
+    "onsiteTitle": "Everything for your stay",
+    "onsiteBody": "WiFi, house rules, laundry, maintenance — and a direct line to the front desk.",
+    "onsiteCta": "Stay support",
+    "quietTitle": "You're all set",
+    "quietBody": "Nothing needs doing right now. We'll reach out before you travel.",
+    "quietCta": "View booking",
+    "daysAway": "{{count}} days out",
+    "frontDesk": "Message front desk",
+    "channelEmail": "Updates go to {{email}}",
+    "channelEmailGeneric": "Updates go to your email",
+    "channelMessaging": "and your linked chat — you don't need to keep this page open.",
+    "channelHint": "Link WhatsApp or Telegram below and we'll buzz you there too."
   }
 }
