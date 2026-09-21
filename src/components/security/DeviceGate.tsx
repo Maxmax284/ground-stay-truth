@@ -96,7 +96,7 @@ export function DeviceGate({ children }: { children: React.ReactNode }) {
         </p>
         <div className="flex flex-col gap-2 sm:flex-row">
           {!blocked && gate.canSelfApprove && (
-            <Button className="flex-1" disabled={busy || !gate.currentDevice} onClick={approveSelf}>
+            <Button className="flex-1" disabled={busy} onClick={approveSelf}>
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
               Trust this device for admin access
             </Button>
