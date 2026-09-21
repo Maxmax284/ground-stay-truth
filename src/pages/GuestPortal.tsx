@@ -449,60 +449,80 @@ const GuestPortal = () => {
             warn loudly and give a one-tap way into Safari/Chrome. */}
         <GuestInAppBrowserBanner />
 
-
-
-        {/* First-visit messaging onboarding — auto-hides once connected or skipped */}
-        <GuestMessagingOnboarding />
-
-        {guestHistory?.isReturning && (
-          <Card className="border-primary/30 bg-primary/5">
-            <CardContent className="flex items-center gap-3 py-4">
-              <Heart className="h-5 w-5 text-primary shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  {t("loyalty.welcomeBack")}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {t("loyalty.stayCount", { count: (guestHistory.completedStays ?? 0) + 1 })}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Hero: Personal Guide (Telegram/WhatsApp featured perk) — shown
-            once the guest has a real booking on file. Pre-arrival variant when
-            they're not yet on-site, default portal copy otherwise. */}
-        {(upcomingBookings.length > 0 || activeBookings.length > 0) && (
-          <GuestPersonalGuideCard
-            variant={activeBookings.length === 0 && confirmedBookings.length > 0 ? "pre_arrival" : "portal"}
-          />
-        )}
-
-        {/* Passive Layer: Your Stay Summary */}
-        <GuestStaySummary focusSection={focusSection} onSectionFocused={() => setFocusSection(null)} />
-
-        {/* Email is not the source of truth — the portal is. Tell them how to
-            pay and upload ID here if nothing ever landed in their inbox. */}
-        {(upcomingBookings.length > 0 || activeBookings.length > 0) && (
-          <GuestEmailFallbackNotice
-            bookingId={(upcomingBookings[0] ?? activeBookings[0])?.id ?? null}
-            depositDue={upcomingBookings.some((b: any) => b.state === "pending_deposit")}
-          />
-        )}
-
-
-        {/* Heads Up — contextual, journey-aware intelligence carousel */}
-        <GuestHeadsUpStrip
-          locations={guestLocations}
-          journeyPhase={journeyPhase}
-          onLearnMore={(entry) => {
-            setActiveTab("island-guide");
+        {/* ── One "Now" card. One state, one obvious next move. ───────────── */}
+        <GuestNowCard
+          state={nowState}
+          unitName={nowBooking?.units?.name ?? null}
+          checkIn={nowBooking?.check_in ?? null}
+          checkOut={nowBooking?.check_out ?? null}
+          nightsAway={
+            nowBooking && nowState !== "onsite"
+              ? Math.max(0, differenceInCalendarDays(new Date(nowBooking.check_in), new Date()))
+              : null
+          }
+          contactEmail={profileQuery.data?.email ?? user?.email ?? null}
+          onGo={(tab, section) => {
+            setActiveTab(tab);
+            setFocusSection(section ?? null);
           }}
         />
 
-        {/* Guest notification enrollment — benefit-framed, not technical */}
-        <GuestStayUpdatesPrompt />
+        {/* Flight radar promoted to the hero while they're travelling */}
+        {nowState === "flight" && nowBooking && (
+          <GuestFlightTracker bookingId={nowBooking.id} guestName={guestName} />
+        )}
+
+        {/* Everything else — setup, perks, intelligence — one tap deeper. */}
+        <Collapsible open={extrasOpen} onOpenChange={setExtrasOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" size="sm" className="w-full justify-between h-9 text-xs">
+              <span>{t("guestPortal.moreTitle", "Setup, perks & heads-up")}</span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${extrasOpen ? "rotate-180" : ""}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-4 pt-4">
+            {/* First-visit messaging onboarding — auto-hides once connected or skipped */}
+            <GuestMessagingOnboarding />
+
+            {guestHistory?.isReturning && (
+              <Card className="border-primary/30 bg-primary/5">
+                <CardContent className="flex items-center gap-3 py-4">
+                  <Heart className="h-5 w-5 text-primary shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{t("loyalty.welcomeBack")}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t("loyalty.stayCount", { count: (guestHistory.completedStays ?? 0) + 1 })}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {(upcomingBookings.length > 0 || activeBookings.length > 0) && (
+              <GuestPersonalGuideCard
+                variant={activeBookings.length === 0 && confirmedBookings.length > 0 ? "pre_arrival" : "portal"}
+              />
+            )}
+
+            <GuestStaySummary focusSection={focusSection} onSectionFocused={() => setFocusSection(null)} />
+
+            {(upcomingBookings.length > 0 || activeBookings.length > 0) && (
+              <GuestEmailFallbackNotice
+                bookingId={(upcomingBookings[0] ?? activeBookings[0])?.id ?? null}
+                depositDue={upcomingBookings.some((b: any) => b.state === "pending_deposit")}
+              />
+            )}
+
+            <GuestHeadsUpStrip
+              locations={guestLocations}
+              journeyPhase={journeyPhase}
+              onLearnMore={() => setActiveTab("island-guide")}
+            />
+
+            {/* Guest notification enrollment — benefit-framed, not technical */}
+            <GuestStayUpdatesPrompt />
+          </CollapsibleContent>
+        </Collapsible>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="flex-wrap">
