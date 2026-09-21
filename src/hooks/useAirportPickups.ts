@@ -27,6 +27,11 @@ export interface AirportPickup {
   confirmed_at: string | null;
   confirmed_airport: string | null;
   guest_landed_at: string | null;
+  /** Stage 3 guest-progress track — only ever set by a named human action. */
+  guest_ready_at: string | null;
+  guest_ready_by: string | null;
+  collected_at: string | null;
+  collected_by: string | null;
   completed_at: string | null;
   completed_by: string | null;
   created_at: string;

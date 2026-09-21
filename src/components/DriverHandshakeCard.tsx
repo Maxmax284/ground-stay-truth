@@ -20,6 +20,12 @@ interface Props {
   driver?: HandshakeDriver | null;
   airportCode?: string | null;
   landedAt?: string | null;
+  /** Set once the guest has said they're out of the terminal. */
+  readyAt?: string | null;
+  /** Staff/driver confirmed the handover. */
+  collectedAt?: string | null;
+  onReady?: () => void;
+  readyPending?: boolean;
 }
 
 /**
