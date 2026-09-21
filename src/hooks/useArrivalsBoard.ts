@@ -17,6 +17,8 @@ export interface ArrivalsBoardRow {
     driver_name: string | null;
     license_plate: string | null;
     guest_landed_at: string | null;
+    guest_ready_at: string | null;
+    collected_at: string | null;
     confirmed_airport: string | null;
     arrival_datetime: string | null;
     assist_mode: string | null;
