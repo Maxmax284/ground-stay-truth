@@ -74,7 +74,8 @@
     "previewGuestPortal": "Preview Guest Portal",
     "warRoomSim": "War Room Sim",
     "platformGuide": "Platform Guide",
-    "arrivalsBoard": "Arrivals Board"
+    "arrivalsBoard": "Arrivals Board",
+    "adminBookingFlow": "Admin Booking Flow"
   },
   "auth": {
     "signIn": "Sign in",
@@ -2143,8 +2144,7 @@
     "tabMessages": "Conversations",
     "empty": "Nothing here right now.",
     "openMessages": "Open the full message inbox"
-  }
-,
+  },
   "guestPreview": {
     "title": "Guest Portal Preview",
     "adminOnly": "Admin only",
@@ -2178,5 +2178,22 @@
       "island": "Island",
       "arrived": "Arrived"
     }
+  },
+  "adminBookingFlow": {
+    "title": "Admin Booking Flow",
+    "subtitle": "Create the guest account, booking, pickup, driver assignment and arrival state in one audited pass.",
+    "openArrivals": "Open Arrivals Board",
+    "noBackdoorTitle": "No standing test account",
+    "noBackdoorDesc": "This creates or links the named guest only. No shared QA login, no hidden bypass, and every action is logged.",
+    "steps": {
+      "guest": "Guest",
+      "stay": "Stay",
+      "pickup": "Pickup",
+      "review": "Review"
+    },
+    "guestTitle": "Guest account",
+    "stayTitle": "Stay details",
+    "pickupTitle": "Pickup and driver",
+    "reviewTitle": "Review and create"
   }
 }
