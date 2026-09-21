@@ -54,11 +54,29 @@ export function DriverHandshakeCard({ driver, airportCode, landedAt, readyAt, co
         </div>
 
         <p className="text-xs text-muted-foreground">
-          {t(
-            "handshake.reassure",
-            "We know you're on the ground. You don't need to keep this page open — we'll buzz your phone when your driver is outside."
-          )}
+          {collectedAt
+            ? t("handshake.collected", "You're with your driver. Next stop: camp — reception is expecting you.")
+            : readyAt
+              ? t("handshake.waiting", "We know you're waiting. Stay at the meeting point — your driver is on the way to you.")
+              : t(
+                  "handshake.reassure",
+                  "No rush — take your time through immigration and bags. Tap the button below once you're outside with your bags."
+                )}
         </p>
+
+        {/* Stage 3: only the guest advances themselves to "ready". */}
+        {!collectedAt && (
+          readyAt ? (
+            <Badge className="bg-[hsl(var(--success)/0.15)] text-[hsl(var(--success))] text-[11px] gap-1">
+              <BadgeCheck className="h-3 w-3" /> {t("handshake.readyBadge", "You told us you're ready")}
+            </Badge>
+          ) : onReady ? (
+            <Button size="sm" className="h-9 w-full text-xs gap-1.5" onClick={onReady} disabled={readyPending}>
+              <BadgeCheck className="h-3.5 w-3.5" />
+              {t("handshake.imReady", "I'm out with my bags — I'm ready")}
+            </Button>
+          ) : null
+        )}
 
         <Separator />
 
