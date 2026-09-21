@@ -381,10 +381,50 @@ export function useDeviceGate(): DeviceGate {
     setDeviceRestricted(restricted);
   }, [restricted]);
 
+  /**
+   * Approve the machine we are on. If the "seen" row has not landed yet (fresh
+   * browser, slow insert, trust pulled by a password change) we create it here
+   * instead of leaving the admin staring at a dead button — the row is still
+   * written as pending first, so the database rules decide the rest.
+   */
   const approveCurrent = useCallback(async () => {
-    if (!currentDevice) return;
-    await actions.mutateAsync({ kind: "approve", device: currentDevice, selfApproved: true });
-  }, [actions, currentDevice]);
+    if (!user?.id) throw new Error("Sign in again to approve this device.");
+    let device = currentDevice as TrustedDeviceRow | null;
+
+    if (!device) {
+      const { data: found } = await supabase
+        .from(TABLE)
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("device_key", deviceKey)
+        .maybeSingle();
+      device = (found as TrustedDeviceRow | null) ?? null;
+    }
+
+    if (!device) {
+      const desc = describeDevice(typeof navigator !== "undefined" ? navigator.userAgent : null);
+      const { data: created, error } = await supabase
+        .from(TABLE)
+        .insert({
+          user_id: user.id,
+          device_key: deviceKey,
+          label: desc.label,
+          device_type: desc.deviceType,
+          browser: desc.browser,
+          os: desc.os,
+          user_agent: desc.label,
+          status: "pending",
+        })
+        .select("*")
+        .maybeSingle();
+      if (error) throw error;
+      device = (created as TrustedDeviceRow | null) ?? null;
+    }
+
+    if (!device) throw new Error("Could not register this device. Try again.");
+    await actions.mutateAsync({ kind: "approve", device, selfApproved: true });
+    await qc.invalidateQueries({ queryKey: ["trusted-devices"] });
+  }, [actions, currentDevice, deviceKey, qc, user?.id]);
 
   return {
     state,
