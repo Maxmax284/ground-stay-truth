@@ -31,17 +31,40 @@ const ResetPassword = () => {
   const [resending, setResending] = useState(false);
   const ran = useRef(false);
 
-  const preparePasswordChange = async () => {
+  /**
+   * Decides whether a second factor is still required before the password can
+   * change. `force` is used after Auth itself answers `insufficient_aal`: in
+   * that case MFA is required no matter what the local factor list says, so we
+   * must land on the step-up screen instead of bouncing back to the password
+   * form (which produced an unrecoverable loop).
+   */
+  const preparePasswordChange = async (force = false) => {
     const { data: assurance, error: assuranceError } =
       await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (assuranceError) throw assuranceError;
+    if (assuranceError && !force) throw assuranceError;
 
-    if (assurance?.nextLevel === "aal2" && assurance.currentLevel !== "aal2") {
+    const stepUpNeeded =
+      force || (assurance?.nextLevel === "aal2" && assurance.currentLevel !== "aal2");
+
+    if (stepUpNeeded) {
       const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
-      if (factorsError) throw factorsError;
-      const verifiedFactor = factors?.totp?.find((factor) => factor.status === "verified");
+      if (factorsError && !force) throw factorsError;
+      const verifiedFactor =
+        factors?.totp?.find((factor) => factor.status === "verified") ?? factors?.totp?.[0] ?? null;
+
       if (verifiedFactor) {
         setFactorId(verifiedFactor.id);
+        setUseRecoveryCode(false);
+        setPhase("mfa");
+        return;
+      }
+
+      if (force) {
+        // Auth demands AAL2 but we cannot match a usable authenticator factor
+        // (stale list, non-TOTP factor, fresh recovery session). Offer the
+        // recovery-code path rather than a dead end.
+        setFactorId(null);
+        setUseRecoveryCode(true);
         setPhase("mfa");
         return;
       }
@@ -188,8 +211,18 @@ const ResetPassword = () => {
     setSubmitting(false);
     if (error) {
       if (error.code === "insufficient_aal" || /AAL2/i.test(error.message)) {
-        await preparePasswordChange().catch(() => undefined);
-        toast({ title: "Authenticator verification required", description: "Enter your 6-digit code, then update the password.", variant: "destructive" });
+        await preparePasswordChange(true).catch(() => {
+          // Even the lookup failed — still show the step-up screen with the
+          // recovery-code option so the user is never stuck on this form.
+          setFactorId(null);
+          setUseRecoveryCode(true);
+          setPhase("mfa");
+        });
+        toast({
+          title: "Two-factor verification required",
+          description: "Confirm with your authenticator code, or use a recovery code if you lost it.",
+          variant: "destructive",
+        });
         return;
       }
       toast({ title: "Reset failed", description: error.message, variant: "destructive" });
@@ -268,7 +301,7 @@ const ResetPassword = () => {
                     {verifyingMfa ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}
                     Use recovery code
                   </Button>
-                  <Button variant="ghost" className="w-full" disabled={verifyingMfa} onClick={() => setUseRecoveryCode(false)}>
+                  <Button variant="ghost" className="w-full" disabled={verifyingMfa || !factorId} onClick={() => setUseRecoveryCode(false)}>
                     Back to authenticator
                   </Button>
                 </>
