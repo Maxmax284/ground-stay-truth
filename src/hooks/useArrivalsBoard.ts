@@ -72,7 +72,7 @@ export function useArrivalsBoard(daysAhead = 14) {
         (supabase
           .from("airport_pickups")
           .select(
-            "id, booking_id, status, guest_landed_at, confirmed_airport, arrival_datetime, assist_mode, drivers(name, license_plate)"
+            "id, booking_id, status, guest_landed_at, guest_ready_at, collected_at, confirmed_airport, arrival_datetime, assist_mode, drivers(name, license_plate)"
           )
           .in("booking_id", ids) as any),
         (supabase
@@ -122,6 +122,8 @@ export function useArrivalsBoard(daysAhead = 14) {
                 driver_name: pickup.drivers?.name ?? null,
                 license_plate: pickup.drivers?.license_plate ?? null,
                 guest_landed_at: pickup.guest_landed_at,
+                guest_ready_at: pickup.guest_ready_at ?? null,
+                collected_at: pickup.collected_at ?? null,
                 confirmed_airport: pickup.confirmed_airport,
                 arrival_datetime: pickup.arrival_datetime,
                 assist_mode: pickup.assist_mode ?? null,
