@@ -1131,6 +1131,11 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
           <GuestPickupCard bookingId={booking.id} guestName={guestName} />
         )}
 
+        {/* How they're getting here — guest-owned, enrich-only, never changes the booking */}
+        {!["completed", "cancelled", "no_show"].includes(state) && (
+          <GuestJourneyIntake bookingId={booking.id} />
+        )}
+
         {/* Live flight tracker — guest owns flight details, staff own the pickup */}
         {!["completed", "cancelled", "no_show"].includes(state) && (
           <GuestFlightTracker bookingId={booking.id} guestName={guestName} />
