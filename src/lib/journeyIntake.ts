@@ -58,7 +58,7 @@ export function isSamuiArrival(code?: string | null): boolean {
  * The guest's journey stops short of the island. Never infer the onward hop —
  * ask for it.
  */
-export function needsOnwardTravel(legs: Array<Pick<DraftLeg, "leg_order" | "to_code" | "leg_type">>): boolean {
+export function needsOnwardTravel(legs: Array<{ leg_order: number; to_code?: string | null; leg_type?: string | null }>): boolean {
   if (!legs.length) return false;
   const ordered = [...legs].sort((a, b) => a.leg_order - b.leg_order);
   const last = ordered[ordered.length - 1];
