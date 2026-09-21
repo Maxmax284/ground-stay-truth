@@ -63,6 +63,7 @@ import { usePendingHousekeepingCount } from "@/hooks/useHousekeepingTasks";
 const navItems = [
   { titleKey: "nav.dashboard", url: "/dashboard", icon: Home },
   { titleKey: "nav.frontDesk", url: "/front-desk", icon: UserCheck },
+  { titleKey: "nav.arrivalsBoard", url: "/arrivals-board", icon: LayoutDashboard },
   { titleKey: "nav.units", url: "/units", icon: Building2 },
   { titleKey: "nav.mediaLibrary", url: "/media-library", icon: Images },
   { titleKey: "nav.bookings", url: "/bookings", icon: BookOpen },
