@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { LandedConfirmationDialog, type LandedAirportCode } from "@/components/LandedConfirmationDialog";
+import { MetroEchoRadar, type MetroLeg } from "@/components/MetroEchoRadar";
 import { Plane, RefreshCcw, Clock, Loader2, PlaneLanding, Pencil, Save, X, Info } from "lucide-react";
 
 interface Props {
@@ -188,6 +189,36 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
 
   const trackedAirport = tracking?.arrival_iata?.toUpperCase();
   const flightAirport = trackedAirport === "BKK" ? "bkk" as const : trackedAirport === "USM" ? "samui" as const : null;
+
+  // ── Metro Echo derived state ───────────────────────────────────────────────
+  const onIsland = !trackedAirport || trackedAirport === "USM";
+  const metroLeg: MetroLeg = pickup.guest_landed_at
+    ? "arrived"
+    : hasLanded
+      ? (onIsland ? "arrived" : "transit")
+      : pickup.international_flight_number && !onIsland
+        ? "inbound"
+        : "island";
+
+  const arrivalStamp =
+    (tracking as any)?.actual_arrival ?? (tracking as any)?.estimated_arrival ?? tracking?.scheduled_arrival ?? pickup.arrival_datetime;
+  const etaLabel = arrivalStamp ? formatCampLabeled(arrivalStamp) : null;
+
+  const transitLine =
+    metroLeg === "arrived"
+      ? t(
+          "guestFlight.metroArrived",
+          "You're on island ground. Grab your bags at the carousel, then tap \"I've landed\" below — the front desk and your driver get pinged instantly."
+        )
+      : metroLeg === "transit"
+        ? t("guestFlight.metroTransit", {
+            defaultValue:
+              "Mainland transit — don't look for the truck yet. Your next move is flight {{flight}} to Samui.",
+            flight: finalFlight ?? "to Samui",
+          })
+        : metroLeg === "inbound"
+          ? t("guestFlight.metroInbound", "Long haul leg is being tracked. We watch the plane — you don't need to keep this page open.")
+          : t("guestFlight.metroIsland", "Samui landing is tracked live. The second you're on the ground, tap \"I've landed\" and your driver rolls.");
 
   return (
     <Card className="border-primary/20">
