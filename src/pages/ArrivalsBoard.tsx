@@ -42,9 +42,12 @@ function RowCard({ row, onOpen }: { row: ArrivalsBoardRow; onOpen: (id: string) 
   const progress = useArrivalProgress();
   const canCollect = !!row.pickup && !row.pickup.collected_at && (!!row.pickup.guest_ready_at || !!row.pickup.guest_landed_at);
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onOpen(row.booking_id)}
-      className="w-full text-left rounded-lg border border-border bg-card p-3 transition-transform duration-300 hover:-translate-y-1 hover:border-primary/40"
+      onKeyDown={(e) => { if (e.key === "Enter") onOpen(row.booking_id); }}
+      className="w-full cursor-pointer text-left rounded-lg border border-border bg-card p-3 transition-transform duration-300 hover:-translate-y-1 hover:border-primary/40"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
