@@ -325,7 +325,6 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
             </div>
           </>
         )}
-        )}
       </CardContent>
 
       <LandedConfirmationDialog
