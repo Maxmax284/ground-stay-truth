@@ -588,7 +588,11 @@
     "replyPlaceholder": "Reply to the guest…",
     "guestWillSee": "The guest will see this reply",
     "readOnly": "Your role can read messages but not reply.",
-    "reply": "Reply"
+    "reply": "Reply",
+    "draftQueued": "Reply queued for admin approval",
+    "draftQueuedDesc": "An admin must approve it before the guest sees it.",
+    "needsAdminApproval": "An admin must approve this before the guest sees it",
+    "awaitingApproval": "Awaiting admin approval"
   },
   "stateTransition": {
     "changeState": "Change State",
