@@ -261,37 +261,23 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
           </div>
         ) : (
           <>
-            <div className="flex items-center gap-2 flex-wrap text-xs">
-              {pickup.international_flight_number && (
-                <span className="font-mono text-muted-foreground">{pickup.international_flight_number}</span>
-              )}
-              {finalFlight && <span className="font-mono font-medium text-foreground">{finalFlight}</span>}
-              {!finalFlight && !pickup.international_flight_number && (
-                <span className="text-muted-foreground">
-                  {t("guestFlight.noFlight", "No flight number yet — add it so we can track you.")}
-                </span>
-              )}
-              <Badge className={`ml-auto text-[10px] ${statusCfg.color}`}>
-                {statusCfg.emoji} {statusCfg.label}
-              </Badge>
-            </div>
-
-            {tracking && (
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
-                {tracking.scheduled_arrival && (
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> {formatCampLabeled(tracking.scheduled_arrival)}
-                  </span>
-                )}
-                {tracking.delay_minutes > 0 && (
-                  <span className="text-orange-600 dark:text-orange-400">+{tracking.delay_minutes} min late</span>
-                )}
-                {tracking.terminal && <span>Terminal {tracking.terminal}</span>}
-                {tracking.gate && <span>Gate {tracking.gate}</span>}
-                {tracking.last_checked_at && (
-                  <span>{t("guestFlight.checked", "Checked")} {formatCampLabeled(tracking.last_checked_at)}</span>
-                )}
-              </div>
+            {!finalFlight && !pickup.international_flight_number ? (
+              <p className="text-xs text-muted-foreground">
+                {t("guestFlight.noFlight", "No flight number yet — add it so we can track you.")}
+              </p>
+            ) : (
+              <MetroEchoRadar
+                intlFlight={pickup.international_flight_number}
+                finalFlight={finalFlight}
+                leg={metroLeg}
+                statusLabel={`${statusCfg.emoji} ${statusCfg.label}`}
+                etaLabel={etaLabel}
+                delayMinutes={tracking?.delay_minutes ?? null}
+                gate={tracking?.gate ?? null}
+                terminal={tracking?.terminal ?? null}
+                altitudeLabel={trackedAirport ? `→ ${trackedAirport}` : null}
+                transitLine={transitLine}
+              />
             )}
 
             {!tracking && (finalFlight || pickup.international_flight_number) && (
@@ -299,6 +285,12 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
                 <Info className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
                 <p>{t("guestFlight.pending", "Looking up your flight now — this card updates itself as soon as the airline data comes through.")}</p>
               </div>
+            )}
+
+            {tracking?.last_checked_at && (
+              <p className="text-[10px] text-muted-foreground">
+                {t("guestFlight.checked", "Checked")} {formatCampLabeled(tracking.last_checked_at)}
+              </p>
             )}
 
             <Separator />
@@ -332,6 +324,7 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
               )}
             </div>
           </>
+        )}
         )}
       </CardContent>
 
