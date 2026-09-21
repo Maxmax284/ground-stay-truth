@@ -67,6 +67,7 @@ import { GuestPersonalGuideCard } from "@/components/GuestPersonalGuideCard";
 import { GuestStaySummary } from "@/components/GuestStaySummary";
 import { GuestPickupCard } from "@/components/GuestPickupCard";
 import { GuestFlightTracker } from "@/components/GuestFlightTracker";
+import { GuestJourneyIntake } from "@/components/GuestJourneyIntake";
 import { ArrivalRouteFAQ } from "@/components/ArrivalRouteFAQ";
 import { GuestDepositSection } from "@/components/GuestDepositSection";
 import { GuestPaymentSummary } from "@/components/GuestPaymentSummary";
@@ -1129,6 +1130,11 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
         {/* Airport Pickup info */}
         {!["completed", "cancelled", "no_show"].includes(state) && (
           <GuestPickupCard bookingId={booking.id} guestName={guestName} />
+        )}
+
+        {/* How they're getting here — guest-owned, enrich-only, never changes the booking */}
+        {!["completed", "cancelled", "no_show"].includes(state) && (
+          <GuestJourneyIntake bookingId={booking.id} />
         )}
 
         {/* Live flight tracker — guest owns flight details, staff own the pickup */}

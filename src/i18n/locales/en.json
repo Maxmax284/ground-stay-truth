@@ -2195,5 +2195,44 @@
     "stayTitle": "Stay details",
     "pickupTitle": "Pickup and driver",
     "reviewTitle": "Review and create"
+  },
+  "journeyIntake": {
+    "onFile": "On file",
+    "weMeetYou": "we meet you here",
+    "legLabel": "Leg {{n}}",
+    "howLabel": "How",
+    "flightNumber": "Flight number",
+    "from": "From",
+    "to": "To",
+    "departs": "Departs",
+    "arrives": "Arrives",
+    "addLeg": "Add another leg",
+    "saveTravel": "Save my travel",
+    "addTravel": "Add my travel",
+    "editTravel": "Update my travel",
+    "addOnward": "Add my hop to Samui",
+    "uploadBooking": "Upload my booking",
+    "saved": "Saved — we'll watch your travel from here.",
+    "savedNeedsOnward": "Saved. We still need how you reach Koh Samui.",
+    "saveFailed": "Couldn't save that. Try again.",
+    "needSomething": "Add a flight number, or where you're coming from and going to.",
+    "unreadable": "We couldn't read that one — type your flight instead.",
+    "legsAdded": "{{count}} leg added",
+    "gapsFilled": "gaps filled",
+    "toCheck": "{{count}} to check with you",
+    "readNothingNew": "Read it — nothing new to add.",
+    "uploadFailed": "Upload failed. Try a screenshot.",
+    "privacy": "We only read travel details from what you upload. Your booking reference is stored hidden, and we never track your location.",
+    "type": {
+      "flight": "Flight",
+      "ferry": "Ferry / boat",
+      "bus": "Bus / van",
+      "road": "Car / taxi",
+      "other": "Other"
+    },
+    "status": {
+      "ready": "Your travel is on file",
+      "needed": "We need your travel details"
+    }
   }
 }

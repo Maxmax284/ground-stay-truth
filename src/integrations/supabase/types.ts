@@ -1964,6 +1964,74 @@ export type Database = {
           },
         ]
       }
+      journey_evidence: {
+        Row: {
+          applied_fields: Json
+          booking_id: string
+          booking_reference_masked: string | null
+          conflicts_created: number
+          created_at: string
+          error_message: string | null
+          extracted_payload: Json | null
+          extraction_status: string
+          file_size: number | null
+          id: string
+          kind: string
+          legs_created: number
+          mime_type: string | null
+          processed_at: string | null
+          storage_path: string | null
+          uploaded_by: string | null
+          uploader_role: string
+        }
+        Insert: {
+          applied_fields?: Json
+          booking_id: string
+          booking_reference_masked?: string | null
+          conflicts_created?: number
+          created_at?: string
+          error_message?: string | null
+          extracted_payload?: Json | null
+          extraction_status?: string
+          file_size?: number | null
+          id?: string
+          kind?: string
+          legs_created?: number
+          mime_type?: string | null
+          processed_at?: string | null
+          storage_path?: string | null
+          uploaded_by?: string | null
+          uploader_role?: string
+        }
+        Update: {
+          applied_fields?: Json
+          booking_id?: string
+          booking_reference_masked?: string | null
+          conflicts_created?: number
+          created_at?: string
+          error_message?: string | null
+          extracted_payload?: Json | null
+          extraction_status?: string
+          file_size?: number | null
+          id?: string
+          kind?: string
+          legs_created?: number
+          mime_type?: string | null
+          processed_at?: string | null
+          storage_path?: string | null
+          uploaded_by?: string | null
+          uploader_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_evidence_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journey_legs: {
         Row: {
           arrival_timezone: string | null
