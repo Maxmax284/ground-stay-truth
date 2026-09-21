@@ -1,69 +1,91 @@
-# Guest Arrival Intelligence — Addendum: Final-Phase Dual Flight-Data Integration
+# CampStay Guest Arrival Intelligence — Consolidated Plan (for review)
 
-This addendum does **not** replace the agreed Guest Arrival Intelligence plan. It is appended as the **last stage**, after every earlier stage is built, validated and accepted.
+One stay, one journey, five role-shaped views. Plan only — nothing in this document has been built beyond what the "LIVE" section states.
 
-## What Metro Echo actually uses (verified, not assumed)
+## Ground rules (Max's decisions, now binding)
 
-Read from Metro Echo's own code (read-only snapshot), `supabase/functions/_shared/`:
+1. Aircraft landing means **the aircraft landed**. It never advances guest ready / collected / checked-in. Those need a human tap.
+2. Flight data never claims to know where a guest physically is. No telemetry-as-location, ever.
+3. No provider read may change a booking, price, room, pickup status or state. Reads produce facts and, on disagreement, visible conflicts for a human.
+4. AeroAPI stays off until the final phase. Earlier stages keep AviationStack only, plus a provider-neutral seam — no second secret, HTTP client, failover or budget ledger before then.
+5. Screenshot extraction may fill **missing** facts automatically with provenance. Conflicts and consequential changes go to a human.
+6. Driver access is least-privilege: assigned driver and authorised transport staff only.
+7. Evidence retention is finite and stated in days before launch.
 
-- **FlightAware AeroAPI v4** — `aeroApi.ts`, secret `AEROAPI_KEY` (fallback name `FLIGHTAWARE_API_KEY`). Asked **first**. Reads airline dispatch: real UTC instants (`scheduled/estimated/actual_out|in`), delay seconds, terminal/gate, cancelled/diverted, last known position (lat/lon/altitude/heading/groundspeed), airport timezone carried with the record, and codeshare lists (`codeshares`, `codeshares_iata`) so a ticket number resolves to the operating number.
-- **AviationStack** — `flightProvider.ts` → `flightStatus.ts`, secret `AVIATIONSTACK_API_KEY` (fallback `FLIGHT_API_KEY`). The **backup aggregator**. Cheaper/looser: schedule + status + a `codeshared` block giving operating vs marketed carrier. Its free tier refuses the `flight_date` filter, so Metro Echo retries without the date and filters the day in code.
-- **Order and honesty rules** (`readFlightWithFeed`): AeroAPI first; on empty or thrown, fall back to AviationStack; if neither carries the flight, return nothing — silence is never rendered as "on time". The answering feed's name travels with the reading (`feed: "aeroapi" | "aviationstack"`).
-- **Budget** (`countedRead`, `spentToday`): per-feed daily ceiling `FLIGHT_DAILY_BUDGET` (default 40 paid reads), each read logged to `api_usage_logs` with provider, feature, cache_hit and status *before* use. A feed that has spent its day is skipped rather than silencing the other one. `over_budget` is returned as a real answer, not an error.
+## Status reconciliation — what is actually deployed
 
-CampStay today uses AviationStack only (`AVIATIONSTACK_API_KEY`, free tier, HTTP-only, date filtered in code) across `check-flight-status`, `poll-flights`, `poll-airport-traffic`, `guest-arrival-journey`, `arrival-fact-sync`.
+**LIVE (built, deployed, not yet user-accepted):** Stage 1 read-model and provenance.
+- Tables `flight_facts` (30 cols), `journey_legs` (26), `arrival_conflicts` (15) exist in the live database with role-shaped RLS. All three currently hold **0 rows** — nothing is feeding them yet.
+- `src/lib/arrivalIntelligence.ts` (source hierarchy, `canOverwrite`, flight key, connection assessment, conflict detection, role views), `src/hooks/useArrivalIntelligence.ts`, `src/lib/__tests__/arrivalIntelligence.test.ts` (20 passing tests).
+- `supabase/functions/arrival-fact-sync/index.ts` deployed: staff-only, reuses facts <10 min old, AviationStack fallback, records disagreements as conflicts, writes nothing operational.
+- 20 passing tests are **not** your sign-off. Stage 1 acceptance is still open: it needs real legs flowing in and the role views read on a phone.
 
-## Overlap and division of labour
+**Also LIVE from before:** `airport_pickups`, `flight_tracking`, `check-flight-status`, `poll-flights` (15-min cron), `poll-airport-traffic`, `guest-landed`, guest surfaces (`GuestNowCard`, `MetroEchoRadar`, `WhileYouWaitTab`, `GuestFlightTracker`, `GuestPickupCard`, `LandedConfirmationDialog`), staff surfaces (`ArrivalsBoard`, `FlightForecastWidget`, `AirportPickupSection`, `CheckInDesk`), booking state machine + `booking_state_log`, messaging with instant staff replies.
 
-| Need | AeroAPI | AviationStack |
-|---|---|---|
-| Operating vs marketed carrier (TG6285 / BR3) | Authoritative, both directions | Present but thinner |
-| Actual in/out instants + delay | Yes, with airport timezone | Partial, often schedule-only |
-| Gate/terminal, cancelled/diverted | Yes | Sometimes |
-| Live position (radar card) | Yes | No |
-| Cost per read | Paid, per-query | Free tier / cheap, hard quota |
+**Known gaps still standing:** no leg intake (so the read-model is empty), `guest-landed` still auto-confirms pickup (violates decision 1 and is fixed in Stage 3), no driver view, no conflict-resolution UI, no screenshot intake, aliases cover a handful of airports.
 
-So: **AeroAPI is truth, AviationStack is presence.** Two feeds are for *verification and continuity*, not for more data.
+## The three-second standard (applies to every stage)
 
-## Recommendation: bounded local integration, not a shared service
+Each role, one glance, human verbs only — Confirm details, Assign pickup, I'm ready, Collected, Checked in, Noted.
 
-Do **not** call Metro Echo's functions from CampStay. Different tenants, different auth, different RLS, and a cross-project dependency would make guest arrivals fail when an unrelated project changes. Instead port the *pattern* — provider adapters, feed-named readings, per-feed daily ceiling, usage ledger — into CampStay's own bounded seam, keyed to `flight_facts` (one row per physical flight/date) so five guests on one aircraft cost one read.
+- **Guest:** what happens next, my legs, where to meet, who to contact.
+- **Reception:** who's arriving today, what needs doing now.
+- **Manager:** exceptions only — tight connections, unassigned pickups, conflicts, no-shows.
+- **Admin:** provenance, feed health, audit.
+- **Driver:** one pickup — name, time, terminal, meeting point, contact. No money, no other guests, no provenance.
 
-## Provider-neutral seams the earlier stages may define (and nothing more)
+No new dashboard, no aviation jargon, no duplicate notices. New facts enrich the existing arrival situation.
 
-Earlier stages are allowed to shape these so late wiring is not a rewrite:
+## Stages
 
-- `flight_facts.source` / `provenance` already records which feed produced each field; keep it a free string, not an enum of one.
-- A single `readFlightFact(flightKey)` contract inside `arrival-fact-sync` — one adapter today (AviationStack), room for a list tomorrow.
-- `arrival_conflicts` already carries `existing_source` vs `incoming_source`; feed-vs-feed disagreement will reuse it unchanged.
-- No earlier stage adds a second provider secret, a second HTTP client, failover logic, or budget tables. Any temptation to "just add AeroAPI while we're here" is out of scope until this phase.
+### Stage 1 — Read-model + provenance — BUILT, awaiting your acceptance
+Acceptance: legs visible for a real booking; provider never silently overwrites a staff-entered value; driver view provably carries no financial or other-guest data.
 
-## Final phase: work items (only after all prior stages pass acceptance)
+### Stage 2 — Flight & journey intake (next stage)
+Guest enters legs (marketed number, date, route) or uploads a booking screenshot/confirmation. Multi-leg ordered legs, ferry/road legs included, only the final leg drives operations. Extraction rules:
+- Empty field + confident extraction → fill it, stamped `source: extracted`, dated, with the evidence linked. No staff gate.
+- Field already set by a human, or extraction disagrees, or the change is consequential (arrival date/airport/final leg) → open conflict, human decides.
+- Booking references and PNRs are treated as secret: stored masked, never shown in staff lists or notifications, visible only to the owning guest and admin.
+- Guest ownership: a guest may only attach evidence to their own booking; staff uploads are attributed to the staff member.
+Acceptance: TG6285 marketed resolves to the operating BR3 IAD→TPE; BKK→Samui plus ferry reads as one journey; date rollover across timezones correct; five guests on one aircraft share one fact row; a screenshot that contradicts staff entry raises a conflict rather than overwriting.
 
-1. **Secrets & config** — `AEROAPI_KEY` added by Max in Project Settings → Secrets; `FLIGHT_DAILY_BUDGET` per feed. Absent key = single-feed behaviour, no crash.
-2. **Adapter layer** — `supabase/functions/_shared/flightFeeds.ts`: `askAero()` and `askStack()` returning one normalised shape plus the feed name. Read-only; no booking, pickup, money or state writes.
-3. **Ordering & failover** — AeroAPI first, AviationStack second, empty-is-empty. Terminal statuses still never re-polled.
-4. **Budget ledger** — per-feed counted reads with a CampStay usage log, `over_budget` surfaced to staff as "flight data paused today", never as a fake status.
-5. **Caching** — `flight_facts` stays the cache (10-minute freshness, shared per aircraft/date). Feed choice never bypasses the cache.
-6. **Provenance & conflicts** — field-level feed attribution; when the two feeds disagree beyond tolerance (≥15 min), open an `arrival_conflicts` row for a human, do not silently pick a winner. Provider still never overwrites staff-entered facts.
-7. **Codeshare resolution** — operating number resolution promoted to AeroAPI's codeshare lists, with AviationStack's `codeshared` block as fallback.
-8. **Monitoring** — per-feed success/empty/limited counts, daily spend, and a single admin health line. No new dashboard.
+### Stage 3 — Two tracks: aircraft status vs guest progress
+Split the signals. Aircraft: scheduled / airborne / landed / cancelled / diverted. Guest: details_needed → details_confirmed → travelling → self-reported landed → ready for pickup → collected → checked in. `guest-landed` stops auto-confirming pickup; "I'm ready" and "Collected" become explicit human actions.
+Acceptance: landed aircraft with no guest tap leaves pickup unconfirmed; late pickup, no-show and no-data cases behave; no state change without a named actor in the audit log.
 
-## Acceptance criteria for this phase
+### Stage 4 — Role views + conflict resolution in existing screens
+Guest Now card, reception arrivals list, manager exception list, admin provenance panel, narrowly scoped driver view. Conflict rows get a plain-language resolve UI ("Keep staff value" / "Use flight data" / "Noted").
+Driver access default proposed: **a single-pickup, expiring, read-only tokenised link** (no account, no password, scoped to one pickup, auto-dead after checkout), plus authorised transport staff via normal login. Flagged for your call — say the word if you'd rather drivers have real logins.
+Acceptance: each role view readable in under three seconds on a phone; driver link exposes exactly one pickup and nothing financial; expired link is dead.
 
-- TG6285 (marketed) resolves to BR3 (operated) IAD→TPE via AeroAPI, and still resolves with AeroAPI disabled.
-- AeroAPI empty → AviationStack answers; both empty → "no flight data on record", never "on time".
-- Five guests on one flight/date = one paid read; ledger proves it.
-- Per-feed ceiling reached → that feed skipped, other feed still answers; both spent → `over_budget` shown honestly.
-- Feed disagreement on arrival time opens a conflict; no booking, pickup, room, price or state change occurs from any provider read.
-- All earlier-stage regression tests (rollover, ferry leg, late pickup, no-show, no data, stale data, security boundaries) still pass unchanged.
+### Stage 5 — Retention, consent, monitoring
+Proposed defaults, for your approval before launch (not yet approved):
+- Uploaded travel evidence (screenshots/confirmations): delete **30 days after checkout**.
+- Derived flight facts: keep **90 days**, then delete.
+- Provenance/audit rows (who set what, when, from which source, no payload): keep **2 years**, PNRs masked.
+Plus consent copy for evidence upload, and a single admin health line. Acceptance: a scheduled purge demonstrably deletes expired evidence while audit trails survive.
 
-## Explicitly out of scope, permanently
+---
 
-Cross-project calls to Metro Echo; position/telemetry treated as the guest's whereabouts; any automatic booking/pickup/check-in transition from a provider read; a third provider; a new dashboard.
+## Final phase (after stages 1–5 pass acceptance): dual flight-data providers
 
-## Decisions needed from Max
+Verified from Metro Echo's own code, not assumed: it runs **FlightAware AeroAPI v4** (`AEROAPI_KEY`, asked first — dispatch-grade actual times, delays, gate/terminal, cancelled/diverted, position, airport timezone, codeshare lists) with **AviationStack** (`AVIATIONSTACK_API_KEY`) as backup aggregator, a per-feed daily ceiling (`FLIGHT_DAILY_BUDGET`, 40 there) and every paid read logged before use. CampStay today is AviationStack-only, free tier.
 
-1. Fund AeroAPI at this phase, or ship single-feed and keep the adapter dormant?
-2. Daily paid-read ceiling for CampStay (Metro Echo runs 40/feed)?
-3. Keep the five original open decisions as they stand (driver access, screenshot review, landing auto-confirm, evidence retention, flight tier)?
+Position in this phase: **AeroAPI is the preferred operational feed, not infallible truth.**
+- Availability fallback: AeroAPI empty, error or limited → ask AviationStack. Both empty → "no flight data on record". Never a fabricated "on time".
+- Routine dual-source verification is **not** a second paid call. Where two readings already exist (cache, fallback), disagreements surface as conflicts with dated per-field provenance. No gratuitous second call for comparison's sake.
+- Ceiling is **measured, not copied**: count actual arrivals per day from live bookings, multiply by the polls a stay needs, price it against AeroAPI's tier, and bring you a number for explicit approval before any paid activation.
+- Per-flight shared caching stays the gate (one `flight_facts` row per aircraft/date), plus a lock so concurrent requests for the same flight cannot both pay.
+- Do not port Metro Echo's functions or call them across projects — equivalent bounded integration inside CampStay, so an unrelated project can never break guest arrivals.
+
+Release gates for this phase: marketed→operating resolution works with AeroAPI on and off; five guests one flight = one paid read, proven in the ledger; ceiling reached → that feed skipped, the other still answers, "flight data paused today" shown honestly; feed disagreement opens a conflict; every stage 1–5 regression test still green; no booking/pickup/price/room change from any read.
+
+## Outstanding decisions
+
+1. Driver access mechanism — accept the expiring single-pickup link default, or require real logins?
+2. Retention numbers — accept 30 / 90 days / 2 years, or set your own?
+3. Paid-read ceiling — approve after I bring measured volumes and AeroAPI pricing (final phase only).
+
+## Approval requested
+
+Approval for **Stage 2 (flight & journey intake) only**. Stages 3–5 and the final dual-provider phase each come back for separate sign-off.
