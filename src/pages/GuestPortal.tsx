@@ -54,8 +54,12 @@ import {
   CalendarDays, ArrowRight, Home, Info, MessageCircle, Send,
   ChevronLeft, ChevronRight, Eye, CalendarPlus, User, Circle,
   MessageSquare, FileText, XCircle, Wrench, ClipboardCheck,
-  Clock, ListChecks, Shield, MapPin, Heart, Star,
+  Clock, ListChecks, Shield, MapPin, Heart, Star, ChevronDown, Waves,
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { GuestNowCard, computeNowState } from "@/components/GuestNowCard";
+import { WhileYouWaitTab } from "@/components/WhileYouWaitTab";
+import { differenceInCalendarDays } from "date-fns";
 import { GuestStaySupport } from "@/components/GuestStaySupport";
 import { GuestPreviewControls } from "@/components/GuestPreviewControls";
 import { MessagingConnectCard } from "@/components/MessagingConnectCard";
