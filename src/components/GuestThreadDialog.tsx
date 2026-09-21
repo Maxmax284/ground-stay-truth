@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { Loader2, Send, User, Lock, MessagesSquare, ExternalLink } from "lucide-react";
+import { Loader2, Send, User, Lock, MessagesSquare, ExternalLink, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -131,6 +131,12 @@ export function GuestThreadDialog({
                           {t("messages.internal")}
                         </span>
                       )}
+                      {m.draft && (
+                        <span className="inline-flex items-center gap-1 font-medium">
+                          <Clock className="h-2.5 w-2.5" />
+                          {t("messages.awaitingApproval")}
+                        </span>
+                      )}
                       <span>{format(new Date(m.created_at), "MMM d, h:mm a")}</span>
                     </div>
                   </div>
@@ -172,7 +178,9 @@ export function GuestThreadDialog({
                 </Button>
               </div>
               {!isInternal && (
-                <Badge variant="outline" className="text-[10px]">{t("messages.guestWillSee")}</Badge>
+                <Badge variant="outline" className="text-[10px]">
+                  {isAdmin ? t("messages.guestWillSee") : t("messages.needsAdminApproval")}
+                </Badge>
               )}
             </>
           ) : (
