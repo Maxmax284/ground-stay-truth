@@ -176,20 +176,18 @@ Deno.serve(async (req) => {
     const isInTransit = hasConnectingFlight && airportCode && airportCode.toLowerCase() === "bkk";
     const isAtFinalDestination = !isInTransit;
 
-    // Guest tapped "confirm pickup" at their final destination: promote the
-    // pickup to confirmed so the desk sees a live run, not a request. Only
-    // promotes from an un-actioned state — staff decisions are never overwritten,
-    // and the pickup fee obligation is left to the existing payment triggers.
-    let pickupConfirmed = false;
-    if (isAtFinalDestination && ["requested", "pending"].includes(pickup.status ?? "")) {
-      const { error: confirmError } = await serviceClient
-        .from("airport_pickups")
-        .update({ status: "confirmed", confirmed_at: now })
-        .eq("id", pickup.id)
-        .in("status", ["requested", "pending"]);
-      if (!confirmError) pickupConfirmed = true;
-      else console.error("pickup confirm failed", confirmError.message);
-    }
+    // Stage 3 doctrine: a landing is a self-report that the aircraft is down.
+    // It does NOT confirm the pickup, mark the guest ready, collected or checked
+    // in. Staff own the pickup status; the guest taps "I'm ready" separately.
+    const pickupConfirmed = false;
+
+    // Named-actor audit for the landing self-report.
+    await serviceClient.from("guest_arrival_stage_log").insert({
+      booking_id: booking_id,
+      stage: "self_reported_landed",
+      triggered_by: "guest",
+      context: { actor_id: user.id, pickup_id: pickup.id, airport: airportCode, at: now },
+    });
 
     // Cross-check: if flight tracking exists, compare arrival_iata with confirmed airport
     let airportMismatch = false;
