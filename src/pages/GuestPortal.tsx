@@ -433,6 +433,31 @@ const GuestPortal = () => {
     return undefined;
   }, [activeBookings, confirmedBookings]);
 
+  // ── The single "Now" state: one booking, one obvious next move ────────────
+  const nowBooking = useMemo(() => {
+    const pending = upcomingBookings.find((b: any) => b.state === "pending_deposit");
+    if (pending) return pending;
+    if (activeBookings.length > 0) return activeBookings[0];
+    if (confirmedBookings.length > 0) {
+      return confirmedBookings.reduce((a: any, b: any) =>
+        new Date(a.check_in) < new Date(b.check_in) ? a : b
+      );
+    }
+    return upcomingBookings[0] ?? null;
+  }, [upcomingBookings, activeBookings, confirmedBookings]);
+
+  const nowState = useMemo(
+    () =>
+      computeNowState({
+        pendingDeposit: nowBooking?.state === "pending_deposit",
+        checkedIn: activeBookings.some((b: any) => b.id === nowBooking?.id),
+        confirmedCheckIn: nowBooking?.check_in ?? null,
+        hasAnyBooking: Boolean(nowBooking),
+      }),
+    [nowBooking, activeBookings]
+  );
+
+
   const openBookingForm = (unitId?: string) => {
     setBookingFormUnitId(unitId);
     setBookingFormOpen(true);
