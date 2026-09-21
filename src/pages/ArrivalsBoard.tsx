@@ -11,6 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { useArrivalsBoard, type ArrivalsBoardRow } from "@/hooks/useArrivalsBoard";
+import { useArrivalProgress } from "@/hooks/useArrivalProgress";
+import { toast } from "sonner";
 import { STATE_LABELS, STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { formatPrice } from "@/lib/currency";
 import { formatCampLabeled } from "@/lib/timezone";
@@ -66,7 +68,17 @@ function RowCard({ row, onOpen }: { row: ArrivalsBoardRow; onOpen: (id: string) 
         )}
         {row.pickup?.guest_landed_at && (
           <Badge className="text-[10px] gap-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
-            <PlaneLanding className="h-3 w-3" /> Landed {formatCampLabeled(row.pickup.guest_landed_at)}
+            <PlaneLanding className="h-3 w-3" /> {t("arrivalsBoard.landedAt", "Landed")} {formatCampLabeled(row.pickup.guest_landed_at)}
+          </Badge>
+        )}
+        {row.pickup?.guest_ready_at && !row.pickup.collected_at && (
+          <Badge className="text-[10px] gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+            {t("arrivalsBoard.readyBadge", "Ready for pickup")}
+          </Badge>
+        )}
+        {row.pickup?.collected_at && (
+          <Badge variant="secondary" className="text-[10px] gap-1">
+            {t("arrivalsBoard.collectedBadge", "Collected")}
           </Badge>
         )}
         {row.pickup && !row.pickup.driver_name && (
