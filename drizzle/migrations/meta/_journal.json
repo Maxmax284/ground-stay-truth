@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789999375731,
+      "tag": "0000_guest_can_read_assigned_driver",
+      "breakpoints": true
+    }
+  ]
+}
