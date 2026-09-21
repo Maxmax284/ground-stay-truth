@@ -69,7 +69,7 @@ export function GuestThreadDialog({
       });
       setContent("");
       if (!isInternal && !isAdmin) {
-        toast.success(t("messages.draftQueued"), { description: t("messages.draftQueuedDesc") });
+        toast.success(t("messages.messageSent"), { description: t("messages.adminNotified") });
       } else {
         toast.success(t("messages.messageSent"));
       }
@@ -179,7 +179,7 @@ export function GuestThreadDialog({
               </div>
               {!isInternal && (
                 <Badge variant="outline" className="text-[10px]">
-                  {isAdmin ? t("messages.guestWillSee") : t("messages.needsAdminApproval")}
+                  {isAdmin ? t("messages.guestWillSee") : `${t("messages.guestWillSee")} · ${t("messages.adminNotified")}`}
                 </Badge>
               )}
             </>
