@@ -11,6 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { useArrivalsBoard, type ArrivalsBoardRow } from "@/hooks/useArrivalsBoard";
+import { useArrivalProgress } from "@/hooks/useArrivalProgress";
+import { toast } from "sonner";
 import { STATE_LABELS, STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { formatPrice } from "@/lib/currency";
 import { formatCampLabeled } from "@/lib/timezone";
@@ -35,11 +37,17 @@ function dayLabel(date: string) {
 }
 
 function RowCard({ row, onOpen }: { row: ArrivalsBoardRow; onOpen: (id: string) => void }) {
+  const { t } = useTranslation();
   const flightTone = row.flight?.flight_status ? FLIGHT_TONE[row.flight.flight_status] ?? FLIGHT_TONE.scheduled : null;
+  const progress = useArrivalProgress();
+  const canCollect = !!row.pickup && !row.pickup.collected_at && (!!row.pickup.guest_ready_at || !!row.pickup.guest_landed_at);
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onOpen(row.booking_id)}
-      className="w-full text-left rounded-lg border border-border bg-card p-3 transition-transform duration-300 hover:-translate-y-1 hover:border-primary/40"
+      onKeyDown={(e) => { if (e.key === "Enter") onOpen(row.booking_id); }}
+      className="w-full cursor-pointer text-left rounded-lg border border-border bg-card p-3 transition-transform duration-300 hover:-translate-y-1 hover:border-primary/40"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -63,7 +71,17 @@ function RowCard({ row, onOpen }: { row: ArrivalsBoardRow; onOpen: (id: string) 
         )}
         {row.pickup?.guest_landed_at && (
           <Badge className="text-[10px] gap-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
-            <PlaneLanding className="h-3 w-3" /> Landed {formatCampLabeled(row.pickup.guest_landed_at)}
+            <PlaneLanding className="h-3 w-3" /> {t("arrivalsBoard.landedAt", "Landed")} {formatCampLabeled(row.pickup.guest_landed_at)}
+          </Badge>
+        )}
+        {row.pickup?.guest_ready_at && !row.pickup.collected_at && (
+          <Badge className="text-[10px] gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+            {t("arrivalsBoard.readyBadge", "Ready for pickup")}
+          </Badge>
+        )}
+        {row.pickup?.collected_at && (
+          <Badge variant="secondary" className="text-[10px] gap-1">
+            {t("arrivalsBoard.collectedBadge", "Collected")}
           </Badge>
         )}
         {row.pickup && !row.pickup.driver_name && (
@@ -99,7 +117,28 @@ function RowCard({ row, onOpen }: { row: ArrivalsBoardRow; onOpen: (id: string) 
           </div>
         </div>
       )}
-    </button>
+
+      {canCollect && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="mt-2 h-8 text-xs"
+          disabled={progress.isPending}
+          onClick={(e) => {
+            e.stopPropagation();
+            progress.mutate(
+              { bookingId: row.booking_id, action: "collected" },
+              {
+                onSuccess: () => toast.success(t("arrivalsBoard.collectedDone", "Marked collected.")),
+                onError: (err: any) => toast.error(err?.message ?? t("common.error", "Something went wrong")),
+              },
+            );
+          }}
+        >
+          {t("arrivalsBoard.markCollected", "Collected")}
+        </Button>
+      )}
+    </div>
   );
 }
 

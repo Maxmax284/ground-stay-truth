@@ -309,6 +309,8 @@ export type Database = {
           assist_resolved_at: string | null
           assist_resolved_by: string | null
           booking_id: string
+          collected_at: string | null
+          collected_by: string | null
           completed_at: string | null
           completed_by: string | null
           confirmed_airport: string | null
@@ -322,6 +324,8 @@ export type Database = {
           final_flight_confirmed: boolean
           flight_number: string | null
           guest_landed_at: string | null
+          guest_ready_at: string | null
+          guest_ready_by: string | null
           id: string
           international_flight_number: string | null
           luggage_notes: string | null
@@ -348,6 +352,8 @@ export type Database = {
           assist_resolved_at?: string | null
           assist_resolved_by?: string | null
           booking_id: string
+          collected_at?: string | null
+          collected_by?: string | null
           completed_at?: string | null
           completed_by?: string | null
           confirmed_airport?: string | null
@@ -361,6 +367,8 @@ export type Database = {
           final_flight_confirmed?: boolean
           flight_number?: string | null
           guest_landed_at?: string | null
+          guest_ready_at?: string | null
+          guest_ready_by?: string | null
           id?: string
           international_flight_number?: string | null
           luggage_notes?: string | null
@@ -387,6 +395,8 @@ export type Database = {
           assist_resolved_at?: string | null
           assist_resolved_by?: string | null
           booking_id?: string
+          collected_at?: string | null
+          collected_by?: string | null
           completed_at?: string | null
           completed_by?: string | null
           confirmed_airport?: string | null
@@ -400,6 +410,8 @@ export type Database = {
           final_flight_confirmed?: boolean
           flight_number?: string | null
           guest_landed_at?: string | null
+          guest_ready_at?: string | null
+          guest_ready_by?: string | null
           id?: string
           international_flight_number?: string | null
           luggage_notes?: string | null

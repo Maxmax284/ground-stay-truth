@@ -2129,7 +2129,11 @@
     "yourDriver": "Your driver",
     "call": "Call",
     "whatsapp": "WhatsApp",
-    "noDriverYet": "Front desk is assigning your driver now."
+    "noDriverYet": "Front desk is assigning your driver now.",
+    "collected": "You're with your driver. Next stop: camp — reception is expecting you.",
+    "waiting": "We know you're waiting. Stay at the meeting point — your driver is on the way to you.",
+    "readyBadge": "You told us you're ready",
+    "imReady": "I'm out with my bags — I'm ready"
   },
   "arrivalsBoard": {
     "title": "Arrivals Board",
@@ -2143,7 +2147,12 @@
     "tabFlights": "Flights",
     "tabMessages": "Conversations",
     "empty": "Nothing here right now.",
-    "openMessages": "Open the full message inbox"
+    "openMessages": "Open the full message inbox",
+    "landedAt": "Landed",
+    "readyBadge": "Ready for pickup",
+    "collectedBadge": "Collected",
+    "markCollected": "Collected",
+    "collectedDone": "Marked collected."
   },
   "guestPreview": {
     "title": "Guest Portal Preview",

@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAirportPickup, useUpsertAirportPickup } from "@/hooks/useAirportPickups";
 import { useFlightTrackingBatch, useCheckFlightStatus, FLIGHT_STATUS_CONFIG } from "@/hooks/useFlightTracking";
+import { useArrivalProgress } from "@/hooks/useArrivalProgress";
 import { isActivePickup, normalizeArrival } from "@/lib/arrivalModel";
 import { formatCampLabeled } from "@/lib/timezone";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,6 +37,7 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
   const { data: pickup, isLoading } = useAirportPickup(bookingId);
   const upsert = useUpsertAirportPickup();
   const check = useCheckFlightStatus();
+  const progress = useArrivalProgress();
 
   const pickupIds = pickup ? [pickup.id] : [];
   const { data: flightMap } = useFlightTrackingBatch(pickupIds);
@@ -178,8 +180,8 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
       setHandshake((body.driver as HandshakeDriver) ?? null);
       toast.success(
         body.already
-          ? t("guestFlight.alreadyConfirmed", "Already confirmed — the team has it.")
-          : t("guestFlight.confirmed", "Pickup confirmed. Your driver has been alerted.")
+          ? t("guestFlight.alreadyConfirmed", "Already logged — the team has it.")
+          : t("guestFlight.landedLogged", "Landing logged. Tap \"I'm ready\" once you're out with your bags.")
       );
       qc.invalidateQueries({ queryKey: ["airport_pickup", bookingId] });
       qc.invalidateQueries({ queryKey: ["guest-stay-summary-pickups"] });
@@ -348,12 +350,12 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
                   onClick={() => setLandedOpen(true)}
                 >
                   <PlaneLanding className="h-3 w-3" />
-                  {t("guestFlight.confirmPickup", "I've landed — confirm pickup")}
+                  {t("guestFlight.confirmLanded", "I've landed")}
                 </Button>
               )}
               {pickup.guest_landed_at && (
                 <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 text-[10px] self-center">
-                  {t("guestFlight.landedBadge", "Landing confirmed")}
+                  {t("guestFlight.landedBadge", "Landing logged")}
                 </Badge>
               )}
             </div>
@@ -363,6 +365,18 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
                 driver={handshake ?? (pickup.drivers as HandshakeDriver | null) ?? null}
                 airportCode={pickup.confirmed_airport ?? trackedAirport ?? null}
                 landedAt={pickup.guest_landed_at}
+                readyAt={pickup.guest_ready_at}
+                collectedAt={pickup.collected_at}
+                readyPending={progress.isPending}
+                onReady={() =>
+                  progress.mutate(
+                    { bookingId, action: "guest_ready" },
+                    {
+                      onSuccess: () => toast.success(t("guestFlight.readySaved", "Front desk knows you're waiting.")),
+                      onError: (e: any) => toast.error(e?.message ?? t("common.error", "Something went wrong")),
+                    },
+                  )
+                }
               />
             )}
           </>
