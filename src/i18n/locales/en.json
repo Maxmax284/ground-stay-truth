@@ -2147,7 +2147,12 @@
     "tabFlights": "Flights",
     "tabMessages": "Conversations",
     "empty": "Nothing here right now.",
-    "openMessages": "Open the full message inbox"
+    "openMessages": "Open the full message inbox",
+    "landedAt": "Landed",
+    "readyBadge": "Ready for pickup",
+    "collectedBadge": "Collected",
+    "markCollected": "Collected",
+    "collectedDone": "Marked collected."
   },
   "guestPreview": {
     "title": "Guest Portal Preview",

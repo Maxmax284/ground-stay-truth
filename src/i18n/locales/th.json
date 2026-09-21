@@ -2147,7 +2147,12 @@
     "tabFlights": "เที่ยวบิน",
     "tabMessages": "บทสนทนา",
     "empty": "ยังไม่มีข้อมูล",
-    "openMessages": "เปิดกล่องข้อความทั้งหมด"
+    "openMessages": "เปิดกล่องข้อความทั้งหมด",
+    "landedAt": "ลงจอดแล้ว",
+    "readyBadge": "พร้อมให้ไปรับ",
+    "collectedBadge": "รับแล้ว",
+    "markCollected": "รับแล้ว",
+    "collectedDone": "บันทึกว่ารับแล้ว"
   },
   "guestPreview": {
     "title": "ดูตัวอย่างพอร์ทัลผู้เข้าพัก",
