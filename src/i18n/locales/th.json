@@ -75,6 +75,7 @@
     "opsConsole": "ศูนย์ควบคุมปฏิบัติการ",
     "embeds": "วิดเจ็ตฝังเว็บ",
     "arrivalsBoard": "กระดานผู้มาถึง",
+    "adminBooking": "สร้างการจอง",
     "adminBookingFlow": "สร้างการจองแอดมิน"
   },
   "auth": {
