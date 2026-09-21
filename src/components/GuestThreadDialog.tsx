@@ -39,7 +39,7 @@ export function GuestThreadDialog({
   onOpenBooking,
 }: GuestThreadDialogProps) {
   const { t } = useTranslation();
-  const { role, user } = useAuth();
+  const { role, user, isAdmin } = useAuth();
   const { data: messages, isLoading } = useBookingMessages(open ? bookingId : null);
   const createMessage = useCreateMessage();
   const [content, setContent] = useState("");
@@ -68,7 +68,11 @@ export function GuestThreadDialog({
         is_internal: isInternal,
       });
       setContent("");
-      toast.success(t("messages.messageSent"));
+      if (!isInternal && !isAdmin) {
+        toast.success(t("messages.draftQueued"), { description: t("messages.draftQueuedDesc") });
+      } else {
+        toast.success(t("messages.messageSent"));
+      }
     } catch (err: any) {
       toast.error(err?.message || t("messages.messageFailed"));
     }
