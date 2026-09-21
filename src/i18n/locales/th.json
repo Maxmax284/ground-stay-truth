@@ -581,6 +581,7 @@
     "messageCount_other": "{{count}} ข้อความ",
     "newCount": "{{count}} ใหม่",
     "messageSent": "ส่งข้อความแล้ว",
+    "adminNotified": "ผู้ดูแลระบบจะได้รับแจ้งการตอบกลับนี้",
     "messageFailed": "ส่งข้อความไม่สำเร็จ",
     "typeMessage": "พิมพ์ข้อความ...",
     "noContent": "(ไม่มีตัวอย่างข้อความ)",

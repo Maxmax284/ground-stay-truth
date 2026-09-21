@@ -581,6 +581,7 @@
     "messageCount_other": "{{count}} messages",
     "newCount": "{{count}} new",
     "messageSent": "Message sent",
+    "adminNotified": "Admins are notified of this reply",
     "messageFailed": "Failed to send message",
     "typeMessage": "Type a message...",
     "noContent": "(no preview)",
