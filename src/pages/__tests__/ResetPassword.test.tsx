@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 /**
@@ -11,6 +11,9 @@ const setSession = vi.fn();
 const exchangeCodeForSession = vi.fn();
 const verifyOtp = vi.fn();
 const getSession = vi.fn();
+const getAuthenticatorAssuranceLevel = vi.fn();
+const listFactors = vi.fn();
+const challengeAndVerify = vi.fn();
 const consumeRecoveryPayload = vi.fn();
 
 vi.mock("@/integrations/supabase/client", () => ({
@@ -21,9 +24,16 @@ vi.mock("@/integrations/supabase/client", () => ({
       exchangeCodeForSession: (...a: unknown[]) => exchangeCodeForSession(...a),
       verifyOtp: (...a: unknown[]) => verifyOtp(...a),
       getSession: (...a: unknown[]) => getSession(...a),
+      refreshSession: vi.fn().mockResolvedValue({ error: null }),
       updateUser: vi.fn().mockResolvedValue({ error: null }),
       resetPasswordForEmail: vi.fn().mockResolvedValue({ error: null }),
+      mfa: {
+        getAuthenticatorAssuranceLevel: (...a: unknown[]) => getAuthenticatorAssuranceLevel(...a),
+        listFactors: (...a: unknown[]) => listFactors(...a),
+        challengeAndVerify: (...a: unknown[]) => challengeAndVerify(...a),
+      },
     },
+    functions: { invoke: vi.fn().mockResolvedValue({ data: { ok: true }, error: null }) },
   },
 }));
 
@@ -58,6 +68,12 @@ describe("ResetPassword link handling", () => {
     exchangeCodeForSession.mockResolvedValue({ error: null });
     verifyOtp.mockResolvedValue({ error: null });
     getSession.mockResolvedValue({ data: { session: null } });
+    getAuthenticatorAssuranceLevel.mockResolvedValue({
+      data: { currentLevel: "aal1", nextLevel: "aal1" },
+      error: null,
+    });
+    listFactors.mockResolvedValue({ data: { totp: [] }, error: null });
+    challengeAndVerify.mockResolvedValue({ error: null });
   });
 
   it("accepts implicit hash tokens via setSession", async () => {
@@ -86,6 +102,27 @@ describe("ResetPassword link handling", () => {
     getSession.mockResolvedValue({ data: { session: { user: { id: "u1" } } } });
     renderPage();
     await expectReadyForm();
+  });
+
+  it("requires an authenticator code before changing an MFA-enabled account password", async () => {
+    consumeRecoveryPayload.mockReturnValue({ token_hash: "hash" });
+    getAuthenticatorAssuranceLevel.mockResolvedValue({
+      data: { currentLevel: "aal1", nextLevel: "aal2" },
+      error: null,
+    });
+    listFactors.mockResolvedValue({
+      data: { totp: [{ id: "factor-1", status: "verified" }] },
+      error: null,
+    });
+    renderPage();
+
+    const codeInput = await screen.findByLabelText(/6-digit authenticator code/i);
+    expect(screen.queryByLabelText(/new password/i)).not.toBeInTheDocument();
+    fireEvent.change(codeInput, { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: /verify and continue/i }));
+
+    await expectReadyForm();
+    expect(challengeAndVerify).toHaveBeenCalledWith({ factorId: "factor-1", code: "123456" });
   });
 
   it("shows the resend form for an expired link", async () => {

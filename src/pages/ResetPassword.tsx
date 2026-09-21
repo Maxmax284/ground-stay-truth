@@ -8,11 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { consumeRecoveryPayload, recoveryRedirectTo } from "@/lib/recoveryLink";
-import { Loader2 } from "lucide-react";
+import { KeyRound, LifeBuoy, Loader2, ShieldCheck } from "lucide-react";
 import Seo from "@/components/Seo";
 
 
-type Phase = "validating" | "ready" | "invalid";
+type Phase = "validating" | "mfa" | "ready" | "invalid";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -22,17 +22,47 @@ const ResetPassword = () => {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [factorId, setFactorId] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [useRecoveryCode, setUseRecoveryCode] = useState(false);
+  const [verifyingMfa, setVerifyingMfa] = useState(false);
   const [resendEmail, setResendEmail] = useState("");
   const [resending, setResending] = useState(false);
   const ran = useRef(false);
+
+  const preparePasswordChange = async () => {
+    const { data: assurance, error: assuranceError } =
+      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assuranceError) throw assuranceError;
+
+    if (assurance?.nextLevel === "aal2" && assurance.currentLevel !== "aal2") {
+      const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
+      if (factorsError) throw factorsError;
+      const verifiedFactor = factors?.totp?.find((factor) => factor.status === "verified");
+      if (verifiedFactor) {
+        setFactorId(verifiedFactor.id);
+        setPhase("mfa");
+        return;
+      }
+    }
+
+    setPhase("ready");
+  };
 
   useEffect(() => {
     if (ran.current) return;
     ran.current = true;
 
-    // If Supabase fires PASSWORD_RECOVERY on its own, accept it.
+    // A recovery link proves email ownership, but MFA-enabled accounts must
+    // still reach AAL2 before Auth will permit a password change.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if ((event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") && session) setPhase("ready");
+      if ((event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") && session) {
+        void preparePasswordChange().catch(() => {
+          setProblem("Could not check your two-factor security. Please request a new reset link.");
+          setPhase("invalid");
+        });
+      }
     });
 
     (async () => {
@@ -55,14 +85,14 @@ const ResetPassword = () => {
             refresh_token: payload.refresh_token,
           });
           if (error) throw error;
-          setPhase("ready");
+          await preparePasswordChange();
           return;
         }
 
         if (payload?.code) {
           const { error } = await supabase.auth.exchangeCodeForSession(payload.code);
           if (error) throw error;
-          setPhase("ready");
+          await preparePasswordChange();
           return;
         }
 
@@ -72,14 +102,14 @@ const ResetPassword = () => {
             token_hash: payload.token_hash,
           });
           if (error) throw error;
-          setPhase("ready");
+          await preparePasswordChange();
           return;
         }
 
         // No token in the URL — only valid if a recovery session already exists.
         const { data } = await supabase.auth.getSession();
         if (data.session) {
-          setPhase("ready");
+          await preparePasswordChange();
         } else {
           setProblem("No reset link detected. Open the link from your email on this device, or request a new one below.");
           setPhase("invalid");
@@ -98,6 +128,51 @@ const ResetPassword = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const handleMfaVerify = async () => {
+    if (!factorId || mfaCode.length !== 6) return;
+    setVerifyingMfa(true);
+    const { error } = await supabase.auth.mfa.challengeAndVerify({
+      factorId,
+      code: mfaCode.trim(),
+    });
+    setVerifyingMfa(false);
+    if (error) {
+      toast({ title: "Code didn't match", description: "Check your authenticator and try again.", variant: "destructive" });
+      setMfaCode("");
+      return;
+    }
+    setPhase("ready");
+  };
+
+  const handleRecoveryCode = async () => {
+    if (recoveryCode.replace(/[^A-Z0-9]/gi, "").length < 8) return;
+    setVerifyingMfa(true);
+    const { data, error } = await supabase.functions.invoke("mfa-manage", {
+      body: { action: "use_code", code: recoveryCode },
+    });
+    const message = (data as { error?: string } | null)?.error;
+    if (error || message) {
+      setVerifyingMfa(false);
+      toast({
+        title: "Recovery code not accepted",
+        description: message ?? "That code is invalid or was already used.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // The recovery code removes the lost factor. Refresh so Auth immediately
+    // evaluates the password update without the stale MFA enrollment claim.
+    const { error: refreshError } = await supabase.auth.refreshSession();
+    setVerifyingMfa(false);
+    if (refreshError) {
+      toast({ title: "Session refresh failed", description: "Request a new password reset link and try again.", variant: "destructive" });
+      return;
+    }
+    setPhase("ready");
+    toast({ title: "Recovery code accepted", description: "Set your new password, then reconnect your authenticator." });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password.length < 8) {
@@ -112,6 +187,11 @@ const ResetPassword = () => {
     const { error } = await supabase.auth.updateUser({ password });
     setSubmitting(false);
     if (error) {
+      if (error.code === "insufficient_aal" || /AAL2/i.test(error.message)) {
+        await preparePasswordChange().catch(() => undefined);
+        toast({ title: "Authenticator verification required", description: "Enter your 6-digit code, then update the password.", variant: "destructive" });
+        return;
+      }
       toast({ title: "Reset failed", description: error.message, variant: "destructive" });
       return;
     }
@@ -154,6 +234,7 @@ const ResetPassword = () => {
 
           <CardDescription>
             {phase === "validating" && "Checking your reset link…"}
+            {phase === "mfa" && "Your reset link is valid. Confirm your second factor to continue."}
             {phase === "ready" && "Enter a new password for your account."}
             {phase === "invalid" && problem}
           </CardDescription>
@@ -162,6 +243,64 @@ const ResetPassword = () => {
           {phase === "validating" && (
             <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" /> One moment…
+            </div>
+          )}
+
+          {phase === "mfa" && (
+            <div className="space-y-4">
+              {useRecoveryCode ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="recovery-code">Recovery code</Label>
+                    <Input
+                      id="recovery-code"
+                      value={recoveryCode}
+                      autoFocus
+                      autoComplete="one-time-code"
+                      placeholder="ABCDE-FGHJK"
+                      onChange={(event) => setRecoveryCode(event.target.value.toUpperCase())}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      This removes the lost authenticator. You will reconnect it after signing in.
+                    </p>
+                  </div>
+                  <Button className="w-full" disabled={verifyingMfa || recoveryCode.length < 8} onClick={handleRecoveryCode}>
+                    {verifyingMfa ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}
+                    Use recovery code
+                  </Button>
+                  <Button variant="ghost" className="w-full" disabled={verifyingMfa} onClick={() => setUseRecoveryCode(false)}>
+                    Back to authenticator
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="mfa-code">6-digit authenticator code</Label>
+                    <Input
+                      id="mfa-code"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      autoFocus
+                      autoComplete="one-time-code"
+                      value={mfaCode}
+                      placeholder="123456"
+                      onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, ""))}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" && mfaCode.length === 6) void handleMfaVerify();
+                      }}
+                    />
+                  </div>
+                  <Button className="w-full" disabled={verifyingMfa || mfaCode.length !== 6} onClick={handleMfaVerify}>
+                    {verifyingMfa ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                    Verify and continue
+                  </Button>
+                  <Button variant="link" className="w-full" disabled={verifyingMfa} onClick={() => setUseRecoveryCode(true)}>
+                    <LifeBuoy className="mr-2 h-4 w-4" />
+                    Lost your authenticator?
+                  </Button>
+                </>
+              )}
             </div>
           )}
 
