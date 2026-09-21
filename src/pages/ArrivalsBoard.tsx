@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +48,7 @@ function RowCard({ row, onOpen }: { row: ArrivalsBoardRow; onOpen: (id: string) 
             {row.unit_name ?? "No unit"} · {dayLabel(row.check_in)} → {format(parseISO(row.check_out), "d MMM")}
           </p>
         </div>
-        <Badge variant={STATE_VARIANTS[row.state as BookingState] ?? "secondary"} className="text-[10px] shrink-0">
+        <Badge variant="secondary" className={`text-[10px] shrink-0 ${STATE_VARIANTS[row.state as BookingState] ?? ""}`}>
           {STATE_LABELS[row.state as BookingState] ?? row.state}
         </Badge>
       </div>
@@ -105,6 +106,7 @@ function RowCard({ row, onOpen }: { row: ArrivalsBoardRow; onOpen: (id: string) 
 export default function ArrivalsBoard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { role } = useAuth();
   const { data, isLoading, refetch, isFetching } = useArrivalsBoard();
   const [search, setSearch] = useState("");
   const [openBooking, setOpenBooking] = useState<string | null>(null);
@@ -215,6 +217,7 @@ export default function ArrivalsBoard() {
         bookingId={openBooking}
         open={!!openBooking}
         onOpenChange={(o) => !o && setOpenBooking(null)}
+        isAdmin={role === "admin"}
       />
     </DashboardLayout>
   );
