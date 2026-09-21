@@ -549,19 +549,7 @@ export function useCreateMessage() {
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Check if this is a guest-facing message from non-admin — save as draft
-      let isDraft = false;
-      if (!message.is_internal) {
-        const { data: roles } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", user?.id ?? "");
-        const userRole = roles?.[0]?.role;
-        if (userRole && userRole !== "admin") {
-          isDraft = true;
-        }
-      }
-
+      // Guest-facing replies send immediately (no approval gate). Admins get an audit notification.
       const { data, error } = await supabase
         .from("messages")
         .insert({
@@ -569,15 +557,14 @@ export function useCreateMessage() {
           content: message.content,
           is_internal: message.is_internal,
           sender_id: user?.id ?? null,
-          draft: isDraft,
+          draft: false,
           ...(message.attachment_url ? { attachment_url: message.attachment_url, attachment_type: message.attachment_type } : {}),
         } as any)
         .select()
         .single();
       if (error) throw error;
 
-      // If draft, notify admins for review
-      if (isDraft) {
+      if (!message.is_internal) {
         const { data: profile } = await supabase
           .from("profiles")
           .select("full_name")
@@ -588,6 +575,7 @@ export function useCreateMessage() {
           .from("user_roles")
           .select("user_id")
           .eq("role", "admin");
+        const preview = message.content.length > 90 ? `${message.content.slice(0, 90)}…` : message.content;
         await createNotifications(
           (admins ?? [])
             .filter((a) => a.user_id !== user?.id)
@@ -595,7 +583,7 @@ export function useCreateMessage() {
               user_id: a.user_id,
               type: "message",
               reference_id: message.booking_id,
-              message: `${senderName} drafted a guest message pending your approval`,
+              message: `${senderName} replied to a guest: "${preview}"`,
             }))
         );
       }
