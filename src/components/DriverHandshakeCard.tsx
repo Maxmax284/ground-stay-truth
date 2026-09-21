@@ -33,7 +33,7 @@ interface Props {
  * ground: front desk alerted, who is collecting them, the plate, and exactly
  * where to stand. Staff still own the driver assignment — this only displays it.
  */
-export function DriverHandshakeCard({ driver, airportCode, landedAt }: Props) {
+export function DriverHandshakeCard({ driver, airportCode, landedAt, readyAt, collectedAt, onReady, readyPending }: Props) {
   const { t } = useTranslation();
   const meeting = meetingPointFor(airportCode);
   const digits = (v?: string | null) => (v ? v.replace(/\D/g, "") : "");
