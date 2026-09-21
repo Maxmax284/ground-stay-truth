@@ -72,7 +72,7 @@ export function onwardPrompt(lastToName?: string | null, lastToCode?: string | n
 }
 
 /** The leg operations actually care about: the one that ends on the island. */
-export function pickFinalLegOrder(legs: Array<Pick<DraftLeg, "leg_order" | "to_code">>): number | null {
+export function pickFinalLegOrder(legs: Array<{ leg_order: number; to_code?: string | null }>): number | null {
   if (!legs.length) return null;
   const ordered = [...legs].sort((a, b) => a.leg_order - b.leg_order);
   const island = [...ordered].reverse().find((l) => isSamuiArrival(l.to_code));
