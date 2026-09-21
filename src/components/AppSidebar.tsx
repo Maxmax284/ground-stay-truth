@@ -23,6 +23,7 @@ import {
   PlusSquare,
   MoreVertical,
   UserCheck,
+  LayoutDashboard,
   Bell,
   Percent,
   KeyRound,

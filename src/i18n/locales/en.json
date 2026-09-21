@@ -73,7 +73,8 @@
     "navigation": "Navigation",
     "previewGuestPortal": "Preview Guest Portal",
     "warRoomSim": "War Room Sim",
-    "platformGuide": "Platform Guide"
+    "platformGuide": "Platform Guide",
+    "arrivalsBoard": "Arrivals Board"
   },
   "auth": {
     "signIn": "Sign in",
@@ -2120,5 +2121,27 @@
     "channelEmailGeneric": "Updates go to your email",
     "channelMessaging": "and your linked chat — you don't need to keep this page open.",
     "channelHint": "Link WhatsApp or Telegram below and we'll buzz you there too."
+  },
+  "handshake": {
+    "title": "Front desk alerted",
+    "reassure": "You can close this. We'll message you when your driver is at the meeting point.",
+    "yourDriver": "Your driver",
+    "call": "Call",
+    "whatsapp": "WhatsApp",
+    "noDriverYet": "Front desk is assigning your driver now."
+  },
+  "arrivalsBoard": {
+    "title": "Arrivals Board",
+    "subtitle": "Every booking coming in, its flight, and the last thing the guest said.",
+    "inWindow": "In window",
+    "arrivingToday": "Arriving today",
+    "tracked": "Flights tracked",
+    "landed": "Landed",
+    "search": "Search guest, unit or flight number",
+    "tabAll": "All bookings",
+    "tabFlights": "Flights",
+    "tabMessages": "Conversations",
+    "empty": "Nothing here right now.",
+    "openMessages": "Open the full message inbox"
   }
 }
