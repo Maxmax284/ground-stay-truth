@@ -2229,6 +2229,10 @@
       "bus": "Bus / van",
       "road": "Car / taxi",
       "other": "Other"
+    },
+    "status": {
+      "ready": "Your travel is on file",
+      "needed": "We need your travel details"
     }
   }
 }
