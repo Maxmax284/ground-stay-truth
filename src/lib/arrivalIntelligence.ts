@@ -365,6 +365,165 @@ export interface ArrivalSituationInput {
   pickupRequested: boolean;
   factLastCheckedAt?: string | null;
   stalenessMinutes?: number;
+  /** Airport code on the pickup record, if staff set one. Compared, never applied. */
+  pickupAirportCode?: string | null;
+  /** Arrival time on the pickup record staff would actually drive to. */
+  pickupArrivalTime?: string | null;
+}
+
+// ── Attention checks (structured, staff-facing, never auto-applied) ───────────
+
+export type AttentionCode =
+  | "no_travel_details"
+  | "missing_island_leg"
+  | "final_airport_mismatch"
+  | "landed_not_ready"
+  | "pickup_no_arrival_time"
+  | "pickup_no_driver"
+  | "stale_flight_data"
+  | "details_to_confirm"
+  | "broken_connection"
+  | "flight_disrupted";
+
+export interface AttentionCheck {
+  code: AttentionCode;
+  severity: "info" | "warning" | "critical";
+  /** One plain sentence. No jargon, no aviation-speak. */
+  message: string;
+  /** The single human verb this check invites. Never an automatic action. */
+  action: string | null;
+}
+
+/** Codes that mean the guest has actually reached the island. */
+const ISLAND_CODES = new Set(["USM", "SAMUI", "NATHON", "MAENAM", "BIGBUDDHA", "LIPANOI", "KOHSAMUI"]);
+
+function code(value?: string | null): string | null {
+  const v = (value ?? "").trim().toUpperCase().replace(/\s+/g, "");
+  return v || null;
+}
+
+/**
+ * Situational scaffolding: what a person should look at, derived only from
+ * facts already on file. Returns questions, never changes.
+ */
+export function detectArrivalAttention(input: {
+  legs: JourneyLeg[];
+  finalLeg: JourneyLeg | null;
+  finalFact: FlightFact | null;
+  aircraft: { status: AircraftStatus; delayMinutes: number };
+  guestStep: GuestStep;
+  connections: ConnectionRisk[];
+  dataIsStale: boolean;
+  openConflicts: number;
+  pickupRequested: boolean;
+  driverAssigned: boolean;
+  pickupAirportCode?: string | null;
+  pickupArrivalTime?: string | null;
+  guestReadyAt?: string | null;
+}): AttentionCheck[] {
+  const out: AttentionCheck[] = [];
+
+  if (!input.legs.length) {
+    out.push({
+      code: "no_travel_details",
+      severity: "warning",
+      message: "No travel details on file for this guest.",
+      action: "Confirm details",
+    });
+  }
+
+  const finalCode = code(input.finalLeg?.to_code);
+  if (input.legs.length && finalCode && !ISLAND_CODES.has(finalCode)) {
+    out.push({
+      code: "missing_island_leg",
+      severity: "warning",
+      message: `Their journey stops at ${finalCode} — how they reach Samui is not on file.`,
+      action: "Confirm details",
+    });
+  }
+
+  const pickupCode = code(input.pickupAirportCode);
+  if (pickupCode && finalCode && pickupCode !== finalCode) {
+    out.push({
+      code: "final_airport_mismatch",
+      severity: "critical",
+      message: `Pickup is set for ${pickupCode} but their last leg arrives at ${finalCode}.`,
+      action: "Confirm details",
+    });
+  }
+
+  const landed = input.aircraft.status === "landed" || input.guestStep === "self_reported_landed";
+  if (landed && !input.guestReadyAt && input.guestStep !== "ready_for_pickup" && input.guestStep !== "collected" && input.guestStep !== "checked_in") {
+    out.push({
+      code: "landed_not_ready",
+      severity: "info",
+      message: "Plane is down. The guest has not said they're out with their bags yet.",
+      action: null,
+    });
+  }
+
+  if (input.pickupRequested) {
+    const actionable =
+      input.pickupArrivalTime ??
+      input.finalFact?.estimated_arrival ??
+      input.finalFact?.scheduled_arrival ??
+      input.finalLeg?.scheduled_arrival ??
+      null;
+    if (!actionable) {
+      out.push({
+        code: "pickup_no_arrival_time",
+        severity: "critical",
+        message: "Pickup is on but there is no arrival time anyone can drive to.",
+        action: "Confirm details",
+      });
+    }
+    if (!input.driverAssigned) {
+      out.push({
+        code: "pickup_no_driver",
+        severity: "warning",
+        message: "Pickup requested, no driver assigned.",
+        action: "Assign pickup",
+      });
+    }
+  }
+
+  if (input.dataIsStale) {
+    out.push({
+      code: "stale_flight_data",
+      severity: "warning",
+      message: "Flight updates are out of date — treat the times as unconfirmed.",
+      action: null,
+    });
+  }
+
+  if (input.openConflicts > 0) {
+    out.push({
+      code: "details_to_confirm",
+      severity: "warning",
+      message: `${input.openConflicts} travel detail${input.openConflicts === 1 ? "" : "s"} disagree and need a person to decide.`,
+      action: "Confirm details",
+    });
+  }
+
+  if (input.connections.some((c) => c.level === "broken")) {
+    out.push({
+      code: "broken_connection",
+      severity: "critical",
+      message: "Their onward connection does not work as booked.",
+      action: "Noted",
+    });
+  }
+
+  if (input.aircraft.status === "cancelled" || input.aircraft.status === "diverted") {
+    out.push({
+      code: "flight_disrupted",
+      severity: "critical",
+      message: "Flight is cancelled or diverted. Nothing was changed automatically.",
+      action: "Noted",
+    });
+  }
+
+  return out;
 }
 
 export interface RoleView {
