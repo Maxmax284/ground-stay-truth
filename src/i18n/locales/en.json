@@ -2244,5 +2244,21 @@
       "ready": "Your travel is on file",
       "needed": "We need your travel details"
     }
+  },
+  "arrivalExceptions": {
+    "tab": "Travel checks",
+    "empty": "Nothing to check. Every guest's travel details agree.",
+    "arrives": "arrives",
+    "copyBrief": "Copy driver brief",
+    "openBooking": "Open booking",
+    "briefCopied": "Driver brief copied — paste it to your driver.",
+    "important": "Important",
+    "onFile": "On file, from",
+    "incoming": "New reading, from",
+    "keepOurs": "Keep what we have",
+    "useNew": "Use the new detail",
+    "notRelevant": "Not relevant",
+    "saved": "Noted — thanks.",
+    "failed": "Could not save that."
   }
 }
