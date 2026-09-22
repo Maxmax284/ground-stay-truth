@@ -32,7 +32,7 @@ import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { formatPrice } from "@/lib/currency";
 import { calculateOutstanding, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_VARIANTS, PAYMENT_TYPE_LABELS, getPaymentProvenance, type PaymentStatus, type PaymentType } from "@/lib/paymentTypes";
-import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, ArrowUpRight, AlertTriangle, User, FileText, Info, Wrench, Shirt, Globe, Sparkles, RotateCcw, Paperclip, Image as ImageIcon, File, X, Loader2, Activity, ArrowRightLeft } from "lucide-react";
+import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, ArrowUpRight, AlertTriangle, User, FileText, Info, Wrench, Shirt, Globe, Sparkles, RotateCcw, Paperclip, Image as ImageIcon, File, X, Loader2, Activity, ArrowRightLeft, Plane } from "lucide-react";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { RefundDialog } from "@/components/RefundDialog";
 import { GuestPortalActivityTimeline } from "@/components/GuestPortalActivityTimeline";
@@ -47,6 +47,7 @@ import { PaymentGuideLink } from "@/components/PaymentGuideLink";
 import { BookingTrainingSection } from "@/components/BookingTrainingSection";
 import { useBookingTrainingLinks } from "@/hooks/useTrainingPackages";
 import { AirportPickupSection } from "@/components/AirportPickupSection";
+import { StaffArrivalRadar } from "@/components/front-desk/StaffArrivalRadar";
 import { AdminOverrideMenu } from "@/components/AdminOverrideMenu";
 import { useGuestDocuments } from "@/hooks/useGuestDocuments";
 import { useMaintenanceRequests, useUpdateMaintenanceStatus } from "@/hooks/useMaintenanceRequests";
@@ -346,7 +347,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
           <AIBriefingCard bookingId={booking.id} variant="compact" />
         </div>
 
-        <AirportPickupSection bookingId={booking.id} guestName={guestName} />
+        <AirportPickupSection bookingId={booking.id} guestName={guestName} hideRadar />
         {isRealAdmin ? (
           <AdminOverrideMenu bookingId={booking.id} pickupId={pickup?.id ?? null} />
         ) : (
@@ -461,6 +462,9 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
             <TabsTrigger value="payments" className="flex-1"><CreditCard className="h-4 w-4 mr-1" /> {t("bookingDetail.paymentsTab")}</TabsTrigger>
             <TabsTrigger value="messages" className="flex-1"><MessageSquare className="h-4 w-4 mr-1" /> {t("bookingDetail.notesTab")}</TabsTrigger>
             <TabsTrigger value="documents" className="flex-1"><FileText className="h-4 w-4 mr-1" /> {t("bookingDetail.documentsTab")}</TabsTrigger>
+            {pickup && (
+              <TabsTrigger value="travel" className="flex-1"><Plane className="h-4 w-4 mr-1" /> {t("bookingDetail.travelTab")}</TabsTrigger>
+            )}
             {canSeePortalActivity && (
               <TabsTrigger value="portal" className="flex-1"><Activity className="h-4 w-4 mr-1" /> {t("bookingDetail.tabs.portal")}</TabsTrigger>
             )}
@@ -476,6 +480,24 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
           <TabsContent value="payments"><PaymentsTab payments={payments ?? []} bookingId={booking.id} bookingState={booking.state as string} canSeeAmounts={canSeeAmounts} canRecord={canRecordPay} policies={policies} totalPrice={booking.total_price} booking={booking as any} /></TabsContent>
           <TabsContent value="messages"><MessagesTab messages={messages ?? []} bookingId={booking.id} /></TabsContent>
           <TabsContent value="documents"><div className="py-3"><RequiredDocumentsCard bookingId={booking.id} checkIn={booking.check_in} checkOut={booking.check_out} /></div></TabsContent>
+          {pickup && (
+            <TabsContent value="travel">
+              <div className="py-3">
+                {(pickup.flight_number || (pickup as any).international_flight_number) ? (
+                  <StaffArrivalRadar
+                    pickupId={pickup.id}
+                    intlFlightNumber={(pickup as any).international_flight_number ?? null}
+                    finalFlightNumber={pickup.flight_number ?? null}
+                    guestLandedAt={(pickup as any).guest_landed_at ?? null}
+                    guestReadyAt={(pickup as any).guest_ready_at ?? null}
+                    collectedAt={(pickup as any).collected_at ?? null}
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">{t("bookingDetail.travelNoFlight")}</p>
+                )}
+              </div>
+            </TabsContent>
+          )}
           {isCheckedIn && (
             <TabsContent value="support">
               <BookingSupportTab

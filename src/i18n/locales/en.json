@@ -470,6 +470,8 @@
       "checkout": "Complete check-out when guest departs"
     },
     "historyTab": "History",
+    "travelTab": "Travel",
+    "travelNoFlight": "No flight details on file for this pickup yet.",
     "paymentsTab": "Payments",
     "notesTab": "Notes",
     "documentsTab": "ID",

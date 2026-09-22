@@ -40,9 +40,11 @@ const AIRPORT_LABELS: Record<string, string> = {
 interface Props {
   bookingId: string;
   guestName?: string;
+  /** When the radar is already mounted elsewhere (e.g. the sheet's Travel tab). */
+  hideRadar?: boolean;
 }
 
-export function AirportPickupSection({ bookingId, guestName }: Props) {
+export function AirportPickupSection({ bookingId, guestName, hideRadar }: Props) {
   const { role } = useAuth();
   const { data: pickup, isLoading } = useAirportPickup(bookingId);
   const { data: drivers } = useDrivers(true);
@@ -476,7 +478,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
         </div>
 
         {/* Staff-only: live aircraft scope, then what needs a person's attention */}
-        {canManage && (pickup.flight_number || pickup.international_flight_number) && (
+        {canManage && !hideRadar && (pickup.flight_number || pickup.international_flight_number) && (
           <StaffArrivalRadar
             pickupId={pickup.id}
             intlFlightNumber={pickup.international_flight_number ?? null}
