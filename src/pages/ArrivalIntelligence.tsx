@@ -9,6 +9,7 @@
  */
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -168,6 +169,7 @@ function BookingBlock({ row, onOpen }: { row: IntelBookingRow; onOpen: (id: stri
 
 export default function ArrivalIntelligence() {
   const { t } = useTranslation();
+  const { role } = useAuth();
   const { data: rows, isLoading } = useArrivalIntelBoard();
   const [search, setSearch] = useState("");
   const [openBooking, setOpenBooking] = useState<string | null>(null);
