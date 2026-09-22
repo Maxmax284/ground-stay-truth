@@ -105,6 +105,18 @@ function RowCard({ row, onOpen }: { row: ArrivalsBoardRow; onOpen: (id: string) 
         )}
       </div>
 
+      {showRadar && row.pickup && (
+        <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+          <StaffArrivalRadar
+            pickupId={row.pickup.id}
+            finalFlightNumber={row.flight?.flight_number ?? null}
+            guestLandedAt={row.pickup.guest_landed_at}
+            guestReadyAt={row.pickup.guest_ready_at}
+            collectedAt={row.pickup.collected_at}
+          />
+        </div>
+      )}
+
       {row.last_message && (
         <div className="mt-2 flex items-start gap-1.5 rounded-md bg-muted/50 p-2">
           <MessageSquare className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
