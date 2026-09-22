@@ -122,6 +122,8 @@ export function useArrivalIntelligence(
     driverName?: string | null;
     driverPlate?: string | null;
     meetingPoint?: string | null;
+    pickupAirportCode?: string | null;
+    pickupArrivalTime?: string | null;
   },
 ): ArrivalIntelligenceResult {
   const legsQuery = useJourneyLegs(bookingId);
@@ -151,6 +153,8 @@ export function useArrivalIntelligence(
       driverPlate: context?.driverPlate ?? null,
       meetingPoint: context?.meetingPoint ?? null,
       pickupRequested: context?.pickupRequested ?? false,
+      pickupAirportCode: context?.pickupAirportCode ?? null,
+      pickupArrivalTime: context?.pickupArrivalTime ?? null,
       factLastCheckedAt: (finalFactId && facts[finalFactId]?.last_checked_at) || null,
     });
   }, [bookingId, legs, facts, conflicts, context]);

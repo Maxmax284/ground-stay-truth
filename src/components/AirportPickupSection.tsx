@@ -19,6 +19,7 @@ import { getTravelState } from "@/lib/travelState";
 import { normalizeArrival, ARRIVAL_TYPE_CONFIG, PICKUP_RESOLUTION_LABELS, ARRIVAL_TYPES, isActivePickup, getPickupWarnings, type ArrivalType } from "@/lib/arrivalModel";
 import { CAMP_TIMEZONE_LABEL, toCampInputValue, fromCampInputValue, formatCampLabeled } from "@/lib/timezone";
 import { ManualAssistBanner } from "@/components/ManualAssistBanner";
+import { ArrivalAttentionLine } from "@/components/front-desk/ArrivalAttentionLine";
 
 const STATUS_COLORS: Record<string, string> = {
   requested: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
@@ -471,6 +472,20 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
             </div>
           )}
         </div>
+
+        {/* Staff-only: what needs a person's attention, and where facts came from */}
+        {canManage && (
+          <ArrivalAttentionLine
+            bookingId={bookingId}
+            pickupAirportCode={pickup.confirmed_airport ?? null}
+            pickupArrivalTime={pickup.arrival_datetime ?? null}
+            pickupRequested={isActivePickup(pickup as any)}
+            driverAssigned={!!pickup.driver_id}
+            guestLandedAt={(pickup as any).guest_landed_at ?? null}
+            guestReadyAt={(pickup as any).guest_ready_at ?? null}
+            collectedAt={(pickup as any).collected_at ?? null}
+          />
+        )}
 
         {/* Arrival time & passengers */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
