@@ -477,7 +477,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
         {canManage && (
           <ArrivalAttentionLine
             bookingId={bookingId}
-            pickupAirportCode={pickup.arrival_airport ?? null}
+            pickupAirportCode={pickup.confirmed_airport ?? null}
             pickupArrivalTime={pickup.arrival_datetime ?? null}
             pickupRequested={isActivePickup(pickup as any)}
             driverAssigned={!!pickup.driver_id}
