@@ -1,7 +1,7 @@
 import { Plane, PlaneLanding, Radar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-export type MetroLeg = "inbound" | "transit" | "island" | "arrived";
+export type RadarLeg = "inbound" | "transit" | "island" | "arrived";
 
 interface Props {
   /** First flight into Thailand, e.g. EK384 */
@@ -9,7 +9,7 @@ interface Props {
   /** Final hop onto Samui, e.g. PG5125 */
   finalFlight?: string | null;
   /** Which leg is live right now */
-  leg: MetroLeg;
+  leg: RadarLeg;
   statusLabel: string;
   etaLabel?: string | null;
   delayMinutes?: number | null;
@@ -20,12 +20,12 @@ interface Props {
 }
 
 /**
- * Metro Echo — the guest-facing flight panel. Dark, tight, military-minimalist:
+ * Ground Radar — the guest-facing flight panel. Dark, tight, military-minimalist:
  * a hop line for the route, a sweeping radar for the live leg, and one blatant
  * line telling the guest what to actually do when they touch down.
  * Pure presentation — all data is handed in.
  */
-export function MetroEchoRadar({
+export function GroundRadar({
   intlFlight,
   finalFlight,
   leg,
@@ -54,7 +54,7 @@ export function MetroEchoRadar({
         <div className="flex items-center gap-2">
           <Radar className="h-4 w-4 text-sidebar-primary" />
           <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sidebar-foreground/70">
-            Metro Echo
+            Ground Radar
           </span>
         </div>
         <Badge className="bg-sidebar-accent text-sidebar-accent-foreground border-0 text-[10px] font-mono uppercase tracking-wider">
@@ -72,7 +72,7 @@ export function MetroEchoRadar({
           <div className="absolute top-1/2 left-0 w-full h-px -translate-y-1/2 bg-sidebar-border/50" />
           {!arrived && (
             <div
-              className="metro-sweep absolute inset-0 rounded-full"
+              className="radar-sweep absolute inset-0 rounded-full"
               style={{
                 background:
                   "conic-gradient(from 0deg, hsl(var(--sidebar-primary) / 0.45) 0deg, transparent 55deg, transparent 360deg)",
@@ -82,7 +82,7 @@ export function MetroEchoRadar({
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="relative flex h-3 w-3 items-center justify-center">
               {!arrived && (
-                <span className="metro-ping absolute h-3 w-3 rounded-full bg-sidebar-primary/60" />
+                <span className="radar-ping absolute h-3 w-3 rounded-full bg-sidebar-primary/60" />
               )}
               <span className="relative h-2 w-2 rounded-full bg-sidebar-primary" />
             </span>
@@ -140,7 +140,7 @@ export function MetroEchoRadar({
                 <div
                   className={`h-[2px] w-full ${
                     i === activeIndex && !arrived
-                      ? "metro-leg-active"
+                      ? "radar-leg-active"
                       : i < activeIndex
                         ? "bg-sidebar-primary"
                         : "bg-sidebar-border"

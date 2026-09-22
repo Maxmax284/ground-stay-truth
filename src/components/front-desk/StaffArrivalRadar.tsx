@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { MetroEchoRadar, type MetroLeg } from "@/components/MetroEchoRadar";
+import { GroundRadar, type RadarLeg } from "@/components/GroundRadar";
 import { useFlightTrackingBatch, FLIGHT_STATUS_CONFIG } from "@/hooks/useFlightTracking";
 import { formatCampLabeled } from "@/lib/timezone";
 
@@ -15,7 +15,7 @@ interface Props {
 }
 
 /**
- * The same Metro Echo radar the guest sees, mounted inside the staff pickup
+ * The same Ground Radar radar the guest sees, mounted inside the staff pickup
  * panel so the team watches the aircraft live instead of re-reading badges.
  *
  * Doctrine: this scope tracks an AIRCRAFT, never a person. Guest readiness only
@@ -37,7 +37,7 @@ export function StaffArrivalRadar({
     const status = flight?.flight_status ?? null;
     const arrived = status === "landed" || !!guestLandedAt;
 
-    let leg: MetroLeg = "inbound";
+    let leg: RadarLeg = "inbound";
     if (arrived) leg = "arrived";
     else if (status === "in_air") leg = intlFlightNumber ? "transit" : "island";
     else leg = "inbound";
@@ -70,7 +70,7 @@ export function StaffArrivalRadar({
   if (!pickupId) return null;
 
   return (
-    <MetroEchoRadar
+    <GroundRadar
       intlFlight={intlFlightNumber ?? null}
       finalFlight={finalFlightNumber ?? flight?.flight_number ?? null}
       leg={view.leg}
