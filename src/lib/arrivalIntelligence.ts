@@ -651,6 +651,21 @@ export function buildArrivalSituation(input: ArrivalSituationInput): ArrivalSitu
     connections,
     dataIsStale,
     exceptions,
+    attention: detectArrivalAttention({
+      legs: input.legs,
+      finalLeg,
+      finalFact,
+      aircraft,
+      guestStep,
+      connections,
+      dataIsStale,
+      openConflicts: input.openConflicts,
+      pickupRequested: input.pickupRequested,
+      driverAssigned: input.driverAssigned,
+      pickupAirportCode: input.pickupAirportCode ?? null,
+      pickupArrivalTime: input.pickupArrivalTime ?? null,
+      guestReadyAt: input.progress.guestReadyAt ?? null,
+    }),
     views: {
       guest: guestView,
       front_desk: {
