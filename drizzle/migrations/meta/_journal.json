@@ -36,6 +36,13 @@
       "when": 1790008783053,
       "tag": "0004_arrival_guest_progress_stage3",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790048309226,
+      "tag": "0005_flight_provider_seam_provenance_budget",
+      "breakpoints": true
     }
   ]
 }

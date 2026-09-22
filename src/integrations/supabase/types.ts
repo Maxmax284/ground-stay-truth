@@ -1410,6 +1410,78 @@ export type Database = {
         }
         Relationships: []
       }
+      flight_provider_reads: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          flight_key: string | null
+          http_status: number | null
+          id: string
+          leg_id: string | null
+          outcome: string
+          paid: boolean
+          provider: string
+          read_day: string
+          requested_by: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          flight_key?: string | null
+          http_status?: number | null
+          id?: string
+          leg_id?: string | null
+          outcome?: string
+          paid?: boolean
+          provider: string
+          read_day?: string
+          requested_by?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          flight_key?: string | null
+          http_status?: number | null
+          id?: string
+          leg_id?: string | null
+          outcome?: string
+          paid?: boolean
+          provider?: string
+          read_day?: string
+          requested_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flight_provider_reads_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flight_provider_reads_leg_id_fkey"
+            columns: ["leg_id"]
+            isOneToOne: false
+            referencedRelation: "journey_legs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flight_read_locks: {
+        Row: {
+          flight_key: string
+          locked_at: string
+        }
+        Insert: {
+          flight_key: string
+          locked_at?: string
+        }
+        Update: {
+          flight_key?: string
+          locked_at?: string
+        }
+        Relationships: []
+      }
       flight_tracking: {
         Row: {
           actual_arrival: string | null
@@ -2040,6 +2112,60 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_leg_field_provenance: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          field_name: string
+          field_value: string | null
+          id: string
+          leg_id: string
+          observed_at: string
+          provider: string | null
+          recorded_by: string | null
+          source: string
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          field_name: string
+          field_value?: string | null
+          id?: string
+          leg_id: string
+          observed_at?: string
+          provider?: string | null
+          recorded_by?: string | null
+          source: string
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          field_name?: string
+          field_value?: string | null
+          id?: string
+          leg_id?: string
+          observed_at?: string
+          provider?: string | null
+          recorded_by?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_leg_field_provenance_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_leg_field_provenance_leg_id_fkey"
+            columns: ["leg_id"]
+            isOneToOne: false
+            referencedRelation: "journey_legs"
             referencedColumns: ["id"]
           },
         ]
