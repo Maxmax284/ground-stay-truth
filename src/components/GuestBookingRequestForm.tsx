@@ -158,8 +158,27 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
     return pricing.nights.length > 0 && pricing.subtotal <= 0;
   }, [pricingUnit, checkIn, checkOut, pricing]);
 
-  const validationErrors = useMemo(() => {
+  // Travel protocol: every stay request must answer the flight question.
+  // Guests without tickets yet tick "not booked" and the booking is flagged
+  // so staff chase the details before arrival.
+  const travelErrors = useMemo(() => {
     const errs: string[] = [];
+    if (flightsNotBooked) return errs;
+    if (!arrivalFlight?.trim()) {
+      errs.push(t("guestBooking.flightRequired", {
+        defaultValue: "Please add the flight you land on — or tick that your flights aren't booked yet.",
+      }));
+    }
+    if (!arrivalDatetime) {
+      errs.push(t("guestBooking.arrivalTimeRequired", {
+        defaultValue: "Please add your arrival date and time in Thailand.",
+      }));
+    }
+    return errs;
+  }, [flightsNotBooked, arrivalFlight, arrivalDatetime, t]);
+
+  const validationErrors = useMemo(() => {
+    const errs: string[] = [...travelErrors];
     if (!selectedGroup || !checkIn || !checkOut) return errs;
     const nights = differenceInCalendarDays(new Date(checkOut), new Date(checkIn));
     if (nights <= 0) errs.push(t("bookingForm.checkoutAfterCheckin"));
@@ -180,7 +199,7 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
       errs.push(GUEST_MESSAGES.pricing_unavailable);
     }
     return errs;
-  }, [selectedGroup, checkIn, checkOut, numGuests, availabilityStatus, pricingUnavailable, t]);
+  }, [travelErrors, selectedGroup, checkIn, checkOut, numGuests, availabilityStatus, pricingUnavailable, t]);
 
   const pricingSources = useMemo(() => {
     const sources = new Map<string, number>();
