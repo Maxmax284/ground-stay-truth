@@ -66,7 +66,6 @@ const navItems = [
   { titleKey: "nav.frontDesk", url: "/front-desk", icon: UserCheck },
   { titleKey: "nav.arrivalsBoard", url: "/arrivals-board", icon: LayoutDashboard },
   { titleKey: "nav.adminBooking", url: "/admin-booking", icon: BookOpen },
-  { titleKey: "nav.previewGuestPortal", url: "/guest-preview", icon: Eye },
   { titleKey: "nav.units", url: "/units", icon: Building2 },
   { titleKey: "nav.mediaLibrary", url: "/media-library", icon: Images },
   { titleKey: "nav.bookings", url: "/bookings", icon: BookOpen },
