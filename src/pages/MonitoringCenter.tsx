@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrivalDataHealthCard } from "@/components/monitoring/ArrivalDataHealthCard";
 import {
   Collapsible,
   CollapsibleContent,
@@ -561,7 +562,11 @@ export default function MonitoringCenter() {
 
 
 
+        {/* Arrival Intelligence data + retention health */}
+        <ArrivalDataHealthCard />
+
         {/* Recent activity */}
+
 
         <Card>
           <CardHeader>
