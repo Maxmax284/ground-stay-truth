@@ -15,7 +15,7 @@ interface Props {
 }
 
 /**
- * The same Ground Radar radar the guest sees, mounted inside the staff pickup
+ * The same Ground Radar scope the guest sees, mounted inside the staff pickup
  * panel so the team watches the aircraft live instead of re-reading badges.
  *
  * Doctrine: this scope tracks an AIRCRAFT, never a person. Guest readiness only
