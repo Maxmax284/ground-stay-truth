@@ -40,7 +40,9 @@ interface FormValues {
   guest_type: string;
   notes: string;
   arrival_flight: string;
-  arrival_time: string;
+  connecting_flight: string;
+  arrival_datetime: string;
+  flights_not_booked: boolean;
   emergency_contact: string;
   airport_pickup: boolean;
   pickup_flight_number: string;
@@ -62,7 +64,8 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
     defaultValues: {
       group_id: "", check_in: "", check_out: "", num_guests: 1,
-      guest_type: "", notes: "", arrival_flight: "", arrival_time: "",
+      guest_type: "", notes: "", arrival_flight: "", connecting_flight: "",
+      arrival_datetime: "", flights_not_booked: false,
       emergency_contact: "", airport_pickup: false, pickup_flight_number: "",
       pickup_arrival_datetime: "", pickup_passenger_count: 1, pickup_luggage_notes: "",
       pickup_special_instructions: "",
@@ -74,6 +77,9 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
   const checkOut = watch("check_out");
   const numGuests = watch("num_guests");
   const airportPickup = watch("airport_pickup");
+  const arrivalFlight = watch("arrival_flight");
+  const arrivalDatetime = watch("arrival_datetime");
+  const flightsNotBooked = watch("flights_not_booked");
 
   const selectedGroup = unitGroups?.find((g) => g.id === selectedGroupId);
 
