@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
+import { StaffArrivalRadar } from "@/components/front-desk/StaffArrivalRadar";
 import { useArrivalsBoard, type ArrivalsBoardRow } from "@/hooks/useArrivalsBoard";
 import { useArrivalProgress } from "@/hooks/useArrivalProgress";
 import { toast } from "sonner";
@@ -41,6 +42,8 @@ function RowCard({ row, onOpen }: { row: ArrivalsBoardRow; onOpen: (id: string) 
   const flightTone = row.flight?.flight_status ? FLIGHT_TONE[row.flight.flight_status] ?? FLIGHT_TONE.scheduled : null;
   const progress = useArrivalProgress();
   const canCollect = !!row.pickup && !row.pickup.collected_at && (!!row.pickup.guest_ready_at || !!row.pickup.guest_landed_at);
+  // Live scope only while the arrival is still in play — collected guests don't need it.
+  const showRadar = !!row.pickup && !row.pickup.collected_at && !!row.flight?.flight_number;
   return (
     <div
       role="button"
@@ -104,6 +107,18 @@ function RowCard({ row, onOpen }: { row: ArrivalsBoardRow; onOpen: (id: string) 
           <Badge variant="outline" className="text-[10px]">{formatPrice(row.total_price)}</Badge>
         )}
       </div>
+
+      {showRadar && row.pickup && (
+        <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+          <StaffArrivalRadar
+            pickupId={row.pickup.id}
+            finalFlightNumber={row.flight?.flight_number ?? null}
+            guestLandedAt={row.pickup.guest_landed_at}
+            guestReadyAt={row.pickup.guest_ready_at}
+            collectedAt={row.pickup.collected_at}
+          />
+        </div>
+      )}
 
       {row.last_message && (
         <div className="mt-2 flex items-start gap-1.5 rounded-md bg-muted/50 p-2">

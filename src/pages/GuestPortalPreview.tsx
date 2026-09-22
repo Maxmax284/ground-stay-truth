@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import DashboardLayout from "@/components/DashboardLayout";
 import { GuestNowCard, type NowState } from "@/components/GuestNowCard";
-import { MetroEchoRadar, type MetroLeg } from "@/components/MetroEchoRadar";
+import { GroundRadar, type RadarLeg } from "@/components/GroundRadar";
 import { WhileYouWaitTab } from "@/components/WhileYouWaitTab";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,12 +12,12 @@ import { Separator } from "@/components/ui/separator";
 import { Plane, Radar, Smartphone, Waves } from "lucide-react";
 
 const NOW_STATES: NowState[] = ["deposit", "flight", "onsite", "quiet"];
-const RADAR_LEGS: MetroLeg[] = ["inbound", "transit", "island", "arrived"];
+const RADAR_LEGS: RadarLeg[] = ["inbound", "transit", "island", "arrived"];
 
 export default function GuestPortalPreview() {
   const { t } = useTranslation();
   const [nowState, setNowState] = useState<NowState>("flight");
-  const [radarLeg, setRadarLeg] = useState<MetroLeg>("island");
+  const [radarLeg, setRadarLeg] = useState<RadarLeg>("island");
 
   const today = useMemo(() => new Date(), []);
   const checkIn = useMemo(() => today.toISOString(), [today]);
@@ -44,7 +44,7 @@ export default function GuestPortalPreview() {
       "guestPreview.radarArrived",
       "On island ground. Bags first, then the meeting point card takes over."
     ),
-  } satisfies Record<MetroLeg, string>;
+  } satisfies Record<RadarLeg, string>;
 
   return (
     <DashboardLayout>
@@ -62,7 +62,7 @@ export default function GuestPortalPreview() {
             <p className="max-w-2xl text-sm text-muted-foreground">
               {t(
                 "guestPreview.subtitle",
-                "Preview the guest Now card, Metro Echo radar, and While You Wait screen without opening a guest account."
+                "Preview the guest Now card, Ground Radar radar, and While You Wait screen without opening a guest account."
               )}
             </p>
           </div>
@@ -121,7 +121,7 @@ export default function GuestPortalPreview() {
                           PG5125
                         </Badge>
                       </div>
-                      <MetroEchoRadar
+                      <GroundRadar
                         intlFlight="EK384"
                         finalFlight="PG5125"
                         leg="island"
@@ -160,13 +160,13 @@ export default function GuestPortalPreview() {
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3">
                   <div>
                     <p className="text-sm font-semibold text-foreground">
-                      {t("guestPreview.radarTitle", "Metro Echo route card")}
+                      {t("guestPreview.radarTitle", "Ground Radar route card")}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {t("guestPreview.radarSubtitle", "Switch legs to check the landing and transit language.")}
                     </p>
                   </div>
-                  <Select value={radarLeg} onValueChange={(value) => setRadarLeg(value as MetroLeg)}>
+                  <Select value={radarLeg} onValueChange={(value) => setRadarLeg(value as RadarLeg)}>
                     <SelectTrigger className="h-8 w-40 text-xs">
                       <SelectValue />
                     </SelectTrigger>
@@ -179,7 +179,7 @@ export default function GuestPortalPreview() {
                     </SelectContent>
                   </Select>
                 </div>
-                <MetroEchoRadar
+                <GroundRadar
                   intlFlight="EK384"
                   finalFlight="PG5125"
                   leg={radarLeg}

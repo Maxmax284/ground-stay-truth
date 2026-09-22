@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { LandedConfirmationDialog, type LandedAirportCode } from "@/components/LandedConfirmationDialog";
-import { MetroEchoRadar, type MetroLeg } from "@/components/MetroEchoRadar";
+import { GroundRadar, type RadarLeg } from "@/components/GroundRadar";
 import { DriverHandshakeCard, type HandshakeDriver } from "@/components/DriverHandshakeCard";
 import { Plane, RefreshCcw, Clock, Loader2, PlaneLanding, Pencil, Save, X, Info } from "lucide-react";
 
@@ -195,9 +195,9 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
   const trackedAirport = tracking?.arrival_iata?.toUpperCase();
   const flightAirport = trackedAirport === "BKK" ? "bkk" as const : trackedAirport === "USM" ? "samui" as const : null;
 
-  // ── Metro Echo derived state ───────────────────────────────────────────────
+  // ── Ground Radar derived state ───────────────────────────────────────────────
   const onIsland = !trackedAirport || trackedAirport === "USM";
-  const metroLeg: MetroLeg = pickup.guest_landed_at
+  const radarLeg: RadarLeg = pickup.guest_landed_at
     ? "arrived"
     : hasLanded
       ? (onIsland ? "arrived" : "transit")
@@ -210,18 +210,18 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
   const etaLabel = arrivalStamp ? formatCampLabeled(arrivalStamp) : null;
 
   const transitLine =
-    metroLeg === "arrived"
+    radarLeg === "arrived"
       ? t(
           "guestFlight.metroArrived",
           "You're on island ground. Grab your bags at the carousel, then tap \"I've landed\" below — the front desk and your driver get pinged instantly."
         )
-      : metroLeg === "transit"
+      : radarLeg === "transit"
         ? t("guestFlight.metroTransit", {
             defaultValue:
               "Mainland transit — don't look for the truck yet. Your next move is flight {{flight}} to Samui.",
             flight: finalFlight ?? "to Samui",
           })
-        : metroLeg === "inbound"
+        : radarLeg === "inbound"
           ? t("guestFlight.metroInbound", "Long haul leg is being tracked. We watch the plane — you don't need to keep this page open.")
           : t("guestFlight.metroIsland", "Samui landing is tracked live. The second you're on the ground, tap \"I've landed\" and your driver rolls.");
 
@@ -302,10 +302,10 @@ export function GuestFlightTracker({ bookingId, guestName }: Props) {
                 {t("guestFlight.noFlight", "No flight number yet — add it so we can track you.")}
               </p>
             ) : (
-              <MetroEchoRadar
+              <GroundRadar
                 intlFlight={pickup.international_flight_number}
                 finalFlight={finalFlight}
-                leg={metroLeg}
+                leg={radarLeg}
                 statusLabel={`${statusCfg.emoji} ${statusCfg.label}`}
                 etaLabel={etaLabel}
                 delayMinutes={tracking?.delay_minutes ?? null}

@@ -418,26 +418,26 @@
   }
 }
 
-/* ── Metro Echo flight radar ─────────────────────────────────────────────── */
-@keyframes metro-sweep {
+/* ── Ground Radar flight radar ─────────────────────────────────────────────── */
+@keyframes radar-sweep {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-@keyframes metro-ping {
+@keyframes radar-ping {
   0% { transform: scale(0.4); opacity: 0.85; }
   100% { transform: scale(2.2); opacity: 0; }
 }
-@keyframes metro-dash {
+@keyframes radar-dash {
   to { background-position: 28px 0; }
 }
-.metro-sweep { animation: metro-sweep 4s linear infinite; transform-origin: center; }
-.metro-ping { animation: metro-ping 2.4s ease-out infinite; }
-.metro-leg-active {
+.radar-sweep { animation: radar-sweep 4s linear infinite; transform-origin: center; }
+.radar-ping { animation: radar-ping 2.4s ease-out infinite; }
+.radar-leg-active {
   background-image: linear-gradient(90deg, hsl(var(--primary)) 0 12px, transparent 12px 28px);
   background-size: 28px 2px;
   background-repeat: repeat-x;
-  animation: metro-dash 0.9s linear infinite;
+  animation: radar-dash 0.9s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .metro-sweep, .metro-ping, .metro-leg-active { animation: none; }
+  .radar-sweep, .radar-ping, .radar-leg-active { animation: none; }
 }
