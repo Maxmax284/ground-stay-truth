@@ -63,7 +63,23 @@ Deno.serve(async (req) => {
     ].filter((k): k is string => !!k);
     const authHeader = req.headers.get("Authorization");
     const token = (authHeader ?? req.headers.get("apikey") ?? "").replace("Bearer ", "").trim();
-    if (!acceptedKeys.includes(token)) {
+
+    // Also accept a project JWT whose role is anon/service_role (key formats差 vary).
+    let jwtRole: string | null = null;
+    try {
+      const part = token.split(".")[1];
+      if (part) {
+        const json = JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/")));
+        jwtRole = typeof json?.role === "string" ? json.role : null;
+      }
+    } catch { /* not a JWT */ }
+
+    const authorized =
+      acceptedKeys.includes(token) ||
+      jwtRole === "anon" ||
+      jwtRole === "service_role";
+
+    if (!authorized) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
