@@ -479,14 +479,80 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
 
           <Separator />
           <h4 className="text-sm font-semibold text-foreground">{t("guestBooking.arrivalDetails")}</h4>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="arrival_flight">{t("guestBooking.flightInfo")}</Label>
-              <Input id="arrival_flight" {...register("arrival_flight")} placeholder={t("guestBooking.flightPlaceholder")} />
+
+          <div className="rounded-md border border-border p-3 space-y-3">
+            <div className="flex items-start gap-2">
+              <Plane className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                {t("guestBooking.flightProtocolNote", {
+                  defaultValue:
+                    "Flight details are required for every stay so we can follow your journey and reach you if anything changes.",
+                })}
+              </p>
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="arrival_flight">
+                  {t("guestBooking.finalFlight", { defaultValue: "Flight you land on" })}
+                  {!flightsNotBooked && <span className="text-destructive"> *</span>}
+                </Label>
+                <Input
+                  id="arrival_flight"
+                  {...register("arrival_flight")}
+                  disabled={flightsNotBooked}
+                  placeholder="PG 123"
+                  className="uppercase"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="arrival_datetime">
+                  {t("guestBooking.arrivalDateTime", { defaultValue: "Arrival date & time (Thailand)" })}
+                  {!flightsNotBooked && <span className="text-destructive"> *</span>}
+                </Label>
+                <Input
+                  id="arrival_datetime"
+                  type="datetime-local"
+                  {...register("arrival_datetime")}
+                  disabled={flightsNotBooked}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="arrival_time">{t("guestBooking.arrivalTime")}</Label>
-              <Input id="arrival_time" type="time" {...register("arrival_time")} />
+              <Label htmlFor="connecting_flight">
+                {t("guestBooking.connectingFlight", { defaultValue: "Connecting / first flight (if any)" })}
+              </Label>
+              <Input
+                id="connecting_flight"
+                {...register("connecting_flight")}
+                disabled={flightsNotBooked}
+                placeholder="TG 925 Bangkok"
+                className="uppercase"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                {t("guestBooking.connectingFlightHint", {
+                  defaultValue: "Flying in through Bangkok or another city? Add that flight too.",
+                })}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 pt-1 border-t border-border/50">
+              <div>
+                <Label htmlFor="flights_not_booked" className="text-sm font-medium">
+                  {t("guestBooking.flightsNotBooked", { defaultValue: "My flights aren't booked yet" })}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {t("guestBooking.flightsNotBookedDesc", {
+                    defaultValue: "We'll ask you for them on your stay page once you've booked.",
+                  })}
+                </p>
+              </div>
+              <Switch
+                id="flights_not_booked"
+                checked={flightsNotBooked}
+                onCheckedChange={(v) => setValue("flights_not_booked", v)}
+              />
             </div>
           </div>
           <div className="space-y-2">
