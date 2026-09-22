@@ -1,18 +1,31 @@
 // arrival-fact-sync
 // -----------------------------------------------------------------------------
-// Stage 1 of Guest Arrival Intelligence. Staff-only.
+// Guest Arrival Intelligence — shared flight facts with dual-provider telemetry.
+// Staff-only.
 //
 // Takes a journey leg, resolves ONE shared flight fact for the physical flight
 // (keyed on operating number + date + arrival airport, so five guests on the
 // same aircraft cost one provider call), links the leg to that fact, and records
 // any disagreement as an open row in `arrival_conflicts`.
 //
+// Provider policy (see _shared/flightProviders.ts):
+//   AeroAPI primary → AviationStack on availability failover only.
+//   Daily paid ceiling enforced. Concurrency lock stops duplicate paid reads.
+//
 // Hard rules:
 //  - Never touches bookings, payments, units, or pickup status.
 //  - Never overwrites a value whose source outranks the provider.
-//  - Fails loud to the caller, quiet to operations.
+//  - Empty provider data reads "no flight data on record", never "on time".
 // -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  acquireFlightLock,
+  buildFlightKey,
+  clean,
+  lookupFlight,
+  logProviderRead,
+  releaseFlightLock,
+} from "../_shared/flightProviders.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
@@ -37,7 +50,6 @@ function cors(req: Request) {
   };
 }
 
-const AVIATIONSTACK_BASE = "http://api.aviationstack.com/v1";
 /** A shared fact this fresh is reused for every guest on the flight. */
 const FACT_FRESH_MINUTES = 10;
 
@@ -51,30 +63,13 @@ const SOURCE_RANK: Record<string, number> = {
 };
 
 const CRITICAL_FIELDS = new Set(["to_code", "scheduled_arrival", "operating_flight_number"]);
-
-function clean(value?: string | null): string | null {
-  if (!value) return null;
-  const out = value.replace(/\s+/g, "").toUpperCase();
-  return out.length ? out : null;
-}
-
-function buildFlightKey(operating: string | null, marketed: string | null, flightDate: string, arrivalCode: string | null): string | null {
-  const number = operating ?? marketed;
-  if (!number || !flightDate) return null;
-  return `${number}:${flightDate}:${(arrivalCode ?? "ANY").toUpperCase()}`;
-}
-
-const STATUS_MAP: Record<string, string> = {
-  scheduled: "scheduled",
-  active: "in_air",
-  landed: "landed",
-  cancelled: "cancelled",
-  incident: "incident",
-  diverted: "diverted",
-};
+const TERMINAL_STATES = ["landed", "cancelled", "diverted"];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors(req) });
+
+  let heldLock: string | null = null;
+  let admin: any = null;
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -91,7 +86,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: cors(req) });
     }
 
-    const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: roles } = await admin
       .from("user_roles")
       .select("role")
@@ -131,71 +126,76 @@ Deno.serve(async (req) => {
     let factKey = buildFlightKey(operating, marketed, flightDate, arrivalCode);
     let { data: existingFact } = await admin.from("flight_facts").select("*").eq("flight_key", factKey!).maybeSingle();
 
-    let usedProvider = false;
-    let providerPayload: Record<string, unknown> | null = null;
-
     const factIsFresh = existingFact?.last_checked_at
       ? (Date.now() - new Date(existingFact.last_checked_at).getTime()) / 60000 < FACT_FRESH_MINUTES
       : false;
-    const terminal = ["landed", "cancelled", "diverted"].includes(existingFact?.flight_status ?? "");
+    const isTerminal = TERMINAL_STATES.includes(existingFact?.flight_status ?? "");
 
-    if (!existingFact || (!factIsFresh && !terminal) || force_refresh === true) {
-      const apiKey = Deno.env.get("AVIATIONSTACK_API_KEY");
-      if (apiKey) {
-        try {
-          const url = `${AVIATIONSTACK_BASE}/flights?access_key=${apiKey}&flight_iata=${encodeURIComponent(lookupNumber)}&limit=5`;
-          const resp = await fetch(url);
-          const json = await resp.json();
-          const rows: any[] = Array.isArray(json?.data) ? json.data : [];
-          // Provider has no date filter on the free plan — filter in code.
-          const match =
-            rows.find((r) => r?.flight_date === flightDate && (!arrivalCode || clean(r?.arrival?.iata) === arrivalCode)) ??
-            rows.find((r) => r?.flight_date === flightDate) ??
-            null;
-          if (match) {
-            usedProvider = true;
-            providerPayload = match;
-          }
-        } catch (providerError) {
-          console.warn("arrival-fact-sync provider lookup failed", providerError);
-        }
+    let lookup: Awaited<ReturnType<typeof lookupFlight>> | null = null;
+    const wantsProvider = !existingFact || (!factIsFresh && !isTerminal) || force_refresh === true;
+
+    if (wantsProvider && factKey) {
+      // Concurrency lock: two staff tapping refresh must not buy two reads.
+      const gotLock = await acquireFlightLock(admin, factKey);
+      if (!gotLock) {
+        await logProviderRead(admin, {
+          provider: "aeroapi",
+          paid: false,
+          flight_key: factKey,
+          leg_id: leg.id,
+          booking_id: leg.booking_id,
+          outcome: "lock_held_elsewhere",
+          requested_by: user.id,
+        });
+      } else {
+        heldLock = factKey;
+        lookup = await lookupFlight(admin, {
+          flightNumber: lookupNumber,
+          flightDate,
+          arrivalCode,
+          flightKey: factKey,
+          legId: leg.id,
+          bookingId: leg.booking_id,
+          requestedBy: user.id,
+        });
       }
     }
 
     const conflictsToRecord: Array<Record<string, unknown>> = [];
+    const flight = lookup?.flight ?? null;
 
-    if (providerPayload) {
-      const p = providerPayload as any;
-      const providerOperating = clean(p?.flight?.codeshared?.flight_iata) ?? clean(p?.flight?.iata) ?? lookupNumber;
-      const providerMarketed = p?.flight?.codeshared ? clean(p?.flight?.iata) ?? marketed : marketed ?? clean(p?.flight?.iata);
-      const providerArrival = clean(p?.arrival?.iata);
-
+    if (flight) {
       const record = {
-        flight_key: buildFlightKey(providerOperating, providerMarketed, flightDate, providerArrival ?? arrivalCode)!,
+        flight_key: buildFlightKey(
+          flight.operating_flight_number,
+          flight.marketed_flight_number,
+          flightDate,
+          flight.arrival_iata ?? arrivalCode,
+        )!,
         flight_date: flightDate,
-        marketed_flight_number: providerMarketed,
-        operating_flight_number: providerOperating,
-        marketed_carrier: p?.airline?.name ?? null,
-        operating_carrier: p?.flight?.codeshared?.airline_name ?? p?.airline?.name ?? null,
-        airline_name: p?.airline?.name ?? null,
-        departure_iata: clean(p?.departure?.iata),
-        arrival_iata: providerArrival,
-        departure_airport: p?.departure?.airport ?? null,
-        arrival_airport: p?.arrival?.airport ?? null,
-        departure_timezone: p?.departure?.timezone ?? null,
-        arrival_timezone: p?.arrival?.timezone ?? null,
-        scheduled_departure: p?.departure?.scheduled ?? null,
-        estimated_departure: p?.departure?.estimated ?? null,
-        actual_departure: p?.departure?.actual ?? null,
-        scheduled_arrival: p?.arrival?.scheduled ?? null,
-        estimated_arrival: p?.arrival?.estimated ?? null,
-        actual_arrival: p?.arrival?.actual ?? null,
-        flight_status: STATUS_MAP[String(p?.flight_status ?? "").toLowerCase()] ?? "unknown",
-        delay_minutes: Number(p?.arrival?.delay ?? 0) || 0,
-        terminal: p?.arrival?.terminal ?? null,
-        gate: p?.arrival?.gate ?? null,
-        provider: "aviationstack",
-        raw_response: providerPayload,
+        marketed_flight_number: flight.marketed_flight_number,
+        operating_flight_number: flight.operating_flight_number,
+        marketed_carrier: flight.marketed_carrier,
+        operating_carrier: flight.operating_carrier,
+        airline_name: flight.airline_name,
+        departure_iata: flight.departure_iata,
+        arrival_iata: flight.arrival_iata,
+        departure_airport: flight.departure_airport,
+        arrival_airport: flight.arrival_airport,
+        departure_timezone: flight.departure_timezone,
+        arrival_timezone: flight.arrival_timezone,
+        scheduled_departure: flight.scheduled_departure,
+        estimated_departure: flight.estimated_departure,
+        actual_departure: flight.actual_departure,
+        scheduled_arrival: flight.scheduled_arrival,
+        estimated_arrival: flight.estimated_arrival,
+        actual_arrival: flight.actual_arrival,
+        flight_status: flight.flight_status,
+        delay_minutes: flight.delay_minutes,
+        terminal: flight.terminal,
+        gate: flight.gate,
+        provider: flight.provider,
+        raw_response: flight.raw_response,
         last_checked_at: new Date().toISOString(),
       };
 
@@ -229,8 +229,8 @@ Deno.serve(async (req) => {
           severity: CRITICAL_FIELDS.has(field) ? "critical" : "warning",
           note:
             providerRank > legRank
-              ? "Live flight data updates a lower-confidence value. Confirm to apply."
-              : "Live flight data disagrees with what a person entered. A human decides.",
+              ? `Live flight data (${flight.provider}) updates a lower-confidence value. Confirm to apply.`
+              : `Live flight data (${flight.provider}) disagrees with what a person entered. A human decides.`,
         });
       }
 
@@ -279,7 +279,10 @@ Deno.serve(async (req) => {
         ok: true,
         flight_key: factKey,
         shared_fact_id: existingFact?.id ?? null,
-        source: usedProvider ? "provider" : existingFact ? "shared_cache" : "none",
+        source: flight ? flight.provider : existingFact ? "shared_cache" : "none",
+        providers_tried: lookup?.provider_tried ?? [],
+        provider_outcome: lookup?.outcome ?? (existingFact ? "cache_fresh" : "not_attempted"),
+        paid_reads_used: lookup?.paid_reads_used ?? 0,
         conflicts_opened: conflictsOpened,
         note: "Read-model only. No booking, payment, room or pickup status was changed.",
       }),
@@ -291,5 +294,9 @@ Deno.serve(async (req) => {
       status: 500,
       headers: cors(req),
     });
+  } finally {
+    if (heldLock && admin) {
+      try { await releaseFlightLock(admin, heldLock); } catch { /* lock expires on its own */ }
+    }
   }
 });
