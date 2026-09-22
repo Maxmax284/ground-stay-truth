@@ -234,7 +234,12 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
 
     const arrivalDetails: Record<string, any> = {};
     if (data.arrival_flight) arrivalDetails.flight_info = data.arrival_flight;
-    if (data.arrival_time) arrivalDetails.arrival_time = data.arrival_time;
+    if (data.connecting_flight) arrivalDetails.connecting_flight = data.connecting_flight;
+    if (data.arrival_datetime) {
+      arrivalDetails.arrival_datetime = fromCampInputValue(data.arrival_datetime);
+      arrivalDetails.arrival_time = data.arrival_datetime.slice(11, 16);
+    }
+    arrivalDetails.flight_pending = !!data.flights_not_booked;
     if (data.emergency_contact) arrivalDetails.emergency_contact = data.emergency_contact;
     if (data.airport_pickup) arrivalDetails.airport_pickup = true;
 
