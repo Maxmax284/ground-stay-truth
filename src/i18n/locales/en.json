@@ -2233,6 +2233,7 @@
     "readNothingNew": "Read it — nothing new to add.",
     "uploadFailed": "Upload failed. Try a screenshot.",
     "privacy": "We only read travel details from what you upload. Your booking reference is stored hidden, and we never track your location.",
+    "retention": "Anything you upload is deleted 30 days after you check out.",
     "type": {
       "flight": "Flight",
       "ferry": "Ferry / boat",
