@@ -19,6 +19,7 @@ import { getTravelState } from "@/lib/travelState";
 import { normalizeArrival, ARRIVAL_TYPE_CONFIG, PICKUP_RESOLUTION_LABELS, ARRIVAL_TYPES, isActivePickup, getPickupWarnings, type ArrivalType } from "@/lib/arrivalModel";
 import { CAMP_TIMEZONE_LABEL, toCampInputValue, fromCampInputValue, formatCampLabeled } from "@/lib/timezone";
 import { ManualAssistBanner } from "@/components/ManualAssistBanner";
+import { ArrivalAttentionLine } from "@/components/front-desk/ArrivalAttentionLine";
 
 const STATUS_COLORS: Record<string, string> = {
   requested: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
