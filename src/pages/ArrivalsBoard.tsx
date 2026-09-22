@@ -1,9 +1,17 @@
+/**
+ * Arrivals — one screen for everything about people getting here: who is coming,
+ * what their flight is doing, the travel legs on file and what disagrees.
+ *
+ * Read-heavy by design. The only actions are marking a guest collected and
+ * settling a disagreement — both explicit human decisions. Flight data never
+ * moves a booking, price, room or pickup status on its own.
+ */
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +19,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { StaffArrivalRadar } from "@/components/front-desk/StaffArrivalRadar";
+import { ArrivalExceptionsPanel } from "@/components/front-desk/ArrivalExceptionsPanel";
+import { JourneyBlock } from "@/components/front-desk/JourneyBlock";
 import { useArrivalsBoard, type ArrivalsBoardRow } from "@/hooks/useArrivalsBoard";
+import { useArrivalIntelBoard } from "@/hooks/useArrivalIntelBoard";
 import { useArrivalProgress } from "@/hooks/useArrivalProgress";
 import { toast } from "sonner";
 import { STATE_LABELS, STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
@@ -20,6 +31,7 @@ import { formatCampLabeled } from "@/lib/timezone";
 import { format, parseISO, isToday, isTomorrow } from "date-fns";
 import {
   LayoutDashboard, Plane, MessageSquare, RefreshCcw, Search, PlaneLanding, Car, MapPin, Clock,
+  AlertTriangle, Home,
 } from "lucide-react";
 
 const FLIGHT_TONE: Record<string, string> = {
@@ -29,6 +41,18 @@ const FLIGHT_TONE: Record<string, string> = {
   delayed: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
   cancelled: "bg-destructive/10 text-destructive",
 };
+
+/** States where the guest is already here — nothing about the flight matters any more. */
+const SETTLED_STATES = new Set(["checked_in", "completed", "no_show", "cancelled"]);
+
+/** The arrival is still in play: the guest is not here yet and the car has not taken them. */
+function isArrivalLive(row: ArrivalsBoardRow) {
+  if (SETTLED_STATES.has(row.state)) return false;
+  if (!row.pickup) return false;
+  if (row.pickup.collected_at) return false;
+  if (row.pickup.status === "completed" || row.pickup.status === "cancelled") return false;
+  return true;
+}
 
 function dayLabel(date: string) {
   const d = parseISO(date);
@@ -41,9 +65,11 @@ function RowCard({ row, onOpen }: { row: ArrivalsBoardRow; onOpen: (id: string) 
   const { t } = useTranslation();
   const flightTone = row.flight?.flight_status ? FLIGHT_TONE[row.flight.flight_status] ?? FLIGHT_TONE.scheduled : null;
   const progress = useArrivalProgress();
-  const canCollect = !!row.pickup && !row.pickup.collected_at && (!!row.pickup.guest_ready_at || !!row.pickup.guest_landed_at);
-  // Live scope only while the arrival is still in play — collected guests don't need it.
-  const showRadar = !!row.pickup && !row.pickup.collected_at && !!row.flight?.flight_number;
+  const live = isArrivalLive(row);
+  const inHouse = row.state === "checked_in";
+  const canCollect = live && (!!row.pickup?.guest_ready_at || !!row.pickup?.guest_landed_at);
+  // Live scope only while the arrival is still in play — guests already here don't need it.
+  const showRadar = live && !!row.flight?.flight_number;
   return (
     <div
       role="button"
@@ -65,19 +91,24 @@ function RowCard({ row, onOpen }: { row: ArrivalsBoardRow; onOpen: (id: string) 
       </div>
 
       <div className="mt-2 flex flex-wrap gap-1.5">
-        {row.flight?.flight_number && (
+        {inHouse && (
+          <Badge variant="secondary" className="text-[10px] gap-1">
+            <Home className="h-3 w-3" /> {t("arrivalsBoard.inHouseBadge", "Here now")}
+          </Badge>
+        )}
+        {row.flight?.flight_number && !inHouse && (
           <Badge className={`text-[10px] font-mono gap-1 ${flightTone}`}>
             <Plane className="h-3 w-3" /> {row.flight.flight_number}
             {row.flight.flight_status ? ` · ${row.flight.flight_status}` : ""}
             {row.flight.delay_minutes ? ` +${row.flight.delay_minutes}m` : ""}
           </Badge>
         )}
-        {row.pickup?.guest_landed_at && (
+        {row.pickup?.guest_landed_at && live && (
           <Badge className="text-[10px] gap-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
             <PlaneLanding className="h-3 w-3" /> {t("arrivalsBoard.landedAt", "Landed")} {formatCampLabeled(row.pickup.guest_landed_at)}
           </Badge>
         )}
-        {row.pickup?.guest_ready_at && !row.pickup.collected_at && (
+        {row.pickup?.guest_ready_at && live && (
           <Badge className="text-[10px] gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
             {t("arrivalsBoard.readyBadge", "Ready for pickup")}
           </Badge>
@@ -87,18 +118,18 @@ function RowCard({ row, onOpen }: { row: ArrivalsBoardRow; onOpen: (id: string) 
             {t("arrivalsBoard.collectedBadge", "Collected")}
           </Badge>
         )}
-        {row.pickup && !row.pickup.driver_name && (
+        {live && !row.pickup?.driver_name && (
           <Badge variant="outline" className="text-[10px] gap-1">
-            <Car className="h-3 w-3" /> No driver yet
+            <Car className="h-3 w-3" /> {t("arrivalsBoard.noDriver", "No driver yet")}
           </Badge>
         )}
-        {row.pickup?.driver_name && (
+        {row.pickup?.driver_name && live && (
           <Badge variant="secondary" className="text-[10px] gap-1">
             <Car className="h-3 w-3" /> {row.pickup.driver_name}
             {row.pickup.license_plate ? ` · ${row.pickup.license_plate}` : ""}
           </Badge>
         )}
-        {row.pickup?.confirmed_airport && (
+        {row.pickup?.confirmed_airport && live && (
           <Badge variant="outline" className="text-[10px] gap-1 uppercase">
             <MapPin className="h-3 w-3" /> {row.pickup.confirmed_airport}
           </Badge>
@@ -162,11 +193,14 @@ export default function ArrivalsBoard() {
   const navigate = useNavigate();
   const { role } = useAuth();
   const { data, isLoading, refetch, isFetching } = useArrivalsBoard();
+  const canSeeIntel = role === "admin" || role === "manager" || role === "front_desk_supervisor";
+  const { data: intelRows, isLoading: intelLoading } = useArrivalIntelBoard();
   const [search, setSearch] = useState("");
   const [openBooking, setOpenBooking] = useState<string | null>(null);
 
+  const q = search.trim().toLowerCase();
+
   const rows = useMemo(() => {
-    const q = search.trim().toLowerCase();
     if (!q) return data ?? [];
     return (data ?? []).filter(
       (r) =>
@@ -174,12 +208,29 @@ export default function ArrivalsBoard() {
         (r.unit_name ?? "").toLowerCase().includes(q) ||
         (r.flight?.flight_number ?? "").toLowerCase().includes(q)
     );
-  }, [data, search]);
+  }, [data, q]);
 
-  const flights = rows.filter((r) => r.flight || r.pickup);
+  const journeys = useMemo(() => {
+    const all = canSeeIntel ? intelRows ?? [] : [];
+    if (!q) return all;
+    return all.filter(
+      (r) =>
+        r.guest_name.toLowerCase().includes(q) ||
+        (r.unit_name ?? "").toLowerCase().includes(q) ||
+        r.legs.some((l) =>
+          [l.marketed_flight_number, l.operating_flight_number, l.from_code, l.to_code]
+            .filter(Boolean)
+            .some((v) => String(v).toLowerCase().includes(q)),
+        ),
+    );
+  }, [intelRows, q, canSeeIntel]);
+
+  const incoming = rows.filter((r) => !SETTLED_STATES.has(r.state));
+  const inHouse = rows.filter((r) => r.state === "checked_in");
+  const liveFlights = rows.filter(isArrivalLive);
   const talking = rows.filter((r) => r.last_message);
-  const landedToday = rows.filter((r) => r.pickup?.guest_landed_at).length;
-  const arrivingToday = rows.filter((r) => isToday(parseISO(r.check_in))).length;
+  const waiting = journeys.reduce((n, r) => n + r.openConflicts, 0);
+  const arrivingToday = incoming.filter((r) => isToday(parseISO(r.check_in))).length;
 
   return (
     <DashboardLayout>
@@ -202,10 +253,10 @@ export default function ArrivalsBoard() {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: t("arrivalsBoard.inWindow", "In window"), value: rows.length, icon: LayoutDashboard },
             { label: t("arrivalsBoard.arrivingToday", "Arriving today"), value: arrivingToday, icon: Clock },
-            { label: t("arrivalsBoard.tracked", "Flights tracked"), value: flights.length, icon: Plane },
-            { label: t("arrivalsBoard.landed", "Landed"), value: landedToday, icon: PlaneLanding },
+            { label: t("arrivalsBoard.liveFlights", "Flights in the air"), value: liveFlights.length, icon: Plane },
+            { label: t("arrivalsBoard.inHouseStat", "Here now"), value: inHouse.length, icon: Home },
+            { label: t("arrivalsBoard.waitingStat", "Waiting on a person"), value: waiting, icon: AlertTriangle },
           ].map((s) => (
             <Card key={s.label}>
               <CardContent className="p-3 flex items-center gap-2.5">
@@ -234,14 +285,20 @@ export default function ArrivalsBoard() {
             {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full" />)}
           </div>
         ) : (
-          <Tabs defaultValue="all">
-            <TabsList>
-              <TabsTrigger value="all">{t("arrivalsBoard.tabAll", "All bookings")} ({rows.length})</TabsTrigger>
-              <TabsTrigger value="flights">{t("arrivalsBoard.tabFlights", "Flights")} ({flights.length})</TabsTrigger>
+          <Tabs defaultValue="incoming">
+            <TabsList className="flex-wrap h-auto">
+              <TabsTrigger value="incoming">{t("arrivalsBoard.tabIncoming", "Coming in")} ({incoming.length})</TabsTrigger>
+              <TabsTrigger value="inhouse">{t("arrivalsBoard.tabInHouse", "Here now")} ({inHouse.length})</TabsTrigger>
               <TabsTrigger value="messages">{t("arrivalsBoard.tabMessages", "Conversations")} ({talking.length})</TabsTrigger>
+              {canSeeIntel && (
+                <>
+                  <TabsTrigger value="journeys">{t("arrivalIntel.tabJourneys", "Journeys")} ({journeys.length})</TabsTrigger>
+                  <TabsTrigger value="conflicts">{t("arrivalIntel.tabConflicts", "Disagreements")} ({waiting})</TabsTrigger>
+                </>
+              )}
             </TabsList>
 
-            {([["all", rows], ["flights", flights], ["messages", talking]] as const).map(([key, list]) => (
+            {([["incoming", incoming], ["inhouse", inHouse], ["messages", talking]] as const).map(([key, list]) => (
               <TabsContent key={key} value={key} className="mt-3">
                 {list.length === 0 ? (
                   <Card>
@@ -263,6 +320,30 @@ export default function ArrivalsBoard() {
                 )}
               </TabsContent>
             ))}
+
+            {canSeeIntel && (
+              <>
+                <TabsContent value="journeys" className="mt-3 space-y-3">
+                  {intelLoading ? (
+                    <div className="space-y-3">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-40 w-full" />)}</div>
+                  ) : journeys.length === 0 ? (
+                    <Card>
+                      <CardContent className="p-6 text-center text-sm text-muted-foreground">
+                        {t("arrivalIntel.empty", "No arrivals in this window.")}
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    journeys.map((row) => (
+                      <JourneyBlock key={row.booking_id} row={row} onOpen={setOpenBooking} />
+                    ))
+                  )}
+                </TabsContent>
+
+                <TabsContent value="conflicts" className="mt-3">
+                  <ArrivalExceptionsPanel onOpen={setOpenBooking} />
+                </TabsContent>
+              </>
+            )}
           </Tabs>
         )}
       </div>

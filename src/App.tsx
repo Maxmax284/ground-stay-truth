@@ -7,7 +7,7 @@ import { AIRouteFocusTracker } from "@/components/ai/AIRouteFocusTracker";
 import { SpotlightLayer } from "@/components/ai/SpotlightLayer";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import { RolePreviewProvider } from "@/hooks/useRolePreview";
@@ -36,7 +36,6 @@ import Stay from "./pages/Stay";
 import Simulation from "./pages/Simulation";
 import FrontDesk from "./pages/FrontDesk";
 import ArrivalsBoard from "./pages/ArrivalsBoard";
-import ArrivalIntelligence from "./pages/ArrivalIntelligence";
 import AdminBookingFlow from "./pages/AdminBookingFlow";
 import LandingPage from "./pages/LandingPage";
 import DisasterRecovery from "./pages/DisasterRecovery";
@@ -108,7 +107,7 @@ const App = () => (
                 <Route path="/media-library" element={<ProtectedRoute requiredPath="/media-library"><MediaLibrary /></ProtectedRoute>} />
                 <Route path="/bookings" element={<ProtectedRoute requiredPath="/bookings"><Bookings /></ProtectedRoute>} />
                 <Route path="/arrivals-board" element={<ProtectedRoute requiredPath="/arrivals-board"><ArrivalsBoard /></ProtectedRoute>} />
-                <Route path="/arrival-intelligence" element={<ProtectedRoute requiredPath="/arrival-intelligence"><ArrivalIntelligence /></ProtectedRoute>} />
+                <Route path="/arrival-intelligence" element={<Navigate to="/arrivals-board" replace />} />
                 <Route path="/admin-booking" element={<ProtectedRoute requiredPath="/admin-booking"><AdminBookingFlow /></ProtectedRoute>} />
                 <Route path="/guest-preview" element={<ProtectedRoute requiredPath="/guest-preview"><GuestPortalPreview /></ProtectedRoute>} />
                 <Route path="/front-desk" element={<ProtectedRoute requiredPath="/front-desk"><FrontDesk /></ProtectedRoute>} />

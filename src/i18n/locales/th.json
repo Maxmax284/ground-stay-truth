@@ -2165,7 +2165,14 @@
     "readyBadge": "พร้อมให้ไปรับ",
     "collectedBadge": "รับแล้ว",
     "markCollected": "รับแล้ว",
-    "collectedDone": "บันทึกว่ารับแล้ว"
+    "collectedDone": "บันทึกว่ารับแล้ว",
+    "inHouseBadge": "ถึงแล้ว",
+    "noDriver": "ยังไม่มีคนขับ",
+    "inHouseStat": "ถึงแล้ว",
+    "waitingStat": "รอคนตัดสินใจ",
+    "liveFlights": "เที่ยวบินกำลังเดินทาง",
+    "tabIncoming": "กำลังมาถึง",
+    "tabInHouse": "ถึงแล้ว"
   },
   "guestPreview": {
     "title": "ดูตัวอย่างพอร์ทัลผู้เข้าพัก",

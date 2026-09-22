@@ -2165,7 +2165,14 @@
     "readyBadge": "Ready for pickup",
     "collectedBadge": "Collected",
     "markCollected": "Collected",
-    "collectedDone": "Marked collected."
+    "collectedDone": "Marked collected.",
+    "inHouseBadge": "Here now",
+    "noDriver": "No driver yet",
+    "inHouseStat": "Here now",
+    "waitingStat": "Waiting on a person",
+    "liveFlights": "Flights in the air",
+    "tabIncoming": "Coming in",
+    "tabInHouse": "Here now"
   },
   "guestPreview": {
     "title": "Guest Portal Preview",

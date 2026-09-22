@@ -1,34 +1,15 @@
 /**
- * Arrival intelligence — one screen showing, per arriving stay: the travel legs
- * on file and who gave them, anything that disagrees, and the stamped sequence
- * of what actually happened.
- *
- * Read-only by design. The only action here is resolving a disagreement, which
- * is an explicit human decision. Nothing on this screen changes a booking,
- * price, room, pickup status or balance.
+ * One arriving stay's travel story: the legs on file, who gave them, and the
+ * stamped sequence of what actually happened. Read-only.
  */
-import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "@/hooks/useAuth";
-import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookingDetailSheet } from "@/components/BookingDetailSheet";
-import { ArrivalExceptionsPanel } from "@/components/front-desk/ArrivalExceptionsPanel";
-import {
-  useArrivalIntelBoard,
-  type IntelBookingRow,
-  type IntelLeg,
-} from "@/hooks/useArrivalIntelBoard";
 import { formatCampLabeled } from "@/lib/timezone";
 import { format, parseISO } from "date-fns";
-import {
-  Plane, Ship, Bus, Car, Search, AlertTriangle, History, Route as RouteIcon, MapPin,
-} from "lucide-react";
+import { Plane, Ship, Bus, Car, AlertTriangle, History, MapPin } from "lucide-react";
+import type { IntelBookingRow, IntelLeg } from "@/hooks/useArrivalIntelBoard";
 
 const LEG_ICON: Record<string, typeof Plane> = {
   flight: Plane,
@@ -86,7 +67,7 @@ function LegLine({ leg }: { leg: IntelLeg }) {
   );
 }
 
-function BookingBlock({ row, onOpen }: { row: IntelBookingRow; onOpen: (id: string) => void }) {
+export function JourneyBlock({ row, onOpen }: { row: IntelBookingRow; onOpen: (id: string) => void }) {
   const { t } = useTranslation();
   const stages = [...row.stages].reverse();
   return (
@@ -164,118 +145,5 @@ function BookingBlock({ row, onOpen }: { row: IntelBookingRow; onOpen: (id: stri
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-export default function ArrivalIntelligence() {
-  const { t } = useTranslation();
-  const { role } = useAuth();
-  const { data: rows, isLoading } = useArrivalIntelBoard();
-  const [search, setSearch] = useState("");
-  const [openBooking, setOpenBooking] = useState<string | null>(null);
-
-  const list = useMemo(() => {
-    const all = rows ?? [];
-    const q = search.trim().toLowerCase();
-    if (!q) return all;
-    return all.filter(
-      (r) =>
-        r.guest_name.toLowerCase().includes(q) ||
-        (r.unit_name ?? "").toLowerCase().includes(q) ||
-        r.legs.some((l) =>
-          [l.marketed_flight_number, l.operating_flight_number, l.from_code, l.to_code]
-            .filter(Boolean)
-            .some((v) => String(v).toLowerCase().includes(q)),
-        ),
-    );
-  }, [rows, search]);
-
-  const needsPerson = list.filter((r) => r.openConflicts > 0);
-  const noTravel = list.filter((r) => r.legs.length === 0);
-
-  return (
-    <DashboardLayout>
-      <div className="space-y-4">
-        <div>
-          <h1 className="flex items-center gap-2 text-xl font-semibold text-foreground">
-            <RouteIcon className="h-5 w-5 text-primary" />
-            {t("arrivalIntel.title", "Arrival intelligence")}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {t(
-              "arrivalIntel.subtitle",
-              "Every arriving guest, how they get here, what disagrees, and who said what.",
-            )}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: t("arrivalIntel.statArriving", "Arriving"), value: list.length },
-            { label: t("arrivalIntel.statWaiting", "Waiting on a person"), value: needsPerson.length },
-            { label: t("arrivalIntel.statNoTravel", "No travel on file"), value: noTravel.length },
-          ].map((s) => (
-            <Card key={s.label}>
-              <CardContent className="p-3">
-                <div className="text-xl font-semibold text-foreground">{s.value}</div>
-                <div className="text-[11px] text-muted-foreground">{s.label}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("arrivalIntel.search", "Search guest, room or flight number") as string}
-            className="pl-8"
-          />
-        </div>
-
-        {isLoading ? (
-          <div className="space-y-3">
-            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-40 w-full" />)}
-          </div>
-        ) : (
-          <Tabs defaultValue="journeys">
-            <TabsList>
-              <TabsTrigger value="journeys">
-                {t("arrivalIntel.tabJourneys", "Journeys")} ({list.length})
-              </TabsTrigger>
-              <TabsTrigger value="conflicts">
-                {t("arrivalIntel.tabConflicts", "Disagreements")} ({needsPerson.length})
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="journeys" className="mt-3 space-y-3">
-              {list.length === 0 ? (
-                <Card>
-                  <CardContent className="p-6 text-center text-sm text-muted-foreground">
-                    {t("arrivalIntel.empty", "No arrivals in this window.")}
-                  </CardContent>
-                </Card>
-              ) : (
-                list.map((row) => (
-                  <BookingBlock key={row.booking_id} row={row} onOpen={setOpenBooking} />
-                ))
-              )}
-            </TabsContent>
-
-            <TabsContent value="conflicts" className="mt-3">
-              <ArrivalExceptionsPanel onOpen={setOpenBooking} />
-            </TabsContent>
-          </Tabs>
-        )}
-      </div>
-
-      <BookingDetailSheet
-        bookingId={openBooking}
-        open={!!openBooking}
-        onOpenChange={(o) => !o && setOpenBooking(null)}
-        isAdmin={role === "admin"}
-      />
-    </DashboardLayout>
   );
 }
