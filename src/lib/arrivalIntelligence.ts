@@ -544,6 +544,8 @@ export interface ArrivalSituation {
   connections: ConnectionRisk[];
   dataIsStale: boolean;
   exceptions: string[];
+  /** Structured, staff-facing checks. Questions only — nothing auto-applies. */
+  attention: AttentionCheck[];
   views: Record<ArrivalRole, RoleView>;
 }
 
