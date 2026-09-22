@@ -20,6 +20,8 @@ import { normalizeArrival, ARRIVAL_TYPE_CONFIG, PICKUP_RESOLUTION_LABELS, ARRIVA
 import { CAMP_TIMEZONE_LABEL, toCampInputValue, fromCampInputValue, formatCampLabeled } from "@/lib/timezone";
 import { ManualAssistBanner } from "@/components/ManualAssistBanner";
 import { ArrivalAttentionLine } from "@/components/front-desk/ArrivalAttentionLine";
+import { StaffArrivalRadar } from "@/components/front-desk/StaffArrivalRadar";
+
 
 const STATUS_COLORS: Record<string, string> = {
   requested: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
@@ -473,7 +475,18 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
           )}
         </div>
 
-        {/* Staff-only: what needs a person's attention, and where facts came from */}
+        {/* Staff-only: live aircraft scope, then what needs a person's attention */}
+        {canManage && (pickup.flight_number || pickup.international_flight_number) && (
+          <StaffArrivalRadar
+            pickupId={pickup.id}
+            intlFlightNumber={pickup.international_flight_number ?? null}
+            finalFlightNumber={pickup.flight_number ?? null}
+            guestLandedAt={(pickup as any).guest_landed_at ?? null}
+            guestReadyAt={(pickup as any).guest_ready_at ?? null}
+            collectedAt={(pickup as any).collected_at ?? null}
+          />
+        )}
+
         {canManage && (
           <ArrivalAttentionLine
             bookingId={bookingId}
@@ -486,6 +499,7 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
             collectedAt={(pickup as any).collected_at ?? null}
           />
         )}
+
 
         {/* Arrival time & passengers */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
