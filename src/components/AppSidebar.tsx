@@ -77,6 +77,7 @@ const navItems = [
   { titleKey: "nav.adjustments", url: "/adjustments", icon: Percent },
   { titleKey: "nav.embeds", url: "/embeds", icon: Code2 },
   { titleKey: "nav.settings", url: "/settings", icon: Settings },
+  { titleKey: "nav.previewGuestPortal", url: "/guest-preview", icon: Eye },
 ];
 
 const PREVIEW_ROLES: AppRole[] = ["front_desk", "front_desk_supervisor", "manager", "maintenance", "viewer"];
