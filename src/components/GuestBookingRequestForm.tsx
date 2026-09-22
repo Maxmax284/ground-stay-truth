@@ -40,7 +40,9 @@ interface FormValues {
   guest_type: string;
   notes: string;
   arrival_flight: string;
-  arrival_time: string;
+  connecting_flight: string;
+  arrival_datetime: string;
+  flights_not_booked: boolean;
   emergency_contact: string;
   airport_pickup: boolean;
   pickup_flight_number: string;
@@ -62,7 +64,8 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
     defaultValues: {
       group_id: "", check_in: "", check_out: "", num_guests: 1,
-      guest_type: "", notes: "", arrival_flight: "", arrival_time: "",
+      guest_type: "", notes: "", arrival_flight: "", connecting_flight: "",
+      arrival_datetime: "", flights_not_booked: false,
       emergency_contact: "", airport_pickup: false, pickup_flight_number: "",
       pickup_arrival_datetime: "", pickup_passenger_count: 1, pickup_luggage_notes: "",
       pickup_special_instructions: "",
@@ -74,6 +77,9 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
   const checkOut = watch("check_out");
   const numGuests = watch("num_guests");
   const airportPickup = watch("airport_pickup");
+  const arrivalFlight = watch("arrival_flight");
+  const arrivalDatetime = watch("arrival_datetime");
+  const flightsNotBooked = watch("flights_not_booked");
 
   const selectedGroup = unitGroups?.find((g) => g.id === selectedGroupId);
 
@@ -152,8 +158,27 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
     return pricing.nights.length > 0 && pricing.subtotal <= 0;
   }, [pricingUnit, checkIn, checkOut, pricing]);
 
-  const validationErrors = useMemo(() => {
+  // Travel protocol: every stay request must answer the flight question.
+  // Guests without tickets yet tick "not booked" and the booking is flagged
+  // so staff chase the details before arrival.
+  const travelErrors = useMemo(() => {
     const errs: string[] = [];
+    if (flightsNotBooked) return errs;
+    if (!arrivalFlight?.trim()) {
+      errs.push(t("guestBooking.flightRequired", {
+        defaultValue: "Please add the flight you land on — or tick that your flights aren't booked yet.",
+      }));
+    }
+    if (!arrivalDatetime) {
+      errs.push(t("guestBooking.arrivalTimeRequired", {
+        defaultValue: "Please add your arrival date and time in Thailand.",
+      }));
+    }
+    return errs;
+  }, [flightsNotBooked, arrivalFlight, arrivalDatetime, t]);
+
+  const validationErrors = useMemo(() => {
+    const errs: string[] = [...travelErrors];
     if (!selectedGroup || !checkIn || !checkOut) return errs;
     const nights = differenceInCalendarDays(new Date(checkOut), new Date(checkIn));
     if (nights <= 0) errs.push(t("bookingForm.checkoutAfterCheckin"));
@@ -174,7 +199,7 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
       errs.push(GUEST_MESSAGES.pricing_unavailable);
     }
     return errs;
-  }, [selectedGroup, checkIn, checkOut, numGuests, availabilityStatus, pricingUnavailable, t]);
+  }, [travelErrors, selectedGroup, checkIn, checkOut, numGuests, availabilityStatus, pricingUnavailable, t]);
 
   const pricingSources = useMemo(() => {
     const sources = new Map<string, number>();
@@ -209,7 +234,12 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
 
     const arrivalDetails: Record<string, any> = {};
     if (data.arrival_flight) arrivalDetails.flight_info = data.arrival_flight;
-    if (data.arrival_time) arrivalDetails.arrival_time = data.arrival_time;
+    if (data.connecting_flight) arrivalDetails.connecting_flight = data.connecting_flight;
+    if (data.arrival_datetime) {
+      arrivalDetails.arrival_datetime = fromCampInputValue(data.arrival_datetime);
+      arrivalDetails.arrival_time = data.arrival_datetime.slice(11, 16);
+    }
+    arrivalDetails.flight_pending = !!data.flights_not_booked;
     if (data.emergency_contact) arrivalDetails.emergency_contact = data.emergency_contact;
     if (data.airport_pickup) arrivalDetails.airport_pickup = true;
 
@@ -262,8 +292,9 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
           booking_id: bookingResult.id,
           status: "requested",
           fee,
-          flight_number: data.pickup_flight_number || null,
-          arrival_datetime: fromCampInputValue(data.pickup_arrival_datetime),
+          flight_number: data.pickup_flight_number || data.arrival_flight || null,
+          international_flight_number: data.connecting_flight || null,
+          arrival_datetime: fromCampInputValue(data.pickup_arrival_datetime || data.arrival_datetime),
           passenger_count: Number(data.pickup_passenger_count) || 1,
           luggage_notes: data.pickup_luggage_notes || null,
           special_instructions: data.pickup_special_instructions || null,
@@ -449,14 +480,80 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
 
           <Separator />
           <h4 className="text-sm font-semibold text-foreground">{t("guestBooking.arrivalDetails")}</h4>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="arrival_flight">{t("guestBooking.flightInfo")}</Label>
-              <Input id="arrival_flight" {...register("arrival_flight")} placeholder={t("guestBooking.flightPlaceholder")} />
+
+          <div className="rounded-md border border-border p-3 space-y-3">
+            <div className="flex items-start gap-2">
+              <Plane className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                {t("guestBooking.flightProtocolNote", {
+                  defaultValue:
+                    "Flight details are required for every stay so we can follow your journey and reach you if anything changes.",
+                })}
+              </p>
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="arrival_flight">
+                  {t("guestBooking.finalFlight", { defaultValue: "Flight you land on" })}
+                  {!flightsNotBooked && <span className="text-destructive"> *</span>}
+                </Label>
+                <Input
+                  id="arrival_flight"
+                  {...register("arrival_flight")}
+                  disabled={flightsNotBooked}
+                  placeholder="PG 123"
+                  className="uppercase"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="arrival_datetime">
+                  {t("guestBooking.arrivalDateTime", { defaultValue: "Arrival date & time (Thailand)" })}
+                  {!flightsNotBooked && <span className="text-destructive"> *</span>}
+                </Label>
+                <Input
+                  id="arrival_datetime"
+                  type="datetime-local"
+                  {...register("arrival_datetime")}
+                  disabled={flightsNotBooked}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="arrival_time">{t("guestBooking.arrivalTime")}</Label>
-              <Input id="arrival_time" type="time" {...register("arrival_time")} />
+              <Label htmlFor="connecting_flight">
+                {t("guestBooking.connectingFlight", { defaultValue: "Connecting / first flight (if any)" })}
+              </Label>
+              <Input
+                id="connecting_flight"
+                {...register("connecting_flight")}
+                disabled={flightsNotBooked}
+                placeholder="TG 925 Bangkok"
+                className="uppercase"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                {t("guestBooking.connectingFlightHint", {
+                  defaultValue: "Flying in through Bangkok or another city? Add that flight too.",
+                })}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 pt-1 border-t border-border/50">
+              <div>
+                <Label htmlFor="flights_not_booked" className="text-sm font-medium">
+                  {t("guestBooking.flightsNotBooked", { defaultValue: "My flights aren't booked yet" })}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {t("guestBooking.flightsNotBookedDesc", {
+                    defaultValue: "We'll ask you for them on your stay page once you've booked.",
+                  })}
+                </p>
+              </div>
+              <Switch
+                id="flights_not_booked"
+                checked={flightsNotBooked}
+                onCheckedChange={(v) => setValue("flights_not_booked", v)}
+              />
             </div>
           </div>
           <div className="space-y-2">
