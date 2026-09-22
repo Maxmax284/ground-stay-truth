@@ -13,6 +13,11 @@
 //  - Empty data reads "no flight data on record", never "on time".
 // -----------------------------------------------------------------------------
 
+// Deno global — this module runs in the edge runtime; declared so the app's
+// typecheck can also read the pure normalisers used by tests.
+declare const Deno: { env: { get(key: string): string | undefined } };
+
+
 export const DAILY_PAID_READ_CEILING = 25;
 export const LOCK_STALE_SECONDS = 30;
 
