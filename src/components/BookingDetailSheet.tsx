@@ -462,6 +462,9 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
             <TabsTrigger value="payments" className="flex-1"><CreditCard className="h-4 w-4 mr-1" /> {t("bookingDetail.paymentsTab")}</TabsTrigger>
             <TabsTrigger value="messages" className="flex-1"><MessageSquare className="h-4 w-4 mr-1" /> {t("bookingDetail.notesTab")}</TabsTrigger>
             <TabsTrigger value="documents" className="flex-1"><FileText className="h-4 w-4 mr-1" /> {t("bookingDetail.documentsTab")}</TabsTrigger>
+            {pickup && (
+              <TabsTrigger value="travel" className="flex-1"><Plane className="h-4 w-4 mr-1" /> {t("bookingDetail.travelTab")}</TabsTrigger>
+            )}
             {canSeePortalActivity && (
               <TabsTrigger value="portal" className="flex-1"><Activity className="h-4 w-4 mr-1" /> {t("bookingDetail.tabs.portal")}</TabsTrigger>
             )}
@@ -477,6 +480,24 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
           <TabsContent value="payments"><PaymentsTab payments={payments ?? []} bookingId={booking.id} bookingState={booking.state as string} canSeeAmounts={canSeeAmounts} canRecord={canRecordPay} policies={policies} totalPrice={booking.total_price} booking={booking as any} /></TabsContent>
           <TabsContent value="messages"><MessagesTab messages={messages ?? []} bookingId={booking.id} /></TabsContent>
           <TabsContent value="documents"><div className="py-3"><RequiredDocumentsCard bookingId={booking.id} checkIn={booking.check_in} checkOut={booking.check_out} /></div></TabsContent>
+          {pickup && (
+            <TabsContent value="travel">
+              <div className="py-3">
+                {(pickup.flight_number || (pickup as any).international_flight_number) ? (
+                  <StaffArrivalRadar
+                    pickupId={pickup.id}
+                    intlFlightNumber={(pickup as any).international_flight_number ?? null}
+                    finalFlightNumber={pickup.flight_number ?? null}
+                    guestLandedAt={(pickup as any).guest_landed_at ?? null}
+                    guestReadyAt={(pickup as any).guest_ready_at ?? null}
+                    collectedAt={(pickup as any).collected_at ?? null}
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">{t("bookingDetail.travelNoFlight")}</p>
+                )}
+              </div>
+            </TabsContent>
+          )}
           {isCheckedIn && (
             <TabsContent value="support">
               <BookingSupportTab
