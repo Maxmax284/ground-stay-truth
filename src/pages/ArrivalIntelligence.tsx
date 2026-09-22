@@ -272,6 +272,7 @@ export default function ArrivalIntelligence() {
         bookingId={openBooking}
         open={!!openBooking}
         onOpenChange={(o) => !o && setOpenBooking(null)}
+        isAdmin={role === "admin"}
       />
     </DashboardLayout>
   );
