@@ -41,6 +41,8 @@ function RowCard({ row, onOpen }: { row: ArrivalsBoardRow; onOpen: (id: string) 
   const flightTone = row.flight?.flight_status ? FLIGHT_TONE[row.flight.flight_status] ?? FLIGHT_TONE.scheduled : null;
   const progress = useArrivalProgress();
   const canCollect = !!row.pickup && !row.pickup.collected_at && (!!row.pickup.guest_ready_at || !!row.pickup.guest_landed_at);
+  // Live scope only while the arrival is still in play — collected guests don't need it.
+  const showRadar = !!row.pickup && !row.pickup.collected_at && !!row.flight?.flight_number;
   return (
     <div
       role="button"
