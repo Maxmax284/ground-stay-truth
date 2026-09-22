@@ -254,7 +254,7 @@ export default function ArrivalsBoard() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: t("arrivalsBoard.arrivingToday", "Arriving today"), value: arrivingToday, icon: Clock },
-            { label: t("arrivalsBoard.tracked", "Flights in the air", "Flights in the air"), value: liveFlights.length, icon: Plane },
+            { label: t("arrivalsBoard.liveFlights", "Flights in the air"), value: liveFlights.length, icon: Plane },
             { label: t("arrivalsBoard.inHouseStat", "Here now"), value: inHouse.length, icon: Home },
             { label: t("arrivalsBoard.waitingStat", "Waiting on a person"), value: waiting, icon: AlertTriangle },
           ].map((s) => (
