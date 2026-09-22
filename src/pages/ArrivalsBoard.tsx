@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
+import { StaffArrivalRadar } from "@/components/front-desk/StaffArrivalRadar";
 import { useArrivalsBoard, type ArrivalsBoardRow } from "@/hooks/useArrivalsBoard";
 import { useArrivalProgress } from "@/hooks/useArrivalProgress";
 import { toast } from "sonner";
