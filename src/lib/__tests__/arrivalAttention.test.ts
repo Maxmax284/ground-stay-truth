@@ -186,7 +186,7 @@ describe("attention rides along with the situation read-model", () => {
 
   it("five guests on the same aircraft share one flight fact key", () => {
     const keys = ["TG6285", "BR3", "NZ4053", "SQ5203", "UA7799"].map((n) =>
-      buildFlightKey({ operatingNumber: "BR3", marketedNumber: n, flightDate: "2026-10-01", arrivalCode: "TPE" }),
+      buildFlightKey({ operatingFlightNumber: "BR3", marketedFlightNumber: n, flightDate: "2026-10-01", arrivalCode: "TPE" }),
     );
     expect(new Set(keys).size).toBe(1);
   });
