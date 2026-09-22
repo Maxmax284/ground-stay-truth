@@ -32,7 +32,7 @@ import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { formatPrice } from "@/lib/currency";
 import { calculateOutstanding, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_VARIANTS, PAYMENT_TYPE_LABELS, getPaymentProvenance, type PaymentStatus, type PaymentType } from "@/lib/paymentTypes";
-import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, ArrowUpRight, AlertTriangle, User, FileText, Info, Wrench, Shirt, Globe, Sparkles, RotateCcw, Paperclip, Image as ImageIcon, File, X, Loader2, Activity, ArrowRightLeft } from "lucide-react";
+import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, ArrowUpRight, AlertTriangle, User, FileText, Info, Wrench, Shirt, Globe, Sparkles, RotateCcw, Paperclip, Image as ImageIcon, File, X, Loader2, Activity, ArrowRightLeft, Plane } from "lucide-react";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { RefundDialog } from "@/components/RefundDialog";
 import { GuestPortalActivityTimeline } from "@/components/GuestPortalActivityTimeline";
@@ -47,6 +47,7 @@ import { PaymentGuideLink } from "@/components/PaymentGuideLink";
 import { BookingTrainingSection } from "@/components/BookingTrainingSection";
 import { useBookingTrainingLinks } from "@/hooks/useTrainingPackages";
 import { AirportPickupSection } from "@/components/AirportPickupSection";
+import { StaffArrivalRadar } from "@/components/front-desk/StaffArrivalRadar";
 import { AdminOverrideMenu } from "@/components/AdminOverrideMenu";
 import { useGuestDocuments } from "@/hooks/useGuestDocuments";
 import { useMaintenanceRequests, useUpdateMaintenanceStatus } from "@/hooks/useMaintenanceRequests";
@@ -346,7 +347,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
           <AIBriefingCard bookingId={booking.id} variant="compact" />
         </div>
 
-        <AirportPickupSection bookingId={booking.id} guestName={guestName} />
+        <AirportPickupSection bookingId={booking.id} guestName={guestName} hideRadar />
         {isRealAdmin ? (
           <AdminOverrideMenu bookingId={booking.id} pickupId={pickup?.id ?? null} />
         ) : (
