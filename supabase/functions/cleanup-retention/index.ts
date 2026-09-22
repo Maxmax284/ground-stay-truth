@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     const token = (authHeader ?? req.headers.get("apikey") ?? "").replace("Bearer ", "").trim();
 
-    // Also accept a project JWT whose role is anon/service_role (key formats差 vary).
+    // Also accept a project JWT whose role is anon/service_role (key formats vary).
     let jwtRole: string | null = null;
     try {
       const part = token.split(".")[1];
