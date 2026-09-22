@@ -472,6 +472,20 @@ export function AirportPickupSection({ bookingId, guestName }: Props) {
           )}
         </div>
 
+        {/* Staff-only: what needs a person's attention, and where facts came from */}
+        {canManage && (
+          <ArrivalAttentionLine
+            bookingId={bookingId}
+            pickupAirportCode={pickup.arrival_airport ?? null}
+            pickupArrivalTime={pickup.arrival_datetime ?? null}
+            pickupRequested={isActivePickup(pickup as any)}
+            driverAssigned={!!pickup.driver_id}
+            guestLandedAt={(pickup as any).guest_landed_at ?? null}
+            guestReadyAt={(pickup as any).guest_ready_at ?? null}
+            collectedAt={(pickup as any).collected_at ?? null}
+          />
+        )}
+
         {/* Arrival time & passengers */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
           {pickup.arrival_datetime && (
