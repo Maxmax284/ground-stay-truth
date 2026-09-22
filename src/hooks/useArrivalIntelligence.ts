@@ -122,6 +122,8 @@ export function useArrivalIntelligence(
     driverName?: string | null;
     driverPlate?: string | null;
     meetingPoint?: string | null;
+    pickupAirportCode?: string | null;
+    pickupArrivalTime?: string | null;
   },
 ): ArrivalIntelligenceResult {
   const legsQuery = useJourneyLegs(bookingId);
