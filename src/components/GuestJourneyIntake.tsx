@@ -336,6 +336,10 @@ export function GuestJourneyIntake({ bookingId }: Props) {
           {t(
             "journeyIntake.privacy",
             "We only read travel details from what you upload. Your booking reference is stored hidden, and we never track your location.",
+          )}{" "}
+          {t(
+            "journeyIntake.retention",
+            "Anything you upload is deleted 30 days after you check out.",
           )}
         </p>
       </CardContent>

@@ -113,6 +113,96 @@ Deno.serve(async (req) => {
     results["payment_events"] = peError ? -1 : (peCount ?? 0);
     if (peError) console.error("Cleanup payment_events failed:", peError.message);
 
+    // -------------------------------------------------------------------------
+    // Arrival Intelligence retention (Stage 5). Mirrors src/lib/arrivalRetention.ts
+    //  - uploaded travel evidence: deleted 30 days after checkout (file + row)
+    //  - derived flight facts: 90 days
+    //  - resolved/dismissed arrival conflicts: 90 days after resolution
+    // Provenance and stage logs are NOT touched here — they are kept 2 years.
+    // -------------------------------------------------------------------------
+    const EVIDENCE_DAYS_AFTER_CHECKOUT = 30;
+    const FLIGHT_FACT_DAYS = 90;
+    const RESOLVED_CONFLICT_DAYS = 90;
+
+    try {
+      const checkoutCutoff = new Date(
+        now.getTime() - EVIDENCE_DAYS_AFTER_CHECKOUT * 24 * 60 * 60 * 1000,
+      )
+        .toISOString()
+        .slice(0, 10);
+
+      // Stays that ended long enough ago.
+      const { data: oldBookings } = await supabase
+        .from("bookings")
+        .select("id")
+        .lt("check_out", checkoutCutoff)
+        .limit(2000);
+
+      const oldIds = (oldBookings ?? []).map((b: { id: string }) => b.id);
+      let evidencePurged = 0;
+      let filesPurged = 0;
+
+      if (oldIds.length) {
+        const { data: evidence } = await supabase
+          .from("journey_evidence")
+          .select("id, storage_path")
+          .in("booking_id", oldIds)
+          .limit(1000);
+
+        const rows = evidence ?? [];
+        const paths = rows
+          .map((r: { storage_path: string | null }) => r.storage_path)
+          .filter((p: string | null): p is string => !!p);
+
+        if (paths.length) {
+          const { data: removed, error: rmErr } = await supabase.storage
+            .from("guest-documents")
+            .remove(paths);
+          if (rmErr) console.error("Evidence file purge failed:", rmErr.message);
+          else filesPurged = removed?.length ?? 0;
+        }
+
+        if (rows.length) {
+          const { count, error } = await supabase
+            .from("journey_evidence")
+            .delete({ count: "exact" })
+            .in("id", rows.map((r: { id: string }) => r.id));
+          if (error) console.error("Evidence row purge failed:", error.message);
+          else evidencePurged = count ?? 0;
+        }
+      }
+
+      results["journey_evidence"] = evidencePurged;
+      results["travel_evidence_files"] = filesPurged;
+
+      // Derived flight facts older than 90 days. journey_legs.flight_fact_id is
+      // ON DELETE SET NULL, so legs and their provenance survive intact.
+      const factCutoff = new Date(now.getTime() - FLIGHT_FACT_DAYS * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10);
+      const { count: factCount, error: factErr } = await supabase
+        .from("flight_facts")
+        .delete({ count: "exact" })
+        .lt("flight_date", factCutoff);
+      results["flight_facts"] = factErr ? -1 : (factCount ?? 0);
+      if (factErr) console.error("Cleanup flight_facts failed:", factErr.message);
+
+      // Settled conflicts. Open ones are never deleted — a human still owes a call.
+      const conflictCutoff = new Date(
+        now.getTime() - RESOLVED_CONFLICT_DAYS * 24 * 60 * 60 * 1000,
+      ).toISOString();
+      const { count: cfCount, error: cfErr } = await supabase
+        .from("arrival_conflicts")
+        .delete({ count: "exact" })
+        .in("status", ["resolved", "dismissed"])
+        .lt("resolved_at", conflictCutoff);
+      results["arrival_conflicts"] = cfErr ? -1 : (cfCount ?? 0);
+      if (cfErr) console.error("Cleanup arrival_conflicts failed:", cfErr.message);
+    } catch (arrivalErr) {
+      console.error("Arrival retention purge failed:", (arrivalErr as Error).message);
+      results["arrival_retention_error"] = -1;
+    }
+
     return new Response(
       JSON.stringify({ success: true, deleted: results, timestamp: now.toISOString() }),
       { headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
