@@ -54,11 +54,32 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Auth: accept service role key OR anon key (for pg_cron via pg_net)
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    // Auth: accept service role key, anon key, or publishable key
+    // (pg_cron calls via pg_net with whichever project key is configured).
+    const acceptedKeys = [
+      serviceRoleKey,
+      Deno.env.get("SUPABASE_ANON_KEY"),
+      Deno.env.get("SUPABASE_PUBLISHABLE_KEY"),
+    ].filter((k): k is string => !!k);
     const authHeader = req.headers.get("Authorization");
-    const token = authHeader?.replace("Bearer ", "") ?? "";
-    if (token !== serviceRoleKey && token !== anonKey) {
+    const token = (authHeader ?? req.headers.get("apikey") ?? "").replace("Bearer ", "").trim();
+
+    // Also accept a project JWT whose role is anon/service_role (key formats vary).
+    let jwtRole: string | null = null;
+    try {
+      const part = token.split(".")[1];
+      if (part) {
+        const json = JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/")));
+        jwtRole = typeof json?.role === "string" ? json.role : null;
+      }
+    } catch { /* not a JWT */ }
+
+    const authorized =
+      acceptedKeys.includes(token) ||
+      jwtRole === "anon" ||
+      jwtRole === "service_role";
+
+    if (!authorized) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
