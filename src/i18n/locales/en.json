@@ -599,7 +599,13 @@
     "draftQueued": "Reply queued for admin approval",
     "draftQueuedDesc": "An admin must approve it before the guest sees it.",
     "needsAdminApproval": "An admin must approve this before the guest sees it",
-    "awaitingApproval": "Awaiting admin approval"
+    "awaitingApproval": "Awaiting admin approval",
+    "openChat": "Chat",
+    "filterLabel": "Filter conversations",
+    "filterAll": "Everyone",
+    "filterToday": "Arriving today",
+    "filterHere": "Here now",
+    "filterUpcoming": "Coming later"
   },
   "stateTransition": {
     "changeState": "Change State",
@@ -2370,5 +2376,9 @@
     "title": "Your language",
     "subtitle": "Write to us in your own language. The front desk works in English or Thai and you'll read their replies in yours.",
     "partialNote": "These are still being translated — some text stays in English."
+  },
+  "staffLanguage": {
+    "title": "Your display language",
+    "subtitle": "Your own choice, saved to your account. Guest messages are shown to you in this language, and your replies reach the guest in theirs."
   }
 }

@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
+import { StaffLanguagePicker } from "@/components/staff/StaffLanguagePicker";
 import { useTutorial } from "@/hooks/useTutorial";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -40,7 +41,7 @@ const LANGUAGES = [
 
 export default function ProfileEditor() {
   const { t } = useTranslation();
-  const { user, signOut } = useAuth();
+  const { user, signOut, role } = useAuth();
   const navigate = useNavigate();
   const { profile, updateProfile } = useProfile();
   const { resetTutorial, isResetting } = useTutorial();
@@ -111,6 +112,9 @@ export default function ProfileEditor() {
 
   return (
     <div className="space-y-6">
+      {/* Staff read the desk in English or Thai — their own choice, per person. */}
+      {role && role !== "guest" && <StaffLanguagePicker />}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">{t("profile.myProfile")}</CardTitle>

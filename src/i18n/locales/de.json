@@ -515,7 +515,13 @@
     "draftQueued": "Antwort zur Administratorgenehmigung in der Warteschlange",
     "draftQueuedDesc": "Ein Administrator muss diese genehmigen, bevor der Gast sie sieht.",
     "needsAdminApproval": "Ein Administrator muss dies genehmigen, bevor der Gast es sieht",
-    "awaitingApproval": "Wartet auf Administratorgenehmigung"
+    "awaitingApproval": "Wartet auf Administratorgenehmigung",
+    "openChat": "Chat",
+    "filterLabel": "Gespräche filtern",
+    "filterAll": "Alle",
+    "filterToday": "Kommt heute an",
+    "filterHere": "Jetzt hier",
+    "filterUpcoming": "Kommt später"
   },
   "stateTransition": {
     "changeState": "Status ändern",
@@ -1770,5 +1776,9 @@
     "guideFlag": "Erster-Tag-Tipp",
     "guideNeverChecked": "nie geprüft",
     "guideCheckedAgo": "geprüft vor {{days}} T"
+  },
+  "staffLanguage": {
+    "title": "Ihre Anzeigesprache",
+    "subtitle": "Ihre eigene Wahl, in Ihrem Konto gespeichert. Gästenachrichten werden Ihnen in dieser Sprache angezeigt, Ihre Antworten erreichen den Gast in seiner."
   }
 }

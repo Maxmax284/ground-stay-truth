@@ -23,6 +23,7 @@ import { ArrivalExceptionsPanel } from "@/components/front-desk/ArrivalException
 import { DriverResponseRateStrip } from "@/components/front-desk/DriverResponseRateStrip";
 import { ArrivalEssentialsPanel } from "@/components/front-desk/ArrivalEssentialsPanel";
 import { JourneyBlock } from "@/components/front-desk/JourneyBlock";
+import { GuestThreadLauncher } from "@/components/GuestThreadLauncher";
 import { useArrivalsBoard, type ArrivalsBoardRow } from "@/hooks/useArrivalsBoard";
 import { useArrivalIntelBoard } from "@/hooks/useArrivalIntelBoard";
 import { useArrivalProgress } from "@/hooks/useArrivalProgress";
@@ -153,18 +154,36 @@ function RowCard({ row, onOpen }: { row: ArrivalsBoardRow; onOpen: (id: string) 
         </div>
       )}
 
+      {/* The last thing said, and a tap straight into that guest's own thread. */}
       {row.last_message && (
-        <div className="mt-2 flex items-start gap-1.5 rounded-md bg-muted/50 p-2">
-          <MessageSquare className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
-          <div className="min-w-0">
-            <p className="text-[11px] text-foreground line-clamp-2">
-              {row.last_message.from_guest ? "Guest: " : "Team: "}
-              {row.last_message.content}
-            </p>
-            <p className="text-[10px] text-muted-foreground">{formatCampLabeled(row.last_message.created_at)}</p>
-          </div>
-        </div>
+        <GuestThreadLauncher
+          bookingId={row.booking_id}
+          guestName={row.guest_name}
+          headline={row.unit_name ?? row.guest_name}
+          className="mt-2 cursor-pointer rounded-md bg-muted/50 p-2 transition-colors hover:bg-muted"
+          trigger={
+            <div className="flex items-start gap-1.5">
+              <MessageSquare className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
+              <div className="min-w-0">
+                <p className="text-[11px] text-foreground line-clamp-2">
+                  {row.last_message.from_guest ? "Guest: " : "Team: "}
+                  {row.last_message.content}
+                </p>
+                <p className="text-[10px] text-muted-foreground">{formatCampLabeled(row.last_message.created_at)}</p>
+              </div>
+            </div>
+          }
+        />
       )}
+
+      <div className="mt-2 flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+        <GuestThreadLauncher
+          bookingId={row.booking_id}
+          guestName={row.guest_name}
+          headline={row.unit_name ?? row.guest_name}
+          onOpenBooking={() => onOpen(row.booking_id)}
+        />
+      </div>
 
       {canCollect && (
         <Button

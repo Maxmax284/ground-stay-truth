@@ -14,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FetchErrorState } from "@/components/FetchErrorState";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
-import { format, formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow, isToday } from "date-fns";
 import { MessageSquare, Search, User, CalendarDays, Circle } from "lucide-react";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { GuestThreadDialog } from "@/components/GuestThreadDialog";
@@ -105,6 +105,7 @@ const Messages = () => {
   const handleNewMessage = useRef(() => play("message")).current;
   useMessagesRealtime(handleNewMessage);
   const [search, setSearch] = useState("");
+  const [scope, setScope] = useState<"all" | "today" | "here" | "upcoming">("all");
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [threadBookingId, setThreadBookingId] = useState<string | null>(null);
   const markRead = useMarkMessagesRead();
@@ -117,7 +118,17 @@ const Messages = () => {
     markRead.mutate(bookingId);
   };
 
+  // Who is walking through the door, in the desk's own words.
+  const matchesScope = (th: InboxThread) => {
+    if (scope === "all") return true;
+    const checkIn = new Date(th.check_in);
+    if (scope === "here") return th.state === "checked_in";
+    if (scope === "today") return th.state !== "checked_in" && isToday(checkIn);
+    return th.state !== "checked_in" && !isToday(checkIn) && checkIn.getTime() > Date.now();
+  };
+
   const filtered = (threads ?? []).filter((th) => {
+    if (!matchesScope(th)) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return th.unit_name.toLowerCase().includes(q) || (th.guest_name?.toLowerCase().includes(q) ?? false) || th.last_message_content.toLowerCase().includes(q);
@@ -139,6 +150,26 @@ const Messages = () => {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder={t("messages.searchPlaceholder")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        </div>
+
+        <div className="flex flex-wrap gap-2" role="group" aria-label={t("messages.filterLabel", "Filter conversations") as string}>
+          {([
+            ["all", t("messages.filterAll", "Everyone")],
+            ["today", t("messages.filterToday", "Arriving today")],
+            ["here", t("messages.filterHere", "Here now")],
+            ["upcoming", t("messages.filterUpcoming", "Coming later")],
+          ] as const).map(([key, label]) => (
+            <Button
+              key={key}
+              size="sm"
+              variant={scope === key ? "default" : "outline"}
+              aria-pressed={scope === key}
+              className="h-7 text-xs"
+              onClick={() => setScope(key)}
+            >
+              {label}
+            </Button>
+          ))}
         </div>
 
         {isLoading ? (
