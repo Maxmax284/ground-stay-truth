@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Globe, Loader2 } from "lucide-react";
 import { useMessageTranslation } from "@/hooks/useMessageTranslation";
+import { useAuth } from "@/hooks/useAuth";
 
 /**
  * Message body with an optional machine translation.
@@ -26,6 +27,10 @@ export function TranslatableText({ messageId, text, targetLanguage, onTinted = f
   const { t } = useTranslation();
   const { translations, translate, clearTranslation, failedIds, pendingId } =
     useMessageTranslation();
+  const { session } = useAuth();
+  // Translation needs a signed-in session. Rather than offering a button that
+  // can only fail (e.g. a driver on a link-only page), we don't offer it.
+  const canTranslate = !!session?.access_token;
 
   const translation = translations[messageId];
   const failed = !!failedIds[messageId];
@@ -53,6 +58,7 @@ export function TranslatableText({ messageId, text, targetLanguage, onTinted = f
         </p>
       )}
 
+      {canTranslate && (
       <button
         type="button"
         onClick={() =>
