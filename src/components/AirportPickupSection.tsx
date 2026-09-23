@@ -23,6 +23,7 @@ import { ArrivalAttentionLine } from "@/components/front-desk/ArrivalAttentionLi
 import { StaffArrivalRadar } from "@/components/front-desk/StaffArrivalRadar";
 import { useCreateDriverLink } from "@/hooks/useDriverLink";
 import { PickupConversationDialog } from "@/components/PickupConversationDialog";
+import { DriverResponseLine } from "@/components/front-desk/DriverResponseLine";
 import { Link2 } from "lucide-react";
 
 
