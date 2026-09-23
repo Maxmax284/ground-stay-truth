@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 /** Columns a guest is allowed to see. Staff notes stay out of guest queries. */
 const GUEST_COLUMNS =
-  "id,name,category,description,photos,address,maps_url,phone,whatsapp,website,opening_hours,distance_note,badges,sort_order,last_reviewed_at,closed_temporarily,seasonal_note";
+  "id,name,category,description,photos,address,maps_url,phone,whatsapp,website,opening_hours,distance_note,badges,sort_order,last_reviewed_at,closed_temporarily,seasonal_note,arrival_essential";
 
 export interface LocalRecommendation {
   id: string;
@@ -35,6 +35,8 @@ export interface LocalRecommendation {
   last_reviewed_at: string | null;
   closed_temporarily: boolean;
   seasonal_note: string | null;
+  /** Editorial flag: worth knowing about on the day you land. */
+  arrival_essential: boolean;
   /** Editor-only fields. */
   featured?: boolean;
   is_active?: boolean;
@@ -144,4 +146,38 @@ export function needsReview(
 ): boolean {
   const since = daysSinceReview(entry, now);
   return since === null || since > days;
+}
+
+/**
+ * Flags (or unflags) a place as essential for guests arriving today.
+ *
+ * Editorial only: it changes what staff and arriving guests see first, and
+ * nothing about a booking, a pickup or a flight.
+ */
+export function useToggleArrivalEssential() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, essential }: { id: string; essential: boolean }) => {
+      const { error } = await supabase
+        .from("local_recommendations")
+        .update({ arrival_essential: essential })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["local-recommendations"] }),
+  });
+}
+
+/**
+ * Orders published entries for someone who has just landed: the places the team
+ * flagged as arrival essentials first, then everything else, both in the
+ * camp's own sort order.
+ */
+export function sortForArrival<T extends { arrival_essential: boolean; sort_order: number }>(
+  entries: T[],
+): T[] {
+  return [...entries].sort((a, b) => {
+    if (a.arrival_essential !== b.arrival_essential) return a.arrival_essential ? -1 : 1;
+    return a.sort_order - b.sort_order;
+  });
 }

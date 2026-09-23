@@ -1741,6 +1741,34 @@
       "recovery": "Erholung und Gesundheit",
       "training": "Training",
       "etiquette": "Lokale Gepflogenheiten"
-    }
+    },
+    "essential": "Heute gut zu wissen",
+    "arrivalSubtitle": "Ein paar Dinge für Ihren ersten Tag",
+    "essentialsHeading": "Erster Tag"
+  },
+  "arrivalCountdown": {
+    "today": "Sie kommen heute an",
+    "tomorrow": "Sie kommen morgen an",
+    "days": "Noch {{count}} Tage bis zu Ihrer Ankunft",
+    "todayLine": "Lassen Sie sich Zeit. Alles Wichtige steht auf dieser Seite.",
+    "soonLine": "Fast soweit. Flugdaten und Abholung finden Sie weiter unten.",
+    "farLine": "Noch nichts zu tun. Wir zeigen das Nötige, wenn Ihr Termin näher kommt.",
+    "room": "Ihr Zimmer: {{name}}"
+  },
+  "guestLanguage": {
+    "title": "Ihre Sprache",
+    "subtitle": "Schreiben Sie uns in Ihrer Sprache. Die Rezeption arbeitet auf Englisch oder Thai, Sie lesen die Antworten in Ihrer Sprache.",
+    "partialNote": "Diese Sprachen werden noch übersetzt — einige Texte bleiben englisch."
+  },
+  "arrivalsBoard": {
+    "tabGuide": "Insel-Guide",
+    "guideEmpty": "Noch keine Orte erfasst. Unter Einstellungen → Guide anlegen, dann sehen Gäste sie hier.",
+    "guideHintManager": "Einen Ort als Erster-Tag-Tipp markieren — Ankommende sehen ihn oben in ihrem Guide.",
+    "guideHintStaff": "Die Empfehlungen des Camps. Manager entscheiden, was Ankommende zuerst sehen.",
+    "guideEssential": "Erster Tag",
+    "guideDraft": "Nicht veröffentlicht",
+    "guideFlag": "Erster-Tag-Tipp",
+    "guideNeverChecked": "nie geprüft",
+    "guideCheckedAgo": "geprüft vor {{days}} T"
   }
 }

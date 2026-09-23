@@ -21,6 +21,7 @@ import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { StaffArrivalRadar } from "@/components/front-desk/StaffArrivalRadar";
 import { ArrivalExceptionsPanel } from "@/components/front-desk/ArrivalExceptionsPanel";
 import { DriverResponseRateStrip } from "@/components/front-desk/DriverResponseRateStrip";
+import { ArrivalEssentialsPanel } from "@/components/front-desk/ArrivalEssentialsPanel";
 import { JourneyBlock } from "@/components/front-desk/JourneyBlock";
 import { useArrivalsBoard, type ArrivalsBoardRow } from "@/hooks/useArrivalsBoard";
 import { useArrivalIntelBoard } from "@/hooks/useArrivalIntelBoard";
@@ -299,6 +300,7 @@ export default function ArrivalsBoard() {
                   <TabsTrigger value="conflicts">{t("arrivalIntel.tabConflicts", "Disagreements")} ({waiting})</TabsTrigger>
                 </>
               )}
+              <TabsTrigger value="guide">{t("arrivalsBoard.tabGuide", "Island guide")}</TabsTrigger>
             </TabsList>
 
             {([["incoming", incoming], ["inhouse", inHouse], ["messages", talking]] as const).map(([key, list]) => (
@@ -347,6 +349,11 @@ export default function ArrivalsBoard() {
                 </TabsContent>
               </>
             )}
+
+            {/* What the camp recommends, and which places arriving guests see first. */}
+            <TabsContent value="guide" className="mt-3">
+              <ArrivalEssentialsPanel />
+            </TabsContent>
           </Tabs>
         )}
       </div>

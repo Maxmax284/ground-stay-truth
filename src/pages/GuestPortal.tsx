@@ -60,8 +60,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { GuestNowCard, computeNowState } from "@/components/GuestNowCard";
 import { JourneyBanner } from "@/components/guest/JourneyBanner";
 import { LanguageSuggestionBanner } from "@/components/guest/LanguageSuggestionBanner";
-import { AirportGuidanceCard } from "@/components/guest/AirportGuidanceCard";
-import { IslandGuideCard } from "@/components/guest/IslandGuideCard";
+import { GuestWelcomeFlow } from "@/components/guest/GuestWelcomeFlow";
+import { GuestLanguagePicker } from "@/components/guest/GuestLanguagePicker";
 import { resolveJourneyStage } from "@/lib/guestJourneyStage";
 import { useAirportPickup } from "@/hooks/useAirportPickups";
 import { WhileYouWaitTab } from "@/components/WhileYouWaitTab";
@@ -478,6 +478,16 @@ const GuestPortal = () => {
     [nowState, journeyPhase, nowPickupQuery.data]
   );
 
+  // The one booking whose pickup card the welcome flow shows at the top, so the
+  // bookings list below can skip it instead of showing a second copy.
+  const hoistedPickupBookingId =
+    (journeyStage === "island_approach" || journeyStage === "pickup") &&
+    nowPickupQuery.data?.pickup_enabled
+      ? nowBooking?.id ?? null
+      : null;
+
+
+
 
 
   // Which airport matters right now. Read-only: it reflects the leg the guest
@@ -547,15 +557,18 @@ const GuestPortal = () => {
           <GuestFlightTracker bookingId={nowBooking.id} guestName={guestName} />
         )}
 
-        {/* Airport orientation for the leg they're on. Discovery, never
-            instruction — it sits under the Now card and hides once checked in. */}
-        {legAirport && (
-          <AirportGuidanceCard airportCode={legAirport.code} legLabel={legAirport.label} />
-        )}
-
-        {/* Lamai's own island guide. Discovery only, and it renders nothing
-            until the camp has actually published entries. */}
-        <IslandGuideCard />
+        {/* ── The welcome flow: countdown → the airport on this leg → pickup →
+            the island guide, in that order, for whichever stage they're at.
+            Arrangement only; every card still owns its own data. ─────────── */}
+        <GuestWelcomeFlow
+          stage={journeyStage}
+          bookingId={nowBooking?.id ?? null}
+          checkIn={nowBooking?.check_in ?? null}
+          unitName={nowBooking?.units?.name ?? null}
+          guestName={guestName}
+          legAirport={legAirport}
+          pickupEnabled={Boolean(nowPickupQuery.data?.pickup_enabled)}
+        />
 
         {/* Everything else — setup, perks, intelligence — one tap deeper. */}
         <Collapsible open={extrasOpen} onOpenChange={setExtrasOpen}>
@@ -566,6 +579,10 @@ const GuestPortal = () => {
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-4 pt-4">
+            {/* The guest's own language choice. Never inferred from where they
+                are flying from — staff keep reading in English or Thai. */}
+            <GuestLanguagePicker />
+
             {/* First-visit messaging onboarding — auto-hides once connected or skipped */}
             <GuestMessagingOnboarding />
 
@@ -656,8 +673,8 @@ const GuestPortal = () => {
                   {t("guestBooking.requestBooking")}
                 </Button>
               </div>
-              {activeBookings.length > 0 && <Section title={t("guestPortal.currentlyCheckedIn")}>{activeBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} guestReviews={guestReviews} guestName={guestName} />)}</Section>}
-              {upcomingBookings.length > 0 && <Section title={t("guestPortal.upcoming")}>{upcomingBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} guestReviews={guestReviews} guestName={guestName} />)}</Section>}
+              {activeBookings.length > 0 && <Section title={t("guestPortal.currentlyCheckedIn")}>{activeBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} guestReviews={guestReviews} guestName={guestName} hidePickup={b.id === hoistedPickupBookingId} />)}</Section>}
+              {upcomingBookings.length > 0 && <Section title={t("guestPortal.upcoming")}>{upcomingBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} guestReviews={guestReviews} guestName={guestName} hidePickup={b.id === hoistedPickupBookingId} />)}</Section>}
               {pastBookings.length > 0 && <Section title={t("guestPortal.pastStays")}>{pastBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} guestReviews={guestReviews} guestName={guestName} />)}</Section>}
               {/* Loud, bounded loading state — never a silent blank screen */}
               {isLoading && !bookingsError && (
@@ -1027,7 +1044,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 
-function GuestBookingCard({ booking, messages, userId, policies, guestReviews, guestName }: { booking: any; messages: any[]; userId?: string; policies?: any[]; guestReviews?: any[]; guestName?: string | null }) {
+/** `hidePickup` is set when the welcome flow already shows this booking's pickup card, so it never appears twice. */
+function GuestBookingCard({ booking, messages, userId, policies, guestReviews, guestName, hidePickup = false }: { booking: any; messages: any[]; userId?: string; policies?: any[]; guestReviews?: any[]; guestName?: string | null; hidePickup?: boolean }) {
   const { t } = useTranslation();
   const { profile: cardProfile } = useProfile();
   const [showMessages, setShowMessages] = useState(false);
@@ -1181,8 +1199,8 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
           </>
         )}
 
-        {/* Airport Pickup info */}
-        {!["completed", "cancelled", "no_show"].includes(state) && (
+        {/* Airport Pickup info — skipped when the welcome flow already shows it */}
+        {!hidePickup && !["completed", "cancelled", "no_show"].includes(state) && (
           <GuestPickupCard bookingId={booking.id} guestName={guestName} />
         )}
 

@@ -2380,6 +2380,7 @@ export type Database = {
       local_recommendations: {
         Row: {
           address: string | null
+          arrival_essential: boolean
           badges: string[]
           category: string
           closed_temporarily: boolean
@@ -2407,6 +2408,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          arrival_essential?: boolean
           badges?: string[]
           category: string
           closed_temporarily?: boolean
@@ -2434,6 +2436,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          arrival_essential?: boolean
           badges?: string[]
           category?: string
           closed_temporarily?: boolean
