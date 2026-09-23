@@ -11,7 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Check, Copy, ExternalLink, ShieldQuestion } from "lucide-react";
+import { AlertTriangle, Check, Copy, ExternalLink, Link2, ShieldQuestion } from "lucide-react";
+import { useCreateDriverLink } from "@/hooks/useDriverLink";
 import { toast } from "sonner";
 import {
   useArrivalExceptions,
@@ -92,6 +93,23 @@ export function ArrivalExceptionsPanel({ onOpen }: { onOpen: (bookingId: string)
       toast.error(e?.message ?? t("arrivalExceptions.failed", "Could not save that."));
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const makeDriverLink = async (bookingId: string) => {
+    const pickupId = briefs?.[bookingId]?.id;
+    if (!pickupId) return;
+    setLinking(bookingId);
+    try {
+      const { url } = await createLink.mutateAsync({ pickup_id: pickupId });
+      await navigator.clipboard.writeText(url);
+      toast.success(
+        t("arrivalExceptions.driverLinkCopied", "Driver link copied — send it to your driver. It expires in 48 hours."),
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? t("arrivalExceptions.driverLinkFailed", "Could not make that link."));
+    } finally {
+      setLinking(null);
     }
   };
 
