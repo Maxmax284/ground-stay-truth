@@ -81,6 +81,7 @@ export function TranslatableText({ messageId, text, targetLanguage, onTinted = f
           </>
         )}
       </button>
+      )}
     </div>
   );
 }
