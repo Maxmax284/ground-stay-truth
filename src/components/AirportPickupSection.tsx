@@ -21,6 +21,9 @@ import { CAMP_TIMEZONE_LABEL, toCampInputValue, fromCampInputValue, formatCampLa
 import { ManualAssistBanner } from "@/components/ManualAssistBanner";
 import { ArrivalAttentionLine } from "@/components/front-desk/ArrivalAttentionLine";
 import { StaffArrivalRadar } from "@/components/front-desk/StaffArrivalRadar";
+import { useCreateDriverLink } from "@/hooks/useDriverLink";
+import { PickupConversationDialog } from "@/components/PickupConversationDialog";
+import { Link2 } from "lucide-react";
 
 
 const STATUS_COLORS: Record<string, string> = {
@@ -59,8 +62,20 @@ export function AirportPickupSection({ bookingId, guestName, hideRadar }: Props)
   const [domesticFlight, setDomesticFlight] = useState("");
   const [arrivalDt, setArrivalDt] = useState("");
   const [paxCount, setPaxCount] = useState("1");
+  const [driverChatOpen, setDriverChatOpen] = useState(false);
+  const createDriverLink = useCreateDriverLink();
 
   const canManage = permissions.canTransitionState(role); // front_desk+
+
+  const copyDriverLink = async () => {
+    try {
+      const { url } = await createDriverLink.mutateAsync({ pickup_id: pickup?.id ?? "" });
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Driver link copied", description: "Send it by WhatsApp or LINE. No account is needed." });
+    } catch (error: any) {
+      toast({ title: "Could not make driver link", description: error?.message, variant: "destructive" });
+    }
+  };
 
   const baseFee = useMemo(() => {
     const setting = policies?.find((p) => p.key === "transport_base_fee");
@@ -552,7 +567,21 @@ export function AirportPickupSection({ bookingId, guestName, hideRadar }: Props)
 
         {/* Driver */}
         <div className="space-y-2">
-          <Label className="text-xs font-medium">Driver</Label>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Label className="text-sm font-semibold">Driver & pickup chat</Label>
+            {canManage && (
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => void copyDriverLink()} disabled={createDriverLink.isPending}>
+                  <Link2 className="mr-2 h-4 w-4" />
+                  {createDriverLink.isPending ? "Making link…" : "Copy driver link"}
+                </Button>
+                <Button size="sm" onClick={() => setDriverChatOpen(true)}>
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  Open driver chat
+                </Button>
+              </div>
+            )}
+          </div>
           {canManage ? (
             <Select value={pickup.driver_id ?? ""} onValueChange={handleAssignDriver}>
               <SelectTrigger className="h-8 text-sm">
@@ -587,6 +616,13 @@ export function AirportPickupSection({ bookingId, guestName, hideRadar }: Props)
             </div>
           )}
         </div>
+
+        <PickupConversationDialog
+          pickupId={pickup.id}
+          guestName={guestName}
+          open={driverChatOpen}
+          onOpenChange={setDriverChatOpen}
+        />
 
         {/* Admin controls: arrival type + pickup override */}
         {permissions.canAdminOverride(role) && (
