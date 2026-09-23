@@ -484,23 +484,28 @@ function BookingRow({
 
         {/* Comms snapshot — last message, read state, deep link to thread */}
         {lastMessage && (
-          <button
-            type="button"
-            onClick={() => onOpen(booking.id)}
-            className="mt-3 w-full text-left flex items-start gap-2 text-xs rounded-md p-2 bg-muted/30 hover:bg-muted/60 transition-colors border border-border/40"
-          >
-            <MessageSquare className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${lastMessage.from_guest && lastMessage.is_read === false ? "text-[hsl(var(--info))]" : "text-muted-foreground"}`} />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-wide">
-                <span>{lastMessage.from_guest ? t("frontDesk.messages.guest") : t("frontDesk.messages.staff")}</span>
-                <span>· {formatDistanceToNow(new Date(lastMessage.created_at), { addSuffix: true })}</span>
-                {lastMessage.from_guest && lastMessage.is_read === false && (
-                  <span className="text-[hsl(var(--info))] font-medium">· {t("frontDesk.messages.unread")}</span>
-                )}
+          <GuestThreadLauncher
+            bookingId={booking.id}
+            guestName={resolveGuestDisplayName(booking as any)}
+            headline={booking.units?.name ?? undefined}
+            onOpenBooking={() => onOpen(booking.id)}
+            className="mt-3 w-full cursor-pointer text-left text-xs rounded-md p-2 bg-muted/30 hover:bg-muted/60 transition-colors border border-border/40"
+            trigger={
+              <div className="flex items-start gap-2">
+                <MessageSquare className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${lastMessage.from_guest && lastMessage.is_read === false ? "text-[hsl(var(--info))]" : "text-muted-foreground"}`} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-wide">
+                    <span>{lastMessage.from_guest ? t("frontDesk.messages.guest") : t("frontDesk.messages.staff")}</span>
+                    <span>· {formatDistanceToNow(new Date(lastMessage.created_at), { addSuffix: true })}</span>
+                    {lastMessage.from_guest && lastMessage.is_read === false && (
+                      <span className="text-[hsl(var(--info))] font-medium">· {t("frontDesk.messages.unread")}</span>
+                    )}
+                  </div>
+                  <div className="text-foreground truncate mt-0.5">{lastMessage.content || t("frontDesk.messages.attachment")}</div>
+                </div>
               </div>
-              <div className="text-foreground truncate mt-0.5">{lastMessage.content || t("frontDesk.messages.attachment")}</div>
-            </div>
-          </button>
+            }
+          />
         )}
 
         {/* Warnings */}
