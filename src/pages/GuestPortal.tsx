@@ -1189,8 +1189,8 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
           </>
         )}
 
-        {/* Airport Pickup info */}
-        {!["completed", "cancelled", "no_show"].includes(state) && (
+        {/* Airport Pickup info — skipped when the welcome flow already shows it */}
+        {!hidePickup && !["completed", "cancelled", "no_show"].includes(state) && (
           <GuestPickupCard bookingId={booking.id} guestName={guestName} />
         )}
 
