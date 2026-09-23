@@ -64,6 +64,13 @@
       "when": 1790131552815,
       "tag": "0008_scope_pickup_messages_to_property",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790131688846,
+      "tag": "0009_lock_pickup_message_content",
+      "breakpoints": true
     }
   ]
 }
