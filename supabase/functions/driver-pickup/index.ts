@@ -126,11 +126,12 @@ Deno.serve(async (req) => {
       if (!content || content.length > 1000) return fail(400, "Message must be between 1 and 1,000 characters");
       if (!allowed(`send:${user.id}`, 12, 60_000)) return fail(429, "Too many messages — wait a minute");
 
-      const { data: pickup } = await db.from("airport_pickups").select("id, booking_id").eq("id", pickupId).maybeSingle();
+      const { data: pickup } = await db.from("airport_pickups").select("id, booking_id, property_id").eq("id", pickupId).maybeSingle();
       if (!pickup) return fail(404, "Pickup not found");
       const { data: booking } = await db.from("bookings").select("guest_id, manual_guest_name, profiles(full_name)").eq("id", pickup.booking_id).maybeSingle();
       const { data: roles } = await db.from("user_roles").select("role").eq("user_id", user.id);
-      const isStaff = (roles ?? []).some((role: any) => STAFF_ROLES.includes(role.role));
+      const { data: propertyAccess } = await db.from("user_property_assignments").select("id").eq("user_id", user.id).eq("property_id", pickup.property_id).maybeSingle();
+      const isStaff = !!propertyAccess && (roles ?? []).some((role: any) => STAFF_ROLES.includes(role.role));
       const isGuest = booking?.guest_id === user.id;
       if (!isStaff && !isGuest) return fail(403, "This pickup is not available to you");
 
@@ -147,7 +148,11 @@ Deno.serve(async (req) => {
       const guestName = (booking as any)?.profiles?.full_name || booking?.manual_guest_name || "the guest";
       if (senderType === "guest") {
         const { data: staffRoles } = await db.from("user_roles").select("user_id").in("role", STAFF_ROLES);
-        const staffIds = [...new Set((staffRoles ?? []).map((role: any) => role.user_id))];
+        const roleIds = [...new Set((staffRoles ?? []).map((role: any) => role.user_id))];
+        const { data: assignedStaff } = roleIds.length
+          ? await db.from("user_property_assignments").select("user_id").eq("property_id", pickup.property_id).in("user_id", roleIds)
+          : { data: [] };
+        const staffIds = [...new Set((assignedStaff ?? []).map((row: any) => row.user_id))];
         if (staffIds.length) await db.from("notifications").insert(staffIds.map((id) => ({
           user_id: id, type: "pickup_message", reference_id: pickup.booking_id,
           message: `Pickup chat: ${guestName} sent a message for the driver.`,
@@ -172,10 +177,10 @@ Deno.serve(async (req) => {
       return fail(410, "This link has expired. Ask the camp for a new one.");
     }
 
-    const { data: pickup } = await db
+      const { data: pickup } = await db
       .from("airport_pickups")
       .select(
-        "id, booking_id, confirmed_airport, arrival_location_name, arrival_datetime, flight_number, " +
+        "id, booking_id, property_id, confirmed_airport, arrival_location_name, arrival_datetime, flight_number, " +
           "passenger_count, luggage_notes, special_instructions, guest_landed_at, guest_ready_at, collected_at, " +
           "drivers(name, license_plate, vehicle_type)",
       )
@@ -214,7 +219,11 @@ Deno.serve(async (req) => {
       if (error) return fail(500, "Could not send message");
 
       const { data: staffRoles } = await db.from("user_roles").select("user_id").in("role", STAFF_ROLES);
-      const staffIds = [...new Set((staffRoles ?? []).map((role: any) => role.user_id))];
+      const roleIds = [...new Set((staffRoles ?? []).map((role: any) => role.user_id))];
+      const { data: assignedStaff } = roleIds.length
+        ? await db.from("user_property_assignments").select("user_id").eq("property_id", pickup.property_id).in("user_id", roleIds)
+        : { data: [] };
+      const staffIds = [...new Set((assignedStaff ?? []).map((row: any) => row.user_id))];
       const notices = staffIds.map((id) => ({
         user_id: id, type: "pickup_message", reference_id: link.booking_id,
         message: `Driver message for ${guestName}: ${content.slice(0, 120)}`,
@@ -246,7 +255,11 @@ Deno.serve(async (req) => {
         });
 
         const { data: staffRoles } = await db.from("user_roles").select("user_id").in("role", STAFF_ROLES);
-        const staffIds = [...new Set((staffRoles ?? []).map((r: any) => r.user_id))];
+        const roleIds = [...new Set((staffRoles ?? []).map((role: any) => role.user_id))];
+        const { data: assignedStaff } = roleIds.length
+          ? await db.from("user_property_assignments").select("user_id").eq("property_id", pickup.property_id).in("user_id", roleIds)
+          : { data: [] };
+        const staffIds = [...new Set((assignedStaff ?? []).map((row: any) => row.user_id))];
         if (staffIds.length) {
           await db.from("notifications").insert(
             staffIds.map((id) => ({
