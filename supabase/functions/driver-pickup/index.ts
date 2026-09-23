@@ -12,12 +12,9 @@
 // Nothing else moves. A landed aircraft still never advances anything by itself.
 // -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Content-Type": "application/json",
-};
+const responseHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
 const STAFF_ROLES = ["admin", "manager", "front_desk_supervisor", "front_desk"];
 
@@ -51,9 +48,9 @@ function bangkok(iso: string | null): string | null {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: cors });
+  if (req.method === "OPTIONS") return new Response(null, { headers: responseHeaders });
   const fail = (status: number, error: string) =>
-    new Response(JSON.stringify({ error }), { status, headers: cors });
+    new Response(JSON.stringify({ error }), { status, headers: responseHeaders });
 
   try {
     const url = Deno.env.get("SUPABASE_URL")!;
@@ -61,7 +58,7 @@ Deno.serve(async (req) => {
     const db = createClient(url, service);
 
     const body = await req.json().catch(() => ({}));
-    const action: string = body.action ?? "view";
+    const action: string = typeof body.action === "string" ? body.action : "view";
     const token: string = typeof body.token === "string" ? body.token.trim() : "";
 
     // --- Staff action: mint a link for one pickup -----------------------------
@@ -109,14 +106,60 @@ Deno.serve(async (req) => {
         .single();
       if (error) return fail(500, error.message);
       return new Response(JSON.stringify({ ok: true, token: link.token, expires_at: link.expires_at }), {
-        headers: cors,
+        headers: responseHeaders,
       });
     }
 
-    // --- Driver actions: view / collected ------------------------------------
+    // --- Signed-in guest/staff pickup chat -----------------------------------
+    if (action === "authenticated_send") {
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader?.startsWith("Bearer ")) return fail(401, "Unauthorized");
+      const userClient = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user } } = await userClient.auth.getUser();
+      if (!user) return fail(401, "Unauthorized");
+
+      const pickupId = typeof body.pickup_id === "string" ? body.pickup_id : "";
+      const content = typeof body.content === "string" ? body.content.trim() : "";
+      if (!pickupId) return fail(400, "pickup_id required");
+      if (!content || content.length > 1000) return fail(400, "Message must be between 1 and 1,000 characters");
+      if (!allowed(`send:${user.id}`, 12, 60_000)) return fail(429, "Too many messages — wait a minute");
+
+      const { data: pickup } = await db.from("airport_pickups").select("id, booking_id").eq("id", pickupId).maybeSingle();
+      if (!pickup) return fail(404, "Pickup not found");
+      const { data: booking } = await db.from("bookings").select("guest_id, manual_guest_name, profiles(full_name)").eq("id", pickup.booking_id).maybeSingle();
+      const { data: roles } = await db.from("user_roles").select("role").eq("user_id", user.id);
+      const isStaff = (roles ?? []).some((role: any) => STAFF_ROLES.includes(role.role));
+      const isGuest = booking?.guest_id === user.id;
+      if (!isStaff && !isGuest) return fail(403, "This pickup is not available to you");
+
+      const senderType = isStaff ? "staff" : "guest";
+      const { data: message, error } = await db.from("pickup_driver_messages").insert({
+        pickup_id: pickup.id,
+        booking_id: pickup.booking_id,
+        sender_type: senderType,
+        sender_user_id: user.id,
+        content,
+      }).select("id, pickup_id, booking_id, sender_type, sender_user_id, content, read_by_guest_at, read_by_staff_at, read_by_driver_at, created_at").single();
+      if (error) return fail(500, "Could not send message");
+
+      const guestName = (booking as any)?.profiles?.full_name || booking?.manual_guest_name || "the guest";
+      if (senderType === "guest") {
+        const { data: staffRoles } = await db.from("user_roles").select("user_id").in("role", STAFF_ROLES);
+        const staffIds = [...new Set((staffRoles ?? []).map((role: any) => role.user_id))];
+        if (staffIds.length) await db.from("notifications").insert(staffIds.map((id) => ({
+          user_id: id, type: "pickup_message", reference_id: pickup.booking_id,
+          message: `Pickup chat: ${guestName} sent a message for the driver.`,
+        })));
+      }
+      return new Response(JSON.stringify({ ok: true, message }), { headers: responseHeaders });
+    }
+
+    // --- Driver actions: view / collected / message ---------------------------
     if (!token || token.length < 20) return fail(400, "Link is not valid");
     if (!allowed(token)) return fail(429, "Too many requests — try again in a minute");
-    if (!["view", "collected"].includes(action)) return fail(400, "Unknown action");
+    if (!["view", "collected", "send_message"].includes(action)) return fail(400, "Unknown action");
 
     const { data: link } = await db
       .from("pickup_driver_links")
@@ -156,6 +199,33 @@ Deno.serve(async (req) => {
       .select("flight_number, airline_name, flight_status, delay_minutes, estimated_arrival, actual_arrival, terminal, gate")
       .eq("pickup_id", pickup.id)
       .maybeSingle();
+
+    if (action === "send_message") {
+      const content = typeof body.content === "string" ? body.content.trim() : "";
+      if (!content || content.length > 1000) return fail(400, "Message must be between 1 and 1,000 characters");
+      if (!allowed(`message:${token}`, 10, 60_000)) return fail(429, "Too many messages — wait a minute");
+      const { data: message, error } = await db.from("pickup_driver_messages").insert({
+        pickup_id: pickup.id,
+        booking_id: link.booking_id,
+        driver_link_id: link.id,
+        sender_type: "driver",
+        content,
+      }).select("id, pickup_id, booking_id, sender_type, content, created_at").single();
+      if (error) return fail(500, "Could not send message");
+
+      const { data: staffRoles } = await db.from("user_roles").select("user_id").in("role", STAFF_ROLES);
+      const staffIds = [...new Set((staffRoles ?? []).map((role: any) => role.user_id))];
+      const notices = staffIds.map((id) => ({
+        user_id: id, type: "pickup_message", reference_id: link.booking_id,
+        message: `Driver message for ${guestName}: ${content.slice(0, 120)}`,
+      }));
+      if (booking?.guest_id) notices.push({
+        user_id: booking.guest_id, type: "pickup_message", reference_id: link.booking_id,
+        message: `Your driver sent a pickup message: ${content.slice(0, 120)}`,
+      });
+      if (notices.length) await db.from("notifications").insert(notices);
+      return new Response(JSON.stringify({ ok: true, message }), { headers: responseHeaders });
+    }
 
     if (action === "collected") {
       if (!pickup.collected_at) {
@@ -204,6 +274,19 @@ Deno.serve(async (req) => {
         .eq("id", link.id);
     }
 
+    const { data: pickupMessages } = await db
+      .from("pickup_driver_messages")
+      .select("id, sender_type, content, created_at")
+      .eq("pickup_id", pickup.id)
+      .order("created_at", { ascending: true })
+      .limit(100);
+
+    await db.from("pickup_driver_messages")
+      .update({ read_by_driver_at: new Date().toISOString() })
+      .eq("pickup_id", pickup.id)
+      .neq("sender_type", "driver")
+      .is("read_by_driver_at", null);
+
     const status = pickup.collected_at
       ? "collected"
       : pickup.guest_ready_at
@@ -239,11 +322,12 @@ Deno.serve(async (req) => {
           collected_at: pickup.collected_at ?? null,
           expires_at: link.expires_at,
         },
+        messages: pickupMessages ?? [],
       }),
-      { headers: cors },
+      { headers: responseHeaders },
     );
   } catch (err) {
     console.error("driver-pickup error", err);
-    return new Response(JSON.stringify({ error: "Something went wrong" }), { status: 500, headers: cors });
+    return new Response(JSON.stringify({ error: "Something went wrong" }), { status: 500, headers: responseHeaders });
   }
 });

@@ -8,12 +8,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle2, MapPin, Phone, Plane, RefreshCw, Users } from "lucide-react";
+import { CheckCircle2, Loader2, MapPin, MessageCircle, Phone, Plane, RefreshCw, Send, Users } from "lucide-react";
 import { toast } from "sonner";
 import { meetingPointFor } from "@/lib/meetingPoints";
+
+interface DriverMessage { id: string; sender_type: "driver" | "guest" | "staff"; content: string; created_at: string; }
 
 interface Brief {
   guest_name: string;
@@ -59,20 +62,23 @@ export default function DriverPickup() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [messages, setMessages] = useState<DriverMessage[]>([]);
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
 
   const call = useCallback(
-    async (action: "view" | "collected") => {
+    async (action: "view" | "collected" | "send_message", content?: string) => {
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/driver-pickup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ token, action }),
+        body: JSON.stringify({ token, action, content }),
       });
       const body = await resp.json().catch(() => ({}));
       if (!resp.ok) throw new Error(body.error || "Could not load this pickup");
-      return body.brief as Brief;
+      return body as { brief?: Brief; messages?: DriverMessage[]; message?: DriverMessage };
     },
     [token],
   );
@@ -80,7 +86,9 @@ export default function DriverPickup() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setBrief(await call("view"));
+      const result = await call("view");
+      if (result.brief) setBrief(result.brief);
+      setMessages(result.messages ?? []);
       setError(null);
     } catch (e: any) {
       setError(e.message);
@@ -98,7 +106,8 @@ export default function DriverPickup() {
   const confirmCollected = async () => {
     setSaving(true);
     try {
-      setBrief(await call("collected"));
+      const result = await call("collected");
+      if (result.brief) setBrief(result.brief);
       toast.success("Thank you — the camp knows the guest is with you.");
     } catch (e: any) {
       toast.error(e.message);
@@ -107,7 +116,25 @@ export default function DriverPickup() {
     }
   };
 
+  const sendMessage = async (preset?: string) => {
+    const content = (preset ?? message).trim();
+    if (!content) return;
+    setSending(true);
+    try {
+      const result = await call("send_message", content);
+      if (result.message) setMessages((current) => [...current, result.message as DriverMessage]);
+      setMessage("");
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSending(false);
+    }
+  };
+
   const meeting = brief ? meetingPointFor(brief.airport) : null;
+  const whatsappLink = brief?.guest_phone
+    ? `https://wa.me/${brief.guest_phone.replace(/\D/g, "")}?text=${encodeURIComponent(`Hi ${brief.guest_name}, this is your LMT pickup driver. I am at ${meeting?.point ?? brief.location_name ?? "the meeting point"}.`)}`
+    : null;
 
   return (
     <div className="mx-auto max-w-md space-y-4 p-4">
@@ -193,6 +220,37 @@ export default function DriverPickup() {
                   {brief.vehicle && <Badge variant="outline">{brief.vehicle}</Badge>}
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base"><MessageCircle className="h-4 w-4 text-primary" /> Message guest</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="max-h-60 space-y-2 overflow-y-auto rounded-md border bg-muted/20 p-3" aria-live="polite">
+                {messages.length === 0 ? <p className="py-4 text-center text-sm text-muted-foreground">No messages yet.</p> : messages.map((item) => (
+                  <div key={item.id} className={`flex ${item.sender_type === "driver" ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-[88%] rounded-md px-3 py-2 text-sm ${item.sender_type === "driver" ? "bg-primary text-primary-foreground" : "border bg-background"}`}>
+                      <p className="mb-1 text-[11px] font-semibold opacity-75">{item.sender_type === "guest" ? brief.guest_name : item.sender_type === "staff" ? "Front desk" : "You"}</p>
+                      <p className="whitespace-pre-wrap break-words">{item.content}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {["I'm at the meeting point", "Wearing an LMT shirt", "I can see you"].map((text) => (
+                  <Button key={text} variant="outline" size="sm" disabled={sending} onClick={() => void sendMessage(text)}>{text}</Button>
+                ))}
+              </div>
+              <div className="flex items-end gap-2">
+                <Textarea value={message} onChange={(event) => setMessage(event.target.value)} maxLength={1000} rows={2} placeholder="Type a short message…" />
+                <Button size="icon" className="h-10 w-10 shrink-0" disabled={!message.trim() || sending} onClick={() => void sendMessage()} aria-label="Send message">
+                  {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                </Button>
+              </div>
+              {whatsappLink && <Button variant="outline" className="w-full" asChild><a href={whatsappLink} target="_blank" rel="noopener noreferrer"><MessageCircle className="mr-2 h-4 w-4" /> Chat on WhatsApp</a></Button>}
+              <p className="text-xs text-muted-foreground">The guest and front desk can see this pickup conversation.</p>
             </CardContent>
           </Card>
 
