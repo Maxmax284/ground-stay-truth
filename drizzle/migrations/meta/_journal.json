@@ -50,6 +50,13 @@
       "when": 1790128352740,
       "tag": "0006_pickup_driver_links",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790130945124,
+      "tag": "0007_pickup_driver_messages",
+      "breakpoints": true
     }
   ]
 }
