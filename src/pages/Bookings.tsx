@@ -439,7 +439,6 @@ const Bookings = () => {
                           })()}
                         </div>
                       </TableCell>
-                    )}
                   </TableRow>
                 ))}
               </TableBody>
