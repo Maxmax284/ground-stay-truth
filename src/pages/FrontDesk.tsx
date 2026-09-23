@@ -559,6 +559,14 @@ function BookingRow({
           <Button size="sm" variant="outline" onClick={() => onOpen(booking.id)}>
             {t("frontDesk.actions.openBooking")}
           </Button>
+          {/* This guest's conversation, right where the desk already is. */}
+          <GuestThreadLauncher
+            bookingId={booking.id}
+            guestName={guestName}
+            headline={booking.units?.name ?? undefined}
+            onOpenBooking={() => onOpen(booking.id)}
+            className="h-8 text-xs gap-1"
+          />
           {booking.profiles?.phone && (
             <>
               <Button size="sm" variant="ghost" asChild>

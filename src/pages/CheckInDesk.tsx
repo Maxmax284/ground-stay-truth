@@ -420,6 +420,14 @@ function DeskList({
               <Button variant="outline" size="sm" onClick={() => onOpen(b.id)}>
                 {t("checkInDesk.actions.openBooking")}
               </Button>
+              {/* Talk to the guest standing in front of you without leaving the desk. */}
+              <GuestThreadLauncher
+                bookingId={b.id}
+                guestName={resolveGuestDisplayName(b)}
+                headline={b.units?.name ?? undefined}
+                onOpenBooking={() => onOpen(b.id)}
+                className="h-8 text-xs gap-1"
+              />
               <Button size="sm" disabled={disabled} onClick={() => onAct(b)}>
                 {mode === "in" ? (
                   <LogIn className="h-4 w-4 mr-2" />
