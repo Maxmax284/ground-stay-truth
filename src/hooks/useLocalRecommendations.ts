@@ -147,3 +147,37 @@ export function needsReview(
   const since = daysSinceReview(entry, now);
   return since === null || since > days;
 }
+
+/**
+ * Flags (or unflags) a place as essential for guests arriving today.
+ *
+ * Editorial only: it changes what staff and arriving guests see first, and
+ * nothing about a booking, a pickup or a flight.
+ */
+export function useToggleArrivalEssential() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, essential }: { id: string; essential: boolean }) => {
+      const { error } = await supabase
+        .from("local_recommendations")
+        .update({ arrival_essential: essential })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["local-recommendations"] }),
+  });
+}
+
+/**
+ * Orders published entries for someone who has just landed: the places the team
+ * flagged as arrival essentials first, then everything else, both in the
+ * camp's own sort order.
+ */
+export function sortForArrival<T extends { arrival_essential: boolean; sort_order: number }>(
+  entries: T[],
+): T[] {
+  return [...entries].sort((a, b) => {
+    if (a.arrival_essential !== b.arrival_essential) return a.arrival_essential ? -1 : 1;
+    return a.sort_order - b.sort_order;
+  });
+}
