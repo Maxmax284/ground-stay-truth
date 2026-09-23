@@ -70,6 +70,8 @@ export function ArrivalExceptionsPanel({ onOpen }: { onOpen: (bookingId: string)
   const { data: rows, isLoading } = useArrivalExceptions();
   const decide = useDecideArrivalException();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [linking, setLinking] = useState<string | null>(null);
+  const createLink = useCreateDriverLink();
 
   const bookingIds = useMemo(() => (rows ?? []).map((r) => r.booking_id), [rows]);
   const { data: briefs } = usePickupBriefs(bookingIds);
