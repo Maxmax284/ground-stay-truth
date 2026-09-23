@@ -1057,7 +1057,9 @@
   "translation": {
     "translate": "Translate",
     "viewOriginal": "View Original",
-    "translating": "Translating…"
+    "translating": "Translating…",
+    "machineNote": "Machine translation",
+    "failed": "Couldn't translate — showing the original."
   },
   "legal": {
     "privacyPolicy": "Privacy Policy",

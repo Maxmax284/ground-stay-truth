@@ -1030,7 +1030,9 @@
   "translation": {
     "translate": "แปล",
     "viewOriginal": "ดูต้นฉบับ",
-    "translating": "กำลังแปล…"
+    "translating": "กำลังแปล…",
+    "machineNote": "แปลด้วยระบบอัตโนมัติ",
+    "failed": "แปลไม่สำเร็จ — แสดงข้อความต้นฉบับ"
   },
   "legal": {
     "privacyPolicy": "นโยบายความเป็นส่วนตัว",

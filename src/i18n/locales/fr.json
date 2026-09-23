@@ -902,7 +902,9 @@
   "translation": {
     "translate": "Traduire",
     "viewOriginal": "Voir l'original",
-    "translating": "Traduction…"
+    "translating": "Traduction…",
+    "machineNote": "Traduction automatique",
+    "failed": "Traduction impossible — texte original affiché."
   },
   "legal": {
     "privacyPolicy": "Politique de confidentialité",
