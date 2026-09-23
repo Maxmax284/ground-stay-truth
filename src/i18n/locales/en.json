@@ -2324,5 +2324,25 @@
     "lastReviewed": "Last checked {{date}}",
     "stale": "may be out of date",
     "noCoverage": "We don't have checked guidance for this airport yet. Follow the airport's own signage, and message us if you need a hand."
+  },
+  "localGuide": {
+    "title": "Around Lamai",
+    "subtitle": "Places the camp actually sends people to",
+    "open": "Have a look",
+    "directions": "Directions",
+    "website": "Website",
+    "closed": "Temporarily closed",
+    "checked": "Checked {{date}}",
+    "disclaimer": "Written by the Lamai team. Hours and prices change — call ahead for anything that matters.",
+    "categories": {
+      "food": "Food & drink",
+      "beach": "Beaches",
+      "attraction": "Worth seeing",
+      "essentials": "Everyday essentials",
+      "transport": "Getting around",
+      "recovery": "Recovery & health",
+      "training": "Training",
+      "etiquette": "Local etiquette"
+    }
   }
 }

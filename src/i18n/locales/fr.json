@@ -1722,5 +1722,25 @@
     "lastReviewed": "Vérifié le {{date}}",
     "stale": "peut ne plus être à jour",
     "noCoverage": "Nous n'avons pas encore d'informations vérifiées pour cet aéroport. Suivez la signalisation sur place et écrivez-nous si besoin."
+  },
+  "localGuide": {
+    "title": "Autour de Lamai",
+    "subtitle": "Les adresses que le camp recommande vraiment",
+    "open": "Jeter un œil",
+    "directions": "Itinéraire",
+    "website": "Site web",
+    "closed": "Fermé temporairement",
+    "checked": "Vérifié {{date}}",
+    "disclaimer": "Rédigé par l'équipe de Lamai. Les horaires et les prix changent — appelez avant si c'est important.",
+    "categories": {
+      "food": "Manger et boire",
+      "beach": "Plages",
+      "attraction": "À voir",
+      "essentials": "Essentiels du quotidien",
+      "transport": "Se déplacer",
+      "recovery": "Récupération et santé",
+      "training": "Entraînement",
+      "etiquette": "Usages locaux"
+    }
   }
 }
