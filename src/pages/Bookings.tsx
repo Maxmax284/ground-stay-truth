@@ -347,7 +347,7 @@ const Bookings = () => {
                   <TableHead>{t("bookings.numGuests")}</TableHead>
                   <TableHead>{t("bookings.state")}</TableHead>
                   <TableHead>{t("bookings.created")}</TableHead>
-                  {canApprove && <TableHead></TableHead>}
+                  <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
