@@ -2690,11 +2690,13 @@ export type Database = {
           content: string
           created_at: string
           draft: boolean
+          external_ref: string | null
           id: string
           is_internal: boolean
           property_id: string | null
           read_at: string | null
           sender_id: string | null
+          source: string
         }
         Insert: {
           approved_by?: string | null
@@ -2704,11 +2706,13 @@ export type Database = {
           content: string
           created_at?: string
           draft?: boolean
+          external_ref?: string | null
           id?: string
           is_internal?: boolean
           property_id?: string | null
           read_at?: string | null
           sender_id?: string | null
+          source?: string
         }
         Update: {
           approved_by?: string | null
@@ -2718,11 +2722,13 @@ export type Database = {
           content?: string
           created_at?: string
           draft?: boolean
+          external_ref?: string | null
           id?: string
           is_internal?: boolean
           property_id?: string | null
           read_at?: string | null
           sender_id?: string | null
+          source?: string
         }
         Relationships: [
           {
