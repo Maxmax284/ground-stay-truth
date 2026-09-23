@@ -23,6 +23,7 @@ import { ArrivalAttentionLine } from "@/components/front-desk/ArrivalAttentionLi
 import { StaffArrivalRadar } from "@/components/front-desk/StaffArrivalRadar";
 import { useCreateDriverLink } from "@/hooks/useDriverLink";
 import { PickupConversationDialog } from "@/components/PickupConversationDialog";
+import { DriverResponseLine } from "@/components/front-desk/DriverResponseLine";
 import { Link2 } from "lucide-react";
 
 
@@ -582,6 +583,7 @@ export function AirportPickupSection({ bookingId, guestName, hideRadar }: Props)
               </div>
             )}
           </div>
+          <DriverResponseLine pickupId={pickup.id} />
           {canManage ? (
             <Select value={pickup.driver_id ?? ""} onValueChange={handleAssignDriver}>
               <SelectTrigger className="h-8 text-sm">
