@@ -3456,6 +3456,63 @@ export type Database = {
           },
         ]
       }
+      pickup_driver_links: {
+        Row: {
+          booking_id: string
+          collected_at: string | null
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          last_viewed_at: string | null
+          pickup_id: string
+          revoked_at: string | null
+          token: string
+          view_count: number
+        }
+        Insert: {
+          booking_id: string
+          collected_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          last_viewed_at?: string | null
+          pickup_id: string
+          revoked_at?: string | null
+          token: string
+          view_count?: number
+        }
+        Update: {
+          booking_id?: string
+          collected_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          last_viewed_at?: string | null
+          pickup_id?: string
+          revoked_at?: string | null
+          token?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pickup_driver_links_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pickup_driver_links_pickup_id_fkey"
+            columns: ["pickup_id"]
+            isOneToOne: false
+            referencedRelation: "airport_pickups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_guidance: {
         Row: {
           ai_prompt_suggestions: string[]
