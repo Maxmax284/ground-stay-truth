@@ -14,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FetchErrorState } from "@/components/FetchErrorState";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
-import { format, formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow, isToday } from "date-fns";
 import { MessageSquare, Search, User, CalendarDays, Circle } from "lucide-react";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { GuestThreadDialog } from "@/components/GuestThreadDialog";
