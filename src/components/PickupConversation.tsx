@@ -25,7 +25,11 @@ export function PickupConversation({ pickupId, viewer, placeholder = "Write a pi
   const [content, setContent] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => endRef.current?.scrollIntoView({ block: "nearest" }), [messages?.length]);
+  useEffect(() => {
+    if (typeof endRef.current?.scrollIntoView === "function") {
+      endRef.current.scrollIntoView({ block: "nearest" });
+    }
+  }, [messages?.length]);
 
   const submit = async () => {
     const body = content.trim();
