@@ -49,6 +49,7 @@ import { PickupStatusStrip } from "@/components/front-desk/PickupStatusStrip";
 import { TurnoverBoard } from "@/components/front-desk/TurnoverBoard";
 import { FlightForecastWidget } from "@/components/FlightForecastWidget";
 import { ArrivalExceptionsPanel } from "@/components/front-desk/ArrivalExceptionsPanel";
+import { DriverChatPanel } from "@/components/front-desk/DriverChatPanel";
 import { computeOperationalStatus, TONE_CLASS } from "@/lib/operationalStatus";
 import { isAcknowledged, isMoneyGapMuted, isPayOnArrival } from "@/lib/staffMarkers";
 import { formatDistanceToNow } from "date-fns";
@@ -183,6 +184,7 @@ export default function FrontDesk() {
           </TabsContent>
 
           <TabsContent value="travelChecks" className="space-y-3 mt-4">
+            <DriverChatPanel />
             <ArrivalExceptionsPanel onOpen={setDetailId} />
           </TabsContent>
 

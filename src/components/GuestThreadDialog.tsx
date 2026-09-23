@@ -14,6 +14,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useBookingMessages, useCreateMessage } from "@/hooks/useBookings";
 import { permissions } from "@/lib/permissions";
+import { useAirportPickup } from "@/hooks/useAirportPickups";
+import { PickupConversation } from "@/components/PickupConversation";
 
 interface GuestThreadDialogProps {
   bookingId: string | null;
@@ -42,6 +44,7 @@ export function GuestThreadDialog({
   const { role, user, isAdmin } = useAuth();
   const { data: messages, isLoading } = useBookingMessages(open ? bookingId : null);
   const createMessage = useCreateMessage();
+  const { data: pickup } = useAirportPickup(open ? bookingId : null);
   const [content, setContent] = useState("");
   const [isInternal, setIsInternal] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
@@ -146,6 +149,13 @@ export function GuestThreadDialog({
           )}
           <div ref={endRef} />
         </div>
+
+        {pickup && (
+          <div className="border-t px-4 py-3">
+            <p className="mb-2 text-sm font-semibold">Driver pickup chat</p>
+            <PickupConversation pickupId={pickup.id} viewer="staff" placeholder="Message the driver and guest…" />
+          </div>
+        )}
 
         <div className="border-t px-4 py-3 space-y-2">
           {canReply ? (

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Plane, Car, Clock, User, MessageSquare, CheckCircle2, Loader2, AlertTriangle, ArrowRight, MapPin, Info, Ship, Bus } from "lucide-react";
+import { PickupConversation } from "@/components/PickupConversation";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Plane }> = {
   requested: { label: "Pickup Requested", color: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300", icon: Loader2 },
@@ -240,6 +241,15 @@ export function GuestPickupCard({ bookingId, guestName }: Props) {
             A driver will be assigned shortly. You'll see their details here once confirmed.
           </p>
         )}
+
+        <Separator />
+        <div className="space-y-2">
+          <p className="flex items-center gap-2 text-sm font-semibold">
+            <MessageSquare className="h-4 w-4 text-primary" />
+            Driver chat
+          </p>
+          <PickupConversation pickupId={pickup.id} viewer="guest" placeholder="Message your driver…" />
+        </div>
       </CardContent>
     </Card>
   );
