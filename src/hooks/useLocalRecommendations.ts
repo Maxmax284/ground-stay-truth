@@ -35,6 +35,8 @@ export interface LocalRecommendation {
   last_reviewed_at: string | null;
   closed_temporarily: boolean;
   seasonal_note: string | null;
+  /** Editorial flag: worth knowing about on the day you land. */
+  arrival_essential: boolean;
   /** Editor-only fields. */
   featured?: boolean;
   is_active?: boolean;
