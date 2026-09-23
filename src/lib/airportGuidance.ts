@@ -243,12 +243,11 @@ export const CURATED_AIRPORTS: Record<string, AirportGuidance> = {
     city: "London",
     country: "United Kingdom",
     timezone: "Europe/London",
-    onceUnused: undefined as never,
     orientation:
       "Four passenger terminals connected by free trains and buses. Terminal changes take time, so confirm yours before you arrive.",
     links: [{ label: "Official airport website and maps", url: "https://www.heathrow.com/" }],
     lastReviewed: REVIEWED,
-  } as AirportGuidance,
+  },
   IAD: {
     code: "IAD",
     icao: "KIAD",
