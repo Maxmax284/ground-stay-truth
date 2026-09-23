@@ -516,7 +516,12 @@
     "draftQueuedDesc": "Ein Administrator muss diese genehmigen, bevor der Gast sie sieht.",
     "needsAdminApproval": "Ein Administrator muss dies genehmigen, bevor der Gast es sieht",
     "awaitingApproval": "Wartet auf Administratorgenehmigung",
-    "openChat": "Chat"
+    "openChat": "Chat",
+    "filterLabel": "Gespräche filtern",
+    "filterAll": "Alle",
+    "filterToday": "Kommt heute an",
+    "filterHere": "Jetzt hier",
+    "filterUpcoming": "Kommt später"
   },
   "stateTransition": {
     "changeState": "Status ändern",

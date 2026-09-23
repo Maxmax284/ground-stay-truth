@@ -516,7 +516,12 @@
     "draftQueuedDesc": "Un administrateur doit l'approuver avant que le client ne la voie.",
     "needsAdminApproval": "Un administrateur doit approuver ceci avant que le client ne le voie",
     "awaitingApproval": "En attente d'approbation administrative",
-    "openChat": "Discussion"
+    "openChat": "Discussion",
+    "filterLabel": "Filtrer les conversations",
+    "filterAll": "Tout le monde",
+    "filterToday": "Arrive aujourd’hui",
+    "filterHere": "Sur place",
+    "filterUpcoming": "Arrive plus tard"
   },
   "stateTransition": {
     "changeState": "Changer l'état",

@@ -600,7 +600,12 @@
     "draftQueuedDesc": "An admin must approve it before the guest sees it.",
     "needsAdminApproval": "An admin must approve this before the guest sees it",
     "awaitingApproval": "Awaiting admin approval",
-    "openChat": "Chat"
+    "openChat": "Chat",
+    "filterLabel": "Filter conversations",
+    "filterAll": "Everyone",
+    "filterToday": "Arriving today",
+    "filterHere": "Here now",
+    "filterUpcoming": "Coming later"
   },
   "stateTransition": {
     "changeState": "Change State",
