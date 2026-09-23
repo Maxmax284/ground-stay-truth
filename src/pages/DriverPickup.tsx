@@ -2,7 +2,8 @@
  * Driver view — the only screen a driver ever sees.
  *
  * Reached by an expiring link for ONE pickup. No login, no menu, no money, no
- * booking reference, no other guests. One action: "Guest is in the car".
+ * booking reference, no other guests. Pickup chat and one operational action:
+ * "Guest is in the car".
  * A landed plane is stated plainly as a landed plane, never as a ready guest.
  */
 import { useCallback, useEffect, useState } from "react";
