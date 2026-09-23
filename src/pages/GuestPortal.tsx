@@ -60,6 +60,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { GuestNowCard, computeNowState } from "@/components/GuestNowCard";
 import { JourneyBanner } from "@/components/guest/JourneyBanner";
 import { LanguageSuggestionBanner } from "@/components/guest/LanguageSuggestionBanner";
+import { AirportGuidanceCard } from "@/components/guest/AirportGuidanceCard";
 import { resolveJourneyStage } from "@/lib/guestJourneyStage";
 import { useAirportPickup } from "@/hooks/useAirportPickups";
 import { WhileYouWaitTab } from "@/components/WhileYouWaitTab";
@@ -478,6 +479,22 @@ const GuestPortal = () => {
 
 
 
+  // Which airport matters right now. Read-only: it reflects the leg the guest
+  // is on and never changes a booking, a flight record or a pickup.
+  const legAirport = useMemo((): { code: string; label: string } | null => {
+    if (!nowBooking || nowState === "onsite") return null;
+    const details = (nowBooking.arrival_details ?? null) as Record<string, any> | null;
+    if (journeyStage?.stage === "island_approach" || journeyStage?.stage === "pickup") {
+      return { code: "USM", label: t("airportGuidance.legArrival", "Arriving") };
+    }
+    if (journeyStage?.stage === "bangkok" || journeyStage?.stage === "transit") {
+      const code = details?.confirmed_airport ?? details?.transit_airport ?? "BKK";
+      return { code, label: t("airportGuidance.legConnection", "Your connection") };
+    }
+    const code = details?.confirmed_airport ?? details?.arrival_airport ?? null;
+    return code ? { code, label: t("airportGuidance.legArrival", "Arriving") } : null;
+  }, [nowBooking, nowState, journeyStage, t]);
+
   const openBookingForm = (unitId?: string) => {
     setBookingFormUnitId(unitId);
     setBookingFormOpen(true);
@@ -527,6 +544,12 @@ const GuestPortal = () => {
         {/* Flight radar promoted to the hero while they're travelling */}
         {nowState === "flight" && nowBooking && (
           <GuestFlightTracker bookingId={nowBooking.id} guestName={guestName} />
+        )}
+
+        {/* Airport orientation for the leg they're on. Discovery, never
+            instruction — it sits under the Now card and hides once checked in. */}
+        {legAirport && (
+          <AirportGuidanceCard airportCode={legAirport.code} legLabel={legAirport.label} />
         )}
 
         {/* Everything else — setup, perks, intelligence — one tap deeper. */}
