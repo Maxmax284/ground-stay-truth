@@ -381,49 +381,41 @@ export async function lookupFlight(
 
   const aeroKey = Deno.env.get("AEROAPI_KEY");
   if (aeroKey) {
-    tried.push("aeroapi");
-    try {
-      const result = await fetchAeroApi(aeroKey, opts.flightNumber, opts.flightDate, opts.arrivalCode);
+    const ticket = await reservePaidRead(admin, { ...base, provider: "aeroapi" });
+    if (ticket) {
+      tried.push("aeroapi");
       paidUsed += 1;
       remaining -= 1;
-      await logProviderRead(admin, {
-        ...base,
-        provider: "aeroapi",
-        paid: true,
-        outcome: result.outcome,
-        http_status: result.status,
-      });
-      if (result.flight) return { flight: result.flight, provider_tried: tried, outcome: "ok", paid_reads_used: paidUsed };
-    } catch (error) {
-      await logProviderRead(admin, { ...base, provider: "aeroapi", paid: true, outcome: "exception" });
-      paidUsed += 1;
-      remaining -= 1;
-      console.warn("flightProviders: AeroAPI threw", error);
+      try {
+        const result = await fetchAeroApi(aeroKey, opts.flightNumber, opts.flightDate, opts.arrivalCode);
+        await finishPaidRead(admin, ticket, result.outcome, result.status);
+        if (result.flight) return { flight: result.flight, provider_tried: tried, outcome: "ok", paid_reads_used: paidUsed };
+      } catch (error) {
+        await finishPaidRead(admin, ticket, "exception");
+        console.warn("flightProviders: AeroAPI threw", error);
+      }
     }
   }
 
   const stackKey = Deno.env.get("AVIATIONSTACK_API_KEY");
   if (stackKey && remaining > 0) {
-    tried.push("aviationstack");
-    try {
-      const result = await fetchAviationStack(stackKey, opts.flightNumber, opts.flightDate, opts.arrivalCode);
+    const ticket = await reservePaidRead(admin, { ...base, provider: "aviationstack" });
+    if (ticket) {
+      tried.push("aviationstack");
       paidUsed += 1;
-      await logProviderRead(admin, {
-        ...base,
-        provider: "aviationstack",
-        paid: true,
-        outcome: result.outcome,
-        http_status: result.status,
-      });
-      if (result.flight) {
-        return { flight: result.flight, provider_tried: tried, outcome: "fallback_ok", paid_reads_used: paidUsed };
+      try {
+        const result = await fetchAviationStack(stackKey, opts.flightNumber, opts.flightDate, opts.arrivalCode);
+        await finishPaidRead(admin, ticket, result.outcome, result.status);
+        if (result.flight) {
+          return { flight: result.flight, provider_tried: tried, outcome: "fallback_ok", paid_reads_used: paidUsed };
+        }
+      } catch (error) {
+        await finishPaidRead(admin, ticket, "exception");
+        console.warn("flightProviders: AviationStack threw", error);
       }
-    } catch (error) {
-      await logProviderRead(admin, { ...base, provider: "aviationstack", paid: true, outcome: "exception" });
-      paidUsed += 1;
-      console.warn("flightProviders: AviationStack threw", error);
     }
   }
+
 
   // Both silent. Say so plainly — never invent "on time".
   return { flight: null, provider_tried: tried, outcome: "no_flight_data_on_record", paid_reads_used: paidUsed };
