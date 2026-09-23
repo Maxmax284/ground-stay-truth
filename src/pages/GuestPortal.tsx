@@ -59,6 +59,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { GuestNowCard, computeNowState } from "@/components/GuestNowCard";
 import { JourneyBanner } from "@/components/guest/JourneyBanner";
+import { LanguageSuggestionBanner } from "@/components/guest/LanguageSuggestionBanner";
 import { resolveJourneyStage } from "@/lib/guestJourneyStage";
 import { useAirportPickup } from "@/hooks/useAirportPickups";
 import { WhileYouWaitTab } from "@/components/WhileYouWaitTab";
@@ -497,6 +498,9 @@ const GuestPortal = () => {
         {/* In-app browsers (Instagram/Facebook/LINE) break Stripe redirects —
             warn loudly and give a one-tap way into Safari/Chrome. */}
         <GuestInAppBrowserBanner />
+
+        {/* ── One quiet, opt-in language offer based on the device's own setting. */}
+        <LanguageSuggestionBanner />
 
         {/* ── Stage atmosphere. Presentation only — the truth is in the card
             directly below it. ─────────────────────────────────────────────── */}
