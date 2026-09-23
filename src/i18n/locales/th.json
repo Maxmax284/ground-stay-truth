@@ -912,7 +912,12 @@
     "zh": "中文",
     "ja": "日本語",
     "ko": "한국어",
-    "es": "Español"
+    "es": "Español",
+    "suggestion": {
+      "prompt": "ต้องการอ่านเป็น{{language}}ไหม",
+      "keep": "ไม่เป็นไร",
+      "partial": "แปลบางส่วน"
+    }
   },
   "staySupport": {
     "tabLabel": "การสนับสนุน",

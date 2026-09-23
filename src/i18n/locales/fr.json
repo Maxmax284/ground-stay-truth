@@ -808,7 +808,12 @@
     "zh": "中文",
     "ja": "日本語",
     "ko": "한국어",
-    "es": "Español"
+    "es": "Español",
+    "suggestion": {
+      "prompt": "Préférez-vous lire ceci en {{language}} ?",
+      "keep": "Non merci",
+      "partial": "Traduction partielle"
+    }
   },
   "staySupport": {
     "tabLabel": "Support",

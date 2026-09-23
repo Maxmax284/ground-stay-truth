@@ -939,7 +939,12 @@
     "zh": "中文",
     "ja": "日本語",
     "ko": "한국어",
-    "es": "Español"
+    "es": "Español",
+    "suggestion": {
+      "prompt": "Prefer to read this in {{language}}?",
+      "keep": "No thanks",
+      "partial": "Partly translated"
+    }
   },
   "staySupport": {
     "tabLabel": "Support",
