@@ -208,6 +208,45 @@
   }
 }
 
+/* ── Guest journey ambience ────────────────────────────────────────────────────
+   One scrim family for every contextual guest image. The scrim is what keeps
+   overlay text readable (and AA-contrast) whether the photo loads, fails, or is
+   skipped entirely on a data-saver connection — in which case these gradients
+   ARE the visual. */
+.journey-tint-calm,
+.journey-tint-travel,
+.journey-tint-island,
+.journey-tint-home {
+  background-image:
+    linear-gradient(to top, hsl(var(--journey-scrim) / 0.88) 0%, hsl(var(--journey-scrim) / 0.55) 45%, hsl(var(--journey-scrim) / 0.15) 100%),
+    linear-gradient(135deg, hsl(var(--journey-calm) / 0.55), hsl(var(--journey-scrim) / 0.35));
+}
+
+.journey-tint-travel {
+  background-image:
+    linear-gradient(to top, hsl(var(--journey-scrim) / 0.88) 0%, hsl(var(--journey-scrim) / 0.55) 45%, hsl(var(--journey-scrim) / 0.15) 100%),
+    linear-gradient(135deg, hsl(var(--journey-travel) / 0.55), hsl(var(--journey-scrim) / 0.35));
+}
+
+.journey-tint-island {
+  background-image:
+    linear-gradient(to top, hsl(var(--journey-scrim) / 0.88) 0%, hsl(var(--journey-scrim) / 0.55) 45%, hsl(var(--journey-scrim) / 0.15) 100%),
+    linear-gradient(135deg, hsl(var(--journey-island) / 0.55), hsl(var(--journey-scrim) / 0.35));
+}
+
+.journey-tint-home {
+  background-image:
+    linear-gradient(to top, hsl(var(--journey-scrim) / 0.88) 0%, hsl(var(--journey-scrim) / 0.55) 45%, hsl(var(--journey-scrim) / 0.15) 100%),
+    linear-gradient(135deg, hsl(var(--journey-home) / 0.55), hsl(var(--journey-scrim) / 0.35));
+}
+
+.journey-overlay-text {
+  color: hsl(var(--journey-overlay-foreground));
+  text-shadow: 0 1px 2px hsl(var(--journey-scrim) / 0.6);
+}
+
+
+
 /* ── Decorative Patterns ── */
 
 /* Ring rope: thin horizontal lines at top of dashboard */
