@@ -246,7 +246,9 @@ Deno.serve(async (req) => {
           .is("collected_at", null);
         if (error) return fail(500, error.message);
 
-        await db.from("pickup_driver_links").update({ collected_at: now }).eq("id", link.id);
+        // The handover ends this driver's access. This response still confirms
+        // collection, but every later request fails closed as revoked.
+        await db.from("pickup_driver_links").update({ collected_at: now, revoked_at: now }).eq("id", link.id);
         await db.from("guest_arrival_stage_log").insert({
           booking_id: link.booking_id,
           stage: "collected",
