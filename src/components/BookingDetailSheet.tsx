@@ -36,6 +36,7 @@ import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, ArrowUpRi
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { RefundDialog } from "@/components/RefundDialog";
 import { GuestPortalActivityTimeline } from "@/components/GuestPortalActivityTimeline";
+import { GuestThreadLauncher } from "@/components/GuestThreadLauncher";
 import { PaymentLinkManager } from "@/components/PaymentLinkManager";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { RequiredDocumentsCard } from "@/components/RequiredDocumentsCard";
@@ -268,6 +269,10 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
             {isCheckedIn && <StaySupportBadge bookingId={booking.id} />}
             {trainingLinks && trainingLinks.length > 0 && <TrainingBadge />}
           </SheetTitle>
+          {/* One tap to the guest's own conversation, from any tab. */}
+          <div className="flex">
+            <GuestThreadLauncher bookingId={booking.id} guestName={guestName} className="h-8 text-xs gap-1" />
+          </div>
           {guestName && <div className="flex items-center gap-2 text-sm text-foreground"><User className="h-4 w-4 text-muted-foreground" /><span className="font-medium">{guestName}</span>{guestHistory?.isReturning && <Badge variant="secondary" className="text-[10px]">{t("loyalty.returningGuest", { count: (guestHistory.completedStays ?? 0) + 1 })}</Badge>}{isCompleted && (bookingReview ? <Badge className={`text-[10px] ${bookingReview.status === "approved" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300" : bookingReview.status === "rejected" ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"}`}>{t("reviews.reviewStatus", { defaultValue: "Review" })}: {t(`reviews.${bookingReview.status}`)}</Badge> : <span className="text-xs text-muted-foreground">{t("reviews.noReviewSubmitted", { defaultValue: "No review submitted" })}</span>)}</div>}
           {softHoldInfo && (
             <div className={`flex items-center gap-2 text-sm ${softHoldInfo.isExpired ? "text-destructive" : "text-warning-foreground"}`}>
@@ -641,6 +646,9 @@ function PaymentsTab({ payments, bookingId, bookingState, canSeeAmounts, canReco
           </div>
         </div>
       )}
+
+      {/* Money questions are guest questions — reach them from here directly. */}
+      <GuestThreadLauncher bookingId={bookingId} className="h-8 w-full text-xs gap-1" />
 
       {/* Payment list with type badges + status indicators + refund button */}
       {payments.length > 0 ? (
