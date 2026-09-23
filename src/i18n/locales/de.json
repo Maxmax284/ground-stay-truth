@@ -1332,7 +1332,20 @@
     "checkinPassed": "Das Check-in-Datum ist überschritten. Bitte kontaktieren Sie das Team.",
     "unitNotAssigned": "Unterkunft ausstehend",
     "contactStaff": "Fragen? Schreiben Sie unserem Team.",
-    "landed": "Gelandet ✓",
+    "landed": {
+      "connectingTitle": "Wo befinden Sie sich gerade?",
+      "confirmTitle": "Wo sind Sie gelandet?",
+      "confirmDescV2": "Wählen Sie die passendste Angabe. Nur Koh Samui (USM) bedeutet, dass Sie wirklich angekommen sind — die anderen sind Transitpunkte auf dem Festland.",
+      "flightHint": "Flug {{flight}} landet in {{airport}}",
+      "suggested": "Vorschlag",
+      "transitTitle": "Sie sind noch auf der Durchreise",
+      "transitDesc": "Sie haben Koh Samui noch nicht erreicht. Wir vermerken das, und Ihr Fahrer wird losgeschickt, sobald Sie auf der Insel sind.",
+      "mismatchTitle": "Das passt nicht zu Ihrem Flug",
+      "mismatchDesc": "Unseren Daten nach landet Flug {{flight}} in {{expected}}. Sie haben {{selected}} gewählt. Wenn Sie sicher sind, bestätigen Sie — das Team prüft es nach.",
+      "confirmTransit": "Alles klar — ich bin noch unterwegs",
+      "confirmAnyway": "Trotzdem bestätigen",
+      "confirm": "Hier bin ich gelandet"
+    },
     "actions": {
       "payDeposit": "Anzahlung leisten",
       "uploadId": "Ausweis hochladen",

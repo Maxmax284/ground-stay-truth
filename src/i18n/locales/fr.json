@@ -1332,7 +1332,20 @@
     "checkinPassed": "La date d'arrivée est dépassée. Veuillez contacter l'équipe.",
     "unitNotAssigned": "Logement en attente",
     "contactStaff": "Des questions ? Envoyez un message à notre équipe.",
-    "landed": "Atterri ✓",
+    "landed": {
+      "connectingTitle": "Où êtes-vous en ce moment ?",
+      "confirmTitle": "Où avez-vous atterri ?",
+      "confirmDescV2": "Choisissez la réponse la plus proche. Seul Koh Samui (USM) signifie que vous êtes vraiment arrivé — les autres sont des points de transit sur le continent.",
+      "flightHint": "Le vol {{flight}} arrive à {{airport}}",
+      "suggested": "Suggéré",
+      "transitTitle": "Vous êtes encore en transit",
+      "transitDesc": "Vous n'êtes pas encore arrivé à Koh Samui. Nous l'enregistrons et votre chauffeur sera envoyé dès votre arrivée sur l'île.",
+      "mismatchTitle": "Cela ne correspond pas à votre vol",
+      "mismatchDesc": "D'après nos informations, le vol {{flight}} arrive à {{expected}}. Vous avez indiqué {{selected}}. Si vous êtes sûr, confirmez — l'équipe vérifiera.",
+      "confirmTransit": "C'est noté — je suis en transit",
+      "confirmAnyway": "Confirmer quand même",
+      "confirm": "J'ai atterri ici"
+    },
     "actions": {
       "payDeposit": "Payer l'acompte",
       "uploadId": "Télécharger pièce d'identité",
