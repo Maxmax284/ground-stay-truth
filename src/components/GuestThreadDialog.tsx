@@ -17,6 +17,7 @@ import { useBookingMessages, useCreateMessage } from "@/hooks/useBookings";
 import { permissions } from "@/lib/permissions";
 import { useAirportPickup } from "@/hooks/useAirportPickups";
 import { PickupConversation } from "@/components/PickupConversation";
+import { MessageSourceBadge } from "@/components/MessageSourceBadge";
 
 interface GuestThreadDialogProps {
   bookingId: string | null;
@@ -152,6 +153,8 @@ export function GuestThreadDialog({
                           {t("messages.awaitingApproval")}
                         </span>
                       )}
+                      {/* Which app the guest wrote from. One thread, many doors. */}
+                      <MessageSourceBadge source={m.source} />
                       <span>{format(new Date(m.created_at), "MMM d, h:mm a")}</span>
                     </div>
                   </div>

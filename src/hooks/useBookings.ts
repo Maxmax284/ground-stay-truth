@@ -586,6 +586,15 @@ export function useCreateMessage() {
               message: `${senderName} replied to a guest: "${preview}"`,
             }))
         );
+
+        // Fallback rail: WhatsApp if linked, otherwise a debounced email so the
+        // guest hears about the reply even if they never open the portal.
+        // Fire-and-forget — delivery must never block the staff member's send.
+        supabase.functions
+          .invoke("notify-guest-message", {
+            body: { booking_id: message.booking_id, message_id: (data as any)?.id },
+          })
+          .catch((err) => console.warn("notify-guest-message failed:", err));
       }
 
       return data;

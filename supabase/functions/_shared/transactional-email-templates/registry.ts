@@ -26,6 +26,7 @@ import { template as checkoutFollowup } from './checkout-followup.tsx'
 import { template as reviewRequest } from './review-request.tsx'
 import { template as welcomeCheckin } from './welcome-checkin.tsx'
 import { template as adminAlertGeneric } from './admin-alert-generic.tsx'
+import { template as guestMessageNotice } from './guest-message-notice.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   booking_confirmed: bookingConfirmed,
@@ -36,4 +37,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   review_request: reviewRequest,
   welcome_checkin: welcomeCheckin,
   admin_alert_generic: adminAlertGeneric,
+  guest_message_notice: guestMessageNotice,
 }

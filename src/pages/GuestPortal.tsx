@@ -81,7 +81,7 @@ import { PaymentGuideLink } from "@/components/PaymentGuideLink";
 import { BookingAdjustmentsCard } from "@/components/BookingAdjustmentsCard";
 import { PreArrivalChecklist } from "@/components/PreArrivalChecklist";
 import { GuestStayUpdatesPrompt } from "@/components/GuestStayUpdatesPrompt";
-import { GuestMessagingOnboarding } from "@/components/GuestMessagingOnboarding";
+import { CampCommunicationCard } from "@/components/guest/CampCommunicationCard";
 import { GuestHeadsUpStrip } from "@/components/GuestHeadsUpStrip";
 import { GuestPlaybook } from "@/components/GuestPlaybook";
 import { ReviewFormDialog } from "@/components/ReviewFormDialog";
@@ -570,6 +570,15 @@ const GuestPortal = () => {
           pickupEnabled={Boolean(nowPickupQuery.data?.pickup_enabled)}
         />
 
+        {/* The one obvious way to reach the camp. Sits under the next-step cards
+            on purpose: operational truth first, then "here's how to ask". */}
+        <CampCommunicationCard
+          bookingId={nowBooking?.id ?? null}
+          guestName={guestName}
+          bookingReference={nowBooking?.units?.name ?? null}
+        />
+
+
         {/* Everything else — setup, perks, intelligence — one tap deeper. */}
         <Collapsible open={extrasOpen} onOpenChange={setExtrasOpen}>
           <CollapsibleTrigger asChild>
@@ -583,8 +592,6 @@ const GuestPortal = () => {
                 are flying from — staff keep reading in English or Thai. */}
             <GuestLanguagePicker />
 
-            {/* First-visit messaging onboarding — auto-hides once connected or skipped */}
-            <GuestMessagingOnboarding />
 
             {guestHistory?.isReturning && (
               <Card className="border-primary/30 bg-primary/5">

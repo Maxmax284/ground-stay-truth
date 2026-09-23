@@ -2380,5 +2380,15 @@
   "staffLanguage": {
     "title": "Your display language",
     "subtitle": "Your own choice, saved to your account. Guest messages are shown to you in this language, and your replies reach the guest in theirs."
+  },
+  "guestComms": {
+    "title": "Talk to the camp",
+    "body": "Arrival, your room, training, anything at all — write here and the front desk sees it on your booking.",
+    "openChat": "Message the front desk",
+    "openWhatsapp": "Use WhatsApp instead",
+    "saved": "Every message is saved to your stay, so whoever is on shift already knows your story.",
+    "threadTitle": "Lamai front desk",
+    "whatsappGreeting": "Hi Lamai Camp, this is {{name}}{{ref}} —",
+    "aGuest": "a guest"
   }
 }
