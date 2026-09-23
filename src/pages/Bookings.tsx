@@ -401,7 +401,7 @@ const Bookings = () => {
                               <Banknote className="h-3 w-3 mr-1" /> Record payment
                             </Button>
                           )}
-                          {b.state === "pending_approval" && (
+                          {canApprove && b.state === "pending_approval" && (
                             <>
                               <Button size="sm" variant="default" className="h-7 px-2 text-xs" onClick={(e) => handleQuickApprove(e, b.id)} disabled={transition.isPending}>
                                 <Check className="h-3 w-3 mr-1" /> {t("approval.approve")}
