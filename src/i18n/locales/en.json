@@ -2280,5 +2280,32 @@
     "notRelevant": "Not relevant",
     "saved": "Noted — thanks.",
     "failed": "Could not save that."
+  },
+  "journeyStage": {
+    "greeting": "Welcome, {{name}}",
+    "preparing": {
+      "title": "Getting ready",
+      "line": "Nothing urgent. We'll tell you what matters, when it matters."
+    },
+    "transit": {
+      "title": "On the way",
+      "line": "We're watching your flights. Your next step stays at the top of this page."
+    },
+    "bangkok": {
+      "title": "Bangkok connection",
+      "line": "One more hop. Take your time — immigration and bags come first."
+    },
+    "islandApproach": {
+      "title": "Almost on the island",
+      "line": "Samui today. Tell us when you're actually ready and we'll move."
+    },
+    "pickup": {
+      "title": "Your pickup",
+      "line": "Meeting point and driver details are right here. No rush."
+    },
+    "inHouse": {
+      "title": "Welcome to Lamai",
+      "line": "You're checked in. Training, essentials and the front desk are one tap away."
+    }
   }
 }
