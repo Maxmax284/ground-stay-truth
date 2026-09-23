@@ -383,9 +383,14 @@ const Bookings = () => {
                     <TableCell className="text-muted-foreground text-sm">
                       {format(new Date(b.created_at), "MMM d")}
                     </TableCell>
-                    {canApprove && (
-                      <TableCell>
-                        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                    <TableCell>
+                        <div className="flex gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
+                          {/* Chat sits on every row, whatever the staff role. */}
+                          <GuestThreadLauncher
+                            bookingId={b.id}
+                            guestName={resolveGuestDisplayName(b as any)}
+                            className="h-7 px-2 text-xs gap-1"
+                          />
                           {canOverrideDeadline && getBookingDeadline(b, policiesForDeadlines as any)?.isExpired && (
                             <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setExtendBooking(b)}>
                               <Clock className="h-3 w-3 mr-1" /> Override expiry
