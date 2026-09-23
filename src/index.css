@@ -59,6 +59,14 @@
     --fight-blue: 217 91% 45%;
     --fight-gold: 42 90% 55%;
     --fight-dark: 0 0% 6%;
+
+    /* Guest journey ambience — contextual imagery scrims and stage hues */
+    --journey-overlay-foreground: 0 0% 98%;
+    --journey-scrim: 0 0% 4%;
+    --journey-calm: 215 30% 25%;
+    --journey-travel: 217 91% 30%;
+    --journey-island: 186 70% 26%;
+    --journey-home: 0 60% 24%;
   }
 
   .dark {
