@@ -24,6 +24,7 @@ import { useBookingDiscountFlags } from "@/hooks/usePriceStory";
 import { BookingFilters, type BookingSort } from "@/components/BookingFilters";
 import { BookingFormDialog } from "@/components/BookingFormDialog";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
+import { GuestThreadLauncher } from "@/components/GuestThreadLauncher";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
