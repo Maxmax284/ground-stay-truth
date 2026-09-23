@@ -124,20 +124,25 @@ function BookingCard({ booking, onClick, onExtend, onRecordPayment, discountFlag
         <span>{t("bookings.guestCount", { count: booking.num_guests })}</span>
         <PriceStoryBadge booking={booking} policies={cardPolicies} flag={discountFlag} />
       </div>
-      {(cardDeadline?.isExpired && onExtend) || onRecordPayment ? (
-        <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
-          {cardDeadline?.isExpired && onExtend && (
-            <Button size="sm" variant="outline" className="h-7 flex-1 px-2 text-xs" onClick={() => onExtend(booking)}>
-              <Clock className="h-3 w-3 mr-1" /> Override expiry
-            </Button>
-          )}
-          {onRecordPayment && (
-            <Button size="sm" variant="outline" className="h-7 flex-1 px-2 text-xs" onClick={() => onRecordPayment(booking)}>
-              <Banknote className="h-3 w-3 mr-1" /> Record payment
-            </Button>
-          )}
-        </div>
-      ) : null}
+      {/* Talking to the guest is a first-class action on the card itself —
+          staff shouldn't have to know where the Messenger tab lives. */}
+      <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
+        <GuestThreadLauncher
+          bookingId={booking.id}
+          guestName={resolveGuestDisplayName(booking as any)}
+          className="h-7 flex-1 px-2 text-xs gap-1"
+        />
+        {cardDeadline?.isExpired && onExtend && (
+          <Button size="sm" variant="outline" className="h-7 flex-1 px-2 text-xs" onClick={() => onExtend(booking)}>
+            <Clock className="h-3 w-3 mr-1" /> Override expiry
+          </Button>
+        )}
+        {onRecordPayment && (
+          <Button size="sm" variant="outline" className="h-7 flex-1 px-2 text-xs" onClick={() => onRecordPayment(booking)}>
+            <Banknote className="h-3 w-3 mr-1" /> Record payment
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
