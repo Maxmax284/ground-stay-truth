@@ -84,3 +84,42 @@ describe("display labels", () => {
     expect(translateLabel(tEn, "paymentStatus", null)).toBe("—");
   });
 });
+
+/**
+ * Gate for shipping a language to guests. A language listed in
+ * GUEST_READY_LANGUAGES must cover every guest-visible key — staff-only screens
+ * may stay English, but a guest must never hit a half-translated page.
+ */
+describe("guest-ready languages", () => {
+  const dicts: Record<string, Record<string, string>> = {
+    en: flatEn,
+    th: flatTh,
+    fr: flatten(fr as Dict),
+    de: flatten(de as Dict),
+  };
+
+  const guestKeys = Object.keys(flatEn).filter(isGuestSurfaceKey);
+
+  it("covers a meaningful part of the dictionary", () => {
+    expect(guestKeys.length).toBeGreaterThan(200);
+  });
+
+  for (const code of GUEST_READY_LANGUAGES) {
+    it(`${code} translates every guest-visible key`, () => {
+      const dict = dicts[code];
+      expect(dict, `no dictionary loaded for ${code}`).toBeTruthy();
+      const missing = guestKeys.filter((k) => !dict[k] || !dict[k].trim());
+      expect(missing).toEqual([]);
+    });
+
+    it(`${code} keeps guest-visible placeholders intact`, () => {
+      const dict = dicts[code];
+      const vars = (s: string) =>
+        (s.match(/\{\{\s*\w+\s*\}\}/g) ?? []).map((v) => v.replace(/\s/g, "")).sort();
+      const broken = guestKeys.filter(
+        (k) => dict[k] && vars(dict[k]).join() !== vars(flatEn[k]).join(),
+      );
+      expect(broken).toEqual([]);
+    });
+  }
+});
