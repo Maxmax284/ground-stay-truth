@@ -31,6 +31,7 @@ interface InboxThread {
   last_message_at: string;
   last_message_content: string;
   last_message_is_internal: boolean;
+  last_message_source: string | null;
   total_messages: number;
   unread_count: number;
 }
@@ -43,7 +44,7 @@ function useInboxThreads() {
     queryFn: async () => {
       const { data: messages, error: mErr } = await supabase
         .from("messages")
-        .select("id, booking_id, content, is_internal, sender_id, created_at, read_at")
+        .select("id, booking_id, content, is_internal, sender_id, created_at, read_at, source")
         .order("created_at", { ascending: false });
       if (mErr) throw mErr;
       if (!messages || messages.length === 0) return [];
@@ -70,7 +71,8 @@ function useInboxThreads() {
           guest_name: resolveGuestDisplayName(booking as any), state: booking.state as BookingState,
           check_in: booking.check_in, check_out: booking.check_out,
           last_message_at: msg.created_at, last_message_content: msg.content,
-          last_message_is_internal: msg.is_internal, total_messages: 1,
+          last_message_is_internal: msg.is_internal,
+          last_message_source: (msg as any).source ?? null, total_messages: 1,
           unread_count: (msg.sender_id !== user?.id && !(msg as any).read_at) ? 1 : 0,
         });
       }
