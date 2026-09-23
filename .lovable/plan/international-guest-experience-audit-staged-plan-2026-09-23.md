@@ -5,40 +5,48 @@ Read-only audit of the live CampStay LMT code. Nothing was changed. Findings bel
 ## A. What actually exists today
 
 ### Guest portal (one surface, already context-driven)
+
 - `src/pages/GuestPortal.tsx` is the single guest surface. It composes `GuestNowCard` (line 484), `GuestFlightTracker` (503, 1142), `GuestPersonalGuideCard` (533), `GuestPickupCard` (1132), `GuestPlaybook` (843). **LIVE.** The "one card tells you the next step" pattern the vision asks for already exists — new work extends it, no new dashboard needed.
 - `GuestPortalPreview.tsx` is the admin/manager preview and renders `GuestNowCard` + `GroundRadar` directly. **LIVE.**
 - `GroundRadar.tsx` is pure presentation, fed by `GuestFlightTracker`. **LIVE.**
 
 ### Flights / arrival intelligence
+
 - `supabase/functions/_shared/flightProviders.ts`: providers are `aeroapi` then `aviationstack` (types line 24, calls 398-424), paid-read reservation, ceiling + `ceiling_reached` outcome, per-day cap 25 plus admin grants. **LIVE.**
 - Tables present in generated types: `flight_facts`, `flight_provider_reads`, `flight_read_locks`, `flight_tracking`, `flight_budget_grants`, `journey_legs`, `journey_leg_field_provenance`, `journey_evidence`, `arrival_conflicts`, `guest_arrival_stage_log`, `airport_pickups`, `airport_traffic`, `pickup_driver_links`, `pickup_driver_messages`. **LIVE.**
 - Functions present: `check-flight-status`, `guest-arrival-journey`, `guest-landed`, `journey-intake`, `arrival-fact-sync`, `arrival-progress`, `driver-pickup`, `cleanup-retention`, `daily-briefing`. **LIVE.**
 - Admin budget panel `src/components/monitoring/FlightBudgetPanel.tsx`, `DriverResponseRateStrip`, `DriverResponseLine`. **LIVE (code), NOT staff-verified on a real device** — the previous live test only confirmed the driver link end-to-end; staff screens stopped at the authenticator prompt. This remains an open verification item, not a code gap.
 
 ### Driver pickup
+
 - `DriverPickup.tsx` (token page, no login), `driver-pickup` function, `PickupConversation`/`PickupConversationDialog`, `front-desk/DriverChatPanel.tsx`, `AirportPickupSection.tsx` controls, expiring/revoked-on-collected links, immutable messages. **LIVE.**
 
 ### Airport content
+
 - `src/lib/airportFactSheets.ts` — hardcoded fact sheets for BKK, USM, piers, bus, with a rich shape (immigration, customs, SIM, cash, transport, terminal, route, weather, connectivity, late night) plus a section schema used by `ArrivalWelcomeEditor.tsx` / `GuidedSectionEditor.tsx`. **PARTIAL:** real content, but only these few locations, code-resident (no review dates, no source links, no per-airport DB rows, editors can't add a new airport).
 - `src/lib/airports.ts` — 9 tracked IATA codes with labels, no ICAO, no city/country/timezone, no terminals, no official links. **PARTIAL.**
 - `src/lib/meetingPoints.ts`, `ArrivalWelcomeGuide.tsx`, `ArrivalRouteFAQ.tsx`, `DriverHandshakeCard.tsx`. **LIVE.**
 
 ### Language / i18n
+
 - `src/i18n/index.ts` declares 9 languages, lazy-loaded. Actual key coverage (line counts): `en` 2283, `th` 2283, `fr`/`de`/`ko` 1226, `es`/`ja`/`ru`/`zh` 1047. So **English and Thai are complete; the other seven are roughly half or less and silently fall back to English.** Presenting them as "live" today would be inaccurate.
 - `src/lib/__tests__/i18nCoverage.test.ts` enforces EN↔TH parity only — no gate on the other languages.
 - `profiles.preferred_language` + `useLanguagePreference.ts` already gives each **staff member and guest** an individual persisted language, with explicit device choice winning. `LanguageToggle` / `LanguageSelector`. **LIVE.** No locale suggestion prompt exists anywhere — and no code currently infers language from airport (good).
 
 ### Translation
+
 - `supabase/functions/translate-message/index.ts` — AI Gateway (`google/gemini-2.5-flash`), AI guard (budget + rate limit + role), 4000-char cap, CORS allowlist, usage logging. **LIVE.**
 - `src/hooks/useMessageTranslation.ts` with an in-memory cache. **PARTIAL — staff side only:** the only consumer is `BookingDetailSheet.tsx` (811), using `profiles.preferred_language`. `useWelcomeTranslation.ts` translates arrival-guide content. `GuestThreadDialog.tsx` has **no** translation, so the guest never sees a translated staff reply and the driver chat has none at all.
 - No persisted translation storage: nothing keeps the original + translation pair, no "translated by machine" marker in the DB, no cache across sessions or devices.
 
 ### Samui / Lamai content
+
 - `local_recommendations` table exists (category, name, description, address, maps_url, phone, whatsapp, website, opening_hours, photos, badges, featured, is_active, sort_order, staff_notes, property_id). **ORPHAN:** `rg` finds zero references in `src/` outside generated types — no editor, no guest surface, no RLS verified in app code. Nothing is published to guests from it today.
 - `intelligence_entries` (status, audience, location, translations JSON, image, expires_at, approved_by) is the closest working authoring+review model. **LIVE** via `IntelligenceEditor.tsx`. Its `translations` JSON column is the pattern to copy for guide content.
 - No "last reviewed", "seasonal/closed", or accessible-directions fields anywhere yet.
 
 ### Inaccessible / unverified in this audit
+
 - RLS policy text and grants for `local_recommendations` and `pickup_driver_messages` were not read (no schema queries in plan mode) — must be confirmed before building on them.
 - No real-device (iOS/Android browser) verification exists for the flight budget panel, driver reply rate, or staff pickup chat.
 - Actual guest nationality/origin mix is unknown — language priority below is a guess until we look at real booking data.
@@ -100,3 +108,5 @@ Ordering note: Stage 3 is deliberately allowed to run in parallel with 1–2 bec
 Alongside it, two zero-build verification asks: Nikki confirms the staff-side driver chat, reply rate and flight budget panel on a real phone (blocked for me by the authenticator prompt), and you confirm the real guest-origin mix so Stage 1's language priority isn't a guess.
 
 No build, schema change, deployment or native packaging in this scope.
+
+Approved — proceed with Stage 0: International Guest Experience Visual Foundation only. I want the existing CampStay guest portal to become more visually engaging, welcoming, and intuitive without changing or disrupting the booking, flight tracking, pickup, messaging, or check-in systems already in place. The visual experience should naturally adapt to the guest's journey, whether they're preparing to travel, in transit, arriving in Bangkok, approaching Koh Samui, awaiting pickup, or already checked in at Lamai. Establish a consistent design foundation with contextual imagery, subtle animations, welcoming transitions, mobile-friendly layouts, and clear next-step information. Everything should remain extremely easy to understand within 2–3 seconds, with the guest's immediate needs always taking priority over decorative or educational content. All new components must be ready for future multilingual support, accessible, responsive, and respectful of reduced-motion and low-bandwidth preferences. Reuse the existing Guest Portal, Now Card, Ground Radar, and Pickup Card rather than creating additional dashboards or duplicating functionality. I also want to see actual mobile screenshots demonstrating the different guest journey states so we can evaluate the experience visually, not just through automated tests. Complete the implementation and report the results for review before proceeding further. Stages 1–4, including expanded language support, two-way message translation, airport intelligence, and the Lamai-managed island guide, remain unapproved until we review and authorize each stage separately.

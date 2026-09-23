@@ -58,6 +58,9 @@ import {
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { GuestNowCard, computeNowState } from "@/components/GuestNowCard";
+import { JourneyBanner } from "@/components/guest/JourneyBanner";
+import { resolveJourneyStage } from "@/lib/guestJourneyStage";
+import { useAirportPickup } from "@/hooks/useAirportPickups";
 import { WhileYouWaitTab } from "@/components/WhileYouWaitTab";
 import { differenceInCalendarDays } from "date-fns";
 import { GuestStaySupport } from "@/components/GuestStaySupport";
@@ -458,6 +461,21 @@ const GuestPortal = () => {
     [nowBooking, activeBookings]
   );
 
+  // Presentation only: which stage imagery/tint the portal wears. Reads the
+  // pickup row that already exists for this booking — it never creates or
+  // changes one.
+  const nowPickupQuery = useAirportPickup(nowBooking?.id ?? null);
+  const journeyStage = useMemo(
+    () =>
+      resolveJourneyStage({
+        nowState,
+        journeyPhase,
+        awaitingPickup: Boolean(nowPickupQuery.data?.pickup_enabled),
+      }),
+    [nowState, journeyPhase, nowPickupQuery.data]
+  );
+
+
 
   const openBookingForm = (unitId?: string) => {
     setBookingFormUnitId(unitId);
@@ -479,6 +497,10 @@ const GuestPortal = () => {
         {/* In-app browsers (Instagram/Facebook/LINE) break Stripe redirects —
             warn loudly and give a one-tap way into Safari/Chrome. */}
         <GuestInAppBrowserBanner />
+
+        {/* ── Stage atmosphere. Presentation only — the truth is in the card
+            directly below it. ─────────────────────────────────────────────── */}
+        <JourneyBanner stage={journeyStage} guestName={guestName} />
 
         {/* ── One "Now" card. One state, one obvious next move. ───────────── */}
         <GuestNowCard

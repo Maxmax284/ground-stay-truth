@@ -59,6 +59,14 @@
     --fight-blue: 217 91% 45%;
     --fight-gold: 42 90% 55%;
     --fight-dark: 0 0% 6%;
+
+    /* Guest journey ambience — contextual imagery scrims and stage hues */
+    --journey-overlay-foreground: 0 0% 98%;
+    --journey-scrim: 0 0% 4%;
+    --journey-calm: 215 30% 25%;
+    --journey-travel: 217 91% 30%;
+    --journey-island: 186 70% 26%;
+    --journey-home: 0 60% 24%;
   }
 
   .dark {
@@ -110,6 +118,13 @@
     --fight-blue: 217 91% 55%;
     --fight-gold: 42 85% 55%;
     --fight-dark: 0 0% 3%;
+
+    --journey-overlay-foreground: 0 0% 98%;
+    --journey-scrim: 0 0% 2%;
+    --journey-calm: 215 30% 18%;
+    --journey-travel: 217 91% 22%;
+    --journey-island: 186 70% 18%;
+    --journey-home: 0 60% 18%;
   }
 }
 
@@ -192,6 +207,45 @@
     }
   }
 }
+
+/* ── Guest journey ambience ────────────────────────────────────────────────────
+   One scrim family for every contextual guest image. The scrim is what keeps
+   overlay text readable (and AA-contrast) whether the photo loads, fails, or is
+   skipped entirely on a data-saver connection — in which case these gradients
+   ARE the visual. */
+.journey-tint-calm,
+.journey-tint-travel,
+.journey-tint-island,
+.journey-tint-home {
+  background-image:
+    linear-gradient(to top, hsl(var(--journey-scrim) / 0.88) 0%, hsl(var(--journey-scrim) / 0.55) 45%, hsl(var(--journey-scrim) / 0.15) 100%),
+    linear-gradient(135deg, hsl(var(--journey-calm) / 0.55), hsl(var(--journey-scrim) / 0.35));
+}
+
+.journey-tint-travel {
+  background-image:
+    linear-gradient(to top, hsl(var(--journey-scrim) / 0.88) 0%, hsl(var(--journey-scrim) / 0.55) 45%, hsl(var(--journey-scrim) / 0.15) 100%),
+    linear-gradient(135deg, hsl(var(--journey-travel) / 0.55), hsl(var(--journey-scrim) / 0.35));
+}
+
+.journey-tint-island {
+  background-image:
+    linear-gradient(to top, hsl(var(--journey-scrim) / 0.88) 0%, hsl(var(--journey-scrim) / 0.55) 45%, hsl(var(--journey-scrim) / 0.15) 100%),
+    linear-gradient(135deg, hsl(var(--journey-island) / 0.55), hsl(var(--journey-scrim) / 0.35));
+}
+
+.journey-tint-home {
+  background-image:
+    linear-gradient(to top, hsl(var(--journey-scrim) / 0.88) 0%, hsl(var(--journey-scrim) / 0.55) 45%, hsl(var(--journey-scrim) / 0.15) 100%),
+    linear-gradient(135deg, hsl(var(--journey-home) / 0.55), hsl(var(--journey-scrim) / 0.35));
+}
+
+.journey-overlay-text {
+  color: hsl(var(--journey-overlay-foreground));
+  text-shadow: 0 1px 2px hsl(var(--journey-scrim) / 0.6);
+}
+
+
 
 /* ── Decorative Patterns ── */
 
