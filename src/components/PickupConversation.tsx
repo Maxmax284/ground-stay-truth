@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { TranslatableText } from "@/components/TranslatableText";
 import { format } from "date-fns";
 import { Loader2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +22,9 @@ interface Props {
 }
 
 export function PickupConversation({ pickupId, viewer, placeholder = "Write a pickup message…" }: Props) {
+  const { i18n } = useTranslation();
+  // Driver, guest and front desk each read the same thread in their own language.
+  const readerLanguage = (i18n.language || "en").split("-")[0];
   const { data: messages, isLoading } = usePickupConversation(pickupId);
   const send = useSendPickupMessage();
   const [content, setContent] = useState("");
@@ -55,7 +60,16 @@ export function PickupConversation({ pickupId, viewer, placeholder = "Write a pi
             <div key={message.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
               <div className={`max-w-[88%] rounded-md px-3 py-2 ${mine ? "bg-primary text-primary-foreground" : "border bg-background"}`}>
                 <p className="mb-1 text-[11px] font-semibold opacity-75">{LABEL[message.sender_type]}</p>
-                <p className="whitespace-pre-wrap break-words text-sm">{message.content}</p>
+                {mine ? (
+                  <p className="whitespace-pre-wrap break-words text-sm">{message.content}</p>
+                ) : (
+                  <TranslatableText
+                    messageId={message.id}
+                    text={message.content}
+                    targetLanguage={readerLanguage}
+                    onTinted={mine}
+                  />
+                )}
                 <p className="mt-1 text-[10px] opacity-65">{format(new Date(message.created_at), "d MMM, HH:mm")}</p>
               </div>
             </div>

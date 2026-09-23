@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { TranslatableText } from "@/components/TranslatableText";
 import { format } from "date-fns";
 import { Loader2, Send, User, Lock, MessagesSquare, ExternalLink, Clock } from "lucide-react";
 import { toast } from "sonner";
