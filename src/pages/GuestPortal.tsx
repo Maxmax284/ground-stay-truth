@@ -61,6 +61,7 @@ import { GuestNowCard, computeNowState } from "@/components/GuestNowCard";
 import { JourneyBanner } from "@/components/guest/JourneyBanner";
 import { LanguageSuggestionBanner } from "@/components/guest/LanguageSuggestionBanner";
 import { AirportGuidanceCard } from "@/components/guest/AirportGuidanceCard";
+import { IslandGuideCard } from "@/components/guest/IslandGuideCard";
 import { resolveJourneyStage } from "@/lib/guestJourneyStage";
 import { useAirportPickup } from "@/hooks/useAirportPickups";
 import { WhileYouWaitTab } from "@/components/WhileYouWaitTab";
@@ -551,6 +552,10 @@ const GuestPortal = () => {
         {legAirport && (
           <AirportGuidanceCard airportCode={legAirport.code} legLabel={legAirport.label} />
         )}
+
+        {/* Lamai's own island guide. Discovery only, and it renders nothing
+            until the camp has actually published entries. */}
+        <IslandGuideCard />
 
         {/* Everything else — setup, perks, intelligence — one tap deeper. */}
         <Collapsible open={extrasOpen} onOpenChange={setExtrasOpen}>
