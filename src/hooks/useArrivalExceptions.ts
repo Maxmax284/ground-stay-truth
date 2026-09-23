@@ -115,6 +115,7 @@ export function useDecideArrivalException() {
 }
 
 export interface PickupBrief {
+  id: string;
   booking_id: string;
   flight_number: string | null;
   confirmed_airport: string | null;
@@ -138,7 +139,7 @@ export function usePickupBriefs(bookingIds: string[]) {
       const { data, error } = await supabase
         .from("airport_pickups")
         .select(
-          "booking_id, flight_number, confirmed_airport, arrival_location_name, arrival_datetime, passenger_count, luggage_notes, special_instructions, guest_ready_at, collected_at, drivers(name, license_plate)",
+          "id, booking_id, flight_number, confirmed_airport, arrival_location_name, arrival_datetime, passenger_count, luggage_notes, special_instructions, guest_ready_at, collected_at, drivers(name, license_plate)",
         )
         .in("booking_id", key);
       if (error) throw error;

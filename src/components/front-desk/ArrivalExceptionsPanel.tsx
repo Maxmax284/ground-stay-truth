@@ -11,7 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Check, Copy, ExternalLink, ShieldQuestion } from "lucide-react";
+import { AlertTriangle, Check, Copy, ExternalLink, Link2, ShieldQuestion } from "lucide-react";
+import { useCreateDriverLink } from "@/hooks/useDriverLink";
 import { toast } from "sonner";
 import {
   useArrivalExceptions,
@@ -69,6 +70,8 @@ export function ArrivalExceptionsPanel({ onOpen }: { onOpen: (bookingId: string)
   const { data: rows, isLoading } = useArrivalExceptions();
   const decide = useDecideArrivalException();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [linking, setLinking] = useState<string | null>(null);
+  const createLink = useCreateDriverLink();
 
   const bookingIds = useMemo(() => (rows ?? []).map((r) => r.booking_id), [rows]);
   const { data: briefs } = usePickupBriefs(bookingIds);
@@ -92,6 +95,23 @@ export function ArrivalExceptionsPanel({ onOpen }: { onOpen: (bookingId: string)
       toast.error(e?.message ?? t("arrivalExceptions.failed", "Could not save that."));
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const makeDriverLink = async (bookingId: string) => {
+    const pickupId = briefs?.[bookingId]?.id;
+    if (!pickupId) return;
+    setLinking(bookingId);
+    try {
+      const { url } = await createLink.mutateAsync({ pickup_id: pickupId });
+      await navigator.clipboard.writeText(url);
+      toast.success(
+        t("arrivalExceptions.driverLinkCopied", "Driver link copied — send it to your driver. It expires in 48 hours."),
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? t("arrivalExceptions.driverLinkFailed", "Could not make that link."));
+    } finally {
+      setLinking(null);
     }
   };
 
@@ -151,7 +171,18 @@ export function ArrivalExceptionsPanel({ onOpen }: { onOpen: (bookingId: string)
                   </span>
                 )}
                 <span className="ml-auto flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => copyBrief(bookingId, guestName, guestPhone)}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!briefs?.[bookingId]?.id || linking === bookingId}
+                    onClick={() => makeDriverLink(bookingId)}
+                  >
+                    <Link2 className="mr-2 h-4 w-4" />
+                    {linking === bookingId
+                      ? t("arrivalExceptions.linking", "Making link…")
+                      : t("arrivalExceptions.driverLink", "Driver link")}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => copyBrief(bookingId, guestName, guestPhone)}>
                     <Copy className="mr-2 h-4 w-4" />
                     {t("arrivalExceptions.copyBrief", "Copy driver brief")}
                   </Button>
