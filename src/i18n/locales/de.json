@@ -1712,5 +1712,15 @@
       "title": "Willkommen in Lamai",
       "line": "Sie sind eingecheckt. Training, Wichtiges und die Rezeption sind nur einen Tap entfernt."
     }
+  },
+  "airportGuidance": {
+    "legArrival": "Ankunft",
+    "legConnection": "Ihr Umstieg",
+    "open": "Orientierung am Flughafen",
+    "terminals": "Terminals",
+    "mapNote": "Gates, Schalter und Geschäfte ändern sich — sehen Sie am Reisetag immer auf dem offiziellen Flughafenplan nach.",
+    "lastReviewed": "Zuletzt geprüft am {{date}}",
+    "stale": "möglicherweise nicht aktuell",
+    "noCoverage": "Für diesen Flughafen liegen uns noch keine geprüften Hinweise vor. Folgen Sie der Beschilderung vor Ort und schreiben Sie uns, wenn Sie Hilfe brauchen."
   }
 }

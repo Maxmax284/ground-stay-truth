@@ -1712,5 +1712,15 @@
       "title": "Bienvenue à Lamai",
       "line": "Vous êtes enregistré. L'entraînement, les essentiels et la réception sont à portée de main."
     }
+  },
+  "airportGuidance": {
+    "legArrival": "Arrivée",
+    "legConnection": "Votre correspondance",
+    "open": "Repères à l'aéroport",
+    "terminals": "Terminaux",
+    "mapNote": "Portes, comptoirs et boutiques changent — consultez toujours le plan officiel de l'aéroport le jour même.",
+    "lastReviewed": "Vérifié le {{date}}",
+    "stale": "peut ne plus être à jour",
+    "noCoverage": "Nous n'avons pas encore d'informations vérifiées pour cet aéroport. Suivez la signalisation sur place et écrivez-nous si besoin."
   }
 }

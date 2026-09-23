@@ -2314,5 +2314,15 @@
       "title": "Welcome to Lamai",
       "line": "You're checked in. Training, essentials and the front desk are one tap away."
     }
+  },
+  "airportGuidance": {
+    "legArrival": "Arriving",
+    "legConnection": "Your connection",
+    "open": "Airport orientation",
+    "terminals": "Terminals",
+    "mapNote": "Gates, counters and shops change — always check the airport's own map on the day.",
+    "lastReviewed": "Last checked {{date}}",
+    "stale": "may be out of date",
+    "noCoverage": "We don't have checked guidance for this airport yet. Follow the airport's own signage, and message us if you need a hand."
   }
 }

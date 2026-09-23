@@ -484,10 +484,10 @@ const GuestPortal = () => {
   const legAirport = useMemo((): { code: string; label: string } | null => {
     if (!nowBooking || nowState === "onsite") return null;
     const details = (nowBooking.arrival_details ?? null) as Record<string, any> | null;
-    if (journeyStage?.stage === "island_approach" || journeyStage?.stage === "pickup") {
+    if (journeyStage === "island_approach" || journeyStage === "pickup") {
       return { code: "USM", label: t("airportGuidance.legArrival", "Arriving") };
     }
-    if (journeyStage?.stage === "bangkok" || journeyStage?.stage === "transit") {
+    if (journeyStage === "bangkok" || journeyStage === "transit") {
       const code = details?.confirmed_airport ?? details?.transit_airport ?? "BKK";
       return { code, label: t("airportGuidance.legConnection", "Your connection") };
     }
