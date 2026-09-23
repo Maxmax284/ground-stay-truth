@@ -76,6 +76,7 @@ const Settings = () => {
           {isAdmin && <TabsContent value="properties"><ErrorBoundary inline label="Properties"><PropertyManagementPanel /></ErrorBoundary></TabsContent>}
           {isAdmin && <TabsContent value="training"><ErrorBoundary inline label="Training"><TrainingPackagesManager /></ErrorBoundary></TabsContent>}
           {isAdmin && <TabsContent value="arrival"><ErrorBoundary inline label="Arrival"><ArrivalWelcomeEditor /></ErrorBoundary></TabsContent>}
+          {canManagePolicies && <TabsContent value="guide"><ErrorBoundary inline label="Island guide"><LocalRecommendationsEditor /></ErrorBoundary></TabsContent>}
           {isAdmin && <TabsContent value="integrations"><ErrorBoundary inline label="Integrations"><IntegrationSettings /></ErrorBoundary></TabsContent>}
           {canManageReviews && <TabsContent value="reviews"><ErrorBoundary inline label="Reviews"><ReviewsManager /></ErrorBoundary></TabsContent>}
           {isAdmin && <TabsContent value="aiops"><ErrorBoundary inline label="Ops"><AIOpsPanel /></ErrorBoundary></TabsContent>}
