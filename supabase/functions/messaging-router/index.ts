@@ -1061,6 +1061,65 @@ async function getGuestPhase(
   return "none";
 }
 
+// ── Inbound mirror: one thread per guest, whichever app they wrote from ──────
+// Anything a guest sends over WhatsApp/Telegram/SMS/LINE is written into
+// public.messages under their current booking, tagged with the channel it came
+// from. That's what puts it in front of staff at Front Desk, Arrivals, Bookings,
+// Check-In Desk and /messages — no separate inbox, no silo.
+//
+// Capture only: this stores text and raises an alert. It never changes booking,
+// payment, room, pickup or check-in state.
+async function mirrorGuestMessage(
+  admin: any,
+  userId: string,
+  channel: string,
+  text: string,
+  externalRef?: string | null,
+): Promise<void> {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    // The stay they're living right now, else the next one they're travelling to.
+    const { data: bookings } = await admin
+      .from("bookings")
+      .select("id, state, check_in, units(name)")
+      .eq("guest_id", userId)
+      .in("state", ["checked_in", "confirmed", "pending_deposit"])
+      .order("check_in", { ascending: true })
+      .limit(10);
+    const booking =
+      (bookings ?? []).find((b: any) => b.state === "checked_in") ??
+      (bookings ?? []).find((b: any) => b.check_in >= today) ??
+      (bookings ?? [])[0];
+    if (!booking) return; // nothing to attach to — the log still has the message
+
+    const source = ["whatsapp", "telegram", "sms", "line"].includes(channel) ? channel : "portal";
+    const { error } = await admin.from("messages").insert({
+      booking_id: booking.id,
+      content: text.slice(0, 2000),
+      is_internal: false,
+      sender_id: userId,
+      draft: false,
+      source,
+      ...(externalRef ? { external_ref: externalRef } : {}),
+    });
+    // Duplicate external_ref means the provider retried a delivery — not a failure.
+    if (error && !`${error.message}`.includes("duplicate key")) {
+      console.warn("[mirror] message insert failed:", error.message);
+      return;
+    }
+
+    const unit = booking.units?.name ? ` (${booking.units.name})` : "";
+    const preview = text.length > 120 ? `${text.slice(0, 120)}…` : text;
+    await emitAdminAlert(
+      "guest_message_received",
+      `Guest wrote via ${source}${unit}: "${preview}"`,
+      { referenceId: booking.id, deepLink: "/messages", context: { channel: source }, triggeredBy: "messaging-router" },
+    );
+  } catch (e) {
+    console.warn("[mirror] failed:", e instanceof Error ? e.message : e);
+  }
+}
+
 // ── Self-report arrival intent detection (hybrid: keyword + AI fallback) ──
 // Stage 2 = guest landed at a MAINLAND transit node (BKK, DMK, URT/Surat Thani) — still in transit.
 // Stage 3 = guest reached Koh Samui (USM, Nathon, Lipa Noi, ferry-onboard, on the island).
