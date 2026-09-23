@@ -592,8 +592,6 @@ const GuestPortal = () => {
                 are flying from — staff keep reading in English or Thai. */}
             <GuestLanguagePicker />
 
-            {/* First-visit messaging onboarding — auto-hides once connected or skipped */}
-            <GuestMessagingOnboarding />
 
             {guestHistory?.isReturning && (
               <Card className="border-primary/30 bg-primary/5">
