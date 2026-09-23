@@ -46,7 +46,14 @@
     "perNight": "/nuit",
     "propertyManagement": "Gestion immobilière",
     "next": "Suivant",
-    "menu": "Menu"
+    "menu": "Menu",
+    "checking": "Vérification des disponibilités...",
+    "tryAgain": "Réessayer",
+    "processing": "Traitement...",
+    "days": "jours",
+    "filters": "Filtres",
+    "all": "Tous types",
+    "refresh": "Rafraîchir"
   },
   "nav": {
     "dashboard": "Tableau de bord",
@@ -58,7 +65,19 @@
     "messages": "Messages",
     "settings": "Paramètres",
     "navigation": "Navigation",
-    "previewGuestPortal": "Aperçu du portail invité"
+    "previewGuestPortal": "Aperçu du portail invité",
+    "mediaLibrary": "Médiathèque",
+    "frontDesk": "Réception",
+    "notifications": "Notifications",
+    "adjustments": "Ajustements",
+    "opsConsole": "Console Opérations",
+    "embeds": "Intégrations",
+    "warRoomSim": "Simulation War Room",
+    "platformGuide": "Guide Plateforme",
+    "arrivalsBoard": "Tableau des arrivées",
+    "arrivalIntel": "Intelligence des arrivées",
+    "adminBooking": "Nouvelle réservation",
+    "adminBookingFlow": "Flux de réservation Admin"
   },
   "auth": {
     "signIn": "Se connecter",
@@ -435,8 +454,37 @@
       "offline": "Hors ligne",
       "bank_transfer": "Virement bancaire",
       "cash": "Espèces",
-      "card": "Carte"
-    }
+      "card": "Carte",
+      "in_person": "En personne",
+      "other": "Autre (hors ligne)"
+    },
+    "refundIssued": "Remboursement effectué avec succès",
+    "totalStayCost": "Coût total du séjour",
+    "totalPaid": "Total payé",
+    "totalRefunded": "Remboursé",
+    "netPaid": "Net payé",
+    "outstanding": "Solde dû",
+    "fullyPaid": "Entièrement payé",
+    "refund": "Remboursement",
+    "paymentType": "Type de paiement",
+    "paymentSummary": "Récapitulatif des paiements",
+    "addonsLabel": "Services additionnels (transfert aéroport, extras)",
+    "history": "Historique des paiements",
+    "refundLabel": "Rembourser",
+    "viewReceipt": "Voir le reçu",
+    "issueRefund": "Émettre un remboursement",
+    "refundDescriptionStripe": "Stripe sera facturé immédiatement. La base de données sera mise à jour seulement après la confirmation du remboursement par Stripe.",
+    "refundDescriptionManual": "Remboursement manuel — ceci met à jour uniquement l'enregistrement dans la base de données. Aucun fournisseur ne sera facturé. Traitez le remboursement réel séparément.",
+    "originalAmount": "Montant original",
+    "alreadyRefunded": "Déjà remboursé",
+    "maxRefundable": "Max remboursable",
+    "refundAmount": "Montant du remboursement",
+    "exceedsMax": "Dépasse le montant maximal remboursable",
+    "fullRefundNote": "Il s'agira d'un remboursement intégral",
+    "refundReason": "Motif",
+    "refundReasonPlaceholder": "Expliquez pourquoi ce remboursement est émis...",
+    "confirmRefund": "Confirmer le remboursement",
+    "paymentFailed": "Paiement non enregistré"
   },
   "messages": {
     "title": "Messages",
@@ -456,7 +504,18 @@
     "newCount": "{{count}} nouveau",
     "messageSent": "Message envoyé",
     "messageFailed": "Échec de l'envoi du message",
-    "typeMessage": "Tapez un message..."
+    "typeMessage": "Tapez un message...",
+    "adminNotified": "Les administrateurs sont informés de cette réponse",
+    "noContent": "(aucun aperçu)",
+    "openBooking": "Ouvrir la réservation",
+    "replyPlaceholder": "Répondre au client...",
+    "guestWillSee": "Le client verra cette réponse",
+    "readOnly": "Votre rôle permet de lire les messages mais pas d'y répondre.",
+    "reply": "Répondre",
+    "draftQueued": "Réponse en attente d'approbation administrative",
+    "draftQueuedDesc": "Un administrateur doit l'approuver avant que le client ne la voie.",
+    "needsAdminApproval": "Un administrateur doit approuver ceci avant que le client ne le voie",
+    "awaitingApproval": "En attente d'approbation administrative"
   },
   "stateTransition": {
     "changeState": "Changer l'état",
@@ -494,7 +553,20 @@
     "invalidFileType": "Type de fichier invalide",
     "invalidFileTypeDesc": "Veuillez télécharger un fichier JPG, PNG, WebP ou PDF.",
     "fileTooLarge": "Fichier trop volumineux",
-    "fileTooLargeDesc": "Taille maximale : 10 Mo."
+    "fileTooLargeDesc": "Taille maximale : 10 Mo.",
+    "uploadStalled": "Le téléchargement de votre pièce d'identité prend plus de temps que prévu. Vérifiez votre connexion et réessayez — si le problème persiste, contactez la réception, nous pourrons le prendre autrement.",
+    "uploadNotVisible": "Nous avons enregistré votre document, mais il n'apparaît pas encore. Actualisez pour vérifier à nouveau. S'il n'est toujours pas listé, téléchargez-le une fois de plus ou contactez la réception.",
+    "uploadFailedRecovery": "Votre téléchargement de pièce d'identité n'a pas abouti. Réessayez, ou contactez la réception.",
+    "received": "Document d'identité reçu.",
+    "needsReplacementTitle": "Nous avons besoin d'un document différent",
+    "needsReplacement": "Veuillez télécharger la page principale de votre passeport avec votre photo et vos détails.",
+    "guidanceTitle": "Ce dont nous avons besoin: la page photo de votre passeport",
+    "guidanceOk1": "✓ La page avec votre photo, nom et numéro de passeport",
+    "guidanceOk2": "✓ Les quatre coins visibles, au point, sans reflet",
+    "guidanceBad1": "✗ Carte d'arrivée numérique thaïlandaise / QR code TDAC",
+    "guidanceBad2": "✗ Carte d'embarquement, billet d'avion ou confirmation de réservation",
+    "guidanceBad3": "✗ Page de visa autocollant seule",
+    "retryUpload": "Actualiser et réessayer"
   },
   "verification": {
     "analyzing": "Analyse…",
@@ -620,7 +692,13 @@
     "confirmCancel": "Oui, annuler la réservation",
     "bookingCancelled": "Réservation annulée",
     "campInfo": "Infos du camp",
-    "noCampInfo": "Les informations du camp n'ont pas encore été configurées. Veuillez revenir plus tard."
+    "noCampInfo": "Les informations du camp n'ont pas encore été configurées. Veuillez revenir plus tard.",
+    "frontDeskReplied": "La réception a répondu",
+    "contactFrontDesk": "Contacter la réception",
+    "frontDesk": "Réception",
+    "roomsAvailable": "chambres disponibles",
+    "thankYou": "Merci de votre séjour parmi nous !",
+    "departureMessage": "Nous espérons que vous avez passé un merveilleux séjour. Bon voyage, et nous serions ravis de vous accueillir à nouveau !"
   },
   "campInfo": {
     "trainingSchedule": "Programme d'entraînement",
@@ -639,7 +717,11 @@
       "fighter": "Combattant",
       "training_guest": "Stagiaire",
       "spectator": "Spectateur",
-      "long_term": "Séjour longue durée"
+      "long_term": "Séjour longue durée",
+      "traveler": "Voyageur",
+      "digital_nomad": "Nomade digital",
+      "couple": "Couple",
+      "business": "Affaires"
     },
     "arrivalDetails": "Détails d'arrivée",
     "flightInfo": "Vol / Ferry",
@@ -648,7 +730,19 @@
     "emergencyContact": "Contact d'urgence",
     "emergencyPlaceholder": "Nom et numéro de téléphone",
     "dietaryRestrictions": "Restrictions alimentaires",
-    "dietaryPlaceholder": "Allergies, végétarien, etc."
+    "dietaryPlaceholder": "Allergies, végétarien, etc.",
+    "flightProtocolNote": "Les détails de vol sont requis pour chaque séjour afin que nous puissions suivre votre voyage et vous contacter en cas de changement.",
+    "finalFlight": "Vol d'atterrissage",
+    "arrivalDateTime": "Date et heure d'arrivée (Thaïlande)",
+    "connectingFlight": "Vol de correspondance / premier vol (si applicable)",
+    "connectingFlightHint": "Vous arrivez via Bangkok ou une autre ville ? Ajoutez aussi ce vol.",
+    "flightsNotBooked": "Mes vols ne sont pas encore réservés",
+    "flightsNotBookedDesc": "Nous vous les demanderons sur votre page de séjour une fois réservés.",
+    "flightRequired": "Veuillez ajouter le vol sur lequel vous atterrissez – ou cocher que vos vols ne sont pas encore réservés.",
+    "arrivalTimeRequired": "Veuillez ajouter votre date et heure d'arrivée en Thaïlande.",
+    "airportPickup": "Organiser le transfert aéroport",
+    "airportPickupDesc": "Nous organiserons un transfert depuis l'aéroport pour vous",
+    "airportPickupFeeNote": "Des frais de transfert sont ajoutés au total de votre réservation."
   },
   "notFound": {
     "title": "404",
@@ -687,7 +781,14 @@
     "minStay": "Le séjour minimum est de {{count}} nuit(s) pour ce logement.",
     "maxCapacity": "La capacité maximale est de {{count}} invité(s) pour ce logement.",
     "maintenanceConflict": "Le logement est bloqué pour maintenance du {{start}} au {{end}}{{reason}}.",
-    "bufferConflict": "L'arrivée entre en conflit avec le délai de nettoyage de {{hours}}h après un départ le {{date}}."
+    "bufferConflict": "L'arrivée entre en conflit avec le délai de nettoyage de {{hours}}h après un départ le {{date}}.",
+    "seasonalMinStay": "Minimum {{ruleName}} : {{count}} nuit(s).",
+    "guestType": "Type de client",
+    "occupancyError": "Le nombre de clients dépasse le maximum autorisé pour cette unité.",
+    "noRoomsAvailable": "Désolé – ce type de chambre n'est plus disponible pour ces dates.",
+    "roomType": "Type de chambre",
+    "selectRoomType": "Sélectionner le type de chambre",
+    "roomsAvailable": "chambres disponibles"
   },
   "filters": {
     "state": "État",
@@ -827,7 +928,26 @@
       "front_desk": "Réception",
       "guest_portal": "Portail invité",
       "supervisor_override": "Dérogation manager"
-    }
+    },
+    "payOnlineTab": "Payer en ligne",
+    "bankTransferTab": "Virement bancaire",
+    "onlineInstructions": "Payez en toute sécurité avec votre carte de crédit ou de débit.",
+    "bankTransferTitle": "Détails du virement bancaire",
+    "bankName": "Banque",
+    "accountName": "Nom du compte",
+    "accountNumber": "Numéro de compte",
+    "reference": "Référence",
+    "bankTransferNote": "Veuillez inclure la référence lors de votre virement. Votre réservation sera confirmée une fois le paiement vérifié.",
+    "openingCheckout": "Ouverture du paiement sécurisé — cela peut prendre quelques secondes...",
+    "tempUnavailable": "Le paiement par carte est temporairement indisponible. Veuillez contacter la réception et nous vous enverrons un lien de paiement.",
+    "onlineNotConfigured": "Les paiements en ligne ne sont pas encore disponibles. Veuillez contacter la réception.",
+    "sessionExpired": "Cette session de réservation a expiré ou le statut a changé. Veuillez actualiser et réessayer.",
+    "alreadyPaid": "Un paiement a déjà été enregistré pour cette réservation.",
+    "redirectBlocked": "Votre navigateur n'a pas ouvert automatiquement le paiement sécurisé. Appuyez sur le bouton ci-dessous pour l'ouvrir, ou copiez le lien dans Safari ou Chrome.",
+    "noCheckoutUrl": "Le paiement n'a pas pu être ouvert. Veuillez contacter la réception.",
+    "checkoutTimeout": "Le paiement prend plus de temps que d'habitude. Veuillez vérifier votre connexion et réessayer, ou contacter la réception pour un lien de paiement.",
+    "payOnline": "Payer l'acompte en ligne",
+    "openCheckoutManually": "Ouvrir le paiement sécurisé"
   },
   "override": {
     "title": "Dérogation de statut",
@@ -1220,7 +1340,357 @@
       "reportIssue": "Besoin d'aide",
       "askGlitch": "Demander à Kru Glitch",
       "landedSuccess": "Confirmé ! L'équipe est informée. Votre chauffeur arrive.",
-      "alreadyLanded": "Vous avez déjà confirmé votre arrivée."
+      "alreadyLanded": "Vous avez déjà confirmé votre arrivée.",
+      "depositNotFound": "Nous n'avons pas trouvé de caution due pour cette réservation. Veuillez contacter la réception.",
+      "uploadNotAvailable": "Le téléchargement de pièce d'identité n'est pas encore disponible pour cette réservation. Veuillez contacter la réception."
+    },
+    "arrivalSaved": "Détails d'arrivée enregistrés",
+    "howArriving": "Comment arrivez-vous ?",
+    "transportIntent": "Avez-vous besoin d'un transfert ?",
+    "essentials": {
+      "title": "Infos Essentielles",
+      "wifi": "WiFi",
+      "rules": "Règlement Intérieur",
+      "emergency": "Urgence"
+    }
+  },
+  "arrivalFAQ": {
+    "title": "Arriver à Koh Samui — FAQ Rapide",
+    "badge": "Transit vs. Arrivée",
+    "lead": "Seuls USM (Aéroport de Koh Samui) et les jetées de l'île comptent comme votre arrivée finale. Tout le reste est encore en transit — même si vous avez déjà atterri en Thaïlande.",
+    "youAreHere": "Vous êtes ici",
+    "messageStaff": "Contacter le personnel à cette étape",
+    "printSheet": "Imprimer la feuille d'arrivée",
+    "printBlocked": "Fenêtre pop-up bloquée — veuillez autoriser les pop-ups pour imprimer.",
+    "printTitle": "Instructions d'Arrivée — Koh Samui",
+    "arrivedNote": "Vous êtes arrivé(e). Plus aucune étape de transit n'est nécessaire.",
+    "nextStep": "Étape suivante",
+    "stage": {
+      "pre_departure": "Pas encore atterri",
+      "bkk": "À BKK (Bangkok)",
+      "dmk": "À DMK (Don Mueang)",
+      "urt": "À URT (Surat Thani)",
+      "ferry": "Sur le ferry",
+      "pier": "À la jetée de Samui",
+      "usm": "Atterri(e) à USM"
+    },
+    "next": {
+      "pre_departure": "Confirmez votre atterrissage une fois en Thaïlande.",
+      "bkk": "Prenez votre vol de correspondance vers USM, ou vers URT pour le ferry.",
+      "dmk": "Prenez votre vol de correspondance (USM ou URT). Prévoyez 4h+ si transfert vers BKK.",
+      "urt": "Prenez la navette jusqu'à la jetée de Donsak, puis le ferry vers Nathon ou Lipa Noi.",
+      "ferry": "Prévenez-nous lorsque vous serez à quelques minutes de la jetée.",
+      "pier": "Le transfert s'active — votre chauffeur est en route.",
+      "usm": "Le transfert s'active — votre chauffeur est en route."
+    },
+    "timeline": {
+      "depart": "Départ",
+      "transit": "Transit continental",
+      "crossing": "Ferry / correspondance",
+      "samui": "Sur Koh Samui"
+    },
+    "q": {
+      "why": "Pourquoi BKK / DMK / URT ne comptent-ils pas comme « arrivé(e) » ?",
+      "whatToTell": "Que dois-je dire au personnel à chaque étape ?"
+    },
+    "a": {
+      "why": "Ces aéroports sont sur le continent thaïlandais. Vous avez encore besoin d'un vol de correspondance ou d'un ferry pour atteindre l'île. Tant que vos pieds n'ont pas touché Samui, l'équipe vous considère en transit — le transfert n'est pas encore envoyé, mais le personnel peut voir votre itinéraire."
+    },
+    "s": {
+      "bkkUsm": {
+        "title": "Scénario : BKK → USM (connexion directe)",
+        "body": "Vous atterrissez à BKK, passez l'immigration, puis prenez votre vol intérieur vers Samui (USM). Le système vous indique en transit — Bangkok jusqu'à l'atterrissage à USM. Une fois USM atterri, le statut passe à « arrivé(e) » et le transfert est activé."
+      },
+      "dmkUsm": {
+        "title": "Scénario : DMK → USM (itinéraire économique Bangkok)",
+        "body": "Don Mueang est le deuxième aéroport de Bangkok — généralement moins cher, principalement des compagnies low-cost. Même règle : atterrir à DMK vous maintient en transit. L'arrivée finale est USM. Attention : BKK et DMK ne sont pas le même aéroport — prévoyez 4h+ si vous avez une correspondance."
+      },
+      "urtFerry": {
+        "title": "Scénario : DMK / BKK → URT → ferry → Samui",
+        "body": "L'itinéraire économique. Volez jusqu'à Surat Thani (URT), puis prenez le ferry vers la jetée de Nathon ou Lipa Noi. Le statut reste en transit à travers URT et le ferry. Arrivée finale = la jetée où vous débarquez à Samui."
+      },
+      "usmDirect": {
+        "title": "Scénario : Vol direct vers USM",
+        "body": "Le chemin le plus simple. Vous atterrissez, vous êtes arrivé(e). Pas d'état de transit. Le transfert (si activé) est déclenché dès que USM enregistre votre atterrissage."
+      }
+    },
+    "script": {
+      "title": "Message à envoyer au personnel",
+      "desc": "Copiez ce texte et envoyez-le sur n'importe quel canal de messagerie connecté."
+    },
+    "scriptText": {
+      "bkk": "Bonjour — Je viens d'atterrir à BKK (Bangkok Suvarnabhumi). Je me dirige vers mon vol de correspondance. Je vous enverrai un nouveau message lorsque je serai plus proche de Samui.",
+      "dmk": "Bonjour — Je viens d'atterrir à DMK (Don Mueang). Je prends mon prochain vol bientôt. Je vous informerai une fois que je serai à Samui.",
+      "urt": "Bonjour — J'ai atterri à Surat Thani (URT). Je me dirige vers le ferry pour Samui. Je vous ferai savoir quand je serai sur le bateau.",
+      "ferry": "Bonjour — Je suis actuellement sur le ferry pour Samui. Je vous enverrai un nouveau message quelques minutes avant d'arriver au quai.",
+      "pier": "Bonjour — Je viens d'atteindre le quai de Samui (Nathon / Lipa Noi). Prêt pour le ramassage.",
+      "usm": "Bonjour — J'ai atterri à USM (Aéroport de Koh Samui). Prêt pour le ramassage."
+    },
+    "print": {
+      "bookingId": "Réservation",
+      "intlFlight": "Vol international",
+      "finalFlight": "Vol final/de correspondance",
+      "arrivalTime": "Heure d'arrivée",
+      "ruleTitle": "Règle Transit vs Arrivée",
+      "ruleBody": "BKK, DMK et URT sont des points de contrôle de transit sur le continent — le personnel vous considère en transit jusqu'à votre arrivée à Koh Samui. USM (Aéroport de Samui) et les quais de Nathon / Lipa Noi comptent comme arrivée finale. Le ramassage s'active uniquement à l'arrivée finale.",
+      "checkpoints": "Points de contrôle",
+      "code": "Code",
+      "name": "Lieu",
+      "status": "Statut",
+      "transit": "Transit",
+      "arrived": "Arrivé",
+      "cheatTitle": "Quoi envoyer au personnel à chaque étape",
+      "footer": "Imprimez cette feuille ou enregistrez-la en PDF — gardez-la sur votre téléphone pour le voyage."
+    }
+  },
+  "checkin": {
+    "confirmPayment": "Confirmer le paiement à l'enregistrement",
+    "confirmPaymentDesc": "Enregistrer le paiement en espèces ou en personne reçu pendant l'enregistrement",
+    "outstanding": "Solde impayé",
+    "paymentNotes": "Notes de paiement (ex: numéro de reçu)",
+    "recordAndCheckIn": "Enregistrer le paiement et s'enregistrer",
+    "balanceDueWarning": "Le client doit encore {{amount}} avant que l'enregistrement ne soit complet."
+  },
+  "labels": {
+    "bookingState": {
+      "inquiry": "Demande",
+      "soft_hold": "Réservation provisoire",
+      "pending_approval": "En attente d'approbation",
+      "pending_deposit": "Dépôt en attente",
+      "confirmed": "Confirmé",
+      "checked_in": "Enregistré",
+      "completed": "Terminé",
+      "cancelled": "Annulé",
+      "no_show": "Non-présentation"
+    },
+    "paymentStatus": {
+      "pending": "En attente",
+      "recorded": "Payé",
+      "failed": "Échec",
+      "cancelled": "Annulé",
+      "refunded": "Remboursé",
+      "partially_refunded": "Partiellement remboursé",
+      "waived": "Exonéré"
+    },
+    "paymentType": {
+      "deposit": "Acompte",
+      "balance": "Solde",
+      "addon": "Extra",
+      "security_deposit": "Dépôt de garantie",
+      "booking_fee": "Frais de réservation"
+    },
+    "paymentMethod": {
+      "stripe": "Carte (Stripe)",
+      "cash": "Espèces",
+      "bank_transfer": "Virement bancaire",
+      "in_person": "En personne",
+      "manual": "Enregistré par le personnel",
+      "other": "Autre (hors ligne)"
+    },
+    "depositState": {
+      "not_required": "Pas d'acompte requis",
+      "awaiting": "Acompte en attente",
+      "paid": "Acompte payé",
+      "handled_offline": "Géré hors ligne",
+      "refunded": "Acompte remboursé",
+      "forfeited": "Dépôt annulé"
+    },
+    "pickupResolution": {
+      "pickup_requested": "Ramassage demandé",
+      "pickup_scheduled": "Ramassage prévu",
+      "pickup_completed": "Ramassage effectué",
+      "pickup_failed": "Ramassage non effectué",
+      "self_arrival": "Arrivée autonome",
+      "pickup_disabled": "Ramassage désactivé par l'admin"
+    },
+    "documentStatus": {
+      "pending": "En attente de vérification",
+      "verified": "Vérifié",
+      "rejected": "À remplacer",
+      "needs_replacement": "À remplacer",
+      "checked_in_person": "Vérifié en personne"
+    },
+    "documentType": {
+      "passport": "Passeport / Pièce d'identité",
+      "national_id": "Carte d'identité nationale",
+      "visa": "Visa",
+      "tm30": "TM30",
+      "other": "Autre"
+    },
+    "tm30Status": {
+      "not_required": "TM30 non requis",
+      "pending": "TM30 en attente",
+      "tm30_submitted": "TM30 soumis",
+      "tm30_confirmed": "TM30 confirmé",
+      "tm30_failed": "TM30 échoué"
+    },
+    "cleaningStatus": {
+      "clean": "Propre",
+      "dirty": "À nettoyer",
+      "in_progress": "En cours de nettoyage",
+      "inspected": "Inspecté",
+      "blocked": "Bloqué"
+    },
+    "housekeepingStatus": {
+      "pending": "En attente",
+      "in_progress": "En cours",
+      "completed": "Terminé",
+      "skipped": "Ignoré"
+    },
+    "unitStatus": {
+      "available": "Disponible",
+      "occupied": "Occupé",
+      "maintenance": "Maintenance",
+      "inactive": "Inactif"
+    },
+    "driverAssignment": {
+      "unassigned": "Pas de chauffeur",
+      "assigned": "Chauffeur assigné",
+      "en_route": "Chauffeur en route",
+      "arrived": "Chauffeur arrivé",
+      "completed": "Dépôt effectué"
+    },
+    "checkoutBlocker": {
+      "outstanding_balance": "Solde dû",
+      "security_deposit_held": "Dépôt de garantie non libéré",
+      "open_maintenance": "Maintenance en cours dans la chambre",
+      "unreturned_key": "Clé non rendue",
+      "pending_documents": "Pièce d'identité manquante"
+    },
+    "offlineAck": {
+      "deposit": "Dépôt géré hors ligne",
+      "balance": "Solde collecté hors ligne",
+      "id_document": "ID vérifié en personne",
+      "security_deposit": "Dépôt de garantie géré hors ligne"
+    },
+    "marker": {
+      "pay_on_arrival": "Paiement à l'arrivée",
+      "manual_booking": "Réservation manuelle",
+      "legacy_booking": "Ancien enregistrement",
+      "handled_by_staff": "Géré par le personnel",
+      "deadline_override": "Date limite ignorée",
+      "attribution_missing": "Acteur non enregistré",
+      "sandbox": "Réservation d'essai"
+    }
+  },
+  "whileYouWait": {
+    "tab": "En attendant",
+    "title": "Pendant votre attente",
+    "subtitle": "Les conditions sur l'île, en direct de la source.",
+    "failed": "Impossible de charger les conditions de l'île pour le moment. Réessayez dans une minute.",
+    "onIsland": "Sur l'île en ce moment",
+    "feelsLike": "Ressenti",
+    "seaState": "État de la mer — Lamai Beach",
+    "waveHeight": "Hauteur des vagues",
+    "period": "Période",
+    "nextTides": "Prochaines marées",
+    "noTides": "Pas de changement de marée à venir.",
+    "highTide": "Marée haute",
+    "lowTide": "Marée basse",
+    "campRules": "Infos camp",
+    "source": "Données : Open-Meteo · mis à jour"
+  },
+  "nowCard": {
+    "tagAction": "Action requise",
+    "tagTravel": "En route",
+    "tagOnsite": "Vous êtes enregistré",
+    "tagBooked": "Réservé",
+    "depositTitle": "Votre acompte est toujours en attente",
+    "depositBody": "Payez l'acompte et votre chambre est garantie. Cela prend moins d'une minute sur votre téléphone.",
+    "depositCta": "Payer l'acompte",
+    "flightTitle": "Suivez votre vol",
+    "flightBody": "Nous suivons votre vol en direct. Atterrissez, appuyez sur « J'ai atterri », et votre chauffeur se déplace.",
+    "flightCta": "Ouvrir le radar de vol",
+    "onsiteTitle": "Tout pour votre séjour",
+    "onsiteBody": "WiFi, règlement intérieur, laverie, maintenance — et un accès direct à la réception.",
+    "onsiteCta": "Assistance séjour",
+    "quietTitle": "Tout est prêt",
+    "quietBody": "Rien à faire pour le moment. Nous vous contacterons avant votre voyage.",
+    "quietCta": "Voir la réservation",
+    "daysAway": "{{count}} jours restants",
+    "frontDesk": "Message à la réception",
+    "channelEmail": "Les mises à jour vont à {{email}}",
+    "channelEmailGeneric": "Les mises à jour vont à votre e-mail",
+    "channelMessaging": "et à votre chat lié — pas besoin de laisser cette page ouverte.",
+    "channelHint": "Liez WhatsApp ou Telegram ci-dessous et nous vous contacterons là-bas aussi."
+  },
+  "handshake": {
+    "title": "Réception alertée",
+    "reassure": "Vous pouvez fermer ceci. Nous vous enverrons un message lorsque votre chauffeur sera au point de rendez-vous.",
+    "yourDriver": "Votre chauffeur",
+    "call": "Appeler",
+    "whatsapp": "WhatsApp",
+    "noDriverYet": "La réception attribue votre chauffeur maintenant.",
+    "collected": "Vous êtes avec votre chauffeur. Prochain arrêt : le camp — la réception vous attend.",
+    "waiting": "Nous savons que vous attendez. Restez au point de rendez-vous — votre chauffeur est en route.",
+    "readyBadge": "Vous nous avez dit être prêt",
+    "imReady": "Je suis dehors avec mes bagages — je suis prêt"
+  },
+  "journeyIntake": {
+    "onFile": "Dans nos dossiers",
+    "weMeetYou": "nous vous attendons ici",
+    "legLabel": "Étape {{n}}",
+    "howLabel": "Comment",
+    "flightNumber": "Numéro de vol",
+    "from": "De",
+    "to": "À",
+    "departs": "Départ",
+    "arrives": "Arrivée",
+    "addLeg": "Ajouter une étape",
+    "saveTravel": "Enregistrer mon voyage",
+    "addTravel": "Ajouter mon voyage",
+    "editTravel": "Modifier mon voyage",
+    "addOnward": "Ajouter mon transfert vers Samui",
+    "uploadBooking": "Télécharger ma réservation",
+    "saved": "Enregistré — nous suivrons votre voyage d'ici.",
+    "savedNeedsOnward": "Enregistré. Il nous manque encore votre arrivée à Koh Samui.",
+    "saveFailed": "Impossible d'enregistrer. Veuillez réessayer.",
+    "needSomething": "Ajoutez un numéro de vol, ou vos lieux de départ et d'arrivée.",
+    "unreadable": "Impossible de lire cela — veuillez taper votre vol.",
+    "legsAdded": "{{count}} étape ajoutée",
+    "gapsFilled": "lacunes comblées",
+    "toCheck": "{{count}} à vérifier avec vous",
+    "readNothingNew": "Lecture effectuée — rien de nouveau à ajouter.",
+    "uploadFailed": "Échec du téléchargement. Essayez une capture d'écran.",
+    "privacy": "Nous lisons uniquement les détails de voyage que vous téléchargez. Votre référence de réservation est masquée, et nous ne suivons jamais votre localisation.",
+    "retention": "Tout ce que vous téléchargez est supprimé 30 jours après votre départ.",
+    "type": {
+      "flight": "Vol",
+      "ferry": "Ferry / Bateau",
+      "bus": "Bus / Van",
+      "road": "Voiture / Taxi",
+      "other": "Autre"
+    },
+    "status": {
+      "ready": "Vos informations de voyage sont enregistrées",
+      "needed": "Nous avons besoin de vos détails de voyage"
+    }
+  },
+  "journeyStage": {
+    "greeting": "Bienvenue, {{name}}",
+    "preparing": {
+      "title": "Préparation en cours",
+      "line": "Rien d'urgent. Nous vous informerons des points importants au moment opportun."
+    },
+    "transit": {
+      "title": "En route",
+      "line": "Nous surveillons vos vols. Votre prochaine étape est affichée en haut de cette page."
+    },
+    "bangkok": {
+      "title": "Correspondance à Bangkok",
+      "line": "Encore une étape. Prenez votre temps — l'immigration et les bagages d'abord."
+    },
+    "islandApproach": {
+      "title": "Presque sur l'île",
+      "line": "Koh Samui aujourd'hui. Dites-nous quand vous êtes prêt et nous bougerons."
+    },
+    "pickup": {
+      "title": "Votre prise en charge",
+      "line": "Le point de rencontre et les détails du chauffeur sont ici. Pas de précipitation."
+    },
+    "inHouse": {
+      "title": "Bienvenue à Lamai",
+      "line": "Vous êtes enregistré. L'entraînement, les essentiels et la réception sont à portée de main."
     }
   }
 }
