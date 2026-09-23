@@ -118,6 +118,13 @@
     --fight-blue: 217 91% 55%;
     --fight-gold: 42 85% 55%;
     --fight-dark: 0 0% 3%;
+
+    --journey-overlay-foreground: 0 0% 98%;
+    --journey-scrim: 0 0% 2%;
+    --journey-calm: 215 30% 18%;
+    --journey-travel: 217 91% 22%;
+    --journey-island: 186 70% 18%;
+    --journey-home: 0 60% 18%;
   }
 }
 
