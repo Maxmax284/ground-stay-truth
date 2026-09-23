@@ -1517,6 +1517,12 @@ serve(async (req) => {
       if (stage) console.log(`Self-report stage detected for user ${userId}: ${stage}`);
     }
 
+    // Mirror the guest's own words onto their booking thread so staff see it
+    // where they already work. Capture only — nothing executes from here.
+    if (!isStaffRole(role) && !simulate_user_id && guestPhase !== "none") {
+      await mirrorGuestMessage(admin, userId, channel, trimmed);
+    }
+
     // Urgency classification
     const urgency = detectUrgency(trimmed, history);
 
