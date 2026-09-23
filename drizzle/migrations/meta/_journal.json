@@ -57,6 +57,13 @@
       "when": 1790130945124,
       "tag": "0007_pickup_driver_messages",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790131552815,
+      "tag": "0008_scope_pickup_messages_to_property",
+      "breakpoints": true
     }
   ]
 }
