@@ -349,6 +349,11 @@ export default function ArrivalsBoard() {
                 </TabsContent>
               </>
             )}
+
+            {/* What the camp recommends, and which places arriving guests see first. */}
+            <TabsContent value="guide" className="mt-3">
+              <ArrivalEssentialsPanel />
+            </TabsContent>
           </Tabs>
         )}
       </div>
