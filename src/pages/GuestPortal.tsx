@@ -547,15 +547,18 @@ const GuestPortal = () => {
           <GuestFlightTracker bookingId={nowBooking.id} guestName={guestName} />
         )}
 
-        {/* Airport orientation for the leg they're on. Discovery, never
-            instruction — it sits under the Now card and hides once checked in. */}
-        {legAirport && (
-          <AirportGuidanceCard airportCode={legAirport.code} legLabel={legAirport.label} />
-        )}
-
-        {/* Lamai's own island guide. Discovery only, and it renders nothing
-            until the camp has actually published entries. */}
-        <IslandGuideCard />
+        {/* ── The welcome flow: countdown → the airport on this leg → pickup →
+            the island guide, in that order, for whichever stage they're at.
+            Arrangement only; every card still owns its own data. ─────────── */}
+        <GuestWelcomeFlow
+          stage={journeyStage}
+          bookingId={nowBooking?.id ?? null}
+          checkIn={nowBooking?.check_in ?? null}
+          unitName={nowBooking?.units?.name ?? null}
+          guestName={guestName}
+          legAirport={legAirport}
+          pickupEnabled={Boolean(nowPickupQuery.data?.pickup_enabled)}
+        />
 
         {/* Everything else — setup, perks, intelligence — one tap deeper. */}
         <Collapsible open={extrasOpen} onOpenChange={setExtrasOpen}>
