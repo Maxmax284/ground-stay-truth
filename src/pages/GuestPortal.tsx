@@ -60,8 +60,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { GuestNowCard, computeNowState } from "@/components/GuestNowCard";
 import { JourneyBanner } from "@/components/guest/JourneyBanner";
 import { LanguageSuggestionBanner } from "@/components/guest/LanguageSuggestionBanner";
-import { AirportGuidanceCard } from "@/components/guest/AirportGuidanceCard";
-import { IslandGuideCard } from "@/components/guest/IslandGuideCard";
+import { GuestWelcomeFlow } from "@/components/guest/GuestWelcomeFlow";
+import { GuestLanguagePicker } from "@/components/guest/GuestLanguagePicker";
 import { resolveJourneyStage } from "@/lib/guestJourneyStage";
 import { useAirportPickup } from "@/hooks/useAirportPickups";
 import { WhileYouWaitTab } from "@/components/WhileYouWaitTab";
@@ -569,6 +569,10 @@ const GuestPortal = () => {
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-4 pt-4">
+            {/* The guest's own language choice. Never inferred from where they
+                are flying from — staff keep reading in English or Thai. */}
+            <GuestLanguagePicker />
+
             {/* First-visit messaging onboarding — auto-hides once connected or skipped */}
             <GuestMessagingOnboarding />
 
