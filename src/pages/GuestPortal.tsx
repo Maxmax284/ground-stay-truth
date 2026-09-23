@@ -461,6 +461,21 @@ const GuestPortal = () => {
     [nowBooking, activeBookings]
   );
 
+  // Presentation only: which stage imagery/tint the portal wears. Reads the
+  // pickup row that already exists for this booking — it never creates or
+  // changes one.
+  const nowPickupQuery = useAirportPickup(nowBooking?.id ?? null);
+  const journeyStage = useMemo(
+    () =>
+      resolveJourneyStage({
+        nowState,
+        journeyPhase,
+        awaitingPickup: Boolean(nowPickupQuery.data?.pickup_enabled),
+      }),
+    [nowState, journeyPhase, nowPickupQuery.data]
+  );
+
+
 
   const openBookingForm = (unitId?: string) => {
     setBookingFormUnitId(unitId);
