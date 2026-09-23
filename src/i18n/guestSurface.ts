@@ -32,6 +32,9 @@ export const GUEST_SURFACE_PREFIXES = [
   "messages",
   "documents",
   "checkin",
+  "translation",
+  "airportGuidance",
+  "localGuide",
 ] as const;
 
 export function isGuestSurfaceKey(key: string): boolean {
