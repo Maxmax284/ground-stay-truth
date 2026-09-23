@@ -480,6 +480,10 @@ const GuestPortal = () => {
             warn loudly and give a one-tap way into Safari/Chrome. */}
         <GuestInAppBrowserBanner />
 
+        {/* ── Stage atmosphere. Presentation only — the truth is in the card
+            directly below it. ─────────────────────────────────────────────── */}
+        <JourneyBanner stage={journeyStage} guestName={guestName} />
+
         {/* ── One "Now" card. One state, one obvious next move. ───────────── */}
         <GuestNowCard
           state={nowState}
