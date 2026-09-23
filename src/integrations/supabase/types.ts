@@ -3513,6 +3513,70 @@ export type Database = {
           },
         ]
       }
+      pickup_driver_messages: {
+        Row: {
+          booking_id: string
+          content: string
+          created_at: string
+          driver_link_id: string | null
+          id: string
+          pickup_id: string
+          read_by_driver_at: string | null
+          read_by_guest_at: string | null
+          read_by_staff_at: string | null
+          sender_type: string
+          sender_user_id: string | null
+        }
+        Insert: {
+          booking_id: string
+          content: string
+          created_at?: string
+          driver_link_id?: string | null
+          id?: string
+          pickup_id: string
+          read_by_driver_at?: string | null
+          read_by_guest_at?: string | null
+          read_by_staff_at?: string | null
+          sender_type: string
+          sender_user_id?: string | null
+        }
+        Update: {
+          booking_id?: string
+          content?: string
+          created_at?: string
+          driver_link_id?: string | null
+          id?: string
+          pickup_id?: string
+          read_by_driver_at?: string | null
+          read_by_guest_at?: string | null
+          read_by_staff_at?: string | null
+          sender_type?: string
+          sender_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pickup_driver_messages_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pickup_driver_messages_driver_link_id_fkey"
+            columns: ["driver_link_id"]
+            isOneToOne: false
+            referencedRelation: "pickup_driver_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pickup_driver_messages_pickup_id_fkey"
+            columns: ["pickup_id"]
+            isOneToOne: false
+            referencedRelation: "airport_pickups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_guidance: {
         Row: {
           ai_prompt_suggestions: string[]
