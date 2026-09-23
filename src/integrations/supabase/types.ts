@@ -1311,6 +1311,33 @@ export type Database = {
         }
         Relationships: []
       }
+      flight_budget_grants: {
+        Row: {
+          created_at: string
+          extra_reads: number
+          granted_by: string | null
+          id: string
+          read_day: string
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          extra_reads: number
+          granted_by?: string | null
+          id?: string
+          read_day?: string
+          reason: string
+        }
+        Update: {
+          created_at?: string
+          extra_reads?: number
+          granted_by?: string | null
+          id?: string
+          read_day?: string
+          reason?: string
+        }
+        Relationships: []
+      }
       flight_facts: {
         Row: {
           actual_arrival: string | null
