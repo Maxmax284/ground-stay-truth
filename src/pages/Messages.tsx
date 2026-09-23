@@ -206,6 +206,7 @@ const Messages = () => {
                       </div>
                       <p className="text-sm text-muted-foreground truncate">
                         {thread.last_message_is_internal && <span className="text-xs font-medium text-secondary-foreground mr-1">[{t("messages.internal")}]</span>}
+                        <MessageSourceBadge source={thread.last_message_source} className="text-[10px] mr-1.5 align-middle" />
                         {thread.last_message_content}
                       </p>
                       <div className="flex items-center gap-2">
