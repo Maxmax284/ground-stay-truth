@@ -663,8 +663,8 @@ const GuestPortal = () => {
                   {t("guestBooking.requestBooking")}
                 </Button>
               </div>
-              {activeBookings.length > 0 && <Section title={t("guestPortal.currentlyCheckedIn")}>{activeBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} guestReviews={guestReviews} guestName={guestName} />)}</Section>}
-              {upcomingBookings.length > 0 && <Section title={t("guestPortal.upcoming")}>{upcomingBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} guestReviews={guestReviews} guestName={guestName} />)}</Section>}
+              {activeBookings.length > 0 && <Section title={t("guestPortal.currentlyCheckedIn")}>{activeBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} guestReviews={guestReviews} guestName={guestName} hidePickup={b.id === hoistedPickupBookingId} />)}</Section>}
+              {upcomingBookings.length > 0 && <Section title={t("guestPortal.upcoming")}>{upcomingBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} guestReviews={guestReviews} guestName={guestName} hidePickup={b.id === hoistedPickupBookingId} />)}</Section>}
               {pastBookings.length > 0 && <Section title={t("guestPortal.pastStays")}>{pastBookings.map((b) => <GuestBookingCard key={b.id} booking={b} messages={messagesByBooking.get(b.id) ?? []} userId={user?.id} policies={policies ?? undefined} guestReviews={guestReviews} guestName={guestName} />)}</Section>}
               {/* Loud, bounded loading state — never a silent blank screen */}
               {isLoading && !bookingsError && (
@@ -1034,7 +1034,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 
-function GuestBookingCard({ booking, messages, userId, policies, guestReviews, guestName }: { booking: any; messages: any[]; userId?: string; policies?: any[]; guestReviews?: any[]; guestName?: string | null }) {
+/** `hidePickup` is set when the welcome flow already shows this booking's pickup card, so it never appears twice. */
+function GuestBookingCard({ booking, messages, userId, policies, guestReviews, guestName, hidePickup = false }: { booking: any; messages: any[]; userId?: string; policies?: any[]; guestReviews?: any[]; guestName?: string | null; hidePickup?: boolean }) {
   const { t } = useTranslation();
   const { profile: cardProfile } = useProfile();
   const [showMessages, setShowMessages] = useState(false);
