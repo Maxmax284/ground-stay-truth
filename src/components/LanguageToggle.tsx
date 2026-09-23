@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SUPPORTED_LANGUAGES, changeLanguage } from "@/i18n";
 import { markLanguageChosenByUser } from "@/hooks/useLanguagePreference";
+import { isGuestReady } from "@/i18n/guestSurface";
 import { Globe } from "lucide-react";
 
 /**
@@ -23,7 +24,7 @@ import { Globe } from "lucide-react";
  * - The trigger exposes the active language in its accessible name.
  */
 export function LanguageToggle() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const active =
     SUPPORTED_LANGUAGES.find((l) => l.code === i18n.language) ??
@@ -76,6 +77,11 @@ export function LanguageToggle() {
                 {lang.flag}
               </span>
               <span className="flex-1">{lang.label}</span>
+              {!isGuestReady(lang.code) && (
+                <span className="ml-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {t("language.suggestion.partial", "Partly translated")}
+                </span>
+              )}
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>

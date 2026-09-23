@@ -17,6 +17,10 @@ function getCacheKey(text: string, targetLang: string) {
 export function useMessageTranslation() {
   const { session } = useAuth();
   const [translations, setTranslations] = useState<Record<string, TranslationResult>>({});
+  // Ids whose last translation attempt failed, so the UI can say so plainly
+  // instead of silently showing the untranslated original.
+  const [failedIds, setFailedIds] = useState<Record<string, true>>({});
+  const [pendingId, setPendingId] = useState<string | null>(null);
 
   const translateMutation = useMutation({
     mutationFn: async ({ messageId, text, targetLanguage }: { messageId: string; text: string; targetLanguage: string }) => {
@@ -45,9 +49,21 @@ export function useMessageTranslation() {
       translationCache.set(cacheKey, result);
       return { messageId, result };
     },
+    onMutate: ({ messageId }) => {
+      setPendingId(messageId);
+      setFailedIds((prev) => {
+        const next = { ...prev };
+        delete next[messageId];
+        return next;
+      });
+    },
     onSuccess: ({ messageId, result }) => {
       setTranslations((prev) => ({ ...prev, [messageId]: result }));
     },
+    onError: (_error, { messageId }) => {
+      setFailedIds((prev) => ({ ...prev, [messageId]: true }));
+    },
+    onSettled: () => setPendingId(null),
   });
 
   const translate = useCallback((messageId: string, text: string, targetLanguage: string) => {
@@ -66,6 +82,8 @@ export function useMessageTranslation() {
     translations,
     translate,
     clearTranslation,
+    failedIds,
+    pendingId,
     isTranslating: translateMutation.isPending,
   };
 }

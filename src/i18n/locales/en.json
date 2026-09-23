@@ -939,7 +939,12 @@
     "zh": "中文",
     "ja": "日本語",
     "ko": "한국어",
-    "es": "Español"
+    "es": "Español",
+    "suggestion": {
+      "prompt": "Prefer to read this in {{language}}?",
+      "keep": "No thanks",
+      "partial": "Partly translated"
+    }
   },
   "staySupport": {
     "tabLabel": "Support",
@@ -1052,7 +1057,9 @@
   "translation": {
     "translate": "Translate",
     "viewOriginal": "View Original",
-    "translating": "Translating…"
+    "translating": "Translating…",
+    "machineNote": "Machine translation",
+    "failed": "Couldn't translate — showing the original."
   },
   "legal": {
     "privacyPolicy": "Privacy Policy",
@@ -2306,6 +2313,36 @@
     "inHouse": {
       "title": "Welcome to Lamai",
       "line": "You're checked in. Training, essentials and the front desk are one tap away."
+    }
+  },
+  "airportGuidance": {
+    "legArrival": "Arriving",
+    "legConnection": "Your connection",
+    "open": "Airport orientation",
+    "terminals": "Terminals",
+    "mapNote": "Gates, counters and shops change — always check the airport's own map on the day.",
+    "lastReviewed": "Last checked {{date}}",
+    "stale": "may be out of date",
+    "noCoverage": "We don't have checked guidance for this airport yet. Follow the airport's own signage, and message us if you need a hand."
+  },
+  "localGuide": {
+    "title": "Around Lamai",
+    "subtitle": "Places the camp actually sends people to",
+    "open": "Have a look",
+    "directions": "Directions",
+    "website": "Website",
+    "closed": "Temporarily closed",
+    "checked": "Checked {{date}}",
+    "disclaimer": "Written by the Lamai team. Hours and prices change — call ahead for anything that matters.",
+    "categories": {
+      "food": "Food & drink",
+      "beach": "Beaches",
+      "attraction": "Worth seeing",
+      "essentials": "Everyday essentials",
+      "transport": "Getting around",
+      "recovery": "Recovery & health",
+      "training": "Training",
+      "etiquette": "Local etiquette"
     }
   }
 }

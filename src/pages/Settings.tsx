@@ -18,6 +18,7 @@ import NotificationSettings from "@/components/settings/NotificationSettings";
 import { AppStatusPanel } from "@/components/settings/AppStatusPanel";
 import { SandboxPanel } from "@/components/SandboxPanel";
 import { AIOpsPanel } from "@/components/admin/AIOpsPanel";
+import { LocalRecommendationsEditor } from "@/components/admin/LocalRecommendationsEditor";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -53,6 +54,7 @@ const Settings = () => {
             {isAdmin && <TabsTrigger value="properties" className="text-xs sm:text-sm">Properties</TabsTrigger>}
             {isAdmin && <TabsTrigger value="training" className="text-xs sm:text-sm">Training</TabsTrigger>}
             {isAdmin && <TabsTrigger value="arrival" className="text-xs sm:text-sm">Arrival</TabsTrigger>}
+            {canManagePolicies && <TabsTrigger value="guide" className="text-xs sm:text-sm">Guide</TabsTrigger>}
             {isAdmin && <TabsTrigger value="integrations" className="text-xs sm:text-sm">Integrations</TabsTrigger>}
             {canManageReviews && <TabsTrigger value="reviews" className="text-xs sm:text-sm">{t("settings.reviewsTab")}</TabsTrigger>}
             {isAdmin && <TabsTrigger value="aiops" className="text-xs sm:text-sm">Ops</TabsTrigger>}
@@ -74,6 +76,7 @@ const Settings = () => {
           {isAdmin && <TabsContent value="properties"><ErrorBoundary inline label="Properties"><PropertyManagementPanel /></ErrorBoundary></TabsContent>}
           {isAdmin && <TabsContent value="training"><ErrorBoundary inline label="Training"><TrainingPackagesManager /></ErrorBoundary></TabsContent>}
           {isAdmin && <TabsContent value="arrival"><ErrorBoundary inline label="Arrival"><ArrivalWelcomeEditor /></ErrorBoundary></TabsContent>}
+          {canManagePolicies && <TabsContent value="guide"><ErrorBoundary inline label="Island guide"><LocalRecommendationsEditor /></ErrorBoundary></TabsContent>}
           {isAdmin && <TabsContent value="integrations"><ErrorBoundary inline label="Integrations"><IntegrationSettings /></ErrorBoundary></TabsContent>}
           {canManageReviews && <TabsContent value="reviews"><ErrorBoundary inline label="Reviews"><ReviewsManager /></ErrorBoundary></TabsContent>}
           {isAdmin && <TabsContent value="aiops"><ErrorBoundary inline label="Ops"><AIOpsPanel /></ErrorBoundary></TabsContent>}

@@ -59,6 +59,9 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { GuestNowCard, computeNowState } from "@/components/GuestNowCard";
 import { JourneyBanner } from "@/components/guest/JourneyBanner";
+import { LanguageSuggestionBanner } from "@/components/guest/LanguageSuggestionBanner";
+import { AirportGuidanceCard } from "@/components/guest/AirportGuidanceCard";
+import { IslandGuideCard } from "@/components/guest/IslandGuideCard";
 import { resolveJourneyStage } from "@/lib/guestJourneyStage";
 import { useAirportPickup } from "@/hooks/useAirportPickups";
 import { WhileYouWaitTab } from "@/components/WhileYouWaitTab";
@@ -477,6 +480,22 @@ const GuestPortal = () => {
 
 
 
+  // Which airport matters right now. Read-only: it reflects the leg the guest
+  // is on and never changes a booking, a flight record or a pickup.
+  const legAirport = useMemo((): { code: string; label: string } | null => {
+    if (!nowBooking || nowState === "onsite") return null;
+    const details = (nowBooking.arrival_details ?? null) as Record<string, any> | null;
+    if (journeyStage === "island_approach" || journeyStage === "pickup") {
+      return { code: "USM", label: t("airportGuidance.legArrival", "Arriving") };
+    }
+    if (journeyStage === "bangkok" || journeyStage === "transit") {
+      const code = details?.confirmed_airport ?? details?.transit_airport ?? "BKK";
+      return { code, label: t("airportGuidance.legConnection", "Your connection") };
+    }
+    const code = details?.confirmed_airport ?? details?.arrival_airport ?? null;
+    return code ? { code, label: t("airportGuidance.legArrival", "Arriving") } : null;
+  }, [nowBooking, nowState, journeyStage, t]);
+
   const openBookingForm = (unitId?: string) => {
     setBookingFormUnitId(unitId);
     setBookingFormOpen(true);
@@ -497,6 +516,9 @@ const GuestPortal = () => {
         {/* In-app browsers (Instagram/Facebook/LINE) break Stripe redirects —
             warn loudly and give a one-tap way into Safari/Chrome. */}
         <GuestInAppBrowserBanner />
+
+        {/* ── One quiet, opt-in language offer based on the device's own setting. */}
+        <LanguageSuggestionBanner />
 
         {/* ── Stage atmosphere. Presentation only — the truth is in the card
             directly below it. ─────────────────────────────────────────────── */}
@@ -524,6 +546,16 @@ const GuestPortal = () => {
         {nowState === "flight" && nowBooking && (
           <GuestFlightTracker bookingId={nowBooking.id} guestName={guestName} />
         )}
+
+        {/* Airport orientation for the leg they're on. Discovery, never
+            instruction — it sits under the Now card and hides once checked in. */}
+        {legAirport && (
+          <AirportGuidanceCard airportCode={legAirport.code} legLabel={legAirport.label} />
+        )}
+
+        {/* Lamai's own island guide. Discovery only, and it renders nothing
+            until the camp has actually published entries. */}
+        <IslandGuideCard />
 
         {/* Everything else — setup, perks, intelligence — one tap deeper. */}
         <Collapsible open={extrasOpen} onOpenChange={setExtrasOpen}>

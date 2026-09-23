@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { TranslatableText } from "@/components/TranslatableText";
 import { format } from "date-fns";
 import { Loader2, Send, User, Lock, MessagesSquare, ExternalLink, Clock } from "lucide-react";
 import { toast } from "sonner";
@@ -40,7 +41,9 @@ export function GuestThreadDialog({
   guestName,
   onOpenBooking,
 }: GuestThreadDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // Each reader gets the thread in their own chosen display language.
+  const readerLanguage = (i18n.language || "en").split("-")[0];
   const { role, user, isAdmin } = useAuth();
   const { data: messages, isLoading } = useBookingMessages(open ? bookingId : null);
   const createMessage = useCreateMessage();
@@ -126,7 +129,16 @@ export function GuestThreadDialog({
                           : "bg-accent text-accent-foreground"
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
+                    {mine ? (
+                      <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
+                    ) : (
+                      <TranslatableText
+                        messageId={m.id}
+                        text={m.content}
+                        targetLanguage={readerLanguage}
+                        onTinted={!m.is_internal}
+                      />
+                    )}
                     <div className="flex items-center gap-2 text-[10px] opacity-80">
                       {m.is_internal && (
                         <span className="inline-flex items-center gap-1">
