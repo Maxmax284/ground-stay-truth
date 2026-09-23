@@ -50,6 +50,7 @@ import { TurnoverBoard } from "@/components/front-desk/TurnoverBoard";
 import { FlightForecastWidget } from "@/components/FlightForecastWidget";
 import { ArrivalExceptionsPanel } from "@/components/front-desk/ArrivalExceptionsPanel";
 import { DriverChatPanel } from "@/components/front-desk/DriverChatPanel";
+import { GuestThreadLauncher } from "@/components/GuestThreadLauncher";
 import { computeOperationalStatus, TONE_CLASS } from "@/lib/operationalStatus";
 import { isAcknowledged, isMoneyGapMuted, isPayOnArrival } from "@/lib/staffMarkers";
 import { formatDistanceToNow } from "date-fns";
