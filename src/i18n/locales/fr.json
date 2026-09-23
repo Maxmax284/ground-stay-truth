@@ -515,7 +515,8 @@
     "draftQueued": "Réponse en attente d'approbation administrative",
     "draftQueuedDesc": "Un administrateur doit l'approuver avant que le client ne la voie.",
     "needsAdminApproval": "Un administrateur doit approuver ceci avant que le client ne le voie",
-    "awaitingApproval": "En attente d'approbation administrative"
+    "awaitingApproval": "En attente d'approbation administrative",
+    "openChat": "Discussion"
   },
   "stateTransition": {
     "changeState": "Changer l'état",
@@ -1770,5 +1771,9 @@
     "guideFlag": "Essentiel du premier jour",
     "guideNeverChecked": "jamais vérifié",
     "guideCheckedAgo": "vérifié il y a {{days}} j"
+  },
+  "staffLanguage": {
+    "title": "Votre langue d’affichage",
+    "subtitle": "Votre propre choix, enregistré sur votre compte. Les messages des clients vous sont présentés dans cette langue, et vos réponses parviennent au client dans la sienne."
   }
 }

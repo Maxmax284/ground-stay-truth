@@ -49,6 +49,7 @@ import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { FetchErrorState } from "@/components/FetchErrorState";
 import { formatPrice } from "@/lib/currency";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
+import { GuestThreadLauncher } from "@/components/GuestThreadLauncher";
 
 type Mode = "in" | "out";
 
