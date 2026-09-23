@@ -152,6 +152,26 @@ const Messages = () => {
           <Input placeholder={t("messages.searchPlaceholder")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
 
+        <div className="flex flex-wrap gap-2" role="group" aria-label={t("messages.filterLabel", "Filter conversations") as string}>
+          {([
+            ["all", t("messages.filterAll", "Everyone")],
+            ["today", t("messages.filterToday", "Arriving today")],
+            ["here", t("messages.filterHere", "Here now")],
+            ["upcoming", t("messages.filterUpcoming", "Coming later")],
+          ] as const).map(([key, label]) => (
+            <Button
+              key={key}
+              size="sm"
+              variant={scope === key ? "default" : "outline"}
+              aria-pressed={scope === key}
+              className="h-7 text-xs"
+              onClick={() => setScope(key)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+
         {isLoading ? (
           <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}</div>
         ) : isError ? (
