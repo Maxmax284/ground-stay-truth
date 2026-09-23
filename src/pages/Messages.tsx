@@ -20,6 +20,7 @@ import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { GuestThreadDialog } from "@/components/GuestThreadDialog";
 import { Button } from "@/components/ui/button";
 import { Reply } from "lucide-react";
+import { MessageSourceBadge } from "@/components/MessageSourceBadge";
 
 interface InboxThread {
   booking_id: string;
