@@ -478,6 +478,16 @@ const GuestPortal = () => {
     [nowState, journeyPhase, nowPickupQuery.data]
   );
 
+  // The one booking whose pickup card the welcome flow shows at the top, so the
+  // bookings list below can skip it instead of showing a second copy.
+  const hoistedPickupBookingId =
+    (journeyStage === "island_approach" || journeyStage === "pickup") &&
+    nowPickupQuery.data?.pickup_enabled
+      ? nowBooking?.id ?? null
+      : null;
+
+
+
 
 
   // Which airport matters right now. Read-only: it reflects the leg the guest
