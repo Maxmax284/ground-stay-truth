@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 /** Columns a guest is allowed to see. Staff notes stay out of guest queries. */
 const GUEST_COLUMNS =
-  "id,name,category,description,photos,address,maps_url,phone,whatsapp,website,opening_hours,distance_note,badges,sort_order,last_reviewed_at,closed_temporarily,seasonal_note";
+  "id,name,category,description,photos,address,maps_url,phone,whatsapp,website,opening_hours,distance_note,badges,sort_order,last_reviewed_at,closed_temporarily,seasonal_note,arrival_essential";
 
 export interface LocalRecommendation {
   id: string;
