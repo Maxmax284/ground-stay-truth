@@ -1,64 +1,135 @@
-# Messaging Connector Audit — Read Only
+# CampStay LMT — Messaging Connector Audit (read-only, nothing changed)
 
-Nothing was changed. This is what is actually live in CampStay LMT today.
+Law being checked against: messaging feeds the system, it does not control it.
 
-## Plain English
+## 1. What is live now
 
-**The spine is built and working.** Every conversation is stored against one booking, so the front desk always sees one thread per stay. Guests can write from the portal, staff can reply from Bookings, Front Desk, Arrivals Board, Check-In Desk, the booking sheet and the Messenger page. Each message carries a stamp saying where it came from (Portal, WhatsApp, Telegram, SMS, LINE, email), and staff see that stamp in the thread and in the inbox list.
+- **One thread per stay.** Every message is stored against a booking. No loose inboxes, no orphan chats.
+- **Guest portal card.** "Talk to the camp" sits in the portal, no codes, no PIN. One button opens the conversation with the front desk.
+- **Staff can reply from anywhere they already work.** Chat buttons on Bookings rows and cards, Front Desk, Arrivals Board, Check-In Desk, and inside the booking sheet (header and next to the balance). Plus the Messenger page with Arriving Today / Here Now / In Transit filters.
+- **Channel stamps.** Each message shows where it came from — Portal, WhatsApp, Telegram, SMS, LINE, email — in the thread and on the inbox list.
+- **Replies default to guest-visible**, with a toggle for an internal note.
+- **Guest email fallback, debounced.** A guest-visible reply triggers one email with a snippet and a link back to the portal. Maximum one per guest per 10 minutes. Internal notes never email.
+- **Admin alerting.** A guest message raises a "guest message received" alert through the existing alert centre, with its rate limits and critical-only switch.
+- **Telegram works end to end**, in and out, because the bot token is in place.
 
-**Email fallback is live and is not spammy.** When staff send a guest-visible reply, the guest gets one email notice with a snippet and a link back to their portal — at most one per 10 minutes per guest, and never for internal notes. Admins get a "guest message received" alert through the existing alert centre with its own rate limits and critical-only switch.
+## 2. Scaffolded but not connected
 
-**Telegram is the only external channel actually connected.** The bot token is in place, so Telegram in and out works. WhatsApp, SMS (Twilio) and LINE all have complete code paths but no credentials, so they politely report "not configured" and the system falls back to email. That is the real external dependency: Lamai's WhatsApp Business account.
+- **WhatsApp outbound seam.** The staff reply path already tries WhatsApp first and falls back to email. Today it answers "connector not linked" every time, so email carries everything. No credentials = no sends, no crash.
+- **Meta WhatsApp inbound webhook.** Written, verified handshake and all, but no verify token and no phone number configured.
+- **SMS (Twilio) and LINE.** Full send and receive code, signature checks included, zero credentials. They report "not configured" and stop.
+- **WhatsApp templates and the 24-hour reply window.** Not handled at all. Free-form text only, which works only while a guest has written first. This decision waits for the real account.
 
-**The old PIN dance is half retired.** The prominent "Talk to the camp" card is live in the guest portal and does not use codes. But the old code-based "Connect WhatsApp / Telegram" card is still rendered further down the portal (in the setup section), and the 6-digit code function and its table are still the only way an external chat gets matched to a person.
+## 3. Partially done / old clutter
 
-**Zero-code phone matching does not exist yet.** This is the biggest gap. A guest who saves their WhatsApp number in their profile is still not recognised when they text in — the router only knows people who completed a code link. Unmatched numbers are logged as "unlinked" and dropped; nothing reaches the booking thread. Staff phone matching has the same gap: a staff member texting from an unlinked number is simply unknown.
+- **The old 6-digit code card is still on the portal**, further down in the setup section. It still mints codes and tells people to send `/link 123456`. The new card sits above it, so guests currently see two different invitations.
+- **Code linking is still the only way an external chat gets matched to a person.** No phone matching yet.
+- **Two outbound stacks exist side by side:** the new connector seam used by staff replies, and the older event pipeline that sends Telegram/LINE/SMS/WhatsApp directly. The old one should eventually lose its WhatsApp half.
+- **Staff cannot see whether a guest has a working WhatsApp link.** No status anywhere in the staff views.
+- **Email debounce is time-based only** — it does not know whether the guest is sitting in the portal right now.
 
-**Safety rule holds.** Nothing in the messaging path writes to bookings, payments, pickups, pricing, refunds or check-in state. Guest intents land as text only. The one thing inbound messages do write is an arrival self-report signal and an alert for staff — both advisory, both requiring a human to act.
+## 4. In the blueprint, not built yet
 
-## Technical notes
+- **Zero-code phone matching.** A guest texts in from the number on their profile and is recognised instantly. Same for staff numbers.
+- **Booking-reference matching** (`#BK-4920`) as the fallback when a number is unknown.
+- **Platform-sent handshake link** that drops a person straight into their own stay thread.
+- **An unmatched-number queue** so staff can see and claim texts from numbers nobody recognises. Today those are logged and dropped silently.
+- **Staff phone identity**, so a staff text reads as internal, not as a stranger.
 
-### 1. `public.messages`
-Columns: `id, booking_id (NOT NULL), sender_id, content, is_internal (default true), created_at, read_at, draft, approved_by, property_id, attachment_url, attachment_type, source (NOT NULL default 'portal'), external_ref`. Source tags are supported and constrained to portal/whatsapp/telegram/sms/line/email. No provider/author-name column — inbound external messages carry `sender_id = guest user id` and `external_ref` for the provider id.
+## 5. Current inbound flow
 
-RLS: staff read via `has_ops_read`, write via `has_ops_write`; admins full. Guests read only non-internal, non-draft rows on their own bookings; insert only with `is_internal = false` and `sender_id = auth.uid()`; update limited to read status. Note the table default for `is_internal` is `true` — guest-visible is explicit, set by the UI toggle.
+A guest texts a channel → the channel's webhook normalises it → the router looks up the chat ID in its link table.
 
-### 2. Guest portal UI
-- `guest/CampCommunicationCard.tsx` — live, rendered at `GuestPortal.tsx:575`, code-free. Portal chat button always; `wa.me` deep link only when bot identity reports WhatsApp configured (currently it is not, so the button is hidden).
-- `MessagingConnectCard.tsx` — **still rendered** at `GuestPortal.tsx:776`, still mints 6-digit codes via `messaging-link` and opens `/link <code>` / `/start link_<code>`. `GuestPersonalGuideCard` uses the same flow. `GuestMessagingOnboarding.tsx` is deleted.
-- Phone/WhatsApp entry is only in `ProfileEditor.tsx` (`phone`, `whatsapp`, `line_id`, `preferred_language`) — not on the communication card, and not used for matching.
-- No email-fallback button; email is automatic, not user-triggered.
+- **Not linked:** logged as "unlinked" and dropped. Nothing reaches the booking.
+- **Linked, but no current or upcoming stay:** blocked.
+- **Linked with a live or upcoming stay:** the message is written into the booking thread with the right channel stamp, and staff get an alert.
 
-### 3. Staff UI
-`GuestThreadLauncher` is wired into Bookings (row + card), Front Desk (two spots), Arrivals Board (two spots), Check-In Desk, and `BookingDetailSheet` (header + payments panel). `GuestThreadDialog` renders `MessageSourceBadge` per message; `Messages.tsx` shows the last-message source in the inbox list, with Arriving Today / Here Now / In Transit filters. Reply default is **guest-visible** (dialog state `isInternal = false`), with a toggle; non-admin guest-visible replies are flagged as admin-notified. Staff do **not** see whether a guest has a linked WhatsApp/phone anywhere in these views.
+Staff are recognised by their role once their chat is linked — never by phone number.
 
-### 4. Inbound
-`whatsapp-meta-webhook` (Meta verify handshake + text messages), `twilio-webhook` (`?channel=sms`, HMAC-SHA1 signature verified), `line-webhook`, `telegram-webhook` — all normalise to `{channel, chat_id, text, display_name}` and POST to `messaging-router` with the internal bridge token.
+## 6. Current outbound staff-reply flow
 
-`messaging-router` resolves identity **only** via `messaging_chat_bindings` on `(channel, chat_id)`, created solely by `/link <6-digit code>` against `messaging_link_codes`. No phone/`profiles.whatsapp`/`manual_guest_phone`/booking-reference matching exists. Unlinked → logged to `messaging_inbound_log` with `outcome: 'unlinked'` and dropped. Matched guests are gated by `getGuestPhase` (active / upcoming / post_stay today; otherwise blocked), then `mirrorGuestMessage` inserts into `messages` with `booking_id` (checked-in booking first, else next check-in) and `source = channel`, and raises `guest_message_received`. Staff are recognised by `user_roles` once their chat is bound — role-derived, not phone-derived.
+Staff write in the thread → the message saves to the booking → the system tries WhatsApp (currently unavailable) → falls back to one debounced email to the guest with a portal link. Every attempt is logged. The reply is already saved before any delivery is attempted, so nothing is lost if delivery fails.
 
-### 5. Outbound
-Staff reply path: `useBookings.ts` writes the message row, then fire-and-forget invokes `notify-guest-message`, which tries `sendGuestWhatsApp` (Lovable connector gateway seam, needs `LOVABLE_API_KEY` + `WHATSAPP_API_KEY`) and then debounced email. Today it returns `connector_not_linked`, so email always carries it.
+## 7. Safety boundaries — confirmed
 
-`notify-via-messaging` is the older event pipeline and holds real implementations for Telegram (`api.telegram.org`), LINE push, Twilio SMS, and direct Meta WhatsApp Cloud sends with retry/logging. `integration_secrets` currently holds `telegram_bot_token` only — no `whatsapp_*`, `twilio_*` or `line_*` keys, so only Telegram outbound is live; the others short-circuit as `not_configured`.
+No message, from any channel, writes to bookings, pickups, room assignments, payments, pricing, refunds, fees, balances or check-in state. Verified across the message table, all four webhooks, and the router. The router only writes: the inbound log, chat links, the message itself, escalation flags, and alerts.
 
-WhatsApp 24-hour customer-service window and approved template names are **not** implemented — the connector seam sends free-form text, which only works inside a guest-initiated window. This is a connector-time decision, deliberately left open.
+The single exception worth naming is not a mutation: when a guest with a live or upcoming stay says something that reads like "I've landed," the system records an advisory signal and tells staff. A human still moves the booking. "Cancel my pickup" or "upgrade my room" lands as plain text in the thread and waits for a person.
 
-### 6. Email fallback and anti-spam
-`notify-guest-message`: staff-role gated (403 otherwise), skips internal notes, resolves email from `profiles.email` or `bookings.manual_guest_email`, debounces on `email_send_log` (10 minutes per recipient per template), idempotency key `guest-msg-<message_id>-<email>`. Template `guest_message_notice` in the transactional registry, sent via Lovable managed email from `notify.lmtcampstay.com`. Admin side: `emit-admin-alert` with `guest_message_received` from the catalog, rate limits and `__critical_only__` handled there. **Active-portal-session suppression is not implemented** — the debounce is purely time-based.
+## 8. External dependency status
 
-### 7. Safety
-Confirmed: no path from `messages`, the webhooks, or `messaging-router` writes to `bookings`, `payments`, `airport_pickups` status, units, pricing, refunds or fees. Router side effects are limited to `messaging_inbound_log`, `messaging_chat_bindings`, `messaging_thread_memory`, `messages`, `guest_escalations` and admin alerts. Closest thing to a mutation is arrival self-report detection for active/upcoming guests, which records an advisory signal for staff review. No mutation risk found.
+| Channel | Status |
+|---|---|
+| Telegram | Live, in and out |
+| Email | Live, primary fallback, sending from the verified LMT sender |
+| Portal chat | Live |
+| WhatsApp Business | **Blocked** — needs Lamai's business account, then connector linkage and webhook token |
+| SMS / Twilio | Code ready, no account credentials |
+| LINE | Code ready, no account credentials |
 
-### 8. State of play
-- **Done:** one-thread-per-booking model, source column and badges, staff chat buttons everywhere, guest communication card, inbound mirror into `messages`, debounced guest email, admin alerting, Telegram end to end.
-- **Partial:** old code-link card still on the portal; `messaging-link` / `messaging_link_codes` still the only matcher; two outbound stacks (`notify-guest-message` seam vs `notify-via-messaging` direct sends); no linked-channel status shown to staff; no session-aware email suppression.
-- **Blocked on Lamai's WhatsApp Business account:** connector linkage (`WHATSAPP_API_KEY`), Meta webhook verify token, message templates and window handling, retiring the legacy direct Meta sender.
-- **Not implemented:** phone-number matching for guests or staff, booking-reference matching (`#BK-…`), platform-sent handshake link to a specific thread, unmatched-number triage queue for staff.
+## 9. Recommended build order
 
-### Manual tests after publish
-1. Guest portal: open "Talk to the camp", send a message, confirm it appears on the booking thread for staff.
-2. Staff reply from a Bookings row and from the booking sheet; confirm guest sees it and one email notice arrives; send a second reply within 10 minutes and confirm no second email.
-3. Internal note: confirm no email and no guest visibility.
-4. Telegram: complete the code link once, text the bot, confirm the message lands on the right booking with a Telegram badge.
-5. Confirm a booking's payment, pickup and check-in state are untouched after all of the above.
+1. Remove the old code-link card from the portal so guests see one invitation, not two.
+2. Phone matching: recognise a guest by the number on their profile or booking, with booking-reference as backup.
+3. Staff phone matching so staff texts read as internal.
+4. Unmatched-number queue for the front desk, so nothing is silently dropped.
+5. Show linked-channel status on the guest's booking so staff know which door is open.
+6. Suppress the email when the guest is actively in the portal.
+7. Link the WhatsApp Business connector when Lamai's account exists, then decide on templates and the 24-hour window.
+8. Retire the old WhatsApp sender in the legacy pipeline.
+
+## 10. Flow diagram
+
+```text
+                 ┌───────────────────────────────┐
+                 │   GUEST WRITES (any door)     │
+                 │ Portal · WhatsApp · Telegram  │
+                 │        SMS · LINE             │
+                 └───────────────┬───────────────┘
+                                 │
+                 ┌───────────────▼───────────────┐
+                 │  CHANNEL WEBHOOK (normalise)  │
+                 └───────────────┬───────────────┘
+                                 │
+                 ┌───────────────▼───────────────┐
+                 │   WHO IS THIS?                │
+                 │  today: linked chat only      │
+                 │  planned: phone / #BK-ref     │
+                 └──────┬─────────────────┬──────┘
+                    no  │                 │ yes
+                        ▼                 ▼
+          ┌─────────────────────┐  ┌────────────────────────┐
+          │  DROPPED + LOGGED   │  │  HAS LIVE / UPCOMING   │
+          │ (planned: staff     │  │  STAY?                 │
+          │  triage queue)      │  └──────┬──────────┬──────┘
+          └─────────────────────┘     no  │          │ yes
+                                          ▼          ▼
+                              ┌────────────────┐  ┌────────────────────┐
+                              │    BLOCKED     │  │ WRITE TO BOOKING   │
+                              └────────────────┘  │ THREAD + SOURCE    │
+                                                  │ STAMP              │
+                                                  └─────────┬──────────┘
+                                                            │
+                                    ┌───────────────────────▼──────────────┐
+                                    │  ALERT STAFF (rate-limited)          │
+                                    │  NO booking / money / room change    │
+                                    └───────────────────────┬──────────────┘
+                                                            │
+                                    ┌───────────────────────▼──────────────┐
+                                    │  HUMAN READS IT AND DECIDES          │
+                                    └───────────────────────┬──────────────┘
+                                                            │
+                                    ┌───────────────────────▼──────────────┐
+                                    │  STAFF REPLY (saved to booking)      │
+                                    └───────────┬──────────────────────────┘
+                                                │
+                                 ┌──────────────▼──────────────┐
+                                 │  TRY WHATSAPP (not linked)  │
+                                 └──────────────┬──────────────┘
+                                                │ unavailable
+                                 ┌──────────────▼──────────────┐
+                                 │  EMAIL FALLBACK             │
+                                 │  1 per guest / 10 min       │
+                                 │  portal link included       │
+                                 └─────────────────────────────┘
+```
