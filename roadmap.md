@@ -28,3 +28,8 @@ Stage 0 — Visual foundation — DONE (journey stages, WelcomeMoment, ContextIm
 - [ ] Actual guest-origin mix to prioritise languages beyond FR/DE — needs Max/Nikki
 - [ ] Decision: should the pickup journey stage appear from arrival day, or only once a pickup is enabled?
 - [ ] Nobody has written island guide entries yet — guests see no guide until Nikki adds places under Settings → Guide
+
+## Post-stage requests (done)
+- [x] Island guide on the Arrivals Board — "Island guide" tab, managers/admins flag first-day essentials (arrival_essential)
+- [x] Guest welcome flow — countdown -> airport by leg -> pickup -> island guide (pickup card hoisted, no duplicate)
+- [x] Guest language picker in the portal, staff replies follow the guest's choice
