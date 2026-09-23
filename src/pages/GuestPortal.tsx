@@ -58,6 +58,9 @@ import {
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { GuestNowCard, computeNowState } from "@/components/GuestNowCard";
+import { JourneyBanner } from "@/components/guest/JourneyBanner";
+import { resolveJourneyStage } from "@/lib/guestJourneyStage";
+import { useAirportPickup } from "@/hooks/useAirportPickups";
 import { WhileYouWaitTab } from "@/components/WhileYouWaitTab";
 import { differenceInCalendarDays } from "date-fns";
 import { GuestStaySupport } from "@/components/GuestStaySupport";
