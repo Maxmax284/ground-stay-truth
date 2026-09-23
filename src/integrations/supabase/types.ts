@@ -2382,6 +2382,7 @@ export type Database = {
           address: string | null
           badges: string[]
           category: string
+          closed_temporarily: boolean
           created_at: string
           created_by: string | null
           description: string | null
@@ -2389,12 +2390,15 @@ export type Database = {
           featured: boolean
           id: string
           is_active: boolean
+          last_reviewed_at: string | null
+          last_reviewed_by: string | null
           maps_url: string | null
           name: string
           opening_hours: string | null
           phone: string | null
           photos: string[]
           property_id: string | null
+          seasonal_note: string | null
           sort_order: number
           staff_notes: string | null
           updated_at: string
@@ -2405,6 +2409,7 @@ export type Database = {
           address?: string | null
           badges?: string[]
           category: string
+          closed_temporarily?: boolean
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -2412,12 +2417,15 @@ export type Database = {
           featured?: boolean
           id?: string
           is_active?: boolean
+          last_reviewed_at?: string | null
+          last_reviewed_by?: string | null
           maps_url?: string | null
           name: string
           opening_hours?: string | null
           phone?: string | null
           photos?: string[]
           property_id?: string | null
+          seasonal_note?: string | null
           sort_order?: number
           staff_notes?: string | null
           updated_at?: string
@@ -2428,6 +2436,7 @@ export type Database = {
           address?: string | null
           badges?: string[]
           category?: string
+          closed_temporarily?: boolean
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -2435,12 +2444,15 @@ export type Database = {
           featured?: boolean
           id?: string
           is_active?: boolean
+          last_reviewed_at?: string | null
+          last_reviewed_by?: string | null
           maps_url?: string | null
           name?: string
           opening_hours?: string | null
           phone?: string | null
           photos?: string[]
           property_id?: string | null
+          seasonal_note?: string | null
           sort_order?: number
           staff_notes?: string | null
           updated_at?: string
