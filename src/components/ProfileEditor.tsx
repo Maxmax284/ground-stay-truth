@@ -112,6 +112,9 @@ export default function ProfileEditor() {
 
   return (
     <div className="space-y-6">
+      {/* Staff read the desk in English or Thai — their own choice, per person. */}
+      {role && role !== "guest" && <StaffLanguagePicker />}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">{t("profile.myProfile")}</CardTitle>
