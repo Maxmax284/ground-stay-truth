@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
       .select(
         "id, booking_id, confirmed_airport, arrival_location_name, arrival_datetime, flight_number, " +
           "passenger_count, luggage_notes, special_instructions, guest_landed_at, guest_ready_at, collected_at, " +
-          "drivers(name, license_plate, vehicle_model)",
+          "drivers(name, license_plate, vehicle_type)",
       )
       .eq("id", link.pickup_id)
       .maybeSingle();
@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
           special_instructions: pickup.special_instructions ?? null,
           driver_name: (pickup as any).drivers?.name ?? null,
           license_plate: (pickup as any).drivers?.license_plate ?? null,
-          vehicle: (pickup as any).drivers?.vehicle_model ?? null,
+          vehicle: (pickup as any).drivers?.vehicle_type ?? null,
           status,
           collected_at: pickup.collected_at ?? null,
           expires_at: link.expires_at,
