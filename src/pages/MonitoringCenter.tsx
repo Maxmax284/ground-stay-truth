@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrivalDataHealthCard } from "@/components/monitoring/ArrivalDataHealthCard";
+import { FlightBudgetPanel } from "@/components/monitoring/FlightBudgetPanel";
 import {
   Collapsible,
   CollapsibleContent,
@@ -561,6 +562,9 @@ export default function MonitoringCenter() {
         )}
 
 
+
+        {/* Paid flight lookup budget (admin only) */}
+        <FlightBudgetPanel />
 
         {/* Arrival Intelligence data + retention health */}
         <ArrivalDataHealthCard />

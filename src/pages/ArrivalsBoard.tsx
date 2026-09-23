@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { StaffArrivalRadar } from "@/components/front-desk/StaffArrivalRadar";
 import { ArrivalExceptionsPanel } from "@/components/front-desk/ArrivalExceptionsPanel";
+import { DriverResponseRateStrip } from "@/components/front-desk/DriverResponseRateStrip";
 import { JourneyBlock } from "@/components/front-desk/JourneyBlock";
 import { useArrivalsBoard, type ArrivalsBoardRow } from "@/hooks/useArrivalsBoard";
 import { useArrivalIntelBoard } from "@/hooks/useArrivalIntelBoard";
@@ -269,6 +270,8 @@ export default function ArrivalsBoard() {
             </Card>
           ))}
         </div>
+
+        <DriverResponseRateStrip />
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

@@ -582,6 +582,7 @@ export function AirportPickupSection({ bookingId, guestName, hideRadar }: Props)
               </div>
             )}
           </div>
+          <DriverResponseLine pickupId={pickup.id} />
           {canManage ? (
             <Select value={pickup.driver_id ?? ""} onValueChange={handleAssignDriver}>
               <SelectTrigger className="h-8 text-sm">
