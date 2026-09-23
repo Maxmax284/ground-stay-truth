@@ -642,6 +642,9 @@ function PaymentsTab({ payments, bookingId, bookingState, canSeeAmounts, canReco
         </div>
       )}
 
+      {/* Money questions are guest questions — reach them from here directly. */}
+      <GuestThreadLauncher bookingId={bookingId} className="h-8 w-full text-xs gap-1" />
+
       {/* Payment list with type badges + status indicators + refund button */}
       {payments.length > 0 ? (
         <ScrollArea className="max-h-[220px]">
