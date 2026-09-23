@@ -40,6 +40,7 @@ import AdminBookingFlow from "./pages/AdminBookingFlow";
 import LandingPage from "./pages/LandingPage";
 import DisasterRecovery from "./pages/DisasterRecovery";
 import GuestPaymentLink from "./pages/GuestPaymentLink";
+import DriverPickup from "./pages/DriverPickup";
 import PaymentReport from "./pages/PaymentReport";
 import MediaLibrary from "./pages/MediaLibrary";
 import SecurityCenter from "./pages/SecurityCenter";
@@ -139,6 +140,7 @@ const App = () => (
                 <Route path="/embed/:type" element={<EmbedWidget />} />
                 <Route path="/stay" element={<Stay />} />
                 <Route path="/pay/:token" element={<GuestPaymentLink />} />
+                <Route path="/driver/:token" element={<DriverPickup />} />
                 <Route path="/legal" element={<Legal />} />
                 <Route path="/unsubscribe" element={<Unsubscribe />} />
 
