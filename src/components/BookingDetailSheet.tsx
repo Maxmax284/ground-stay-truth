@@ -36,6 +36,7 @@ import { CalendarDays, CreditCard, MessageSquare, History, ArrowRight, ArrowUpRi
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { RefundDialog } from "@/components/RefundDialog";
 import { GuestPortalActivityTimeline } from "@/components/GuestPortalActivityTimeline";
+import { GuestThreadLauncher } from "@/components/GuestThreadLauncher";
 import { PaymentLinkManager } from "@/components/PaymentLinkManager";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { RequiredDocumentsCard } from "@/components/RequiredDocumentsCard";
