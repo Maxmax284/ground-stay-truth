@@ -174,6 +174,25 @@ export function normalizeAviationStack(row: Record<string, any>, fallbackNumber:
 // Budget ledger + concurrency lock
 // ---------------------------------------------------------------------------
 
+/** Pure cap math, shared with the admin dashboard and tests. Never negative. */
+export function remainingPaidReads(base: number, grantedExtra: number, used: number): number {
+  return Math.max(0, base + Math.max(0, grantedExtra) - Math.max(0, used));
+}
+
+/** Extra paid reads an admin granted for today only. A read failure grants nothing. */
+export async function grantedExtraReadsToday(admin: any): Promise<number> {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data, error } = await admin
+    .from("flight_budget_grants")
+    .select("extra_reads")
+    .eq("read_day", today);
+  if (error) {
+    console.warn("flightProviders: budget grants unreadable, using standing cap", error.message);
+    return 0;
+  }
+  return (data ?? []).reduce((n: number, row: any) => n + (Number(row.extra_reads) || 0), 0);
+}
+
 /** How many paid reads are left today. Never throws — a broken ledger means no paid reads. */
 export async function paidReadsRemaining(admin: any): Promise<number> {
   const today = new Date().toISOString().slice(0, 10);
@@ -186,7 +205,8 @@ export async function paidReadsRemaining(admin: any): Promise<number> {
     console.warn("flightProviders: ledger unreadable, refusing paid reads", error.message);
     return 0;
   }
-  return Math.max(0, DAILY_PAID_READ_CEILING - (count ?? 0));
+  const extra = await grantedExtraReadsToday(admin);
+  return remainingPaidReads(DAILY_PAID_READ_CEILING, extra, count ?? 0);
 }
 
 export async function logProviderRead(
