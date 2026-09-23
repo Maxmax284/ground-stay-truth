@@ -117,7 +117,21 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: MODEL,
         messages: [
-          { role: "system", content: `Translate the following text to ${targetLangName}. Respond with ONLY the translated text, nothing else.` },
+          {
+            role: "system",
+            content:
+              `Translate the user's message into ${targetLangName}.\n` +
+              "Rules:\n" +
+              "- Respond with ONLY the translation. No notes, no quotes, no explanation.\n" +
+              "- Copy these through EXACTLY, character for character, never translated or reformatted: " +
+              "person names, airport codes (BKK, USM, CDG), flight numbers (e.g. TG101, PG5162), " +
+              "booking references and PNRs, room or unit names, phone numbers, times, dates, " +
+              "amounts and currency, URLs, and named meeting points (Gate 3, Exit 4, Door B).\n" +
+              "- Translate only what is written. Never add advice, instructions, greetings, " +
+              "reassurance or any fact the sender did not write.\n" +
+              "- If part of the message is already in the target language, leave it as-is.\n" +
+              "- Keep the sender's tone and keep it short.",
+          },
           { role: "user", content: text },
         ],
       }),
