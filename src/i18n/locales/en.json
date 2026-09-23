@@ -2179,7 +2179,16 @@
     "waitingStat": "Waiting on a person",
     "liveFlights": "Flights in the air",
     "tabIncoming": "Coming in",
-    "tabInHouse": "Here now"
+    "tabInHouse": "Here now",
+    "tabGuide": "Island guide",
+    "guideEmpty": "No places written yet. Add them under Settings → Guide and guests will see them here.",
+    "guideHintManager": "Flag a place as a first-day essential and arriving guests see it at the top of their guide.",
+    "guideHintStaff": "What the camp recommends. Managers decide which places arriving guests see first.",
+    "guideEssential": "First day",
+    "guideDraft": "Not published",
+    "guideFlag": "First-day essential",
+    "guideNeverChecked": "never checked",
+    "guideCheckedAgo": "checked {{days}}d ago"
   },
   "guestPreview": {
     "title": "Guest Portal Preview",
@@ -2343,6 +2352,23 @@
       "recovery": "Recovery & health",
       "training": "Training",
       "etiquette": "Local etiquette"
-    }
+    },
+    "essential": "Good to know today",
+    "arrivalSubtitle": "A few things worth knowing on your first day",
+    "essentialsHeading": "First day"
+  },
+  "arrivalCountdown": {
+    "today": "You arrive today",
+    "tomorrow": "You arrive tomorrow",
+    "days": "{{count}} days until you arrive",
+    "todayLine": "Travel at your own pace. Everything you need is on this page.",
+    "soonLine": "Nearly time. Your flight details and pickup live below.",
+    "farLine": "Nothing to do yet. We'll bring things forward as your date gets closer.",
+    "room": "Your room: {{name}}"
+  },
+  "guestLanguage": {
+    "title": "Your language",
+    "subtitle": "Write to us in your own language. The front desk works in English or Thai and you'll read their replies in yours.",
+    "partialNote": "These are still being translated — some text stays in English."
   }
 }

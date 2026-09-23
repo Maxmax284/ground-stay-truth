@@ -1741,6 +1741,34 @@
       "recovery": "Récupération et santé",
       "training": "Entraînement",
       "etiquette": "Usages locaux"
-    }
+    },
+    "essential": "Bon à savoir aujourd'hui",
+    "arrivalSubtitle": "Quelques repères pour votre premier jour",
+    "essentialsHeading": "Premier jour"
+  },
+  "arrivalCountdown": {
+    "today": "Vous arrivez aujourd'hui",
+    "tomorrow": "Vous arrivez demain",
+    "days": "Plus que {{count}} jours avant votre arrivée",
+    "todayLine": "Prenez votre temps. Tout ce qu'il vous faut est sur cette page.",
+    "soonLine": "C'est bientôt. Votre vol et votre transfert sont plus bas.",
+    "farLine": "Rien à faire pour l'instant. Nous afficherons le nécessaire à l'approche de la date.",
+    "room": "Votre chambre : {{name}}"
+  },
+  "guestLanguage": {
+    "title": "Votre langue",
+    "subtitle": "Écrivez-nous dans votre langue. La réception travaille en anglais ou en thaï et vous lirez ses réponses dans la vôtre.",
+    "partialNote": "Ces langues sont en cours de traduction — certains textes restent en anglais."
+  },
+  "arrivalsBoard": {
+    "tabGuide": "Guide de l'île",
+    "guideEmpty": "Aucun lieu enregistré. Ajoutez-les dans Réglages → Guide et les clients les verront ici.",
+    "guideHintManager": "Marquez un lieu comme essentiel du premier jour : les arrivants le verront en haut de leur guide.",
+    "guideHintStaff": "Les recommandations du camp. Les managers décident de ce que voient d'abord les arrivants.",
+    "guideEssential": "Premier jour",
+    "guideDraft": "Non publié",
+    "guideFlag": "Essentiel du premier jour",
+    "guideNeverChecked": "jamais vérifié",
+    "guideCheckedAgo": "vérifié il y a {{days}} j"
   }
 }
