@@ -115,6 +115,7 @@ export function useDecideArrivalException() {
 }
 
 export interface PickupBrief {
+  id: string;
   booking_id: string;
   flight_number: string | null;
   confirmed_airport: string | null;

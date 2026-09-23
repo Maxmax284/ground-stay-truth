@@ -151,7 +151,18 @@ export function ArrivalExceptionsPanel({ onOpen }: { onOpen: (bookingId: string)
                   </span>
                 )}
                 <span className="ml-auto flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => copyBrief(bookingId, guestName, guestPhone)}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!briefs?.[bookingId]?.id || linking === bookingId}
+                    onClick={() => makeDriverLink(bookingId)}
+                  >
+                    <Link2 className="mr-2 h-4 w-4" />
+                    {linking === bookingId
+                      ? t("arrivalExceptions.linking", "Making link…")
+                      : t("arrivalExceptions.driverLink", "Driver link")}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => copyBrief(bookingId, guestName, guestPhone)}>
                     <Copy className="mr-2 h-4 w-4" />
                     {t("arrivalExceptions.copyBrief", "Copy driver brief")}
                   </Button>
