@@ -75,6 +75,7 @@ const Settings = () => {
           {/* Every panel is isolated: one crashing section must never blank the page. */}
           <TabsContent value="profile"><ErrorBoundary inline label="Profile"><ProfileEditor /></ErrorBoundary></TabsContent>
           {canManageRoles && <TabsContent value="users"><ErrorBoundary inline label="Users"><UserRoleManager /></ErrorBoundary></TabsContent>}
+          <TabsContent value="staff-phones"><ErrorBoundary inline label="Staff phones"><StaffPhoneManager /></ErrorBoundary></TabsContent>
           {canManagePolicies && <TabsContent value="cancellation"><ErrorBoundary inline label="Cancellation policy"><CancellationPolicyEditor /></ErrorBoundary></TabsContent>}
           {canManagePolicies && <TabsContent value="policies"><ErrorBoundary inline label="Policies"><PolicySettingsForm /></ErrorBoundary></TabsContent>}
           {isAdmin && <TabsContent value="drivers"><ErrorBoundary inline label="Drivers"><DriverManager /></ErrorBoundary></TabsContent>}
