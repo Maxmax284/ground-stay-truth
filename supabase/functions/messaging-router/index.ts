@@ -1365,14 +1365,37 @@ serve(async (req) => {
         .from("messaging_chat_bindings")
         .select("user_id").eq("channel", channel).eq("chat_id", chat_id).maybeSingle();
       if (!binding) {
-        await admin.from("messaging_inbound_log").insert({
-          channel, chat_id, inbound_text: trimmed, outcome: "unlinked",
-        });
-        return new Response(JSON.stringify({
-          reply: "Hey — we're not connected yet. Open the app, generate a 6-digit code, then send: /link 123456",
-        }), { headers: { "Content-Type": "application/json" } });
+        // Registered camp number? Then this is staff, not an unknown guest.
+        // Identity only — being recognised grants no extra authority here.
+        let staffMatch: { user_id: string | null; label: string } | null = null;
+        if (channel === "whatsapp" || channel === "sms") {
+          const { data: resolved } = await admin
+            .rpc("resolve_staff_phone", { _raw: chat_id });
+          staffMatch = Array.isArray(resolved) ? (resolved[0] ?? null) : (resolved ?? null);
+        }
+        if (staffMatch?.user_id) {
+          await admin.from("messaging_chat_bindings").upsert({
+            user_id: staffMatch.user_id, channel, chat_id,
+            display_name: display_name || staffMatch.label || null,
+          }, { onConflict: "channel,chat_id" });
+          await seedDefaultPrefs(admin, staffMatch.user_id, channel);
+          await admin.from("messaging_inbound_log").insert({
+            channel, chat_id, user_id: staffMatch.user_id,
+            inbound_text: trimmed, outcome: "staff_phone_matched",
+          });
+          userId = staffMatch.user_id;
+        } else {
+          await admin.from("messaging_inbound_log").insert({
+            channel, chat_id, inbound_text: trimmed,
+            outcome: staffMatch ? "staff_phone_unassigned" : "unlinked",
+          });
+          return new Response(JSON.stringify({
+            reply: "Hey — we're not connected yet. Open the app, generate a 6-digit code, then send: /link 123456",
+          }), { headers: { "Content-Type": "application/json" } });
+        }
+      } else {
+        userId = binding.user_id;
       }
-      userId = binding.user_id;
 
       // /unlink
       if (/^\/?unlink\b/i.test(trimmed)) {

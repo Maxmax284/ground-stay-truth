@@ -22,6 +22,8 @@ import { LocalRecommendationsEditor } from "@/components/admin/LocalRecommendati
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { Phone } from "lucide-react";
+import StaffPhoneManager from "@/components/settings/StaffPhoneManager";
 
 
 
@@ -48,6 +50,9 @@ const Settings = () => {
           <TabsList className="flex-wrap h-auto gap-1 p-1.5 bg-muted/80 relative z-10">
             <TabsTrigger value="profile" className="text-xs sm:text-sm">{t("settings.profileTab")}</TabsTrigger>
             {canManageRoles && <TabsTrigger value="users" className="text-xs sm:text-sm">{t("settings.usersTab")}</TabsTrigger>}
+            <TabsTrigger value="staff-phones" className="text-xs sm:text-sm">
+              <Phone className="h-3.5 w-3.5 mr-1" />Staff Phones
+            </TabsTrigger>
             {canManagePolicies && <TabsTrigger value="cancellation" className="text-xs sm:text-sm">Cancellation</TabsTrigger>}
             {canManagePolicies && <TabsTrigger value="policies" className="text-xs sm:text-sm">{t("settings.policiesTab")}</TabsTrigger>}
             {isAdmin && <TabsTrigger value="drivers" className="text-xs sm:text-sm">Drivers</TabsTrigger>}
@@ -70,6 +75,7 @@ const Settings = () => {
           {/* Every panel is isolated: one crashing section must never blank the page. */}
           <TabsContent value="profile"><ErrorBoundary inline label="Profile"><ProfileEditor /></ErrorBoundary></TabsContent>
           {canManageRoles && <TabsContent value="users"><ErrorBoundary inline label="Users"><UserRoleManager /></ErrorBoundary></TabsContent>}
+          <TabsContent value="staff-phones"><ErrorBoundary inline label="Staff phones"><StaffPhoneManager /></ErrorBoundary></TabsContent>
           {canManagePolicies && <TabsContent value="cancellation"><ErrorBoundary inline label="Cancellation policy"><CancellationPolicyEditor /></ErrorBoundary></TabsContent>}
           {canManagePolicies && <TabsContent value="policies"><ErrorBoundary inline label="Policies"><PolicySettingsForm /></ErrorBoundary></TabsContent>}
           {isAdmin && <TabsContent value="drivers"><ErrorBoundary inline label="Drivers"><DriverManager /></ErrorBoundary></TabsContent>}

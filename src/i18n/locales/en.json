@@ -608,7 +608,10 @@
     "filterHere": "Here now",
     "filterUpcoming": "Coming later",
     "campNotified": "The camp has been emailed",
-    "guestComposerPlaceholder": "Write to the camp…"
+    "guestComposerPlaceholder": "Write to the camp…",
+    "staffLabel": "Staff",
+    "guestLabel": "Guest",
+    "campTeam": "Camp team"
   },
   "stateTransition": {
     "changeState": "Change State",

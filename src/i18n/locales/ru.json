@@ -461,7 +461,10 @@
     "newCount": "{{count}} новых",
     "messageSent": "Сообщение отправлено",
     "messageFailed": "Не удалось отправить сообщение",
-    "typeMessage": "Введите сообщение..."
+    "typeMessage": "Введите сообщение...",
+    "staffLabel": "Персонал",
+    "guestLabel": "Гость",
+    "campTeam": "Команда кэмпа"
   },
   "stateTransition": {
     "changeState": "Изменить статус",

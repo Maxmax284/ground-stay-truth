@@ -19,6 +19,7 @@ import { permissions } from "@/lib/permissions";
 import { useAirportPickup } from "@/hooks/useAirportPickups";
 import { PickupConversation } from "@/components/PickupConversation";
 import { MessageSourceBadge } from "@/components/MessageSourceBadge";
+import { useMessageSenderLabels } from "@/hooks/useMessageSenderLabels";
 
 interface GuestThreadDialogProps {
   bookingId: string | null;
@@ -50,6 +51,7 @@ export function GuestThreadDialog({
   const { data: messages, isLoading } = useBookingMessages(open ? bookingId : null);
   const createMessage = useCreateMessage();
   const { data: pickup } = useAirportPickup(open ? bookingId : null);
+  const { data: senderLabels } = useMessageSenderLabels(open ? bookingId : null);
   const [content, setContent] = useState("");
   const [isInternal, setIsInternal] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
@@ -103,6 +105,13 @@ export function GuestThreadDialog({
       ) : (
         (messages ?? []).map((m: any) => {
           const mine = m.sender_id && m.sender_id === user?.id;
+          // A reply from a registered camp number is staff, not an unknown guest.
+          const sender = m.sender_id ? senderLabels?.[m.sender_id] : undefined;
+          const fromStaff = !!sender?.is_staff;
+          const senderName = fromStaff
+            ? [sender?.display_name, sender?.staff_label].filter(Boolean).join(" · ") ||
+              t("messages.campTeam")
+            : guestName || t("messages.guestLabel");
           return (
             <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
               <div
@@ -111,9 +120,16 @@ export function GuestThreadDialog({
                     ? "bg-muted text-foreground border border-dashed"
                     : mine
                       ? "bg-primary text-primary-foreground"
-                      : "bg-accent text-accent-foreground"
+                      : fromStaff
+                        ? "bg-secondary text-secondary-foreground border border-primary/25"
+                        : "bg-accent text-accent-foreground"
                 }`}
               >
+                {!mine && (
+                  <p className="text-[10px] font-medium uppercase tracking-wide opacity-70">
+                    {fromStaff ? `${t("messages.staffLabel")} — ${senderName}` : senderName}
+                  </p>
+                )}
                 {mine ? (
                   <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
                 ) : (

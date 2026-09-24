@@ -461,7 +461,10 @@
     "newCount": "{{count}} 件の新着",
     "messageSent": "メッセージを送信しました",
     "messageFailed": "メッセージの送信に失敗しました",
-    "typeMessage": "メッセージを入力..."
+    "typeMessage": "メッセージを入力...",
+    "staffLabel": "スタッフ",
+    "guestLabel": "ゲスト",
+    "campTeam": "キャンプチーム"
   },
   "stateTransition": {
     "changeState": "ステータスを変更",
