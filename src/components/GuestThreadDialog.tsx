@@ -124,6 +124,11 @@ export function GuestThreadDialog({
                       : "bg-accent text-accent-foreground"
                 }`}
               >
+                {!mine && (
+                  <p className="text-[10px] font-medium uppercase tracking-wide opacity-70">
+                    {fromStaff ? `${t("messages.staffLabel")} — ${senderName}` : senderName}
+                  </p>
+                )}
                 {mine ? (
                   <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
                 ) : (
