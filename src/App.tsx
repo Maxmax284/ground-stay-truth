@@ -35,6 +35,7 @@ import Embeds from "./pages/Embeds";
 import Stay from "./pages/Stay";
 import Simulation from "./pages/Simulation";
 import FrontDesk from "./pages/FrontDesk";
+import CheckInDesk from "./pages/CheckInDesk";
 import ArrivalsBoard from "./pages/ArrivalsBoard";
 import AdminBookingFlow from "./pages/AdminBookingFlow";
 import LandingPage from "./pages/LandingPage";
@@ -112,6 +113,8 @@ const App = () => (
                 <Route path="/admin-booking" element={<ProtectedRoute requiredPath="/admin-booking"><AdminBookingFlow /></ProtectedRoute>} />
                 <Route path="/guest-preview" element={<ProtectedRoute requiredPath="/guest-preview"><GuestPortalPreview /></ProtectedRoute>} />
                 <Route path="/front-desk" element={<ProtectedRoute requiredPath="/front-desk"><FrontDesk /></ProtectedRoute>} />
+                <Route path="/check-in-desk" element={<ProtectedRoute requiredPath="/check-in-desk"><CheckInDesk /></ProtectedRoute>} />
+                <Route path="/check-in" element={<Navigate to="/check-in-desk" replace />} />
                 <Route path="/calendar" element={<ProtectedRoute requiredPath="/calendar"><CalendarView /></ProtectedRoute>} />
                 <Route path="/pricing" element={<ProtectedRoute requiredPath="/pricing"><Pricing /></ProtectedRoute>} />
                 <Route path="/reports" element={<ProtectedRoute requiredPath="/reports"><Reports /></ProtectedRoute>} />

@@ -129,7 +129,8 @@ export default function FrontDesk() {
 
 
         <Tabs defaultValue="arriving" className="w-full">
-          <TabsList className="flex-wrap h-auto">
+          {/* Phones: slide sideways instead of stacking rows and eating height. */}
+          <TabsList className="h-auto w-full justify-start overflow-x-auto whitespace-nowrap sm:flex-wrap">
             <TabsTrigger value="arriving">{t("frontDesk.tabs.arriving", { count: totals.arriving })}</TabsTrigger>
             <TabsTrigger value="upcoming">{t("frontDesk.tabs.upcoming", { count: totals.upcoming })}</TabsTrigger>
             <TabsTrigger value="staying">{t("frontDesk.tabs.staying", { count: totals.staying })}</TabsTrigger>
