@@ -201,6 +201,12 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
     where: "Messages", nextAction: "Reply from the Messages inbox.",
   },
   {
+    key: "staff_replied_to_guest", label: "Staff replied to a guest",
+    description: "A staff member sends a guest-visible reply (internal notes excluded).",
+    category: "guest_portal", severity: "info", defaultEmail: true, defaultInApp: true, wired: true,
+    where: "Messages", nextAction: "No action needed — overview of guest conversations.",
+  },
+  {
     key: "guest_stuck_at_payment", label: "Guest stuck at payment",
     description: "Guest tapped Pay but never reached Stripe.",
     category: "guest_portal", severity: "action", defaultEmail: true, defaultInApp: true, wired: true,
