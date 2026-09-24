@@ -19,6 +19,7 @@ import { permissions } from "@/lib/permissions";
 import { useAirportPickup } from "@/hooks/useAirportPickups";
 import { PickupConversation } from "@/components/PickupConversation";
 import { MessageSourceBadge } from "@/components/MessageSourceBadge";
+import { useMessageSenderLabels } from "@/hooks/useMessageSenderLabels";
 
 interface GuestThreadDialogProps {
   bookingId: string | null;
