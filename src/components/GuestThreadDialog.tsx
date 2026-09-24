@@ -103,6 +103,14 @@ export function GuestThreadDialog({
       ) : (
         (messages ?? []).map((m: any) => {
           const mine = m.sender_id && m.sender_id === user?.id;
+          // A reply from a registered camp number is staff, not an unknown guest.
+          const sender = m.sender_id ? senderLabels?.[m.sender_id] : undefined;
+          const fromStaff = !!sender?.is_staff;
+          const senderName = fromStaff
+            ? [sender?.display_name || t("messages.staffLabel"), sender?.staff_label]
+                .filter(Boolean)
+                .join(" · ")
+            : guestName || t("messages.guestLabel");
           return (
             <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
               <div
