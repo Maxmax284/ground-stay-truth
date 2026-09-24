@@ -112,71 +112,43 @@ export function GuestThreadDialog({
           </div>
         </DialogHeader>
 
-        <div className="max-h-[45vh] overflow-y-auto px-4 py-3 space-y-3">
-          {isLoading ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-md" />)}
+        {showPickupTab ? (
+          /* One window, two clearly separated conversations — never two composers at once. */
+          <Tabs defaultValue="guest" className="w-full">
+            <div className="px-4 pt-3">
+              <TabsList className="w-full">
+                <TabsTrigger value="guest" className="flex-1 text-xs">
+                  {t("messages.guestConversation", { defaultValue: "Guest conversation" })}
+                </TabsTrigger>
+                <TabsTrigger value="pickup" className="flex-1 text-xs">
+                  {t("messages.driverPickupChat", { defaultValue: "Driver pickup" })}
+                </TabsTrigger>
+              </TabsList>
             </div>
-          ) : (messages ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">{t("messages.noMessages")}</p>
-          ) : (
-            (messages ?? []).map((m: any) => {
-              const mine = m.sender_id && m.sender_id === user?.id;
-              return (
-                <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                  <div
-                    className={`max-w-[85%] rounded-lg px-3 py-2 space-y-1 ${
-                      m.is_internal
-                        ? "bg-muted text-foreground border border-dashed"
-                        : mine
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-accent text-accent-foreground"
-                    }`}
-                  >
-                    {mine ? (
-                      <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
-                    ) : (
-                      <TranslatableText
-                        messageId={m.id}
-                        text={m.content}
-                        targetLanguage={readerLanguage}
-                        onTinted={!m.is_internal}
-                      />
-                    )}
-                    <div className="flex items-center gap-2 text-[10px] opacity-80">
-                      {m.is_internal && (
-                        <span className="inline-flex items-center gap-1">
-                          <Lock className="h-2.5 w-2.5" />
-                          {t("messages.internal")}
-                        </span>
-                      )}
-                      {m.draft && (
-                        <span className="inline-flex items-center gap-1 font-medium">
-                          <Clock className="h-2.5 w-2.5" />
-                          {t("messages.awaitingApproval")}
-                        </span>
-                      )}
-                      {/* Which app the guest wrote from. One thread, many doors. */}
-                      <MessageSourceBadge source={m.source} />
-                      <span>{format(new Date(m.created_at), "MMM d, h:mm a")}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          )}
-          <div ref={endRef} />
-        </div>
-
-        {/* Driver pickup chat is a staff surface — guests use the pickup card. */}
-        {pickup && !isGuest && (
-          <div className="border-t px-4 py-3">
-            <p className="mb-2 text-sm font-semibold">Driver pickup chat</p>
-            <PickupConversation pickupId={pickup.id} viewer="staff" placeholder="Message the driver and guest…" />
-          </div>
+            <TabsContent value="guest" className="mt-0">
+              {transcript}
+              {composer}
+            </TabsContent>
+            <TabsContent value="pickup" className="mt-0 px-4 py-3">
+              <PickupConversation
+                pickupId={pickup!.id}
+                viewer="staff"
+                placeholder={t("messages.pickupComposerPlaceholder", { defaultValue: "Message the driver and guest…" })}
+              />
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <>
+            {transcript}
+            {composer}
+          </>
         )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
-        <div className="border-t px-4 py-3 space-y-2">
+export default GuestThreadDialog;
           {canReply ? (
             <>
               <Textarea
