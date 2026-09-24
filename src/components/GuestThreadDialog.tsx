@@ -50,6 +50,7 @@ export function GuestThreadDialog({
   const { data: messages, isLoading } = useBookingMessages(open ? bookingId : null);
   const createMessage = useCreateMessage();
   const { data: pickup } = useAirportPickup(open ? bookingId : null);
+  const { data: senderLabels } = useMessageSenderLabels(open ? bookingId : null);
   const [content, setContent] = useState("");
   const [isInternal, setIsInternal] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
