@@ -524,7 +524,10 @@
     "filterHere": "Sur place",
     "filterUpcoming": "Arrive plus tard",
     "campNotified": "Le camp a été prévenu par e-mail",
-    "guestComposerPlaceholder": "Écrire au camp…"
+    "guestComposerPlaceholder": "Écrire au camp…",
+    "staffLabel": "Équipe",
+    "guestLabel": "Client",
+    "campTeam": "Équipe du camp"
   },
   "stateTransition": {
     "changeState": "Changer l'état",

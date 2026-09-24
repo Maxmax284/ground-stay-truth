@@ -461,7 +461,10 @@
     "newCount": "{{count}} 条新消息",
     "messageSent": "消息已发送",
     "messageFailed": "消息发送失败",
-    "typeMessage": "输入消息..."
+    "typeMessage": "输入消息...",
+    "staffLabel": "员工",
+    "guestLabel": "客人",
+    "campTeam": "营地团队"
   },
   "stateTransition": {
     "changeState": "更改状态",

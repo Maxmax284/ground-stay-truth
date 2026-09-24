@@ -524,7 +524,10 @@
     "filterHere": "Jetzt hier",
     "filterUpcoming": "Kommt später",
     "campNotified": "Das Camp wurde per E-Mail benachrichtigt",
-    "guestComposerPlaceholder": "An das Camp schreiben…"
+    "guestComposerPlaceholder": "An das Camp schreiben…",
+    "staffLabel": "Team",
+    "guestLabel": "Gast",
+    "campTeam": "Camp-Team"
   },
   "stateTransition": {
     "changeState": "Status ändern",

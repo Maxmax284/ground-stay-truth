@@ -456,7 +456,10 @@
     "newCount": "{{count}}개 새 메시지",
     "messageSent": "메시지 전송됨",
     "messageFailed": "메시지 전송 실패",
-    "typeMessage": "메시지를 입력하세요..."
+    "typeMessage": "메시지를 입력하세요...",
+    "staffLabel": "스태프",
+    "guestLabel": "게스트",
+    "campTeam": "캠프 팀"
   },
   "stateTransition": {
     "changeState": "상태 변경",

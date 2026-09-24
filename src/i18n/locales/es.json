@@ -461,7 +461,10 @@
     "newCount": "{{count}} nuevo",
     "messageSent": "Mensaje enviado",
     "messageFailed": "Error al enviar el mensaje",
-    "typeMessage": "Escribe un mensaje..."
+    "typeMessage": "Escribe un mensaje...",
+    "staffLabel": "Personal",
+    "guestLabel": "Huésped",
+    "campTeam": "Equipo del camp"
   },
   "stateTransition": {
     "changeState": "Cambiar estado",
