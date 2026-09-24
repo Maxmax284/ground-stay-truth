@@ -52,7 +52,10 @@ export function GuestThreadDialog({
   const [content, setContent] = useState("");
   const [isInternal, setIsInternal] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
-  const canReply = permissions.canSendMessages(role);
+  // Guests write from the portal's "Talk to the camp" card; RLS already
+  // restricts them to their own bookings with is_internal = false.
+  const isGuest = role === "guest";
+  const canReply = isGuest || permissions.canSendMessages(role);
 
   useEffect(() => {
     if (open) endRef.current?.scrollIntoView({ block: "end" });
@@ -72,10 +75,10 @@ export function GuestThreadDialog({
       await createMessage.mutateAsync({
         booking_id: bookingId,
         content: body,
-        is_internal: isInternal,
+        is_internal: isGuest ? false : isInternal,
       });
       setContent("");
-      if (!isInternal && !isAdmin) {
+      if (!isInternal && !isAdmin && !isGuest) {
         toast.success(t("messages.messageSent"), { description: t("messages.adminNotified") });
       } else {
         toast.success(t("messages.messageSent"));
@@ -165,7 +168,8 @@ export function GuestThreadDialog({
           <div ref={endRef} />
         </div>
 
-        {pickup && (
+        {/* Driver pickup chat is a staff surface — guests use the pickup card. */}
+        {pickup && !isGuest && (
           <div className="border-t px-4 py-3">
             <p className="mb-2 text-sm font-semibold">Driver pickup chat</p>
             <PickupConversation pickupId={pickup.id} viewer="staff" placeholder="Message the driver and guest…" />
@@ -189,12 +193,14 @@ export function GuestThreadDialog({
                 }}
               />
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Switch id="thread-internal" checked={isInternal} onCheckedChange={setIsInternal} />
-                  <Label htmlFor="thread-internal" className="text-xs text-muted-foreground">
-                    {isInternal ? t("messages.internalNote") : t("messages.guestVisible")}
-                  </Label>
-                </div>
+                {isGuest ? <span /> : (
+                  <div className="flex items-center gap-2">
+                    <Switch id="thread-internal" checked={isInternal} onCheckedChange={setIsInternal} />
+                    <Label htmlFor="thread-internal" className="text-xs text-muted-foreground">
+                      {isInternal ? t("messages.internalNote") : t("messages.guestVisible")}
+                    </Label>
+                  </div>
+                )}
                 <Button size="sm" onClick={handleSend} disabled={!content.trim() || createMessage.isPending}>
                   {createMessage.isPending
                     ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
@@ -202,7 +208,7 @@ export function GuestThreadDialog({
                   {t("messages.send")}
                 </Button>
               </div>
-              {!isInternal && (
+              {!isInternal && !isGuest && (
                 <Badge variant="outline" className="text-[10px]">
                   {isAdmin ? t("messages.guestWillSee") : `${t("messages.guestWillSee")} · ${t("messages.adminNotified")}`}
                 </Badge>
