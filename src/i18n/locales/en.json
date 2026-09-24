@@ -606,7 +606,8 @@
     "filterToday": "Arriving today",
     "filterHere": "Here now",
     "filterUpcoming": "Coming later",
-    "campNotified": "The camp has been emailed"
+    "campNotified": "The camp has been emailed",
+    "guestComposerPlaceholder": "Write to the camp…"
   },
   "stateTransition": {
     "changeState": "Change State",

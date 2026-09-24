@@ -182,7 +182,7 @@ export function GuestThreadDialog({
               <Textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder={isInternal ? t("messages.writeNote") : t("messages.replyPlaceholder")}
+                placeholder={isGuest ? t("messages.guestComposerPlaceholder") : isInternal ? t("messages.writeNote") : t("messages.replyPlaceholder")}
                 rows={2}
                 autoFocus
                 onKeyDown={(e) => {
