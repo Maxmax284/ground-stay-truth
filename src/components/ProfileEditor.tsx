@@ -115,6 +115,34 @@ export default function ProfileEditor() {
       {/* Staff read the desk in English or Thai — their own choice, per person. */}
       {role && role !== "guest" && <StaffLanguagePicker />}
 
+      {/* Your own mobile: recognised as staff in guest conversations. */}
+      {role && role !== "guest" && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Phone className="h-4 w-4 text-primary" />
+              Your staff mobile / WhatsApp
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <p>
+              Fill in your <span className="text-foreground font-medium">Phone</span> or{" "}
+              <span className="text-foreground font-medium">WhatsApp</span> below (with country
+              code, like +66 81 234 5678). Anything you send a guest from that number shows up in
+              their conversation marked <span className="text-foreground font-medium">Staff</span>,
+              with your name — not as an unknown guest.
+            </p>
+            {(role === "admin" || role === "manager") && (
+              <p className="text-foreground">
+                Shared camp lines — front desk, duty manager, driver dispatch — belong in{" "}
+                <span className="font-medium">Settings → Staff Phones</span>, where you can add
+                several numbers. Duplicates are blocked there.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">{t("profile.myProfile")}</CardTitle>
