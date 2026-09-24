@@ -120,7 +120,9 @@ export function GuestThreadDialog({
                     ? "bg-muted text-foreground border border-dashed"
                     : mine
                       ? "bg-primary text-primary-foreground"
-                      : "bg-accent text-accent-foreground"
+                      : fromStaff
+                        ? "bg-secondary text-secondary-foreground border border-primary/25"
+                        : "bg-accent text-accent-foreground"
                 }`}
               >
                 {!mine && (
