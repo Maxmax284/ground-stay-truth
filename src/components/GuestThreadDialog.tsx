@@ -88,6 +88,112 @@ export function GuestThreadDialog({
     }
   };
 
+  // Driver pickup chat is a staff surface — guests use the pickup card.
+  const showPickupTab = Boolean(pickup) && !isGuest;
+
+  const transcript = (
+    <div className="max-h-[45vh] overflow-y-auto px-4 py-3 space-y-3">
+      {isLoading ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-md" />)}
+        </div>
+      ) : (messages ?? []).length === 0 ? (
+        <p className="text-sm text-muted-foreground py-6 text-center">{t("messages.noMessages")}</p>
+      ) : (
+        (messages ?? []).map((m: any) => {
+          const mine = m.sender_id && m.sender_id === user?.id;
+          return (
+            <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+              <div
+                className={`max-w-[85%] rounded-lg px-3 py-2 space-y-1 ${
+                  m.is_internal
+                    ? "bg-muted text-foreground border border-dashed"
+                    : mine
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-accent text-accent-foreground"
+                }`}
+              >
+                {mine ? (
+                  <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
+                ) : (
+                  <TranslatableText
+                    messageId={m.id}
+                    text={m.content}
+                    targetLanguage={readerLanguage}
+                    onTinted={!m.is_internal}
+                  />
+                )}
+                <div className="flex items-center gap-2 text-[10px] opacity-80">
+                  {m.is_internal && (
+                    <span className="inline-flex items-center gap-1">
+                      <Lock className="h-2.5 w-2.5" />
+                      {t("messages.internal")}
+                    </span>
+                  )}
+                  {m.draft && (
+                    <span className="inline-flex items-center gap-1 font-medium">
+                      <Clock className="h-2.5 w-2.5" />
+                      {t("messages.awaitingApproval")}
+                    </span>
+                  )}
+                  {/* Which app the guest wrote from. One thread, many doors. */}
+                  <MessageSourceBadge source={m.source} />
+                  <span>{format(new Date(m.created_at), "MMM d, h:mm a")}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })
+      )}
+      <div ref={endRef} />
+    </div>
+  );
+
+  const composer = (
+    <div className="border-t px-4 py-3 space-y-2">
+      {canReply ? (
+        <>
+          <Textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder={isGuest ? t("messages.guestComposerPlaceholder") : isInternal ? t("messages.writeNote") : t("messages.replyPlaceholder")}
+            rows={2}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+          />
+          <div className="flex items-center justify-between gap-2">
+            {isGuest ? <span /> : (
+              <div className="flex items-center gap-2">
+                <Switch id="thread-internal" checked={isInternal} onCheckedChange={setIsInternal} />
+                <Label htmlFor="thread-internal" className="text-xs text-muted-foreground">
+                  {isInternal ? t("messages.internalNote") : t("messages.guestVisible")}
+                </Label>
+              </div>
+            )}
+            <Button size="sm" onClick={handleSend} disabled={!content.trim() || createMessage.isPending}>
+              {createMessage.isPending
+                ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                : <Send className="h-3.5 w-3.5 mr-1" />}
+              {t("messages.send")}
+            </Button>
+          </div>
+          {!isInternal && !isGuest && (
+            <Badge variant="outline" className="text-[10px]">
+              {isAdmin ? t("messages.guestWillSee") : `${t("messages.guestWillSee")} · ${t("messages.adminNotified")}`}
+            </Badge>
+          )}
+        </>
+      ) : (
+        <p className="text-xs text-muted-foreground">{t("messages.readOnly")}</p>
+      )}
+    </div>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg p-0 gap-0">
