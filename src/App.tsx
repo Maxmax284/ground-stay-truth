@@ -35,6 +35,7 @@ import Embeds from "./pages/Embeds";
 import Stay from "./pages/Stay";
 import Simulation from "./pages/Simulation";
 import FrontDesk from "./pages/FrontDesk";
+import CheckInDesk from "./pages/CheckInDesk";
 import ArrivalsBoard from "./pages/ArrivalsBoard";
 import AdminBookingFlow from "./pages/AdminBookingFlow";
 import LandingPage from "./pages/LandingPage";
