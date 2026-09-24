@@ -79,7 +79,7 @@ export function GuestThreadDialog({
       });
       setContent("");
       if (!isInternal && !isAdmin) {
-        toast.success(t("messages.messageSent"), { description: t("messages.adminNotified") });
+        toast.success(t("messages.messageSent"), { description: t(isGuest ? "messages.campNotified" : "messages.adminNotified") });
       } else {
         toast.success(t("messages.messageSent"));
       }

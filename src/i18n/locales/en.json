@@ -605,7 +605,8 @@
     "filterAll": "Everyone",
     "filterToday": "Arriving today",
     "filterHere": "Here now",
-    "filterUpcoming": "Coming later"
+    "filterUpcoming": "Coming later",
+    "campNotified": "The camp has been emailed"
   },
   "stateTransition": {
     "changeState": "Change State",

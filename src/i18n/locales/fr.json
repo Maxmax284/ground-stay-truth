@@ -521,7 +521,8 @@
     "filterAll": "Tout le monde",
     "filterToday": "Arrive aujourd’hui",
     "filterHere": "Sur place",
-    "filterUpcoming": "Arrive plus tard"
+    "filterUpcoming": "Arrive plus tard",
+    "campNotified": "Le camp a été prévenu par e-mail"
   },
   "stateTransition": {
     "changeState": "Changer l'état",
