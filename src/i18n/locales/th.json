@@ -606,7 +606,8 @@
     "filterToday": "มาถึงวันนี้",
     "filterHere": "อยู่ที่นี่แล้ว",
     "filterUpcoming": "มาถึงภายหลัง",
-    "campNotified": "ส่งอีเมลแจ้งแคมป์แล้ว"
+    "campNotified": "ส่งอีเมลแจ้งแคมป์แล้ว",
+    "guestComposerPlaceholder": "เขียนถึงแคมป์…"
   },
   "stateTransition": {
     "changeState": "เปลี่ยนสถานะ",

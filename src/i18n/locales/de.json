@@ -522,7 +522,8 @@
     "filterToday": "Kommt heute an",
     "filterHere": "Jetzt hier",
     "filterUpcoming": "Kommt später",
-    "campNotified": "Das Camp wurde per E-Mail benachrichtigt"
+    "campNotified": "Das Camp wurde per E-Mail benachrichtigt",
+    "guestComposerPlaceholder": "An das Camp schreiben…"
   },
   "stateTransition": {
     "changeState": "Status ändern",
