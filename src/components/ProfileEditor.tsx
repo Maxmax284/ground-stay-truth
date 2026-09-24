@@ -25,7 +25,7 @@ import { StaffLanguagePicker } from "@/components/staff/StaffLanguagePicker";
 import { useTutorial } from "@/hooks/useTutorial";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Trash2, RotateCcw, Download, Loader2 } from "lucide-react";
+import { Trash2, RotateCcw, Download, Loader2, Phone } from "lucide-react";
 
 const LANGUAGES = [
   { code: "en", label: "English" },
