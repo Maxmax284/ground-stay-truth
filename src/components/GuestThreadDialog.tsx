@@ -109,9 +109,8 @@ export function GuestThreadDialog({
           const sender = m.sender_id ? senderLabels?.[m.sender_id] : undefined;
           const fromStaff = !!sender?.is_staff;
           const senderName = fromStaff
-            ? [sender?.display_name || t("messages.staffLabel"), sender?.staff_label]
-                .filter(Boolean)
-                .join(" · ")
+            ? [sender?.display_name, sender?.staff_label].filter(Boolean).join(" · ") ||
+              t("messages.campTeam")
             : guestName || t("messages.guestLabel");
           return (
             <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
