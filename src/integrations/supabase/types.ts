@@ -4405,6 +4405,45 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_phone_numbers: {
+        Row: {
+          channel: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          label: string
+          phone_e164: string
+          phone_raw: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          phone_e164: string
+          phone_raw: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          phone_e164?: string
+          phone_raw?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       stay_modifications: {
         Row: {
           actor_email: string | null
@@ -5550,6 +5589,7 @@ export type Database = {
           self_issued: boolean
         }[]
       }
+      normalize_phone: { Args: { _raw: string }; Returns: string }
       record_offline_payment: {
         Args: {
           _amount: number
@@ -5563,6 +5603,14 @@ export type Database = {
         Returns: string
       }
       reset_sandbox: { Args: never; Returns: Json }
+      resolve_staff_phone: {
+        Args: { _raw: string }
+        Returns: {
+          full_name: string
+          label: string
+          user_id: string
+        }[]
+      }
       revoke_admin_elevation: { Args: { _grant_id: string }; Returns: boolean }
       swap_booking_rooms: {
         Args: { _booking_a: string; _booking_b: string; _reason?: string }
