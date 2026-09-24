@@ -48,6 +48,9 @@ const Settings = () => {
           <TabsList className="flex-wrap h-auto gap-1 p-1.5 bg-muted/80 relative z-10">
             <TabsTrigger value="profile" className="text-xs sm:text-sm">{t("settings.profileTab")}</TabsTrigger>
             {canManageRoles && <TabsTrigger value="users" className="text-xs sm:text-sm">{t("settings.usersTab")}</TabsTrigger>}
+            <TabsTrigger value="staff-phones" className="text-xs sm:text-sm">
+              <Phone className="h-3.5 w-3.5 mr-1" />Staff Phones
+            </TabsTrigger>
             {canManagePolicies && <TabsTrigger value="cancellation" className="text-xs sm:text-sm">Cancellation</TabsTrigger>}
             {canManagePolicies && <TabsTrigger value="policies" className="text-xs sm:text-sm">{t("settings.policiesTab")}</TabsTrigger>}
             {isAdmin && <TabsTrigger value="drivers" className="text-xs sm:text-sm">Drivers</TabsTrigger>}
