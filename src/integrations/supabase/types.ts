@@ -5438,6 +5438,15 @@ export type Database = {
         }[]
       }
       get_integration_secret: { Args: { _key: string }; Returns: string }
+      get_message_sender_labels: {
+        Args: { _booking_id: string }
+        Returns: {
+          display_name: string
+          is_staff: boolean
+          sender_id: string
+          staff_label: string
+        }[]
+      }
       get_ops_exceptions: {
         Args: never
         Returns: {
