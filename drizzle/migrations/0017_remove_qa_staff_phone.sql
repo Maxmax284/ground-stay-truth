@@ -1,0 +1,1 @@
+DELETE FROM public.staff_phone_numbers WHERE phone_e164 = '+66819990001';
