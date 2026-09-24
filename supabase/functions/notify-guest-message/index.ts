@@ -18,6 +18,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendAppEmail } from "../_shared/appEmail.ts";
 import { sendGuestWhatsApp, whatsAppConnectorLinked } from "../_shared/messagingConnector.ts";
+import { emitAdminAlert } from "../_shared/adminAlert.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -57,8 +58,29 @@ Deno.serve(async (req) => {
     const { data: callerRoles } = await admin
       .from("user_roles").select("role").eq("user_id", caller.user.id);
     const staffRoles = ["admin", "manager", "front_desk_supervisor", "front_desk", "maintenance"];
-    if (!(callerRoles ?? []).some((r: { role: string }) => staffRoles.includes(r.role))) {
-      return json({ error: "forbidden" }, 403);
+    const callerIsStaff = (callerRoles ?? []).some((r: { role: string }) => staffRoles.includes(r.role));
+
+    // ── Guest-sent message: alert the camp (email + bell via alert centre) ──
+    if (!callerIsStaff) {
+      const { data: gm } = await admin
+        .from("messages").select("id, booking_id, content, is_internal, sender_id")
+        .eq("id", message_id ?? "").maybeSingle();
+      const { data: gb } = await admin
+        .from("bookings").select("id, guest_id, units(name)").eq("id", booking_id).maybeSingle();
+      if (!gm || !gb || gm.booking_id !== booking_id || gb.guest_id !== caller.user.id || gm.sender_id !== caller.user.id) {
+        return json({ error: "forbidden" }, 403);
+      }
+      const { data: gp } = await admin
+        .from("profiles").select("full_name").eq("user_id", caller.user.id).maybeSingle();
+      const who = (gp?.full_name as string | null) ?? "A guest";
+      const unit = (gb as { units?: { name?: string } | null }).units?.name;
+      const text = String(gm.content ?? "").trim();
+      await emitAdminAlert(
+        "guest_message_received",
+        `${who}${unit ? ` (${unit})` : ""}: "${text.length > 200 ? text.slice(0, 200) + "…" : text}"`,
+        { referenceId: booking_id, deepLink: "/messages", context: { channel: "portal" }, triggeredBy: caller.user.id },
+      );
+      return json({ ok: true, direction: "guest_to_camp", alerted: true });
     }
 
     // The message we're announcing, and who it belongs to.
@@ -141,6 +163,13 @@ Deno.serve(async (req) => {
     } else {
       email = { attempted: false, skipped: "no_email_on_file" };
     }
+
+    // ── Quiet admin visibility on staff replies (alert centre caps + settings) ──
+    await emitAdminAlert(
+      "staff_replied_to_guest",
+      `${staffName} → ${guestName ?? "guest"}${unitName ? ` (${unitName})` : ""}: "${snippet.slice(0, 200)}"`,
+      { referenceId: booking_id, deepLink: "/messages", context: { channel: "portal" }, triggeredBy: caller.user.id },
+    );
 
     return json({
       ok: true,

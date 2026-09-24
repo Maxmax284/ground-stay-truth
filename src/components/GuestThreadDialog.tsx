@@ -78,8 +78,8 @@ export function GuestThreadDialog({
         is_internal: isGuest ? false : isInternal,
       });
       setContent("");
-      if (!isInternal && !isAdmin && !isGuest) {
-        toast.success(t("messages.messageSent"), { description: t("messages.adminNotified") });
+      if (!isInternal && !isAdmin) {
+        toast.success(t("messages.messageSent"), { description: t(isGuest ? "messages.campNotified" : "messages.adminNotified") });
       } else {
         toast.success(t("messages.messageSent"));
       }

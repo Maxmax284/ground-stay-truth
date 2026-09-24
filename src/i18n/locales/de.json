@@ -521,7 +521,8 @@
     "filterAll": "Alle",
     "filterToday": "Kommt heute an",
     "filterHere": "Jetzt hier",
-    "filterUpcoming": "Kommt später"
+    "filterUpcoming": "Kommt später",
+    "campNotified": "Das Camp wurde per E-Mail benachrichtigt"
   },
   "stateTransition": {
     "changeState": "Status ändern",
