@@ -127,6 +127,13 @@
       "when": 1790221267562,
       "tag": "0017_remove_qa_staff_phone",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790302867746,
+      "tag": "0018_normalize_phone_strip_00_prefix",
+      "breakpoints": true
     }
   ]
 }
