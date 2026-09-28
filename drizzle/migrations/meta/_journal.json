@@ -134,6 +134,13 @@
       "when": 1790302867746,
       "tag": "0018_normalize_phone_strip_00_prefix",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790571939341,
+      "tag": "0019_backfill_staff_phone_e164_normalize_00",
+      "breakpoints": true
     }
   ]
 }
