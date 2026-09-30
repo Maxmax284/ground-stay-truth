@@ -141,6 +141,13 @@
       "when": 1790571939341,
       "tag": "0019_backfill_staff_phone_e164_normalize_00",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1790742117419,
+      "tag": "0020_pricing_clarity_adjustment_guard",
+      "breakpoints": true
     }
   ]
 }
