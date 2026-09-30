@@ -8,6 +8,7 @@ import { calculateBookingFinancials } from "@/lib/paymentTypes";
 import { PriceStoryBadge } from "@/components/PriceStoryBadge";
 import { PriceBuildPanel } from "@/components/PriceBuildPanel";
 import { useBookingDiscountFlags, type PriceStoryBooking } from "@/hooks/usePriceStory";
+import { pickupAddonLine } from "@/lib/pricingClarity";
 import { Check, Clock, AlertCircle, ShieldCheck, ShieldAlert, Shield } from "lucide-react";
 
 interface Props {
@@ -140,7 +141,9 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
             <div className="text-[10px] uppercase text-muted-foreground">Booking total</div>
             <div className="text-base font-semibold tabular-nums">{fmt(fin.grandTotal)}</div>
             {fin.addonRequired > 0 && (
-              <div className="text-[10px] text-muted-foreground">incl. {fmt(fin.addonRequired)} add-ons</div>
+              <div className="text-[10px] text-muted-foreground">
+                {pickupAddonLine(fin.addonRequired, fmt)}
+              </div>
             )}
           </div>
           <div>

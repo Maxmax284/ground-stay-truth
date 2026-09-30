@@ -4,6 +4,7 @@
  */
 import { useState } from "react";
 import { ChevronDown, Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/currency";
 import { usePriceStory, type PriceStoryBooking } from "@/hooks/usePriceStory";
 import { useBookingActiveAdjustments } from "@/hooks/useBookingActiveAdjustments";
@@ -23,6 +24,7 @@ interface Props {
 
 export function PriceBuildPanel({ booking, policies, addonTotal, totalPaid, outstanding, credit, audience = "staff" }: Props) {
   const [open, setOpen] = useState(false);
+  const contentId = `price-build-${booking.id}`;
   const { story } = usePriceStory(booking, open);
   const { data: adjustments } = useBookingActiveAdjustments(open && audience === "staff" ? booking.id : null);
   const fmt = (n: number) => formatPrice(Math.abs(n), policies);
@@ -32,17 +34,19 @@ export function PriceBuildPanel({ booking, policies, addonTotal, totalPaid, outs
 
   return (
     <div className="rounded-md border border-border/60">
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-3 py-2 text-xs font-medium text-foreground"
+        className="h-auto w-full justify-between rounded-md px-3 py-2 text-xs text-foreground"
         aria-expanded={open}
+        aria-controls={contentId}
       >
         How this price was built
         <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
+      </Button>
       {open && (
-        <div className="space-y-2 border-t border-border/60 px-3 py-2 text-xs">
+        <div id={contentId} className="space-y-2 border-t border-border/60 px-3 py-2 text-xs">
           {!story ? (
             <p className="text-muted-foreground">Working out the breakdown…</p>
           ) : (
@@ -72,6 +76,11 @@ export function PriceBuildPanel({ booking, policies, addonTotal, totalPaid, outs
             <span>Room total (stored)</span>
             <span className="tabular-nums">{stored != null ? formatPrice(stored, policies) : "—"}</span>
           </div>
+          {story && Math.abs(story.drift) >= 1 && (
+            <p className="rounded-md bg-[hsl(var(--warning))]/10 p-2 text-[10px] leading-relaxed text-warning-foreground">
+              Today&apos;s rates give {fmt(story.chargedTotal)}, but this booking is saved at {stored != null ? formatPrice(stored, policies) : "—"}. The saved total remains authoritative.
+            </p>
+          )}
           {pickup && <div className="flex justify-between"><span>{pickup}</span></div>}
           <div className="flex justify-between"><span>Total paid</span><span className="tabular-nums">{formatPrice(totalPaid, policies)}</span></div>
           <div className="flex justify-between">

@@ -43,7 +43,9 @@ import { RequiredDocumentsCard } from "@/components/RequiredDocumentsCard";
 import { SecurityDepositSection } from "@/components/SecurityDepositSection";
 import { BookingFinancialSummary } from "@/components/BookingFinancialSummary";
 import { PriceStoryBadge } from "@/components/PriceStoryBadge";
+import { PriceBuildPanel } from "@/components/PriceBuildPanel";
 import { useBookingDiscountFlags, type PriceStoryBooking } from "@/hooks/usePriceStory";
+import { pickupAddonLine, PICKUP_HELPER } from "@/lib/pricingClarity";
 import { PaymentGuideLink } from "@/components/PaymentGuideLink";
 import { BookingTrainingSection } from "@/components/BookingTrainingSection";
 import { useBookingTrainingLinks } from "@/hooks/useTrainingPackages";
@@ -621,6 +623,15 @@ function PaymentsTab({ payments, bookingId, bookingState, canSeeAmounts, canReco
               {formatPrice(totalPrice, policies)}
             </span>
           </div>
+          {balance.addonTotal > 0 && (
+            <>
+              <div className="flex justify-between gap-3 text-sm">
+                <span className="text-muted-foreground">Airport pickup</span>
+                <span className="text-right font-medium">{pickupAddonLine(balance.addonTotal, (value) => formatPrice(value, policies))}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">{PICKUP_HELPER}</p>
+            </>
+          )}
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">{t("payments.totalPaid", { defaultValue: "Total Paid" })}</span>
             <span className="font-medium text-[hsl(var(--success))]">{formatPrice(balance.totalPaid, policies)}</span>
@@ -644,6 +655,16 @@ function PaymentsTab({ payments, bookingId, bookingState, canSeeAmounts, canReco
               {balance.outstanding > 0 ? formatPrice(balance.outstanding, policies) : t("payments.fullyPaid", { defaultValue: "Fully Paid" })}
             </span>
           </div>
+          {booking && (
+            <PriceBuildPanel
+              booking={booking}
+              policies={policies}
+              addonTotal={balance.addonTotal}
+              totalPaid={balance.totalPaid}
+              outstanding={balance.outstanding}
+              credit={balance.credit}
+            />
+          )}
         </div>
       )}
 
