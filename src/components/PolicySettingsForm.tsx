@@ -20,6 +20,7 @@ import { playGroundSound, SOUND_NAMES, type SoundName } from "@/lib/groundSounds
 import { StayEssentialsEditor } from "@/components/StayEssentialsEditor";
 import { LiveConfirmationPreview } from "@/components/LiveConfirmationPreview";
 import { SendTestEmailButton } from "@/components/SendTestEmailButton";
+import { previewLongStay } from "@/lib/pricingClarity";
 
 /* ── Setting Groups ────────────────────────────────────────── */
 
