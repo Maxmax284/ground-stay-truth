@@ -7,7 +7,6 @@ import { ChevronDown, Info } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
 import { usePriceStory, type PriceStoryBooking } from "@/hooks/usePriceStory";
 import { useBookingActiveAdjustments } from "@/hooks/useBookingActiveAdjustments";
-import { formatInTimeZone } from "date-fns-tz";
 import {
   ROLE_EXPLAINER, decimalExplanation, pickupAddonLine, PICKUP_HELPER, linesForAudience, type Audience,
 } from "@/lib/pricingClarity";
@@ -62,8 +61,8 @@ export function PriceBuildPanel({ booking, policies, addonTotal, totalPaid, outs
             <div className="space-y-1 rounded bg-muted/40 p-2">
               {(adjustments ?? []).map((a) => (
                 <div key={a.id} className="text-[10px] text-muted-foreground">
-                  <span className="text-foreground">{a.label}</span> ·{" "}
-                  {a.applied_at ? formatInTimeZone(new Date(a.applied_at), "Asia/Bangkok", "d MMM yyyy HH:mm") : "—"}
+                  <span className="text-foreground">{a.label}</span>{a.internal_note ? ` — ${a.internal_note}` : ""} ·{" "}
+                  {a.applied_at ? new Date(a.applied_at).toLocaleString("en-GB", { timeZone: "Asia/Bangkok", dateStyle: "medium", timeStyle: "short" }) : "—"}
                 </div>
               ))}
             </div>

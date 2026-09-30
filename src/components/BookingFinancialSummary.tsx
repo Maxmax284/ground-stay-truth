@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/currency";
 import { calculateBookingFinancials } from "@/lib/paymentTypes";
 import { PriceStoryBadge } from "@/components/PriceStoryBadge";
+import { PriceBuildPanel } from "@/components/PriceBuildPanel";
 import { useBookingDiscountFlags, type PriceStoryBooking } from "@/hooks/usePriceStory";
 import { Check, Clock, AlertCircle, ShieldCheck, ShieldAlert, Shield } from "lucide-react";
 
@@ -268,6 +269,17 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
             </div>
           )}
         </div>
+
+        {booking && (
+          <PriceBuildPanel
+            booking={booking}
+            policies={policies}
+            addonTotal={fin.addonRequired}
+            totalPaid={fin.bookingCollected}
+            outstanding={fin.outstanding}
+            credit={fin.credit}
+          />
+        )}
 
         {/* Footer total collected (incl. security + fee) */}
         {(fin.securityPaid > 0 || fin.feePaid > 0) && (
