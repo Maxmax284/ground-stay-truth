@@ -625,9 +625,8 @@ function PaymentsTab({ payments, bookingId, bookingState, canSeeAmounts, canReco
           </div>
           {balance.addonTotal > 0 && (
             <>
-              <div className="flex justify-between gap-3 text-sm">
-                <span className="text-muted-foreground">Airport pickup</span>
-                <span className="text-right font-medium">{pickupAddonLine(balance.addonTotal, (value) => formatPrice(value, policies))}</span>
+              <div className="text-sm font-medium">
+                {pickupAddonLine(balance.addonTotal, (value) => formatPrice(value, policies))}
               </div>
               <p className="text-xs text-muted-foreground">{PICKUP_HELPER}</p>
             </>
