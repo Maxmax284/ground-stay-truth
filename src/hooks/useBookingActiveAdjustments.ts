@@ -15,7 +15,7 @@ export function useBookingActiveAdjustments(bookingId: string | null | undefined
     queryFn: async () => {
       const { data, error } = await supabase
         .from("booking_adjustments")
-        .select("id, label, adjustment_type, value, value_type, amount_calculated, status, applied_at")
+        .select("id, label, adjustment_type, value, value_type, amount_calculated, status, applied_at, applied_by, internal_note")
         .eq("booking_id", bookingId as string)
         .eq("status", "active");
       if (error) throw error;
