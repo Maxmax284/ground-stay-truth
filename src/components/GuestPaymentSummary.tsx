@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ExternalLink, CreditCard, Receipt } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
+import { decimalExplanation, PICKUP_HELPER } from "@/lib/pricingClarity";
 import {
   calculateOutstanding,
   PAYMENT_STATUS_LABELS,
@@ -78,6 +79,12 @@ export function GuestPaymentSummary({ bookingId, totalPrice, policies }: GuestPa
               <span className="text-muted-foreground">{t("payments.totalRefunded", { defaultValue: "Refunded" })}</span>
               <span className="font-medium text-[hsl(var(--info))]">−{formatPrice(balance.totalRefunded, policies)}</span>
             </div>
+          )}
+          {balance.addonTotal > 0 && (
+            <p className="text-xs text-muted-foreground">{t("payments.pickupSeparate", { defaultValue: PICKUP_HELPER })}</p>
+          )}
+          {decimalExplanation(totalPrice, true) && (
+            <p className="text-xs text-muted-foreground">{t("payments.decimalHelper", { defaultValue: decimalExplanation(totalPrice, true) as string })}</p>
           )}
           <Separator className="my-1" />
           <div className="flex justify-between text-sm">

@@ -8,6 +8,7 @@
 //                        revoke unpaid payment links.
 //   - action: "void"   → mark adjustment voided, restore total, recompute.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { emitAdminAlert } from "../_shared/adminAlert.ts";
 import { corsPreflight, jsonResponse, getCorsHeaders } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -219,6 +220,38 @@ async function handleApply(req: Request, admin: any, userId: string, body: Apply
       internal_note: internalNote ?? null,
     },
   });
+
+  // 7. Visibility alert for large manual discounts (never blocks the operation).
+  if (adjustmentType === "discount") {
+    try {
+      const { data: thRow } = await admin.from("policy_settings")
+        .select("value,property_id").eq("key", "large_adjustment_alert_threshold");
+      const th = (thRow ?? []).find((r: any) => r.property_id === booking.property_id)
+        ?? (thRow ?? []).find((r: any) => r.property_id == null);
+      const threshold = Number(String(th?.value ?? "10000").replace(/"/g, "")) || 10000;
+      if (amountCalc >= threshold) {
+        const { data: prof } = await admin.from("profiles").select("full_name,email").eq("user_id", userId).maybeSingle();
+        const { data: roleRows } = await admin.from("user_roles").select("role").eq("user_id", userId);
+        const role = (roleRows ?? []).map((r: any) => r.role).includes("admin") ? "admin" : "manager";
+        const operator = prof?.full_name || prof?.email || "Staff";
+        const guestName = booking.manual_guest_name || booking.guest_name || "Guest";
+        await emitAdminAlert(
+          "large_pricing_adjustment",
+          `Large pricing adjustment recorded: ฿${amountCalc.toLocaleString()} on ${booking.confirmation_number ?? bookingId} (${guestName}) by ${operator} (${role}). Reason: ${label}. Total ฿${originalTotal} → ฿${newTotal}.`,
+          {
+            referenceId: bookingId,
+            deepLink: `/bookings?booking=${bookingId}&adjustment=${adjRow.id}`,
+            triggeredBy: userId,
+            context: {
+              booking_id: bookingId, adjustment_id: adjRow.id, confirmation_number: booking.confirmation_number ?? null,
+              guest_name: guestName, amount: amountCalc, operator, role, reason: label,
+              applied_at: adjRow.applied_at, before_total: originalTotal, after_total: newTotal, threshold,
+            },
+          },
+        );
+      }
+    } catch (e) { console.warn("large adjustment alert skipped", e); }
+  }
 
   return jsonResponse(req, {
     success: true,
