@@ -1,0 +1,1 @@
+- booking_adjustments history is immutable (DB trigger guard_booking_adjustment_history): only status/void fields change, no deletes — fix a wrong adjustment by voiding and re-applying, so the audit trail stays true.
