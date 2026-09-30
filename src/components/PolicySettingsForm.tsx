@@ -460,6 +460,19 @@ export function PolicySettingsForm() {
             </CardHeader>
           </Card>
 
+          {group.id === "discounts" && (
+            <div className="rounded-lg border border-border/60 bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
+              <p className="font-medium text-foreground">Cleaner future totals (note)</p>
+              <p>
+                Tiers like {getValue("long_stay_7_nights_discount_percentage")}% give exact but decimal totals
+                (7 × ฿1,500 = ฿10,500 → ฿{previewLongStay(10500, Number(getValue("long_stay_7_nights_discount_percentage")) || 0).toLocaleString()}).
+                A round 10% would give ฿{previewLongStay(10500, 10).toLocaleString()}. Changing a tier applies to future bookings only —
+                existing bookings are never recalculated. Nothing changes unless an admin edits the value above.
+              </p>
+            </div>
+          )}
+
+
           {/* Settings grid — use custom editor for Stay Essentials */}
           {group.id === "stay_essentials" ? (
             <StayEssentialsEditor />
