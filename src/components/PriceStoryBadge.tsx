@@ -62,7 +62,9 @@ export function PriceStoryBadge({ booking, policies, flag, variant = "pill", cla
 
   const label = variant === "dot"
     ? null
-    : amount > 0
+    : isHuman
+      ? "Manual discount applied"
+      : amount > 0
       ? `−${formatPrice(amount, policies)}`
       : policyHint
         ? `${policyHint.percentage}%`

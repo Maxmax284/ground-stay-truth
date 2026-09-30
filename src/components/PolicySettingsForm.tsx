@@ -20,6 +20,7 @@ import { playGroundSound, SOUND_NAMES, type SoundName } from "@/lib/groundSounds
 import { StayEssentialsEditor } from "@/components/StayEssentialsEditor";
 import { LiveConfirmationPreview } from "@/components/LiveConfirmationPreview";
 import { SendTestEmailButton } from "@/components/SendTestEmailButton";
+import { previewLongStay } from "@/lib/pricingClarity";
 
 /* ── Setting Groups ────────────────────────────────────────── */
 
@@ -89,6 +90,7 @@ const GROUPS: SettingGroup[] = [
       "long_stay_7_nights_discount_percentage",
       "long_stay_14_nights_discount_percentage",
       "long_stay_30_nights_discount_percentage",
+      "large_adjustment_alert_threshold",
     ],
     summary: (g) => `7n: ${g("long_stay_7_nights_discount_percentage")}% • 14n: ${g("long_stay_14_nights_discount_percentage")}% • 30n: ${g("long_stay_30_nights_discount_percentage")}%`,
   },
@@ -227,6 +229,7 @@ const FRIENDLY_LABELS: Record<string, string> = {
   long_stay_7_nights_discount_percentage: "7+ Nights Discount (%)",
   long_stay_14_nights_discount_percentage: "14+ Nights Discount (%)",
   long_stay_30_nights_discount_percentage: "30+ Nights Discount (%)",
+  large_adjustment_alert_threshold: "Large Adjustment Alert Threshold (฿)",
   loyalty_pricing_enabled: "Loyalty Pricing",
   loyalty_2nd_stay_discount_percentage: "2nd Stay Discount (%)",
   loyalty_3rd_stay_discount_percentage: "3rd+ Stay Discount (%)",
@@ -457,6 +460,19 @@ export function PolicySettingsForm() {
               </div>
             </CardHeader>
           </Card>
+
+          {group.id === "discounts" && (
+            <div className="rounded-lg border border-border/60 bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
+              <p className="font-medium text-foreground">Cleaner future totals (note)</p>
+              <p>
+                Tiers like {getValue("long_stay_7_nights_discount_percentage")}% give exact but decimal totals
+                (7 × ฿1,500 = ฿10,500 → ฿{previewLongStay(10500, Number(getValue("long_stay_7_nights_discount_percentage")) || 0).toLocaleString()}).
+                A round 10% would give ฿{previewLongStay(10500, 10).toLocaleString()}. Changing a tier applies to future bookings only —
+                existing bookings are never recalculated. Nothing changes unless an admin edits the value above.
+              </p>
+            </div>
+          )}
+
 
           {/* Settings grid — use custom editor for Stay Essentials */}
           {group.id === "stay_essentials" ? (

@@ -367,6 +367,12 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
     where: "Booking → Adjustments", nextAction: "Confirm the adjustment matches what was agreed with the guest.",
   },
   {
+    key: "large_pricing_adjustment", label: "Large pricing adjustment recorded",
+    description: "A single manual discount or waiver reached the configured threshold. Operational visibility only.",
+    category: "operations", severity: "info", defaultEmail: true, defaultInApp: true, wired: true,
+    where: "Booking → Adjustments", nextAction: "Glance at the reason — for visibility only.",
+  },
+  {
     key: "booking_adjustment_voided", label: "Booking adjustment voided",
     description: "A previously applied adjustment was voided.",
     category: "operations", severity: "warning", defaultEmail: false, defaultInApp: true, wired: true,
