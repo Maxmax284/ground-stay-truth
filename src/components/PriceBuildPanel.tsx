@@ -9,20 +9,22 @@ import { formatPrice } from "@/lib/currency";
 import { usePriceStory, type PriceStoryBooking } from "@/hooks/usePriceStory";
 import { useBookingActiveAdjustments } from "@/hooks/useBookingActiveAdjustments";
 import {
-  ROLE_EXPLAINER, decimalExplanation, pickupAddonLine, PICKUP_HELPER, linesForAudience, type Audience,
+  addonLine, addonHelper, ROLE_EXPLAINER, decimalExplanation, PICKUP_HELPER, linesForAudience, type Audience,
 } from "@/lib/pricingClarity";
 
 interface Props {
   booking: PriceStoryBooking;
   policies?: any[] | null;
   addonTotal: number;
+  /** Live add-on payment rows — decides whether the add-on line can say "airport pickup". */
+  addonRows?: Array<{ description?: string | null }>;
   totalPaid: number;
   outstanding: number;
   credit: number;
   audience?: Audience;
 }
 
-export function PriceBuildPanel({ booking, policies, addonTotal, totalPaid, outstanding, credit, audience = "staff" }: Props) {
+export function PriceBuildPanel({ booking, policies, addonTotal, addonRows, totalPaid, outstanding, credit, audience = "staff" }: Props) {
   const [open, setOpen] = useState(false);
   const contentId = `price-build-${booking.id}`;
   const { story } = usePriceStory(booking, open);
@@ -30,7 +32,7 @@ export function PriceBuildPanel({ booking, policies, addonTotal, totalPaid, outs
   const fmt = (n: number) => formatPrice(Math.abs(n), policies);
   const stored = booking.total_price ?? null;
   const decimalNote = decimalExplanation(stored, !!story?.hasPolicy);
-  const pickup = pickupAddonLine(addonTotal, (n) => formatPrice(n, policies));
+  const pickup = addonLine(addonRows ?? [], addonTotal, (n) => formatPrice(n, policies));
 
   return (
     <div className="rounded-md border border-border/60">
@@ -89,7 +91,7 @@ export function PriceBuildPanel({ booking, policies, addonTotal, totalPaid, outs
           </div>
 
           {decimalNote && <p className="flex gap-1.5 text-muted-foreground"><Info className="mt-[1px] h-3 w-3 shrink-0" />{decimalNote}</p>}
-          {pickup && <p className="flex gap-1.5 text-muted-foreground"><Info className="mt-[1px] h-3 w-3 shrink-0" />{PICKUP_HELPER}</p>}
+          {pickup && <p className="flex gap-1.5 text-muted-foreground"><Info className="mt-[1px] h-3 w-3 shrink-0" />{addonHelper(addonRows ?? [])}</p>}
 
           {audience === "staff" && (
             <ul className="space-y-0.5 border-t border-border/60 pt-1.5 text-[10px] text-muted-foreground">
