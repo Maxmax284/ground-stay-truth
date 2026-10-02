@@ -126,6 +126,7 @@ function BookingCard({ booking, onClick, onExtend, onRecordPayment, discountFlag
         <span>{t("bookings.guestCount", { count: booking.num_guests })}</span>
         <PriceStoryBadge booking={booking} policies={cardPolicies} flag={discountFlag} />
       </div>
+      <BookingReadinessRow readiness={readiness} />
       {/* Talking to the guest is a first-class action on the card itself —
           staff shouldn't have to know where the Messenger tab lives. */}
       <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
@@ -230,6 +231,8 @@ const Bookings = () => {
   }, [rawBookings, showCancelled, stateFilter, sort, expiredOnly, policiesForDeadlines]);
 
   // Count of expired holds/deposits across the loaded set — drives the filter chip.
+  const { data: readiness } = useBookingReadiness(bookings as any);
+
   const expiredCount = useMemo(
     () => (rawBookings ?? []).filter((b: any) =>
       b.state !== "cancelled" && getBookingDeadline(b, policiesForDeadlines as any)?.isExpired,
