@@ -70,11 +70,12 @@ describe("pricing clarity", () => {
     expect(addonHelper([{ description: "Laundry bundle" }])).toBe(ADDONS_HELPER);
     expect(isAllPickupAddons([{ description: "Airport Pickup" }])).toBe(true);
     expect(isAllPickupAddons([])).toBe(false);
-    expect(liveAddonRows([
+    const rows = liveAddonRows([
       { payment_type: "addon", status: "pending", description: "Airport pickup fee" },
       { payment_type: "addon", status: "cancelled", description: "Airport pickup fee" },
       { payment_type: "deposit", status: "recorded", description: "Deposit" },
-    })).toHaveLength(1);
+    ]);
+    expect(rows).toHaveLength(1);
   });
 
   it("guest view hides operator names and reasons; staff sees them", () => {
