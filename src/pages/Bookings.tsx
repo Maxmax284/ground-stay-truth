@@ -40,6 +40,8 @@ import { QuickOfflinePaymentDialog } from "@/components/bookings/QuickOfflinePay
 import { calculateOutstanding } from "@/lib/paymentTypes";
 import { Banknote } from "lucide-react";
 import { canRecordOfflinePayment } from "@/lib/offlinePayments";
+import { useBookingReadiness, type BookingReadiness } from "@/hooks/useBookingReadiness";
+import { BookingReadinessRow } from "@/components/BookingReadinessRow";
 
 /** Small ID-document indicator for the bookings list. Advisory only. */
 function DocumentFlagBadge({ status }: { status?: DocumentReviewStatus }) {
@@ -99,7 +101,7 @@ function BookingStatusBadge({ booking }: { booking: any }) {
 }
 
 
-function BookingCard({ booking, onClick, onExtend, onRecordPayment, discountFlag }: { booking: any; onClick: () => void; onExtend?: (b: any) => void; onRecordPayment?: (b: any) => void; discountFlag?: any }) {
+function BookingCard({ booking, onClick, onExtend, onRecordPayment, discountFlag, readiness }: { booking: any; onClick: () => void; onExtend?: (b: any) => void; onRecordPayment?: (b: any) => void; discountFlag?: any; readiness?: BookingReadiness }) {
   const { t } = useTranslation();
   const { data: cardPolicies } = usePolicySettings();
   const cardDeadline = getBookingDeadline(booking, cardPolicies as any);
@@ -124,6 +126,7 @@ function BookingCard({ booking, onClick, onExtend, onRecordPayment, discountFlag
         <span>{t("bookings.guestCount", { count: booking.num_guests })}</span>
         <PriceStoryBadge booking={booking} policies={cardPolicies} flag={discountFlag} />
       </div>
+      <BookingReadinessRow readiness={readiness} />
       {/* Talking to the guest is a first-class action on the card itself —
           staff shouldn't have to know where the Messenger tab lives. */}
       <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
@@ -228,6 +231,8 @@ const Bookings = () => {
   }, [rawBookings, showCancelled, stateFilter, sort, expiredOnly, policiesForDeadlines]);
 
   // Count of expired holds/deposits across the loaded set — drives the filter chip.
+  const { data: readiness } = useBookingReadiness(bookings as any);
+
   const expiredCount = useMemo(
     () => (rawBookings ?? []).filter((b: any) =>
       b.state !== "cancelled" && getBookingDeadline(b, policiesForDeadlines as any)?.isExpired,
@@ -332,6 +337,7 @@ const Bookings = () => {
                 onExtend={canOverrideDeadline ? setExtendBooking : undefined}
                 onRecordPayment={needsMoneyBackfill(b) ? setPayBooking : undefined}
                 discountFlag={discountFlags?.[b.id]}
+                readiness={readiness?.[b.id]}
               />
             ))}
           </div>
@@ -369,6 +375,7 @@ const Bookings = () => {
                       <div className="flex flex-col gap-1">
                         <span>{resolveGuestDisplayName(b as any)}</span>
                         <DocumentFlagBadge status={docFlags?.[b.id]} />
+                        <BookingReadinessRow readiness={readiness?.[b.id]} />
                       </div>
                     </TableCell>
                     <TableCell>{format(new Date(b.check_in), "MMM d, yyyy")}</TableCell>
