@@ -2396,5 +2396,15 @@
     "threadTitle": "Lamai front desk",
     "whatsappGreeting": "Hi Lamai Camp, this is {{name}}{{ref}} —",
     "aGuest": "a guest"
+  },
+  "readiness": {
+    "label": "Guest readiness",
+    "openedPortal": "Opened portal",
+    "paid": "Paid",
+    "flightAdded": "Flight added",
+    "idUploaded": "ID uploaded",
+    "messaged": "Messaged",
+    "yes": "yes",
+    "no": "not yet"
   }
 }

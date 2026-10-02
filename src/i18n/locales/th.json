@@ -2396,5 +2396,15 @@
     "threadTitle": "แผนกต้อนรับ Lamai",
     "whatsappGreeting": "สวัสดี Lamai Camp นี่คือ {{name}}{{ref}} —",
     "aGuest": "แขก"
+  },
+  "readiness": {
+    "label": "ความพร้อมของแขก",
+    "openedPortal": "เปิดพอร์ทัลแล้ว",
+    "paid": "ชำระแล้ว",
+    "flightAdded": "เพิ่มเที่ยวบินแล้ว",
+    "idUploaded": "อัปโหลดบัตรแล้ว",
+    "messaged": "ส่งข้อความแล้ว",
+    "yes": "ใช่",
+    "no": "ยัง"
   }
 }
