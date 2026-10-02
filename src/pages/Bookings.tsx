@@ -375,6 +375,7 @@ const Bookings = () => {
                       <div className="flex flex-col gap-1">
                         <span>{resolveGuestDisplayName(b as any)}</span>
                         <DocumentFlagBadge status={docFlags?.[b.id]} />
+                        <BookingReadinessRow readiness={readiness?.[b.id]} />
                       </div>
                     </TableCell>
                     <TableCell>{format(new Date(b.check_in), "MMM d, yyyy")}</TableCell>
