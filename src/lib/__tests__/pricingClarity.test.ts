@@ -3,7 +3,8 @@ import { readFileSync } from "fs";
 import {
   hasDecimals, decimalExplanation, DECIMAL_HELPER, shouldRaiseLargeAdjustmentAlert,
   pickupAddonLine, isExplainedByAddon, linesForAudience, previewLongStay, MANUAL_BADGE_LABEL,
-  ROLE_EXPLAINER, LARGE_ADJUSTMENT_LABEL, PICKUP_HELPER,
+  ROLE_EXPLAINER, LARGE_ADJUSTMENT_LABEL, PICKUP_HELPER, ADDONS_HELPER,
+  addonLine, addonHelper, liveAddonRows, isAllPickupAddons,
 } from "@/lib/pricingClarity";
 import { buildPriceStory } from "@/lib/priceStory";
 
@@ -53,6 +54,27 @@ describe("pricing clarity", () => {
     expect(pickupAddonLine(0, String)).toBeNull();
     expect(isExplainedByAddon(10061.55, 9461.55, 600)).toBe(true);
     expect(isExplainedByAddon(10000, 9461.55, 600)).toBe(false);
+  });
+
+  it("labels add-ons as airport pickup only when the payment rows say so", () => {
+    expect(addonLine([{ description: "Airport pickup fee" }], 600, (n) => `฿${n}`))
+      .toBe("Airport pickup: ฿600 separate add-on");
+    expect(addonLine([{ description: "Laundry bundle" }], 1200, (n) => `฿${n}`))
+      .toBe("Add-ons: ฿1200 billed separately from the room");
+    expect(addonLine([{ description: "Airport pickup fee" }, { description: "Laundry bundle" }], 900, (n) => `฿${n}`))
+      .toBe("Add-ons: ฿900 billed separately from the room");
+    // No rows (unknown add-ons) stays neutral — never claim pickup without evidence.
+    expect(addonLine([], 600, (n) => `฿${n}`)).toBe("Add-ons: ฿600 billed separately from the room");
+    expect(addonLine([{ description: "Laundry bundle" }], 0, (n) => `฿${n}`)).toBeNull();
+    expect(addonHelper([{ description: "Airport pickup fee" }])).toBe(PICKUP_HELPER);
+    expect(addonHelper([{ description: "Laundry bundle" }])).toBe(ADDONS_HELPER);
+    expect(isAllPickupAddons([{ description: "Airport Pickup" }])).toBe(true);
+    expect(isAllPickupAddons([])).toBe(false);
+    expect(liveAddonRows([
+      { payment_type: "addon", status: "pending", description: "Airport pickup fee" },
+      { payment_type: "addon", status: "cancelled", description: "Airport pickup fee" },
+      { payment_type: "deposit", status: "recorded", description: "Deposit" },
+    })).toHaveLength(1);
   });
 
   it("guest view hides operator names and reasons; staff sees them", () => {
