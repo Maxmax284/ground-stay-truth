@@ -96,7 +96,7 @@ const PLAIN_ENGLISH: Record<string, string> = {
   guest_portal_loaded: "Opened their guest page",
   guest_portal_load_failed: "Their guest page wouldn't load their booking",
   guest_booking_loaded: "Saw their booking on screen",
-  guest_booking_missing: "Signed in, but no booking is attached to their email",
+  guest_booking_missing: "Signed up, no booking yet (normal before their first request)",
   deposit_button_clicked: "Tapped the Pay Deposit button",
   deposit_section_scrolled: "Scrolled down to the deposit section",
   checkout_button_clicked: "Tapped Pay Deposit Online",
@@ -347,7 +347,9 @@ export function GuestPortalHealth() {
   }, [rows]);
 
   const stuck = useMemo(
-    () => rows.filter((r) => FAILURE_TYPES.has(r.event_type) || r.event_type === "guest_booking_missing").slice(0, 12),
+    // "No booking yet" is not a failure: every such guest so far simply hadn't
+    // requested a stay yet. Only real errors belong in the stuck list.
+    () => rows.filter((r) => FAILURE_TYPES.has(r.event_type)).slice(0, 12),
     [rows],
   );
 

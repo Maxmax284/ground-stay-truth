@@ -18,7 +18,7 @@ const PLAIN_ENGLISH: Record<string, string> = {
   guest_portal_loaded: "Opened the portal",
   guest_portal_load_failed: "Portal failed to load their bookings",
   guest_booking_loaded: "Saw their booking",
-  guest_booking_missing: "Logged in with no booking linked",
+  guest_booking_missing: "Signed up, no booking yet",
   guest_viewed_booking: "Viewed this booking",
   deposit_button_clicked: "Tapped Pay Deposit",
   deposit_section_scrolled: "Reached the deposit section",
