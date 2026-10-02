@@ -40,6 +40,8 @@ import { QuickOfflinePaymentDialog } from "@/components/bookings/QuickOfflinePay
 import { calculateOutstanding } from "@/lib/paymentTypes";
 import { Banknote } from "lucide-react";
 import { canRecordOfflinePayment } from "@/lib/offlinePayments";
+import { useBookingReadiness, type BookingReadiness } from "@/hooks/useBookingReadiness";
+import { BookingReadinessRow } from "@/components/BookingReadinessRow";
 
 /** Small ID-document indicator for the bookings list. Advisory only. */
 function DocumentFlagBadge({ status }: { status?: DocumentReviewStatus }) {
@@ -99,7 +101,7 @@ function BookingStatusBadge({ booking }: { booking: any }) {
 }
 
 
-function BookingCard({ booking, onClick, onExtend, onRecordPayment, discountFlag }: { booking: any; onClick: () => void; onExtend?: (b: any) => void; onRecordPayment?: (b: any) => void; discountFlag?: any }) {
+function BookingCard({ booking, onClick, onExtend, onRecordPayment, discountFlag, readiness }: { booking: any; onClick: () => void; onExtend?: (b: any) => void; onRecordPayment?: (b: any) => void; discountFlag?: any; readiness?: BookingReadiness }) {
   const { t } = useTranslation();
   const { data: cardPolicies } = usePolicySettings();
   const cardDeadline = getBookingDeadline(booking, cardPolicies as any);
