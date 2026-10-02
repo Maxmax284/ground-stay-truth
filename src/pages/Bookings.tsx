@@ -337,6 +337,7 @@ const Bookings = () => {
                 onExtend={canOverrideDeadline ? setExtendBooking : undefined}
                 onRecordPayment={needsMoneyBackfill(b) ? setPayBooking : undefined}
                 discountFlag={discountFlags?.[b.id]}
+                readiness={readiness?.[b.id]}
               />
             ))}
           </div>
