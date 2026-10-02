@@ -9,7 +9,7 @@ import { formatPrice } from "@/lib/currency";
 import { usePriceStory, type PriceStoryBooking } from "@/hooks/usePriceStory";
 import { useBookingActiveAdjustments } from "@/hooks/useBookingActiveAdjustments";
 import {
-  addonLine, addonHelper, ROLE_EXPLAINER, decimalExplanation, PICKUP_HELPER, linesForAudience, type Audience,
+  addonLine, addonHelper, ROLE_EXPLAINER, decimalExplanation, linesForAudience, type Audience,
 } from "@/lib/pricingClarity";
 
 interface Props {
