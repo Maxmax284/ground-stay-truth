@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ExternalLink, CreditCard, Receipt } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
-import { decimalExplanation, PICKUP_HELPER } from "@/lib/pricingClarity";
+import { decimalExplanation, addonHelper, liveAddonRows } from "@/lib/pricingClarity";
+import { detectPolicyDiscountHint, nightsBetweenDates } from "@/lib/priceStory";
 import {
   calculateOutstanding,
   PAYMENT_STATUS_LABELS,
@@ -21,9 +22,11 @@ interface GuestPaymentSummaryProps {
   bookingId: string;
   totalPrice: number | null;
   policies?: any[];
+  /** Stay dates — lets the decimal helper confirm a long-stay discount before explaining anything. */
+  booking?: { check_in?: string | null; check_out?: string | null } | null;
 }
 
-export function GuestPaymentSummary({ bookingId, totalPrice, policies }: GuestPaymentSummaryProps) {
+export function GuestPaymentSummary({ bookingId, totalPrice, policies, booking }: GuestPaymentSummaryProps) {
   const { t } = useTranslation();
 
   const { data: payments } = useQuery({
