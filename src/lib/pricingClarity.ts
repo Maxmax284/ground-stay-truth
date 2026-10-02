@@ -39,6 +39,40 @@ export function pickupAddonLine(addonTotal: number, fmt: (n: number) => string):
   return `Airport pickup: ${fmt(addonTotal)} separate add-on`;
 }
 
+export const ADDONS_HELPER = "Add-ons are billed separately from the room rate.";
+
+/** The add-on obligations still counting toward the balance — mirrors calculateOutstanding. */
+export function liveAddonRows(
+  payments: Array<{ payment_type?: string | null; status?: string | null; description?: string | null }>
+): Array<{ description?: string | null }> {
+  return (payments ?? []).filter(
+    (p) =>
+      (p.payment_type ?? "") === "addon" &&
+      ["pending", "recorded", "partially_refunded", "waived"].includes(p.status ?? "")
+  );
+}
+
+/** Only claim "airport pickup" when every live add-on row actually is one. */
+export function isAllPickupAddons(rows: Array<{ description?: string | null }>): boolean {
+  return rows.length > 0 && rows.every((r) => /pickup/i.test(r.description ?? ""));
+}
+
+/** Data-driven add-on label: pickup only when the payment rows say pickup, neutral otherwise. */
+export function addonLine(
+  rows: Array<{ description?: string | null }>,
+  addonTotal: number,
+  fmt: (n: number) => string
+): string | null {
+  if (!addonTotal || addonTotal <= 0) return null;
+  return isAllPickupAddons(rows)
+    ? `Airport pickup: ${fmt(addonTotal)} separate add-on`
+    : `Add-ons: ${fmt(addonTotal)} billed separately from the room`;
+}
+
+export function addonHelper(rows: Array<{ description?: string | null }>): string {
+  return isAllPickupAddons(rows) ? PICKUP_HELPER : ADDONS_HELPER;
+}
+
 /** Payments exceed the room total by exactly the add-on amount → explained, not a mismatch. */
 export function isExplainedByAddon(paid: number, roomTotal: number, addonTotal: number): boolean {
   if (addonTotal <= 0) return false;

@@ -45,7 +45,7 @@ import { BookingFinancialSummary } from "@/components/BookingFinancialSummary";
 import { PriceStoryBadge } from "@/components/PriceStoryBadge";
 import { PriceBuildPanel } from "@/components/PriceBuildPanel";
 import { useBookingDiscountFlags, type PriceStoryBooking } from "@/hooks/usePriceStory";
-import { pickupAddonLine, PICKUP_HELPER } from "@/lib/pricingClarity";
+import { addonLine, addonHelper, liveAddonRows } from "@/lib/pricingClarity";
 import { PaymentGuideLink } from "@/components/PaymentGuideLink";
 import { BookingTrainingSection } from "@/components/BookingTrainingSection";
 import { useBookingTrainingLinks } from "@/hooks/useTrainingPackages";
@@ -587,6 +587,7 @@ function PaymentsTab({ payments, bookingId, bookingState, canSeeAmounts, canReco
     () => calculateOutstanding(totalPrice ?? null, payments),
     [totalPrice, payments]
   );
+  const addonRows = liveAddonRows(payments);
 
   const handleRecord = async () => {
     if (!amount || Number(amount) <= 0) { toast({ title: t("payments.enterValidAmount"), variant: "destructive" }); return; }
@@ -626,9 +627,9 @@ function PaymentsTab({ payments, bookingId, bookingState, canSeeAmounts, canReco
           {balance.addonTotal > 0 && (
             <>
               <div className="text-sm font-medium">
-                {pickupAddonLine(balance.addonTotal, (value) => formatPrice(value, policies))}
+                {addonLine(addonRows, balance.addonTotal, (value) => formatPrice(value, policies))}
               </div>
-              <p className="text-xs text-muted-foreground">{PICKUP_HELPER}</p>
+              <p className="text-xs text-muted-foreground">{addonHelper(addonRows)}</p>
             </>
           )}
           <div className="flex justify-between text-sm">
@@ -659,6 +660,7 @@ function PaymentsTab({ payments, bookingId, bookingState, canSeeAmounts, canReco
               booking={booking}
               policies={policies}
               addonTotal={balance.addonTotal}
+              addonRows={addonRows}
               totalPaid={balance.totalPaid}
               outstanding={balance.outstanding}
               credit={balance.credit}

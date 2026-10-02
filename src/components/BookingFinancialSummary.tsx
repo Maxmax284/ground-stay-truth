@@ -8,7 +8,7 @@ import { calculateBookingFinancials } from "@/lib/paymentTypes";
 import { PriceStoryBadge } from "@/components/PriceStoryBadge";
 import { PriceBuildPanel } from "@/components/PriceBuildPanel";
 import { useBookingDiscountFlags, type PriceStoryBooking } from "@/hooks/usePriceStory";
-import { pickupAddonLine } from "@/lib/pricingClarity";
+import { addonLine, liveAddonRows } from "@/lib/pricingClarity";
 import { Check, Clock, AlertCircle, ShieldCheck, ShieldAlert, Shield } from "lucide-react";
 
 interface Props {
@@ -65,7 +65,7 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
     queryFn: async () => {
       const { data, error } = await supabase
         .from("payments")
-        .select("amount, status, payment_type, refund_amount, provider")
+        .select("amount, status, payment_type, refund_amount, provider, description")
         .eq("booking_id", bookingId);
       if (error) throw error;
       return data ?? [];
@@ -112,6 +112,7 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
   if (!canSeeAmounts) return null;
 
   const fmt = (n: number) => formatPrice(n, policies);
+  const addonRows = liveAddonRows(payments ?? []);
   const overall = OVERALL_LABEL[fin.overallStatus] ?? OVERALL_LABEL.awaiting_payment;
   // A cancelled / no-show stay owes nothing. What matters is money still held.
   const isVoid = bookingState === "cancelled" || bookingState === "no_show";
@@ -142,7 +143,7 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
             <div className="text-base font-semibold tabular-nums">{fmt(fin.grandTotal)}</div>
             {fin.addonRequired > 0 && (
               <div className="text-[10px] text-muted-foreground">
-                {pickupAddonLine(fin.addonRequired, fmt)}
+                {addonLine(addonRows, fin.addonRequired, fmt)}
               </div>
             )}
           </div>
@@ -278,6 +279,7 @@ export function BookingFinancialSummary({ bookingId, totalPrice, propertyId, can
             booking={booking}
             policies={policies}
             addonTotal={fin.addonRequired}
+            addonRows={addonRows}
             totalPaid={fin.bookingCollected}
             outstanding={fin.outstanding}
             credit={fin.credit}

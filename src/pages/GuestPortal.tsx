@@ -1201,7 +1201,7 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
         {!["inquiry", "soft_hold"].includes(state) && booking.total_price != null && (
           <>
             <BookingAdjustmentsCard bookingId={booking.id} canManage={false} policies={policies} />
-            <GuestPaymentSummary bookingId={booking.id} totalPrice={booking.total_price} policies={policies} />
+            <GuestPaymentSummary bookingId={booking.id} totalPrice={booking.total_price} policies={policies} booking={booking} />
             <PaymentGuideLink />
           </>
         )}
