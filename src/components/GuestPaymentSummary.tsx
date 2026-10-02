@@ -84,9 +84,11 @@ export function GuestPaymentSummary({ bookingId, totalPrice, policies, booking }
             </div>
           )}
           {balance.addonTotal > 0 && (
-            <p className="text-xs text-muted-foreground">{t("payments.pickupSeparate", { defaultValue: PICKUP_HELPER })}</p>
+            <p className="text-xs text-muted-foreground">
+              {t("payments.pickupSeparate", { defaultValue: addonHelper(liveAddonRows(payments ?? [])) })}
+            </p>
           )}
-          {decimalExplanation(totalPrice, true) && (
+          {decimalExplanation(totalPrice, !!detectPolicyDiscountHint(nightsBetweenDates(booking?.check_in, booking?.check_out), policies)) && (
             <p className="text-xs text-muted-foreground">{t("payments.decimalHelper", { defaultValue: decimalExplanation(totalPrice, true) as string })}</p>
           )}
           <Separator className="my-1" />
