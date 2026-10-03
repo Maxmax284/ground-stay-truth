@@ -69,6 +69,7 @@ import { WhileYouWaitTab } from "@/components/WhileYouWaitTab";
 import { differenceInCalendarDays } from "date-fns";
 import { GuestStaySupport } from "@/components/GuestStaySupport";
 import { GuestPreviewControls } from "@/components/GuestPreviewControls";
+import { IslandGuideCard } from "@/components/guest/IslandGuideCard";
 import { MessagingConnectCard } from "@/components/MessagingConnectCard";
 import { GuestPersonalGuideCard } from "@/components/GuestPersonalGuideCard";
 import { GuestStaySummary } from "@/components/GuestStaySummary";
@@ -644,7 +645,7 @@ const GuestPortal = () => {
                 <Circle className="h-2 w-2 fill-primary text-primary" />
               )}
             </TabsTrigger>
-            {activeBookings.length > 0 && (
+            {(activeBookings.length > 0 || confirmedBookings.length > 0) && (
               <TabsTrigger value="stay-support" className="flex items-center gap-1.5">
                 <Wrench className="h-3.5 w-3.5" />
                 {t("staySupport.tabLabel")}
@@ -771,8 +772,17 @@ const GuestPortal = () => {
           </TabsContent>
 
           {/* ── Stay Support Tab ── */}
-          {activeBookings.length > 0 && (
+          {(activeBookings.length > 0 || confirmedBookings.length > 0) && (
             <TabsContent value="stay-support">
+              {/* Journey-adaptive: before arrival, getting here + front desk first;
+                  once checked in, the binder + in-stay actions. Same data either way. */}
+              {activeBookings.length === 0 ? (
+                <div className="space-y-6">
+                  <MessagingConnectCard />
+                  <IslandGuideCard arrivalMode />
+                  <WelcomeSheetCard unitId={confirmedBookings[0]?.unit_id} />
+                </div>
+              ) : (
               <div className="space-y-6">
                 <WelcomeSheetCard unitId={activeBookings[0]?.unit_id} />
                 <MessagingConnectCard />
@@ -786,6 +796,7 @@ const GuestPortal = () => {
                   }))}
                 />
               </div>
+              )}
             </TabsContent>
           )}
 

@@ -9,7 +9,6 @@ import { ReviewsManager } from "@/components/ReviewsManager";
 import { IntegrationSettings } from "@/components/IntegrationSettings";
 import { TrainingPackagesManager } from "@/components/TrainingPackagesManager";
 import { DriverManager } from "@/components/DriverManager";
-import { ArrivalWelcomeEditor } from "@/components/ArrivalWelcomeEditor";
 import { SecurityEventLog } from "@/components/SecurityEventLog";
 import { IntelligenceEditor } from "@/components/IntelligenceEditor";
 import PropertyManagementPanel from "@/components/PropertyManagementPanel";
@@ -18,13 +17,12 @@ import NotificationSettings from "@/components/settings/NotificationSettings";
 import { AppStatusPanel } from "@/components/settings/AppStatusPanel";
 import { SandboxPanel } from "@/components/SandboxPanel";
 import { AIOpsPanel } from "@/components/admin/AIOpsPanel";
-import { LocalRecommendationsEditor } from "@/components/admin/LocalRecommendationsEditor";
 import { useAuth } from "@/hooks/useAuth";
 import { permissions } from "@/lib/permissions";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { Phone } from "lucide-react";
 import StaffPhoneManager from "@/components/settings/StaffPhoneManager";
-import { WelcomeSheetEditor } from "@/components/settings/WelcomeSheetEditor";
+import { GuestGuideSettings } from "@/components/settings/GuestGuideSettings";
 
 
 
@@ -59,9 +57,7 @@ const Settings = () => {
             {isAdmin && <TabsTrigger value="drivers" className="text-xs sm:text-sm">Drivers</TabsTrigger>}
             {isAdmin && <TabsTrigger value="properties" className="text-xs sm:text-sm">Properties</TabsTrigger>}
             {isAdmin && <TabsTrigger value="training" className="text-xs sm:text-sm">Training</TabsTrigger>}
-            {isAdmin && <TabsTrigger value="arrival" className="text-xs sm:text-sm">Arrival</TabsTrigger>}
-            {canManagePolicies && <TabsTrigger value="welcome-sheet" className="text-xs sm:text-sm">Welcome sheet</TabsTrigger>}
-            {canManagePolicies && <TabsTrigger value="guide" className="text-xs sm:text-sm">Guide</TabsTrigger>}
+            {canManagePolicies && <TabsTrigger value="guest-guide" className="text-xs sm:text-sm">Guest Guide &amp; Welcome</TabsTrigger>}
             {isAdmin && <TabsTrigger value="integrations" className="text-xs sm:text-sm">Integrations</TabsTrigger>}
             {canManageReviews && <TabsTrigger value="reviews" className="text-xs sm:text-sm">{t("settings.reviewsTab")}</TabsTrigger>}
             {isAdmin && <TabsTrigger value="aiops" className="text-xs sm:text-sm">Ops</TabsTrigger>}
@@ -83,9 +79,7 @@ const Settings = () => {
           {isAdmin && <TabsContent value="drivers"><ErrorBoundary inline label="Drivers"><DriverManager /></ErrorBoundary></TabsContent>}
           {isAdmin && <TabsContent value="properties"><ErrorBoundary inline label="Properties"><PropertyManagementPanel /></ErrorBoundary></TabsContent>}
           {isAdmin && <TabsContent value="training"><ErrorBoundary inline label="Training"><TrainingPackagesManager /></ErrorBoundary></TabsContent>}
-          {isAdmin && <TabsContent value="arrival"><ErrorBoundary inline label="Arrival"><ArrivalWelcomeEditor /></ErrorBoundary></TabsContent>}
-          {canManagePolicies && <TabsContent value="welcome-sheet"><ErrorBoundary inline label="Welcome sheet"><WelcomeSheetEditor /></ErrorBoundary></TabsContent>}
-          {canManagePolicies && <TabsContent value="guide"><ErrorBoundary inline label="Island guide"><LocalRecommendationsEditor /></ErrorBoundary></TabsContent>}
+          {canManagePolicies && <TabsContent value="guest-guide"><ErrorBoundary inline label="Guest guide"><GuestGuideSettings isAdmin={isAdmin} /></ErrorBoundary></TabsContent>}
           {isAdmin && <TabsContent value="integrations"><ErrorBoundary inline label="Integrations"><IntegrationSettings /></ErrorBoundary></TabsContent>}
           {canManageReviews && <TabsContent value="reviews"><ErrorBoundary inline label="Reviews"><ReviewsManager /></ErrorBoundary></TabsContent>}
           {isAdmin && <TabsContent value="aiops"><ErrorBoundary inline label="Ops"><AIOpsPanel /></ErrorBoundary></TabsContent>}
