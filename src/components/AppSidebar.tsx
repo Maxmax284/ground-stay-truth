@@ -79,7 +79,7 @@ const navItems = [
   { titleKey: "nav.adjustments", url: "/adjustments", icon: Percent },
   { titleKey: "nav.embeds", url: "/embeds", icon: Code2 },
   { titleKey: "nav.settings", url: "/settings", icon: Settings },
-  { titleKey: "nav.previewGuestPortal", url: "/guest-preview", icon: Eye },
+  { titleKey: "nav.previewGuestPortal", url: "/guest?preview=true", icon: Eye },
 ];
 
 const PREVIEW_ROLES: AppRole[] = ["front_desk", "front_desk_supervisor", "manager", "maintenance", "viewer"];
@@ -296,7 +296,7 @@ export function AppSidebar() {
                     <Link to="/disaster-recovery" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent">
                       <ShieldAlert className="h-4 w-4" /> Disaster Recovery
                     </Link>
-                    <Link to="/guest-preview" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent">
+                    <Link to="/guest?preview=true" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent">
                       <Eye className="h-4 w-4" /> {t("nav.previewGuestPortal")}
                     </Link>
                     <div className="flex items-center gap-2 px-2 py-1.5">
