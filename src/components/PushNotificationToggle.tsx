@@ -17,7 +17,7 @@ function timeAgo(iso: string | null): string | null {
   return `${Math.round(hrs / 24)} days ago`;
 }
 
-export function PushNotificationToggle() {
+export function PushNotificationToggle({ title = "Push Notifications" }: { title?: string } = {}) {
   const {
     isSupported,
     isSubscribed,
@@ -60,7 +60,7 @@ export function PushNotificationToggle() {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            Push Notifications
+            {title}
           </CardTitle>
         </CardHeader>
         <CardContent><Skeleton className="h-10 w-full" /></CardContent>
@@ -74,7 +74,7 @@ export function PushNotificationToggle() {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <BellOff className="h-5 w-5 text-muted-foreground" />
-            Push Notifications
+            {title}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -109,7 +109,7 @@ export function PushNotificationToggle() {
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <BellRing className="h-5 w-5 text-primary" />
-          Push Notifications
+          {title}
           <Badge
             variant={health === "on" ? "secondary" : "outline"}
             className="ml-auto text-xs"
