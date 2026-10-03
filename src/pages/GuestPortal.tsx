@@ -631,8 +631,6 @@ const GuestPortal = () => {
               onLearnMore={() => setActiveTab("island-guide")}
             />
 
-            {/* Guest notification enrollment — benefit-framed, not technical */}
-            <GuestStayUpdatesPrompt />
           </CollapsibleContent>
         </Collapsible>
 
