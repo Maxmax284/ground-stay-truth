@@ -64,6 +64,7 @@ const SITE = "https://lmtcampstay.com";
 // admin inside the window. Critical alerts always go through.
 const SUPPRESSION_WINDOW_MIN = 5;
 const SUPPRESSION_MAX = 3;
+const GUEST_MESSAGE_MAX = 8;
 
 const FALLBACK_EVENT: AdminAlertEvent = {
   key: "unknown",
@@ -197,8 +198,12 @@ Deno.serve(async (req) => {
       if (!profile?.email) continue;
 
       // Anti-spam: critical bypasses, everything else is rate limited.
+      // Guest messages are counted per booking (one chatty guest can't mute
+      // another) with a higher cap, so "I've landed" + "I'm here" never
+      // swallow the guest's next real message.
       if (!isCritical) {
-        const { count } = await admin
+        const perBooking = event.key === "guest_message_received" && !!bookingId;
+        let q = admin
           .from("admin_alert_log")
           .select("id", { count: "exact", head: true })
           .eq("recipient_user_id", uid)
@@ -206,7 +211,10 @@ Deno.serve(async (req) => {
           .eq("channel", "email")
           .eq("status", "sent")
           .gte("created_at", since);
-        if ((count ?? 0) >= SUPPRESSION_MAX) {
+        if (perBooking) q = q.eq("booking_id", bookingId!);
+        const { count } = await q;
+        const cap = perBooking ? GUEST_MESSAGE_MAX : SUPPRESSION_MAX;
+        if ((count ?? 0) >= cap) {
           suppressed++;
           await admin.from("admin_alert_log").insert({
             event_id: eventId, event_type: event.key, category: event.category,

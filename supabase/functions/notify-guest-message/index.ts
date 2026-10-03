@@ -60,27 +60,18 @@ Deno.serve(async (req) => {
     const staffRoles = ["admin", "manager", "front_desk_supervisor", "front_desk", "maintenance"];
     const callerIsStaff = (callerRoles ?? []).some((r: { role: string }) => staffRoles.includes(r.role));
 
-    // ── Guest-sent message: alert the camp (email + bell via alert centre) ──
+    // ── Guest-sent message: the DB trigger (alert_guest_message) already
+    // alerts the camp on insert. Emitting here too doubled every email.
     if (!callerIsStaff) {
       const { data: gm } = await admin
-        .from("messages").select("id, booking_id, content, is_internal, sender_id")
+        .from("messages").select("id, booking_id, sender_id")
         .eq("id", message_id ?? "").maybeSingle();
       const { data: gb } = await admin
-        .from("bookings").select("id, guest_id, units(name)").eq("id", booking_id).maybeSingle();
+        .from("bookings").select("id, guest_id").eq("id", booking_id).maybeSingle();
       if (!gm || !gb || gm.booking_id !== booking_id || gb.guest_id !== caller.user.id || gm.sender_id !== caller.user.id) {
         return json({ error: "forbidden" }, 403);
       }
-      const { data: gp } = await admin
-        .from("profiles").select("full_name").eq("user_id", caller.user.id).maybeSingle();
-      const who = (gp?.full_name as string | null) ?? "A guest";
-      const unit = (gb as { units?: { name?: string } | null }).units?.name;
-      const text = String(gm.content ?? "").trim();
-      await emitAdminAlert(
-        "guest_message_received",
-        `${who}${unit ? ` (${unit})` : ""}: "${text.length > 200 ? text.slice(0, 200) + "…" : text}"`,
-        { referenceId: booking_id, deepLink: "/messages", context: { channel: "portal" }, triggeredBy: caller.user.id },
-      );
-      return json({ ok: true, direction: "guest_to_camp", alerted: true });
+      return json({ ok: true, direction: "guest_to_camp", alerted: "via_db_trigger" });
     }
 
     // The message we're announcing, and who it belongs to.
