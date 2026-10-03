@@ -261,7 +261,23 @@ Deno.serve(async (req) => {
           return { chars: v.length, decodes: false, error: String((e as Error).message) };
         }
       };
-      return json({ public_key: shape(pub), private_key: shape(priv) });
+      // Phones subscribe with the public key saved in policy_settings; if it
+      // differs from the server's signing pair, every delivery is rejected.
+      const { data: savedRow } = await supabase
+        .from("policy_settings")
+        .select("value")
+        .eq("key", "vapid_public_key")
+        .is("property_id", null)
+        .maybeSingle();
+      const savedRaw = savedRow?.value;
+      const saved = typeof savedRaw === "string"
+        ? savedRaw.replace(/^"|"$/g, "")
+        : (savedRaw as any)?.key ?? "";
+      return json({
+        public_key: shape(pub),
+        private_key: shape(priv),
+        saved_public_key_matches_server: saved.length > 0 && saved === pub,
+      });
     }
 
     const { user_ids, title, body, data, source } = reqBody;
