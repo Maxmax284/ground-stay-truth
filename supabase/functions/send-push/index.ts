@@ -267,7 +267,6 @@ Deno.serve(async (req) => {
         .from("policy_settings")
         .select("value")
         .eq("key", "vapid_public_key")
-        .is("property_id", null)
         .maybeSingle();
       const savedRaw = savedRow?.value;
       const saved = typeof savedRaw === "string"
