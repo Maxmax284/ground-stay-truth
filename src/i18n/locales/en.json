@@ -2406,5 +2406,16 @@
     "messaged": "Messaged",
     "yes": "yes",
     "no": "not yet"
+  },
+  "arrivedSignal": {
+    "title": "Arriving today?",
+    "body": "One tap lets the front desk know. It just sends them a message — nothing else changes.",
+    "landed": "I've landed",
+    "here": "I'm here",
+    "landedDone": "Landed — sent",
+    "hereDone": "Here — sent",
+    "sent": "Front desk notified",
+    "landedMsg": "✈️ I've landed and I'm on my way to the camp.",
+    "hereMsg": "📍 I'm here at the camp."
   }
 }
