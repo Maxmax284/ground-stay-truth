@@ -581,6 +581,10 @@ const GuestPortal = () => {
           bookingReference={nowBooking?.units?.name ?? null}
         />
 
+        {/* Guest notification enrollment — benefit-framed, not technical.
+            Sits in the main flow, not the collapsed extras: iPhone guests
+            must see the Add-to-Home-Screen steps without expanding anything. */}
+        <GuestStayUpdatesPrompt />
 
         {/* Everything else — setup, perks, intelligence — one tap deeper. */}
         <Collapsible open={extrasOpen} onOpenChange={setExtrasOpen}>
@@ -631,8 +635,6 @@ const GuestPortal = () => {
               onLearnMore={() => setActiveTab("island-guide")}
             />
 
-            {/* Guest notification enrollment — benefit-framed, not technical */}
-            <GuestStayUpdatesPrompt />
           </CollapsibleContent>
         </Collapsible>
 
