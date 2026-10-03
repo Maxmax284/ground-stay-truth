@@ -30,7 +30,10 @@ i18n.use(initReactI18next).init({
   missingKeyHandler: (lngs, _ns, key) => {
     recordMissingKey(Array.isArray(lngs) ? lngs : [String(lngs)], key);
   },
-  parseMissingKeyHandler: (key) => humanizeKey(key),
+  // Honour the inline English default written next to the key; only humanize
+  // the raw key when no default was given.
+  parseMissingKeyHandler: (key, defaultValue?: string) =>
+    typeof defaultValue === "string" && defaultValue && defaultValue !== key ? defaultValue : humanizeKey(key),
 });
 
 
