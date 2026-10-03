@@ -61,6 +61,7 @@ import { GuestNowCard, computeNowState } from "@/components/GuestNowCard";
 import { JourneyBanner } from "@/components/guest/JourneyBanner";
 import { LanguageSuggestionBanner } from "@/components/guest/LanguageSuggestionBanner";
 import { GuestWelcomeFlow } from "@/components/guest/GuestWelcomeFlow";
+import { WelcomeSheetCard } from "@/components/guest/WelcomeSheetCard";
 import { GuestLanguagePicker } from "@/components/guest/GuestLanguagePicker";
 import { resolveJourneyStage } from "@/lib/guestJourneyStage";
 import { useAirportPickup } from "@/hooks/useAirportPickups";
@@ -773,6 +774,7 @@ const GuestPortal = () => {
           {activeBookings.length > 0 && (
             <TabsContent value="stay-support">
               <div className="space-y-6">
+                <WelcomeSheetCard unitId={activeBookings[0]?.unit_id} />
                 <MessagingConnectCard />
                 <GuestStaySupport
                   focusSection={focusSection}
