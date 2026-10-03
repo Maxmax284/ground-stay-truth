@@ -27,7 +27,6 @@ import Pricing from "./pages/Pricing";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import GuestPortal from "./pages/GuestPortal";
-import GuestPortalPreview from "./pages/GuestPortalPreview";
 import Messages from "./pages/Messages";
 import NotFound from "./pages/NotFound";
 import Legal from "./pages/Legal";
@@ -111,7 +110,7 @@ const App = () => (
                 <Route path="/arrivals-board" element={<ProtectedRoute requiredPath="/arrivals-board"><ArrivalsBoard /></ProtectedRoute>} />
                 <Route path="/arrival-intelligence" element={<Navigate to="/arrivals-board" replace />} />
                 <Route path="/admin-booking" element={<ProtectedRoute requiredPath="/admin-booking"><AdminBookingFlow /></ProtectedRoute>} />
-                <Route path="/guest-preview" element={<ProtectedRoute requiredPath="/guest-preview"><GuestPortalPreview /></ProtectedRoute>} />
+                <Route path="/guest-preview" element={<Navigate to="/guest?preview=true" replace />} />
                 <Route path="/front-desk" element={<ProtectedRoute requiredPath="/front-desk"><FrontDesk /></ProtectedRoute>} />
                 <Route path="/check-in-desk" element={<ProtectedRoute requiredPath="/check-in-desk"><CheckInDesk /></ProtectedRoute>} />
                 <Route path="/check-in" element={<Navigate to="/check-in-desk" replace />} />

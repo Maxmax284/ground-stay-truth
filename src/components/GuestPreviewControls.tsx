@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,12 +18,12 @@ export function GuestPreviewControls() {
   const viewAs = searchParams.get("as");
 
   // Pull distinct guests who have at least one booking. Admin RLS allows this.
-  const { data: guests } = useQuery({
+  const { data: guestData } = useQuery({
     queryKey: ["admin-preview-guests"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bookings")
-        .select("guest_id, profiles!bookings_guest_id_profiles_fkey(full_name, email)")
+        .select("guest_id, check_in, state, profiles!bookings_guest_id_profiles_fkey(full_name, email)")
         .not("guest_id", "is", null)
         .order("created_at", { ascending: false })
         .limit(200);
@@ -36,9 +36,26 @@ export function GuestPreviewControls() {
         const name = row.profiles?.full_name?.trim() || row.profiles?.email || "Guest";
         out.push({ id: row.guest_id, label: name });
       }
-      return out.sort((a, b) => a.label.localeCompare(b.label));
+      // Default pick: the active stay closest to today (checked in, arriving, or upcoming).
+      const now = Date.now();
+      const active = ((data ?? []) as any[])
+        .filter((r) => r.guest_id && ["checked_in", "confirmed", "pending_deposit"].includes(r.state))
+        .sort((a, b) => Math.abs(new Date(a.check_in).getTime() - now) - Math.abs(new Date(b.check_in).getTime() - now));
+      const defaultId = active[0]?.guest_id ?? out[0]?.id ?? null;
+      return { list: out.sort((a, b) => a.label.localeCompare(b.label)), defaultId };
     },
   });
+
+  const guests = guestData?.list;
+  const autoPicked = useRef(false);
+  useEffect(() => {
+    if (autoPicked.current || viewAs || !guestData?.defaultId) return;
+    autoPicked.current = true;
+    const next = new URLSearchParams(searchParams);
+    next.set("as", guestData.defaultId);
+    next.set("preview", "true");
+    setSearchParams(next, { replace: true });
+  }, [guestData, viewAs, searchParams, setSearchParams]);
 
   const currentLabel = useMemo(() => {
     if (!viewAs) return null;
@@ -47,6 +64,7 @@ export function GuestPreviewControls() {
 
   const setAs = (value: string) => {
     const next = new URLSearchParams(searchParams);
+    autoPicked.current = true;
     if (value === "__self__") next.delete("as");
     else next.set("as", value);
     next.set("preview", "true");
