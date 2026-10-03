@@ -69,6 +69,7 @@ import { WhileYouWaitTab } from "@/components/WhileYouWaitTab";
 import { differenceInCalendarDays } from "date-fns";
 import { GuestStaySupport } from "@/components/GuestStaySupport";
 import { GuestPreviewControls } from "@/components/GuestPreviewControls";
+import { GuestArrivedSignal } from "@/components/guest/GuestArrivedSignal";
 import { IslandGuideCard } from "@/components/guest/IslandGuideCard";
 import { MessagingConnectCard } from "@/components/MessagingConnectCard";
 import { GuestPersonalGuideCard } from "@/components/GuestPersonalGuideCard";
@@ -778,6 +779,7 @@ const GuestPortal = () => {
                   once checked in, the binder + in-stay actions. Same data either way. */}
               {activeBookings.length === 0 ? (
                 <div className="space-y-6">
+                  {confirmedBookings.map((b: any) => <GuestArrivedSignal key={b.id} booking={b} />)}
                   <MessagingConnectCard />
                   <IslandGuideCard arrivalMode />
                   <WelcomeSheetCard unitId={confirmedBookings[0]?.unit_id} />
