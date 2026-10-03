@@ -63,7 +63,9 @@ export function useBookingReadiness(bookings: Array<{ id: string; guest_id?: str
 
       // Responses are grouped per chunk in the order the queries were built.
       for (let c = 0; c < chunks.length; c++) {
-        const [portal, payments, pickups, docs, messages] = responses.slice(c * 5, c * 5 + 5);
+        const [portal, payments, pickups, docs, messages] = responses.slice(c * 5, c * 5 + 5) as Array<{
+          data: Array<Record<string, any>> | null;
+        }>;
 
         for (const row of portal.data ?? []) {
           if (row.booking_id && result[row.booking_id]) result[row.booking_id].openedPortal = true;
