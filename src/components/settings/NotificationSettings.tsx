@@ -182,8 +182,8 @@ export default function NotificationSettings() {
       <Card className="p-5">
         <h2 className="text-lg font-semibold">Admin alerts</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Email alerts are the reliable admin record. Phone push alerts are a separate lane and can be
-          reconnected later. Pick what reaches you — you won't get woken up every time someone opens a door.
+          Email alerts are the reliable admin record. Phone alerts are a separate lane — turn them on per
+          device under Settings → Profile → Ops Alerts. Pick what reaches you — you won't get woken up every time someone opens a door.
         </p>
       </Card>
 

@@ -14,6 +14,7 @@ import { IntelligenceEditor } from "@/components/IntelligenceEditor";
 import PropertyManagementPanel from "@/components/PropertyManagementPanel";
 import { VantaIntegrationPanel } from "@/components/VantaIntegrationPanel";
 import NotificationSettings from "@/components/settings/NotificationSettings";
+import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 import { AppStatusPanel } from "@/components/settings/AppStatusPanel";
 import { SandboxPanel } from "@/components/SandboxPanel";
 import { AIOpsPanel } from "@/components/admin/AIOpsPanel";
@@ -71,7 +72,7 @@ const Settings = () => {
 
 
           {/* Every panel is isolated: one crashing section must never blank the page. */}
-          <TabsContent value="profile"><ErrorBoundary inline label="Profile"><ProfileEditor /></ErrorBoundary></TabsContent>
+          <TabsContent value="profile" className="space-y-4"><ErrorBoundary inline label="Profile"><ProfileEditor /></ErrorBoundary><ErrorBoundary inline label="Ops alerts"><PushNotificationToggle title="Ops Alerts" /></ErrorBoundary></TabsContent>
           {canManageRoles && <TabsContent value="users"><ErrorBoundary inline label="Users"><UserRoleManager /></ErrorBoundary></TabsContent>}
           <TabsContent value="staff-phones"><ErrorBoundary inline label="Staff phones"><StaffPhoneManager /></ErrorBoundary></TabsContent>
           {canManagePolicies && <TabsContent value="cancellation"><ErrorBoundary inline label="Cancellation policy"><CancellationPolicyEditor /></ErrorBoundary></TabsContent>}

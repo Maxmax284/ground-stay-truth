@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, X, CheckCircle2, MessageSquare, Plane, CalendarCheck } from "lucide-react";
+import { Bell, Share, PlusSquare, X, CheckCircle2, MessageSquare, Plane, CalendarCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { showForegroundNotification } from "@/components/ForegroundNotificationBanner";
@@ -14,7 +14,7 @@ const COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
  * Shows at contextually appropriate moments in the guest journey.
  */
 export function GuestStayUpdatesPrompt({ className }: { className?: string }) {
-  const { isSupported, isSubscribed, permission, subscribe, loading } = usePushNotifications();
+  const { isSupported, isSubscribed, permission, subscribe, loading, health } = usePushNotifications();
   const [dismissed, setDismissed] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
   const [justEnabled, setJustEnabled] = useState(false);
@@ -31,6 +31,50 @@ export function GuestStayUpdatesPrompt({ className }: { className?: string }) {
       }
     }
   }, []);
+
+  const handleDismissInstall = () => {
+    localStorage.setItem(DISMISS_KEY, Date.now().toString());
+    setDismissed(true);
+  };
+
+  // iPhone in a Safari tab: alerts only exist once the portal is on the
+  // Home Screen, so show the steps instead of a button that can't work.
+  if (!loading && !dismissed && health === "needs-install") {
+    return (
+      <div className={cn("relative rounded-xl border border-border/60 bg-card p-4 shadow-sm", className)}>
+        <button
+          onClick={handleDismissInstall}
+          className="absolute top-3 right-3 p-1 rounded-full hover:bg-muted/80 transition-colors"
+          aria-label="Dismiss"
+        >
+          <X className="h-3.5 w-3.5 text-muted-foreground" />
+        </button>
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
+            <Bell className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground pr-6">Get stay alerts on your iPhone</p>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              iPhone only sends alerts from apps on your Home Screen. It takes three taps:
+            </p>
+            <ol className="mt-2 space-y-1.5 text-xs text-foreground">
+              <li className="flex items-center gap-2">
+                <span className="font-semibold">1.</span> Tap <Share className="h-3.5 w-3.5 inline" aria-label="Share" /> Share at the bottom of Safari
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="font-semibold">2.</span> Choose <PlusSquare className="h-3.5 w-3.5 inline" aria-hidden /> Add to Home Screen
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="font-semibold">3.</span> Open CampStay from the new icon and tap Enable Stay Updates
+              </li>
+            </ol>
+            <p className="text-[11px] text-muted-foreground mt-2">You'll still get every update by email either way.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Don't show if: loading, already subscribed, not supported, dismissed, or permission permanently denied
   if (loading || isSubscribed || !isSupported || dismissed || permission === "denied") {
