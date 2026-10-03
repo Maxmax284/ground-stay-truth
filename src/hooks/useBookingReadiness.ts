@@ -36,36 +36,54 @@ export function useBookingReadiness(bookings: Array<{ id: string; guest_id?: str
       const result: Record<string, BookingReadiness> = {};
       for (const id of ids) result[id] = { ...EMPTY };
 
-      const [portal, payments, pickups, docs, messages] = await Promise.all([
-        supabase.from("guest_portal_activity").select("booking_id").in("booking_id", ids),
+      // Chunk the id list: a single `.in(...)` with hundreds of UUIDs can
+      // exceed URL limits and fail silently. Errors are thrown so the row
+      // shows nothing instead of falsely marking every step "not done".
+      const CHUNK = 50;
+      const chunks: string[][] = [];
+      for (let i = 0; i < ids.length; i += CHUNK) chunks.push(ids.slice(i, i + CHUNK));
+
+      const queries = chunks.flatMap((chunk) => [
+        supabase.from("guest_portal_activity").select("booking_id").in("booking_id", chunk).limit(10000),
         supabase
           .from("payments")
           .select("booking_id, status")
-          .in("booking_id", ids)
-          .in("status", ["recorded", "partially_refunded"]),
-        supabase.from("airport_pickups").select("booking_id, flight_number").in("booking_id", ids),
-        supabase.from("guest_documents").select("booking_id").in("booking_id", ids),
-        supabase.from("messages").select("booking_id, sender_id").in("booking_id", ids),
+          .in("booking_id", chunk)
+          .in("status", ["recorded", "partially_refunded"])
+          .limit(10000),
+        supabase.from("airport_pickups").select("booking_id, flight_number").in("booking_id", chunk).limit(10000),
+        supabase.from("guest_documents").select("booking_id").in("booking_id", chunk).limit(10000),
+        supabase.from("messages").select("booking_id, sender_id").in("booking_id", chunk).limit(10000),
       ]);
 
-      for (const row of portal.data ?? []) {
-        if (row.booking_id && result[row.booking_id]) result[row.booking_id].openedPortal = true;
+      const responses = await Promise.all(queries);
+      for (const res of responses) {
+        if (res.error) throw res.error;
       }
-      for (const row of payments.data ?? []) {
-        if (row.booking_id && result[row.booking_id]) result[row.booking_id].paid = true;
-      }
-      for (const row of pickups.data ?? []) {
-        if (row.booking_id && result[row.booking_id] && row.flight_number) {
-          result[row.booking_id].flightAdded = true;
+
+      // Responses are grouped per chunk in the order the queries were built.
+      for (let c = 0; c < chunks.length; c++) {
+        const [portal, payments, pickups, docs, messages] = responses.slice(c * 5, c * 5 + 5);
+
+        for (const row of portal.data ?? []) {
+          if (row.booking_id && result[row.booking_id]) result[row.booking_id].openedPortal = true;
         }
-      }
-      for (const row of docs.data ?? []) {
-        if (row.booking_id && result[row.booking_id]) result[row.booking_id].idUploaded = true;
-      }
-      for (const row of messages.data ?? []) {
-        // Only guest-sent messages count — staff replies don't signal guest engagement.
-        if (row.booking_id && result[row.booking_id] && row.sender_id && row.sender_id === guestByBooking.get(row.booking_id)) {
-          result[row.booking_id].messaged = true;
+        for (const row of payments.data ?? []) {
+          if (row.booking_id && result[row.booking_id]) result[row.booking_id].paid = true;
+        }
+        for (const row of pickups.data ?? []) {
+          if (row.booking_id && result[row.booking_id] && row.flight_number) {
+            result[row.booking_id].flightAdded = true;
+          }
+        }
+        for (const row of docs.data ?? []) {
+          if (row.booking_id && result[row.booking_id]) result[row.booking_id].idUploaded = true;
+        }
+        for (const row of messages.data ?? []) {
+          // Only guest-sent messages count — staff replies don't signal guest engagement.
+          if (row.booking_id && result[row.booking_id] && row.sender_id && row.sender_id === guestByBooking.get(row.booking_id)) {
+            result[row.booking_id].messaged = true;
+          }
         }
       }
 

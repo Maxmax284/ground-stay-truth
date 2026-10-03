@@ -44,6 +44,7 @@ const NAV_ACCESS: Record<string, AppRole[]> = {
   "/arrival-intelligence": ["front_desk_supervisor", "manager", "admin"],
   "/admin-booking": ["admin"],
   "/guest-preview": ["admin"],
+  "/guest?preview=true": ["admin"],
   "/calendar":  ["front_desk", "front_desk_supervisor", "manager", "admin", "viewer", "maintenance"],
   "/pricing":   ["manager", "admin"],
   "/reports":   ["manager", "admin", "viewer"],
