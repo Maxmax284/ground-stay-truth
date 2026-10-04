@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +8,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, AlertTriangle, ChevronRight, Check, X, Percent, Lock } from "lucide-react";
+import { Plus, AlertTriangle, ChevronRight, Check, X, Percent, Lock, ClipboardList } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getDiscountEligibility, DISCOUNT_TOOLTIP_HELP } from "@/lib/discountEligibility";
 import { ApplyDiscountDialog } from "@/components/ApplyDiscountDialog";
@@ -130,6 +131,11 @@ function BookingCard({ booking, onClick, onExtend, onRecordPayment, discountFlag
       {/* Talking to the guest is a first-class action on the card itself —
           staff shouldn't have to know where the Messenger tab lives. */}
       <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
+        <Button size="sm" variant="outline" className="h-7 flex-1 px-2 text-xs" asChild>
+          <Link to={`/bookings/${booking.id}/status`}>
+            <ClipboardList className="h-3 w-3 mr-1" /> {t("bookingStatus.title", "Status")}
+          </Link>
+        </Button>
         <GuestThreadLauncher
           bookingId={booking.id}
           guestName={resolveGuestDisplayName(booking as any)}

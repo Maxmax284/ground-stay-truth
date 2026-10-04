@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMarkMessagesRead } from "@/hooks/useBookings";
@@ -112,6 +113,23 @@ const Messages = () => {
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [threadBookingId, setThreadBookingId] = useState<string | null>(null);
   const markRead = useMarkMessagesRead();
+
+  // Deep link: /messages?booking=<id> opens that booking's thread directly
+  // (used by the Booking Status page's "Message guest" chase action).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkBooking = searchParams.get("booking");
+  useEffect(() => {
+    if (!deepLinkBooking || !threads?.length) return;
+    if (threads.some((th) => th.booking_id === deepLinkBooking)) {
+      setThreadBookingId(deepLinkBooking);
+      markRead.mutate(deepLinkBooking);
+    }
+    setSearchParams((prev) => {
+      prev.delete("booking");
+      return prev;
+    }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLinkBooking, threads]);
 
   const activeThread = (threads ?? []).find((th) => th.booking_id === threadBookingId) ?? null;
 
