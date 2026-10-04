@@ -9,8 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DashboardLayout } from "@/components/DashboardLayout";
-import { BookingStatusBadge } from "@/components/BookingStatusBadge";
+import DashboardLayout from "@/components/DashboardLayout";
+import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { PreArrivalChecklist } from "@/components/PreArrivalChecklist";
 import { useBooking } from "@/hooks/useBookings";
 import { useBookingReadiness, type BookingReadiness } from "@/hooks/useBookingReadiness";
@@ -170,7 +170,7 @@ export default function BookingStatus() {
               {booking.units?.name ?? "—"} · {format(new Date(booking.check_in), "MMM d")} – {format(new Date(booking.check_out), "MMM d")}
             </p>
           </div>
-          <BookingStatusBadge booking={booking} />
+          <Badge className={STATE_VARIANTS[booking.state as BookingState]}>{t(`states.${booking.state}`)}</Badge>
         </div>
 
         {/* 1. Readiness summary */}
