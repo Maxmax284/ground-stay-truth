@@ -107,7 +107,7 @@ export function ChaseList({
           <div key={b.id} className="rounded-lg border bg-card p-3">
             <div className="flex items-start justify-between gap-2">
               <button className="min-w-0 text-left" onClick={() => onOpen(b.id)}>
-                <p className="font-medium truncate">{resolveGuestDisplayName(b as any)}</p>
+                <p className="font-medium truncate">{resolveGuestDisplayName(b)}</p>
                 <p className="text-xs text-muted-foreground truncate">
                   {b.units?.name ?? "—"} · {format(parseISO(b.check_in), "d MMM")} → {format(parseISO(b.check_out), "d MMM")}
                 </p>
