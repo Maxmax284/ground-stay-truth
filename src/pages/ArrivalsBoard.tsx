@@ -7,6 +7,7 @@
  * moves a booking, price, room or pickup status on its own.
  */
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -216,6 +217,8 @@ export default function ArrivalsBoard() {
   const { data, isLoading, refetch, isFetching } = useArrivalsBoard();
   const canSeeIntel = role === "admin" || role === "manager" || role === "front_desk_supervisor";
   const { data: intelRows, isLoading: intelLoading } = useArrivalIntelBoard();
+  const [params] = useSearchParams();
+  const [tab, setTab] = useState(params.get("tab") ?? "incoming");
   const [search, setSearch] = useState("");
   const [openBooking, setOpenBooking] = useState<string | null>(null);
 
@@ -308,7 +311,7 @@ export default function ArrivalsBoard() {
             {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full" />)}
           </div>
         ) : (
-          <Tabs defaultValue="incoming">
+          <Tabs value={tab} onValueChange={setTab}>
             <TabsList className="flex-wrap h-auto">
               <TabsTrigger value="incoming">{t("arrivalsBoard.tabIncoming", "Coming in")} ({incoming.length})</TabsTrigger>
               <TabsTrigger value="inhouse">{t("arrivalsBoard.tabInHouse", "Here now")} ({inHouse.length})</TabsTrigger>

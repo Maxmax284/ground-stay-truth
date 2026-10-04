@@ -282,7 +282,7 @@ export default function BookingStatus() {
             )}
             {openConflicts.length > 0 && (
               <Button size="sm" variant="outline" className="h-7 text-xs" asChild>
-                <Link to="/arrivals-board">{t("bookingStatus.resolveConflicts", "Resolve on Arrivals Board")}</Link>
+                <Link to="/arrivals-board?tab=conflicts">{t("bookingStatus.resolveConflicts", "Resolve on Arrivals Board")}</Link>
               </Button>
             )}
           </CardContent>
