@@ -130,6 +130,11 @@ function BookingCard({ booking, onClick, onExtend, onRecordPayment, discountFlag
       {/* Talking to the guest is a first-class action on the card itself —
           staff shouldn't have to know where the Messenger tab lives. */}
       <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
+        <Button size="sm" variant="outline" className="h-7 flex-1 px-2 text-xs" asChild>
+          <Link to={`/bookings/${booking.id}/status`}>
+            <ClipboardList className="h-3 w-3 mr-1" /> {t("bookingStatus.title", "Status")}
+          </Link>
+        </Button>
         <GuestThreadLauncher
           bookingId={booking.id}
           guestName={resolveGuestDisplayName(booking as any)}
