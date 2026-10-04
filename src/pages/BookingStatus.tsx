@@ -20,6 +20,7 @@ import { useAirportPickup } from "@/hooks/useAirportPickups";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { EmailReachabilityNotice } from "@/components/EmailReachabilityNotice";
 
 /**
  * Staff-facing per-booking status page: everything the guest has or hasn't
@@ -172,6 +173,8 @@ export default function BookingStatus() {
           </div>
           <Badge className={STATE_VARIANTS[booking.state as BookingState]}>{t(`states.${booking.state}`)}</Badge>
         </div>
+
+        <EmailReachabilityNotice email={guestEmail} />
 
         {/* 1. Readiness summary */}
         <Card>
