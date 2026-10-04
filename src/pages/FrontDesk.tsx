@@ -49,6 +49,7 @@ import { PickupStatusStrip } from "@/components/front-desk/PickupStatusStrip";
 import { TurnoverBoard } from "@/components/front-desk/TurnoverBoard";
 import { FlightForecastWidget } from "@/components/FlightForecastWidget";
 import { ArrivalExceptionsPanel } from "@/components/front-desk/ArrivalExceptionsPanel";
+import { ChaseList } from "@/components/front-desk/ChaseList";
 import { DriverChatPanel } from "@/components/front-desk/DriverChatPanel";
 import { GuestThreadLauncher } from "@/components/GuestThreadLauncher";
 import { computeOperationalStatus, TONE_CLASS } from "@/lib/operationalStatus";
@@ -135,6 +136,7 @@ export default function FrontDesk() {
             <TabsTrigger value="upcoming">{t("frontDesk.tabs.upcoming", { count: totals.upcoming })}</TabsTrigger>
             <TabsTrigger value="staying">{t("frontDesk.tabs.staying", { count: totals.staying })}</TabsTrigger>
             <TabsTrigger value="departing">{t("frontDesk.tabs.departing", { count: totals.departing })}</TabsTrigger>
+            <TabsTrigger value="chase">{t("chaseList.tab", "Chase list")}</TabsTrigger>
             <TabsTrigger value="travelChecks">{t("arrivalExceptions.tab", "Travel checks")}</TabsTrigger>
             {isManagerPlus && <TabsTrigger value="overrides">{t("frontDesk.tabs.overrides")}</TabsTrigger>}
           </TabsList>
@@ -183,6 +185,10 @@ export default function FrontDesk() {
               pickupByBooking={pickupByBooking}
               lastMessageByBooking={lastMessageByBooking}
             />
+          </TabsContent>
+
+          <TabsContent value="chase" className="space-y-3 mt-4">
+            <ChaseList sections={sections} onOpen={setDetailId} />
           </TabsContent>
 
           <TabsContent value="travelChecks" className="space-y-3 mt-4">
