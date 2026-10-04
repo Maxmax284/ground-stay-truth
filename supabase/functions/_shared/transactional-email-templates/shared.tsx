@@ -105,6 +105,10 @@ export function Shell({
           {intro ? <Text style={lead}>{intro}</Text> : null}
           {children}
           <Hr style={{ borderColor: '#eeeeee', margin: '28px 0 0 0' }} />
+          <Text style={footer}>
+            Replies to this email aren't read — please message the camp from your guest portal (lmtcampstay.com/guest).
+            {' '}ตอบกลับอีเมลนี้จะไม่ถึงเรา — กรุณาส่งข้อความผ่านพอร์ทัลของคุณ
+          </Text>
           <Text style={footer}>{FOOTER_NOTE}</Text>
         </Container>
       </Body>

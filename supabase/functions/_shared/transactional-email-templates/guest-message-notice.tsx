@@ -35,7 +35,7 @@ const Email = (d: Props) => {
       </Panel>
 
       <BigCta
-        href={d.portal_url || 'https://lmtcampstay.com/guest'}
+        href={d.portal_url || 'https://lmtcampstay.com/guest?action=messages'}
         label={t(lang, 'Read and reply', 'อ่านและตอบกลับ')}
         sub={t(lang, 'Your whole conversation lives in the guest portal.', 'บทสนทนาทั้งหมดอยู่ในพอร์ทัลของคุณ')}
       />

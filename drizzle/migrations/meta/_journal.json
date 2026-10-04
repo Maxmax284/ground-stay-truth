@@ -148,6 +148,13 @@
       "when": 1790742117419,
       "tag": "0020_pricing_clarity_adjustment_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791128101919,
+      "tag": "0021_email_deliverability_lookup",
+      "breakpoints": true
     }
   ]
 }

@@ -173,6 +173,9 @@ const GuestPortal = () => {
     if (actionFromUrl === "landed") {
       setFocusSection("landed");
     }
+    if (actionFromUrl === "messages") {
+      setActiveTab("messages");
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Audit-log every "View as Guest" session, once per (admin, viewed_guest) pair per browser session

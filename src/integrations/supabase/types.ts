@@ -5398,6 +5398,13 @@ export type Database = {
           occurred_at: string
         }[]
       }
+      get_email_deliverability: {
+        Args: { _email: string }
+        Returns: {
+          reason: string
+          since: string
+        }[]
+      }
       get_guest_bookings: {
         Args: { _guest_key: string }
         Returns: {

@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
             staff_name: staffName,
             unit_name: unitName,
             snippet,
-            portal_url: `${SITE}/guest`,
+            portal_url: `${SITE}/guest?action=messages`,
           },
         });
         email = { attempted: true, ...result };
