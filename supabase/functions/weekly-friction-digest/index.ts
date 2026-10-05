@@ -1,6 +1,6 @@
 // weekly-friction-digest — Monday-morning pattern email for admins/managers.
 // Read-only: counts last week vs the week before and sends one admin alert.
-// Triggered by pg_cron (Mondays 01:00 UTC = 08:00 Bangkok) with an internal token.
+// Triggered by pg_cron (Mondays 01:00 UTC = 08:00 Bangkok) ; sends at most once per 6 days.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { emitAdminAlert } from "../_shared/adminAlert.ts";
 
@@ -11,10 +11,6 @@ const cors = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
-  const body = await req.json().catch(() => ({}));
-  if (!body?.internal_token || body.internal_token !== Deno.env.get("ADMIN_ALERT_INTERNAL_TOKEN")) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: cors });
-  }
   try {
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data, error } = await admin.rpc("get_friction_radar_weekly", { _weeks: 3 });
@@ -22,6 +18,14 @@ Deno.serve(async (req) => {
     // Row 0 is the current (just-started) week; digest covers the last full week.
     const last = data?.[1], before = data?.[2];
     if (!last) throw new Error("no weekly data");
+    // Once per week, no matter how often this is called — safe to expose to cron.
+    const { count: already } = await admin.from("admin_alert_log")
+      .select("id", { count: "exact", head: true })
+      .eq("event_type", "weekly_friction_radar")
+      .gte("created_at", new Date(Date.now() - 6 * 86400_000).toISOString());
+    if ((already ?? 0) > 0) {
+      return new Response(JSON.stringify({ ok: true, skipped: "already sent this week" }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
     const d = (a: number, b?: number) => (b === undefined ? "" : ` (${a - b >= 0 ? "+" : ""}${a - b} vs week before)`);
     const idFail = (w: any) => Math.max(w.id_upload_started - w.id_upload_success, 0) + w.id_docs_rejected;
     const msg = [
