@@ -10,6 +10,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { emitAdminAlert } from "../_shared/adminAlert.ts";
+import { buildOpsBrief } from "../_shared/opsBrief.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,7 +29,7 @@ async function buildBriefing(admin: any): Promise<string> {
 
   const [arrRes, depRes, occRes, unitsRes, pendApr, pendDep, openMaint] = await Promise.all([
     admin.from("bookings")
-      .select("check_in, num_guests, units(name), profiles!bookings_guest_id_profiles_fkey(full_name)")
+      .select("id, check_in, num_guests, units(name), profiles!bookings_guest_id_profiles_fkey(full_name)")
       .eq("check_in", today)
       .in("state", ["confirmed", "pending_deposit", "checked_in"])
       .limit(20),
@@ -101,6 +102,15 @@ async function buildBriefing(admin: any): Promise<string> {
   if ((pendDep.count ?? 0) > 0) issues.push(`${pendDep.count} unpaid deposit`);
   if ((openMaint.count ?? 0) > 0) issues.push(`${openMaint.count} open maintenance`);
   lines.push(issues.length ? `Flags: ${issues.join(", ")}.` : "Flags: none.");
+
+  // Daily Ops Brief street read — overnight messages, bounces, drafts.
+  try {
+    const brief = await buildOpsBrief(admin);
+    lines.push("", `Street read: ${brief.line}`);
+  } catch (e) {
+    console.error("ops brief failed", e);
+    lines.push("", "Street read: unavailable — check Corner Talk.");
+  }
 
   return lines.join("\n");
 }
