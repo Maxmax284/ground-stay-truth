@@ -105,7 +105,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
   const { data: booking } = useBooking(bookingId);
   const { data: pickup } = useAirportPickup(bookingId);
   const guestId = (booking as any)?.guest_id;
-  const { data: guestHistory } = useGuestHistory(guestId);
+  const { data: guestHistory } = useGuestHistory(guestId, bookingId);
   const { data: stateLog } = useBookingStateLog(bookingId);
   const { data: payments } = useBookingPayments(bookingId);
   const { data: messages } = useBookingMessages(bookingId);

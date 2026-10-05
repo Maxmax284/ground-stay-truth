@@ -100,15 +100,18 @@ export function usePriceStory(booking: PriceStoryBooking | null | undefined, ena
   });
 
   // Loyalty tier depends on how many stays this guest has finished.
+  // Only `completed` counts — a checked_in booking must never count itself,
+  // and the booking being quoted is always excluded.
   const { data: completedStays } = useQuery({
-    queryKey: ["price-story-completed-stays", booking?.guest_id ?? null],
+    queryKey: ["price-story-completed-stays", booking?.guest_id ?? null, bookingId],
     enabled: on && !!booking?.guest_id,
     queryFn: async () => {
       const { count, error } = await supabase
         .from("bookings")
         .select("id", { count: "exact", head: true })
         .eq("guest_id", booking!.guest_id as string)
-        .in("state", ["completed", "checked_in"]);
+        .eq("state", "completed")
+        .neq("id", bookingId as string);
       if (error) throw error;
       return count ?? 0;
     },
