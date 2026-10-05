@@ -21,6 +21,18 @@ export interface CornerTalkData {
   upcoming: CornerTalkUpcoming[];
   allClear: boolean;
   generatedAt: string;
+  /** Daily Ops Brief — deterministic morning street read (read-only counts). */
+  brief?: {
+    date: string;
+    arrivals: number;
+    arrivalsMissingFlight: number;
+    arrivalsMissingId: number;
+    departures: number;
+    overnightMessages: number;
+    bouncedEmails: number;
+    pendingDrafts: number;
+    line: string;
+  } | null;
 }
 
 export function useCornerTalk() {
