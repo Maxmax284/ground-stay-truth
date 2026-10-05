@@ -78,19 +78,19 @@ export function GuestPreviewControls() {
   };
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm">
+    <div className="flex min-w-0 max-w-full flex-col gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs sm:px-4 sm:py-3 sm:text-sm">
       <div className="flex items-start gap-2 text-warning-foreground">
         <Eye className="h-4 w-4 shrink-0 mt-0.5" />
-        <span>
+        <span className="min-w-0 break-words">
           {viewAs
-            ? <>Viewing as <strong>{currentLabel}</strong>. Every action below is disabled and this session has been audit-logged. To make changes on this guest's behalf, do it from the Bookings page.</>
+            ? <>Viewing as <strong>{currentLabel}</strong> · read-only · audit-logged<span className="hidden sm:inline">. To make changes on this guest's behalf, do it from the Bookings page.</span></>
             : <>Admin preview. Pick a guest below to see their actual portal exactly as they see it (read-only).</>}
         </span>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="min-w-[220px] flex-1">
+      <div className="flex min-w-0 items-center gap-2">
+        <div className="min-w-0 flex-1">
           <Select value={viewAs ?? "__self__"} onValueChange={setAs}>
-            <SelectTrigger className="h-9 bg-background">
+            <SelectTrigger className="h-9 min-w-0 bg-background">
               <SelectValue placeholder="View as guest…" />
             </SelectTrigger>
             <SelectContent>
@@ -105,8 +105,8 @@ export function GuestPreviewControls() {
           </Select>
         </div>
         {viewAs && (
-          <Button variant="outline" size="sm" onClick={clear} className="h-9">
-            <X className="h-3.5 w-3.5 mr-1" /> Exit guest view
+          <Button variant="outline" size="sm" onClick={clear} className="h-9 shrink-0 px-2 sm:px-3" aria-label="Exit guest view">
+            <X className="h-3.5 w-3.5 sm:mr-1" /> <span className="hidden min-[400px]:inline">Exit</span><span className="hidden sm:inline">&nbsp;guest view</span>
           </Button>
         )}
       </div>
