@@ -186,7 +186,7 @@ export function ModifyStayDialog({
   const pricingBefore = pricingMode === "preserve" ? onRecordTotal : beforeQuote.total || onRecordTotal;
   const pricingAfterEffective = pricingMode === "preserve" ? changeDelta.mergedTotal : afterQuote.total;
   const delta = useMemo(() => summarizeDelta(pricingBefore, pricingAfterEffective), [pricingBefore, pricingAfterEffective]);
-  const unitName = (id: string) => (units ?? []).find((u) => u.id === id)?.name ?? "Room";
+
 
   // Pricing basis for the new stay: gross room charge plus each automatic
   // discount, aggregated across every segment of the stay.
@@ -224,6 +224,7 @@ export function ModifyStayDialog({
     ? Math.min(carry.suggestedWaiver, Math.max(0, delta.calculated))
     : Math.min(Math.max(0, Number(waiveInput) || 0), Math.max(0, delta.calculated));
   const finalAmount = Math.round((delta.calculated - waived) * 100) / 100;
+  const committedTotal = Math.max(0, Math.round((pricingAfterEffective - waived) * 100) / 100);
 
   const structuralErrors = useMemo(() => validateDraft(draft), [draft]);
   const lineErrors = afterQuote.lines.filter((l) => l.error).map((l) => l.error as string);
@@ -599,7 +600,7 @@ export function ModifyStayDialog({
                     return (
                       <div key={`a${i}`} className="space-y-0.5 border-l-2 border-primary/40 pl-2">
                         <p className="text-xs font-medium">
-                          {unitName(r.unitId)}: {r.startsOn} → {r.endsOn}
+                          {unitName(units, r.unitId)}: {r.startsOn} → {r.endsOn}
                         </p>
                         <Row label={`${r.nights} night${r.nights === 1 ? "" : "s"} base`} value={formatPrice(gross, policies)} />
                         <Row
