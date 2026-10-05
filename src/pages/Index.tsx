@@ -488,14 +488,14 @@ function StatCard({ label, value, icon: Icon, description, stagger, onClick }: {
 
   return (
     <Card
-      className={`hover-lift animate-fade-up animate-stagger-${stagger} ${onClick ? "cursor-pointer" : ""}`}
+      className={`camp-pass hover-lift animate-fade-up animate-stagger-${stagger} ${onClick ? "cursor-pointer" : ""}`}
       onClick={onClick}
     >
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground" style={{ fontFamily: "'Source Sans 3', sans-serif" }}>
+        <CardTitle className="camp-pass-meta font-normal">
           {label}
         </CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <Icon className="h-4 w-4 camp-tone-locked" />
       </CardHeader>
       <CardContent>
         {value === null ? (
