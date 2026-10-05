@@ -395,18 +395,18 @@ function BookingRow({
 
   return (
     <Card
-      className="hover:shadow-md transition-shadow"
+      className="camp-pass hover:shadow-md transition-shadow"
       data-spotlight-kind="booking"
       data-spotlight-id={booking.id}
       data-spotlight-tags={spotlightTags}
     >
-      <CardContent className="p-4">
+      <CardContent className="p-4 pt-5">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           {/* Identity */}
           <div className="min-w-0 flex-1">
+            <p className="camp-pass-meta mb-1">{unitName} · {t("frontDesk.guestCount", { count: booking.num_guests })}</p>
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-semibold text-foreground text-base truncate">{guestName}</h3>
-              <Badge variant="outline" className="text-[10px]">{unitName}</Badge>
               <Badge className={`text-[10px] border ${TONE_CLASS[opStatus.tone]}`}>
                 {opStatus.label}
               </Badge>
