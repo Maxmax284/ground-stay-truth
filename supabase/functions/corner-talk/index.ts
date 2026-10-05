@@ -123,6 +123,12 @@ const MESSAGES: Record<string, string> = {
   checklist_no_connectivity: "{count} arriving guest(s) with no connectivity plan — pickup communication at risk",
   checklist_no_samui_flight: "{count} arriving guest(s) missing Samui flight — pickup timing unavailable",
   checklist_critical_gaps: "{count} arriving guest(s) with incomplete critical checklist items",
+  // Guest comms + engine-room signals
+  guest_messages_overnight: "{count} guest message(s) in the last 24h — check the inbox",
+  email_send_failures: "{count} email(s) failed or bounced in 7 days — check Email Health",
+  booking_visibility_spike: "{count} guest(s) hit \"no booking linked\" in 7 days — likely duplicate guest accounts",
+  ai_drafts_pending: "{count} AI draft(s) waiting for review",
+  push_delivery_failures: "{count} push notification(s) failed in 7 days",
 };
 
 function renderMessage(key: string, params: Record<string, string | number>): string {
@@ -179,6 +185,12 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
     arrivingTodayUnitsRes,
     // Consolidated: global essentials policies
     essentialsPoliciesRes,
+    // Guest comms + engine-room
+    guestMessagesRes,
+    emailFailuresRes,
+    bookingMissingRes,
+    aiDraftsRes,
+    pushFailuresRes,
   ] = await Promise.all([
     // 💰 Unpaid deposits
     adminClient.from("bookings").select("id", { count: "exact", head: true })
