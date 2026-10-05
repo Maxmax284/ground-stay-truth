@@ -45,20 +45,30 @@ export function ArrivalCountdown({ checkIn, unitName, now = new Date() }: Arriva
         ? t("arrivalCountdown.soonLine", "Nearly time. Your flight details and pickup live below.")
         : t("arrivalCountdown.farLine", "Nothing to do yet. We'll bring things forward as your date gets closer.");
 
+  const digits = String(days).padStart(2, "0").split("");
+
   return (
-    <Card className="border-primary/20 bg-primary/5">
-      <CardContent className="flex items-start gap-3 p-4">
-        <CalendarClock className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+    <div className="camp-pass">
+      <div className="flex items-center gap-4 p-4 pt-5">
+        <div className="flex gap-1.5" aria-label={headline} key={days}>
+          {digits.map((d, i) => (
+            <span key={i} className="camp-flap camp-flap-in" aria-hidden="true">{d}</span>
+          ))}
+        </div>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground">{headline}</p>
-          <p className="text-xs text-muted-foreground">{line}</p>
+          <p className="camp-pass-meta flex items-center gap-1.5">
+            <CalendarClock className="h-3 w-3" aria-hidden="true" />
+            {t("arrivalCountdown.label", "Days to camp")}
+          </p>
+          <p className="font-display text-base font-semibold leading-tight">{headline}</p>
+          <p className="text-xs opacity-70">{line}</p>
           {unitName && (
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="camp-pass-mono mt-1 text-[11px] opacity-60">
               {t("arrivalCountdown.room", "Your room: {{name}}", { name: unitName })}
             </p>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
