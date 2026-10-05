@@ -78,7 +78,7 @@ export function GuestPreviewControls() {
   };
 
   return (
-    <div className="flex min-w-0 max-w-full flex-col gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs sm:px-4 sm:py-3 sm:text-sm">
+    <div className="preview-ticket flex min-w-0 max-w-full flex-col gap-2 overflow-hidden rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs sm:px-4 sm:py-3 sm:text-sm">
       <div className="flex items-start gap-2 text-warning-foreground">
         <Eye className="h-4 w-4 shrink-0 mt-0.5" />
         <span className="min-w-0 break-words">
@@ -87,7 +87,7 @@ export function GuestPreviewControls() {
             : <>Admin preview. Pick a guest below to see their actual portal exactly as they see it (read-only).</>}
         </span>
       </div>
-      <div className="flex min-w-0 items-center gap-2">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
         <div className="min-w-0 flex-1">
           <Select value={viewAs ?? "__self__"} onValueChange={setAs}>
             <SelectTrigger className="h-9 min-w-0 bg-background">

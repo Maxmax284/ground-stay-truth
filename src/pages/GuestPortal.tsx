@@ -524,8 +524,8 @@ const GuestPortal = () => {
       <div className="space-y-6 w-full max-w-full overflow-x-hidden">
         {isPreview && <GuestPreviewControls />}
         <fieldset disabled={isViewingAsGuest} className={isViewingAsGuest ? "space-y-6 min-w-0 max-w-full [&_a]:pointer-events-none opacity-95 pointer-events-auto" : "space-y-6 min-w-0 max-w-full m-0 p-0 border-0"}>
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="station-header flex min-w-0 items-center justify-between">
+          <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t("guestPortal.myStay")}</h1>
             <p className="text-muted-foreground text-sm mt-0.5 sm:mt-1">{t("guestPortal.subtitle")}</p>
           </div>
@@ -644,44 +644,45 @@ const GuestPortal = () => {
           </CollapsibleContent>
         </Collapsible>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="min-w-0 max-w-full space-y-4">
+          <div className="camp-pass-meta px-1">{t("guestPortal.stayBoard", "Stay board")}</div>
           {/* Phone: one row that scrolls sideways — wrapping rows overflow the
               fixed-height list and overlap whatever sits below it. */}
-          <TabsList className="flex h-auto w-full max-w-full flex-nowrap justify-start gap-1 overflow-x-auto">
-            <TabsTrigger value="bookings">{t("guestPortal.myBookings")}</TabsTrigger>
-            <TabsTrigger value="listings">{t("guestPortal.listings")}</TabsTrigger>
-            <TabsTrigger value="messages" className="flex items-center gap-1.5">
+          <TabsList className="guest-tab-rail flex h-auto w-full max-w-full flex-nowrap justify-start gap-1 overflow-x-auto overscroll-x-contain scroll-smooth snap-x">
+            <TabsTrigger value="bookings" className="shrink-0 snap-start">{t("guestPortal.myBookings")}</TabsTrigger>
+            <TabsTrigger value="listings" className="shrink-0 snap-start">{t("guestPortal.listings")}</TabsTrigger>
+            <TabsTrigger value="messages" className="flex shrink-0 snap-start items-center gap-1.5">
               {t("messages.title")}
               {inboxThreads.some((t) => t.unread_count > 0) && (
                 <Circle className="h-2 w-2 fill-primary text-primary" />
               )}
             </TabsTrigger>
             {(activeBookings.length > 0 || confirmedBookings.length > 0) && (
-              <TabsTrigger value="stay-support" className="flex items-center gap-1.5">
+              <TabsTrigger value="stay-support" className="flex shrink-0 snap-start items-center gap-1.5">
                 <Wrench className="h-3.5 w-3.5" />
                 {t("staySupport.tabLabel")}
               </TabsTrigger>
             )}
             {confirmedBookings.length > 0 && (
-              <TabsTrigger value="pre-arrival" className="flex items-center gap-1.5">
+              <TabsTrigger value="pre-arrival" className="flex shrink-0 snap-start items-center gap-1.5">
                 <ClipboardCheck className="h-3.5 w-3.5" />
                 {t("preArrival.title", "Pre-Arrival")}
               </TabsTrigger>
             )}
-            <TabsTrigger value="calendar">{t("nav.calendar")}</TabsTrigger>
+            <TabsTrigger value="calendar" className="shrink-0 snap-start">{t("nav.calendar")}</TabsTrigger>
             {hasTrainingAssociation && (
-              <TabsTrigger value="camp-info">{t("guestPortal.campInfo")}</TabsTrigger>
+              <TabsTrigger value="camp-info" className="shrink-0 snap-start">{t("guestPortal.campInfo")}</TabsTrigger>
             )}
-            <TabsTrigger value="island-guide" className="flex items-center gap-1.5">
+            <TabsTrigger value="island-guide" className="flex shrink-0 snap-start items-center gap-1.5">
               <MapPin className="h-3.5 w-3.5" />
               Island Guide
             </TabsTrigger>
-            <TabsTrigger value="while-you-wait" className="flex items-center gap-1.5">
+            <TabsTrigger value="while-you-wait" className="flex shrink-0 snap-start items-center gap-1.5">
               <Waves className="h-3.5 w-3.5" />
               {t("whileYouWait.tab", "While You Wait")}
             </TabsTrigger>
-            <TabsTrigger value="policies">{t("guestPortal.policies")}</TabsTrigger>
-            <TabsTrigger value="profile">{t("guestPortal.profile")}</TabsTrigger>
+            <TabsTrigger value="policies" className="shrink-0 snap-start">{t("guestPortal.policies")}</TabsTrigger>
+            <TabsTrigger value="profile" className="shrink-0 snap-start">{t("guestPortal.profile")}</TabsTrigger>
           </TabsList>
 
           {/* ── Bookings Tab ── */}

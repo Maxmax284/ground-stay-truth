@@ -388,7 +388,7 @@ function AIAssistantPanelInner() {
   };
 
   // Bubble style
-  const bubbleStyle: React.CSSProperties = bubblePos
+  const bubbleStyle: React.CSSProperties = bubblePos && !isMobile
     ? { position: "fixed", left: bubblePos.x, top: bubblePos.y, bottom: "auto", right: "auto" }
     : {};
 
@@ -404,14 +404,14 @@ function AIAssistantPanelInner() {
           ...bubbleStyle,
           transition: bubbleDragging ? "none" : "left 0.3s ease-out, top 0.3s ease-out",
         }}
-        className={`${!bubblePos ? "fixed right-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:right-6 md:bottom-24" : ""} z-50 select-none touch-none`}
+        className={`${!bubblePos || isMobile ? "fixed left-3 bottom-[calc(1rem+env(safe-area-inset-bottom))] md:left-auto md:right-6 md:bottom-24" : ""} z-50 select-none touch-none`}
         onPointerDown={(e) => { setBubbleDragging(true); handleBubblePointerDown(e); }}
         onPointerMove={handleBubblePointerMove}
         onPointerUp={() => { setBubbleDragging(false); handleBubblePointerUp(); }}
       >
         {isGuest ? (
           <div
-            className={`flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl p-2.5 sm:px-4 sm:py-3 ${bubbleDragging ? "scale-105 cursor-grabbing" : "cursor-grab hover:scale-105"} transition-transform`}
+            className={`flex h-11 w-11 items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl p-2.5 sm:h-auto sm:w-auto sm:px-4 sm:py-3 ${bubbleDragging ? "scale-105 cursor-grabbing" : "cursor-grab hover:scale-105"} transition-transform`}
             aria-label={t("ai.openAssistant")}
           >
             <Sparkles className="h-5 w-5 pointer-events-none shrink-0" />

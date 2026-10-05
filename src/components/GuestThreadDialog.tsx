@@ -95,7 +95,7 @@ export function GuestThreadDialog({
   const showPickupTab = Boolean(pickup) && !isGuest;
 
   const transcript = (
-    <div className="max-h-[45vh] overflow-y-auto px-4 py-3 space-y-3">
+    <div className="max-h-[45dvh] min-w-0 overflow-x-hidden overflow-y-auto px-3 py-3 sm:px-4 space-y-3">
       {isLoading ? (
         <div className="space-y-2">
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-md" />)}
@@ -113,9 +113,9 @@ export function GuestThreadDialog({
               t("messages.campTeam")
             : guestName || t("messages.guestLabel");
           return (
-            <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+            <div key={m.id} className={`flex min-w-0 ${mine ? "justify-end" : "justify-start"}`}>
               <div
-                className={`max-w-[85%] rounded-lg px-3 py-2 space-y-1 ${
+                className={`min-w-0 max-w-[88%] overflow-hidden rounded-lg px-3 py-2 space-y-1 ${
                   m.is_internal
                     ? "bg-muted text-foreground border border-dashed"
                     : mine
@@ -131,7 +131,7 @@ export function GuestThreadDialog({
                   </p>
                 )}
                 {mine ? (
-                  <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
+                  <p className="text-sm whitespace-pre-wrap break-anywhere">{m.content}</p>
                 ) : (
                   <TranslatableText
                     messageId={m.id}
@@ -140,7 +140,7 @@ export function GuestThreadDialog({
                     onTinted={!m.is_internal}
                   />
                 )}
-                <div className="flex items-center gap-2 text-[10px] opacity-80">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] opacity-80">
                   {m.is_internal && (
                     <span className="inline-flex items-center gap-1">
                       <Lock className="h-2.5 w-2.5" />
@@ -167,7 +167,7 @@ export function GuestThreadDialog({
   );
 
   const composer = (
-    <div className="border-t px-4 py-3 space-y-2">
+    <div className="border-t px-3 py-3 sm:px-4 space-y-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       {canReply ? (
         <>
           <Textarea
@@ -183,7 +183,7 @@ export function GuestThreadDialog({
               }
             }}
           />
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col items-stretch gap-2 min-[390px]:flex-row min-[390px]:items-center min-[390px]:justify-between">
             {isGuest ? <span /> : (
               <div className="flex items-center gap-2">
                 <Switch id="thread-internal" checked={isInternal} onCheckedChange={setIsInternal} />
@@ -192,7 +192,7 @@ export function GuestThreadDialog({
                 </Label>
               </div>
             )}
-            <Button size="sm" onClick={handleSend} disabled={!content.trim() || createMessage.isPending}>
+            <Button size="sm" className="w-full min-[390px]:w-auto" onClick={handleSend} disabled={!content.trim() || createMessage.isPending}>
               {createMessage.isPending
                 ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
                 : <Send className="h-3.5 w-3.5 mr-1" />}
@@ -213,9 +213,9 @@ export function GuestThreadDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg p-0 gap-0">
+      <DialogContent className="flex max-h-[min(92dvh,760px)] w-[calc(100vw-1rem)] max-w-lg min-w-0 flex-col overflow-hidden p-0 gap-0 sm:w-full">
         <DialogHeader className="px-4 py-3 border-b space-y-1">
-          <DialogTitle className="flex items-center gap-2 text-base">
+          <DialogTitle className="flex min-w-0 items-center gap-2 pr-6 text-base">
             <MessagesSquare className="h-4 w-4 text-primary" />
             {headline || t("messages.title")}
           </DialogTitle>
@@ -238,12 +238,12 @@ export function GuestThreadDialog({
         {showPickupTab ? (
           /* One window, two clearly separated conversations — never two composers at once. */
           <Tabs defaultValue="guest" className="w-full">
-            <div className="px-4 pt-3">
-              <TabsList className="w-full">
-                <TabsTrigger value="guest" className="flex-1 text-xs">
+            <div className="min-w-0 overflow-x-auto px-3 pt-3 sm:px-4">
+              <TabsList className="inline-flex h-auto min-w-full w-max max-w-none justify-start">
+                <TabsTrigger value="guest" className="shrink-0 text-xs">
                   {t("messages.guestConversation", { defaultValue: "Guest conversation" })}
                 </TabsTrigger>
-                <TabsTrigger value="pickup" className="flex-1 text-xs">
+                <TabsTrigger value="pickup" className="shrink-0 text-xs">
                   {t("messages.driverPickupChat", { defaultValue: "Driver pickup" })}
                 </TabsTrigger>
               </TabsList>

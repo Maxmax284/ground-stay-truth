@@ -240,7 +240,7 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
 
   return (
     <>
-      <div className="space-y-2">
+      <div className="min-w-0 max-w-full space-y-2 overflow-hidden">
         {/* Phase label */}
         {journeyPhase && (
           <div className="flex items-center gap-1.5 px-1">
@@ -268,7 +268,7 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
 
         {/* Stacked carousel cards */}
         <div
-          className="overflow-hidden relative space-y-2"
+          className="relative min-w-0 max-w-full touch-pan-y overflow-hidden space-y-2 overscroll-x-contain"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           onMouseEnter={handlePause}
@@ -280,7 +280,7 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
               key={`${entry.id}-${i}`}
               onClick={() => handleCardTap(entry)}
               className={`
-                rounded-xl border px-3 py-3 cursor-pointer
+                guest-headsup-card min-w-0 max-w-full overflow-hidden rounded-lg border px-3 py-3 cursor-pointer
                 backdrop-blur-sm bg-card/80
                 ${getSeverityBorder(entry)}
                 ${CATEGORY_ACCENT[entry.category] || ""}
@@ -295,12 +295,12 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
                   {CATEGORY_ICONS[entry.category] ?? <Info className="h-4 w-4 text-muted-foreground" />}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm text-foreground leading-snug">{entry.title}</p>
-                  <p className="text-muted-foreground text-xs mt-0.5 line-clamp-2">{entry.body}</p>
-                  <div className="flex items-center gap-2 mt-1.5">
+                  <p className="font-medium text-sm text-foreground leading-snug break-anywhere pr-5">{entry.title}</p>
+                  <p className="text-muted-foreground text-xs mt-0.5 line-clamp-2 break-anywhere">{entry.body}</p>
+                  <div className="flex flex-wrap items-center gap-2 mt-1.5">
                     <button
                       onClick={(e) => { e.stopPropagation(); setDetailEntry(entry); }}
-                      className="text-xs text-primary hover:underline inline-flex items-center gap-0.5"
+                      className="min-w-0 text-left text-xs text-primary hover:underline inline-flex items-center gap-0.5 break-words"
                     >
                       Read more about this tip <ChevronRight className="h-3 w-3" />
                     </button>
@@ -316,7 +316,7 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
                   <img
                     src={entry.image_url}
                     alt={entry.image_caption || entry.title}
-                    className="h-14 w-14 rounded-lg object-cover shrink-0 shadow-sm"
+                    className="hidden h-14 w-14 rounded-lg object-cover shrink-0 shadow-sm min-[390px]:block"
                   />
                 )}
                 {i === 0 && (
@@ -359,7 +359,7 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
 
       {/* Detail Sheet */}
       <Sheet open={!!detailEntry} onOpenChange={(open) => !open && setDetailEntry(null)}>
-        <SheetContent side="bottom" className="h-[80vh] rounded-t-2xl px-0 pb-0">
+        <SheetContent side="bottom" className="h-[80dvh] max-w-full overflow-hidden rounded-t-lg px-0 pb-0">
           {detailEntry && (
             <div className="flex flex-col h-full">
               <SheetHeader className="px-5 pb-3 border-b">
@@ -373,14 +373,14 @@ export function GuestHeadsUpStrip({ locations, onLearnMore, journeyPhase }: Prop
                 </div>
                 <SheetTitle className="text-left text-lg leading-snug pr-6">{detailEntry.title}</SheetTitle>
               </SheetHeader>
-              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+              <div className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto px-4 py-4 sm:px-5 space-y-4">
                 {detailEntry.image_url && (
                   <div className="space-y-1">
                     <img src={detailEntry.image_url} alt={detailEntry.image_caption || detailEntry.title} className="w-full max-h-56 object-cover rounded-lg" />
                     {detailEntry.image_caption && <p className="text-xs text-muted-foreground italic">{detailEntry.image_caption}</p>}
                   </div>
                 )}
-                <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{detailEntry.body}</p>
+                <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap break-anywhere">{detailEntry.body}</p>
                 {detailEntry.location && detailEntry.location.filter((l) => l !== "global").length > 0 && (
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
