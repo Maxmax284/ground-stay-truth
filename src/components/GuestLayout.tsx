@@ -40,16 +40,16 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
   const isAndroid = /android/i.test(navigator.userAgent);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background overflow-x-clip">
       <div className="thai-stripe" />
-      <header className="h-14 flex items-center justify-between border-b border-border px-6 bg-card">
+      <header className="h-14 flex items-center justify-between gap-2 border-b border-border px-3 sm:px-6 bg-card min-w-0">
         <h1
-          className="text-lg font-bold text-foreground"
+          className="text-base sm:text-lg font-bold text-foreground truncate min-w-0 leading-tight"
           style={{ fontFamily: "'Playfair Display', serif" }}
         >
           {t("auth.groundStay")}
         </h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {!isStandalone && (isIOS || isAndroid) && (
             <Dialog>
               <DialogTrigger asChild>
@@ -94,7 +94,7 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
           )}
           <Link
             to="/simulation"
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            className="hidden sm:inline-flex text-muted-foreground hover:text-foreground transition-colors"
             title={t("nav.platformGuide", "Platform Guide")}
           >
             <Target className="h-4 w-4" />
@@ -109,14 +109,15 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
             variant="ghost"
             size="sm"
             onClick={signOut}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground px-2 sm:px-3"
+            aria-label={t("common.signOut")}
           >
-            <LogOut className="h-4 w-4 mr-1" />
-            {t("common.signOut")}
+            <LogOut className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">{t("common.signOut")}</span>
           </Button>
         </div>
       </header>
-      <main className="flex-1 p-6 max-w-5xl mx-auto w-full">
+      <main className="flex-1 px-3 py-4 sm:p-6 pb-28 sm:pb-6 max-w-5xl mx-auto w-full min-w-0">
         <div key={location.pathname} className="animate-page-entry">
           {children}
         </div>
