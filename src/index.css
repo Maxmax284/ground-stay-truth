@@ -525,6 +525,38 @@
   .board-flip, .board-flip-stagger > * { animation: none; }
 }
 
+/* Solari split-flap cells (SplitFlapText). */
+.flap-cell {
+  position: relative;
+  display: inline-block;
+  min-width: 0.62em;
+  text-align: center;
+  margin: 0 0.5px 2px;
+  padding: 0 1px;
+  border-radius: 2px;
+  background: hsl(var(--muted) / 0.55);
+  color: hsl(var(--muted-foreground));
+  transition: background-color 300ms ease, color 300ms ease;
+  overflow: hidden;
+}
+.flap-cell::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 1px;
+  background: hsl(var(--background) / 0.7);
+  pointer-events: none;
+}
+.flap-cell[data-settled] { background: hsl(var(--muted) / 0.3); color: hsl(var(--foreground)); }
+@keyframes flap-drop {
+  0% { transform: perspective(200px) rotateX(-80deg); opacity: 0.4; }
+  100% { transform: perspective(200px) rotateX(0deg); opacity: 1; }
+}
+.flap-char { display: inline-block; transform-origin: top center; animation: flap-drop 90ms ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .flap-char { animation: none; }
+}
+
 /* Guest-side board language: softer settle, no overshoot, mount/change only. */
 @keyframes board-flip-soft {
   0% { transform: perspective(600px) rotateX(-25deg); opacity: 0; }

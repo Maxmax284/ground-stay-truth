@@ -10,6 +10,7 @@ import {
 import { useCornerTalk, type Severity } from "@/hooks/useCornerTalk";
 import { useAuth } from "@/hooks/useAuth";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
+import { SplitFlapText } from "@/components/SplitFlapText";
 
 const STORAGE_KEY = "corner-talk-collapsed";
 const SOFT_DISMISSED_PREFIX = "corner-talk-soft-";
@@ -275,7 +276,7 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
               <p className="camp-pass-meta">
                 {t("cornerTalk.dailyBrief", "Today's street read")}
               </p>
-              <p key={data.brief.line} className="board-flip camp-pass-mono text-sm text-foreground mt-1">{data.brief.line}</p>
+              <p className="camp-pass-mono text-sm text-foreground mt-1.5 leading-relaxed"><SplitFlapText text={data.brief.line} /></p>
             </div>
           )}
           {effectiveAllClear ? (
