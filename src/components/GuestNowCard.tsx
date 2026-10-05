@@ -100,7 +100,7 @@ export function GuestNowCard({
               <span className="camp-led" aria-hidden="true" />
               {config.tag}
             </span>
-            <p className="font-display text-lg font-semibold leading-tight">{config.title}</p>
+            <p className="font-stat tracking-wide text-lg font-semibold leading-tight">{config.title}</p>
             <p className="text-xs opacity-70">{config.body}</p>
           </div>
         </div>

@@ -60,7 +60,7 @@ export function ArrivalCountdown({ checkIn, unitName, now = new Date() }: Arriva
             <CalendarClock className="h-3 w-3" aria-hidden="true" />
             {t("arrivalCountdown.label", "Days to camp")}
           </p>
-          <p className="font-display text-base font-semibold leading-tight">{headline}</p>
+          <p className="font-stat tracking-wide text-base font-semibold leading-tight">{headline}</p>
           <p className="text-xs opacity-70">{line}</p>
           {unitName && (
             <p className="camp-pass-mono mt-1 text-[11px] opacity-60">
