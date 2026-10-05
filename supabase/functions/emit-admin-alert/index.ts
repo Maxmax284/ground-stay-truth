@@ -266,6 +266,7 @@ Deno.serve(async (req) => {
         });
         ok = result.sent;
         if (!ok) {
+          if (!("error" in result) && result.reason === "sandbox") skipped = true;
           failure =
             "error" in result
               ? String(result.error).slice(0, 300)
@@ -275,11 +276,12 @@ Deno.serve(async (req) => {
         failure = e instanceof Error ? e.message : "dispatch error";
       }
 
-      ok ? emailSent++ : emailFailed++;
+      // Held back on purpose (test/sandbox booking) is not a delivery failure.
+      if (ok) emailSent++; else if (!skipped) emailFailed++;
       await admin.from("admin_alert_log").insert({
         event_id: eventId, event_type: event.key, category: event.category,
         severity: event.severity, channel: "email", recipient_user_id: uid,
-        recipient_email: profile.email, status: ok ? "sent" : "failed",
+        recipient_email: profile.email, status: ok ? "sent" : skipped ? "skipped" : "failed",
         failure_reason: failure, booking_id: bookingId, guest_id: guestId,
         triggered_by: body.triggered_by ?? "system", template_key: "admin_alert_generic",
       });
