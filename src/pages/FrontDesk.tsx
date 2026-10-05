@@ -157,7 +157,7 @@ export default function FrontDesk() {
             {isManagerPlus && <TabsTrigger value="overrides" className="shrink-0">{t("frontDesk.tabs.overrides")}</TabsTrigger>}
           </TabsList>
 
-          <TabsContent value="arriving" className="space-y-3 mt-4">
+          <TabsContent value="arriving" className="space-y-3 mt-4 desk-panel-in">
             <SectionList
               isLoading={isLoading}
               bookings={sections.arrivingToday}
@@ -169,7 +169,7 @@ export default function FrontDesk() {
               lastMessageByBooking={lastMessageByBooking}
             />
           </TabsContent>
-          <TabsContent value="staying" className="space-y-3 mt-4">
+          <TabsContent value="staying" className="space-y-3 mt-4 desk-panel-in">
             <SectionList
               isLoading={isLoading}
               bookings={sections.currentlyStaying}
@@ -180,7 +180,7 @@ export default function FrontDesk() {
               lastMessageByBooking={lastMessageByBooking}
             />
           </TabsContent>
-          <TabsContent value="departing" className="space-y-3 mt-4">
+          <TabsContent value="departing" className="space-y-3 mt-4 desk-panel-in">
             <SectionList
               isLoading={isLoading}
               bookings={sections.departingToday}
@@ -191,7 +191,7 @@ export default function FrontDesk() {
               lastMessageByBooking={lastMessageByBooking}
             />
           </TabsContent>
-          <TabsContent value="upcoming" className="space-y-3 mt-4">
+          <TabsContent value="upcoming" className="space-y-3 mt-4 desk-panel-in">
             <SectionList
               isLoading={isLoading}
               bookings={sections.upcoming}
@@ -203,17 +203,17 @@ export default function FrontDesk() {
             />
           </TabsContent>
 
-          <TabsContent value="chase" className="space-y-3 mt-4">
+          <TabsContent value="chase" className="space-y-3 mt-4 desk-panel-in">
             <ChaseList sections={sections} onOpen={setDetailId} />
           </TabsContent>
 
-          <TabsContent value="travelChecks" className="space-y-3 mt-4">
+          <TabsContent value="travelChecks" className="space-y-3 mt-4 desk-panel-in">
             <DriverChatPanel />
             <ArrivalExceptionsPanel onOpen={setDetailId} />
           </TabsContent>
 
           {isManagerPlus && (
-            <TabsContent value="overrides" className="space-y-3 mt-4">
+            <TabsContent value="overrides" className="space-y-3 mt-4 desk-panel-in">
               <OverridesPanel rows={overrides ?? []} />
             </TabsContent>
           )}
