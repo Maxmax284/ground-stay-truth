@@ -126,13 +126,13 @@ export function GuestNowCard({
         )}
 
         <div className="flex flex-wrap gap-2 pt-1">
-          <Button size="sm" className="h-9 text-xs" onClick={config.go}>
+          <Button size="sm" className="h-10 sm:h-9 text-xs flex-1 sm:flex-none min-w-[8rem]" onClick={config.go}>
             {config.cta}
           </Button>
           <Button
             size="sm"
             variant="outline"
-            className="h-9 text-xs gap-1.5 bg-transparent border-current/30 text-inherit hover:bg-background/10 hover:text-inherit"
+            className="h-10 sm:h-9 text-xs gap-1.5 flex-1 sm:flex-none min-w-[8rem] bg-transparent border-current/30 text-inherit hover:bg-background/10 hover:text-inherit"
             onClick={() => onGo("messages")}
           >
             <MessageSquare className="h-3 w-3" />
@@ -141,9 +141,9 @@ export function GuestNowCard({
         </div>
 
         {/* Channel clarity — say out loud where our signals land */}
-        <p className="flex items-start gap-1.5 text-[11px] opacity-60">
+        <p className="flex min-w-0 items-start gap-1.5 text-[11px] opacity-60">
           <Mail className="h-3 w-3 mt-0.5 shrink-0" />
-          <span>
+          <span className="min-w-0 break-words [overflow-wrap:anywhere]">
             {masked
               ? t("nowCard.channelEmail", { defaultValue: "Updates go to {{email}}", email: masked })
               : t("nowCard.channelEmailGeneric", "Updates go to your email")}
