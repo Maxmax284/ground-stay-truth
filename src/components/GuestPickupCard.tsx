@@ -121,7 +121,7 @@ export function GuestPickupCard({ bookingId, guestName }: Props) {
   const GuidanceIcon = SEVERITY_ICONS[travelInfo.severity];
 
   return (
-    <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+    <Card className="camp-pass">
       <CardContent className="p-3 space-y-2.5">
         {/* Header */}
         <div className="flex items-center justify-between">

@@ -129,7 +129,7 @@ export function IslandGuideCard({ arrivalMode = false }: IslandGuideCardProps) {
   );
 
   return (
-    <Card>
+    <Card className="camp-pass">
       <CardContent className="space-y-3 p-4">
         <button
           type="button"

@@ -52,8 +52,8 @@ export function FrictionRadarPanel() {
           value={cur?.emails_failed ?? 0} prev={prev?.emails_failed}
           hint={`${cur?.emails_sent ?? 0} sent · ${cur?.emails_bounced ?? 0} bounced. Bounced guests show a warning on their Status page.`} />
       </div>
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm">Last 6 weeks</CardTitle></CardHeader>
+      <Card className="camp-pass">
+        <CardHeader className="pb-2"><CardTitle className="camp-pass-meta">Last 6 weeks</CardTitle></CardHeader>
         <CardContent className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-xs text-muted-foreground">
@@ -87,9 +87,9 @@ function Metric({ icon, title, value, prev, hint }: { icon: React.ReactNode; tit
   const diff = prev === undefined ? 0 : value - prev;
   const Trend = diff > 0 ? TrendingUp : diff < 0 ? TrendingDown : Minus;
   return (
-    <Card className={diff > 0 ? "border-warning/40" : undefined}>
+    <Card className={`camp-pass ${diff > 0 ? "border-warning/40" : ""}`}>
       <CardHeader className="pb-1">
-        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">{icon} {title}</CardTitle>
+        <CardTitle className="camp-pass-meta flex items-center gap-2">{icon} {title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-1">
         <div className="flex items-baseline gap-2">

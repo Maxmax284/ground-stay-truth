@@ -199,7 +199,7 @@ const Index = () => {
 
               {/* Quick Actions — not for Viewer */}
               {!isViewer && (
-                <Card className="animate-fade-up animate-stagger-5">
+                <Card className="camp-pass animate-fade-up animate-stagger-5">
                   <CardHeader>
                     <CardTitle className="text-lg">{t("dashboard.quickActions")}</CardTitle>
                   </CardHeader>
@@ -367,7 +367,7 @@ function MaintenanceDashboard({ t }: { t: any }) {
 
 function ArrivalCard({ arrivals, t, onClickBooking }: { arrivals: any[]; t: any; onClickBooking: (id: string) => void }) {
   return (
-    <Card className="animate-fade-up animate-stagger-4">
+    <Card className="camp-pass animate-fade-up animate-stagger-4">
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <LogIn className="h-5 w-5 text-success" /> {t("dashboard.arrivingToday")}
@@ -394,7 +394,7 @@ function ArrivalCard({ arrivals, t, onClickBooking }: { arrivals: any[]; t: any;
 
 function DepartureCard({ departures, t, onClickBooking }: { departures: any[]; t: any; onClickBooking: (id: string) => void }) {
   return (
-    <Card className="animate-fade-up animate-stagger-4">
+    <Card className="camp-pass animate-fade-up animate-stagger-4">
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <LogOut className="h-5 w-5 text-warning" /> {t("dashboard.departingToday")}
@@ -421,7 +421,7 @@ function DepartureCard({ departures, t, onClickBooking }: { departures: any[]; t
 
 function RecentActivityCard({ recentActivity, t, onClickBooking }: { recentActivity: any; t: any; onClickBooking: (id: string) => void }) {
   return (
-    <Card className="animate-fade-up animate-stagger-5">
+    <Card className="camp-pass animate-fade-up animate-stagger-5">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg">{t("dashboard.recentActivity")}</CardTitle>
         <Link to="/bookings">

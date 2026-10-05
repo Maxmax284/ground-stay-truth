@@ -40,7 +40,7 @@ export function WelcomeSheetCard({ unitId }: { unitId?: string }) {
   );
 
   return (
-    <Card>
+    <Card className="camp-pass">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg"><BookOpen className="h-5 w-5 text-primary" />{t("welcomeSheet.title", { defaultValue: "Your stay — welcome sheet" })}</CardTitle>
         {sheet.welcome && <p className="text-sm text-muted-foreground whitespace-pre-line">{sheet.welcome}</p>}

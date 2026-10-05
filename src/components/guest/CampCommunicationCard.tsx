@@ -54,7 +54,7 @@ export function CampCommunicationCard({
 
   return (
     <>
-      <Card className="border-primary/25">
+      <Card className="camp-pass">
         <CardContent className="p-5 space-y-4">
           <div className="flex items-start gap-3">
             <div className="h-10 w-10 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center">

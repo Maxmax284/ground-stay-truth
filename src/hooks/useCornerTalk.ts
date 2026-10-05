@@ -40,26 +40,37 @@ export function useCornerTalk() {
   const { profile } = useProfile();
   const language = profile.data?.preferred_language || "en";
 
-  return useQuery<CornerTalkData>({
+  return useQuery<CornerTalkData | null>({
     queryKey: ["corner-talk", role, language],
     queryFn: async () => {
-      // Always get a fresh session to avoid expired JWT errors
-      const { data: { session: freshSession } } = await supabase.auth.getSession();
+      // Use a fresh token — a cached one can expire in flight and 401.
+      let { data: { session: freshSession } } = await supabase.auth.getSession();
       if (!freshSession) throw new Error("Not authenticated");
+      const expMs = (freshSession.expires_at ?? 0) * 1000;
+      if (expMs - Date.now() < 60_000) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        freshSession = refreshed.session ?? freshSession;
+      }
 
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/corner-talk`,
-        {
+      const call = (token: string) =>
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/corner-talk`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${freshSession.access_token}`,
+            Authorization: `Bearer ${token}`,
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({ language }),
-        }
-      );
+        });
 
+      let resp = await call(freshSession.access_token);
+      if (resp.status === 401) {
+        // Stale token — refresh once and retry before giving up.
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        if (refreshed.session) resp = await call(refreshed.session.access_token);
+      }
+
+      if (resp.status === 401) return null; // session gone — stay quiet, don't blank the screen
       if (!resp.ok) {
         throw new Error(`Corner Talk error: ${resp.status}`);
       }
