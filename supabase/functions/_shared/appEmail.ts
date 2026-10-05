@@ -88,7 +88,10 @@ export async function sendAppEmail(args: SendAppEmailArgs): Promise<SendAppEmail
     }
   }
 
-  // 2. Send through Lovable's managed email API.
+  // 2. Mirror into the guest's portal thread (before send, so bounces still land).
+  await mirrorToGuestThread(supabase, args, templateData)
+
+  // 3. Send through Lovable's managed email API.
   try {
     const result = await sendTemplateEmail(args.templateName, recipient, {
       templateData,
@@ -133,5 +136,49 @@ export async function sendAppEmail(args: SendAppEmailArgs): Promise<SendAppEmail
     })
     if (error) console.error('email_send_log write failed', error)
     return { sent: false, reason: 'send_failed', error: errorMsg }
+  }
+}
+
+// Guest-facing emails are mirrored into the booking's chat as a "Camp notice"
+// (sender_id NULL, source 'email') so the guest can read and reply in the
+// portal even if the email bounces. Read-only copy — never triggers actions.
+// NULL sender means the guest-message alert trigger ignores it.
+const GUEST_NOTICE_TEXT: Record<string, (d: Record<string, unknown>) => string> = {
+  booking_confirmed: (d) => `Your booking is confirmed${d.unit_name ? ` — ${d.unit_name}` : ''}, ${d.check_in} to ${d.check_out}. Your arrival steps are in this portal. Reply here with any questions.`,
+  deposit_reminder: () => `Reminder: your deposit is still due to hold your booking. Check Payments in this portal, or reply here if you need help.`,
+  payment_link_sent: () => `A payment link was sent to your email. You can also pay from Payments in this portal. Reply here with any questions.`,
+  pre_arrival_reminder: (d) => `You arrive on ${d.check_in}. Please finish your arrival checklist (flight, ID, arrival time) in this portal. Reply here if anything changes.`,
+  welcome_checkin: () => `Welcome to camp! Wi-Fi, house rules and emergency contacts are in your Stay Guide. Message us here any time.`,
+  checkout_followup: () => `Thanks for staying with us. Reply here if you left anything behind or need a receipt.`,
+  review_request: () => `We'd love to hear how your stay went — you can leave a review from this portal.`,
+}
+
+async function mirrorToGuestThread(
+  supabase: ReturnType<typeof serviceClient>,
+  args: SendAppEmailArgs,
+  templateData: Record<string, unknown>,
+) {
+  const build = GUEST_NOTICE_TEXT[args.templateName]
+  if (!build || !args.bookingId) return
+  try {
+    const { data: booking } = await supabase
+      .from('bookings').select('id, guest_id, property_id').eq('id', args.bookingId).maybeSingle()
+    if (!booking?.guest_id) return
+    const externalRef = `notice:${args.templateName}:${args.bookingId}`
+    const { data: existing } = await supabase
+      .from('messages').select('id').eq('external_ref', externalRef).limit(1)
+    if (existing && existing.length > 0) return
+    const { error } = await supabase.from('messages').insert({
+      booking_id: args.bookingId,
+      sender_id: null,
+      content: build(templateData),
+      is_internal: false,
+      source: 'email',
+      external_ref: externalRef,
+      property_id: booking.property_id ?? null,
+    })
+    if (error) console.error('guest thread mirror failed', error)
+  } catch (e) {
+    console.error('guest thread mirror error', e)
   }
 }
