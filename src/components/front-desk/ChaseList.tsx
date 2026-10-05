@@ -97,7 +97,7 @@ function useChaseSignals(bookings: FrontDeskBooking[]) {
 
       const bouncedEmails = new Set<string>();
       for (const res of responses.slice(0, emailChunks.length)) {
-        for (const row of res.data ?? []) {
+        for (const row of (res.data ?? []) as Array<Record<string, any>>) {
           if (row.recipient_email) bouncedEmails.add(String(row.recipient_email).toLowerCase());
         }
       }
@@ -109,7 +109,7 @@ function useChaseSignals(bookings: FrontDeskBooking[]) {
       // latest. If it's from the guest, staff still owe a reply.
       const seen = new Set<string>();
       for (const res of responses.slice(emailChunks.length)) {
-        for (const row of res.data ?? []) {
+        for (const row of (res.data ?? []) as Array<Record<string, any>>) {
           if (!row.booking_id || seen.has(row.booking_id) || !result[row.booking_id]) continue;
           seen.add(row.booking_id);
           if (row.sender_id && row.sender_id === guestByBooking.get(row.booking_id)) {
