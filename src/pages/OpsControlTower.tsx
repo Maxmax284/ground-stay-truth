@@ -398,7 +398,7 @@ export default function OpsControlTower() {
   return (
     <DashboardLayout>
       <div className="space-y-6 p-4 sm:p-6" data-ai-focus="ops">
-        <div>
+        <div className="station-header">
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Activity className="h-6 w-6 text-primary" />
             Ops Control Tower
@@ -412,7 +412,7 @@ export default function OpsControlTower() {
         <NarrativeSummaryCard />
 
         <Tabs defaultValue={radarTab ? "radar" : "health"}>
-          <TabsList className="flex-wrap h-auto">
+          <TabsList className="scrollbar-none flex h-auto w-full max-w-full flex-nowrap justify-start overflow-x-auto whitespace-nowrap sm:flex-wrap">
             <TabsTrigger value="health">Systems Health</TabsTrigger>
             <TabsTrigger value="matrix">Matrix</TabsTrigger>
             <TabsTrigger value="transit">Transit Monitor</TabsTrigger>

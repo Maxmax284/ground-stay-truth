@@ -40,7 +40,7 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
   const isAndroid = /android/i.test(navigator.userAgent);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background overflow-x-clip">
+    <div className="guest-shell min-h-screen flex flex-col bg-background overflow-x-clip">
       <div className="thai-stripe" />
       <header className="h-14 flex items-center justify-between gap-2 border-b border-border px-3 sm:px-6 bg-card min-w-0">
         <h1
@@ -117,8 +117,8 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
           </Button>
         </div>
       </header>
-      <main className="flex-1 px-3 py-4 sm:p-6 pb-28 sm:pb-6 max-w-5xl mx-auto w-full min-w-0">
-        <div key={location.pathname} className="animate-page-entry">
+      <main className="flex-1 px-3 py-4 sm:p-6 pb-28 sm:pb-6 max-w-5xl mx-auto w-full min-w-0 overflow-x-clip">
+        <div key={location.pathname} className="animate-page-entry min-w-0 max-w-full">
           {children}
         </div>
       </main>

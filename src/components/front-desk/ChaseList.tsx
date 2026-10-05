@@ -233,8 +233,13 @@ export function ChaseList({
         const missing = r ? KEYS.filter((k) => !r[k]).length : null;
         const last = lastActivity?.[b.id];
         const chips = chipsFor(b);
+        const primaryReason = chips[0] ? chipLabel[chips[0]] : bucketLabel[bucket];
         return (
-          <div key={b.id} className="camp-pass p-3">
+          <div key={b.id} className="camp-pass min-w-0 overflow-hidden p-3">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <span className="attention-stamp text-warning-foreground">{chips.length > 0 ? "Needs eyes" : "On board"}</span>
+              <span className="min-w-0 text-xs text-muted-foreground break-anywhere">Why here: {primaryReason}</span>
+            </div>
             <div className="flex items-start justify-between gap-2">
               <button className="min-w-0 text-left" onClick={() => onOpen(b.id)}>
                 <p className="font-medium truncate">{resolveGuestDisplayName(b)}</p>
@@ -263,13 +268,13 @@ export function ChaseList({
               </div>
             )}
             <BookingReadinessRow readiness={r} />
-            <div className="mt-2 flex items-center justify-between gap-2">
+            <div className="mt-2 flex flex-col items-stretch gap-2 min-[390px]:flex-row min-[390px]:items-center min-[390px]:justify-between">
               <span className="text-[11px] text-muted-foreground truncate">
                 {last
                   ? t("chaseList.lastSeen", "Portal: {{when}}", { when: formatDistanceToNow(new Date(last), { addSuffix: true }) })
                   : t("chaseList.neverSeen", "Portal: never opened")}
               </span>
-              <div className="flex gap-1 shrink-0">
+              <div className="flex gap-1 shrink-0 self-end">
                 <Button asChild variant="ghost" size="sm" className="h-7 px-2">
                   <Link to={`/messages?booking=${b.id}`}><MessageSquare className="h-3.5 w-3.5" /></Link>
                 </Button>

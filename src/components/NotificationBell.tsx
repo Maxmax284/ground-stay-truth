@@ -9,22 +9,7 @@ import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead 
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { formatDistanceToNow } from "date-fns";
 import type { SoundName } from "@/lib/groundSounds";
-
-const TYPE_ICONS: Record<string, string> = {
-  booking: "📋",
-  payment: "💳",
-  maintenance: "🔧",
-  laundry: "👕",
-  override: "⚠️",
-  stay_essentials: "🏠",
-  daily_digest: "📊",
-  security_freeze: "🚨",
-  security_unfreeze: "✅",
-  flight_landed: "✈️",
-  guest_landed: "🛬",
-  pickup_confirmed: "🚗",
-  message: "💬",
-};
+import { getNotificationPresentation } from "@/lib/notificationPresentation";
 
 /** Dispatch a custom event when tapping an actionable notification type. */
 function handleNotificationAction(type: string) {
@@ -145,7 +130,7 @@ export function NotificationBell() {
                     setOpen(false);
                   }}
                 >
-                  <span className="text-base shrink-0 mt-0.5">{TYPE_ICONS[n.type] ?? "📌"}</span>
+                  <span className="text-base shrink-0 mt-0.5">{getNotificationPresentation(n.type).icon}</span>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm leading-snug ${!n.read ? "font-medium text-foreground" : "text-muted-foreground"}`}>
                       {n.message}

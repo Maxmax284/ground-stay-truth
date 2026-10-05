@@ -15,23 +15,7 @@ import {
   useMarkAllNotificationsRead,
   type Notification,
 } from "@/hooks/useNotifications";
-
-const TYPE_ICONS: Record<string, string> = {
-  booking: "📋",
-  payment: "💳",
-  maintenance: "🔧",
-  laundry: "👕",
-  override: "⚠️",
-  stay_essentials: "🏠",
-  daily_digest: "📊",
-  security_freeze: "🚨",
-  security_unfreeze: "✅",
-  flight_landed: "✈️",
-  guest_landed: "🛬",
-  pickup_confirmed: "🚗",
-  message: "💬",
-  review: "⭐",
-};
+import { getNotificationPresentation, NOTIFICATION_AUDIENCE_LABELS, NOTIFICATION_LEVEL_LABELS } from "@/lib/notificationPresentation";
 
 type ReadFilter = "all" | "unread" | "read";
 
@@ -65,7 +49,7 @@ export default function NotificationCenter() {
   return (
     <DashboardLayout>
       <div className="max-w-5xl mx-auto space-y-4">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="station-header flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
             <Bell className="h-6 w-6 text-primary" />
             <div>
@@ -115,7 +99,7 @@ export default function NotificationCenter() {
                 <SelectItem value="all">{t("common.all", "All types")}</SelectItem>
                 {types.map((tp) => (
                   <SelectItem key={tp} value={tp}>
-                    {(TYPE_ICONS[tp] ?? "📌") + " " + tp}
+                    {getNotificationPresentation(tp).icon + " " + getNotificationPresentation(tp).label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -133,7 +117,7 @@ export default function NotificationCenter() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="board-panel">
           <CardContent className="p-0">
             <ScrollArea className="h-[60vh]">
               {isLoading ? (
@@ -151,12 +135,14 @@ export default function NotificationCenter() {
                       key={n.id}
                       className={`flex items-start gap-3 px-4 py-3 ${!n.read ? "bg-primary/5" : ""}`}
                     >
-                      <span className="text-lg shrink-0 mt-0.5">{TYPE_ICONS[n.type] ?? "📌"}</span>
+                      <span className="text-lg shrink-0 mt-0.5">{getNotificationPresentation(n.type).icon}</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <Badge variant="outline" className="text-xs">
-                            {n.type}
+                            {getNotificationPresentation(n.type).label}
                           </Badge>
+                          <span className="attention-stamp text-muted-foreground">{NOTIFICATION_AUDIENCE_LABELS[getNotificationPresentation(n.type).audience]}</span>
+                          <span className="text-[10px] uppercase text-muted-foreground">{NOTIFICATION_LEVEL_LABELS[getNotificationPresentation(n.type).level]}</span>
                           {!n.read && (
                             <span className="inline-block h-2 w-2 rounded-full bg-primary" />
                           )}

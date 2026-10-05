@@ -3,6 +3,7 @@ import { useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { showForegroundNotification } from "@/components/ForegroundNotificationBanner";
+import { getNotificationPresentation } from "@/lib/notificationPresentation";
 
 export interface Notification {
   id: string;
@@ -48,18 +49,9 @@ export function useNotifications() {
           // Show foreground banner for real-time DB notifications
           const n = payload.new as any;
           if (n && document.visibilityState === "visible") {
-            const typeLabels: Record<string, string> = {
-              booking: "📋 Booking",
-              payment: "💳 Payment",
-              maintenance: "🔧 Maintenance",
-              laundry: "👕 Laundry",
-              message: "💬 Message",
-              review: "⭐ Review",
-              flight: "✈️ Flight",
-              stay_essentials: "🏠 Stay Info",
-            };
+            const presentation = getNotificationPresentation(n.type);
             showForegroundNotification({
-              title: `LMT CampStay — ${typeLabels[n.type] || "Notification"}`,
+              title: `LMT CampStay — ${presentation.icon} ${presentation.label}`,
               body: n.message,
               type: n.type,
               referenceId: n.reference_id,

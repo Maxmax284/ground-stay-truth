@@ -37,9 +37,9 @@ export function FrontDeskFAB() {
   };
 
   return (
-    <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-3 sm:bottom-5 sm:right-5 z-40 flex flex-col items-end gap-2">
+    <div className="guest-frontdesk-dock fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-3 sm:bottom-5 sm:right-5 z-40 flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-2">
       {hasPreview && (
-        <div className="max-w-[min(280px,calc(100vw-1.5rem))] rounded-xl border border-border bg-card shadow-lg shadow-primary/10 p-3 pr-8 relative animate-fade-in">
+        <div className="max-w-[min(280px,calc(100vw-1.5rem))] overflow-hidden rounded-lg border border-border bg-card shadow-lg shadow-primary/10 p-3 pr-8 relative animate-fade-in">
           <button
             onClick={(e) => { e.stopPropagation(); setShowPreview(false); }}
             className="absolute top-1.5 right-1.5 text-muted-foreground hover:text-foreground p-1 rounded"
@@ -53,7 +53,7 @@ export function FrontDeskFAB() {
               {" · "}
               {formatDistanceToNow(new Date(last!.created_at), { addSuffix: true })}
             </div>
-            <p className="text-xs text-foreground line-clamp-2">{last!.content || t("messages.noContent", { defaultValue: "(no preview)" })}</p>
+            <p className="text-xs text-foreground line-clamp-2 break-anywhere">{last!.content || t("messages.noContent", { defaultValue: "(no preview)" })}</p>
           </button>
         </div>
       )}

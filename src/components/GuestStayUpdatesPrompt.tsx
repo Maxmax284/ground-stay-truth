@@ -41,7 +41,7 @@ export function GuestStayUpdatesPrompt({ className }: { className?: string }) {
   // Home Screen, so show the steps instead of a button that can't work.
   if (!loading && !dismissed && health === "needs-install") {
     return (
-      <div className={cn("relative rounded-xl border border-border/60 bg-card p-4 shadow-sm", className)}>
+      <div className={cn("guest-notice-card relative min-w-0 max-w-full overflow-hidden rounded-lg border border-border/60 bg-card p-4 shadow-sm", className)}>
         <button
           onClick={handleDismissInstall}
           className="absolute top-3 right-3 p-1 rounded-full hover:bg-muted/80 transition-colors"
@@ -59,13 +59,13 @@ export function GuestStayUpdatesPrompt({ className }: { className?: string }) {
               iPhone only sends alerts from apps on your Home Screen. It takes three taps:
             </p>
             <ol className="mt-2 space-y-1.5 text-xs text-foreground">
-              <li className="flex items-center gap-2">
+              <li className="flex min-w-0 items-start gap-2">
                 <span className="font-semibold">1.</span> Tap <Share className="h-3.5 w-3.5 inline" aria-label="Share" /> Share at the bottom of Safari
               </li>
-              <li className="flex items-center gap-2">
+              <li className="flex min-w-0 items-start gap-2">
                 <span className="font-semibold">2.</span> Choose <PlusSquare className="h-3.5 w-3.5 inline" aria-hidden /> Add to Home Screen
               </li>
-              <li className="flex items-center gap-2">
+              <li className="flex min-w-0 items-start gap-2">
                 <span className="font-semibold">3.</span> Open CampStay from the new icon and tap Enable Stay Updates
               </li>
             </ol>
@@ -85,7 +85,7 @@ export function GuestStayUpdatesPrompt({ className }: { className?: string }) {
   if (justEnabled) {
     return (
       <div className={cn(
-        "rounded-xl border border-primary/20 bg-primary/5 p-4 animate-fade-up",
+        "guest-notice-card min-w-0 max-w-full overflow-hidden rounded-lg border border-primary/20 bg-primary/5 p-4 animate-fade-up",
         className
       )}>
         <div className="flex items-center gap-3">
@@ -132,7 +132,7 @@ export function GuestStayUpdatesPrompt({ className }: { className?: string }) {
 
   return (
     <div className={cn(
-      "relative rounded-xl border border-border/60 bg-card p-4 shadow-sm animate-fade-up",
+      "guest-notice-card relative min-w-0 max-w-full overflow-hidden rounded-lg border border-border/60 bg-card p-4 shadow-sm animate-fade-up",
       className
     )}>
       {/* Dismiss button */}

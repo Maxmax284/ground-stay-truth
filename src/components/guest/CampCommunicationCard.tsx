@@ -54,8 +54,8 @@ export function CampCommunicationCard({
 
   return (
     <>
-      <Card className="camp-pass">
-        <CardContent className="p-5 space-y-4">
+      <Card className="camp-pass min-w-0 max-w-full overflow-hidden">
+        <CardContent className="p-4 sm:p-5 space-y-4">
           <div className="flex items-start gap-3">
             <div className="h-10 w-10 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center">
               <MessagesSquare className="h-5 w-5 text-primary" aria-hidden />
