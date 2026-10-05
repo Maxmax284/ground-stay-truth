@@ -93,7 +93,7 @@ function Metric({ icon, title, value, prev, hint }: { icon: React.ReactNode; tit
       </CardHeader>
       <CardContent className="space-y-1">
         <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold">{value}</span>
+          <span key={String(value)} className="board-flip inline-block text-2xl font-bold">{value}</span>
           <span className={`text-xs flex items-center gap-1 ${diff > 0 ? "text-warning-foreground" : "text-muted-foreground"}`}>
             <Trend className="h-3 w-3" /> {prev === undefined ? "this week" : `${diff > 0 ? "+" : ""}${diff} vs last week`}
           </span>
