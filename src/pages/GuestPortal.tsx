@@ -523,7 +523,7 @@ const GuestPortal = () => {
           phone's width — long emails, wide cards, tab rows included. */}
       <div className="space-y-6 w-full max-w-full overflow-x-hidden">
         {isPreview && <GuestPreviewControls />}
-        <fieldset disabled={isViewingAsGuest} className={isViewingAsGuest ? "space-y-6 [&_a]:pointer-events-none opacity-95 pointer-events-auto" : "space-y-6 m-0 p-0 border-0"}>
+        <fieldset disabled={isViewingAsGuest} className={isViewingAsGuest ? "space-y-6 min-w-0 max-w-full [&_a]:pointer-events-none opacity-95 pointer-events-auto" : "space-y-6 min-w-0 max-w-full m-0 p-0 border-0"}>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t("guestPortal.myStay")}</h1>
