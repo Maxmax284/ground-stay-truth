@@ -108,13 +108,13 @@ function BookingCard({ booking, onClick, onExtend, onRecordPayment, discountFlag
   const cardDeadline = getBookingDeadline(booking, cardPolicies as any);
   return (
     <div
-      className="rounded-lg border bg-card p-4 cursor-pointer active:bg-accent/50 transition-colors"
+      className="camp-pass rounded-lg border p-4 pt-5 cursor-pointer active:bg-accent/50 transition-colors"
       onClick={onClick}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="font-medium text-foreground truncate">{booking.units?.name ?? "—"}</p>
-          <p className="text-sm text-muted-foreground truncate">{resolveGuestDisplayName(booking as any)}</p>
+          <p className="camp-pass-meta truncate">{booking.units?.name ?? "—"}</p>
+          <p className="font-medium text-foreground truncate mt-0.5">{resolveGuestDisplayName(booking as any)}</p>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <BookingStatusBadge booking={booking} />
@@ -122,7 +122,7 @@ function BookingCard({ booking, onClick, onExtend, onRecordPayment, discountFlag
         </div>
       </div>
       <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-        <span>{format(new Date(booking.check_in), "MMM d")} – {format(new Date(booking.check_out), "MMM d")}</span>
+        <span className="camp-pass-mono">{format(new Date(booking.check_in), "MMM d")} – {format(new Date(booking.check_out), "MMM d")}</span>
         <span>·</span>
         <span>{t("bookings.guestCount", { count: booking.num_guests })}</span>
         <PriceStoryBadge booking={booking} policies={cardPolicies} flag={discountFlag} />

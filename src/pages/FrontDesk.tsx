@@ -395,18 +395,18 @@ function BookingRow({
 
   return (
     <Card
-      className="hover:shadow-md transition-shadow"
+      className="camp-pass hover:shadow-md transition-shadow"
       data-spotlight-kind="booking"
       data-spotlight-id={booking.id}
       data-spotlight-tags={spotlightTags}
     >
-      <CardContent className="p-4">
+      <CardContent className="p-4 pt-5">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           {/* Identity */}
           <div className="min-w-0 flex-1">
+            <p className="camp-pass-meta mb-1">{unitName} · {t("frontDesk.guestCount", { count: booking.num_guests })}</p>
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-semibold text-foreground text-base truncate">{guestName}</h3>
-              <Badge variant="outline" className="text-[10px]">{unitName}</Badge>
               <Badge className={`text-[10px] border ${TONE_CLASS[opStatus.tone]}`}>
                 {opStatus.label}
               </Badge>
@@ -420,7 +420,7 @@ function BookingRow({
               )}
             </div>
             <div className="text-xs text-muted-foreground mt-1 flex items-center gap-3 flex-wrap">
-              <span>
+              <span className="camp-pass-mono">
                 {t("frontDesk.dateRangeNights", {
                   from: format(parseISO(booking.check_in), "MMM d"),
                   to: format(parseISO(booking.check_out), "MMM d"),
@@ -430,14 +430,13 @@ function BookingRow({
               {nightsLeft !== null && (
                 <span className="text-foreground">{t("frontDesk.nightsRemaining", { count: nightsLeft })}</span>
               )}
-              <span>· {t("frontDesk.guestCount", { count: booking.num_guests })}</span>
             </div>
           </div>
 
           {/* Financials */}
           <div className="text-right shrink-0">
-            <div className="text-xs text-muted-foreground">{t("frontDesk.total")}</div>
-            <div className="font-semibold">{formatPrice(booking.total_price ?? 0)}</div>
+            <div className="camp-pass-meta">{t("frontDesk.total")}</div>
+            <div className="font-semibold camp-pass-mono">{formatPrice(booking.total_price ?? 0)}</div>
             {booking.outstanding > 0 ? (
               <div className="text-xs text-destructive font-medium mt-0.5">
                 {t("frontDesk.owed", { amount: formatPrice(booking.outstanding) })}
