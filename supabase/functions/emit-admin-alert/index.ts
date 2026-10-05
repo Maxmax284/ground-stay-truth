@@ -231,6 +231,7 @@ Deno.serve(async (req) => {
       const subject = `${SEVERITY_PREFIX[event.severity]} ${event.label}`;
       let ok = false;
       let failure: string | null = null;
+      let skipped = false;
       try {
         const result = await sendAppEmail({
           templateName: "admin_alert_generic",
