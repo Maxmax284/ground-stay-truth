@@ -50,5 +50,5 @@ export const NOTIFICATION_LEVEL_LABELS: Record<NotificationLevel, string> = {
 };
 
 export function getNotificationPresentation(type: string): NotificationPresentation {
-  return PRESENTATION[type] ?? { ...DEFAULT_PRESENTATION, label: type.replaceAll("_", " ") };
+  return PRESENTATION[type] ?? { ...DEFAULT_PRESENTATION, label: type.split("_").join(" ") };
 }
