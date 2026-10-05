@@ -162,6 +162,13 @@
       "when": 1791170782318,
       "tag": "0022_ops_instincts_readonly_rollups",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791171929957,
+      "tag": "0023_weekly_friction_radar",
+      "breakpoints": true
     }
   ]
 }

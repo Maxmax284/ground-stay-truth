@@ -12,6 +12,8 @@ import { OpsBookingTimelineSheet } from "@/components/ops/OpsBookingTimelineShee
 import { SystemsMatrixPanel } from "@/components/ops/SystemsMatrixPanel";
 import { VerificationPanel } from "@/components/ops/VerificationPanel";
 import { AgentActivityPanel } from "@/components/ops/AgentActivityPanel";
+import { FrictionRadarPanel } from "@/components/ops/FrictionRadarPanel";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useFrontDeskData } from "@/hooks/useFrontDesk";
 import {
@@ -387,6 +389,8 @@ function NarrativeSummaryCard() {
 }
 
 export default function OpsControlTower() {
+  const [searchParams] = useSearchParams();
+  const radarTab = searchParams.get("tab") === "radar";
   const { isAdmin } = useAuth();
   const [detailId, setDetailId] = useState<string | null>(null);
   const [timelineId, setTimelineId] = useState<string | null>(null);
@@ -407,7 +411,7 @@ export default function OpsControlTower() {
 
         <NarrativeSummaryCard />
 
-        <Tabs defaultValue="health">
+        <Tabs defaultValue={radarTab ? "radar" : "health"}>
           <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="health">Systems Health</TabsTrigger>
             <TabsTrigger value="matrix">Matrix</TabsTrigger>
@@ -416,6 +420,7 @@ export default function OpsControlTower() {
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="agents">Agent Activity</TabsTrigger>
             <TabsTrigger value="verify">Verification</TabsTrigger>
+            <TabsTrigger value="radar">Friction Radar</TabsTrigger>
           </TabsList>
 
           <TabsContent value="health" className="mt-4">
@@ -438,6 +443,9 @@ export default function OpsControlTower() {
           </TabsContent>
           <TabsContent value="verify" className="mt-4">
             <VerificationPanel />
+          </TabsContent>
+          <TabsContent value="radar" className="mt-4">
+            <FrictionRadarPanel />
           </TabsContent>
         </Tabs>
       </div>

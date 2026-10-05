@@ -5431,6 +5431,21 @@ export type Database = {
         }[]
       }
       get_friction_radar: { Args: { _days?: number }; Returns: Json }
+      get_friction_radar_weekly: {
+        Args: { _weeks?: number }
+        Returns: {
+          booking_missing: number
+          booking_missing_guests: number
+          emails_bounced: number
+          emails_failed: number
+          emails_sent: number
+          id_docs_rejected: number
+          id_upload_started: number
+          id_upload_success: number
+          portal_loaded: number
+          week_start: string
+        }[]
+      }
       get_guest_bookings: {
         Args: { _guest_key: string }
         Returns: {
