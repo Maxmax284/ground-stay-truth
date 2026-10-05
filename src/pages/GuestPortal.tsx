@@ -642,7 +642,9 @@ const GuestPortal = () => {
         </Collapsible>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="flex-wrap">
+          {/* Phone: one row that scrolls sideways — wrapping rows overflow the
+              fixed-height list and overlap whatever sits below it. */}
+          <TabsList className="flex h-auto w-full max-w-full flex-nowrap justify-start gap-1 overflow-x-auto">
             <TabsTrigger value="bookings">{t("guestPortal.myBookings")}</TabsTrigger>
             <TabsTrigger value="listings">{t("guestPortal.listings")}</TabsTrigger>
             <TabsTrigger value="messages" className="flex items-center gap-1.5">
