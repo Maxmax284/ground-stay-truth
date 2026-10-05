@@ -519,7 +519,9 @@ const GuestPortal = () => {
 
   return (
     <GuestLayout>
-      <div className="space-y-6">
+      {/* max-w-full + overflow guard: nothing in the portal may push past the
+          phone's width — long emails, wide cards, tab rows included. */}
+      <div className="space-y-6 w-full max-w-full overflow-x-hidden">
         {isPreview && <GuestPreviewControls />}
         <fieldset disabled={isViewingAsGuest} className={isViewingAsGuest ? "space-y-6 [&_a]:pointer-events-none opacity-95 pointer-events-auto" : "space-y-6 m-0 p-0 border-0"}>
         <div className="flex items-center justify-between">
@@ -642,7 +644,9 @@ const GuestPortal = () => {
         </Collapsible>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="flex-wrap">
+          {/* Phone: one row that scrolls sideways — wrapping rows overflow the
+              fixed-height list and overlap whatever sits below it. */}
+          <TabsList className="flex h-auto w-full max-w-full flex-nowrap justify-start gap-1 overflow-x-auto">
             <TabsTrigger value="bookings">{t("guestPortal.myBookings")}</TabsTrigger>
             <TabsTrigger value="listings">{t("guestPortal.listings")}</TabsTrigger>
             <TabsTrigger value="messages" className="flex items-center gap-1.5">
@@ -1370,8 +1374,8 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
             <div className="mt-2 space-y-2">
               {messages.length === 0 && <p className="text-xs text-muted-foreground">{t("messages.noMessages")}</p>}
               {messages.map((m) => (
-                <div key={m.id} className={`text-sm p-2 rounded-md ${m.sender_id === userId ? "bg-primary/10 text-foreground ml-6" : !m.sender_id ? "border border-primary/30 bg-card text-foreground mr-6" : "bg-muted text-foreground mr-6"}`}>
-                  <p className="whitespace-pre-line">{m.content}</p>
+                <div key={m.id} className={`text-sm p-2 rounded-md max-w-full ${m.sender_id === userId ? "bg-primary/10 text-foreground ml-6" : !m.sender_id ? "border border-primary/30 bg-card text-foreground mr-6" : "bg-muted text-foreground mr-6"}`}>
+                  <p className="whitespace-pre-line break-words">{m.content}</p>
                   <p className="text-[10px] text-muted-foreground mt-1">
                     {format(new Date(m.created_at), "MMM d, h:mm a")}
                     {m.sender_id === userId ? ` · ${t("common.you")}` : !m.sender_id ? ` · ${t("messages.campNotice", "Camp notice")}` : ` · ${t("common.staff")}`}
@@ -1464,8 +1468,8 @@ function GuestThreadView({ bookingId, booking, messages, userId, onBack }: {
         <div className="space-y-2">
           {messages.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">{t("messages.noMessages")}</p>}
           {messages.map((m) => (
-            <div key={m.id} className={`text-sm p-3 rounded-lg ${m.sender_id === userId ? "bg-primary/10 text-foreground ml-8" : !m.sender_id ? "border border-primary/30 bg-card text-foreground mr-8" : "bg-muted text-foreground mr-8"}`}>
-              <p className="whitespace-pre-line">{m.content}</p>
+            <div key={m.id} className={`text-sm p-3 rounded-lg max-w-full ${m.sender_id === userId ? "bg-primary/10 text-foreground ml-8" : !m.sender_id ? "border border-primary/30 bg-card text-foreground mr-8" : "bg-muted text-foreground mr-8"}`}>
+              <p className="whitespace-pre-line break-words">{m.content}</p>
               <p className="text-[10px] text-muted-foreground mt-1">
                 {format(new Date(m.created_at), "MMM d, h:mm a")}
                 {m.sender_id === userId ? ` · ${t("common.you")}` : !m.sender_id ? ` · ${t("messages.campNotice", "Camp notice")}` : ` · ${t("common.staff")}`}
