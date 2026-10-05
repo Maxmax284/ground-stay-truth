@@ -1374,8 +1374,8 @@ function GuestBookingCard({ booking, messages, userId, policies, guestReviews, g
             <div className="mt-2 space-y-2">
               {messages.length === 0 && <p className="text-xs text-muted-foreground">{t("messages.noMessages")}</p>}
               {messages.map((m) => (
-                <div key={m.id} className={`text-sm p-2 rounded-md ${m.sender_id === userId ? "bg-primary/10 text-foreground ml-6" : !m.sender_id ? "border border-primary/30 bg-card text-foreground mr-6" : "bg-muted text-foreground mr-6"}`}>
-                  <p className="whitespace-pre-line">{m.content}</p>
+                <div key={m.id} className={`text-sm p-2 rounded-md max-w-full ${m.sender_id === userId ? "bg-primary/10 text-foreground ml-6" : !m.sender_id ? "border border-primary/30 bg-card text-foreground mr-6" : "bg-muted text-foreground mr-6"}`}>
+                  <p className="whitespace-pre-line break-words">{m.content}</p>
                   <p className="text-[10px] text-muted-foreground mt-1">
                     {format(new Date(m.created_at), "MMM d, h:mm a")}
                     {m.sender_id === userId ? ` · ${t("common.you")}` : !m.sender_id ? ` · ${t("messages.campNotice", "Camp notice")}` : ` · ${t("common.staff")}`}
