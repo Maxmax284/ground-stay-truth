@@ -1,3 +1,4 @@
+import { fetchPaymentDiagnostics } from "@/lib/paymentDiagnostics";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -98,22 +99,8 @@ export function PaymentLinkManager({ bookingId }: PaymentLinkManagerProps) {
   const { data: readiness } = useQuery({
     queryKey: ["stripe-live-safety"],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return null;
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payment-diagnostics`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            "Content-Type": "application/json",
-          },
-          body: "{}",
-        },
-      );
-      if (!resp.ok) return null;
-      return resp.json() as Promise<{ live_safe: boolean; next_action: string; warnings: string[] }>;
+      return fetchPaymentDiagnostics<{ live_safe: boolean; next_action: string; warnings: string[] }>()
+        .catch(() => null);
     },
     staleTime: 30_000,
   });
