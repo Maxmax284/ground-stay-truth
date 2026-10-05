@@ -210,7 +210,8 @@ function RowCard({ row, onOpen }: { row: ArrivalsBoardRow; onOpen: (id: string) 
   );
 }
 
-export default function ArrivalsBoard() {
+export default function ArrivalsBoard({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? EmbedShell : DashboardLayout;
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { role } = useAuth();
@@ -257,7 +258,7 @@ export default function ArrivalsBoard() {
   const arrivingToday = incoming.filter((r) => isToday(parseISO(r.check_in))).length;
 
   return (
-    <DashboardLayout>
+    <Shell>
       <div className="space-y-5" data-ai-focus="arrivals-board">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
@@ -386,6 +387,10 @@ export default function ArrivalsBoard() {
         onOpenChange={(o) => !o && setOpenBooking(null)}
         isAdmin={role === "admin"}
       />
-    </DashboardLayout>
+    </Shell>
   );
+}
+
+function EmbedShell({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }

@@ -233,7 +233,7 @@ export default function AdminBookingFlow() {
               {t("adminBookingFlow.subtitle", "Create the guest account, booking, pickup, driver assignment and arrival state in one audited pass.")}
             </p>
           </div>
-          <Button variant="outline" onClick={() => navigate("/arrivals-board")}>{t("adminBookingFlow.openArrivals", "Open Arrivals Board")}</Button>
+          <Button variant="outline" onClick={() => navigate("/front-desk?view=arrivals")}>{t("adminBookingFlow.openArrivals", "Open Arrivals Board")}</Button>
         </div>
 
         <Alert className="border-primary/30 bg-primary/5">
@@ -483,7 +483,7 @@ export default function AdminBookingFlow() {
                   )}
                   {result && (
                     <div className="flex flex-wrap gap-2">
-                      <Button onClick={() => navigate("/arrivals-board")}>View on Arrivals Board</Button>
+                      <Button onClick={() => navigate("/front-desk?view=arrivals")}>View on Arrivals Board</Button>
                       <Button variant="outline" onClick={() => navigate("/bookings")}>Open bookings</Button>
                     </div>
                   )}

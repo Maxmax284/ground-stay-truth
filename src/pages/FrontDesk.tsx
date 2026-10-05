@@ -55,9 +55,13 @@ import { GuestThreadLauncher } from "@/components/GuestThreadLauncher";
 import { computeOperationalStatus, TONE_CLASS } from "@/lib/operationalStatus";
 import { isAcknowledged, isMoneyGapMuted, isPayOnArrival } from "@/lib/staffMarkers";
 import { formatDistanceToNow } from "date-fns";
+import { FrontDeskSwitcher, useFrontDeskView } from "@/components/front-desk/FrontDeskSwitcher";
+import CheckInDesk from "@/pages/CheckInDesk";
+import ArrivalsBoard from "@/pages/ArrivalsBoard";
 
 export default function FrontDesk() {
   const { t } = useTranslation();
+  const view = useFrontDeskView();
   const { role } = useAuth();
   const isAdmin = role === "admin";
   const isManagerPlus = role === "admin" || role === "manager";
@@ -74,9 +78,21 @@ export default function FrontDesk() {
     upcoming: sections.upcoming.length,
   };
 
+  if (view !== "desk") {
+    return (
+      <DashboardLayout>
+        <div className="space-y-5">
+          <FrontDeskSwitcher />
+          {view === "checkin" ? <CheckInDesk embedded /> : <ArrivalsBoard embedded />}
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-5" data-ai-focus="front-desk">
+        <FrontDeskSwitcher />
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
