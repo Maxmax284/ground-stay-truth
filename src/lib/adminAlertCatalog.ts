@@ -431,6 +431,12 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
     category: "summary", severity: "info", defaultEmail: false, defaultInApp: true, wired: true,
     where: "Dashboard", nextAction: "Skim the day's numbers.",
   },
+  {
+    key: "weekly_friction_radar", label: "Weekly Friction Radar",
+    description: "Monday digest: guests who could not see their booking, ID upload friction, undelivered emails.",
+    category: "summary", severity: "info", defaultEmail: true, defaultInApp: true, wired: true,
+    where: "Ops Control Tower → Friction Radar", nextAction: "Skim the trend; fix the biggest repeat problem.",
+  },
 ];
 
 export const EVENTS_BY_KEY: Record<string, AdminAlertEvent> = Object.fromEntries(
