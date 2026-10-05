@@ -98,6 +98,9 @@ export interface ModifyStayRequest {
   quote?: unknown;
   /** Stored booking total at the time of the change, for drift reporting. */
   onRecordTotal?: number;
+  /** "preserve" keeps the stored total and adds only the clean change delta. */
+  pricingMode?: "preserve" | "full_reprice";
+  changeDelta?: number;
 }
 
 export interface ModifyStayResponse {
@@ -149,6 +152,8 @@ export function useModifyStay() {
           force: req.force,
           quote: req.quote,
           on_record_total: req.onRecordTotal,
+          pricing_mode: req.pricingMode,
+          change_delta: req.changeDelta,
         }),
       });
       const json = (await resp.json().catch(() => ({}))) as ModifyStayResponse;

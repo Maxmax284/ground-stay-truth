@@ -144,6 +144,7 @@ export function ModifyStayDialog({
     setReasonCode(initialMode === "upgrade" ? "guest_request" : "guest_request");
     setRequestPayment(true);
     setPendingStart(null);
+    setFullReprice(false);
   }, [open, baseline, initialMode]);
 
 
