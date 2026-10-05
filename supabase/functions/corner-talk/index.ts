@@ -331,6 +331,32 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
     adminClient.from("policy_settings")
       .select("key, value")
       .in("key", ["wifi_network_name", "wifi_password", "emergency_contact_name", "emergency_contact_phone"]),
+
+    // 💬 Guest messages in last 24h (external, non-internal only)
+    adminClient.from("messages").select("id", { count: "exact", head: true })
+      .eq("is_internal", false)
+      .is("external_ref", null)
+      .gte("created_at", twentyFourHoursAgo),
+
+    // 📧 Email failures / bounces (7d)
+    adminClient.from("email_send_log").select("id", { count: "exact", head: true })
+      .in("status", ["failed", "bounced", "error"])
+      .gte("created_at", new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+
+    // 👁️ Guests hitting "no booking linked" (7d, distinct guests)
+    adminClient.from("guest_portal_activity")
+      .select("guest_id")
+      .eq("event_type", "guest_booking_missing")
+      .gte("created_at", new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+
+    // 🤖 AI drafts waiting for review
+    adminClient.from("ai_action_drafts").select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
+
+    // 🔔 Push delivery failures (7d)
+    adminClient.from("push_delivery_log").select("id", { count: "exact", head: true })
+      .neq("status", "delivered")
+      .gte("created_at", new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()),
   ]);
 
   const signals: Signal[] = [];
@@ -683,6 +709,65 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
         isUpcoming: true,
       });
     }
+  }
+
+  // ── 💬 GUEST COMMS + ⚙️ ENGINE ROOM ──
+
+  const guestMsgCount = guestMessagesRes.count ?? 0;
+  if (guestMsgCount > 0) {
+    signals.push({
+      severity: "attention",
+      category: "ops",
+      messageKey: "guest_messages_overnight",
+      params: { count: guestMsgCount },
+      roles: ["admin", "manager", "front_desk_supervisor", "front_desk"],
+    });
+  }
+
+  const emailFailCount = emailFailuresRes.count ?? 0;
+  if (emailFailCount > 0) {
+    signals.push({
+      severity: "attention",
+      category: "system",
+      messageKey: "email_send_failures",
+      params: { count: emailFailCount },
+      roles: ["admin"],
+    });
+  }
+
+  const bookingMissingGuests = new Set(
+    (bookingMissingRes.data ?? []).map((r: any) => r.guest_id).filter(Boolean)
+  ).size;
+  if (bookingMissingGuests > 0) {
+    signals.push({
+      severity: "attention",
+      category: "system",
+      messageKey: "booking_visibility_spike",
+      params: { count: bookingMissingGuests },
+      roles: ["admin"],
+    });
+  }
+
+  const aiDraftCount = aiDraftsRes.count ?? 0;
+  if (aiDraftCount > 0) {
+    signals.push({
+      severity: "attention",
+      category: "system",
+      messageKey: "ai_drafts_pending",
+      params: { count: aiDraftCount },
+      roles: ["admin", "manager"],
+    });
+  }
+
+  const pushFailCount = pushFailuresRes.count ?? 0;
+  if (pushFailCount > 0) {
+    signals.push({
+      severity: "attention",
+      category: "system",
+      messageKey: "push_delivery_failures",
+      params: { count: pushFailCount },
+      roles: ["admin"],
+    });
   }
 
   // ── UPCOMING ──
