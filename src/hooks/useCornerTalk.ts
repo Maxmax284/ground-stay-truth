@@ -40,7 +40,7 @@ export function useCornerTalk() {
   const { profile } = useProfile();
   const language = profile.data?.preferred_language || "en";
 
-  return useQuery<CornerTalkData>({
+  return useQuery<CornerTalkData | null>({
     queryKey: ["corner-talk", role, language],
     queryFn: async () => {
       // Use a fresh token — a cached one can expire in flight and 401.
