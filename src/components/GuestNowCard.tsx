@@ -82,7 +82,7 @@ export function GuestNowCard({
   const Icon = config.icon;
 
   return (
-    <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
+    <Card className="board-flip-soft border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start gap-3">
           <div className="rounded-md bg-primary/10 p-2 shrink-0">

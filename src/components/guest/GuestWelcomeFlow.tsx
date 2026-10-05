@@ -49,7 +49,9 @@ export function GuestWelcomeFlow({
   const showPickup = arrivalDay && pickupEnabled && !!bookingId;
 
   return (
-    <div className="space-y-4">
+    // Keyed on stage: the cards flip in order once when the stage changes,
+    // like a board settling on a new row. Reduced-motion users get none of it.
+    <div key={stage} className="board-flip-soft-stagger space-y-4">
       {/* 1. How long until they're here. Hidden once they're checked in. */}
       {COUNTDOWN_STAGES.includes(stage) && (
         <ArrivalCountdown checkIn={checkIn} unitName={unitName} />

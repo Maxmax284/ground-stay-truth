@@ -544,6 +544,7 @@ const GuestPortal = () => {
 
         {/* ── One "Now" card. One state, one obvious next move. ───────────── */}
         <GuestNowCard
+          key={nowState}
           state={nowState}
           unitName={nowBooking?.units?.name ?? null}
           checkIn={nowBooking?.check_in ?? null}
