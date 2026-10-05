@@ -30,6 +30,10 @@ import {
   PREF_EMAIL_MASTER,
   SEVERITY_LABELS,
   passesCriticalOnly,
+  alertAudience,
+  alertLevel,
+  AUDIENCE_LABELS,
+  LEVEL_LABELS,
   type AlertSeverity,
 } from "@/lib/adminAlertCatalog";
 
@@ -297,6 +301,9 @@ export default function NotificationSettings() {
                         {ev.label}
                         <Badge variant="outline" className={`text-[10px] border-0 ${SEVERITY_STYLE[ev.severity]}`}>
                           {SEVERITY_LABELS[ev.severity]}
+                        </Badge>
+                        <Badge variant="secondary" className="text-[10px]">
+                          {AUDIENCE_LABELS[alertAudience(ev)]} · {LEVEL_LABELS[alertLevel(ev)]}
                         </Badge>
                         {!ev.wired && (
                           <Badge variant="outline" className="text-[10px]">Not live yet</Badge>
