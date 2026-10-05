@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { differenceInCalendarDays, parseISO } from "date-fns";
 import { CalendarClock } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+
 
 /**
  * How long until check-in.
