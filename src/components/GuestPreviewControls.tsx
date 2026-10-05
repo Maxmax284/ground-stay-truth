@@ -106,7 +106,7 @@ export function GuestPreviewControls() {
         </div>
         {viewAs && (
           <Button variant="outline" size="sm" onClick={clear} className="h-9 shrink-0 px-2 sm:px-3" aria-label="Exit guest view">
-            <X className="h-3.5 w-3.5 sm:mr-1" /> <span className="hidden min-[400px]:inline">Exit</span><span className="hidden sm:inline">&nbsp;guest view</span>
+            <X className="h-3.5 w-3.5 sm:mr-1" /> <span className="hidden sm:inline">Exit guest view</span>
           </Button>
         )}
       </div>

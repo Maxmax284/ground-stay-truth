@@ -404,7 +404,7 @@ function AIAssistantPanelInner() {
           ...bubbleStyle,
           transition: bubbleDragging ? "none" : "left 0.3s ease-out, top 0.3s ease-out",
         }}
-        className={`${!bubblePos ? "fixed right-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:right-6 md:bottom-6" : ""} z-50 select-none touch-none`}
+        className={`${!bubblePos ? "fixed right-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:right-6 md:bottom-24" : ""} z-50 select-none touch-none`}
         onPointerDown={(e) => { setBubbleDragging(true); handleBubblePointerDown(e); }}
         onPointerMove={handleBubblePointerMove}
         onPointerUp={() => { setBubbleDragging(false); handleBubblePointerUp(); }}
