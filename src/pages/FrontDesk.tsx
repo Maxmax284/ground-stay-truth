@@ -420,7 +420,7 @@ function BookingRow({
               )}
             </div>
             <div className="text-xs text-muted-foreground mt-1 flex items-center gap-3 flex-wrap">
-              <span>
+              <span className="camp-pass-mono">
                 {t("frontDesk.dateRangeNights", {
                   from: format(parseISO(booking.check_in), "MMM d"),
                   to: format(parseISO(booking.check_out), "MMM d"),
@@ -430,7 +430,6 @@ function BookingRow({
               {nightsLeft !== null && (
                 <span className="text-foreground">{t("frontDesk.nightsRemaining", { count: nightsLeft })}</span>
               )}
-              <span>· {t("frontDesk.guestCount", { count: booking.num_guests })}</span>
             </div>
           </div>
 
