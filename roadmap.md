@@ -4,4 +4,7 @@
 - [x] Guest calm arrival board consistency
 - [x] Staff operating-board consistency
 - [x] Engine-room and notification taxonomy consistency
-- [ ] Authenticated responsive and workflow QA
+- [x] Authenticated guest-preview QA at 360, 375, 390, 414px and desktop
+- [x] Android Chrome, iPhone Safari, and iPhone home-screen viewport simulation
+- [x] Build/typecheck validation
+- [ ] Physical-device touch/PWA verification and staff workflow click-through (staff MFA required)
