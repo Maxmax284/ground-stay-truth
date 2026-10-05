@@ -437,3 +437,44 @@ export const PREF_CRITICAL_ONLY = "__critical_only__";
 export function passesCriticalOnly(event: AdminAlertEvent): boolean {
   return event.severity === "critical" || event.bypassCriticalOnly === true;
 }
+// ---------------------------------------------------------------- sorting
+// Who an alert is for, and how loudly it should knock. Derived from the
+// existing category + severity, so there is one alert spine, not two.
+// Guest-facing "Stay" alerts live in the guest portal, not this catalog.
+export type AlertAudience = "ops" | "owner" | "engine";
+export type AlertLevel = "urgent" | "important" | "digest" | "silent";
+
+export const AUDIENCE_LABELS: Record<AlertAudience, string> = {
+  ops: "Ops · front desk",
+  owner: "Owner",
+  engine: "Engine room",
+};
+
+export const LEVEL_LABELS: Record<AlertLevel, string> = {
+  urgent: "Urgent",
+  important: "Important",
+  digest: "Digest",
+  silent: "Silent log",
+};
+
+export function alertAudience(event: AdminAlertEvent): AlertAudience {
+  switch (event.category) {
+    case "system":
+    case "ai":
+    case "email_delivery":
+      return "engine";
+    case "payments":
+    case "summary":
+      return "owner";
+    default:
+      return "ops";
+  }
+}
+
+export function alertLevel(event: AdminAlertEvent): AlertLevel {
+  if (event.severity === "critical") return "urgent";
+  if (event.category === "summary") return "digest";
+  if (event.severity === "action" || event.severity === "warning") return "important";
+  if (!event.defaultEmail && !event.defaultInApp) return "silent";
+  return "digest";
+}
