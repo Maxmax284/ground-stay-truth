@@ -1,8 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { differenceInCalendarDays, format } from "date-fns";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { CreditCard, Plane, Home, CalendarDays, MessageSquare, Mail } from "lucide-react";
 
 export type NowState = "deposit" | "flight" | "onsite" | "quiet" | "none";
@@ -80,50 +78,70 @@ export function GuestNowCard({
   }[state];
 
   const Icon = config.icon;
+  const tone = state === "deposit" ? "camp-tone-action" : state === "flight" ? "camp-tone-travel" : "camp-tone-locked";
 
   return (
-    <Card className="board-flip-soft border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
-      <CardContent className="p-4 space-y-3">
+    <div className="camp-pass board-flip-soft">
+      <div className="p-4 pt-5 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="camp-pass-meta">{t("nowCard.station", "Lamai Muay Thai · Koh Samui")}</span>
+          {typeof nightsAway === "number" && nightsAway > 0 && (
+            <span className="camp-pass-meta">
+              {t("nowCard.daysAway", { defaultValue: "{{count}} days out", count: nightsAway })}
+            </span>
+          )}
+        </div>
         <div className="flex items-start gap-3">
-          <div className="rounded-md bg-primary/10 p-2 shrink-0">
-            <Icon className="h-5 w-5 text-primary" />
+          <div className={`rounded-md border border-current/30 p-2 shrink-0 ${tone}`}>
+            <Icon className="h-5 w-5" />
           </div>
-          <div className="min-w-0 flex-1 space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
-                {config.tag}
-              </Badge>
-              {typeof nightsAway === "number" && nightsAway > 0 && (
-                <span className="text-[11px] text-muted-foreground">
-                  {t("nowCard.daysAway", { defaultValue: "{{count}} days out", count: nightsAway })}
-                </span>
-              )}
-            </div>
-            <p className="text-base font-semibold text-foreground leading-tight">{config.title}</p>
-            <p className="text-xs text-muted-foreground">{config.body}</p>
-            {(unitName || checkIn) && (
-              <p className="text-[11px] text-muted-foreground font-medium">
-                {unitName}
-                {unitName && checkIn ? " · " : ""}
-                {checkIn ? format(new Date(checkIn), "d MMM") : ""}
-                {checkOut ? ` – ${format(new Date(checkOut), "d MMM")}` : ""}
-              </p>
-            )}
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <span className={`camp-stamp ${tone}`}>
+              <span className="camp-led" aria-hidden="true" />
+              {config.tag}
+            </span>
+            <p className="font-stat tracking-wide text-lg font-semibold leading-tight">{config.title}</p>
+            <p className="text-xs opacity-70">{config.body}</p>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" className="h-8 text-xs" onClick={config.go}>
+        {(unitName || checkIn) && (
+          <div className="camp-pass-perf -mx-4 px-4 pt-3 grid grid-cols-2 gap-3">
+            {unitName && (
+              <div className="min-w-0">
+                <p className="camp-pass-meta">{t("nowCard.room", "Room")}</p>
+                <p className="camp-pass-mono text-sm font-semibold truncate">{unitName}</p>
+              </div>
+            )}
+            {checkIn && (
+              <div className="min-w-0">
+                <p className="camp-pass-meta">{t("nowCard.dates", "Dates")}</p>
+                <p className="camp-pass-mono text-sm font-semibold">
+                  {format(new Date(checkIn), "dd MMM").toUpperCase()}
+                  {checkOut ? ` → ${format(new Date(checkOut), "dd MMM").toUpperCase()}` : ""}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-2 pt-1">
+          <Button size="sm" className="h-9 text-xs" onClick={config.go}>
             {config.cta}
           </Button>
-          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={() => onGo("messages")}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9 text-xs gap-1.5 bg-transparent border-current/30 text-inherit hover:bg-background/10 hover:text-inherit"
+            onClick={() => onGo("messages")}
+          >
             <MessageSquare className="h-3 w-3" />
             {t("nowCard.frontDesk", "Message front desk")}
           </Button>
         </div>
 
         {/* Channel clarity — say out loud where our signals land */}
-        <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+        <p className="flex items-start gap-1.5 text-[11px] opacity-60">
           <Mail className="h-3 w-3 mt-0.5 shrink-0" />
           <span>
             {masked
@@ -134,8 +152,8 @@ export function GuestNowCard({
               : ` · ${t("nowCard.channelHint", "Link WhatsApp or Telegram below and we'll buzz you there too.")}`}
           </span>
         </p>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
