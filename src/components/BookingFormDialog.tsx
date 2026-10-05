@@ -133,6 +133,16 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
     return calculatePricing(selectedUnit, checkIn, checkOut, allPricingRules ?? [], undefined, policies, undefined, Number(extraBeds) || 0, Number(numGuests) || 1);
   }, [selectedUnit, checkIn, checkOut, allPricingRules, validationErrors, policies, extraBeds, numGuests]);
 
+  // Long-stay discount must be a visible staff choice, never a silent one.
+  const [longStayChoice, setLongStayChoice] = useState<"apply" | "base">("apply");
+  const basePricing: PricingSummary | null = useMemo(() => {
+    if (!pricing.longStayDiscount || !selectedUnit) return null;
+    const noLongStay = { ...(policies ?? {}), long_stay_7_nights_discount_percentage: "0", long_stay_14_nights_discount_percentage: "0", long_stay_30_nights_discount_percentage: "0" } as any;
+    return calculatePricing(selectedUnit, checkIn, checkOut, allPricingRules ?? [], undefined, noLongStay, undefined, Number(extraBeds) || 0, Number(numGuests) || 1);
+  }, [pricing.longStayDiscount, selectedUnit, checkIn, checkOut, allPricingRules, policies, extraBeds, numGuests]);
+  const keepBase = !!basePricing && longStayChoice === "base";
+  const finalTotal = keepBase ? basePricing!.total : pricing.total;
+
 
   const todayBkk = useMemo(
     () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date()),
@@ -155,8 +165,14 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
     const composedNotes = isBackdated
       ? `[BACKDATED — ${backdateReason.trim()}]${data.notes ? `\n${data.notes}` : ""}`
       : (data.notes || null);
+    const longStayNote = pricing.longStayDiscount
+      ? (keepBase
+          ? `[PRICING — long-stay discount ${pricing.longStayDiscount.percentage}% declined by staff; base rate kept]`
+          : `[PRICING — long-stay discount ${pricing.longStayDiscount.percentage}% applied (−${pricing.longStayDiscount.amount})]`)
+      : null;
+    const finalNotes = longStayNote ? `${longStayNote}${composedNotes ? `\n${composedNotes}` : ""}` : composedNotes;
     try {
-      await createBooking.mutateAsync({ unit_id: data.unit_id, check_in: data.check_in, check_out: data.check_out, num_guests: Number(data.num_guests), notes: composedNotes, guest_id: data.guest_id || null, guest_type: data.guest_type || null, flight_number: data.flight_number?.trim() || null, manual_guest_name: data.manual_guest_name?.trim() || null, manual_guest_email: data.manual_guest_email?.trim() || null, manual_guest_phone: data.manual_guest_phone?.trim() || null, total_price: pricing.total > 0 ? pricing.total : null, state: "inquiry" } as any);
+      await createBooking.mutateAsync({ unit_id: data.unit_id, check_in: data.check_in, check_out: data.check_out, num_guests: Number(data.num_guests), notes: finalNotes, guest_id: data.guest_id || null, guest_type: data.guest_type || null, flight_number: data.flight_number?.trim() || null, manual_guest_name: data.manual_guest_name?.trim() || null, manual_guest_email: data.manual_guest_email?.trim() || null, manual_guest_phone: data.manual_guest_phone?.trim() || null, total_price: finalTotal > 0 ? finalTotal : null, state: "inquiry" } as any);
       toast({ title: t("bookingForm.bookingCreated"), description: t("bookingForm.bookingCreatedDesc") });
       reset(); setBackdateReason(""); onOpenChange(false);
     } catch (err: any) {
@@ -244,6 +260,19 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
               {pricing.cleaningFee > 0 && <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("bookingForm.cleaningFee")}</span><span className="font-medium">{formatPrice(pricing.cleaningFee, policies)}</span></div>}
               {pricing.extraBedTotal > 0 && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Extra Beds ({extraBeds} × {pricing.nights.length} {pricing.nights.length > 1 ? t("common.nights") : t("common.night")})</span><span className="font-medium">{formatPrice(pricing.extraBedTotal, policies)}</span></div>}
               {pricing.longStayDiscount && (
+                <div className="rounded-md border border-warning/60 bg-warning/10 p-2 space-y-2">
+                  <div className="flex items-start gap-2 text-xs text-warning-foreground">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span><strong>Long-stay discount detected</strong> — {pricing.nights.length} nights hits the {pricing.longStayDiscount.tierLabel} tier ({pricing.longStayDiscount.percentage}%). Room base {formatPrice(pricing.subtotal, policies)} → −{formatPrice(pricing.longStayDiscount.amount, policies)} = {formatPrice(pricing.subtotal - pricing.longStayDiscount.amount, policies)} after discount. Training/add-ons are not included here.</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button type="button" size="sm" variant={longStayChoice === "apply" ? "default" : "outline"} onClick={() => setLongStayChoice("apply")}>Apply discount</Button>
+                    <Button type="button" size="sm" variant={longStayChoice === "base" ? "default" : "outline"} onClick={() => setLongStayChoice("base")}>Keep base rate</Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">Your choice is written to the booking notes. Need a different number? Use Modify Stay after saving.</p>
+                </div>
+              )}
+              {pricing.longStayDiscount && !keepBase && (
                 <div className="flex justify-between text-sm text-[hsl(var(--success))]">
                   <span>{t("pricing.longStayDiscount", { tier: pricing.longStayDiscount.tierLabel, pct: pricing.longStayDiscount.percentage })}</span>
                   <span className="font-medium">-{formatPrice(pricing.longStayDiscount.amount, policies)}</span>
@@ -256,7 +285,7 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
                 </div>
               )}
               <Separator />
-              <div className="flex justify-between text-sm font-semibold"><span>{t("common.total")}</span><span>{formatPrice(pricing.total, policies)}</span></div>
+              <div className="flex justify-between text-sm font-semibold"><span>{t("common.total")}</span><span>{formatPrice(finalTotal, policies)}</span></div>
             </div>
           )}
           <div className="space-y-2">
