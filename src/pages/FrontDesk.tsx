@@ -58,6 +58,8 @@ import { formatDistanceToNow } from "date-fns";
 import { FrontDeskSwitcher, useFrontDeskView } from "@/components/front-desk/FrontDeskSwitcher";
 import CheckInDesk from "@/pages/CheckInDesk";
 import ArrivalsBoard from "@/pages/ArrivalsBoard";
+import { KeyRack } from "@/components/front-desk/KeyRack";
+import { CounterBell } from "@/components/front-desk/CounterBell";
 
 export default function FrontDesk() {
   const { t } = useTranslation();
@@ -106,6 +108,16 @@ export default function FrontDesk() {
             <RefreshCcw className="h-4 w-4 mr-2" /> {t("common.refresh")}
           </Button>
         </div>
+
+        <CounterBell waiting={sections.arrivedNotCheckedIn} onOpen={setDetailId} />
+
+        <KeyRack
+          staying={sections.currentlyStaying}
+          departing={sections.departingToday}
+          arriving={sections.arrivingToday}
+          tasks={todaysTasks}
+          onOpen={setDetailId}
+        />
 
         {/* Today's Briefing — deterministic by default, optional AI narration */}
         <TodaysBriefing
