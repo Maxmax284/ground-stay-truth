@@ -42,13 +42,13 @@ export function FrictionRadarPanel() {
         Patterns, not people. Weeks start Monday. Test bookings excluded. Nothing here changes a booking.
       </p>
       <div className="grid gap-3 md:grid-cols-3">
-        <Metric icon={<UserX className="h-4 w-4" />} title="Can't see their booking"
+        <Metric icon={<UserX className="h-4 w-4" />} title="Portal access gaps"
           value={cur?.booking_missing_guests ?? 0} prev={prev?.booking_missing_guests}
           hint={`${cur?.booking_missing ?? 0} portal loads with no booking linked — usually a second guest account. Merge in Guest Directory.`} />
-        <Metric icon={<IdCard className="h-4 w-4" />} title="ID upload friction"
+        <Metric icon={<IdCard className="h-4 w-4" />} title="Document upload friction"
           value={idFail(cur) + (cur?.id_docs_rejected ?? 0)} prev={prev ? idFail(prev) + prev.id_docs_rejected : undefined}
           hint={`${cur?.id_upload_started ?? 0} started · ${cur?.id_upload_success ?? 0} finished · ${cur?.id_docs_rejected ?? 0} rejected`} />
-        <Metric icon={<MailWarning className="h-4 w-4" />} title="Emails not delivered"
+        <Metric icon={<MailWarning className="h-4 w-4" />} title="Email delivery failures"
           value={cur?.emails_failed ?? 0} prev={prev?.emails_failed}
           hint={`${cur?.emails_sent ?? 0} sent · ${cur?.emails_bounced ?? 0} bounced. Bounced guests show a warning on their Status page.`} />
       </div>

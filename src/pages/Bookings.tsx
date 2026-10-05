@@ -121,7 +121,7 @@ function BookingCard({ booking, onClick, onExtend, onRecordPayment, discountFlag
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </div>
       </div>
-      <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <span className="camp-pass-mono">{format(new Date(booking.check_in), "MMM d")} – {format(new Date(booking.check_out), "MMM d")}</span>
         <span>·</span>
         <span>{t("bookings.guestCount", { count: booking.num_guests })}</span>
@@ -130,7 +130,7 @@ function BookingCard({ booking, onClick, onExtend, onRecordPayment, discountFlag
       <BookingReadinessRow readiness={readiness} />
       {/* Talking to the guest is a first-class action on the card itself —
           staff shouldn't have to know where the Messenger tab lives. */}
-      <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
+      <div className="mt-3 grid grid-cols-1 gap-2 min-[390px]:grid-cols-2" onClick={(e) => e.stopPropagation()}>
         <Button size="sm" variant="outline" className="h-7 flex-1 px-2 text-xs" asChild>
           <Link to={`/bookings/${booking.id}/status`}>
             <ClipboardList className="h-3 w-3 mr-1" /> {t("bookingStatus.title", "Status")}

@@ -249,7 +249,7 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
         onClick={() => setCollapsed((v) => !v)}
         className="flex items-center justify-between w-full px-4 py-3 text-left hover:bg-accent/30 rounded-t-[var(--radius)] transition-colors"
       >
-        <div className="flex items-center gap-2.5">
+        <div className="flex min-w-0 items-center gap-2.5">
           <Swords className="h-4 w-4 text-primary shrink-0" />
           <span className="font-stat text-sm font-semibold uppercase tracking-[0.16em] text-foreground">Corner Talk</span>
           {effectiveAllClear ? (
@@ -302,7 +302,8 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
                         className="flex items-start gap-2.5 flex-1 text-left hover:bg-accent/40 rounded-sm transition-colors py-0.5 px-1 -ml-1 min-w-0"
                       >
                         <SeverityDot severity={item.severity} />
-                        <span className={`text-sm leading-snug ${severityTextClass(item.severity)}`}>{item.text}</span>
+                        <span className="attention-stamp shrink-0">{item.severity === "urgent" ? "Needs eyes" : "Watch"}</span>
+                        <span className={`min-w-0 text-sm leading-snug break-anywhere ${severityTextClass(item.severity)}`}>{item.text}</span>
                       </button>
                       <button
                         onClick={() => softDismiss(item.messageKey)}

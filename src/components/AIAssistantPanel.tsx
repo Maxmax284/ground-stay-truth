@@ -404,7 +404,7 @@ function AIAssistantPanelInner() {
           ...bubbleStyle,
           transition: bubbleDragging ? "none" : "left 0.3s ease-out, top 0.3s ease-out",
         }}
-        className={`${!bubblePos || isMobile ? "fixed left-3 bottom-[calc(1rem+env(safe-area-inset-bottom))] md:left-auto md:right-6 md:bottom-24" : ""} z-50 select-none touch-none`}
+        className={`guest-ai-dock ${!bubblePos || isMobile ? "fixed left-3 bottom-[calc(1rem+env(safe-area-inset-bottom))] md:left-auto md:right-6 md:bottom-24" : ""} z-50 select-none touch-none`}
         onPointerDown={(e) => { setBubbleDragging(true); handleBubblePointerDown(e); }}
         onPointerMove={handleBubblePointerMove}
         onPointerUp={() => { setBubbleDragging(false); handleBubblePointerUp(); }}
@@ -991,7 +991,7 @@ function AIAssistantPanelInner() {
               id="ai-quick-prompts"
               className={`px-3 pb-2.5 ${
                 isCompact
-                  ? "flex gap-1.5 overflow-x-auto scrollbar-thin snap-x"
+                  ? "flex gap-1.5 overflow-x-auto scrollbar-none snap-x"
                   : "flex flex-wrap gap-1.5 max-h-[7.5rem] overflow-y-auto scrollbar-thin"
               } ${expanded ? "mx-auto w-full max-w-3xl md:px-8" : ""}`}
             >

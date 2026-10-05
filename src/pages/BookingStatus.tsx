@@ -161,12 +161,13 @@ export default function BookingStatus() {
     <DashboardLayout>
       <div className="mx-auto max-w-2xl space-y-4 p-4 pb-24">
         {/* Header */}
-        <div className="flex items-start gap-3">
+        <div className="station-header flex min-w-0 items-start gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label={t("common.back", "Back")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-lg font-semibold text-foreground">{guestName}</h1>
+            <div className="board-kicker">Booking status dossier</div>
+            <h1 className="truncate text-xl font-semibold text-foreground">{guestName}</h1>
             <p className="truncate text-sm text-muted-foreground">
               {booking.units?.name ?? "—"} · {format(new Date(booking.check_in), "MMM d")} – {format(new Date(booking.check_out), "MMM d")}
             </p>
@@ -177,7 +178,7 @@ export default function BookingStatus() {
         <EmailReachabilityNotice email={guestEmail} />
 
         {/* 1. Readiness summary */}
-        <Card>
+        <Card className="board-panel">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">{t("bookingStatus.readiness", "Guest readiness")}</CardTitle>
           </CardHeader>
@@ -203,7 +204,7 @@ export default function BookingStatus() {
 
         {/* 2. Chase actions — only for what's actually missing */}
         {missing.length > 0 && (
-          <Card>
+          <Card className="board-panel">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">{t("bookingStatus.chase", "Chase")}</CardTitle>
             </CardHeader>
@@ -237,7 +238,7 @@ export default function BookingStatus() {
         )}
 
         {/* 3. Travel details */}
-        <Card>
+        <Card className="board-panel">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               {t("bookingStatus.travel", "Travel details")}
@@ -292,7 +293,7 @@ export default function BookingStatus() {
         </Card>
 
         {/* 4. ID & documents */}
-        <Card>
+        <Card className="board-panel">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">{t("bookingStatus.documents", "ID & documents")}</CardTitle>
           </CardHeader>
@@ -321,7 +322,7 @@ export default function BookingStatus() {
         </Card>
 
         {/* 5. Pickup status */}
-        <Card>
+        <Card className="board-panel">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">{t("bookingStatus.pickup", "Pickup")}</CardTitle>
           </CardHeader>

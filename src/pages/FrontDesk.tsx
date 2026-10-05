@@ -93,7 +93,7 @@ export default function FrontDesk() {
     <DashboardLayout>
       <div className="space-y-5" data-ai-focus="front-desk">
         <FrontDeskSwitcher />
-        <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="station-header flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               <UserCheck className="h-6 w-6 text-primary" /> {t("frontDesk.title")}
@@ -147,14 +147,14 @@ export default function FrontDesk() {
 
         <Tabs defaultValue="arriving" className="w-full">
           {/* Phones: slide sideways instead of stacking rows and eating height. */}
-          <TabsList className="h-auto w-full justify-start overflow-x-auto whitespace-nowrap sm:flex-wrap">
-            <TabsTrigger value="arriving">{t("frontDesk.tabs.arriving", { count: totals.arriving })}</TabsTrigger>
-            <TabsTrigger value="upcoming">{t("frontDesk.tabs.upcoming", { count: totals.upcoming })}</TabsTrigger>
-            <TabsTrigger value="staying">{t("frontDesk.tabs.staying", { count: totals.staying })}</TabsTrigger>
-            <TabsTrigger value="departing">{t("frontDesk.tabs.departing", { count: totals.departing })}</TabsTrigger>
-            <TabsTrigger value="chase">{t("chaseList.tab", "Chase list")}</TabsTrigger>
-            <TabsTrigger value="travelChecks">{t("arrivalExceptions.tab", "Travel checks")}</TabsTrigger>
-            {isManagerPlus && <TabsTrigger value="overrides">{t("frontDesk.tabs.overrides")}</TabsTrigger>}
+          <TabsList className="scrollbar-none h-auto w-full max-w-full justify-start overflow-x-auto whitespace-nowrap sm:flex-wrap">
+            <TabsTrigger value="arriving" className="shrink-0">{t("frontDesk.tabs.arriving", { count: totals.arriving })}</TabsTrigger>
+            <TabsTrigger value="upcoming" className="shrink-0">{t("frontDesk.tabs.upcoming", { count: totals.upcoming })}</TabsTrigger>
+            <TabsTrigger value="staying" className="shrink-0">{t("frontDesk.tabs.staying", { count: totals.staying })}</TabsTrigger>
+            <TabsTrigger value="departing" className="shrink-0">{t("frontDesk.tabs.departing", { count: totals.departing })}</TabsTrigger>
+            <TabsTrigger value="chase" className="shrink-0">{t("chaseList.tab", "Chase list")}</TabsTrigger>
+            <TabsTrigger value="travelChecks" className="shrink-0">{t("arrivalExceptions.tab", "Travel checks")}</TabsTrigger>
+            {isManagerPlus && <TabsTrigger value="overrides" className="shrink-0">{t("frontDesk.tabs.overrides")}</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="arriving" className="space-y-3 mt-4">
