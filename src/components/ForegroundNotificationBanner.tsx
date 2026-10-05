@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { getNotificationPresentation } from "@/lib/notificationPresentation";
 
 export interface ForegroundNotification {
   id: string;
@@ -24,19 +25,6 @@ const TYPE_ROUTES: Record<string, string> = {
   review: "/dashboard",
   flight: "/dashboard",
   stay_essentials: "/guest",
-};
-
-const TYPE_ICONS: Record<string, string> = {
-  booking: "📋",
-  payment: "💳",
-  maintenance: "🔧",
-  laundry: "👕",
-  message: "💬",
-  review: "⭐",
-  flight: "✈️",
-  stay_essentials: "🏠",
-  test: "🔔",
-  welcome: "🔔",
 };
 
 const AUTO_DISMISS_MS = 5000;
@@ -108,7 +96,7 @@ export function ForegroundNotificationBanner() {
 
   if (!current || !visible) return null;
 
-  const emoji = TYPE_ICONS[current.type || current.tag || ""] || "📌";
+  const emoji = getNotificationPresentation(current.type || current.tag || "").icon;
 
   return (
     <div

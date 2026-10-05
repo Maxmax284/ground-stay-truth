@@ -549,7 +549,7 @@ function BookingRow({
 
 
         {/* Actions */}
-        <div className="flex gap-2 mt-3 flex-wrap">
+        <div className="grid grid-cols-1 gap-2 mt-3 min-[390px]:grid-cols-2 sm:flex sm:flex-wrap">
           {variant === "arriving" && (
             <>
               <Button size="sm" variant="default" onClick={() => onMarkArrived?.(booking)}>
