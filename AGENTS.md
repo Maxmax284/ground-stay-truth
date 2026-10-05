@@ -1,1 +1,2 @@
 - booking_adjustments history is immutable (DB trigger guard_booking_adjustment_history): only status/void fields change, no deletes — fix a wrong adjustment by voiding and re-applying, so the audit trail stays true.
+- Modify Stay defaults to "preserve" pricing: stored total + night-level clean delta (computeChangeDelta); full re-price only for unpaid inquiry/soft_hold/pending_* bookings, enforced server-side — so settled nights are never re-priced.
