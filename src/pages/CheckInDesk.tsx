@@ -53,7 +53,8 @@ import { GuestThreadLauncher } from "@/components/GuestThreadLauncher";
 
 type Mode = "in" | "out";
 
-export default function CheckInDesk() {
+export default function CheckInDesk({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? EmbedShell : DashboardLayout;
   const { t } = useTranslation();
   const { isAdmin } = useAuth();
   const { sections, isLoading, isError, refetch } = useCheckInDesk();
@@ -99,7 +100,7 @@ export default function CheckInDesk() {
   };
 
   return (
-    <DashboardLayout>
+    <Shell>
       <div className="space-y-5" data-ai-focus="check-in-desk">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
@@ -288,7 +289,7 @@ export default function CheckInDesk() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </Shell>
   );
 }
 
@@ -445,4 +446,8 @@ function DeskList({
       ))}
     </div>
   );
+}
+
+function EmbedShell({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }

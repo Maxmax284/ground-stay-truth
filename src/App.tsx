@@ -35,8 +35,7 @@ import Embeds from "./pages/Embeds";
 import Stay from "./pages/Stay";
 import Simulation from "./pages/Simulation";
 import FrontDesk from "./pages/FrontDesk";
-import CheckInDesk from "./pages/CheckInDesk";
-import ArrivalsBoard from "./pages/ArrivalsBoard";
+import { RedirectToFrontDesk } from "./components/front-desk/FrontDeskSwitcher";
 import AdminBookingFlow from "./pages/AdminBookingFlow";
 import LandingPage from "./pages/LandingPage";
 import DisasterRecovery from "./pages/DisasterRecovery";
@@ -109,13 +108,13 @@ const App = () => (
                 <Route path="/media-library" element={<ProtectedRoute requiredPath="/media-library"><MediaLibrary /></ProtectedRoute>} />
 <Route path="/bookings" element={<ProtectedRoute requiredPath="/bookings"><Bookings /></ProtectedRoute>} />
                 <Route path="/bookings/:id/status" element={<ProtectedRoute requiredPath="/bookings"><BookingStatus /></ProtectedRoute>} />
-                <Route path="/arrivals-board" element={<ProtectedRoute requiredPath="/arrivals-board"><ArrivalsBoard /></ProtectedRoute>} />
-                <Route path="/arrival-intelligence" element={<Navigate to="/arrivals-board" replace />} />
+                <Route path="/arrivals-board" element={<RedirectToFrontDesk view="arrivals" />} />
+                <Route path="/arrival-intelligence" element={<Navigate to="/front-desk?view=arrivals" replace />} />
                 <Route path="/admin-booking" element={<ProtectedRoute requiredPath="/admin-booking"><AdminBookingFlow /></ProtectedRoute>} />
                 <Route path="/guest-preview" element={<Navigate to="/guest?preview=true" replace />} />
                 <Route path="/front-desk" element={<ProtectedRoute requiredPath="/front-desk"><FrontDesk /></ProtectedRoute>} />
-                <Route path="/check-in-desk" element={<ProtectedRoute requiredPath="/check-in-desk"><CheckInDesk /></ProtectedRoute>} />
-                <Route path="/check-in" element={<Navigate to="/check-in-desk" replace />} />
+                <Route path="/check-in-desk" element={<RedirectToFrontDesk view="checkin" />} />
+                <Route path="/check-in" element={<Navigate to="/front-desk?view=checkin" replace />} />
                 <Route path="/calendar" element={<ProtectedRoute requiredPath="/calendar"><CalendarView /></ProtectedRoute>} />
                 <Route path="/pricing" element={<ProtectedRoute requiredPath="/pricing"><Pricing /></ProtectedRoute>} />
                 <Route path="/reports" element={<ProtectedRoute requiredPath="/reports"><Reports /></ProtectedRoute>} />

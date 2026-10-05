@@ -357,7 +357,7 @@ Deno.serve(async (req) => {
       guest_account_created: guest.createdAccount,
       pickup_id: pickup?.id ?? null,
       landing,
-      arrivals_board_url: "/arrivals-board",
+      arrivals_board_url: "/front-desk?view=arrivals",
     });
   } catch (error) {
     console.error("admin-booking-flow error", error);
