@@ -130,6 +130,7 @@ const MESSAGES: Record<string, string> = {
   booking_visibility_spike: "{count} guest(s) hit \"no booking linked\" in 7 days — likely duplicate guest accounts",
   ai_drafts_pending: "{count} AI draft(s) waiting for review",
   push_delivery_failures: "{count} push notification(s) failed in 7 days",
+  push_no_devices: "No phones signed up for push — alerts go by email only. Turn on Ops Alerts in Settings → Profile",
 };
 
 function renderMessage(key: string, params: Record<string, string | number>): string {
@@ -359,6 +360,8 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
       .neq("status", "delivered")
       .gte("created_at", new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()),
   ]);
+  const pushDevicesRes = await adminClient
+    .from("push_subscriptions").select("id", { count: "exact", head: true });
 
   const signals: Signal[] = [];
 
@@ -767,6 +770,16 @@ async function extractSignals(adminClient: any): Promise<Signal[]> {
       category: "system",
       messageKey: "push_delivery_failures",
       params: { count: pushFailCount },
+      roles: ["admin"],
+    });
+  }
+
+  if (!pushDevicesRes.error && (pushDevicesRes.count ?? 0) === 0) {
+    signals.push({
+      severity: "normal",
+      category: "system",
+      messageKey: "push_no_devices",
+      params: {},
       roles: ["admin"],
     });
   }

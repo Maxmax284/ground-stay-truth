@@ -81,11 +81,12 @@ export function AdminEmailHealth() {
           {verdict}
         </p>
 
-        <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="grid grid-cols-4 gap-2 text-center">
           {[
             ["Sent", sent.length],
             ["Failed", failed.length],
             ["Grouped", suppressed.length],
+            ["Test (held)", rows.filter((r) => r.status === "skipped").length],
           ].map(([label, n]) => (
             <div key={label as string} className="rounded-md bg-muted/50 p-2">
               <div className="text-lg font-semibold">{n as number}</div>
