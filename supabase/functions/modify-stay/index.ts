@@ -219,8 +219,37 @@ serve(async (req) => {
     if (!reasonCode) return jsonResponse(req, { error: "reason_code required" }, 400);
     const notes = String(body.notes ?? "").trim().slice(0, 2000) || null;
 
-    const pricingBefore = Math.max(0, Number(body.pricing_before ?? booking.total_price ?? 0));
-    const pricingAfter = Math.max(0, Number(body.pricing_after ?? 0));
+    // Pricing mode. "preserve" (default): the stored total is the receipt for
+    // nights already sold — keep it and add only the clean delta for changed
+    // nights. "full_reprice" is only honest when nothing has been sold yet.
+    const storedTotal = Math.round(Number(booking.total_price ?? 0) * 100) / 100;
+    const { data: payRows } = await admin.from("payments").select("status").eq("booking_id", bookingId);
+    const hasRecordedPayment = (payRows ?? []).some((p: any) =>
+      ["recorded", "succeeded", "captured", "completed"].includes(String(p.status)));
+    const fullRepriceAllowed =
+      (["inquiry", "soft_hold", "pending_approval", "pending_deposit"].includes(booking.state) && !hasRecordedPayment)
+      || storedTotal <= 0;
+    const pricingMode = body.pricing_mode === "full_reprice" ? "full_reprice" : "preserve";
+    if (pricingMode === "full_reprice" && !fullRepriceAllowed) {
+      return jsonResponse(req, {
+        error: "full_reprice_not_allowed",
+        message: "This booking already has settled pricing or payments. Only the changed nights can be priced.",
+      }, 409);
+    }
+
+    let pricingBefore: number;
+    let pricingAfter: number;
+    if (pricingMode === "preserve") {
+      const changeDelta = Number(body.change_delta);
+      if (!Number.isFinite(changeDelta)) {
+        return jsonResponse(req, { error: "change_delta required for preserve pricing" }, 400);
+      }
+      pricingBefore = storedTotal; // server-side truth, never the client's number
+      pricingAfter = Math.max(0, Math.round((storedTotal + changeDelta) * 100) / 100);
+    } else {
+      pricingBefore = Math.max(0, Number(body.pricing_before ?? storedTotal));
+      pricingAfter = Math.max(0, Number(body.pricing_after ?? 0));
+    }
     if (!Number.isFinite(pricingAfter) || pricingAfter <= 0) {
       return jsonResponse(req, { error: "pricing_after must be a positive amount" }, 400);
     }
@@ -251,7 +280,7 @@ serve(async (req) => {
         unit_id: s.unit_id, starts_on: s.starts_on, ends_on: s.ends_on,
       })),
     };
-    const afterSnapshot = { segments, total_price: pricingAfter - waived, quote: body.quote ?? null };
+    const afterSnapshot = { segments, total_price: pricingAfter - waived, quote: body.quote ?? null, pricing_mode: pricingMode, on_record_total: storedTotal, change_delta: calculated, clean_full_requote: Number(body.pricing_after ?? 0) || null };
 
     const paymentStatus = finalAmount > 0
       ? "pending"
@@ -364,7 +393,9 @@ serve(async (req) => {
     let netAdjustment = 0; // positive = reduces the total
     const carried: Array<Record<string, unknown>> = [];
 
-    for (const adj of liveAdjustments ?? []) {
+    // Preserve mode: existing adjustments belong to nights already sold. They
+    // are already baked into the stored total — leave them exactly as they are.
+    for (const adj of pricingMode === "full_reprice" ? (liveAdjustments ?? []) : []) {
       const sign = adj.adjustment_type === "surcharge" ? -1 : 1;
       let amount = Math.round(Number(adj.amount_calculated ?? 0) * 100) / 100;
 
@@ -403,11 +434,17 @@ serve(async (req) => {
 
     // The waiver counts exactly once, here, alongside the carried discounts.
     // Never let carried discounts push a stay below zero.
-    const newTotal = Math.max(0, Math.round((baseTotal - netAdjustment - waived) * 100) / 100);
+    const newTotal = pricingMode === "preserve"
+      ? Math.max(0, Math.round((storedTotal + calculated - waived) * 100) / 100)
+      : Math.max(0, Math.round((baseTotal - netAdjustment - waived) * 100) / 100);
 
     await admin
       .from("bookings")
-      .update({ original_total: baseTotal, total_price: newTotal, updated_at: new Date().toISOString() })
+      .update({
+        ...(pricingMode === "full_reprice" ? { original_total: baseTotal } : {}),
+        total_price: newTotal,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", bookingId);
 
 
@@ -447,6 +484,8 @@ serve(async (req) => {
         waived_amount: waived,
         final_amount: finalAmount,
         forced_over_conflict: conflicts.length > 0,
+        pricing_mode: pricingMode,
+        on_record_total: storedTotal,
       },
     }).catch?.((e: unknown) => console.error("[modify-stay] override log failed:", e));
 

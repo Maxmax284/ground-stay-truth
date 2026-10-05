@@ -36,12 +36,15 @@ import {
   AlertTriangle, ArrowRight, ArrowUpRight, CalendarDays, CheckCircle2, Loader2, Plus, ShieldCheck, Sparkles, Trash2,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useUnits } from "@/hooks/useUnits";
 import { usePricingRules } from "@/hooks/usePricingRules";
 import { usePolicySettings } from "@/hooks/usePolicySettings";
 import { formatPrice } from "@/lib/currency";
 import {
   MODIFY_REASON_CODES, inferKind, quoteSegments, summarizeDelta, validateDraft,
+  computeChangeDelta, canFullReprice, type PricingMode,
   type DraftSegment,
 } from "@/lib/modifyStay";
 import {
@@ -85,6 +88,16 @@ export function ModifyStayDialog({
   const { data: existingSegments } = useBookingSegments(open ? booking.id : null);
   const { data: activeAdjustments } = useBookingActiveAdjustments(open ? booking.id : null);
   const modify = useModifyStay();
+  const { data: hasRecordedPayment = true } = useQuery({
+    queryKey: ["booking-payments", booking.id, "recorded-flag"],
+    enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("payments").select("status").eq("booking_id", booking.id);
+      if (error) throw error;
+      return (data ?? []).some((p: any) => ["recorded", "succeeded", "captured", "completed"].includes(String(p.status)));
+    },
+  });
+  const [fullReprice, setFullReprice] = useState(false);
 
   const [mode, setMode] = useState<ModifyStayMode>(initialMode);
   const [draft, setDraft] = useState<DraftSegment[]>([]);
@@ -131,6 +144,7 @@ export function ModifyStayDialog({
     setReasonCode(initialMode === "upgrade" ? "guest_request" : "guest_request");
     setRequestPayment(true);
     setPendingStart(null);
+    setFullReprice(false);
   }, [open, baseline, initialMode]);
 
 
@@ -156,10 +170,23 @@ export function ModifyStayDialog({
   // tier shift). The stored total is still shown, as a reference, and any drift
   // between it and today's re-quote is surfaced instead of billed.
   const onRecordTotal = Number(booking.total_price ?? 0);
-  const pricingBefore = beforeQuote.total || onRecordTotal;
-  const recordDrift = Math.round((onRecordTotal - pricingBefore) * 100) / 100;
+  const recordDrift = Math.round((onRecordTotal - beforeQuote.total) * 100) / 100;
   const hasDrift = Math.abs(recordDrift) >= 0.01 && onRecordTotal > 0;
-  const delta = useMemo(() => summarizeDelta(pricingBefore, afterQuote.total), [pricingBefore, afterQuote.total]);
+
+  // Old receipts stay old receipts: unless nothing has been sold yet AND staff
+  // explicitly asks for a full re-price, only changed nights are priced.
+  const fullRepriceAllowed = canFullReprice(booking.state, hasRecordedPayment) || onRecordTotal <= 0;
+  const pricingMode: PricingMode = fullRepriceAllowed && (fullReprice || onRecordTotal <= 0) ? "full_reprice" : "preserve";
+
+  const changeDelta = useMemo(
+    () => computeChangeDelta(baseline, draft, onRecordTotal, units ?? [], (pricingRules ?? []) as any, policies, booking.num_guests, completedStays),
+    [baseline, draft, onRecordTotal, units, pricingRules, policies, booking.num_guests, completedStays],
+  );
+
+  const pricingBefore = pricingMode === "preserve" ? onRecordTotal : beforeQuote.total || onRecordTotal;
+  const pricingAfterEffective = pricingMode === "preserve" ? changeDelta.mergedTotal : afterQuote.total;
+  const delta = useMemo(() => summarizeDelta(pricingBefore, pricingAfterEffective), [pricingBefore, pricingAfterEffective]);
+
 
   // Pricing basis for the new stay: gross room charge plus each automatic
   // discount, aggregated across every segment of the stay.
@@ -184,22 +211,20 @@ export function ModifyStayDialog({
     };
   }, [afterQuote]);
 
-
-
-  // Discount carry-forward. The server re-applies active human adjustments to
-  // the new base price by itself; this is the same math shown to staff so they
-  // can see the guest's real difference and never hand-waive it a second time.
+  // Discount carry-forward only applies on a full re-price. In preserve mode
+  // existing adjustments belong to the nights already sold and stay untouched.
   const carry = useMemo(
-    () => computeCarryForward(activeAdjustments, pricingBefore, afterQuote.total),
-    [activeAdjustments, pricingBefore, afterQuote.total],
+    () => computeCarryForward(activeAdjustments, beforeQuote.total, afterQuote.total),
+    [activeAdjustments, beforeQuote.total, afterQuote.total],
   );
-  const carryApplies = carry.lines.length > 0 && delta.calculated > 0 && carry.suggestedWaiver > 0.009;
+  const carryApplies = pricingMode === "full_reprice" && carry.lines.length > 0 && delta.calculated > 0 && carry.suggestedWaiver > 0.009;
   const autoWaiverActive = carryApplies && autoCarry && canWaive;
 
   const waived = autoWaiverActive
     ? Math.min(carry.suggestedWaiver, Math.max(0, delta.calculated))
     : Math.min(Math.max(0, Number(waiveInput) || 0), Math.max(0, delta.calculated));
   const finalAmount = Math.round((delta.calculated - waived) * 100) / 100;
+  const committedTotal = Math.max(0, Math.round((pricingAfterEffective - waived) * 100) / 100);
 
   const structuralErrors = useMemo(() => validateDraft(draft), [draft]);
   const lineErrors = afterQuote.lines.filter((l) => l.error).map((l) => l.error as string);
@@ -293,6 +318,8 @@ export function ModifyStayDialog({
       pricingBefore,
       pricingAfter: afterQuote.total,
       onRecordTotal: onRecordTotal || undefined,
+      pricingMode,
+      changeDelta: pricingMode === "preserve" ? changeDelta.delta : undefined,
       waivedAmount: waived,
       requestPayment: requestPayment && finalAmount > 0,
       force,
@@ -543,46 +570,92 @@ export function ModifyStayDialog({
             {/* ── Money ── */}
             <div className="rounded-md border border-border p-3 space-y-2 text-sm">
               <p className="text-xs font-medium text-muted-foreground">Financial impact</p>
-              <Row label={`Current stay (${beforeQuote.nights} night${beforeQuote.nights === 1 ? "" : "s"}, re-priced)`} value={formatPrice(pricingBefore, policies)} />
-              {hasDrift && (
+              <Row label="Stored current total (on record)" value={formatPrice(onRecordTotal, policies)} />
+              <Row
+                label={`Clean re-quote today (${beforeQuote.nights} night${beforeQuote.nights === 1 ? "" : "s"}, info only)`}
+                value={formatPrice(beforeQuote.total, policies)}
+              />
+              {hasDrift && pricingMode === "preserve" && (
+                <p className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    Existing settled pricing differs from current policy ({formatPrice(Math.abs(recordDrift), policies)}{" "}
+                    {recordDrift > 0 ? "higher" : "lower"}). Past pricing will be preserved. Only the new
+                    extension/future segment will be charged.
+                  </span>
+                </p>
+              )}
+
+              {pricingMode === "preserve" ? (
+                <div className="rounded-md bg-muted/40 p-2 space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">How this change is built</p>
+                  {changeDelta.keptNights > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {changeDelta.keptNights} existing night{changeDelta.keptNights === 1 ? "" : "s"} kept at the recorded price.
+                    </p>
+                  )}
+                  {changeDelta.added.map((r, i) => {
+                    const s = r.line?.summary;
+                    const gross = s ? Number(s.subtotal ?? 0) + Number(s.extraBedTotal ?? 0) : 0;
+                    return (
+                      <div key={`a${i}`} className="space-y-0.5 border-l-2 border-primary/40 pl-2">
+                        <p className="text-xs font-medium">
+                          {unitName(units, r.unitId)}: {r.startsOn} → {r.endsOn}
+                        </p>
+                        <Row label={`${r.nights} night${r.nights === 1 ? "" : "s"} base`} value={formatPrice(gross, policies)} />
+                        <Row
+                          label={s?.longStayDiscount ? `Long-stay discount ${s.longStayDiscount.percentage}%` : "Long-stay discount"}
+                          value={`− ${formatPrice(Number(s?.longStayDiscount?.amount ?? 0), policies)}`}
+                        />
+                        <Row label="Loyalty / returning discount" value={`− ${formatPrice(Number(s?.loyaltyDiscount?.amount ?? 0), policies)}`} />
+                        <Row label="Leg due" value={formatPrice(r.amount, policies)} />
+                      </div>
+                    );
+                  })}
+                  {changeDelta.movedTo.length > 0 && (
+                    <Row label="Room move rate difference (same nights)" value={`${changeDelta.movedDifference >= 0 ? "+" : "−"} ${formatPrice(Math.abs(changeDelta.movedDifference), policies)}`} />
+                  )}
+                  {changeDelta.removed.length > 0 && (
+                    <Row
+                      label={`${changeDelta.removed.reduce((s, r) => s + r.nights, 0)} night(s) removed — credit (capped at recorded share)`}
+                      value={`− ${formatPrice(changeDelta.removedCredit, policies)}`}
+                    />
+                  )}
+                </div>
+              ) : (
                 <>
-                  <Row label="Total on record" value={formatPrice(onRecordTotal, policies)} />
-                  <p className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400">
-                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                    <span>
-                      The total on this booking is {formatPrice(Math.abs(recordDrift), policies)}{" "}
-                      {recordDrift > 0 ? "higher" : "lower"} than today's price for the same nights
-                      (old rates, a discount, or a manual edit). The guest is charged only for what
-                      actually changes — this gap is not billed. Admins and managers are notified.
-                    </span>
-                  </p>
+                  <Row label={`New stay price (${afterQuote.nights} night${afterQuote.nights === 1 ? "" : "s"})`} value={formatPrice(afterQuote.total, policies)} />
+                  {afterBasis && (
+                    <div className="rounded-md bg-muted/40 p-2 space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">How that price is built (full re-price)</p>
+                      <Row label="Room rate before discounts" value={formatPrice(afterBasis.gross, policies)} />
+                      <Row label="Automatic long-stay discount" value={`− ${formatPrice(afterBasis.longStay, policies)}`} />
+                      <Row label="Loyalty / returning discount" value={`− ${formatPrice(afterBasis.loyalty, policies)}`} />
+                      {afterBasis.cleaning > 0 && (
+                        <Row label="Cleaning fee" value={formatPrice(afterBasis.cleaning, policies)} />
+                      )}
+                    </div>
+                  )}
                 </>
               )}
-              <Row label={`New stay price (${afterQuote.nights} night${afterQuote.nights === 1 ? "" : "s"})`} value={formatPrice(afterQuote.total, policies)} />
-              {/* Pricing basis: room rate before automatic discounts, then each
-                  automatic discount, so staff can see where the number came from
-                  and never re-discount the same thing by hand. */}
-              {afterBasis && (
-                <div className="rounded-md bg-muted/40 p-2 space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">How that price is built</p>
-                  <Row label="Room rate before discounts" value={formatPrice(afterBasis.gross, policies)} />
-                  {afterBasis.longStay > 0 && (
-                    <Row label="Automatic long-stay discount" value={`− ${formatPrice(afterBasis.longStay, policies)}`} />
-                  )}
-                  {afterBasis.loyalty > 0 && (
-                    <Row label="Returning-guest discount" value={`− ${formatPrice(afterBasis.loyalty, policies)}`} />
-                  )}
-                  {afterBasis.cleaning > 0 && (
-                    <Row label="Cleaning fee" value={formatPrice(afterBasis.cleaning, policies)} />
-                  )}
+
+              {fullRepriceAllowed && (
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm">Full re-price</p>
+                    <p className="text-xs text-muted-foreground">Nothing paid yet — re-quote every night under today's policy.</p>
+                  </div>
+                  <Switch checked={fullReprice} onCheckedChange={setFullReprice} />
                 </div>
               )}
 
               <Row
-                label={delta.direction === "credit" ? "Credit due to guest" : "Difference"}
+                label={delta.direction === "credit" ? "Credit due to guest" : "This change (difference)"}
                 value={`${delta.calculated > 0 ? "+" : ""}${formatPrice(Math.abs(delta.calculated), policies)}`}
                 emphasis
               />
+              <Row label="New booking total" value={formatPrice(committedTotal, policies)} emphasis />
+
               {/* ── Discount carry-forward ── */}
               {carryApplies && (
                 <div className="rounded-md border border-primary/30 bg-primary/5 p-2.5 space-y-2">

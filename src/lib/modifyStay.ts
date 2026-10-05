@@ -259,3 +259,148 @@ function min(values: string[]): string {
 function max(values: string[]): string {
   return values.slice().sort().reverse()[0] ?? "";
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Preserve-history pricing ("old receipts stay old receipts").
+//
+// On a live booking the stored total is the receipt for nights already sold.
+// Re-quoting those nights under today's policy and overwriting the total would
+// claw back (or hand out) money on settled nights. Instead we diff the stay
+// night-by-night:
+//   kept    — same room, same night in both plans → untouched, no money moves
+//   added   — night only in the new plan          → priced fresh, current policy
+//   removed — night only in the old plan          → refunded at the lesser of
+//             today's price and its pro-rata share of the stored total
+//   moved   — same night, different room          → today's rate difference only
+// Added/moved runs are priced as their own contiguous legs, so long-stay tiers
+// apply per leg (the existing rule) and the cleaning fee is never re-charged.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type PricingMode = "preserve" | "full_reprice";
+
+/** States where nothing has been sold yet, so a full re-quote is honest. */
+export const FULL_REPRICE_STATES = ["inquiry", "soft_hold", "pending_approval", "pending_deposit"];
+
+export function canFullReprice(state: string, hasRecordedPayment: boolean): boolean {
+  return FULL_REPRICE_STATES.includes(state) && !hasRecordedPayment;
+}
+
+export interface ChangeRun {
+  unitId: string;
+  startsOn: string;
+  endsOn: string;
+  nights: number;
+  amount: number;
+  line: SegmentQuote | null;
+}
+
+export interface ChangeDelta {
+  keptNights: number;
+  added: ChangeRun[];
+  removed: ChangeRun[];
+  movedFrom: ChangeRun[];
+  movedTo: ChangeRun[];
+  addedAmount: number;
+  removedCredit: number;
+  movedDifference: number;
+  /** Signed: positive = guest owes more. */
+  delta: number;
+  onRecordTotal: number;
+  /** onRecordTotal + delta, never below zero. */
+  mergedTotal: number;
+}
+
+function addDaysIso(iso: string, n: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/** night (YYYY-MM-DD of the evening) → unit id. Half-open: check-out night excluded. */
+function nightMap(segs: DraftSegment[]): Map<string, string> {
+  const m = new Map<string, string>();
+  for (const s of segs) {
+    const n = nightsBetween(s.starts_on, s.ends_on);
+    for (let i = 0; i < n; i++) m.set(addDaysIso(s.starts_on, i), s.unit_id);
+  }
+  return m;
+}
+
+/** Group (night, unit) pairs into contiguous same-room runs. */
+function toRuns(nights: Array<[string, string]>): DraftSegment[] {
+  const sorted = nights.slice().sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+  const runs: DraftSegment[] = [];
+  for (const [night, unit] of sorted) {
+    const last = runs[runs.length - 1];
+    if (last && last.unit_id === unit && last.ends_on === night) {
+      last.ends_on = addDaysIso(night, 1);
+    } else {
+      runs.push({ key: `run-${runs.length}`, unit_id: unit, starts_on: night, ends_on: addDaysIso(night, 1) });
+    }
+  }
+  return runs;
+}
+
+export function computeChangeDelta(
+  before: DraftSegment[],
+  after: DraftSegment[],
+  onRecordTotal: number,
+  units: Unit[],
+  pricingRules: PricingRule[],
+  policies: PolicySetting[] | null | undefined,
+  numGuests: number,
+  completedStays: number,
+): ChangeDelta {
+  const b = nightMap(before);
+  const a = nightMap(after);
+  const added: Array<[string, string]> = [];
+  const removed: Array<[string, string]> = [];
+  const movedFrom: Array<[string, string]> = [];
+  const movedTo: Array<[string, string]> = [];
+  let kept = 0;
+  for (const [night, unit] of a) {
+    const old = b.get(night);
+    if (old === undefined) added.push([night, unit]);
+    else if (old === unit) kept++;
+    else { movedFrom.push([night, old]); movedTo.push([night, unit]); }
+  }
+  for (const [night, unit] of b) if (!a.has(night)) removed.push([night, unit]);
+
+  const price = (pairs: Array<[string, string]>): ChangeRun[] => {
+    const runs = toRuns(pairs);
+    const q = quoteSegments(runs, units, pricingRules, policies, numGuests, completedStays);
+    return runs.map((r, i) => ({
+      unitId: r.unit_id, startsOn: r.starts_on, endsOn: r.ends_on,
+      nights: nightsBetween(r.starts_on, r.ends_on),
+      amount: q.lines[i]?.amount ?? 0,
+      line: q.lines[i] ?? null,
+    }));
+  };
+
+  const addedRuns = price(added);
+  const removedRuns = price(removed);
+  const fromRuns = price(movedFrom);
+  const toRunsP = price(movedTo);
+
+  const sum = (rs: ChangeRun[]) => round2(rs.reduce((s, r) => s + r.amount, 0));
+  const addedAmount = sum(addedRuns);
+  const beforeNights = b.size;
+  const share = beforeNights > 0 ? (Math.max(0, onRecordTotal) * removed.length) / beforeNights : 0;
+  const removedCredit = round2(Math.min(sum(removedRuns), share));
+  const movedDifference = round2(sum(toRunsP) - sum(fromRuns));
+  const delta = round2(addedAmount - removedCredit + movedDifference);
+
+  return {
+    keptNights: kept,
+    added: addedRuns,
+    removed: removedRuns,
+    movedFrom: fromRuns,
+    movedTo: toRunsP,
+    addedAmount,
+    removedCredit,
+    movedDifference,
+    delta,
+    onRecordTotal: round2(onRecordTotal),
+    mergedTotal: Math.max(0, round2(onRecordTotal + delta)),
+  };
+}
