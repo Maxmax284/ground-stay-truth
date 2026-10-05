@@ -250,7 +250,7 @@ export function ChaseList({
               </div>
             </div>
             {chips.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1">
+              <div key={chips.join("|")} className="board-flip-stagger mt-2 flex flex-wrap gap-1">
                 {chips.map((c) => (
                   <Badge
                     key={c}

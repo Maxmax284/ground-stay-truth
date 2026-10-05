@@ -275,7 +275,7 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {t("cornerTalk.dailyBrief", "Today's street read")}
               </p>
-              <p className="text-sm text-foreground mt-0.5">{data.brief.line}</p>
+              <p key={data.brief.line} className="board-flip text-sm text-foreground mt-0.5">{data.brief.line}</p>
             </div>
           )}
           {effectiveAllClear ? (
