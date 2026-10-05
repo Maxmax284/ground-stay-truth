@@ -435,8 +435,8 @@ function BookingRow({
 
           {/* Financials */}
           <div className="text-right shrink-0">
-            <div className="text-xs text-muted-foreground">{t("frontDesk.total")}</div>
-            <div className="font-semibold">{formatPrice(booking.total_price ?? 0)}</div>
+            <div className="camp-pass-meta">{t("frontDesk.total")}</div>
+            <div className="font-semibold camp-pass-mono">{formatPrice(booking.total_price ?? 0)}</div>
             {booking.outstanding > 0 ? (
               <div className="text-xs text-destructive font-medium mt-0.5">
                 {t("frontDesk.owed", { amount: formatPrice(booking.outstanding) })}

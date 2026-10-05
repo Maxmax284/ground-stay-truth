@@ -122,7 +122,7 @@ function BookingCard({ booking, onClick, onExtend, onRecordPayment, discountFlag
         </div>
       </div>
       <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-        <span>{format(new Date(booking.check_in), "MMM d")} – {format(new Date(booking.check_out), "MMM d")}</span>
+        <span className="camp-pass-mono">{format(new Date(booking.check_in), "MMM d")} – {format(new Date(booking.check_out), "MMM d")}</span>
         <span>·</span>
         <span>{t("bookings.guestCount", { count: booking.num_guests })}</span>
         <PriceStoryBadge booking={booking} policies={cardPolicies} flag={discountFlag} />
