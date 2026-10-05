@@ -67,8 +67,7 @@ export function StripeConnectionStatus() {
   const diagnostics = useQuery<Diagnostics>({
     queryKey: ["payment-diagnostics"],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("payment-diagnostics", { body: {} });
-      if (error) throw error;
+      const data = await fetchPaymentDiagnostics<Diagnostics>();
       return (data ?? {}) as Diagnostics;
     },
     retry: 1,

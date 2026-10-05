@@ -38,22 +38,8 @@ export function StripeDiagnosticsCard() {
     setLoading(true);
     setError(null);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not signed in");
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payment-diagnostics`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            "Content-Type": "application/json",
-          },
-          body: "{}",
-        },
-      );
-      const body = await resp.json();
-      if (!resp.ok) throw new Error(body.error || "Failed to load diagnostics");
+      const body = await fetchPaymentDiagnostics();
+      if (!body) throw new Error("Session expired — sign in again to view diagnostics");
       setData(body);
     } catch (e: any) {
       setError(e.message || "Failed to load diagnostics");
