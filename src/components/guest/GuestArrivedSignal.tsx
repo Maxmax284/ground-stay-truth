@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plane, MapPin, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { playGroundSound } from "@/lib/groundSounds";
 
 /**
  * "I've landed / I'm here" — a plain guest message on the booking thread.
@@ -59,6 +60,7 @@ export function GuestArrivedSignal({ booking }: { booking: { id: string; check_i
       await createMessage.mutateAsync({ booking_id: booking.id, content, is_internal: false });
       localStorage.setItem(storeKey(kind), "1");
       setSent((s) => ({ ...s, [kind]: true }));
+      playGroundSound(kind === "landed" ? "landed" : "check_in", 0.35);
       toast.success(t("arrivedSignal.sent", "Front desk notified"));
     } catch (e: any) {
       toast.error(e?.message || t("messages.messageFailed"));
