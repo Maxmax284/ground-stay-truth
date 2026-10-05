@@ -234,7 +234,7 @@ export function ChaseList({
         const last = lastActivity?.[b.id];
         const chips = chipsFor(b);
         return (
-          <div key={b.id} className="rounded-lg border bg-card p-3">
+          <div key={b.id} className="camp-pass p-3">
             <div className="flex items-start justify-between gap-2">
               <button className="min-w-0 text-left" onClick={() => onOpen(b.id)}>
                 <p className="font-medium truncate">{resolveGuestDisplayName(b)}</p>
