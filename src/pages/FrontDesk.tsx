@@ -157,7 +157,7 @@ export default function FrontDesk() {
             {isManagerPlus && <TabsTrigger value="overrides" className="shrink-0">{t("frontDesk.tabs.overrides")}</TabsTrigger>}
           </TabsList>
 
-          <TabsContent value="arriving" className="space-y-3 mt-4">
+          <TabsContent value="arriving" className="space-y-3 mt-4 desk-panel-in">
             <SectionList
               isLoading={isLoading}
               bookings={sections.arrivingToday}
@@ -169,7 +169,7 @@ export default function FrontDesk() {
               lastMessageByBooking={lastMessageByBooking}
             />
           </TabsContent>
-          <TabsContent value="staying" className="space-y-3 mt-4">
+          <TabsContent value="staying" className="space-y-3 mt-4 desk-panel-in">
             <SectionList
               isLoading={isLoading}
               bookings={sections.currentlyStaying}
@@ -180,7 +180,7 @@ export default function FrontDesk() {
               lastMessageByBooking={lastMessageByBooking}
             />
           </TabsContent>
-          <TabsContent value="departing" className="space-y-3 mt-4">
+          <TabsContent value="departing" className="space-y-3 mt-4 desk-panel-in">
             <SectionList
               isLoading={isLoading}
               bookings={sections.departingToday}
@@ -191,7 +191,7 @@ export default function FrontDesk() {
               lastMessageByBooking={lastMessageByBooking}
             />
           </TabsContent>
-          <TabsContent value="upcoming" className="space-y-3 mt-4">
+          <TabsContent value="upcoming" className="space-y-3 mt-4 desk-panel-in">
             <SectionList
               isLoading={isLoading}
               bookings={sections.upcoming}
@@ -203,17 +203,17 @@ export default function FrontDesk() {
             />
           </TabsContent>
 
-          <TabsContent value="chase" className="space-y-3 mt-4">
+          <TabsContent value="chase" className="space-y-3 mt-4 desk-panel-in">
             <ChaseList sections={sections} onOpen={setDetailId} />
           </TabsContent>
 
-          <TabsContent value="travelChecks" className="space-y-3 mt-4">
+          <TabsContent value="travelChecks" className="space-y-3 mt-4 desk-panel-in">
             <DriverChatPanel />
             <ArrivalExceptionsPanel onOpen={setDetailId} />
           </TabsContent>
 
           {isManagerPlus && (
-            <TabsContent value="overrides" className="space-y-3 mt-4">
+            <TabsContent value="overrides" className="space-y-3 mt-4 desk-panel-in">
               <OverridesPanel rows={overrides ?? []} />
             </TabsContent>
           )}
@@ -404,15 +404,19 @@ function BookingRow({
         <div className="flex items-start justify-between gap-3 flex-wrap">
           {/* Identity */}
           <div className="min-w-0 flex-1">
-            <p className="camp-pass-meta mb-1">{unitName} · {t("frontDesk.guestCount", { count: booking.num_guests })}</p>
+            <div className="mb-1.5"><span className="key-tag">{unitName} · {t("frontDesk.guestCount", { count: booking.num_guests })}</span></div>
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-semibold text-foreground text-base truncate">{guestName}</h3>
               <Badge className={`text-[10px] border ${TONE_CLASS[opStatus.tone]}`}>
                 {opStatus.label}
               </Badge>
-              <Badge className={`text-[10px] ${STATE_VARIANTS[booking.state as BookingState] ?? ""}`}>
-                {STATE_LABELS[booking.state as BookingState] ?? booking.state}
-              </Badge>
+              {(() => {
+                const state = booking.state as BookingState;
+                const label = STATE_LABELS[state] ?? booking.state;
+                if (state === "checked_in") return <span className="ink-stamp camp-tone-locked">{label}</span>;
+                if (state === "completed") return <span className="ink-stamp text-[hsl(var(--success))]">{label}</span>;
+                return <Badge className={`text-[10px] ${STATE_VARIANTS[state] ?? ""}`}>{label}</Badge>;
+              })()}
               {booking.arrived_at && (
                 <Badge className="text-[10px] bg-info/20 text-[hsl(var(--info))]">
                   {t("frontDesk.arrivedAt", { time: format(parseISO(booking.arrived_at), "HH:mm") })}
@@ -549,7 +553,7 @@ function BookingRow({
 
 
         {/* Actions */}
-        <div className="grid grid-cols-1 gap-2 mt-3 min-[390px]:grid-cols-2 sm:flex sm:flex-wrap">
+        <div className="grid grid-cols-1 gap-2 mt-3 pt-3 camp-pass-perf min-[390px]:grid-cols-2 sm:flex sm:flex-wrap">
           {variant === "arriving" && (
             <>
               <Button size="sm" variant="default" onClick={() => onMarkArrived?.(booking)}>
