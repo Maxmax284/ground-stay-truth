@@ -137,7 +137,7 @@ export function BookingFormDialog({ open, onOpenChange, defaultUnitId, defaultCh
   const [longStayChoice, setLongStayChoice] = useState<"apply" | "base">("apply");
   const basePricing: PricingSummary | null = useMemo(() => {
     if (!pricing.longStayDiscount || !selectedUnit) return null;
-    const noLongStay = { ...(policies ?? {}), long_stay_7_nights_discount_percentage: "0", long_stay_14_nights_discount_percentage: "0", long_stay_30_nights_discount_percentage: "0" } as any;
+    const noLongStay = (policies ?? []).map((p: any) => (String(p.key).startsWith("long_stay_") ? { ...p, value: "0" } : p));
     return calculatePricing(selectedUnit, checkIn, checkOut, allPricingRules ?? [], undefined, noLongStay, undefined, Number(extraBeds) || 0, Number(numGuests) || 1);
   }, [pricing.longStayDiscount, selectedUnit, checkIn, checkOut, allPricingRules, policies, extraBeds, numGuests]);
   const keepBase = !!basePricing && longStayChoice === "base";
