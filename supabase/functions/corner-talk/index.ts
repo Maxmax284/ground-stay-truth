@@ -8,6 +8,7 @@
 // -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildOpsBrief, type OpsBrief } from "../_shared/opsBrief.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
@@ -829,6 +830,7 @@ interface CornerTalkOutput {
   upcoming: Array<{ text: string; messageKey: string }>;
   allClear: boolean;
   generatedAt: string;
+  brief?: OpsBrief | null;
 }
 
 function buildOutput(signals: Signal[]): CornerTalkOutput {
@@ -1016,6 +1018,11 @@ serve(async (req) => {
 
     // Build structured output
     let output = buildOutput(roleSignals);
+    // Daily Ops Brief — the morning street read, same numbers the 08:00 brief uses.
+    output.brief = await buildOpsBrief(adminClient).catch((e) => {
+      console.error("ops brief failed", e);
+      return null;
+    });
 
     // Translate if needed
     if (lovableApiKey && language && language !== "en") {

@@ -270,6 +270,14 @@ export function CornerTalkPanel({ onAskGlitch }: CornerTalkPanelProps) {
       {/* Body */}
       {!collapsed && (
         <CardContent className="px-4 pb-4 pt-0 space-y-3">
+          {data.brief?.line && (
+            <div className="rounded-md border border-border bg-muted/40 px-3 py-2" data-ai-focus="daily-ops-brief">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {t("cornerTalk.dailyBrief", "Today's street read")}
+              </p>
+              <p className="text-sm text-foreground mt-0.5">{data.brief.line}</p>
+            </div>
+          )}
           {effectiveAllClear ? (
             <p className="text-sm text-muted-foreground py-1">
               {t("cornerTalk.allOperationsNormal", "All operations running normally")}
