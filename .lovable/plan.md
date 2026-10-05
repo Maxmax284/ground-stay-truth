@@ -1,135 +1,120 @@
-# CampStay LMT — Strategic Audit: From "Built" to "Gets Smarter With Use"
+# CampStay LMT — Strategic Plan: Giving the Platform Instincts
 
-Audit only. No code, schema or behavior changes. Based on a read of the edge functions, hooks and live table counts (5 Oct 2026).
+Audit + brainstorm only. No code, schema, migrations or behavior changes. Grounded in a read of the edge functions, hooks, components and live table counts (5 Oct 2026).
 
 ## Street read
 
-The machine is built. It already writes down almost everything that happens: portal opens, payment attempts, ID uploads, messages, emails, alerts. Almost none of that gets read back as a pattern. Every screen answers "what's going on with this guest right now". Nothing answers "what keeps going wrong, week after week".
+The body is built. It writes down almost everything that happens: portal opens, payment attempts, ID uploads, messages, emails, alerts, arrival taps. Almost none of it gets read back as a pattern. Every screen answers "what's going on with this guest right now." Nothing answers "what keeps going wrong, week after week."
 
-The next phase is reading what you already record, not adding features. Two numbers make the case:
+The next phase is reading the receipts you already collect, not adding features. Two live numbers make the case:
 
-- **139 "booking missing" vs 276 "booking loaded" portal events.** Roughly 1 in 3 portal loads ends with a guest who can't see their booking. That's the biggest friction signal in the system, and nobody is watching it as a trend.
-- **Checkout funnel: 33 started → 17 created → 13 redirected → 4 reached the payment provider.** Payment friction is measurable today. It's just not summarized anywhere.
+- **139 "booking missing" vs 276 "booking loaded" portal events.** Roughly 1 in 3 portal loads ends with a guest who can't see their booking. Biggest friction signal in the system; nobody watches it as a trend.
+- **Checkout funnel: 33 started → 17 created → 13 redirected → 4 reached the payment provider.** Payment friction is measurable today. It just isn't summarized anywhere.
 
-(Small numbers, and some of them are smoke tests. They still show which signals carry weight.)
+(Numbers are small and include smoke tests. They still show which signals carry weight.)
 
-## 1. Signals CampStay already captures
+Doctrine stays absolute: **signals feed the system, they never control it.** No auto-booking, no auto-check-in, no money moves, no guest-facing sends without a human. A guest request is a raised hand, not a confirmed booking.
 
-| Area | Where it lives | Volume today |
+## A. Surfaces to upgrade (not replace)
+
+| Surface | Exists today | Upgrade |
 |---|---|---|
-| Portal behaviour (loaded, booking missing, deposit/ID funnel, in-app browser, network errors, email-fallback notice) | `guest_portal_activity` (22 cols) | ~1,040 |
-| Guest and staff messages, Camp Notices (`external_ref notice:*`), landed and "I'm here" taps | `messages` | 68 |
-| Staff alerts sent, suppressed or deduped | `admin_alert_log` | 543 |
-| Email sent, failed, bounced, complained, suppressed | `email_send_log`, `email_log`, `suppressed_emails`, `handle-email-events` | 929 / 3 suppressed |
-| Push delivery | `push_delivery_log`, `push_subscriptions` | 4 (push is barely used) |
-| Payments, links, webhooks, rejections, reconciliation | `payments`, `payment_link_events`, `payment_events`, `payment_rejection_log`, `payment_reconciliation_log` | 155 payments |
-| Booking lifecycle and money changes | `booking_state_log`, `booking_adjustments` (immutable), `override_audit_log` | — |
-| ID documents and review status | `guest_documents`, `guest_document_access_log`, `verify-document` | 13 |
-| Travel: journey legs, evidence, provenance, conflicts, flights | `journey_legs`, `journey_evidence`, `arrival_conflicts`, `flight_tracking`, `flight_facts` | 2 evidence |
-| Pickups and drivers | `airport_pickups`, `pickup_driver_links`, `pickup_driver_messages` | — |
-| Stay ops | `housekeeping_tasks`, `laundry_requests`, `maintenance_requests`, `maintenance_blocks`, `stay_support_log` | 0 support log |
-| AI usage and audit | `ai_usage_events`, `ai_assistant_audit`, `ai_action_drafts`, `intelligence_entries` | 644 / 0 drafts / 26 intel |
-| Staff actions | `staff_audit_events`, `profile_audit_log`, `security_events` | — |
-| Readiness dots (computed live, not stored) | `useBookingReadiness` | — |
+| Corner Talk (`useCornerTalk`, `CornerTalkPanel`, `corner-talk` fn) | Role-aware lines, 2-min server cache | Becomes the plain-English cornerman: role-specific reads fed by rollups, with cited reasons |
+| Front Desk / Chase List (`ChaseList.tsx`) | Readiness dots, last portal activity, sort by date | Attention chips with reasons + next safe action, urgency sort, "Today's Street Read" strip |
+| Notifications (`notifications`, `admin_alert_log`, push, email) | One spine already | Category mapping + urgency classes (Urgent / Important / Digest / Silent log) |
+| Daily Ops Brief (`daily-briefing` fn, `TodaysBriefing.tsx`) | Exists | Fold in arrival risk + overnight messages; feeds Corner Talk |
+| Weekly Friction Radar | Does not exist | New rollup, delivered into Ops Control Tower + admin digest email |
+| Ops Control Tower | Health, matrix, transit, exceptions, timeline, agents, verify | Gains a Friction tab; stays the engine-room home |
+| AI drafts (`ai_action_drafts`, `useAIDrafts`, `AIDraftsPanel`) | Pipe exists, 0 rows ever written | Start feeding it: reply drafts, guide edits, chase messages |
+| Guest portal | Journey-adaptive already | Calmer "next step" focus; Camp Notices stay official-looking; no new screens |
 
-**Not captured:** which Guest Guide or welcome-sheet sections guests open, what questions guests ask Kru Glitch as a category, and how long it takes staff to reply to a guest.
+## B. Signals feeding each surface
 
-## 2. Strongest learning loops (none of them creepy)
+Already captured (verified counts): `guest_portal_activity` ~1,040 events incl. full deposit/ID funnels, in-app-browser and network-error detection; `messages` 68; `admin_alert_log` 543; `email_send_log` 929 + `suppressed_emails` 3; `payments` 155 with link/webhook/rejection logs; `guest_documents` 13 with review status; `journey_legs`/`arrival_conflicts`/`flight_tracking`; `airport_pickups` + driver links; `ai_usage_events` 644; `intelligence_entries` 26; `ai_action_drafts` 0; `push_delivery_log` 4 (push barely used); `stay_support_log` 0.
 
-All of these work on events, not people:
+Not captured today: which guide/welcome sections guests open, guest-question topics as categories, staff time-to-first-reply.
 
-1. **Booking visibility.** Track the `guest_booking_missing` rate. Most likely causes: the guest signed up with a different email than the one on the booking, or the booking isn't linked yet. Fixing the cause gets rid of a whole category of WhatsApp "I can't see my booking" messages.
-2. **Payment friction.** The deposit/checkout funnel events already exist end to end. A weekly drop-off summary shows whether the problem is Stripe, the in-app browser (7 hits) or the link itself.
-3. **ID upload friction.** Started vs succeeded vs rejected (`guest_documents.review_status`). Tells you whether the instructions are clear.
-4. **Email reachability.** Bounces, suppressions and complaints per week, plus guests with no email on file. The banner already exists for one booking at a time. This would be the trend view.
-5. **Repeated guest questions.** Guest messages grouped by topic each week (wifi, pickup, laundry, schedule). If the same question shows up 5 times, the guide or welcome sheet is missing something. It suggests a guide edit; a human publishes it.
-6. **Arrival risk.** Arriving in the next 72h with no flight, no ID, an unopened portal or an open conflict. Chase list data, ranked.
-7. **Alert and notification health.** Ratio of suppressed to sent alerts, push basically unused, email failures. Tells you whether staff are drowning or missing things.
-8. **Staff responsiveness and workload.** Time from a guest message to the first staff reply, measured per booking and per shift. Not a per-person leaderboard.
-9. **Stay ops patterns.** Maintenance repeats per unit, laundry volume by week. The data is thin today, so this comes later.
+Mapping:
+- **Corner Talk (Nam/front desk):** today's arrivals, missing flight/ID/payment (readiness rollups), overnight guest messages, pickup unassigned, email bounces.
+- **Corner Talk (Nikki/admin):** booking requests awaiting review, large adjustments (from `booking_adjustments`), repeated friction themes, comms health.
+- **Corner Talk (Max/dev):** webhook/push/email health (`get_ops_service_health`), booking-missing spike, payment funnel drop, pending AI drafts.
+- **Chase List chips:** No flight info · ID missing · Email bounced · Payment incomplete · Guest messaged · Arrives today · Pickup not assigned · Booking not visible to guest · Arrival conflict · Reply needed — all derivable from existing readiness + portal activity + email log + pickups + conflicts.
+- **Friction Radar:** booking-missing trend, payment funnel, ID funnel, email reachability, alert suppression ratio, repeated question topics.
 
-## 3. A safe CampStay Intelligence Layer
+## C. Minimal read-only SQL (smallest safe path)
 
-```text
-signals (existing tables)
-   -> nightly/weekly read-only rollups (SQL views / RPCs, security definer, admin+manager only)
-   -> summaries + flags + suggested drafts (ai_action_drafts / intelligence_entries)
-   -> human reads, decides, acts in the existing UI
-```
+3–5 `SECURITY DEFINER` functions, gated by `has_role(admin|manager)`, property-scoped via `has_property_access`, sandbox/test rows excluded:
 
-Rules:
-- **Read-only.** Rollups only SELECT. The only things it writes are summaries and drafts, into tables that already exist.
-- **Aggregate first.** Reports show counts and rates. Drill into a single booking only when a staff member clicks through.
-- **No personal profiling.** No scores on guests, no inferring nationality, language or identity, no sentiment ratings on guests.
-- **Explainable.** Every flag cites the rows behind it ("4 of 9 deposit attempts stopped at redirect").
-- **Quiet.** Delivered by email digest and in Ops Control Tower. No new pop-ups, no new push spam.
-- **Deterministic first, AI second.** Numbers come from SQL. The AI only puts them into plain words, with the existing deterministic fallback (as `ops-tower-narrative` already does).
+1. `get_friction_radar(period)` — portal funnel, payment funnel, ID funnel, email health, alert suppression, all as counts/rates.
+2. `get_arrival_risk(hours)` — next-72h arrivals missing flight/ID/portal-open or with open conflicts (feeds Corner Talk + Daily Brief).
+3. `get_reply_latency(period)` — guest message → first staff reply, per booking (never per-person leaderboard).
+4. `get_booking_visibility_issues(period)` — `guest_booking_missing` events grouped by cause hypothesis (email mismatch vs unlinked).
 
-## 4. Kru Glitch / Ops AI — allowed vs forbidden
+No new tables needed for phase 1. Topic labels (later) go in a separate table, never into `messages` itself.
 
-**Allowed next:**
-- Summarize: the daily brief and weekly friction radar in plain words.
-- Flag: "guest stuck" and arrival risk, each with the reason cited.
-- Draft: reply drafts to guests, guide edits, chase messages, housekeeping/task drafts. These already go through `ai_action_drafts` with approval.
-- Group: label guest messages by topic, labels only, never actions.
-- Explain: "why is this booking flagged".
+## D. Corner Talk changes
 
-**Forbidden, stays that way:**
-- Changing booking state, rooms, dates, prices, discounts, fees, balances, deposits, refunds, check-in or check-out.
-- Editing or merging guest records, or approving or rejecting IDs.
-- Sending anything to a guest without a human pressing send. Camp Notices stay template-driven, not AI-written.
-- Publishing guide content. It drafts; an admin publishes.
-- Acting on anything that arrives through WhatsApp, Telegram, LINE or email.
-- Scoring or ranking guests, or inferring identity, nationality or language.
-- Treating flight status as guest location.
+- Keep the function + panel; change what feeds it.
+- Role-split the payload: front desk gets today's operational read; admin gets owner read; dev gets engine-room read.
+- Every line cites its reason: "2 missing flight info" links to those bookings on the Chase List.
+- Deterministic SQL first, AI narration second (same pattern as `ops-tower-narrative` with its deterministic fallback).
+- Tone example: "5 arrivals today. 2 missing flight info. 1 guest messaged overnight. 1 email bounced. No pickup conflicts."
+- Never invents, never profiles guests, never shames staff, never acts.
 
-## 5. Next phase (after feature-building)
+## E. Front Desk / Chase List changes
 
-In order, each one small:
+- Attention chips per booking with the reason, not just grey dots.
+- Sort by urgency (arrives today + most missing + unread reply first), not just date.
+- Each card answers "what do I do next": Message / Status / copy portal link — all existing actions.
+- Optional compact "Today's Street Read" strip at top, fed by the Daily Brief rollup.
+- Stays read-only: chasing is a human-sent message.
 
-1. **Weekly Friction Radar** (biggest win). One admin email plus a Control Tower tab covering booking-missing rate, payment funnel, ID funnel, email reachability, and top repeated question topics. Pure SQL plus the existing digest pipeline.
-2. **Booking visibility root-cause check.** Before building anything, investigate the 139 missing events: which guests, and why. This may be a bug to fix, not something to report on.
-3. **Daily Ops Brief upgrade.** Fold arrival risk (next 72h) and unanswered guest messages older than X hours into the existing `daily-briefing`.
-4. **Guide gap suggestions.** Repeated topics become a draft guide edit in Settings → Guide, admin approves.
-5. **Notification health card.** Email failure rate, alert suppression rate, push reach, in Systems Health.
-6. **Staff response time.** Time to first reply, per booking, shown on the Chase list.
+## F. Notification categories → existing infrastructure
 
-## 6. What exists vs gaps (smallest safe path)
+One spine, four classes, mapped onto what exists:
 
-**Already there:**
-- `guest_portal_activity` with funnel events
-- `daily-briefing`, `ops-tower-narrative`, `corner-talk`, `get_ops_exceptions`, `get_ops_service_health`
-- `ai_action_drafts` with safe executors (fail-closed)
-- `intelligence_entries`
-- `email_send_log` and `handle-email-events`
-- `admin_alert_log` with suppression
-- `useBookingReadiness`, Chase list and Booking Status pages
-- immutable audit tables
+| Class | Audience | Examples | Channel |
+|---|---|---|---|
+| Stay Alerts | Guests | front desk replied, pickup changed, ID needs replacement, payment action needed, arrival info missing | portal + email (existing `notify-guest-message`, scheduled emails) |
+| Ops Alerts | Staff | guest messaged, landed/here tap, booking request, ID uploaded, payment issue, email bounced | existing `admin_alert_log` fan-out + bell + opt-in push |
+| Owner Alerts | Nikki/admin | large discount/waiver, booking request needing owner call, weekly friction radar, exceptions | email digest + bell |
+| Engine Alerts | Max/dev | push failing, email queue failures, webhook issues, booking-missing spike, AI draft failures | Ops Control Tower + email |
 
-**Gaps:**
-- No time-series rollups. Everything is computed live, one booking at a time. Smallest fix: 3 to 5 read-only SQL functions (`get_friction_radar(period)`, `get_arrival_risk(hours)`, `get_reply_latency(period)`).
-- `ai_action_drafts` is unused (0 rows). The approval pipe exists but nothing feeds it.
-- `stay_support_log` is empty and `push_delivery_log` is nearly empty. Not enough data to learn from yet.
-- No guide or welcome-sheet view events. If added, a single `guide_section_viewed` event in the existing telemetry table, aggregate only.
-- Guest messages carry no topic label. That needs a nightly AI labeling pass that writes labels into a separate table, never into the message itself.
-- Smoke-test and sandbox rows mix into real counts. Rollups must exclude `is_sandbox_booking` and test guests.
+Urgent = email + bell (+push if enabled). Important = bell + digest. Digest = weekly email only. Silent log = tables only. Push: audit and repair existing wiring (`push_delivery_log` shows 4 deliveries ever) before expanding anything.
 
-## 7. Do NOT build yet
+## G. Daily Ops Brief + Weekly Friction Radar without bloat
 
-- A WhatsApp auto-responder or any bot that answers guests on its own. Still blocked on Lamai's Business account, and on the core law.
-- Auto check-in from "I'm here", landed taps or geolocation.
-- Dynamic pricing, auto-discounts or automated upsell offers.
-- Guest scoring, sentiment ratings, "VIP" or "risk" labels on people.
-- GPS or location tracking, or behaviour tracking inside the portal beyond the funnel events that exist today.
-- Native iOS/Android app work. PWA plus email covers it, and push has 4 deliveries total.
-- Multi-tenant packaging. Prove the learning loops on Lamai first.
-- New dashboards. Put rollups into Ops Control Tower and the daily email, not a new screen.
-- Paid flight-provider upgrades (FlightAware) until arrival volume justifies the cost.
-- Per-staff leaderboards or surveillance-style productivity tracking.
+- **Daily Brief:** extend the existing `daily-briefing` function with arrival-risk and overnight-message sections; same email, same `TodaysBriefing` card, also feeds Corner Talk. No new surface.
+- **Weekly Friction Radar:** one scheduled admin email + one new tab in Ops Control Tower (not a new page). Pure SQL rollups + AI narration. Front desk never sees it unless they open the Tower.
 
-## Technical notes
+## H. AI / Kru Glitch safe assistance
 
-- Rollups: `SECURITY DEFINER` SQL functions gated by `has_role(admin|manager)`, property-scoped through `has_property_access`, sandbox excluded.
-- Delivery: reuse `daily-briefing` and `send-scheduled-emails` (recipient-scoped idempotency keys).
-- AI wording: reuse the `aiGuard` budget and the deterministic fallback pattern.
-- Anything actionable goes into `ai_action_drafts`. Only the existing safe executors (housekeeping/tasks) may auto-apply on approval.
+**Allowed next:** summarize briefs and radar in plain words; flag "guest stuck" and arrival risk with cited reasons; draft guest replies, guide edits, chase messages, housekeeping/task drafts into `ai_action_drafts` (human approves); label guest messages by topic (labels only, separate table); explain "why is this flagged."
+
+**Forbidden, stays forbidden:** booking state, rooms, dates, prices, discounts, fees, balances, deposits, refunds, check-in/out; editing/merging guest records; approving/rejecting IDs; publishing guide content; sending anything guest-facing without a human pressing send; acting on WhatsApp/Telegram/LINE/email content; guest scoring, sentiment, nationality/language inference; flight status as guest location.
+
+Any background AI job follows the batch-job rules: bounded batch, DB single-flight lock, idempotent progress, circuit breaker on 402/403/429, paused-state guard at every entry point. Model: `openai/gpt-6-astra` via the gateway, deterministic fallback always present.
+
+## I. Aesthetics / motion language
+
+**Staff side:** fight-camp operations board — dark Lamai base, red/blue accents, white utility text, status chips ("NEEDS EYES / READY / MISSING / ARRIVING"). Split-flap/departure-board reveals used sparingly: Corner Talk lines, Daily Brief reveal, readiness changes. Motion guides attention, never slows action. Honor `prefers-reduced-motion`. Zero animation on emergency, help, payment, check-in or passport-critical flows.
+
+**Guest side:** same board language, softer — calm arrival board + welcome binder. "Your next step" always obvious. Gentle flip/snap once on load or status change only. Calm blue/gold accents; red only for urgent action-needed. Camp Notices look official and are reply-able underneath.
+
+Implementation note for later: CSS transforms only, GPU-friendly 300ms transitions (matches existing interactive-cards pattern), semantic tokens, no hardcoded colors.
+
+## J. Order of work
+
+1. **Booking visibility root-cause check** (investigate first, maybe a bug not a report): why 139 `guest_booking_missing` events — which guests, email mismatch vs unlinked booking.
+2. **Read-only rollup functions** (`get_friction_radar`, `get_arrival_risk`, `get_reply_latency`, `get_booking_visibility_issues`) — the data backbone for everything else.
+3. **Corner Talk role-split** fed by rollups — the first visible "instinct."
+4. **Chase List attention chips + urgency sort + Street Read strip.**
+5. **Daily Brief upgrade** (arrival risk + overnight messages).
+6. **Weekly Friction Radar** (Tower tab + admin email).
+7. **Feed `ai_action_drafts`** — reply/chase/guide drafts with approval.
+8. **Notification classification pass** on the existing spine; repair push wiring.
+9. **Motion language pass** on Corner Talk / Brief / Chase List, then the guest portal's softer variant.
+
+## Do NOT build now
+
+Auto-booking, auto-check-in, WhatsApp auto-responder, dynamic pricing, auto-discounts, guest scoring/sentiment, GPS/location tracking, staff surveillance leaderboards, new dashboard pages, native app work, multi-tenant packaging, AI publishing or sending without approval, paid flight-provider upgrades (FlightAware) until arrival volume justifies it.
