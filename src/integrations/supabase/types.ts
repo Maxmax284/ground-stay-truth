@@ -5387,6 +5387,22 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_arrival_risk: {
+        Args: { _hours?: number }
+        Returns: {
+          booking_id: string
+          check_in: string
+          guest_id: string
+          missing_flight: boolean
+          missing_id: boolean
+          open_conflict: boolean
+          pickup_unassigned: boolean
+          portal_never_opened: boolean
+          property_id: string
+          state: Database["public"]["Enums"]["booking_state"]
+          unpaid: boolean
+        }[]
+      }
       get_booking_operational_timeline: {
         Args: { _booking_id: string }
         Returns: {
@@ -5398,6 +5414,15 @@ export type Database = {
           occurred_at: string
         }[]
       }
+      get_booking_visibility_issues: {
+        Args: { _days?: number }
+        Returns: {
+          bookings_now: number
+          guest_id: string
+          last_seen: string
+          misses: number
+        }[]
+      }
       get_email_deliverability: {
         Args: { _email: string }
         Returns: {
@@ -5405,6 +5430,7 @@ export type Database = {
           since: string
         }[]
       }
+      get_friction_radar: { Args: { _days?: number }; Returns: Json }
       get_guest_bookings: {
         Args: { _guest_key: string }
         Returns: {
@@ -5481,6 +5507,17 @@ export type Database = {
           last_success_at: string
           source: string
           status: string
+        }[]
+      }
+      get_reply_latency: {
+        Args: { _days?: number }
+        Returns: {
+          booking_id: string
+          first_guest_message_at: string
+          first_staff_reply_at: string
+          property_id: string
+          reply_minutes: number
+          unanswered: boolean
         }[]
       }
       get_unit_essentials: {
