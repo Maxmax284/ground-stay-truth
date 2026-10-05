@@ -31,7 +31,7 @@ export function AirportGuidanceCard({ airportCode, legLabel }: Props) {
 
   if (result.kind === "unknown") {
     return (
-      <Card>
+      <Card className="camp-pass">
         <CardContent className="p-4 space-y-1">
           <p className="text-sm font-medium flex items-center gap-2">
             <Plane className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
@@ -57,7 +57,7 @@ export function AirportGuidanceCard({ airportCode, legLabel }: Props) {
   }).format(new Date(`${a.lastReviewed}T00:00:00Z`));
 
   return (
-    <Card>
+    <Card className="camp-pass">
       <CardContent className="p-4 space-y-3">
         <button
           type="button"
