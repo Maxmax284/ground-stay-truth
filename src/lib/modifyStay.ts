@@ -109,9 +109,11 @@ export function quoteSegments(
   policies: PolicySetting[] | null | undefined,
   numGuests: number,
   completedStays: number,
+  /** Optional per-segment tier length (same order as segments). */
+  tierNights?: number[],
 ): StayQuote {
   const unitById = new Map(units.map((u) => [u.id, u]));
-  const lines: SegmentQuote[] = segments.map((seg) => {
+  const lines: SegmentQuote[] = segments.map((seg, idx) => {
     const unit = unitById.get(seg.unit_id);
     const nights = nightsBetween(seg.starts_on, seg.ends_on);
     if (!unit) {
@@ -150,6 +152,7 @@ export function quoteSegments(
       completedStays,
       0,
       numGuests,
+      tierNights?.[idx],
     );
     const cleaning = Number(summary.cleaningFee ?? 0);
     return {
@@ -366,9 +369,20 @@ export function computeChangeDelta(
   }
   for (const [night, unit] of b) if (!a.has(night)) removed.push([night, unit]);
 
-  const price = (pairs: Array<[string, string]>): ChangeRun[] => {
+  // Long-stay tier for a changed slice comes from the full same-room leg it
+  // belongs to in its plan, so a 1-night add-on to a 35-night stay keeps 30+.
+  const legLength = (plan: Map<string, string>, r: DraftSegment): number => {
+    let n = nightsBetween(r.starts_on, r.ends_on);
+    let d = addDaysIso(r.starts_on, -1);
+    while (plan.get(d) === r.unit_id) { n++; d = addDaysIso(d, -1); }
+    d = r.ends_on;
+    while (plan.get(d) === r.unit_id) { n++; d = addDaysIso(d, 1); }
+    return n;
+  };
+  const price = (pairs: Array<[string, string]>, plan: Map<string, string>): ChangeRun[] => {
     const runs = toRuns(pairs);
-    const q = quoteSegments(runs, units, pricingRules, policies, numGuests, completedStays);
+    const tiers = runs.map((r) => legLength(plan, r));
+    const q = quoteSegments(runs, units, pricingRules, policies, numGuests, completedStays, tiers);
     return runs.map((r, i) => ({
       unitId: r.unit_id, startsOn: r.starts_on, endsOn: r.ends_on,
       nights: nightsBetween(r.starts_on, r.ends_on),
@@ -377,10 +391,10 @@ export function computeChangeDelta(
     }));
   };
 
-  const addedRuns = price(added);
-  const removedRuns = price(removed);
-  const fromRuns = price(movedFrom);
-  const toRunsP = price(movedTo);
+  const addedRuns = price(added, a);
+  const removedRuns = price(removed, b);
+  const fromRuns = price(movedFrom, b);
+  const toRunsP = price(movedTo, a);
 
   const sum = (rs: ChangeRun[]) => round2(rs.reduce((s, r) => s + r.amount, 0));
   const addedAmount = sum(addedRuns);
