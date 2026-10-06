@@ -87,4 +87,24 @@ describe("Modify Stay preserve pricing", () => {
     expect(canFullReprice("checked_in", false)).toBe(false);
     expect(canFullReprice("confirmed", false)).toBe(false);
   });
+
+  it("H: 1-night add-on to a 35-night stay inherits the 30+ tier", () => {
+    const v = { ...mk("v2"), base_price: 2000 };
+    const before = [seg("v2", "2026-09-18", "2026-10-23")];
+    const d = computeChangeDelta(before, [seg("v2", "2026-09-18", "2026-10-24")], 52955, [v], [], policies, 1, 0);
+    expect(d.added[0].line?.summary?.longStayDiscount?.percentage).toBe(24.35);
+    expect(d.delta).toBe(1513);
+    expect(d.mergedTotal).toBe(54468);
+  });
+
+  it("H2: early-arrival night inherits the leg's tier too", () => {
+    const v = { ...mk("v2"), base_price: 2000 };
+    const d = computeChangeDelta([seg("v2", "2026-09-18", "2026-10-23")], [seg("v2", "2026-09-17", "2026-10-23")], 52955, [v], [], policies, 1, 0);
+    expect(d.delta).toBe(1513);
+  });
+
+  it("H3: a 1-night add-on in a different room starts its own leg (no inherited tier)", () => {
+    const d = run([...original, seg("r12", "2026-10-08", "2026-10-09")]);
+    expect(d.delta).toBe(1300);
+  });
 });

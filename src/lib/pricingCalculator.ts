@@ -174,7 +174,9 @@ export function calculatePricing(
   policies?: PolicySetting[] | null,
   completedStays?: number,
   extraBeds?: number,
-  numGuests?: number
+  numGuests?: number,
+  /** Nights used to pick the long-stay tier (e.g. full leg length when pricing only added nights). */
+  tierNights?: number
 ): PricingSummary {
   if (!checkIn || !checkOut) {
     return { nights: [], subtotal: 0, cleaningFee: 0, extraBedTotal: 0, longStayDiscount: null, loyaltyDiscount: null, total: 0 };
@@ -288,7 +290,7 @@ export function calculatePricing(
   // Long-stay discount — skipped only when every night is already on a
   // weekly/monthly flat rate (otherwise seasonal nights would lose the tier).
   const allNightsFixed = useFixedRate && nights.every((n) => n.ruleName === "Weekly Rate" || n.ruleName === "Monthly Rate");
-  const longStayDiscount = allNightsFixed ? null : getLongStayDiscount(nights.length, subtotal, policies);
+  const longStayDiscount = allNightsFixed ? null : getLongStayDiscount(Math.max(nights.length, tierNights ?? 0), subtotal, policies);
 
   // Loyalty discount
   const loyaltyDiscount = getLoyaltyDiscount(completedStays ?? 0, subtotal, policies);
