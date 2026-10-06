@@ -58,7 +58,8 @@
     "messages": "메시지",
     "settings": "설정",
     "navigation": "내비게이션",
-    "previewGuestPortal": "게스트 포털 미리보기"
+    "previewGuestPortal": "게스트 포털 미리보기",
+    "bookingHistory": "Booking history"
   },
   "auth": {
     "signIn": "로그인",

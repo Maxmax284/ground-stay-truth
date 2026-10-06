@@ -23,6 +23,7 @@ import GuestAuth from "./pages/GuestAuth";
 import Units from "./pages/Units";
 import Bookings from "./pages/Bookings";
 import BookingStatus from "./pages/BookingStatus";
+import BookingHistory from "./pages/BookingHistory";
 import CalendarView from "./pages/CalendarView";
 import Pricing from "./pages/Pricing";
 import Reports from "./pages/Reports";
@@ -107,6 +108,7 @@ const App = () => (
                 <Route path="/units" element={<ProtectedRoute requiredPath="/units"><Units /></ProtectedRoute>} />
                 <Route path="/media-library" element={<ProtectedRoute requiredPath="/media-library"><MediaLibrary /></ProtectedRoute>} />
 <Route path="/bookings" element={<ProtectedRoute requiredPath="/bookings"><Bookings /></ProtectedRoute>} />
+                <Route path="/bookings/history" element={<ProtectedRoute requiredPath="/bookings"><BookingHistory /></ProtectedRoute>} />
                 <Route path="/bookings/:id/status" element={<ProtectedRoute requiredPath="/bookings"><BookingStatus /></ProtectedRoute>} />
                 <Route path="/arrivals-board" element={<RedirectToFrontDesk view="arrivals" />} />
                 <Route path="/arrival-intelligence" element={<Navigate to="/front-desk?view=arrivals" replace />} />

@@ -58,7 +58,8 @@
     "messages": "消息",
     "settings": "设置",
     "navigation": "导航",
-    "previewGuestPortal": "预览访客门户"
+    "previewGuestPortal": "预览访客门户",
+    "bookingHistory": "Booking history"
   },
   "auth": {
     "signIn": "登录",

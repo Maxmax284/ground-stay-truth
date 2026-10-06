@@ -28,6 +28,7 @@ import {
   Percent,
   KeyRound,
   ClipboardCheck,
+  History,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -69,6 +70,7 @@ const navItems = [
   { titleKey: "nav.units", url: "/units", icon: Building2 },
   { titleKey: "nav.mediaLibrary", url: "/media-library", icon: Images },
   { titleKey: "nav.bookings", url: "/bookings", icon: BookOpen },
+  { titleKey: "nav.bookingHistory", url: "/bookings/history", icon: History },
   { titleKey: "nav.calendar", url: "/calendar", icon: CalendarDays },
   { titleKey: "nav.pricing", url: "/pricing", icon: DollarSign },
   { titleKey: "nav.reports", url: "/reports", icon: BarChart3 },
@@ -212,7 +214,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild className="h-11 px-4 text-[15px]">
                     <NavLink
                       to={item.url}
-                      end={item.url === "/dashboard"}
+                      end={item.url === "/dashboard" || item.url === "/bookings"}
                       className="hover:bg-sidebar-accent/50 hover-slide-right"
                       activeClassName="bg-sidebar-accent text-sidebar-primary font-medium border-l-[3px] border-sidebar-primary"
                     >

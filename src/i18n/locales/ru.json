@@ -58,7 +58,8 @@
     "messages": "Сообщения",
     "settings": "Настройки",
     "navigation": "Навигация",
-    "previewGuestPortal": "Предпросмотр портала гостя"
+    "previewGuestPortal": "Предпросмотр портала гостя",
+    "bookingHistory": "Booking history"
   },
   "auth": {
     "signIn": "Войти",

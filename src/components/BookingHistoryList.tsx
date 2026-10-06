@@ -46,7 +46,7 @@ export function BookingHistoryList({ compact = false }: { compact?: boolean }) {
     queryFn: async ({ pageParam }) => {
       let qb = (supabase
         .from("bookings")
-        .select("id, unit_id, check_in, check_out, num_guests, total_price, guest_id, state, guest_name, units(name), profiles!bookings_guest_id_profiles_fkey(full_name, email)")
+        .select("id, unit_id, check_in, check_out, num_guests, total_price, guest_id, state, manual_guest_name, manual_guest_email, units(name), profiles!bookings_guest_id_profiles_fkey(full_name, email)")
         .order("check_in", { ascending: false })
         .range(pageParam, pageParam + PAGE - 1)) as any;
       if (activePropertyId) qb = qb.eq("property_id", activePropertyId);

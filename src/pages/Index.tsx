@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Building2, BookOpen, CalendarDays, TrendingUp, ArrowRight, Plus, LogIn, LogOut, Wrench, Shirt, MessageSquare, ShieldCheck, Check, X, FileText, Clock, Users, LayoutDashboard } from "lucide-react";
+import { Building2, BookOpen, CalendarDays, TrendingUp, ArrowRight, Plus, LogIn, LogOut, Wrench, Shirt, MessageSquare, ShieldCheck, Check, X, FileText, Clock, Users, LayoutDashboard, History } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -73,6 +73,9 @@ const Index = () => {
           <div className="board-kicker">Lamai operations</div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground"><LayoutDashboard className="h-6 w-6 text-primary" />{t("dashboard.welcome")}</h1>
           <p className="text-muted-foreground mt-1">{t("dashboard.overview")}</p>
+          <Button asChild variant="outline" size="sm" className="mt-3">
+            <Link to="/bookings/history"><History className="mr-2 h-4 w-4" />Booking history</Link>
+          </Button>
         </div>
 
         {/* Which account / which build — kills the "my screen shows different
