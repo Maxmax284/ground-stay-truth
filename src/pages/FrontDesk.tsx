@@ -226,8 +226,9 @@ export default function FrontDesk() {
             <ArrivalExceptionsPanel onOpen={setDetailId} />
           </TabsContent>
 
+          <TabsContent value="history" className="mt-4 desk-panel-in"><BookingHistoryList /></TabsContent>
+
           {isManagerPlus && (
-            <TabsContent value="history" className="mt-4 desk-panel-in"><BookingHistoryList /></TabsContent>
             <TabsContent value="overrides" className="space-y-3 mt-4 desk-panel-in">
               <OverridesPanel rows={overrides ?? []} />
             </TabsContent>
