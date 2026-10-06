@@ -78,7 +78,8 @@
     "arrivalsBoard": "Tableau des arrivées",
     "arrivalIntel": "Intelligence des arrivées",
     "adminBooking": "Nouvelle réservation",
-    "adminBookingFlow": "Flux de réservation Admin"
+    "adminBookingFlow": "Flux de réservation Admin",
+    "bookingHistory": "Booking history"
   },
   "auth": {
     "signIn": "Se connecter",

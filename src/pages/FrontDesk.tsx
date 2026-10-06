@@ -32,6 +32,7 @@ import {
   CalendarClock,
   RefreshCcw,
 } from "lucide-react";
+import { BookingHistoryList } from "@/components/BookingHistoryList";
 import { useFrontDeskData, useRecentOverrides, useMarkArrived, type FrontDeskBooking } from "@/hooks/useFrontDesk";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { useAuth } from "@/hooks/useAuth";
@@ -166,6 +167,7 @@ export default function FrontDesk() {
             <TabsTrigger value="departing" className="shrink-0">{t("frontDesk.tabs.departing", { count: totals.departing })}</TabsTrigger>
             <TabsTrigger value="chase" className="shrink-0">{t("chaseList.tab", "Chase list")}</TabsTrigger>
             <TabsTrigger value="travelChecks" className="shrink-0">{t("arrivalExceptions.tab", "Travel checks")}</TabsTrigger>
+            <TabsTrigger value="history" className="shrink-0">{t("nav.bookingHistory")}</TabsTrigger>
             {isManagerPlus && <TabsTrigger value="overrides" className="shrink-0">{t("frontDesk.tabs.overrides")}</TabsTrigger>}
           </TabsList>
 
@@ -223,6 +225,8 @@ export default function FrontDesk() {
             <DriverChatPanel />
             <ArrivalExceptionsPanel onOpen={setDetailId} />
           </TabsContent>
+
+          <TabsContent value="history" className="mt-4 desk-panel-in"><BookingHistoryList /></TabsContent>
 
           {isManagerPlus && (
             <TabsContent value="overrides" className="space-y-3 mt-4 desk-panel-in">

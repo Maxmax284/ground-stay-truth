@@ -58,7 +58,8 @@
     "messages": "Mensajes",
     "settings": "Configuración",
     "navigation": "Navegación",
-    "previewGuestPortal": "Vista previa del portal de huéspedes"
+    "previewGuestPortal": "Vista previa del portal de huéspedes",
+    "bookingHistory": "Booking history"
   },
   "auth": {
     "signIn": "Iniciar sesión",

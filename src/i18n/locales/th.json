@@ -78,7 +78,8 @@
     "arrivalsBoard": "กระดานผู้มาถึง",
     "arrivalIntel": "ข้อมูลการเดินทางผู้เข้าพัก",
     "adminBooking": "สร้างการจอง",
-    "adminBookingFlow": "สร้างการจองแอดมิน"
+    "adminBookingFlow": "สร้างการจองแอดมิน",
+    "bookingHistory": "ประวัติการจอง"
   },
   "auth": {
     "signIn": "เข้าสู่ระบบ",

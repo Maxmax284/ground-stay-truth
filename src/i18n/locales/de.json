@@ -78,7 +78,8 @@
     "arrivalsBoard": "Ankunftstafel",
     "arrivalIntel": "Ankunftsdetails",
     "adminBooking": "Neue Buchung",
-    "adminBookingFlow": "Admin-Buchungsfluss"
+    "adminBookingFlow": "Admin-Buchungsfluss",
+    "bookingHistory": "Booking history"
   },
   "auth": {
     "signIn": "Anmelden",

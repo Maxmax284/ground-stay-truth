@@ -58,7 +58,8 @@
     "messages": "メッセージ",
     "settings": "設定",
     "navigation": "ナビゲーション",
-    "previewGuestPortal": "ゲストポータルプレビュー"
+    "previewGuestPortal": "ゲストポータルプレビュー",
+    "bookingHistory": "Booking history"
   },
   "auth": {
     "signIn": "ログイン",

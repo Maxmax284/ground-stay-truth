@@ -40,6 +40,7 @@ import { BackfillWorklistCard } from "@/components/bookings/BackfillWorklistCard
 import { QuickOfflinePaymentDialog } from "@/components/bookings/QuickOfflinePaymentDialog";
 import { calculateOutstanding } from "@/lib/paymentTypes";
 import { Banknote } from "lucide-react";
+import { BookingHistoryList } from "@/components/BookingHistoryList";
 import { canRecordOfflinePayment } from "@/lib/offlinePayments";
 import { useBookingReadiness, type BookingReadiness } from "@/hooks/useBookingReadiness";
 import { BookingReadinessRow } from "@/components/BookingReadinessRow";
@@ -292,8 +293,10 @@ const Bookings = () => {
           <TabsList>
             <TabsTrigger value="bookings">{t("guests.tabBookings")}</TabsTrigger>
             <TabsTrigger value="directory">{t("guests.tabDirectory")}</TabsTrigger>
+            <TabsTrigger value="history">{t("nav.bookingHistory")}</TabsTrigger>
           </TabsList>
 
+          <TabsContent value="history"><BookingHistoryList /></TabsContent>
           <TabsContent value="directory">
             <GuestDirectory onOpenBooking={(id) => setSelectedBookingId(id)} />
           </TabsContent>

@@ -78,7 +78,8 @@
     "arrivalsBoard": "Arrivals Board",
     "arrivalIntel": "Arrival Intelligence",
     "adminBooking": "New Booking",
-    "adminBookingFlow": "Admin Booking Flow"
+    "adminBookingFlow": "Admin Booking Flow",
+    "bookingHistory": "Booking history"
   },
   "auth": {
     "signIn": "Sign in",
