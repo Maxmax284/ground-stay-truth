@@ -209,7 +209,7 @@ const Units = () => {
         </div>
 
         {isLoading ? (
-          <p className="text-muted-foreground">{t("units.loadingUnits")}</p>
+          <ManifestSync />
         ) : !units?.length ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
