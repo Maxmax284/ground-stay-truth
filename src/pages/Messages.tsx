@@ -116,22 +116,40 @@ const Messages = () => {
 
   // Deep link: /messages?booking=<id> opens that booking's thread directly
   // (used by the Booking Status page's "Message guest" chase action).
+  // Opens even when the booking has no messages yet — those are exactly the
+  // guests staff need to chase, and the dialog handles an empty thread.
   const [searchParams, setSearchParams] = useSearchParams();
   const deepLinkBooking = searchParams.get("booking");
   useEffect(() => {
-    if (!deepLinkBooking || !threads?.length) return;
-    if (threads.some((th) => th.booking_id === deepLinkBooking)) {
-      setThreadBookingId(deepLinkBooking);
-      markRead.mutate(deepLinkBooking);
-    }
+    if (!deepLinkBooking) return;
+    setThreadBookingId(deepLinkBooking);
+    markRead.mutate(deepLinkBooking);
     setSearchParams((prev) => {
       prev.delete("booking");
       return prev;
     }, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deepLinkBooking, threads]);
+  }, [deepLinkBooking]);
 
   const activeThread = (threads ?? []).find((th) => th.booking_id === threadBookingId) ?? null;
+
+  // A deep-linked booking with no messages isn't in the inbox list — fetch its
+  // details so the dialog still shows which room and guest the chase is about.
+  const deepLinkBookingInfo = useQuery({
+    queryKey: ["inbox-deeplink-booking", threadBookingId],
+    enabled: !!threadBookingId && !threads?.some((th) => th.booking_id === threadBookingId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("id, units(name), manual_guest_name, manual_guest_email, manual_guest_phone, profiles!bookings_guest_id_profiles_fkey(full_name, email)")
+        .eq("id", threadBookingId!)
+        .maybeSingle() as any;
+      if (error) throw error;
+      return data;
+    },
+  });
+  const fallbackHeadline = (deepLinkBookingInfo?.data as any)?.units?.name as string | undefined;
+  const fallbackGuestName = deepLinkBookingInfo?.data ? resolveGuestDisplayName(deepLinkBookingInfo.data) : null;
 
   // Default click = reply straight away. The full booking sheet stays one tap away.
   const handleOpenThread = (bookingId: string) => {
@@ -253,8 +271,8 @@ const Messages = () => {
         bookingId={threadBookingId}
         open={!!threadBookingId}
         onOpenChange={(open) => !open && setThreadBookingId(null)}
-        headline={activeThread?.unit_name}
-        guestName={activeThread?.guest_name}
+        headline={activeThread?.unit_name ?? fallbackHeadline}
+        guestName={activeThread?.guest_name ?? fallbackGuestName}
         onOpenBooking={() => {
           const id = threadBookingId;
           setThreadBookingId(null);
