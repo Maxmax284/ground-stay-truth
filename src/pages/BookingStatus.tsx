@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import {
   ArrowLeft, Eye, Banknote, Plane, IdCard, MessageCircle, Check, X,
-  AlertTriangle, Mail, Link2, MessageSquare, PlaneTakeoff, Ship, Bus, Car, HelpCircle,
+  AlertTriangle, Mail, Link2, MessageSquare, PlaneTakeoff, Ship, Bus, Car, HelpCircle, Receipt,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,8 @@ import { useArrivalIntelligence } from "@/hooks/useArrivalIntelligence";
 import { useGuestDocuments, REVIEW_STATUS_LABELS, type DocumentReviewStatus } from "@/hooks/useGuestDocuments";
 import { useAirportPickup } from "@/hooks/useAirportPickups";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
+import { usePriceStory } from "@/hooks/usePriceStory";
+import { formatPrice } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { EmailReachabilityNotice } from "@/components/EmailReachabilityNotice";
