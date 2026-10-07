@@ -60,6 +60,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { GuestNowCard, computeNowState } from "@/components/GuestNowCard";
 import { JourneyBanner } from "@/components/guest/JourneyBanner";
 import { CampLogbook } from "@/components/guest/CampLogbook";
+import { CampPass } from "@/components/guest/CampPass";
 import { LanguageSuggestionBanner } from "@/components/guest/LanguageSuggestionBanner";
 import { GuestWelcomeFlow } from "@/components/guest/GuestWelcomeFlow";
 import { WelcomeSheetCard } from "@/components/guest/WelcomeSheetCard";
@@ -542,6 +543,8 @@ const GuestPortal = () => {
         {/* ── Stage atmosphere. Presentation only — the truth is in the card
             directly below it. ─────────────────────────────────────────────── */}
         <JourneyBanner stage={journeyStage} guestName={guestName} />
+
+        <CampPass booking={nowBooking ?? pastBookings.find((b) => b.state === "completed") ?? null} guestName={guestName} />
 
         <CampLogbook
           booking={nowBooking ?? pastBookings.find((b) => b.state === "completed") ?? null}
