@@ -101,6 +101,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </Button>
             </div>
           </header>
+          <RouteTicker path={location.pathname} title={t(titleKey)} />
           <ElevationBanner />
           <main className="flex-1 p-4 sm:p-6 overflow-y-auto overflow-x-hidden ring-rope-pattern min-w-0">
 

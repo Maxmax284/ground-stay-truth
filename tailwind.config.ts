@@ -148,7 +148,7 @@ export default {
         "ken-burns": "ken-burns 5s ease-out forwards",
         "pulse-ring": "pulse-ring 2s ease-out infinite",
         "title-in": "title-in 0.5s ease-out forwards",
-        "page-entry": "fade-up 0.3s ease-out forwards",
+        "page-entry": "clipboard-slide 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both",
       },
     },
   },
