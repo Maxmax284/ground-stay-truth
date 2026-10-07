@@ -33,12 +33,14 @@ interface Props {
     total_price?: number | null;
     pay_on_arrival?: boolean | null;
   } | null;
+  /** Starting note text; defaults to the legacy backfill note. */
+  defaultNote?: string;
   /** Optional hint from the caller; the dialog still verifies against the database. */
   paid?: number;
   onClose: () => void;
 }
 
-export function QuickOfflinePaymentDialog({ booking, paid, onClose }: Props) {
+export function QuickOfflinePaymentDialog({ booking, paid, onClose, defaultNote }: Props) {
   const bookingId = booking?.id;
 
   /**
@@ -76,7 +78,7 @@ export function QuickOfflinePaymentDialog({ booking, paid, onClose }: Props) {
 
   const [amount, setAmount] = useState<string>("");
   const [method, setMethod] = useState<string>("cash");
-  const [notes, setNotes] = useState("Backfilled — payment taken before platform");
+  const [notes, setNotes] = useState(defaultNote ?? "Backfilled — payment taken before platform");
   const createPayment = useCreatePayment();
   const setPayOnArrival = useSetPayOnArrival();
 

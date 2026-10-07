@@ -40,7 +40,7 @@ export type FrontDeskBooking = {
   totalPaid: number;
   depositPaid: boolean;
   securityDeposit: { status: string; amount_held: number } | null;
-  turnover: { status: string } | null;
+  turnover: { id?: string; status: string } | null;
   docCount: number;
   docTypes: string[];
   nights: number;
@@ -134,7 +134,7 @@ export function useFrontDeskData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("housekeeping_tasks")
-        .select("booking_out_id, booking_in_id, status, unit_id")
+        .select("id, booking_out_id, booking_in_id, status, unit_id")
         .or(
           `booking_out_id.in.(${bookingIds.join(",")}),booking_in_id.in.(${bookingIds.join(",")})`
         );
