@@ -547,6 +547,96 @@
   .flap-char { animation: none; }
 }
 
+/* Solari Route Flip — slim transit ticker under the staff header. */
+.route-ticker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  padding: 0.28rem 1rem;
+  border-bottom: 1px solid hsl(var(--fight-gold) / 0.22);
+  background: linear-gradient(180deg, hsl(var(--fight-dark)), hsl(30 9% 12%));
+  min-width: 0;
+}
+.route-ticker-label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: hsl(38 45% 78% / 0.92);
+  white-space: nowrap;
+  overflow: hidden;
+  min-width: 0;
+}
+.route-ticker-sub {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: hsl(38 45% 78% / 0.45);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.route-ticker-sweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent 20%, hsl(var(--fight-gold) / 0.35) 50%, transparent 80%);
+  background-size: 200% 100%;
+  animation: route-sweep 480ms ease-out both;
+}
+@keyframes route-sweep {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-ticker-sweep { animation: none; opacity: 0; }
+}
+
+/* Fight Camp Clipboard Slide — screens settle into the desk slot. */
+@keyframes clipboard-slide {
+  0% { opacity: 0; transform: translate3d(28px, 22px, 0) rotate(0.4deg); }
+  70% { opacity: 1; transform: translate3d(-2px, -1px, 0) rotate(-0.08deg); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0) rotate(0deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-ticker-label, .route-ticker-sub { color: hsl(38 45% 78% / 0.92); }
+}
+
+/* Manifest Sync — etched clipboard watermark while a board hydrates. */
+.manifest-sync {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1rem;
+  border: 1px dashed hsl(var(--fight-gold) / 0.35);
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 26px, hsl(var(--fight-gold) / 0.05) 26px 27px);
+}
+.manifest-sync-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1.5px solid hsl(var(--fight-gold) / 0.5);
+  border-radius: 3px;
+  transform: rotate(-3deg);
+  font-family: 'Oswald', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: hsl(var(--fight-gold) / 0.85);
+}
+.manifest-sync-label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+
 /* Guest-side board language: softer settle, no overshoot, mount/change only. */
 @keyframes board-flip-soft {
   0% { transform: perspective(600px) rotateX(-25deg); opacity: 0; }
