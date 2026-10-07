@@ -69,11 +69,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <SandboxModeBanner />
           {/* Preview mode banner */}
           {isPreviewMode && (
-            <div className="bg-amber-500/90 text-amber-950 px-4 py-2 flex items-center justify-between text-sm font-medium">
+            <div className="bg-warning/15 text-foreground border-b border-warning/40 px-4 py-2 flex items-center justify-between text-sm font-medium">
               <span>
                 {t("preview.banner", { role: t(`roles.${previewRole}`) })}
               </span>
-              <Button size="sm" variant="ghost" className="h-7 text-amber-950 hover:text-amber-900 hover:bg-amber-400/50" onClick={() => setPreviewRole(null)}>
+              <Button size="sm" variant="ghost" className="h-7 hover:bg-warning/20" onClick={() => setPreviewRole(null)}>
                 <X className="h-4 w-4 mr-1" /> {t("preview.exit")}
               </Button>
             </div>
