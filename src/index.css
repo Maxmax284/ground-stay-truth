@@ -907,3 +907,13 @@
 @media (prefers-reduced-motion: reduce) {
   .key-note, .tm30-slip, .logbook-stamp { animation: none; }
 }
+
+/* The Ledger — ruled accommodation book rows (Booking History) */
+.ledger-row { position:relative; overflow:hidden;
+  background-image: repeating-linear-gradient(to bottom, transparent 0 23px, hsl(var(--border) / 0.45) 23px 24px);
+  border-left: 3px double hsl(var(--primary) / 0.35); }
+.ledger-file { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.08em; }
+.ledger-void { position:absolute; right:3.5rem; top:50%; transform: translateY(-50%) rotate(-9deg);
+  font-family: ui-monospace, monospace; font-weight:800; letter-spacing:0.25em; font-size:1.1rem;
+  color: hsl(var(--destructive) / 0.55); border:2px solid hsl(var(--destructive) / 0.45);
+  padding: 0 0.4rem; border-radius:3px; pointer-events:none; }
