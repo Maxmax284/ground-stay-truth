@@ -21,13 +21,15 @@ const LABEL: Record<HookState, string> = {
 };
 
 export function KeyRack({
-  staying, departing, arriving, tasks, onOpen,
+  staying, departing, arriving, tasks, onOpen, notes,
 }: {
   staying: FrontDeskBooking[];
   departing: FrontDeskBooking[];
   arriving: FrontDeskBooking[];
   tasks: TodayTask[];
   onOpen: (bookingId: string) => void;
+  /** Booking ids with an unread guest message (pigeonhole note). */
+  notes?: Set<string>;
 }) {
   const { data: units } = useUnits();
 
@@ -83,6 +85,9 @@ export function KeyRack({
               className={cn("key-hook min-w-0", `key-${h.state}`)}
             >
               <span className="key-hook-hole" aria-hidden />
+              {h.booking && notes?.has(h.booking.id) && (
+                <span className="key-note" title="Unread guest message" aria-label="Unread guest message" />
+              )}
               <span className="block truncate text-[11px] font-semibold leading-tight">{h.name}</span>
               <span className="block truncate text-[9px] uppercase tracking-wider opacity-80">
                 {LABEL[h.state]}

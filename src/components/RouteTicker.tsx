@@ -28,9 +28,13 @@ function IslandBarometer() {
     radar,
     sea,
   ].filter(Boolean);
+  // Monsoon Shutter — a reminder of the physical routine, never an action.
+  const code = data.weatherCode ?? 0;
+  const squall = (data.windKph ?? 0) >= 35 || [63, 65, 81, 82, 95, 96, 99].includes(code) || (data.precipitation ?? 0) >= 4;
   return (
     <span className="route-ticker-baro" title="Lamai weather + sea (Open-Meteo) · USM arrivals radar. Sea state is not an official ferry schedule.">
       <span className={`baro-dot ${wet ? "baro-dot-wet" : ""}`} aria-hidden />
+      {squall && <span className="route-ticker-squall">[ GULF SQUALL · DROP RING TARPS · STOW OUTDOOR RACKS ] </span>}
       {parts.join(" · ")}
     </span>
   );
