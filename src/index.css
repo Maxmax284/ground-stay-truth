@@ -807,7 +807,10 @@
 .baro-dot { width: 6px; height: 6px; border-radius: 9999px; background: hsl(var(--success) / 0.8); flex-shrink: 0; animation: baro-pulse 2.4s ease-in-out infinite; }
 .baro-dot-wet { background: hsl(var(--fight-gold) / 0.9); }
 @keyframes baro-pulse { 0%,100% { opacity: 0.45; } 50% { opacity: 1; } }
-@media (max-width: 520px) { .route-ticker-baro { display: none; } }
+@media (max-width: 520px) {
+  .route-ticker { flex-wrap: wrap; row-gap: 0.15rem; }
+  .route-ticker-baro { margin-left: 0; flex-basis: 100%; font-size: 9.5px; letter-spacing: 0.1em; white-space: normal; line-height: 1.35; }
+}
 
 /* Grease-pencil strike — a red crayon drag across a fresh stamp, then it fades. */
 .grease-strike { position: relative; }

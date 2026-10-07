@@ -14,7 +14,7 @@ function IslandBarometer() {
     ? arrivals.length
       ? `USM ${down}/${arrivals.length} DOWN${late ? ` · ${late} LATE` : ""}`
       : "USM RADAR QUIET"
-    : null;
+    : "USM RADAR STANDBY";
   // Sea state from marine feed — a read on crossing conditions, not an official ferry status.
   const sea = data.waveHeight != null ? `SEA ${data.waveHeight.toFixed(1)}M${data.waveHeight >= 1.5 ? " ROUGH" : ""}` : null;
   const wet = (data.precipitation ?? 0) > 0 || (data.weatherCode ?? 0) >= 51;
