@@ -104,7 +104,7 @@ const Units = () => {
   };
 
   const renderUnitCard = (unit: Unit) => (
-    <Card key={unit.id} className={`transition-opacity ${!unit.is_active ? "opacity-60" : ""}`}>
+    <Card key={unit.id} className={`ledger-card transition-opacity ${!unit.is_active ? "ledger-card-void" : ""}`}>
       {unit.photos && unit.photos.length > 0 ? (
         <div className="relative aspect-[16/9] overflow-hidden rounded-t-lg">
           <img src={unit.photos[0]} alt={unit.name} className="w-full h-full object-cover" />
@@ -117,7 +117,12 @@ const Units = () => {
       ) : null}
       <CardContent className="p-5 space-y-3">
         <div className="flex items-start justify-between">
-          <h3 className="font-semibold text-foreground text-lg leading-tight">{unit.name}</h3>
+          <div className="min-w-0">
+            <span className="ledger-file block text-[9px] text-muted-foreground/70">
+              UNIT // RM-{String(unit.id).slice(0, 4).toUpperCase()}
+            </span>
+            <h3 className="font-semibold text-foreground text-lg leading-tight">{unit.name}</h3>
+          </div>
           <Badge variant={unit.is_active ? "default" : "secondary"}>
             {unit.is_active ? t("common.active") : t("common.inactive")}
           </Badge>

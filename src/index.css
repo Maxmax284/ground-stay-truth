@@ -930,3 +930,14 @@
   font-family: ui-monospace, monospace; font-weight:800; letter-spacing:0.25em; font-size:0.85rem;
   color: hsl(var(--destructive) / 0.5); border:2px solid hsl(var(--destructive) / 0.4);
   padding: 0 0.35rem; border-radius:3px; pointer-events:none; }
+
+/* The Ledger — Units key wall cards */
+.ledger-card { position:relative; overflow:hidden;
+  border-left: 3px double hsl(var(--primary) / 0.35);
+  background-image: repeating-linear-gradient(to bottom, transparent 0 27px, hsl(var(--border) / 0.4) 27px 28px); }
+.ledger-card-void > *:not(.ledger-void-skip) { opacity: 0.7; }
+.ledger-card-void::after { content:"VOID"; position:absolute; right:1rem; top:3.25rem;
+  transform: rotate(-9deg);
+  font-family: ui-monospace, monospace; font-weight:800; letter-spacing:0.25em; font-size:1.1rem;
+  color: hsl(var(--destructive) / 0.6); border:2px solid hsl(var(--destructive) / 0.5);
+  padding: 0 0.4rem; border-radius:3px; pointer-events:none; z-index:2; }
