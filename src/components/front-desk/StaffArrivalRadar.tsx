@@ -1,4 +1,7 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 import { GroundRadar, type RadarLeg } from "@/components/GroundRadar";
 import { useFlightTrackingBatch, FLIGHT_STATUS_CONFIG } from "@/hooks/useFlightTracking";
 import { formatCampLabeled } from "@/lib/timezone";
@@ -32,6 +35,21 @@ export function StaffArrivalRadar({
 }: Props) {
   const { data: tracking } = useFlightTrackingBatch(pickupId ? [pickupId] : []);
   const flight = tracking?.[pickupId];
+  const qc = useQueryClient();
+
+  // Live: re-read the moment the radar poller writes a new reading for this pickup.
+  useEffect(() => {
+    if (!pickupId) return;
+    const ch = supabase
+      .channel(`flight-radar-${pickupId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "flight_tracking", filter: `pickup_id=eq.${pickupId}` },
+        () => qc.invalidateQueries({ queryKey: ["flight_tracking_batch"] }),
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [pickupId, qc]);
 
   const view = useMemo(() => {
     const status = flight?.flight_status ?? null;
@@ -64,7 +82,8 @@ export function StaffArrivalRadar({
       transitLine = "Aircraft still en route. No pickup action until the guest says they are out.";
     }
 
-    return { leg, statusLabel, eta, transitLine };
+    const dep = flight?.actual_departure ?? flight?.estimated_departure ?? flight?.scheduled_departure ?? null;
+    return { leg, statusLabel, eta, dep, transitLine };
   }, [flight, guestLandedAt, guestReadyAt, collectedAt, intlFlightNumber]);
 
   if (!pickupId) return null;
@@ -76,6 +95,9 @@ export function StaffArrivalRadar({
       leg={view.leg}
       statusLabel={view.statusLabel}
       etaLabel={view.eta ? formatCampLabeled(view.eta) : null}
+      departLabel={view.dep ? `${flight?.departure_iata ? flight.departure_iata + " · " : ""}${formatCampLabeled(view.dep)}` : null}
+      schedArrivalLabel={flight?.scheduled_arrival ? formatCampLabeled(flight.scheduled_arrival) : null}
+      updatedLabel={flight?.last_checked_at ? `Live · checked ${formatDistanceToNow(new Date(flight.last_checked_at), { addSuffix: true })}` : null}
       delayMinutes={flight?.delay_minutes ?? null}
       gate={flight?.gate ?? null}
       terminal={flight?.terminal ?? null}

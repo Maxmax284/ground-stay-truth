@@ -12,6 +12,12 @@ interface Props {
   leg: RadarLeg;
   statusLabel: string;
   etaLabel?: string | null;
+  /** Departure time (best known: actual > estimated > scheduled) */
+  departLabel?: string | null;
+  /** Scheduled arrival, shown when it differs from ETA */
+  schedArrivalLabel?: string | null;
+  /** "Updated 2m ago" footer for live feeds */
+  updatedLabel?: string | null;
   delayMinutes?: number | null;
   gate?: string | null;
   terminal?: string | null;
@@ -31,6 +37,9 @@ export function GroundRadar({
   leg,
   statusLabel,
   etaLabel,
+  departLabel,
+  schedArrivalLabel,
+  updatedLabel,
   delayMinutes,
   gate,
   terminal,
@@ -101,9 +110,21 @@ export function GroundRadar({
               <Plane className="h-4 w-4 text-sidebar-foreground/60" />
             )}
           </div>
+          {departLabel && (
+            <p className="text-xs text-sidebar-foreground/80">
+              <span className="text-sidebar-foreground/50 uppercase text-[10px] tracking-wider mr-1">DEP</span>
+              {departLabel}
+            </p>
+          )}
+          {schedArrivalLabel && schedArrivalLabel !== etaLabel && (
+            <p className="text-xs text-sidebar-foreground/60 line-through decoration-sidebar-foreground/40">
+              <span className="no-underline text-sidebar-foreground/50 uppercase text-[10px] tracking-wider mr-1">SCHED</span>
+              {schedArrivalLabel}
+            </p>
+          )}
           {etaLabel && (
             <p className="text-xs text-sidebar-foreground/80">
-              <span className="text-sidebar-foreground/50 uppercase text-[10px] tracking-wider mr-1">ETA</span>
+              <span className="text-sidebar-foreground/50 uppercase text-[10px] tracking-wider mr-1">ARR</span>
               {etaLabel}
             </p>
           )}
@@ -156,6 +177,9 @@ export function GroundRadar({
       <div className="rounded-md border border-sidebar-border bg-sidebar-accent/60 px-3 py-2">
         <p className="text-xs leading-snug text-sidebar-accent-foreground">{transitLine}</p>
       </div>
+      {updatedLabel && (
+        <p className="font-mono text-[9px] uppercase tracking-wider text-sidebar-foreground/45">{updatedLabel}</p>
+      )}
     </div>
   );
 }
