@@ -1,10 +1,22 @@
 import { SplitFlapText } from "@/components/SplitFlapText";
 import { useSamuiConditions, describeWeather } from "@/hooks/useSamuiConditions";
+import { useAirportTraffic } from "@/hooks/useAirportTraffic";
 
 /** Island barometer — one honest telex line from the weather feed. Read-only. */
 function IslandBarometer() {
   const { data } = useSamuiConditions();
+  const { data: traffic } = useAirportTraffic("USM");
   if (!data || data.temperature === null) return null;
+  const arrivals = (traffic ?? []).filter((f) => f.direction === "arrival");
+  const late = arrivals.filter((f) => (f.delay_minutes ?? 0) >= 30).length;
+  const down = arrivals.filter((f) => f.flight_status === "landed").length;
+  const radar = traffic
+    ? arrivals.length
+      ? `USM ${down}/${arrivals.length} DOWN${late ? ` · ${late} LATE` : ""}`
+      : "USM RADAR QUIET"
+    : null;
+  // Sea state from marine feed — a read on crossing conditions, not an official ferry status.
+  const sea = data.waveHeight != null ? `SEA ${data.waveHeight.toFixed(1)}M${data.waveHeight >= 1.5 ? " ROUGH" : ""}` : null;
   const wet = (data.precipitation ?? 0) > 0 || (data.weatherCode ?? 0) >= 51;
   const rain = data.daily[0]?.rainChance;
   const parts = [
@@ -12,9 +24,11 @@ function IslandBarometer() {
     describeWeather(data.weatherCode).label.toUpperCase(),
     rain != null ? `RAIN ${rain}%` : null,
     wet ? "CANVAS WET" : "CANVAS DRY",
+    radar,
+    sea,
   ].filter(Boolean);
   return (
-    <span className="route-ticker-baro" title="Lamai conditions (Open-Meteo)">
+    <span className="route-ticker-baro" title="Lamai weather + sea (Open-Meteo) · USM arrivals radar. Sea state is not an official ferry schedule.">
       <span className={`baro-dot ${wet ? "baro-dot-wet" : ""}`} aria-hidden />
       {parts.join(" · ")}
     </span>
