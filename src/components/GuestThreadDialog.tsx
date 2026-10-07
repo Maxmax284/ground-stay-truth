@@ -95,7 +95,7 @@ export function GuestThreadDialog({
   const showPickupTab = Boolean(pickup) && !isGuest;
 
   const transcript = (
-    <div className="max-h-[45dvh] min-w-0 overflow-x-hidden overflow-y-auto px-3 py-3 sm:px-4 space-y-3">
+    <div className="radio-log max-h-[45dvh] min-w-0 overflow-x-hidden overflow-y-auto px-3 py-3 sm:px-4 space-y-3">
       {isLoading ? (
         <div className="space-y-2">
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-md" />)}
@@ -117,7 +117,7 @@ export function GuestThreadDialog({
               <div
                 className={`min-w-0 max-w-[88%] overflow-hidden rounded-lg px-3 py-2 space-y-1 ${
                   m.is_internal
-                    ? "bg-muted text-foreground border border-dashed"
+                    ? "radio-desknote bg-muted text-foreground"
                     : mine
                       ? "bg-primary text-primary-foreground"
                       : fromStaff
@@ -140,7 +140,7 @@ export function GuestThreadDialog({
                     onTinted={!m.is_internal}
                   />
                 )}
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] opacity-80">
+                <div className="radio-tx-time flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] opacity-80">
                   {m.is_internal && (
                     <span className="inline-flex items-center gap-1">
                       <Lock className="h-2.5 w-2.5" />
@@ -215,6 +215,9 @@ export function GuestThreadDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[min(92dvh,760px)] w-[calc(100vw-1rem)] max-w-lg min-w-0 flex-col overflow-hidden p-0 gap-0 sm:w-full">
         <DialogHeader className="px-4 py-3 border-b space-y-1">
+          {bookingId && (
+            <p className="radio-callsign">RADIO DESK // CH {bookingId.slice(2, 6).toUpperCase()}</p>
+          )}
           <DialogTitle className="flex min-w-0 items-center gap-2 pr-6 text-base">
             <MessagesSquare className="h-4 w-4 text-primary" />
             {headline || t("messages.title")}

@@ -224,18 +224,19 @@ const Messages = () => {
           <ScrollArea className="max-h-[calc(100vh-14rem)]">
             <div className="space-y-2">
               {filtered.map((thread) => (
-                <Card key={thread.booking_id} className="p-4 cursor-pointer hover:bg-accent/40 transition-colors" onClick={() => handleOpenThread(thread.booking_id)}>
+                <Card key={thread.booking_id} className="radio-card p-4 cursor-pointer hover:bg-accent/40 transition-colors" onClick={() => handleOpenThread(thread.booking_id)}>
                   <div className="flex items-start gap-3">
                     <div className="pt-1.5 shrink-0">
                       {thread.unread_count > 0 ? <Circle className="h-2.5 w-2.5 fill-primary text-primary" /> : <Circle className="h-2.5 w-2.5 text-transparent" />}
                     </div>
                     <div className="flex-1 min-w-0 space-y-1">
+                      <p className="radio-callsign">TX // {thread.booking_id.slice(2, 6).toUpperCase()} · {thread.total_messages} {thread.total_messages === 1 ? "MSG" : "MSGS"}</p>
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="font-semibold text-sm truncate">{thread.unit_name}</span>
                           <Badge className={`text-[10px] shrink-0 ${STATE_VARIANTS[thread.state]}`}>{t(`states.${thread.state}`)}</Badge>
                         </div>
-                        <span className="text-xs text-muted-foreground shrink-0">{formatDistanceToNow(new Date(thread.last_message_at), { addSuffix: true })}</span>
+                        <span className="radio-tx-time text-muted-foreground shrink-0">{formatDistanceToNow(new Date(thread.last_message_at), { addSuffix: true })}</span>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         {thread.guest_name && <span className="flex items-center gap-1"><User className="h-3 w-3" />{thread.guest_name}</span>}
