@@ -61,6 +61,9 @@ import CheckInDesk from "@/pages/CheckInDesk";
 import ArrivalsBoard from "@/pages/ArrivalsBoard";
 import { KeyRack } from "@/components/front-desk/KeyRack";
 import { CounterBell } from "@/components/front-desk/CounterBell";
+import { DeskPanel, DeskStamp, stampsFor, STAMP_LABEL, type DeskStampKey } from "@/components/front-desk/deskStamps";
+
+const STAMP_TABS: DeskStampKey[] = ["passport", "immigration", "balance", "room"];
 
 export default function FrontDesk() {
   const { t } = useTranslation();
@@ -80,6 +83,16 @@ export default function FrontDesk() {
     departing: sections.departingToday.length,
     upcoming: sections.upcoming.length,
   };
+
+  const stampLists = useMemo(() => {
+    const seen = new Map<string, FrontDeskBooking>();
+    [...sections.arrivingToday, ...sections.arrivedNotCheckedIn, ...sections.currentlyStaying, ...sections.departingToday]
+      .forEach((b) => seen.set(b.id, b));
+    const all = [...seen.values()];
+    const out = {} as Record<DeskStampKey, FrontDeskBooking[]>;
+    STAMP_TABS.forEach((k) => { out[k] = all.filter((b) => stampsFor(b).includes(k)); });
+    return out;
+  }, [sections]);
 
   if (view !== "desk") {
     return (
@@ -167,11 +180,15 @@ export default function FrontDesk() {
             <TabsTrigger value="departing" className="shrink-0">{t("frontDesk.tabs.departing", { count: totals.departing })}</TabsTrigger>
             <TabsTrigger value="chase" className="shrink-0">{t("chaseList.tab", "Chase list")}</TabsTrigger>
             <TabsTrigger value="travelChecks" className="shrink-0">{t("arrivalExceptions.tab", "Travel checks")}</TabsTrigger>
+            {STAMP_TABS.map((k) => (
+              <TabsTrigger key={k} value={`stamp-${k}`} className="shrink-0">{STAMP_LABEL[k]} ({stampLists[k].length})</TabsTrigger>
+            ))}
             <TabsTrigger value="history" className="shrink-0">{t("nav.bookingHistory")}</TabsTrigger>
             {isManagerPlus && <TabsTrigger value="overrides" className="shrink-0">{t("frontDesk.tabs.overrides")}</TabsTrigger>}
           </TabsList>
 
-          <TabsContent value="arriving" className="space-y-3 mt-4 desk-panel-in">
+          <TabsContent value="arriving" className="mt-4">
+<DeskPanel className="space-y-3">
             <SectionList
               isLoading={isLoading}
               bookings={sections.arrivingToday}
@@ -182,8 +199,10 @@ export default function FrontDesk() {
               pickupByBooking={pickupByBooking}
               lastMessageByBooking={lastMessageByBooking}
             />
-          </TabsContent>
-          <TabsContent value="staying" className="space-y-3 mt-4 desk-panel-in">
+          </DeskPanel>
+</TabsContent>
+          <TabsContent value="staying" className="mt-4">
+<DeskPanel className="space-y-3">
             <SectionList
               isLoading={isLoading}
               bookings={sections.currentlyStaying}
@@ -193,8 +212,10 @@ export default function FrontDesk() {
               pickupByBooking={pickupByBooking}
               lastMessageByBooking={lastMessageByBooking}
             />
-          </TabsContent>
-          <TabsContent value="departing" className="space-y-3 mt-4 desk-panel-in">
+          </DeskPanel>
+</TabsContent>
+          <TabsContent value="departing" className="mt-4">
+<DeskPanel className="space-y-3">
             <SectionList
               isLoading={isLoading}
               bookings={sections.departingToday}
@@ -204,8 +225,10 @@ export default function FrontDesk() {
               pickupByBooking={pickupByBooking}
               lastMessageByBooking={lastMessageByBooking}
             />
-          </TabsContent>
-          <TabsContent value="upcoming" className="space-y-3 mt-4 desk-panel-in">
+          </DeskPanel>
+</TabsContent>
+          <TabsContent value="upcoming" className="mt-4">
+<DeskPanel className="space-y-3">
             <SectionList
               isLoading={isLoading}
               bookings={sections.upcoming}
@@ -215,23 +238,48 @@ export default function FrontDesk() {
               pickupByBooking={pickupByBooking}
               lastMessageByBooking={lastMessageByBooking}
             />
-          </TabsContent>
+          </DeskPanel>
+</TabsContent>
 
-          <TabsContent value="chase" className="space-y-3 mt-4 desk-panel-in">
+          <TabsContent value="chase" className="mt-4">
+<DeskPanel className="space-y-3">
             <ChaseList sections={sections} onOpen={setDetailId} />
-          </TabsContent>
+          </DeskPanel>
+</TabsContent>
 
-          <TabsContent value="travelChecks" className="space-y-3 mt-4 desk-panel-in">
+          <TabsContent value="travelChecks" className="mt-4">
+<DeskPanel className="space-y-3">
             <DriverChatPanel />
             <ArrivalExceptionsPanel onOpen={setDetailId} />
-          </TabsContent>
+          </DeskPanel>
+</TabsContent>
 
-          <TabsContent value="history" className="mt-4 desk-panel-in"><BookingHistoryList /></TabsContent>
+          {STAMP_TABS.map((k) => (
+            <TabsContent key={k} value={`stamp-${k}`} className="mt-4">
+              <DeskPanel className="space-y-3">
+                <SectionList
+                  isLoading={isLoading}
+                  bookings={stampLists[k]}
+                  emptyText={`Nobody stamped ${STAMP_LABEL[k].toLowerCase()} right now.`}
+                  variant="staying"
+                  onOpen={setDetailId}
+                  pickupByBooking={pickupByBooking}
+                  lastMessageByBooking={lastMessageByBooking}
+                />
+              </DeskPanel>
+            </TabsContent>
+          ))}
+
+          <TabsContent value="history" className="mt-4">
+<DeskPanel className=""><BookingHistoryList /></DeskPanel>
+</TabsContent>
 
           {isManagerPlus && (
-            <TabsContent value="overrides" className="space-y-3 mt-4 desk-panel-in">
+            <TabsContent value="overrides" className="mt-4">
+<DeskPanel className="space-y-3">
               <OverridesPanel rows={overrides ?? []} />
-            </TabsContent>
+            </DeskPanel>
+</TabsContent>
           )}
         </Tabs>
       </div>
@@ -433,6 +481,7 @@ function BookingRow({
                 if (state === "completed") return <span className="ink-stamp text-[hsl(var(--success))]">{label}</span>;
                 return <Badge className={`text-[10px] ${STATE_VARIANTS[state] ?? ""}`}>{label}</Badge>;
               })()}
+              {stampsFor(booking).map((k, i) => <DeskStamp key={k} kind={k} index={i} />)}
               {booking.arrived_at && (
                 <Badge className="text-[10px] bg-info/20 text-[hsl(var(--info))]">
                   {t("frontDesk.arrivedAt", { time: format(parseISO(booking.arrived_at), "HH:mm") })}

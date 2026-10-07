@@ -620,6 +620,10 @@
     padding: 1px 8px; border: 1.5px solid currentColor; border-radius: 3px;
     transform: rotate(-2.5deg);
   }
+  .ink-stamp-press { animation: ink-press 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .desk-sync { display:flex; flex-direction:column; align-items:center; gap:8px; padding:40px 0; animation: desk-sync-in 380ms ease-out both; }
+  .desk-sync-bar { width:min(220px,60%); height:3px; border-radius:2px; background: linear-gradient(90deg, transparent, hsl(var(--fight-gold)), transparent); background-size:200% 100%; animation: desk-sync-sweep 380ms linear infinite; }
+  .desk-sync-label { font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:0.3em; text-transform:uppercase; color: hsl(var(--muted-foreground)); }
   .desk-panel-in { animation: board-flip-soft 380ms cubic-bezier(0.25, 0.8, 0.3, 1) both; }
   .camp-stamp {
     display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 3px;
@@ -669,10 +673,13 @@
 }
 @keyframes counter-glow { 0%,100% { box-shadow: 0 0 0 0 hsl(var(--fight-gold) / 0); } 50% { box-shadow: 0 0 18px -2px hsl(var(--fight-gold) / 0.45); } }
 @keyframes bell-ring { 0%,80%,100% { transform: rotate(0); } 84% { transform: rotate(14deg); } 88% { transform: rotate(-12deg); } 92% { transform: rotate(8deg); } 96% { transform: rotate(-4deg); } }
+@keyframes ink-press { 0% { opacity:0; scale:1.6; } 70% { opacity:1; scale:0.94; } 100% { scale:1; } }
+@keyframes desk-sync-in { from { opacity:0; } to { opacity:1; } }
+@keyframes desk-sync-sweep { from { background-position:200% 0; } to { background-position:-200% 0; } }
 @keyframes camp-led { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
 @media (prefers-reduced-motion: reduce) {
   .camp-led, .camp-flap-in, .desk-panel-in, .guest-headsup-card, .animate-pulse-ring,
-  .animate-pulse-glow, .animate-ken-burns, [class*="intel-anim-"], .key-hook, .counter-bell, .counter-bell-icon,
+  .animate-pulse-glow, .animate-ken-burns, [class*="intel-anim-"], .key-hook, .counter-bell, .counter-bell-icon, .ink-stamp-press, .desk-sync, .desk-sync-bar,
   [class*="animate-stagger-"] { animation: none !important; }
   .guest-headsup-card, .guest-ai-dock { transition: none !important; transform: none !important; }
 }
