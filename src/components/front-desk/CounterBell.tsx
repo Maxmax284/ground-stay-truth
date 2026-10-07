@@ -1,3 +1,4 @@
+import { playGroundSound } from "@/lib/groundSounds";
 /**
  * Counter Bell — lit slip for guests who are physically here but not yet
  * checked in. Read-only: tapping opens the booking; check-in stays a human
@@ -24,7 +25,7 @@ export function CounterBell({
           <li key={b.id}>
             <button
               type="button"
-              onClick={() => onOpen(b.id)}
+              onClick={() => { playGroundSound("counter_bell", 0.5); onOpen(b.id) }}
               className="w-full min-w-0 flex items-center gap-2 text-left rounded-md px-2 py-1.5 hover:bg-background/40 transition-colors"
             >
               <span className="key-tag shrink-0">{b.units?.name ?? "No room"}</span>

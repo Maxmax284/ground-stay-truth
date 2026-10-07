@@ -13,7 +13,9 @@ type SoundName =
   | "briefing"
   | "landed"
   | "message"
-  | "state_change";
+  | "state_change"
+  | "brass_clack"
+  | "counter_bell";
 
 interface SoundDef {
   /** Frequencies to play (Hz). Multiple = chord / sequence. */
@@ -95,6 +97,20 @@ const SOUND_LIBRARY: Record<SoundName, SoundDef> = {
     wave: "sine",
     stagger: 0,
     gain: 0.1,
+  },
+  brass_clack: {
+    freqs: [196, 392], // dull weighted key-on-hook clack
+    duration: 0.06,
+    wave: "triangle",
+    stagger: 0.012,
+    gain: 0.08,
+  },
+  counter_bell: {
+    freqs: [1174.66], // single damped shop-counter ding
+    duration: 0.45,
+    wave: "sine",
+    stagger: 0,
+    gain: 0.08,
   },
   state_change: {
     freqs: [523.25, 659.25], // C5 → E5: simple interval
