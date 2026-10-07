@@ -137,6 +137,7 @@ export default function FrontDesk() {
           arriving={sections.arrivingToday}
           tasks={todaysTasks}
           onOpen={setDetailId}
+          notes={new Set([...(lastMessageByBooking?.entries() ?? [])].filter(([, m]) => m.from_guest && !m.is_read).map(([id]) => id))}
         />
 
         {/* Today's Briefing — deterministic by default, optional AI narration */}

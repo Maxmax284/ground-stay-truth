@@ -856,3 +856,54 @@
 /* Customs double-ring */
 .customs-ring { outline: 1px solid currentColor; outline-offset: 2px; border-radius: 4px; }
 @media (prefers-reduced-motion: reduce) { .rhythm-dot-live { animation:none; } }
+
+/* ── Pigeonhole note (Key Rack) ── */
+.key-hook { position: relative; }
+.key-note {
+  position: absolute; top: -4px; right: 4px; width: 14px; height: 18px;
+  background: hsl(var(--card)); border: 1px solid hsl(var(--border));
+  box-shadow: 0 2px 4px hsl(var(--foreground) / 0.18);
+  transform: rotate(8deg); border-radius: 1px;
+  background-image: linear-gradient(transparent 6px, hsl(var(--destructive) / 0.6) 6px, hsl(var(--destructive) / 0.6) 7px, transparent 7px);
+  animation: note-peek 420ms cubic-bezier(0.2,0.8,0.2,1) both;
+}
+@keyframes note-peek { from { transform: translateY(6px) rotate(0deg); opacity: 0; } to { transform: rotate(8deg); opacity: 1; } }
+
+/* ── Monsoon Shutter ── */
+.route-ticker-squall { color: hsl(var(--warning, 38 92% 50%)); font-weight: 700; }
+
+/* ── Stapled TM.30 slip ── */
+.tm30-staple-zone { padding-left: 1.5rem; }
+.tm30-slip {
+  position: relative; display: inline-block; padding: 8px 14px 6px;
+  background: hsl(var(--card)); color: hsl(var(--foreground));
+  border: 1px dashed hsl(var(--border)); transform: rotate(-3deg);
+  box-shadow: 0 3px 6px hsl(var(--foreground) / 0.12);
+  font-family: ui-monospace, monospace;
+  animation: slip-land 380ms cubic-bezier(0.2,0.8,0.2,1) both;
+}
+.tm30-staple { position: absolute; top: 3px; width: 12px; height: 2px; border-radius: 1px;
+  background: linear-gradient(90deg, hsl(var(--muted-foreground)), hsl(var(--foreground) / 0.4)); }
+.tm30-staple-l { left: 8px; } .tm30-staple-r { right: 8px; }
+.tm30-holes { display: flex; align-items: center; gap: 8px; }
+.tm30-hole { width: 10px; height: 2px; border-radius: 1px; background: hsl(var(--muted-foreground) / 0.5); }
+@keyframes slip-land { from { transform: translateY(-8px) rotate(-8deg); opacity: 0; } to { transform: rotate(-3deg); opacity: 1; } }
+
+/* ── Guest Camp Logbook ── */
+.camp-logbook { border: 1px solid hsl(var(--border)); border-radius: 0.75rem; padding: 1rem;
+  background: hsl(var(--card)); box-shadow: inset 0 0 0 3px hsl(var(--card)), inset 0 0 0 4px hsl(var(--border)); }
+.logbook-slot { min-height: 78px; display: flex; align-items: center; justify-content: center; }
+.logbook-empty { border: 1px dashed hsl(var(--border)); border-radius: 6px; padding: 10px 6px; width: 100%;
+  text-align: center; color: hsl(var(--muted-foreground) / 0.7); }
+.logbook-stamp { display: inline-block; text-align: center; padding: 8px 10px; mix-blend-mode: multiply;
+  border: 2px solid currentColor; opacity: 0.88; animation: logbook-ink 420ms cubic-bezier(0.2,0.8,0.2,1) both; }
+.dark .logbook-stamp { mix-blend-mode: normal; }
+.logbook-rect { color: hsl(222 45% 42%); border-radius: 3px; }
+.logbook-round { color: hsl(285 35% 42%); border-radius: 9999px; padding: 14px 10px; outline: 1px solid currentColor; outline-offset: 2px; }
+.logbook-box { color: hsl(8 65% 46%); border-radius: 2px; outline: 1px solid currentColor; outline-offset: 2px; }
+.logbook-seal { color: hsl(40 55% 40%); border-radius: 9999px; border-style: double; border-width: 4px; padding: 14px 10px; }
+@keyframes logbook-ink { from { opacity: 0; scale: 1.3; } to { opacity: 0.88; scale: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .key-note, .tm30-slip, .logbook-stamp { animation: none; }
+}
