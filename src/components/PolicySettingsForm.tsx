@@ -513,6 +513,8 @@ export function PolicySettingsForm() {
                       landed: "Landed",
                       message: "Message",
                       state_change: "State Change",
+                      brass_clack: "Key Rack Clack",
+                      counter_bell: "Counter Bell",
                     };
                     return (
                       <Button

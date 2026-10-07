@@ -57,7 +57,9 @@ export function CashDesk({ bookings, onOpen }: { bookings: FrontDeskBooking[]; o
       {rows.map((b) => {
         const total = Number(b.total_price ?? 0);
         return (
-          <div key={b.id} className="camp-pass p-3 flex flex-wrap items-center gap-3 justify-between">
+          <div key={b.id} className="camp-pass carbon-chit p-3 pt-5 flex flex-wrap items-center gap-3 justify-between">
+            <span className="carbon-serial" aria-hidden>LMT-CS-{b.id.slice(0, 6).toUpperCase()}</span>
+            {b.outstanding <= 0 && <span className="carbon-paid" aria-hidden>Paid</span>}
             <button className="text-left min-w-0 flex-1" onClick={() => onOpen(b.id)}>
               <p className="font-medium truncate">{resolveGuestDisplayName(b as any) || "Guest"}</p>
               <p className="text-xs text-muted-foreground truncate">

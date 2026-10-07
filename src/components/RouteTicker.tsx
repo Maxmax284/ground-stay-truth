@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { SplitFlapText } from "@/components/SplitFlapText";
 import { useSamuiConditions, describeWeather } from "@/hooks/useSamuiConditions";
 import { useAirportTraffic } from "@/hooks/useAirportTraffic";
@@ -31,6 +32,30 @@ function IslandBarometer() {
     <span className="route-ticker-baro" title="Lamai weather + sea (Open-Meteo) · USM arrivals radar. Sea state is not an official ferry schedule.">
       <span className={`baro-dot ${wet ? "baro-dot-wet" : ""}`} aria-hidden />
       {parts.join(" · ")}
+    </span>
+  );
+}
+
+/** Camp Rhythm Clock — where the camp is in its day (Bangkok time). Display only. */
+function campRhythm(now: Date) {
+  const hm = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit", hour12: false }).format(now).replace(":", ""));
+  if (hm >= 700 && hm < 900) return { live: true, text: "MORNING SESSION · RUN & PADS" };
+  if (hm >= 900 && hm < 1630) return { live: false, text: "CAMP REST · RECOVERY & INTAKE" };
+  if (hm >= 1630 && hm < 1830) return { live: true, text: "AFTERNOON SESSION · CLINCH & SPARRING" };
+  return { live: false, text: "NIGHT RECOVERY · CAMP QUIET" };
+}
+
+function CampRhythm() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+  const r = campRhythm(now);
+  return (
+    <span className="route-ticker-rhythm" title="Camp day rhythm (Bangkok time)">
+      <span className={`baro-dot ${r.live ? "rhythm-dot-live" : ""}`} aria-hidden />
+      {r.text}
     </span>
   );
 }
@@ -73,6 +98,7 @@ export function RouteTicker({ path, title }: { path: string; title: string }) {
           · {sub}
         </span>
       )}
+      <CampRhythm />
       <IslandBarometer />
     </div>
   );

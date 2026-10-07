@@ -1,3 +1,4 @@
+import { playGroundSound } from "@/lib/groundSounds";
 /**
  * Brass Key Rack — read-only room board for Front Desk.
  * Every hook is derived from data already loaded; tapping a hook only opens
@@ -76,7 +77,7 @@ export function KeyRack({
               key={h.id}
               type="button"
               disabled={!h.booking}
-              onClick={() => h.booking && onOpen(h.booking.id)}
+              onClick={() => { playGroundSound("brass_clack", 0.5); h.booking && onOpen(h.booking.id) }}
               title={guest ? `${h.name} · ${guest}` : `${h.name} · ${LABEL[h.state]}`}
               style={{ animationDelay: `${Math.min(i, 24) * 25}ms` }}
               className={cn("key-hook min-w-0", `key-${h.state}`)}
