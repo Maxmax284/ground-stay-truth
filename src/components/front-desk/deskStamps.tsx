@@ -34,7 +34,7 @@ export function stampsFor(b: FrontDeskBooking): DeskStampKey[] {
 export function DeskStamp({ kind, index = 0 }: { kind: DeskStampKey; index?: number }) {
   return (
     <span
-      className={`ink-stamp ink-stamp-press ${STAMP_TONE[kind]}`}
+      className={`ink-stamp ink-stamp-press grease-strike ${STAMP_TONE[kind]}`}
       style={{ transform: `rotate(${index % 2 ? 1.8 : -2.5}deg)` }}
     >
       {STAMP_LABEL[kind]}
