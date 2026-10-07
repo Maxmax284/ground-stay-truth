@@ -75,7 +75,7 @@ const queryClient = new QueryClient({
 });
 
 const App = () => (
-  <ThemeProvider attribute="class" defaultTheme="dark" storageKey="campstay-warm-theme" enableSystem={false}>
+  <ThemeProvider attribute="class" defaultTheme="light" storageKey="campstay-theme-v3" enableSystem={false}>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
