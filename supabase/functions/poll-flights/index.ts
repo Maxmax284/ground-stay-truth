@@ -78,7 +78,7 @@ serve(async (req) => {
     const pickupIds = pickups.map(p => p.id);
     const { data: existingTracking } = await serviceClient
       .from("flight_tracking")
-      .select("pickup_id, flight_status, last_checked_at")
+      .select("pickup_id, flight_status, last_checked_at, delay_minutes, gate, terminal")
       .in("pickup_id", pickupIds);
 
     const terminalStatuses = new Set(["landed", "cancelled", "diverted"]);
@@ -224,6 +224,32 @@ serve(async (req) => {
               if (patchError) console.error(`Failed syncing pickup ${pickup.id} from live flight:`, patchError.message);
             }
 
+
+            // Knock on staff's door (alert only — never moves the pickup).
+            const prev: any = existingTracking?.find(ft => ft.pickup_id === pickup.id);
+            if (prev && newStatus !== "landed" && newStatus !== "cancelled") {
+              const oldDelay = Number(prev.delay_minutes ?? 0);
+              const eta = record.estimated_arrival ?? record.scheduled_arrival;
+              const etaTxt = eta ? new Date(eta).toLocaleString("en-GB", { timeZone: "Asia/Bangkok", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "unknown";
+              if (delayMinutes >= 30 && delayMinutes - oldDelay >= 30) {
+                await serviceClient.rpc("emit_admin_alert", {
+                  _event_type: "flight_delayed",
+                  _message: `✈️ ${cleanFlight} is now ${delayMinutes} min late — new landing ${etaTxt} (Bangkok). Tell the driver.`,
+                  _reference_id: pickup.booking_id, _deep_link: `/bookings/${pickup.booking_id}/status`,
+                  _context: { flight: cleanFlight, delay_minutes: delayMinutes, previous_delay: oldDelay },
+                });
+              }
+              const g = (v: any) => (v ?? "").toString().trim();
+              if ((g(prev.gate) && g(record.gate) && g(prev.gate) !== g(record.gate)) ||
+                  (g(prev.terminal) && g(record.terminal) && g(prev.terminal) !== g(record.terminal))) {
+                await serviceClient.rpc("emit_admin_alert", {
+                  _event_type: "flight_gate_changed",
+                  _message: `✈️ ${cleanFlight} arrival changed: terminal ${g(record.terminal) || "—"}, gate ${g(record.gate) || "—"} (was ${g(prev.terminal) || "—"}/${g(prev.gate) || "—"}).`,
+                  _reference_id: pickup.booking_id, _deep_link: `/bookings/${pickup.booking_id}/status`,
+                  _context: { flight: cleanFlight, gate: record.gate, terminal: record.terminal },
+                });
+              }
+            }
 
             // Detect landed transition → notify guest
             let notified = false;
