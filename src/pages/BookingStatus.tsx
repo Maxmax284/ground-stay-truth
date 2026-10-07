@@ -68,6 +68,7 @@ export default function BookingStatus() {
   const readiness = booking ? readinessMap?.[booking.id] : undefined;
   const { data: pickup } = useAirportPickup(id ?? null);
   const { data: documents } = useGuestDocuments(id ?? null);
+  const { story: priceStory } = usePriceStory(booking ?? null, !!booking);
   const arrival = useArrivalIntelligence(id, {
     guestLandedAt: pickup?.guest_landed_at ?? null,
     guestReadyAt: pickup?.guest_ready_at ?? null,
