@@ -29,6 +29,7 @@ import { GuestThreadLauncher } from "@/components/GuestThreadLauncher";
 import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/utils";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GuestDirectory } from "@/components/guests/GuestDirectory";
@@ -351,8 +352,8 @@ const Bookings = () => {
             ))}
           </div>
         ) : (
-          <div className="rounded-lg border bg-card">
-            <Table>
+          <div className="rounded-lg border bg-card overflow-hidden">
+            <Table className="ledger-table">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("bookings.unit")}</TableHead>
@@ -369,7 +370,7 @@ const Bookings = () => {
                 {bookings.map((b) => (
                   <TableRow
                     key={b.id}
-                    className="cursor-pointer"
+                    className={cn("cursor-pointer", b.state === "cancelled" && "ledger-row-void")}
                     onClick={() => setSelectedBookingId(b.id)}
                     data-spotlight-kind="booking"
                     data-spotlight-id={b.id}
@@ -382,6 +383,9 @@ const Bookings = () => {
                     <TableCell className="font-medium">{b.units?.name ?? "—"}</TableCell>
                     <TableCell className="text-muted-foreground">
                       <div className="flex flex-col gap-1">
+                        <span className="ledger-file text-[9px] text-muted-foreground/70">
+                          FILE // {(b.check_in ?? "").slice(2, 4)}-{String(b.id).slice(0, 4).toUpperCase()}
+                        </span>
                         <span>{resolveGuestDisplayName(b as any)}</span>
                         <DocumentFlagBadge status={docFlags?.[b.id]} />
                         <BookingReadinessRow readiness={readiness?.[b.id]} />
