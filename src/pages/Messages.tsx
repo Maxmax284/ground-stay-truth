@@ -271,8 +271,8 @@ const Messages = () => {
         bookingId={threadBookingId}
         open={!!threadBookingId}
         onOpenChange={(open) => !open && setThreadBookingId(null)}
-        headline={activeThread?.unit_name}
-        guestName={activeThread?.guest_name}
+        headline={activeThread?.unit_name ?? fallbackHeadline}
+        guestName={activeThread?.guest_name ?? fallbackGuestName}
         onOpenBooking={() => {
           const id = threadBookingId;
           setThreadBookingId(null);
