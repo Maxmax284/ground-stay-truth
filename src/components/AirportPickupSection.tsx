@@ -25,6 +25,8 @@ import { useCreateDriverLink } from "@/hooks/useDriverLink";
 import { PickupConversationDialog } from "@/components/PickupConversationDialog";
 import { DriverResponseLine } from "@/components/front-desk/DriverResponseLine";
 import { Link2 } from "lucide-react";
+import { useSaveJourneyLegs } from "@/hooks/useJourneyIntake";
+import type { DraftLeg } from "@/lib/journeyIntake";
 
 
 const STATUS_COLORS: Record<string, string> = {
@@ -65,6 +67,7 @@ export function AirportPickupSection({ bookingId, guestName, hideRadar }: Props)
   const [paxCount, setPaxCount] = useState("1");
   const [driverChatOpen, setDriverChatOpen] = useState(false);
   const createDriverLink = useCreateDriverLink();
+  const saveLegs = useSaveJourneyLegs();
 
   const canManage = permissions.canTransitionState(role); // front_desk+
 
@@ -234,6 +237,17 @@ export function AirportPickupSection({ bookingId, guestName, hideRadar }: Props)
         updates.final_flight_confirmed = true;
       }
       await upsert.mutateAsync(updates);
+      // Bridge staff-typed flights into the radar layer. Server merge never
+      // overwrites stronger facts and raises conflicts for a human instead.
+      const intl = updates.international_flight_number as string | null;
+      const fin = updates.flight_number as string | null;
+      const legs: DraftLeg[] = [];
+      if (intl) legs.push({ leg_order: 1, leg_type: "flight", marketed_flight_number: intl, is_final_leg: !fin, to_code: fin ? null : "USM", scheduled_arrival: fin ? null : updates.arrival_datetime, confidence: "medium" });
+      if (fin) legs.push({ leg_order: legs.length + 1, leg_type: "flight", marketed_flight_number: fin, to_code: "USM", scheduled_arrival: updates.arrival_datetime, is_final_leg: true, confidence: "high" });
+      if (legs.length) {
+        try { await saveLegs.mutateAsync({ bookingId, legs }); }
+        catch (e: any) { toast({ title: "Pickup saved, flight radar didn't update", description: e?.message, variant: "destructive" }); }
+      }
       const manualPrefix = pickup.assist_mode === "manual_assist" ? "[MANUAL] " : "";
       await logPickupAction({
         bookingId,
