@@ -917,3 +917,16 @@
   font-family: ui-monospace, monospace; font-weight:800; letter-spacing:0.25em; font-size:1.1rem;
   color: hsl(var(--destructive) / 0.55); border:2px solid hsl(var(--destructive) / 0.45);
   padding: 0 0.4rem; border-radius:3px; pointer-events:none; }
+
+/* The Ledger — desktop table variant (Bookings list) */
+.ledger-table { border-left: 3px double hsl(var(--primary) / 0.35); }
+.ledger-table thead th { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; }
+.ledger-table tbody tr { background-image: repeating-linear-gradient(to bottom, transparent 0 31px, hsl(var(--border) / 0.35) 31px 32px); }
+.ledger-table tbody tr:hover { background-color: hsl(var(--accent) / 0.5); }
+.ledger-row-void { position:relative; }
+.ledger-row-void > td:first-child::after { content:"VOID"; position:absolute; left:0.5rem; top:50%;
+  transform: translateY(-50%) rotate(-9deg);
+  font-family: ui-monospace, monospace; font-weight:800; letter-spacing:0.25em; font-size:0.85rem;
+  color: hsl(var(--destructive) / 0.5); border:2px solid hsl(var(--destructive) / 0.4);
+  padding: 0 0.35rem; border-radius:3px; pointer-events:none; }
