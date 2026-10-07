@@ -931,6 +931,19 @@
   color: hsl(var(--destructive) / 0.5); border:2px solid hsl(var(--destructive) / 0.4);
   padding: 0 0.35rem; border-radius:3px; pointer-events:none; }
 
+/* The Radio Desk — dispatch log for Messages */
+.radio-card { position:relative; overflow:hidden;
+  border-left: 3px double hsl(var(--primary) / 0.35);
+  background-image: repeating-linear-gradient(to bottom, transparent 0 27px, hsl(var(--border) / 0.35) 27px 28px); }
+.radio-callsign { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: hsl(var(--muted-foreground)); }
+.radio-tx-time { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.65rem; letter-spacing: 0.06em; }
+.radio-log { background-image: repeating-linear-gradient(to bottom, transparent 0 31px, hsl(var(--border) / 0.25) 31px 32px); }
+.radio-desknote { border: 1px dashed hsl(var(--primary) / 0.45);
+  background-image: repeating-linear-gradient(135deg, transparent 0 6px, hsl(var(--primary) / 0.05) 6px 12px); }
+
 /* The Ledger — Units key wall cards */
 .ledger-card { position:relative; overflow:hidden;
   border-left: 3px double hsl(var(--primary) / 0.35);
