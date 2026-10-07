@@ -575,9 +575,9 @@
   .attention-stamp { display: inline-flex; align-items: center; border: 1px solid currentColor; border-radius: 3px; padding: 0.125rem 0.375rem; font-family: 'Oswald', sans-serif; font-size: 0.625rem; line-height: 1rem; letter-spacing: 0.08em; text-transform: uppercase; }
   .camp-pass {
     position: relative; overflow: hidden;
-    background: linear-gradient(160deg, hsl(var(--fight-dark)) 0%, hsl(0 0% 11%) 100%);
-    color: hsl(0 0% 96%);
-    --foreground: 0 0% 96%; --card-foreground: 0 0% 96%;
+    background: linear-gradient(160deg, hsl(var(--fight-dark)) 0%, hsl(30 9% 15%) 100%);
+    color: hsl(36 20% 92%);
+    --foreground: 36 20% 92%; --card-foreground: 36 20% 92%;
     --muted: 0 0% 16%; --muted-foreground: 0 0% 66%;
     --accent: 0 0% 18%; --accent-foreground: 0 0% 96%;
     --border: 0 0% 22%;
