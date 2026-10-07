@@ -205,7 +205,44 @@ export default function BookingStatus() {
           </CardContent>
         </Card>
 
-        {/* 2. Chase actions — only for what's actually missing */}
+        {/* 2. Price breakdown — staff see the discount before chasing money */}
+        {priceStory && (
+          <Card className="board-panel">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Receipt className="h-4 w-4 text-primary" />
+                {t("bookingStatus.priceBreakdown", "Price breakdown")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1.5 text-sm">
+              {priceStory.lines.map((line, i) => (
+                <div key={i} className="flex items-baseline justify-between gap-3">
+                  <span className="min-w-0 text-muted-foreground">
+                    {line.label}
+                    {line.detail && <span className="ml-1 text-xs">· {line.detail}</span>}
+                  </span>
+                  <span className={cn("shrink-0 font-medium", line.amount < 0 ? "text-emerald-600 dark:text-emerald-400" : "text-foreground")}>
+                    {line.amount < 0 ? "−" : ""}{formatPrice(Math.abs(line.amount))}
+                  </span>
+                </div>
+              ))}
+              <div className="flex items-baseline justify-between gap-3 border-t pt-1.5">
+                <span className="font-medium text-foreground">{t("bookingStatus.chargedTotal", "Total on record")}</span>
+                <span className="font-semibold text-foreground">
+                  {formatPrice(priceStory.storedTotal ?? priceStory.chargedTotal)}
+                </span>
+              </div>
+              {priceStory.drift !== 0 && priceStory.storedTotal != null && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  {t("bookingStatus.priceDrift", "Today's re-quote is {{amount}} — the recorded total is what counts and stays untouched.", { amount: formatPrice(priceStory.chargedTotal) })}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">{priceStory.consequence}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 3. Chase actions — only for what's actually missing */}
         {missing.length > 0 && (
           <Card className="board-panel">
             <CardHeader className="pb-2">
