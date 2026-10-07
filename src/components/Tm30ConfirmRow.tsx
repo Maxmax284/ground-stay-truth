@@ -106,6 +106,24 @@ export function Tm30ConfirmRow({ bookingId, label, subtitle }: Props) {
         )}
       </div>
 
+      {/* Stapled TM.30 slip — decoration mirroring the filed state. */}
+      <div className="tm30-staple-zone" aria-hidden>
+        {confirmed && data?.confirmed_at ? (
+          <div className="tm30-slip">
+            <span className="tm30-staple tm30-staple-l" />
+            <span className="tm30-staple tm30-staple-r" />
+            <span className="block text-[9px] font-bold uppercase tracking-widest">TM.30 · Notified</span>
+            <span className="block text-[9px] uppercase tracking-wider opacity-75">
+              {format(new Date(data.confirmed_at), "dd MMM yyyy · HH:mm")} · LMT camp
+            </span>
+          </div>
+        ) : (
+          <div className="tm30-holes">
+            <span className="tm30-hole" /><span className="tm30-hole" />
+            <span className="text-[9px] uppercase tracking-widest text-muted-foreground">Slip not stapled</span>
+          </div>
+        )}
+      </div>
       {confirmed && data?.confirmed_at && (
         <p className="text-xs text-muted-foreground pl-6">
           Confirmed {format(new Date(data.confirmed_at), "MMM d, yyyy 'at' p")}
