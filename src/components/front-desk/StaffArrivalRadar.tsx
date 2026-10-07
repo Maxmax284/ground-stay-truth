@@ -62,7 +62,7 @@ export function StaffArrivalRadar({
 
     const statusLabel = status
       ? FLIGHT_STATUS_CONFIG[status]?.label ?? status
-      : "No flight data on record";
+      : "Radar standby · no live reading yet";
 
     const eta = flight?.actual_arrival ?? flight?.estimated_arrival ?? flight?.scheduled_arrival ?? null;
 

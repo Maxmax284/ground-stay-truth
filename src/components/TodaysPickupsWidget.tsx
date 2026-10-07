@@ -43,7 +43,16 @@ export function TodaysPickupsWidget({ onClickBooking }: Props) {
   const checkFlight = useCheckFlightStatus();
 
   if (isLoading) return <Skeleton className="h-24 w-full" />;
-  if (!pickups || pickups.length === 0) return null;
+  if (!pickups || pickups.length === 0) {
+    return (
+      <Card className="border-primary/20">
+        <CardContent className="flex items-center gap-2 py-3 text-xs text-muted-foreground">
+          <Plane className="h-4 w-4 text-primary shrink-0" />
+          <span><span className="font-mono tracking-wider text-foreground">RADAR STANDBY</span> · no airport pickups booked for today.</span>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const needsAttention = pickups.filter((p: any) => p.status === "requested").length;
 
