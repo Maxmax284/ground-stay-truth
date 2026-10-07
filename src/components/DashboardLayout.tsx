@@ -9,6 +9,7 @@ import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { ReinstallPrompt } from "@/components/ReinstallPrompt";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { RouteTicker } from "@/components/RouteTicker";
 import { TutorialOverlay } from "@/components/TutorialOverlay";
 import { useRolePreview } from "@/hooks/useRolePreview";
 import { useAuth } from "@/hooks/useAuth";
@@ -101,6 +102,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </Button>
             </div>
           </header>
+          <RouteTicker path={location.pathname} title={t(titleKey)} />
           <ElevationBanner />
           <main className="flex-1 p-4 sm:p-6 overflow-y-auto overflow-x-hidden ring-rope-pattern min-w-0">
 
