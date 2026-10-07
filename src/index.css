@@ -839,3 +839,20 @@
   .grease-strike::after { display: none; }
   .baro-dot { animation: none; }
 }
+
+/* Camp Rhythm Clock */
+.route-ticker-rhythm { display:inline-flex; align-items:center; gap:.35rem; font-size:10px; letter-spacing:.12em; color: hsl(38 45% 78% / .75); white-space:nowrap; margin-left:.75rem; }
+.rhythm-dot-live { background: hsl(var(--primary)); animation: rhythm-pulse 2.4s ease-in-out infinite; }
+@keyframes rhythm-pulse { 50% { opacity:.35; } }
+@media (max-width: 520px) { .route-ticker-rhythm { margin-left:0; flex-basis:100%; font-size:9.5px; } }
+
+/* Carbon-copy chit */
+.carbon-chit { position:relative; overflow:hidden; }
+.carbon-chit::before { content:""; position:absolute; top:6px; left:10px; right:10px; height:4px;
+  background: radial-gradient(circle, hsl(var(--border)) 1.6px, transparent 2px) 0 0 / 12px 4px repeat-x; }
+.carbon-serial { position:absolute; top:12px; right:12px; font-family: ui-monospace, monospace; font-size:9px; letter-spacing:.14em; color: hsl(var(--muted-foreground) / .7); }
+.carbon-paid { position:absolute; right:22%; top:50%; transform: translateY(-50%) rotate(-6deg); font-family: ui-monospace, monospace; font-weight:700; text-transform:uppercase; letter-spacing:.2em; font-size:13px; padding:2px 8px; border:2px solid hsl(var(--success) / .55); color: hsl(var(--success) / .6); border-radius:3px; pointer-events:none; mix-blend-mode:multiply; }
+
+/* Customs double-ring */
+.customs-ring { outline: 1px solid currentColor; outline-offset: 2px; border-radius: 4px; }
+@media (prefers-reduced-motion: reduce) { .rhythm-dot-live { animation:none; } }
