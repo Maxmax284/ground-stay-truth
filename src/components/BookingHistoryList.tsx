@@ -109,10 +109,14 @@ function HistoryRow({ b, policies, flag, compact }: { b: any; policies: any; fla
   const n = nights(b.check_in, b.check_out);
 
   return (
-    <li className="rounded-md border border-border/60 bg-card">
+    <li className="ledger-row rounded-md border border-border/60 bg-card">
+      {String(b.state).startsWith("cancel") && <span className="ledger-void" aria-hidden>VOID</span>}
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open}
-        className="flex w-full items-start justify-between gap-3 p-3 text-left">
+        className="relative flex w-full items-start justify-between gap-3 p-3 text-left">
         <div className="min-w-0">
+          <div className="ledger-file text-[10px] text-muted-foreground">
+            FILE // {(b.check_in ?? "").slice(2, 4) || "—"}-{String(b.id).slice(0, 4).toUpperCase()}
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="truncate font-medium text-foreground">{resolveGuestDisplayName(b)}</span>
             <Badge className={cn("text-[10px]", STATE_VARIANTS[b.state as BookingState])}>{String(b.state).replace(/_/g, " ")}</Badge>
