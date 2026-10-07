@@ -2,8 +2,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { FrontDeskBooking } from "@/hooks/useFrontDesk";
 
 /**
- * Front Desk ink stamps — read-only labels derived from data already on the
- * row. They never change booking, payment, ID or room state.
+ * Front Desk ink stamps — labels derived from data already on the
+ * row. The labels change nothing; StampActions holds the staff taps.
  */
 export type DeskStampKey = "passport" | "immigration" | "balance" | "room";
 

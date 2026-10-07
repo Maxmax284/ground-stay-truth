@@ -61,6 +61,8 @@ import CheckInDesk from "@/pages/CheckInDesk";
 import ArrivalsBoard from "@/pages/ArrivalsBoard";
 import { KeyRack } from "@/components/front-desk/KeyRack";
 import { CounterBell } from "@/components/front-desk/CounterBell";
+import { StampAction } from "@/components/front-desk/StampActions";
+import { CashDesk } from "@/components/front-desk/CashDesk";
 import { DeskPanel, DeskStamp, stampsFor, STAMP_LABEL, type DeskStampKey } from "@/components/front-desk/deskStamps";
 
 const STAMP_TABS: DeskStampKey[] = ["passport", "immigration", "balance", "room"];
@@ -90,8 +92,12 @@ export default function FrontDesk() {
       .forEach((b) => seen.set(b.id, b));
     const all = [...seen.values()];
     const out = {} as Record<DeskStampKey, FrontDeskBooking[]>;
-    STAMP_TABS.forEach((k) => { out[k] = all.filter((b) => stampsFor(b).includes(k)); });
-    return out;
+    STAMP_TABS.forEach((k) => {
+      out[k] = k === "room"
+        ? all.filter((b) => !!b.turnover)
+        : all.filter((b) => stampsFor(b).includes(k));
+    });
+    return { ...out, cash: [...all, ...sections.upcoming.filter((b) => !seen.has(b.id))] };
   }, [sections]);
 
   if (view !== "desk") {
@@ -183,6 +189,7 @@ export default function FrontDesk() {
             {STAMP_TABS.map((k) => (
               <TabsTrigger key={k} value={`stamp-${k}`} className="shrink-0">{STAMP_LABEL[k]} ({stampLists[k].length})</TabsTrigger>
             ))}
+            <TabsTrigger value="cash" className="shrink-0">Cash desk</TabsTrigger>
             <TabsTrigger value="history" className="shrink-0">{t("nav.bookingHistory")}</TabsTrigger>
             {isManagerPlus && <TabsTrigger value="overrides" className="shrink-0">{t("frontDesk.tabs.overrides")}</TabsTrigger>}
           </TabsList>
@@ -257,18 +264,32 @@ export default function FrontDesk() {
           {STAMP_TABS.map((k) => (
             <TabsContent key={k} value={`stamp-${k}`} className="mt-4">
               <DeskPanel className="space-y-3">
-                <SectionList
-                  isLoading={isLoading}
-                  bookings={stampLists[k]}
-                  emptyText={`Nobody stamped ${STAMP_LABEL[k].toLowerCase()} right now.`}
-                  variant="staying"
-                  onOpen={setDetailId}
-                  pickupByBooking={pickupByBooking}
-                  lastMessageByBooking={lastMessageByBooking}
-                />
+                {stampLists[k].length === 0 && (
+                  <p className="text-sm text-muted-foreground py-6 text-center">Nobody stamped {STAMP_LABEL[k].toLowerCase()} right now.</p>
+                )}
+                {stampLists[k].map((b) => (
+                  <div key={b.id} className="camp-pass p-3 space-y-2">
+                    <button className="w-full text-left flex flex-wrap items-center justify-between gap-2" onClick={() => setDetailId(b.id)}>
+                      <span className="min-w-0">
+                        <span className="block font-medium truncate">{resolveGuestDisplayName(b as any) || "Guest"}</span>
+                        <span className="block text-xs text-muted-foreground truncate">{b.units?.name ?? "Room"} · {b.check_in} → {b.check_out}</span>
+                      </span>
+                      <span className="flex flex-wrap gap-1">
+                        {stampsFor(b).map((s, i) => <DeskStamp key={s} kind={s} index={i} />)}
+                      </span>
+                    </button>
+                    <StampAction kind={k} booking={b} onOpen={setDetailId} />
+                  </div>
+                ))}
               </DeskPanel>
             </TabsContent>
           ))}
+
+          <TabsContent value="cash" className="mt-4">
+            <DeskPanel className="space-y-3">
+              <CashDesk bookings={stampLists.cash} onOpen={setDetailId} />
+            </DeskPanel>
+          </TabsContent>
 
           <TabsContent value="history" className="mt-4">
 <DeskPanel className=""><BookingHistoryList /></DeskPanel>
