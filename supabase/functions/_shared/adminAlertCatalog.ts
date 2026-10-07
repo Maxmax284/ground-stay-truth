@@ -343,6 +343,18 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
 
   // ------------------------------------------------------------- operations
   {
+    key: "flight_delayed", label: "Pickup flight running late",
+    description: "A tracked pickup flight is now 30+ minutes late (or got later by 30+ minutes).",
+    category: "operations", severity: "action", defaultEmail: true, defaultInApp: true, wired: true,
+    where: "Front Desk → Arrivals", nextAction: "Tell the driver the new landing time.",
+  },
+  {
+    key: "flight_gate_changed", label: "Pickup flight gate changed",
+    description: "The arrival gate or terminal changed on a tracked pickup flight.",
+    category: "operations", severity: "info", defaultEmail: true, defaultInApp: true, wired: true,
+    where: "Front Desk → Arrivals", nextAction: "Let the driver know where to wait.",
+  },
+  {
     key: "airport_pickup_requested", label: "Airport pickup requested",
     description: "A guest requested an airport pickup.",
     category: "operations", severity: "action", defaultEmail: true, defaultInApp: true, wired: true,
