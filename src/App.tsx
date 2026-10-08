@@ -29,6 +29,7 @@ import Pricing from "./pages/Pricing";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import IslandGuideDraft from "./pages/IslandGuideDraft";
+import IslandGuide from "./pages/IslandGuide";
 import GuestPortal from "./pages/GuestPortal";
 import Messages from "./pages/Messages";
 import NotFound from "./pages/NotFound";
@@ -146,6 +147,7 @@ const App = () => (
                 <Route path="/embed/:type/:unitId" element={<EmbedWidget />} />
                 <Route path="/embed/:type" element={<EmbedWidget />} />
                 <Route path="/stay" element={<Stay />} />
+                <Route path="/island-guide" element={<IslandGuide />} />
                 <Route path="/pay/:token" element={<GuestPaymentLink />} />
                 <Route path="/driver/:token" element={<DriverPickup />} />
                 <Route path="/legal" element={<Legal />} />
