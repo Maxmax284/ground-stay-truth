@@ -8,6 +8,7 @@ import { differenceInCalendarDays } from "date-fns";
 import { Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useSearchParams } from "react-router-dom";
 
 type Stage = "upcoming" | "active" | "completed";
 
@@ -59,6 +60,11 @@ async function renderStory(name: string, l: ReturnType<typeof lines>): Promise<B
 export function CampPass({ booking, guestName }: { booking: any | null; guestName?: string | null }) {
   const ref = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
+  const [searchParams] = useSearchParams();
+  // Admin "view as guest" preview locks every control via a disabled fieldset.
+  // Export story mutates nothing (pure client-side canvas), so it stays tappable
+  // there too — rendered as a non-form control the fieldset can't disable.
+  const previewLocked = searchParams.has("as");
   const stage = stageOf(booking);
 
   useEffect(() => {
@@ -105,9 +111,27 @@ export function CampPass({ booking, guestName }: { booking: any | null; guestNam
         </div>
         <span className="camp-pass-stamp shrink-0">LMT</span>
       </div>
-      <Button size="sm" variant="secondary" className="mt-4 w-full sm:w-auto" onClick={share} disabled={busy}>
-        <Share2 className="h-4 w-4 mr-1.5" /> {busy ? "Printing…" : "Export story"}
-      </Button>
+      {previewLocked ? (
+        <span
+          role="button"
+          tabIndex={0}
+          aria-label="Export story"
+          onClick={busy ? undefined : share}
+          onKeyDown={(e) => {
+            if ((e.key === "Enter" || e.key === " ") && !busy) {
+              e.preventDefault();
+              share();
+            }
+          }}
+          className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium h-9 rounded-md px-3 mt-4 w-full sm:w-auto bg-secondary text-secondary-foreground hover:bg-secondary/80 cursor-pointer select-none"
+        >
+          <Share2 className="h-4 w-4 mr-1.5" /> {busy ? "Printing…" : "Export story"}
+        </span>
+      ) : (
+        <Button size="sm" variant="secondary" className="mt-4 w-full sm:w-auto" onClick={share} disabled={busy}>
+          <Share2 className="h-4 w-4 mr-1.5" /> {busy ? "Printing…" : "Export story"}
+        </Button>
+      )}
     </section>
   );
 }
