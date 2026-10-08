@@ -145,12 +145,35 @@
     overflow-x: hidden;
   }
 
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   button, input, textarea, select, img, video, svg { max-width: 100%; }
 
   body {
     @apply bg-background text-foreground;
     font-family: 'Source Sans 3', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    /* Installed iPhone app draws under the clock/notch — keep content clear of it */
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
   }
+
+  /* iOS zooms the whole page when a field under 16px is focused — that zoom is
+     what leaves screens clipped and blurry. Phones get 16px fields. */
+  @media (max-width: 767px) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    textarea, select, [role="combobox"] {
+      font-size: 16px !important;
+    }
+  }
+
+  .safe-top { padding-top: env(safe-area-inset-top, 0px); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Playfair Display', serif;

@@ -36,15 +36,17 @@ interface BookingFiltersProps {
   onSortChange: (s: BookingSort) => void;
   onShowCancelledChange: (v: boolean) => void;
   onExpiredOnlyChange: (v: boolean) => void;
+  showCompleted?: boolean;
+  onShowCompletedChange?: (v: boolean) => void;
 }
 
 export function BookingFilters({
   state, unitId, dateFrom, dateTo, units, sort, showCancelled, expiredOnly, expiredCount,
   onStateChange, onUnitChange, onDateFromChange, onDateToChange, onSortChange, onShowCancelledChange,
-  onExpiredOnlyChange,
+  onExpiredOnlyChange, showCompleted, onShowCompletedChange,
 }: BookingFiltersProps) {
   const { t } = useTranslation();
-  const hasFilters = state || unitId || dateFrom || dateTo || sort !== "check_in_asc" || showCancelled || expiredOnly;
+  const hasFilters = state || unitId || dateFrom || dateTo || sort !== "check_in_asc" || showCancelled || expiredOnly || showCompleted;
 
   const clearAll = () => {
     onStateChange(null);
@@ -54,6 +56,7 @@ export function BookingFilters({
     onSortChange("check_in_asc");
     onShowCancelledChange(false);
     onExpiredOnlyChange(false);
+    onShowCompletedChange?.(false);
   };
 
 
@@ -141,6 +144,15 @@ export function BookingFilters({
           {t("filters.showCancelled")}
         </label>
       </div>
+
+      {onShowCompletedChange && (
+        <div className="flex items-center gap-2 h-10">
+          <Switch id="show-completed" checked={!!showCompleted} onCheckedChange={onShowCompletedChange} />
+          <label htmlFor="show-completed" className="text-xs font-medium text-muted-foreground cursor-pointer">
+            {t("filters.showCompleted", "Show completed")}
+          </label>
+        </div>
+      )}
 
       {hasFilters && (
         <Button variant="ghost" size="sm" onClick={clearAll} className="h-10">

@@ -177,6 +177,7 @@ const Bookings = () => {
   const [rejectReason, setRejectReason] = useState("");
   const [sort, setSort] = useState<BookingSort>("check_in_asc");
   const [showCancelled, setShowCancelled] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
   const [expiredOnly, setExpiredOnly] = useState(false);
   const [extendBooking, setExtendBooking] = useState<any | null>(null);
   const [payBooking, setPayBooking] = useState<any | null>(null);
@@ -201,12 +202,16 @@ const Bookings = () => {
 
 
   // Cancelled bookings are hidden unless explicitly toggled on (or explicitly
-  // filtered for). Completed stays remain visible — they're operational history.
+  // filtered for). Completed stays move to Booking History unless toggled on.
   const bookings = useMemo(() => {
     if (!rawBookings) return rawBookings;
     let visible = (showCancelled || stateFilter === "cancelled")
       ? rawBookings
       : rawBookings.filter((b: any) => b.state !== "cancelled");
+    if (!showCompleted && stateFilter !== "completed") {
+      visible = visible.filter((b: any) => b.state !== "completed");
+    }
+
 
     // "Expired only" — holds / deposit windows that have run out and are
     // still sitting there waiting on a human decision.
@@ -237,7 +242,7 @@ const Bookings = () => {
         break;
     }
     return sorted;
-  }, [rawBookings, showCancelled, stateFilter, sort, expiredOnly, policiesForDeadlines]);
+  }, [rawBookings, showCancelled, showCompleted, stateFilter, sort, expiredOnly, policiesForDeadlines]);
 
   // Count of expired holds/deposits across the loaded set — drives the filter chip.
   const { data: readiness } = useBookingReadiness(bookings as any);
@@ -321,6 +326,8 @@ const Bookings = () => {
           onDateToChange={setDateTo}
           onSortChange={setSort}
           onShowCancelledChange={setShowCancelled}
+          showCompleted={showCompleted}
+          onShowCompletedChange={setShowCompleted}
           expiredOnly={expiredOnly}
           expiredCount={expiredCount}
           onExpiredOnlyChange={setExpiredOnly}
