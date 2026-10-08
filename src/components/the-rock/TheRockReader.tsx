@@ -179,7 +179,7 @@ export function TheRockReader() {
             </Collapsible>
           )}
 
-          <section key={dept.num} className="rock-fade space-y-3">
+          <section key={dept.num} className="rock-fade space-y-5">
             <figure className="relative overflow-hidden rounded-lg border border-border">
               <img src={HEROES[dept.num]} alt="" width={1280} height={640} className="aspect-[2/1] w-full object-cover sm:aspect-[3/1]" />
               <figcaption className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-foreground/85 via-foreground/30 to-transparent p-4">
@@ -193,7 +193,7 @@ export function TheRockReader() {
 
             <p className="font-stat text-[11px] tracking-widest text-muted-foreground">{dept.reports.length} FIELD REPORTS · TAP TO OPEN</p>
 
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {dept.reports.map((r, i) => {
                 const isOpen = open.has(r.id);
                 return (
@@ -203,7 +203,7 @@ export function TheRockReader() {
                       aria-expanded={isOpen}
                       data-preview-allow
                       onClick={() => toggle(r.id)}
-                      className="flex w-full items-start gap-3 p-3 text-left"
+                      className="flex w-full items-start gap-3 p-4 text-left"
                     >
                       <span className="mt-0.5 font-stat text-xs text-primary">{r.code || "—"}</span>
                       <span className="flex-1">
@@ -214,7 +214,7 @@ export function TheRockReader() {
                     </button>
                     <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
                       <div className="overflow-hidden">
-                        <div className="border-t border-border px-3 pb-4 pt-3">
+                        <div className="border-t border-border px-4 pb-6 pt-4">
                           <Md>{r.body}</Md>
                           {r.code === "004-03" && <div className="mt-4"><JellyfishFirstAid /></div>}
                           {r.code === "004-08" && <div className="mt-4 space-y-4"><EmergencyContacts /><MedicalFacilities /></div>}
@@ -276,7 +276,7 @@ function Collapsible({ label, id, open, toggle, children }: { label: string; id:
 function Md({ children }: { children: string }) {
   if (!children) return null;
   return (
-    <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-1 prose-hr:border-border">
+    <div className="prose prose-sm max-w-none leading-relaxed dark:prose-invert prose-headings:text-foreground prose-h4:mt-7 prose-h4:mb-2.5 prose-h4:tracking-wide prose-p:my-3.5 prose-p:text-foreground/90 prose-li:my-1.5 prose-ul:my-3.5 prose-strong:text-foreground prose-blockquote:my-5 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:px-4 prose-blockquote:py-2 prose-hr:my-6 prose-hr:border-border">
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
     </div>
   );

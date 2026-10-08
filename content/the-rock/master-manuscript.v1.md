@@ -318,6 +318,8 @@ The pavement doesn't care whether you're a tourist, a professional fighter, or s
 
 And neither does the insurance company.
 
+**Leave your ego at the gym.** Whatever you've got in the ring means nothing on wet pavement. Out here, the toughest rider is the one who gets home every night.
+
 #### THE HELMET SITUATION — DON'T CONFUSE WHAT YOU SEE WITH WHAT'S LEGAL
 
 Thailand requires motorcycle riders and passengers to wear helmets.
@@ -393,6 +395,14 @@ Congratulations. Very impressive.
 The coffee is still 80 baht.
 
 A bigger engine doesn't make the road wider, improve the weather, or give you better judgment.
+
+#### CHECK YOUR TRAVEL INSURANCE BEFORE YOU RIDE
+
+Here's the part nobody reads until it's too late: **travel insurance does not always cover riding a motorcycle or scooter.**
+
+Some policies exclude it completely. Others only cover you if you hold the right motorcycle licence, ride within certain engine limits, and wear a helmet.
+
+**THE ACTUAL RULE:** Read your policy before you rent anything with two wheels. If it isn't clearly covered in writing, assume you're paying the hospital bill yourself.
 
 If you're an experienced rider with the proper license, insurance, and equipment, that's your decision.
 
