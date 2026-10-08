@@ -5,7 +5,7 @@
  * Renders INSTEAD of its children, so no admin page, query or data fetch
  * behind it ever mounts — direct URL navigation hits the same gate.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
@@ -25,6 +25,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 export function DeviceGate({ children }: { children: React.ReactNode }) {
   useRegisterCurrentDevice();
   const gate = useDeviceGate();
+  const passedRef = useRef(false);
   const { signOut } = useAuth();
   const logAudit = useLogStaffAudit();
   const [busy, setBusy] = useState(false);
@@ -45,7 +46,11 @@ export function DeviceGate({ children }: { children: React.ReactNode }) {
     });
   }, [gate.restricted, gate.state, gate.currentDevice, logged, logAudit]);
 
+  if (gate.state !== "loading") passedRef.current = !gate.restricted;
+
   if (gate.state === "loading") {
+    // Background re-checks must not unmount an already-open page.
+    if (passedRef.current) return <>{children}</>;
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="roundhouse-spinner" />
