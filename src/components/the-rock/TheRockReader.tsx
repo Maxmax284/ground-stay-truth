@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { EmergencyContacts, MedicalFacilities, JellyfishFirstAid } from "./EmergencyBlocks";
 // Locked source edition — never edited in code. Guest edition is derived at render time.
 import manuscript from "../../../content/the-rock/master-manuscript.v1.md?raw";
 
@@ -23,14 +24,21 @@ function toGuestEdition(src: string) {
 }
 
 export function TheRockReader() {
-  const { guide, chapters } = useMemo(() => {
+  const { segments, chapters } = useMemo(() => {
     const guide = toGuestEdition(manuscript);
     const chapters = Array.from(guide.matchAll(/^# (0\d) \/\/ (.+)$/gm)).map((m) => ({
       id: `dept-${m[1]}`,
       num: m[1],
       title: m[2],
     }));
-    return { guide, chapters };
+    // Insert verified blocks without touching the locked source: after 004-03 (jellyfish) and after 004-08 (emergencies).
+    const cut = (text: string, marker: string) => {
+      const i = text.indexOf(marker);
+      return i < 0 ? [text, ""] : [text.slice(0, i), text.slice(i)];
+    };
+    const [a, rest1] = cut(guide, "### FIELD REPORT 004-04");
+    const [b, c] = cut(rest1, "# 05 //");
+    return { segments: [a, b, c], chapters };
   }, []);
 
   return (
@@ -54,7 +62,24 @@ export function TheRockReader() {
         ))}
       </nav>
 
+      <a href="#emergency" data-preview-allow className="inline-flex min-h-11 items-center rounded-md border border-destructive/40 bg-destructive/10 px-3 text-sm font-semibold text-destructive">
+        Emergency numbers: 1669 · 191 · 1155
+      </a>
+
       <article className="prose prose-sm sm:prose-base max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-blockquote:border-primary prose-hr:border-border">
+        <Md>{segments[0]}</Md>
+        {segments[1] && <JellyfishFirstAid />}
+        <Md>{segments[1]}</Md>
+        {segments[2] && (<div className="space-y-4 my-6"><EmergencyContacts /><MedicalFacilities /></div>)}
+        <Md>{segments[2]}</Md>
+      </article>
+    </div>
+  );
+}
+
+function Md({ children }: { children: string }) {
+  if (!children) return null;
+  return (
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
@@ -71,9 +96,7 @@ export function TheRockReader() {
             ),
           }}
         >
-          {guide}
+          {children}
         </ReactMarkdown>
-      </article>
-    </div>
   );
 }
