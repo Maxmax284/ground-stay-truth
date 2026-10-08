@@ -8,7 +8,7 @@
  * The gate renders INSTEAD of its children, so no admin page, query or data
  * fetch behind it ever mounts. Direct URL navigation hits the same gate.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
