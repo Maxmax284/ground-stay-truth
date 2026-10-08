@@ -111,9 +111,27 @@ export function CampPass({ booking, guestName }: { booking: any | null; guestNam
         </div>
         <span className="camp-pass-stamp shrink-0">LMT</span>
       </div>
-      <Button size="sm" variant="secondary" className="mt-4 w-full sm:w-auto" onClick={share} disabled={busy}>
-        <Share2 className="h-4 w-4 mr-1.5" /> {busy ? "Printing…" : "Export story"}
-      </Button>
+      {previewLocked ? (
+        <span
+          role="button"
+          tabIndex={0}
+          aria-label="Export story"
+          onClick={busy ? undefined : share}
+          onKeyDown={(e) => {
+            if ((e.key === "Enter" || e.key === " ") && !busy) {
+              e.preventDefault();
+              share();
+            }
+          }}
+          className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium h-9 rounded-md px-3 mt-4 w-full sm:w-auto bg-secondary text-secondary-foreground hover:bg-secondary/80 cursor-pointer select-none"
+        >
+          <Share2 className="h-4 w-4 mr-1.5" /> {busy ? "Printing…" : "Export story"}
+        </span>
+      ) : (
+        <Button size="sm" variant="secondary" className="mt-4 w-full sm:w-auto" onClick={share} disabled={busy}>
+          <Share2 className="h-4 w-4 mr-1.5" /> {busy ? "Printing…" : "Export story"}
+        </Button>
+      )}
     </section>
   );
 }
