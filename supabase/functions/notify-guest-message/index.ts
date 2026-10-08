@@ -77,10 +77,16 @@ Deno.serve(async (req) => {
     // The message we're announcing, and who it belongs to.
     const { data: message } = await admin
       .from("messages")
-      .select("id, booking_id, content, is_internal, created_at")
+      .select("id, booking_id, content, is_internal, draft, created_at")
       .eq("id", message_id ?? "")
       .maybeSingle();
-    if (message?.is_internal) return json({ ok: true, skipped: "internal_note" });
+    // Every notice must be anchored to a real message on this booking — that
+    // id is the duplicate-protection key, so no message means no send.
+    if (!message || message.booking_id !== booking_id) {
+      return json({ error: "message not found for booking" }, 404);
+    }
+    if (message.is_internal) return json({ ok: true, skipped: "internal_note" });
+    if (message.draft) return json({ ok: true, skipped: "draft_pending_approval" });
 
     const { data: booking } = await admin
       .from("bookings")
@@ -140,7 +146,7 @@ Deno.serve(async (req) => {
           bookingId: booking_id,
           source: "guest-message-notice",
           triggeredBy: caller.user.id,
-          idempotencyKey: `guest-msg-${message?.id ?? crypto.randomUUID()}-${guestEmail.toLowerCase()}`,
+          idempotencyKey: `guest-msg-${message.id}-${guestEmail.toLowerCase()}`,
           templateData: {
             guest_name: guestName?.split(" ")[0] ?? null,
             staff_name: staffName,

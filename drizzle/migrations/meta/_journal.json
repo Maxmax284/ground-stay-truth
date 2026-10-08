@@ -169,6 +169,13 @@
       "when": 1791171929957,
       "tag": "0023_weekly_friction_radar",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791453528242,
+      "tag": "0024_guard_message_updates",
+      "breakpoints": true
     }
   ]
 }
