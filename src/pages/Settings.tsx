@@ -17,6 +17,7 @@ import { VantaIntegrationPanel } from "@/components/VantaIntegrationPanel";
 import NotificationSettings from "@/components/settings/NotificationSettings";
 import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 import { AppStatusPanel } from "@/components/settings/AppStatusPanel";
+import { AssistanceSettingsCard } from "@/components/settings/AssistanceSettingsCard";
 import { CommsHealthCard } from "@/components/settings/CommsHealthCard";
 import { SandboxPanel } from "@/components/SandboxPanel";
 import { AIOpsPanel } from "@/components/admin/AIOpsPanel";
@@ -103,6 +104,7 @@ const Settings = () => {
           <TabsContent value="app" className="space-y-4">
             <ErrorBoundary inline label="App status"><AppStatusPanel /></ErrorBoundary>
             {isAdmin && <ErrorBoundary inline label="Message delivery"><CommsHealthCard /></ErrorBoundary>}
+            {(isAdmin || role === "manager") && <ErrorBoundary inline label="Guest urgent help"><AssistanceSettingsCard /></ErrorBoundary>}
           </TabsContent>
 
         </Tabs>

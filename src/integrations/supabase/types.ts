@@ -1734,38 +1734,139 @@ export type Database = {
           },
         ]
       }
+      guest_escalation_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          booking_id: string | null
+          created_at: string
+          escalation_id: string
+          id: string
+          meta: Json
+          note: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          booking_id?: string | null
+          created_at?: string
+          escalation_id: string
+          id?: string
+          meta?: Json
+          note?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          booking_id?: string | null
+          created_at?: string
+          escalation_id?: string
+          id?: string
+          meta?: Json
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_escalation_events_escalation_id_fkey"
+            columns: ["escalation_id"]
+            isOneToOne: false
+            referencedRelation: "guest_escalations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guest_escalations: {
         Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          addressed_at: string | null
+          addressed_by: string | null
+          assigned_at: string | null
+          assigned_to: string | null
+          booking_id: string | null
+          category: string | null
           channel: string
           chat_id: string
           created_at: string
+          delivered_at: string | null
+          details: string | null
+          escalation_level: number
           guest_user_id: string
+          high_volume: boolean
           id: string
+          kind: string | null
+          last_alerted_at: string | null
+          next_escalation_at: string | null
+          property_id: string | null
+          received_at: string | null
+          resolution_note: string | null
           resolved: boolean
           resolved_at: string | null
           resolved_by: string | null
+          source: string | null
+          status: string | null
           summary: string
         }
         Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          addressed_at?: string | null
+          addressed_by?: string | null
+          assigned_at?: string | null
+          assigned_to?: string | null
+          booking_id?: string | null
+          category?: string | null
           channel: string
           chat_id: string
           created_at?: string
+          delivered_at?: string | null
+          details?: string | null
+          escalation_level?: number
           guest_user_id: string
+          high_volume?: boolean
           id?: string
+          kind?: string | null
+          last_alerted_at?: string | null
+          next_escalation_at?: string | null
+          property_id?: string | null
+          received_at?: string | null
+          resolution_note?: string | null
           resolved?: boolean
           resolved_at?: string | null
           resolved_by?: string | null
+          source?: string | null
+          status?: string | null
           summary: string
         }
         Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          addressed_at?: string | null
+          addressed_by?: string | null
+          assigned_at?: string | null
+          assigned_to?: string | null
+          booking_id?: string | null
+          category?: string | null
           channel?: string
           chat_id?: string
           created_at?: string
+          delivered_at?: string | null
+          details?: string | null
+          escalation_level?: number
           guest_user_id?: string
+          high_volume?: boolean
           id?: string
+          kind?: string | null
+          last_alerted_at?: string | null
+          next_escalation_at?: string | null
+          property_id?: string | null
+          received_at?: string | null
+          resolution_note?: string | null
           resolved?: boolean
           resolved_at?: string | null
           resolved_by?: string | null
+          source?: string | null
+          status?: string | null
           summary?: string
         }
         Relationships: []
@@ -5354,6 +5455,7 @@ export type Database = {
       }
     }
     Functions: {
+      _assist_setting: { Args: { _key: string }; Returns: string }
       assign_sandbox_to_caller: { Args: never; Returns: string }
       assign_unit_for_group: {
         Args: { _check_in: string; _check_out: string; _group_id: string }
@@ -5375,6 +5477,10 @@ export type Database = {
       create_recovery_snapshot: {
         Args: { _kind?: string; _label: string; _notes?: string }
         Returns: string
+      }
+      create_urgent_request: {
+        Args: { _booking_id: string; _category: string; _details?: string }
+        Returns: Json
       }
       device_self_approval_allowed: { Args: never; Returns: boolean }
       emit_admin_alert: {
@@ -5447,6 +5553,7 @@ export type Database = {
           week_start: string
         }[]
       }
+      get_guest_assistance_config: { Args: never; Returns: Json }
       get_guest_bookings: {
         Args: { _guest_key: string }
         Returns: {
@@ -5681,12 +5788,25 @@ export type Database = {
         }[]
       }
       revoke_admin_elevation: { Args: { _grant_id: string }; Returns: boolean }
+      set_assistance_setting: {
+        Args: { _key: string; _value: Json }
+        Returns: undefined
+      }
       swap_booking_rooms: {
         Args: { _booking_a: string; _booking_b: string; _reason?: string }
         Returns: Json
       }
       sync_booking_from_segments: {
         Args: { _booking_id: string }
+        Returns: undefined
+      }
+      urgent_request_action: {
+        Args: {
+          _action: string
+          _assignee?: string
+          _id: string
+          _note?: string
+        }
         Returns: undefined
       }
     }

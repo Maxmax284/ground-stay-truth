@@ -1,3 +1,4 @@
+import { UrgentHelpCard } from "@/components/guest/UrgentHelpCard";
 import { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
@@ -490,6 +491,8 @@ export function GuestStaySummary({ focusSection, onSectionFocused }: { focusSect
           </CardContent>
         </Card>
       )}
+
+      <UrgentHelpCard bookingId={checkedInBooking?.id ?? null} />
 
       {bookings.map((booking) => {
         const bPayments = (payments ?? []).filter((p) => p.booking_id === booking.id);
