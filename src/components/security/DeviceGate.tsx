@@ -5,7 +5,7 @@
  * Renders INSTEAD of its children, so no admin page, query or data fetch
  * behind it ever mounts — direct URL navigation hits the same gate.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
@@ -25,6 +25,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 export function DeviceGate({ children }: { children: React.ReactNode }) {
   useRegisterCurrentDevice();
   const gate = useDeviceGate();
+  const passedRef = useRef(false);
   const { signOut } = useAuth();
   const logAudit = useLogStaffAudit();
   const [busy, setBusy] = useState(false);

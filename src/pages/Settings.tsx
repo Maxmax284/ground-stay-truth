@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardLayout from "@/components/DashboardLayout";
 import ProfileEditor from "@/components/ProfileEditor";
@@ -37,6 +38,15 @@ const Settings = () => {
   const isAdmin = role === "admin";
   const canSeeNotifications = isAdmin || role === "manager";
 
+  // Keep the open tab in the URL so re-renders never bounce back to Profile.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "profile";
+  const setActiveTab = (v: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", v);
+    setSearchParams(next, { replace: true });
+  };
+
 
   return (
     <DashboardLayout>
@@ -46,7 +56,7 @@ const Settings = () => {
           <p className="text-muted-foreground mt-1">{t("settings.subtitle")}</p>
         </div>
 
-        <Tabs defaultValue="profile" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="flex-wrap h-auto gap-1 p-1.5 bg-muted/80 relative z-10">
             <TabsTrigger value="profile" className="text-xs sm:text-sm">{t("settings.profileTab")}</TabsTrigger>
             {canManageRoles && <TabsTrigger value="users" className="text-xs sm:text-sm">{t("settings.usersTab")}</TabsTrigger>}
