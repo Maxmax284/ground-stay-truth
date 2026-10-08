@@ -26,7 +26,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { WhatsAppMetaSetupWizard } from "@/components/WhatsAppMetaSetupWizard";
 
 const TELEGRAM_KEYS = ["telegram_bot_token"] as const;
-const TWILIO_KEYS = ["twilio_account_sid", "twilio_auth_token", "twilio_sms_from"] as const;
+const TWILIO_KEYS = ["twilio_account_sid", "twilio_auth_token", "twilio_whatsapp_from"] as const;
 
 export function MessagingBridgeSettings() {
   const { role } = useAuth();
@@ -329,7 +329,7 @@ export function MessagingBridgeSettings() {
       {/* WhatsApp via Meta Cloud API (direct, guided wizard) */}
       <WhatsAppMetaSetupWizard />
 
-      {/* SMS via Twilio (WhatsApp now goes Meta-direct above) */}
+      {/* WhatsApp via Twilio. Legacy SMS code paths stay dormant server-side. */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -338,8 +338,8 @@ export function MessagingBridgeSettings() {
                 <MessageCircle className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-base">SMS + WhatsApp Bridge (Twilio)</CardTitle>
-                <CardDescription>Inbound SMS and WhatsApp routed through Kru Glitch (capture-only). Use this instead of the Meta wizard if you don't have Meta access.</CardDescription>
+                <CardTitle className="text-base">WhatsApp Bridge (Twilio)</CardTitle>
+                <CardDescription>Inbound WhatsApp routed through Kru Glitch (capture-only). Use this instead of the Meta wizard if you don't have Meta access.</CardDescription>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -358,39 +358,32 @@ export function MessagingBridgeSettings() {
               <CollapsibleTrigger asChild>
                 <button className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground group">
                   <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-90" />
-                  How to get your Twilio SMS credentials
+                  How to set up WhatsApp through Twilio
                 </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <div className="mt-2 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-2">
                   <ol className="list-decimal pl-4 space-y-1">
-                    <li>Sign in to the <a href="https://console.twilio.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">Twilio Console</a>.</li>
-                    <li>From the dashboard, copy your <strong>Account SID</strong> and <strong>Auth Token</strong>.</li>
-                    <li>Buy or assign an SMS-capable number under <em>Phone Numbers → Active Numbers</em>.</li>
-                    <li>Paste all three below and Save.</li>
+                    <li>Sign in to the <a href="https://console.twilio.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">Twilio Console</a> and copy your <strong>Account SID</strong> and <strong>Auth Token</strong>.</li>
+                    <li><strong>Sandbox (testing):</strong> WhatsApp From = <code>+14155238886</code>. Each tester first texts <code>join &lt;your-code&gt;</code> to that number. Only joined phones receive messages, and sandbox sessions expire.</li>
+                    <li><strong>Production:</strong> WhatsApp From = a sender registered and approved in Twilio (<em>Messaging → Senders → WhatsApp senders</em>), linked to a verified Meta business.</li>
                   </ol>
                 </div>
               </CollapsibleContent>
             </Collapsible>
 
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-foreground">
+              <strong>Important:</strong> a number running the WhatsApp Business phone app is <strong>not</strong> automatically a Twilio WhatsApp sender. Registering it with Twilio moves it to the Cloud API and can cut off the phone app. Don't register the camp's live phone-app number until that move is planned — a separate number is the safe route.
+            </div>
+
             {renderSecretField("twilio_account_sid", "Account SID", "AC…")}
             {renderSecretField("twilio_auth_token", "Auth Token", "your auth token")}
-            {renderSecretField("twilio_sms_from", "SMS From Number", "+15551234567")}
             {renderSecretField("twilio_whatsapp_from", "WhatsApp From Number", "+14155238886 (sandbox) or your approved sender")}
 
             <Separator />
             <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-2">
-              <p className="font-medium text-foreground">Webhook URLs (paste into Twilio)</p>
-              <p>SMS — Phone Numbers → your number → <em>A MESSAGE COMES IN</em>:</p>
-              <div className="flex items-center gap-2">
-                <code className="block flex-1 bg-background rounded px-2 py-1 text-[11px] break-all">
-                  {webhookBase}/twilio-webhook?channel=sms
-                </code>
-                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copy(`${webhookBase}/twilio-webhook?channel=sms`)}>
-                  <Copy className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-              <p className="pt-1">WhatsApp — Messaging → Try it out → WhatsApp sandbox settings (or your WhatsApp sender) → <em>When a message comes in</em>:</p>
+              <p className="font-medium text-foreground">Webhook URL (paste into Twilio)</p>
+              <p>Messaging → Try it out → WhatsApp sandbox settings (or your WhatsApp sender) → <em>When a message comes in</em>:</p>
               <div className="flex items-center gap-2">
                 <code className="block flex-1 bg-background rounded px-2 py-1 text-[11px] break-all">
                   {webhookBase}/twilio-webhook?channel=whatsapp
@@ -400,8 +393,8 @@ export function MessagingBridgeSettings() {
                 </Button>
               </div>
               <p className="pt-2"><strong>Method:</strong> POST. The webhook verifies Twilio's signature on every call.</p>
-              <p><strong>WhatsApp via Twilio:</strong> once the WhatsApp From Number is saved and this bridge is on, outbound WhatsApp goes through Twilio instead of Meta. Sandbox testing: text <code>join &lt;your-code&gt;</code> to +1 415 523 8886 from your phone first.</p>
-              <p><strong>Heads up:</strong> turn on Twilio's <em>SMS Pumping Protection</em> and review <em>SMS Geo Permissions</em> before going live.</p>
+              <p>Once the WhatsApp From Number is saved and this bridge is on, outbound WhatsApp goes through Twilio instead of Meta.</p>
+              <p><strong>Heads up:</strong> keep an eye on WhatsApp conversation costs in your Twilio billing.</p>
             </div>
           </CardContent>
         )}
