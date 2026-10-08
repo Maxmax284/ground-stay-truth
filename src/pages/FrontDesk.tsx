@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import DashboardLayout from "@/components/DashboardLayout";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -255,6 +256,7 @@ export default function FrontDesk() {
 <DeskPanel className="space-y-3">
             <UrgentRequestsStrip />
             <CoveragePanel />
+            <div className="text-right"><Link to="/duty-roster" className="text-xs underline text-muted-foreground">Open full duty roster →</Link></div>
             <ChaseList sections={sections} onOpen={setDetailId} />
           </DeskPanel>
 </TabsContent>
