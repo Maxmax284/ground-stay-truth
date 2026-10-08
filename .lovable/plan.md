@@ -1,100 +1,133 @@
-# After-Hours Guest Assistance & Escalation: design review (no build yet)
+# After-Hours Guest Assistance & Escalation: revised plan (v2, for approval)
 
-This is a review only. Nothing in the app, the data, the messages or the settings has been changed.
+This version adds your ten refinements. Nothing has been built yet.
 
-## What already exists (checked)
+## Fixed rules (from your refinements)
 
-- **Emergency phone on the guest portal.** `GuestStaySummary.tsx` (around lines 444–485) shows `emergency_phone`. It only appears for checked-in guests. The number comes from `useStayEssentials.ts:48`: the room's own `emergency_contact_phone` if set, otherwise the camp-wide policy setting `emergency_contact_phone`. This is the natural home for the call button.
-- **`guest_escalations` table.** Columns: `guest_user_id, channel, chat_id, summary, resolved, resolved_by, resolved_at`.
-  - Only `messaging-router` writes to it (around lines 648 and 1558).
-  - It has no `booking_id`, no severity, no acknowledgment step and no time limits.
-  - Who can do what today: guests read their own; staff with read access can read; staff with write access can mark resolved; managers and admins have full access.
-- **`staff_phone_numbers` table.** Holds `phone_e164, label, user_id, channel, is_active`. Managers and admins can edit it; staff can read it. It identifies staff numbers, but it is not a duty roster.
-- **Alert fan-out.**
-  - `emit-admin-alert` sends with a per-person duplicate-protection key (`alert-${eventId}-${uid}`).
-  - `admin_alert_log` records `status`, `retry_count`, `channel` and `recipient_user_id`.
-  - Email is the reliable channel.
-  - Phone alerts: 0 phones signed up today.
-- **Scheduled jobs.** pg_cron is already used (for example in `migrations/20260421030119…`), so a timed escalation job fits the existing pattern.
-- **Reusable screen parts.**
-  - `FrontDeskFAB.tsx` (78 lines): the guest's quick-contact button.
-  - `ChaseList`, the Messages inbox, and the new Settings → App delivery health card.
-  - The `GuestPreviewControls` read-only preview, so admins can see the guest view without acting as the guest.
+1. **Nikki's WhatsApp Business number and all current calling stay exactly as they are.** No migration, redirect or change. CampStay only displays the number that management approves.
+2. **No one is assigned automatically.** Every primary, backup, shift and escalation step is set up and approved by management. The system tracks two separate things for each person:
+   - **Can be notified** (gets alerts)
+   - **Can physically assist** (can actually reach the guest)
+3. **Phone first for lockouts and access problems.** The portal shows three clearly separate options:
+   - **Call for immediate help**: a phone call to the approved number.
+   - **Send a CampStay message**: routine, answered when staff are available.
+   - **Existing WhatsApp**: Nikki's number, unchanged.
 
-## Smallest working version
+   A submitted request never says or suggests that help is guaranteed.
+4. **Full incident lifecycle with a permanent audit trail.** Steps: received → delivered → acknowledged → assigned → escalated → physically addressed → resolved. Acknowledging a request does not resolve it, and it does not stop follow-up on an unresolved incident.
+5. **Coverage & Escalation section inside the existing operations screens.** It feeds into Front Desk, Chase List, Messages and the booking. It is not a separate dashboard.
+6. **Coverage gaps are shown openly to staff.** A sent email or push never counts as someone being available. Guests keep seeing the verified emergency numbers and are never promised 24/7 cover.
+7. **Rate limits never block a real emergency.** See "Rate limiting" below.
+8. **Humans decide.** AI may summarise an incident or draft a reply. It may never:
+   - classify how serious a request is
+   - dismiss or close a request
+   - assign people
+   - change bookings, rooms or payments
+9. **Works without WhatsApp or Twilio.** It uses CampStay's portal, email and phone alerts. WhatsApp stays optional and comes later.
+10. **Phased rollout. Automatic escalation stays off** until management approves the staffing and the full workflow passes on the practice camp.
 
-**1. Guest: "Urgent help" card in the portal**
-- One big **Call camp** button. It dials a number that management has approved, using a phone call link (`tel:`).
-- A separate, clearly labelled **WhatsApp message** link with the same caption as today. It doesn't change Nikki's number.
-- The wording says plainly: a phone call is fastest; a WhatsApp or app message may not be seen right away at night.
-- Honest hours: "Staffed until HH:MM (Bangkok time). After hours we answer as quickly as we can; this is not a guaranteed 24/7 line." The real hours come from the duty roster.
-- Optional **Send urgent request**. The guest picks a category (locked out, medical, safety, room problem, other) and can add one line of text. The request is tied to their active booking.
-- The card says that for medical emergencies or danger, call 1669 or 191 first. It reuses the verified emergency numbers from The Rock.
+## Reuse (verified existing pieces)
 
-**2. Staff: duty roster (managers and admins edit it)**
-- Shifts in Bangkok time, each with a primary person, a backup person and start/end times.
-- Nikki can stay primary every night until others are added. Nam and others start as backups or watchers, so they can see requests without owning the WhatsApp number.
+- `GuestStaySummary.tsx` (around lines 444–485) and `useStayEssentials.ts:48`: the emergency phone number already shown in the portal. This becomes the approved Call number.
+- `FrontDeskFAB.tsx`: the guest's quick-contact button. The three options go here.
+- `guest_escalations`: extended, not replaced. `messaging-router` keeps writing to it, so there's one inbox.
+- `staff_phone_numbers`: where staff contact numbers come from for the roster.
+- `emit-admin-alert` and `admin_alert_log`: alert delivery with per-person duplicate protection, plus delivery status.
+- `get_comms_health` and the Settings → App delivery card: notification health.
+- `policy_settings` and its change history: approved numbers, wording, time limits, on/off switches.
+- The admin preview of the guest portal: actions are blocked there, so admins can look without doing anything for real.
 
-**3. Staff: request lifecycle**
+## Phase 1: Guest help screen, contact settings, linked incidents
 
-```text
-open → acknowledged (by whom, when) → resolved (by whom, note)
-```
+Automatic escalation is off in this phase.
 
-- If nobody acknowledges within **X minutes**, the request goes to the backup. If still nobody after **Y minutes**, it goes to all managers and admins.
-- Every step is logged.
-- Nothing changes a booking, payment, room or check-in automatically. Resolving a request is only a note. Staff still do any real action from the booking itself.
-- No AI sorting of requests. The category is whatever the guest picked; AI may at most suggest a draft reply.
+**Settings** (`policy_settings`, managers and admins only, every change logged):
+- `urgent_call_number`: approved by management. Blank means no Call button; the guest sees emergency numbers only.
+- `whatsapp_display_number`: display only. It defaults to whatever is shown today.
+- `staffed_hours_text` and `after_hours_notice`: the honest wording, written by management.
+- `urgent_requests_enabled`: master switch. **Starts off.**
 
-**4. Where staff see it:** an "Urgent" pinned strip on the Front Desk and Chase List, and an "Urgent" badge on the booking.
+**Guest "Need help?" card:**
+- Call / Message / WhatsApp, clearly separated.
+- Lockout and access issues say "Call first".
+- 1669 and 191 for medical emergencies or danger.
+- An optional urgent request linked to their booking. The guest picks a category; nothing is classified automatically.
 
-## Database and server additions (proposed)
+**Database:**
+- Extend `guest_escalations` with optional fields only (existing rows stay valid):
+  - Links and labels: `booking_id`, `property_id`, `category` (the guest's choice), `source` (`portal` / `messaging`), `status`
+  - Lifecycle times: `received_at`, `delivered_at`, `acknowledged_at` / `_by`, `assigned_to`, `escalation_level`, `next_escalation_at`, `addressed_at` / `_by`, `resolved_at` / `_by`, `resolution_note`
+- New `guest_escalation_events` table: one row per action, add-only. A database guard blocks edits and deletes, the same pattern as messages and booking adjustments.
+- New `create_urgent_request` function: the guest's own booking only, `confirmed`, `checked_in`, or arriving within 48 hours. It records the request and alerts the people approved to receive alerts. If none are set up, managers and admins get it, flagged as a coverage gap.
 
-- **Extend `guest_escalations`** with new optional fields only: `booking_id`, `property_id`, `category`, `severity`, `status` (`open / acknowledged / escalated / resolved`), `acknowledged_by`, `acknowledged_at`, `escalation_level`, `next_escalation_at`, `source` (`portal / messaging`). Existing rows stay valid.
-- **New `duty_roster` table:** `property_id`, `starts_at`, `ends_at`, `primary_user_id`, `backup_user_id`, `note`. Managers and admins write; staff read.
-- **New `guest_escalation_events` table:** an add-only log of who did what and when. No edits or deletes, enforced by a guard like the one on messages.
-- **Guest submission function** (`create_urgent_request`):
-  - Only works on the guest's own booking.
-  - The booking must be in `confirmed` or `checked_in` state, or arriving within 48 hours.
-  - Rate limit: 3 requests per hour.
-  - Fires an alert through `emit_admin_alert` to whoever is on duty now, with a per-person key.
-- **Escalation job** (`escalation-tick`): runs every minute via pg_cron and moves on any request past its `next_escalation_at`. Each step is protected against firing twice (`esc-${id}-L${level}-${uid}`).
-- **Settings:** approved urgent call number, WhatsApp display number, staffed hours text, and the X/Y time limits. Changes are recorded through the existing `policy_settings` change history.
+**Staff:** an Urgent strip on the Front Desk and Chase List, and a badge on the booking. Staff can mark a request acknowledged, assigned, physically addressed or resolved; each step is a separate action.
 
-## Edge cases
+## Phase 2: Coverage, acknowledgments, escalation, reliability
 
-- **No one on the roster tonight:** go straight to managers and admins, and show staff a warning that there's a "coverage gap".
-- **Shifts crossing midnight** in Bangkok time; store times in UTC.
-- **The guest calls and also sends a request:** staff mark one as a duplicate and resolve it with a note.
-- **Phone alerts not set up for anyone:** email still goes out. The urgent card must not imply anyone gets an instant buzz until at least one phone has signed up.
-- **Guest without a booking** (just browsing, or arriving later): they see the call button only.
-- **Requests coming in from messaging** reuse the same table with `source = messaging`, so there's no second inbox.
-- **Admin preview of the guest portal:** sending a request is blocked, as it is for other actions.
-- **Request spam:** rate limit, plus staff can close a request as spam.
+**New `duty_roster` table:**
+- Fields: `property_id`, `starts_at` / `ends_at` (stored in UTC, shown in Bangkok time), `primary_user_id`, `backup_user_id`, `approved_by`, `approved_at`.
+- Staff read it; managers and admins write it.
+- A shift only counts once it has been approved.
 
-## Rollout and tests
+**New `responder_capabilities` table:** `user_id`, `property_id`, `can_receive_alerts`, `can_assist_on_site`, `approved_by`. A person on the roster who can't physically assist triggers a coverage-gap warning.
 
-1. Build on the practice camp only, with test accounts. No live guests.
-2. Test matrix on iPhone (installed app), Android (installed app) and desktop:
-   - The call button opens the phone dialer.
-   - The WhatsApp link opens WhatsApp.
-   - A request appears for the person on duty.
-   - Acknowledge stops the escalation.
-   - The time limit escalates to the backup, then to managers.
-   - Resolve writes the log.
-   - A guest can't see another guest's request.
-   - Nobody can edit the log.
-3. Turn on Ops Alerts on Maxwell's phone, then Nikki's, before going live.
-4. Go live with Nikki as primary, Maxwell as backup and Nam as a watcher.
-5. **Rollback:** a single setting hides the urgent card. The new database fields are optional, so turning the feature off breaks nothing.
+**Coverage & Escalation panel** (a new tab inside Front Desk / Ops, not a new dashboard). It shows:
+- who is on now
+- gaps in the next 24 hours
+- unresolved incidents
+- acknowledgment times
+- escalation history
+- delivery health, using the existing card
 
-## Decisions needed before building
+**Escalation job** `escalation-tick`:
+- Fires on new requests. A backstop check runs every 2 minutes, only while unresolved requests exist. It stops when the queue is empty, so it costs nothing when quiet.
+- Gated by `auto_escalation_enabled`, which **starts off**.
+- Duplicate protection key: `esc-${id}-L${level}-${uid}`.
+- Escalation only re-notifies people; it never closes or reassigns anything without a person.
+- **Unresolved but acknowledged:** a reminder goes out after Z minutes without "addressed" or "resolved".
 
-1. **Which number is the Call camp button?** Nikki's WhatsApp number, a separate night line, or the person on duty's number? This is management's decision; nothing is chosen automatically.
-2. **Staffed hours** and the honest after-hours wording.
-3. **Time limits X and Y** (suggested: 10 minutes, then 20).
-4. **Who is on the roster**, and whether Nam is a backup or only a watcher at first.
-5. **Who can see guest urgent requests:** all staff, or only managers and the person on duty.
-6. **Should medical and safety requests skip straight to all managers?**
+**Reliability tests:** test pushes and emails go to approved test accounts only.
 
-No building starts until you approve.
+## Rate limiting (does not block help)
+
+- The Call button and emergency numbers are **never** rate limited.
+- A guest with an open request **adds an update to it** instead of creating a new one. Updates aren't capped; they re-alert at most once every 2 minutes.
+- New separate requests: soft limit of 5 per booking per hour. After that, the request still saves and still alerts. It is flagged "high volume" for staff to review; it is never dropped.
+- Staff, not the system, can mark a request as spam.
+
+## Conflicts and missing pieces
+
+- **`guest_escalations` has no booking link.** Old rows from messaging stay unlinked; they're shown as "no booking" and not guessed at.
+- **Its current policy lets ops staff update every field.** It needs a column guard so the lifecycle times can only move forward through the new staff actions.
+- **No phone has signed up for alerts (0 today).** Phase 2 can't go live until at least one primary and one backup have them working on their phones.
+- **`emergency_contact_phone` may be shown somewhere today.** I need to confirm which number that is before it becomes the approved Call number; nothing changes until management confirms.
+- **The guest card is only shown to checked-in guests today.** Showing it to guests arriving within 48 hours is a small change to the display rule.
+
+## Rollback
+
+- `urgent_requests_enabled` off hides the guest card. `auto_escalation_enabled` off stops escalation.
+- All new fields are optional and the new tables can be left unused, so turning it off breaks nothing.
+- The audit log is kept even after rollback.
+
+## Tests (practice camp, test accounts only)
+
+On iPhone (installed app), Android (installed app) and desktop:
+- **Contact buttons:** Call opens the dialer, WhatsApp opens WhatsApp, and a CampStay message goes to the booking's thread.
+- **Requests:** an urgent request creates an incident linked to the booking, and a second one adds to the open incident.
+- **Lifecycle:** acknowledging does not resolve, and the reminder fires while a request is unresolved.
+- **Coverage gap:** with no approved shift, staff see the coverage-gap warning and the guest copy promises nothing.
+- **Escalation off:** with escalation off, there are no automatic re-notifications.
+- **Escalation on:** with escalation on (practice camp only), escalation goes primary → backup → managers.
+- **Permissions:** a guest can't see another guest's request, the log can't be edited or deleted, and AI can't change status.
+- **Preview:** admin preview can't send a request.
+
+## Decisions needed from management before building
+
+1. Which number the Call button uses, and whether it is shown to guests arriving within 48 hours.
+2. The staffed hours and after-hours wording.
+3. Who can receive alerts and who can assist on site, per property.
+4. Time limits: X (to backup), Y (to managers), Z (unresolved reminder). Suggested: 10, 20 and 30 minutes.
+5. Who can see urgent requests: all ops staff, or only managers and the person on duty.
+6. Whether medical and safety categories alert managers straight away. This is the guest's choice of category, not an AI decision.
+
+Once you approve, I build Phase 1 only, with every switch off.
