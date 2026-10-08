@@ -1118,6 +1118,45 @@ export type Database = {
         }
         Relationships: []
       }
+      duty_roster: {
+        Row: {
+          approved_at: string
+          approved_by: string
+          backup_user_id: string | null
+          created_at: string
+          ends_at: string
+          id: string
+          note: string | null
+          primary_user_id: string
+          property_id: string | null
+          starts_at: string
+        }
+        Insert: {
+          approved_at?: string
+          approved_by: string
+          backup_user_id?: string | null
+          created_at?: string
+          ends_at: string
+          id?: string
+          note?: string | null
+          primary_user_id: string
+          property_id?: string | null
+          starts_at: string
+        }
+        Update: {
+          approved_at?: string
+          approved_by?: string
+          backup_user_id?: string | null
+          created_at?: string
+          ends_at?: string
+          id?: string
+          note?: string | null
+          primary_user_id?: string
+          property_id?: string | null
+          starts_at?: string
+        }
+        Relationships: []
+      }
       early_checkin_requests: {
         Row: {
           approved_by: string | null
@@ -4259,6 +4298,39 @@ export type Database = {
         }
         Relationships: []
       }
+      responder_capabilities: {
+        Row: {
+          approved_at: string
+          approved_by: string
+          can_assist_on_site: boolean
+          can_receive_alerts: boolean
+          created_at: string
+          id: string
+          property_id: string | null
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string
+          approved_by: string
+          can_assist_on_site?: boolean
+          can_receive_alerts?: boolean
+          created_at?: string
+          id?: string
+          property_id?: string | null
+          user_id: string
+        }
+        Update: {
+          approved_at?: string
+          approved_by?: string
+          can_assist_on_site?: boolean
+          can_receive_alerts?: boolean
+          created_at?: string
+          id?: string
+          property_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       review_audit_log: {
         Row: {
           action: string
@@ -5530,6 +5602,7 @@ export type Database = {
         }[]
       }
       get_comms_health: { Args: { _days?: number }; Returns: Json }
+      get_current_coverage: { Args: { _at?: string }; Returns: Json }
       get_email_deliverability: {
         Args: { _email: string }
         Returns: {
@@ -5537,6 +5610,7 @@ export type Database = {
           since: string
         }[]
       }
+      get_escalation_settings: { Args: never; Returns: Json }
       get_friction_radar: { Args: { _days?: number }; Returns: Json }
       get_friction_radar_weekly: {
         Args: { _weeks?: number }
@@ -5788,6 +5862,7 @@ export type Database = {
         }[]
       }
       revoke_admin_elevation: { Args: { _grant_id: string }; Returns: boolean }
+      run_urgent_escalations: { Args: never; Returns: number }
       set_assistance_setting: {
         Args: { _key: string; _value: Json }
         Returns: undefined
