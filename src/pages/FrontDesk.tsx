@@ -255,6 +255,7 @@ export default function FrontDesk() {
 <DeskPanel className="space-y-3">
             <UrgentRequestsStrip />
             <CoveragePanel />
+            <div className="text-right"><Link to="/duty-roster" className="text-xs underline text-muted-foreground">Open full duty roster →</Link></div>
             <ChaseList sections={sections} onOpen={setDetailId} />
           </DeskPanel>
 </TabsContent>
