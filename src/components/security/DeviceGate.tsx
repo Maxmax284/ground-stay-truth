@@ -45,7 +45,11 @@ export function DeviceGate({ children }: { children: React.ReactNode }) {
     });
   }, [gate.restricted, gate.state, gate.currentDevice, logged, logAudit]);
 
+  if (gate.state !== "loading") passedRef.current = !gate.restricted;
+
   if (gate.state === "loading") {
+    // Background re-checks must not unmount an already-open page.
+    if (passedRef.current) return <>{children}</>;
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="roundhouse-spinner" />
