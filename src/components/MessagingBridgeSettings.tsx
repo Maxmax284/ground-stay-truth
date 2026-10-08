@@ -338,8 +338,8 @@ export function MessagingBridgeSettings() {
                 <MessageCircle className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-base">SMS Bridge (Twilio)</CardTitle>
-                <CardDescription>Inbound SMS routed through Kru Glitch (capture-only). WhatsApp is now handled by the Meta wizard above.</CardDescription>
+                <CardTitle className="text-base">SMS + WhatsApp Bridge (Twilio)</CardTitle>
+                <CardDescription>Inbound SMS and WhatsApp routed through Kru Glitch (capture-only). Use this instead of the Meta wizard if you don't have Meta access.</CardDescription>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -376,11 +376,12 @@ export function MessagingBridgeSettings() {
             {renderSecretField("twilio_account_sid", "Account SID", "AC…")}
             {renderSecretField("twilio_auth_token", "Auth Token", "your auth token")}
             {renderSecretField("twilio_sms_from", "SMS From Number", "+15551234567")}
+            {renderSecretField("twilio_whatsapp_from", "WhatsApp From Number", "+14155238886 (sandbox) or your approved sender")}
 
             <Separator />
             <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-2">
-              <p className="font-medium text-foreground">Webhook URL (paste into Twilio)</p>
-              <p>Console → Phone Numbers → your number → <em>A MESSAGE COMES IN</em>:</p>
+              <p className="font-medium text-foreground">Webhook URLs (paste into Twilio)</p>
+              <p>SMS — Phone Numbers → your number → <em>A MESSAGE COMES IN</em>:</p>
               <div className="flex items-center gap-2">
                 <code className="block flex-1 bg-background rounded px-2 py-1 text-[11px] break-all">
                   {webhookBase}/twilio-webhook?channel=sms
@@ -389,7 +390,17 @@ export function MessagingBridgeSettings() {
                   <Copy className="h-3.5 w-3.5" />
                 </Button>
               </div>
+              <p className="pt-1">WhatsApp — Messaging → Try it out → WhatsApp sandbox settings (or your WhatsApp sender) → <em>When a message comes in</em>:</p>
+              <div className="flex items-center gap-2">
+                <code className="block flex-1 bg-background rounded px-2 py-1 text-[11px] break-all">
+                  {webhookBase}/twilio-webhook?channel=whatsapp
+                </code>
+                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copy(`${webhookBase}/twilio-webhook?channel=whatsapp`)}>
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
               <p className="pt-2"><strong>Method:</strong> POST. The webhook verifies Twilio's signature on every call.</p>
+              <p><strong>WhatsApp via Twilio:</strong> once the WhatsApp From Number is saved and this bridge is on, outbound WhatsApp goes through Twilio instead of Meta. Sandbox testing: text <code>join &lt;your-code&gt;</code> to +1 415 523 8886 from your phone first.</p>
               <p><strong>Heads up:</strong> turn on Twilio's <em>SMS Pumping Protection</em> and review <em>SMS Geo Permissions</em> before going live.</p>
             </div>
           </CardContent>

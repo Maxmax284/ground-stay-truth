@@ -202,6 +202,41 @@ async function sendTwilioSms(
   });
 }
 
+// Twilio WhatsApp is used when the Twilio bridge is on and a WhatsApp sender is saved.
+let _twilioWaCache: boolean | null = null;
+async function useTwilioWhatsApp(admin: any): Promise<boolean> {
+  if (_twilioWaCache !== null) return _twilioWaCache;
+  const [{ data: fromRow }, { data: toggle }] = await Promise.all([
+    admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "twilio_whatsapp_from").maybeSingle(),
+    admin.from("policy_settings").select("value").eq("key", "twilio_bridge_enabled").maybeSingle(),
+  ]);
+  _twilioWaCache = !!fromRow?.encrypted_value && String(toggle?.value ?? "").replace(/"/g, "") === "true";
+  return _twilioWaCache;
+}
+
+async function sendTwilioWhatsApp(admin: any, toNumber: string, text: string): Promise<SendResult> {
+  const [{ data: sidRow }, { data: tokenRow }, { data: fromRow }] = await Promise.all([
+    admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "twilio_account_sid").maybeSingle(),
+    admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "twilio_auth_token").maybeSingle(),
+    admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "twilio_whatsapp_from").maybeSingle(),
+  ]);
+  if (!sidRow?.encrypted_value || !tokenRow?.encrypted_value || !fromRow?.encrypted_value) {
+    return { ok: false, error: "twilio whatsapp not configured", category: "not_configured", severity: "attention", retry_count: 0 };
+  }
+  const sid = sidRow.encrypted_value;
+  const wa = (n: string) => `whatsapp:${n.replace(/^whatsapp:/i, "").replace(/^(?!\+)/, "+")}`;
+  const auth = btoa(`${sid}:${tokenRow.encrypted_value}`);
+  return await sendWithRetry("whatsapp", async () => {
+    const resp = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+      method: "POST",
+      headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ To: wa(toNumber), From: wa(fromRow.encrypted_value), Body: text.slice(0, 1600) }),
+    });
+    if (resp.ok) return { ok: true, status: resp.status };
+    return { ok: false, status: resp.status, body: await resp.text() };
+  });
+}
+
 // WhatsApp via Meta Cloud API.
 async function sendWhatsAppMeta(
   admin: any,
@@ -410,7 +445,9 @@ serve(async (req) => {
         result = await sendTelegram(admin, b.chat_id, text, tgRich);
       } else if (b.channel === "whatsapp") {
         const waIntent = buildWhatsAppForEvent(event_type, metadata as Record<string, any>, lang, role);
-        result = await sendWhatsAppMeta(admin, b.chat_id, text, waIntent);
+        result = (await useTwilioWhatsApp(admin))
+          ? await sendTwilioWhatsApp(admin, b.chat_id, waIntent ? (waIntent.kind === "media" ? waIntent.caption : whatsAppIntentToText(waIntent)) : text)
+          : await sendWhatsAppMeta(admin, b.chat_id, text, waIntent);
       } else if (b.channel === "sms") {
         result = await sendTwilioSms(admin, b.chat_id, text);
       } else if (b.channel === "line") {
