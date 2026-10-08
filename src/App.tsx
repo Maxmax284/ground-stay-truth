@@ -28,6 +28,7 @@ import CalendarView from "./pages/CalendarView";
 import Pricing from "./pages/Pricing";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import IslandGuideDraft from "./pages/IslandGuideDraft";
 import GuestPortal from "./pages/GuestPortal";
 import Messages from "./pages/Messages";
 import NotFound from "./pages/NotFound";
@@ -121,6 +122,7 @@ const App = () => (
                 <Route path="/pricing" element={<ProtectedRoute requiredPath="/pricing"><Pricing /></ProtectedRoute>} />
                 <Route path="/reports" element={<ProtectedRoute requiredPath="/reports"><Reports /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute requiredPath="/settings"><Settings /></ProtectedRoute>} />
+                <Route path="/island-guide-draft" element={<ProtectedRoute requiredPath="/settings"><IslandGuideDraft /></ProtectedRoute>} />
                 <Route path="/stripe-setup" element={<ProtectedRoute requiredPath="/settings"><StripeSetup /></ProtectedRoute>} />
 
                 <Route path="/messages" element={<ProtectedRoute requiredPath="/messages"><Messages /></ProtectedRoute>} />
