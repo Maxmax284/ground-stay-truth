@@ -5423,6 +5423,7 @@ export type Database = {
           misses: number
         }[]
       }
+      get_comms_health: { Args: { _days?: number }; Returns: Json }
       get_email_deliverability: {
         Args: { _email: string }
         Returns: {

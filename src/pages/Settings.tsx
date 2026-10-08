@@ -17,6 +17,7 @@ import { VantaIntegrationPanel } from "@/components/VantaIntegrationPanel";
 import NotificationSettings from "@/components/settings/NotificationSettings";
 import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 import { AppStatusPanel } from "@/components/settings/AppStatusPanel";
+import { CommsHealthCard } from "@/components/settings/CommsHealthCard";
 import { SandboxPanel } from "@/components/SandboxPanel";
 import { AIOpsPanel } from "@/components/admin/AIOpsPanel";
 import { useAuth } from "@/hooks/useAuth";
@@ -99,7 +100,10 @@ const Settings = () => {
           {isAdmin && <TabsContent value="vanta"><ErrorBoundary inline label="Vanta"><VantaIntegrationPanel /></ErrorBoundary></TabsContent>}
           {canSeeNotifications && <TabsContent value="notifications"><ErrorBoundary inline label="Notifications"><NotificationSettings /></ErrorBoundary></TabsContent>}
           {canSeeNotifications && <TabsContent value="sandbox"><ErrorBoundary inline label="Sandbox"><SandboxPanel /></ErrorBoundary></TabsContent>}
-          <TabsContent value="app"><ErrorBoundary inline label="App status"><AppStatusPanel /></ErrorBoundary></TabsContent>
+          <TabsContent value="app" className="space-y-4">
+            <ErrorBoundary inline label="App status"><AppStatusPanel /></ErrorBoundary>
+            {isAdmin && <ErrorBoundary inline label="Message delivery"><CommsHealthCard /></ErrorBoundary>}
+          </TabsContent>
 
         </Tabs>
 
