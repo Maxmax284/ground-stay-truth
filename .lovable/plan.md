@@ -62,6 +62,54 @@ The safest direction is one dossier rendered in two places: a concise entry insi
 - **Discussed only:** “THE ROCK” title/copy, six departments, public `/island-guide`, multilingual full dossier, emergency quick-bar, dossier search/jump navigation, archival photo treatment, verified-source labels, native review/transcreation workflow, and actual offline copy.
 - Earlier chat also generated unsupported claims. Those are historical brainstorm material, **not approved facts**.
 
+### Manuscript retrieval audit — addendum
+
+The final dossier is now explicitly scoped to contain the **complete approved guest-facing manuscript**, not outlines, summaries, or newly improvised replacement prose. The manuscript itself becomes a first-class editorial artifact: exact wording, paragraph order, headings, jokes, callouts, and concluding language must survive ingestion and review unless the owner approves a tracked revision.
+
+#### Exact text retrievable from this project chat
+
+- **Approved brief text:** the exact opening supplied in message 3041, from `LMT // FIELD INTELLIGENCE / ISLAND EDITION` through `leave the ego in the ring`; the final note is available only in the abbreviated form supplied there (`YOU'RE ON THE ROCK NOW ...`), not as a complete paragraph.
+- **Six-department scope and flagship titles:** all six department names, required subjects, and flagship article titles from message 3041.
+- **Exact clean jokes/callouts:** the Ducati/iced-coffee paragraph; the helmet/legal-advisor paragraph; the four named scooter “Don't Be That Guy” setups; and the Tuesday-sparring/championship-belt paragraph are quoted exactly in message 3041.
+- **Earlier five-part draft:** message 3038 is fully retrievable. It contains short bullet prose for Samui neighborhoods and nearby islands; coconut/road/economy claims; attractions; culture; scooters, ocean, dogs, centipedes, mosquitoes, geckos, water/ice, taxis, and songthaews. This is recoverable wording, but it is **not approved for publication** because several claims are unsupported or overbroad.
+- **Earlier East Coast sample copy:** message 3040 is fully retrievable. It contains sample paragraphs for scooters, taxis, jellyfish, temples, and island economics. These are voice samples, not the complete six-chapter manuscript, and several contain profanity or unsupported factual claims that conflict with the later brief.
+
+#### Text not present in accessible project history
+
+- The complete six-chapter prose in final approved order.
+- Full neighborhood profiles for every named Samui area and surrounding island.
+- The full expanded scooter/superbike article, helmet section, rental inspection section, insurance/license/permit section, taxi alternative, and ring-road challenge warning beyond the exact snippets in message 3041.
+- Complete taxi/songthaew, water/ice, dogs/rabies, centipede/gecko, dengue/daytime-mosquito, ocean-flag, jellyfish-first-aid, scams, contacts, attractions, and Fight Camp Code articles.
+- Every complete “Don't Be That Guy” entry with its practical takeaway.
+- The complete final-note prose represented by the ellipsis in message 3041.
+- Any wording that exists only in the separate ChatGPT brainstorming conversation.
+
+These gaps must be filled by the separately supplied approved master manuscript. They must **not** be reconstructed from memory, inferred from section headings, or silently replaced with generic travel copy.
+
+#### Section-by-section content inventory
+
+| Section | Recoverable now | Missing before ingestion |
+|---|---|---|
+| Cover/opening | Exact opening from message 3041 | Any additional cover/deck copy from the external master |
+| 01 Know the Rock | Short profiles for Lamai, Chaweng, Nathon/Lipa Noi, Bophut/Maenam; brief Phangan/Tao/Ang Thong notes from message 3038 | Full approved chapter, Maenam/Nathon/Lipa Noi distinctions, all final transitions/callouts |
+| 02 How This Place Works | Short coconut/road/airport/family/migrant-labor draft from message 3038 | Full approved nuanced chapter and verified wording; every economic/historical claim requires sourcing |
+| 03 Respect the Culture | Short jai yen, temple, monks, sacred images, Kru notes from message 3038 | Full approved prose, Wai Kru treatment, personal-space/head/feet detail, all final examples |
+| 04 Street Survival | Short legacy hazard bullets from message 3038; East Coast samples from 3040; exact Ducati, helmet, and four mistake setups from 3041 | Full approved flagship and all complete subarticles/takeaways; medically/legal vetted instructions |
+| 05 The Good Stuff | Brief attractions list from message 3038 | Full approved food, markets, beaches, ethical elephants, day trips, non-paid-placement language |
+| 06 Fight Camp Code | One short Kru note from 3038 and exact sparring joke from 3041 | Full approved orientation, intensity, etiquette, heat/hydration, recovery, skin/gear hygiene, inclusion chapter |
+| Final note | Opening and closing fragments from message 3041 | Exact complete final note from the approved master |
+
+#### Preservation strategy
+
+- Ingest the owner-supplied master as an immutable **source edition** with checksum, version, supplied date, and attribution; preserve a verbatim archival copy alongside structured display sections.
+- Split content into structured blocks without rewriting: heading, prose, street reality, East Coast note, actual rule, Don't Be That Guy, takeaway, sources, photo/caption, and final encouragement.
+- Track every editorial change as a diff against the approved source edition. No “cleanup,” shortening, tone smoothing, or fact correction silently changes the owner’s wording.
+- Apply fact-review flags at claim/block level: `unreviewed`, `source_needed`, `verified`, `qualified_review_required`, `unverified_local_observation`, `evergreen_review_due`, or `live_expires_at`.
+- A factual concern pauses that block from publication; it does not authorize AI or staff to rewrite it. The owner chooses whether to source, revise, qualify, or remove it.
+- Each localized block points to the exact English source version. Humor is transcreated and separately approved; safety/legal/medical text uses precise same-meaning translation and qualified/native review. Source edits mark affected translations out of sync.
+- Automated translation may produce a labeled draft only. It never overwrites the master, counts as native review, or inherits `verified` status automatically.
+- Acceptance includes a manuscript completeness report proving every approved source block appears once, in order, with no silent omission or duplication.
+
 ---
 
 ## B. Gaps and conflicts
@@ -149,13 +197,14 @@ One desk with department/article list, locale/version matrix, source panel, phot
 
 ### Canonical separation
 
-1. **Field reports:** one canonical article record with stable slug, department, classification, English source version, structured sections, related article/place IDs, publication status, and version.
-2. **Localized versions:** one version per locale, tied to source version, with status `missing → draft → native_review → approved`; translated humor is marked **transcreation**, safety text **same-meaning precision**.
-3. **Sources and verification:** claim-level or section-level source records with URL/document, authority type, jurisdiction, checked date, verifier, notes, and next-review/expiry.
-4. **Places:** retain `local_recommendations` for businesses, attractions, beaches, and practical contacts; link them into articles rather than duplicating them.
-5. **Live advisories:** use expiring, source-backed advisory records; do not bury realtime notices inside evergreen article copy.
-6. **Media:** approved assets reference provenance, rights/consent, location, creator, capture date, caption, alt text, permitted uses, and review status.
-7. **Audit:** append-only editorial events for draft, edit, source change, translation sync, review, publish, unpublish, expiry, and emergency correction.
+1. **Master manuscript editions:** immutable verbatim owner-supplied manuscripts with checksum, attribution, supplied date, version, and supersession history. This is the authoritative wording archive.
+2. **Field reports:** structured renderings of the master with stable slug, department, classification, source-edition/block references, ordered sections, related article/place IDs, publication status, and version. Structure must not silently alter prose.
+3. **Localized versions:** one version per locale, tied to exact source blocks, with status `missing → draft → native_review → approved`; translated humor is marked **transcreation**, safety text **same-meaning precision**.
+4. **Sources and verification:** claim-level or block-level source records with URL/document, authority type, jurisdiction, checked date, verifier, notes, and next-review/expiry.
+5. **Places:** retain `local_recommendations` for businesses, attractions, beaches, and practical contacts; link them into articles rather than duplicating them.
+6. **Live advisories:** use expiring, source-backed advisory records; do not bury realtime notices inside evergreen article copy.
+7. **Media:** approved assets reference provenance, rights/consent, location, creator, capture date, caption, alt text, permitted uses, and review status.
+8. **Audit:** append-only editorial events for manuscript ingestion, block mapping, draft, edit, source change, translation sync, review, publish, unpublish, expiry, and emergency correction.
 
 ### Authority model
 
@@ -220,11 +269,11 @@ The October 2026 helmet-enforcement item may appear only as **unverified local o
 
 ### Phase 0 — editorial lock and cleanup
 
-Freeze unverified legacy guide claims from dossier reuse; inventory the 26 intelligence rows; identify the 3 expired advisories; decide which content is retained, rewritten, sourced, or archived. Correct the misleading offline banner independently if approved.
+Receive the complete approved master manuscript from the separate ChatGPT conversation; checksum and inventory it against the section-by-section checklist above. Freeze unverified legacy guide claims from dossier reuse; inventory the 26 intelligence rows; identify the 3 expired advisories; decide which content is retained, rewritten, sourced, or archived. **No dossier implementation begins until manuscript completeness is confirmed.** Correct the misleading offline banner independently only if separately approved.
 
 ### Phase 1 — canonical English prototype, no public publication
 
-Build the six-department structure, article pattern, source/verification model, rights metadata, editorial audit, and server-enforced roles. Draft only the opening, ending, and 6 flagship reports. Use image placeholders with shot requirements—not fetched images.
+Ingest the complete English master verbatim, map every block into the six-department article pattern, and produce an omission/duplication/diff report. Build the source/verification model, rights metadata, editorial audit, and server-enforced roles. Flag unsupported claims without silently rewriting them. Use image placeholders with shot requirements—not fetched images.
 
 ### Phase 2 — visual prototype and usability review
 
@@ -263,6 +312,7 @@ Implement genuine published-app offline support using the project’s guarded PW
 5. Confirm language order: recommended `en → th → fr/de`, then the remaining five only after native review capacity exists.
 6. Confirm whether offline reading is worth the stale-content and testing burden; recommended default is **not in the first release**.
 7. Confirm photo ownership: camp-commissioned library first, licensed local contributors second, no scraped imagery.
+8. Supply the complete approved master manuscript from the separate ChatGPT conversation, including the unabridged final note and every Don't Be That Guy entry; this is a hard dependency before implementation.
 
 ---
 
