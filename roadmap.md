@@ -1,6 +1,6 @@
 # CampStay UX pass
 - [x] Remove social Camp Pass and exporter; retain existing guest logistics and logbook
-- [ ] Review guest aesthetics/usability and propose logistics-first refinements without implementing them
+- [x] Review guest aesthetics/usability and propose logistics-first refinements without implementing them
 - [x] Mobile containment gate: guest portal, preview, messages, alerts, tabs, floating controls, safe areas
 - [x] Shared Fight Camp Departure Board visual primitives and reduced-motion coverage
 - [x] Guest calm arrival board consistency
