@@ -102,9 +102,9 @@ const Settings = () => {
           {canSeeNotifications && <TabsContent value="notifications"><ErrorBoundary inline label="Notifications"><NotificationSettings /></ErrorBoundary></TabsContent>}
           {canSeeNotifications && <TabsContent value="sandbox"><ErrorBoundary inline label="Sandbox"><SandboxPanel /></ErrorBoundary></TabsContent>}
           <TabsContent value="app" className="space-y-4">
+            {(isAdmin || role === "manager") && <ErrorBoundary inline label="Guest contact & emergency"><AssistanceSettingsCard /></ErrorBoundary>}
             <ErrorBoundary inline label="App status"><AppStatusPanel /></ErrorBoundary>
             {isAdmin && <ErrorBoundary inline label="Message delivery"><CommsHealthCard /></ErrorBoundary>}
-            {(isAdmin || role === "manager") && <ErrorBoundary inline label="Guest urgent help"><AssistanceSettingsCard /></ErrorBoundary>}
           </TabsContent>
 
         </Tabs>
