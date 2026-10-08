@@ -26,7 +26,7 @@ function toGuestEdition(src: string) {
     .split("\n")
     .filter((l) => !/^\*\*Editorial status:\*\*/.test(l) && !/^\*Publication hold:/.test(l))
     .join("\n")
-    .replace(/\s*·\s*(CLINICAL REVIEW|CONTACT VERIFICATION) REQUIRED/g, "")
+    .replace(/\s*·\s*[A-Z ]+(REVIEW|VERIFICATION) REQUIRED/g, "")
     .replace(/\*\*\[NEW DRAFT\]\s*·\s*/g, "**")
     .replace(/\*\*\[NEW DRAFT\]\s*/g, "**")
     .replace(/\s*\[NEW DRAFT\]/g, "")
