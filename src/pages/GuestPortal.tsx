@@ -88,6 +88,7 @@ import { GuestStayUpdatesPrompt } from "@/components/GuestStayUpdatesPrompt";
 import { CampCommunicationCard } from "@/components/guest/CampCommunicationCard";
 import { GuestHeadsUpStrip } from "@/components/GuestHeadsUpStrip";
 import { GuestPlaybook } from "@/components/GuestPlaybook";
+import { TheRockReader } from "@/components/the-rock/TheRockReader";
 import { ReviewFormDialog } from "@/components/ReviewFormDialog";
 import { StarRating } from "@/components/StarRating";
 import { useGuestReviews } from "@/hooks/useReviews";
@@ -966,7 +967,8 @@ const GuestPortal = () => {
           )}
 
           {/* ── Island Guide Tab ── */}
-          <TabsContent value="island-guide">
+          <TabsContent value="island-guide" className="space-y-8">
+            <TheRockReader />
             <GuestPlaybook locations={guestLocations} />
           </TabsContent>
 
