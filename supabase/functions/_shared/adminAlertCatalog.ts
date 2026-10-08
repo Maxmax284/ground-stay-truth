@@ -195,6 +195,18 @@ export const ADMIN_ALERT_EVENTS: AdminAlertEvent[] = [
 
   // ------------------------------------------------------------ guest portal
   {
+    key: "urgent_guest_request", label: "URGENT: guest needs help",
+    description: "A guest raised an urgent help request from the portal. Email is a heads-up, not proof anyone is on the way.",
+    category: "guest_portal", severity: "critical", defaultEmail: true, defaultInApp: true, wired: true, bypassCriticalOnly: true,
+    where: "Front Desk", nextAction: "Call the guest or camp now, then Acknowledge in Front Desk. Acknowledged is not resolved.",
+  },
+  {
+    key: "urgent_guest_request_escalated", label: "ESCALATED: urgent guest request unanswered",
+    description: "An urgent guest request was not acknowledged in time, or nobody is on the roster. It is now on managers and admins.",
+    category: "guest_portal", severity: "critical", defaultEmail: true, defaultInApp: true, wired: true, bypassCriticalOnly: true,
+    where: "Front Desk", nextAction: "Someone take it now: call the guest, Acknowledge in Front Desk, and keep it open until physically handled.",
+  },
+  {
     key: "guest_message_received", label: "Guest message received",
     description: "A guest sends a message from the portal.",
     category: "guest_portal", severity: "action", defaultEmail: true, defaultInApp: true, wired: true,
