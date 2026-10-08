@@ -3,3 +3,4 @@
 - Light theme is the default; bump the ThemeProvider storage key when the default changes so everyone resets once, then keeps their own toggle choice.
 - Guest portal excludes the social Camp Pass/exporter; retain operational stay documents and the existing logbook so logistics remain the priority.
 - Message edits are guarded by DB trigger guard_message_update: guests may change only read_at, and only admins may release drafts or set approved_by — so the thread stays an honest audit trail.
+- Urgent guest incidents live in guest_escalations (kind='urgent_request'; NULL kind = legacy messaging handoffs) and change only through create_urgent_request / urgent_request_action, guarded by guard_escalation_lifecycle; guest_escalation_events is add-only — so incident status is server-enforced and auditable.

@@ -10,3 +10,5 @@
 - [x] Android Chrome, iPhone Safari, and iPhone home-screen viewport simulation
 - [x] Build/typecheck validation
 - [ ] Physical-device touch/PWA verification and staff workflow click-through (staff MFA required)
+
+- [ ] After-hours Phase 2 (roster, responder capabilities, escalation job) — blocked on management decisions + verified staff phone alerts
