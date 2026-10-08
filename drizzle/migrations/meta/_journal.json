@@ -176,6 +176,13 @@
       "when": 1791453528242,
       "tag": "0024_guard_message_updates",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791453771911,
+      "tag": "0025_comms_health",
+      "breakpoints": true
     }
   ]
 }
