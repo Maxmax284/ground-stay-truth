@@ -524,7 +524,24 @@ const GuestPortal = () => {
           phone's width — long emails, wide cards, tab rows included. */}
       <div className="space-y-6 w-full max-w-full overflow-x-hidden">
         {isPreview && <GuestPreviewControls />}
-        <fieldset disabled={isViewingAsGuest} className={isViewingAsGuest ? "space-y-6 min-w-0 max-w-full [&_a]:pointer-events-none opacity-95 pointer-events-auto" : "space-y-6 min-w-0 max-w-full m-0 p-0 border-0"}>
+        {/* Admin "view as guest": everything stays full-strength and navigable
+            (tabs, accordions, links, menus). Only actions that would write on
+            the guest's behalf are intercepted. Real guests are untouched. */}
+        <fieldset
+          className="space-y-6 min-w-0 max-w-full m-0 p-0 border-0"
+          onSubmitCapture={isViewingAsGuest ? (e) => { e.preventDefault(); e.stopPropagation(); toast.info("Preview: read-only, nothing was saved."); } : undefined}
+          onClickCapture={isViewingAsGuest ? (e) => {
+            const el = e.target as HTMLElement;
+            const navigable = el.closest('[role="tab"],[aria-expanded],[aria-controls],a,[role="option"],[role="combobox"],[role="menuitem"],[data-preview-allow]');
+            if (navigable) return;
+            const action = el.closest('button,[role="button"],[role="switch"],[role="checkbox"],input[type="checkbox"],input[type="file"],input[type="submit"]');
+            if (action) {
+              e.preventDefault();
+              e.stopPropagation();
+              toast.info("Preview: read-only, actions are off for admins viewing as a guest.");
+            }
+          } : undefined}
+        >
         <div className="station-header flex min-w-0 items-center justify-between">
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t("guestPortal.myStay")}</h1>
