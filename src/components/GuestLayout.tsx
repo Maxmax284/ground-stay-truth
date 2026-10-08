@@ -40,7 +40,7 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
   const isAndroid = /android/i.test(navigator.userAgent);
 
   return (
-    <div className="guest-shell min-h-screen flex flex-col bg-background overflow-x-clip">
+    <div className="guest-shell safe-top min-h-screen flex flex-col bg-background overflow-x-clip">
       <div className="thai-stripe" />
       <header className="h-14 flex items-center justify-between gap-2 border-b border-border px-3 sm:px-6 bg-card min-w-0">
         <h1
@@ -122,7 +122,7 @@ const GuestLayout = ({ children }: GuestLayoutProps) => {
           {children}
         </div>
       </main>
-      <footer className="border-t border-border bg-card px-6 py-3 text-center text-xs text-muted-foreground space-y-1">
+      <footer className="border-t border-border bg-card px-6 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] text-center text-xs text-muted-foreground space-y-1">
         <div>
           <a href="/legal#privacy" className="hover:text-foreground hover:underline">{t("legal.privacyPolicy")}</a>
           <span className="mx-2">·</span>

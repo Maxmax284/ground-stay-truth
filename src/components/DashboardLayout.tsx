@@ -61,7 +61,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     >
       <div className="min-h-screen flex w-full">
         <AppSidebar />
-        <div className="flex-1 flex flex-col min-w-0 w-full max-w-full">
+        <div className="flex-1 flex flex-col min-w-0 w-full max-w-full safe-top">
           {/* Thai flag accent stripe */}
           <div className="thai-stripe" />
           {/* Security freeze banner */}
@@ -87,9 +87,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <PropertyIndicator />
             </div>
             <span className="text-sm font-medium text-muted-foreground truncate min-w-0">{t(titleKey)}</span>
-            <div className="ml-auto flex items-center gap-1 shrink-0">
-              <LanguageToggle />
-              <ThemeToggle />
+            <div className="ml-auto flex items-center gap-0.5 sm:gap-1 shrink-0">
+              <div className="hidden sm:flex items-center gap-1">
+                <LanguageToggle />
+                <ThemeToggle />
+              </div>
               <NotificationBell />
               <Button
                 variant="ghost"
@@ -102,9 +104,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </Button>
             </div>
           </header>
+          <div className="sm:hidden flex items-center justify-between gap-2 border-b border-border bg-card px-2 py-1">
+            <PropertyIndicator />
+            <div className="flex items-center gap-0.5">
+              <LanguageToggle />
+              <ThemeToggle />
+            </div>
+          </div>
           <RouteTicker path={location.pathname} title={t(titleKey)} />
           <ElevationBanner />
-          <main className="flex-1 p-4 sm:p-6 overflow-y-auto overflow-x-hidden ring-rope-pattern min-w-0">
+          <main className="flex-1 p-3 sm:p-6 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] overflow-y-auto overflow-x-hidden ring-rope-pattern min-w-0">
 
             <div key={location.pathname} className="animate-page-entry min-w-0 max-w-full">
               {children}
