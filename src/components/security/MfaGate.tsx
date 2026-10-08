@@ -204,19 +204,21 @@ function ChallengeScreen({
 
 export function MfaGate({ children }: { children: React.ReactNode }) {
   const gate = useMfaGate();
-
-  // Re-check after enrollment / verification.
-  useEffect(() => {
-    if (gate.state === "loading") return;
-  }, [gate.state]);
+  // Once the gate has passed, background re-checks ("loading") must not
+  // unmount the page — that wiped unsaved form input in Settings.
+  const passedRef = useRef(false);
+  if (gate.state === "satisfied" || gate.state === "not_required") passedRef.current = true;
+  if (gate.state === "enroll_required" || gate.state === "challenge_required") passedRef.current = false;
 
   if (gate.state === "loading") {
+    if (passedRef.current) return <>{children}</>;
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="roundhouse-spinner" />
       </div>
     );
   }
+
 
   if (gate.state === "enroll_required") {
     return (
