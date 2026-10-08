@@ -2,3 +2,4 @@
 - Modify Stay defaults to "preserve" pricing: stored total + night-level clean delta (computeChangeDelta); full re-price only for unpaid inquiry/soft_hold/pending_* bookings, enforced server-side — so settled nights are never re-priced.
 - Light theme is the default; bump the ThemeProvider storage key when the default changes so everyone resets once, then keeps their own toggle choice.
 - Guest portal excludes the social Camp Pass/exporter; retain operational stay documents and the existing logbook so logistics remain the priority.
+- Message edits are guarded by DB trigger guard_message_update: guests may change only read_at, and only admins may release drafts or set approved_by — so the thread stays an honest audit trail.
