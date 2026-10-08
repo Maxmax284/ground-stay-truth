@@ -9,8 +9,9 @@ import {
   URGENT_CATEGORIES, useAssistanceConfig, useCreateUrgentRequest, useMyOpenUrgentRequest,
 } from "@/hooks/useUrgentAssistance";
 
-const tel = (n: string) => `tel:${n.replace(/[^\d+]/g, "")}`;
-const wa = (n: string) => `https://wa.me/${n.replace(/[^\d]/g, "")}`;
+import { toTelLink, toWaLink } from "@/lib/contactLinks";
+const tel = (n: string) => toTelLink(n)!;
+const wa = (n: string) => toWaLink(n)!;
 
 /**
  * Guest "Need help?" card. Three separate routes (call / CampStay message /
