@@ -8,6 +8,7 @@ import { differenceInCalendarDays } from "date-fns";
 import { Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useSearchParams } from "react-router-dom";
 
 type Stage = "upcoming" | "active" | "completed";
 
