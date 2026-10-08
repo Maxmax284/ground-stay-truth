@@ -17,6 +17,7 @@ import { VantaIntegrationPanel } from "@/components/VantaIntegrationPanel";
 import NotificationSettings from "@/components/settings/NotificationSettings";
 import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 import { AppStatusPanel } from "@/components/settings/AppStatusPanel";
+import { CommsHealthCard } from "@/components/settings/CommsHealthCard";
 import { SandboxPanel } from "@/components/SandboxPanel";
 import { AIOpsPanel } from "@/components/admin/AIOpsPanel";
 import { useAuth } from "@/hooks/useAuth";
