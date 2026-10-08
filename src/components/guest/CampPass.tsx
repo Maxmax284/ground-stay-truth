@@ -60,6 +60,11 @@ async function renderStory(name: string, l: ReturnType<typeof lines>): Promise<B
 export function CampPass({ booking, guestName }: { booking: any | null; guestName?: string | null }) {
   const ref = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
+  const [searchParams] = useSearchParams();
+  // Admin "view as guest" preview locks every control via a disabled fieldset.
+  // Export story mutates nothing (pure client-side canvas), so it stays tappable
+  // there too — rendered as a non-form control the fieldset can't disable.
+  const previewLocked = searchParams.has("as");
   const stage = stageOf(booking);
 
   useEffect(() => {
