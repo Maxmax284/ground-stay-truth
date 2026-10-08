@@ -204,6 +204,20 @@
       "when": 1791454610323,
       "tag": "0028_urgent_flag_reset",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1791454798197,
+      "tag": "0029_urgent_assistance_phase2",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1791454817549,
+      "tag": "0030_ack_sets_reminder",
+      "breakpoints": true
     }
   ]
 }
