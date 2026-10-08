@@ -11,7 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ShieldAlert, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatCampShort, toCampInputValue, fromCampInputValue } from "@/lib/timezone";
-import { useSetAssistanceSetting } from "@/hooks/useUrgentAssistance";
+import { useSetAssistanceSetting, useAssistanceConfig } from "@/hooks/useUrgentAssistance";
+import { Link } from "react-router-dom";
+import { toWaLink } from "@/lib/contactLinks";
+
+const copyText = (t: string) => navigator.clipboard?.writeText(t).then(() => toast.success("Link copied"), () => toast.error("Couldn't copy"));
 
 type Coverage = {
   shift_id: string | null; starts_at: string | null; ends_at: string | null;
@@ -28,6 +32,7 @@ export function CoveragePanel() {
   const canManage = role === "admin" || role === "manager";
   const qc = useQueryClient();
   const setSetting = useSetAssistanceSetting();
+  const { data: cfg } = useAssistanceConfig();
 
   const { data: coverage } = useQuery({
     queryKey: ["coverage-now"], refetchInterval: 60_000,
@@ -153,7 +158,46 @@ export function CoveragePanel() {
             </div>
           </div>
         ))}
-        <p className="text-[11px] text-muted-foreground">A sent alert doesn't mean someone is available. Phone alerts only work on phones that have turned them on.</p>
+        {coverage && (coverage as any).source === "default" && (
+          <p className="text-[11px] text-muted-foreground -mt-2">No shift right now — using the Default On-Call set by management.</p>
+        )}
+        <p className="text-[11px] text-muted-foreground">A sent alert doesn't mean someone is available. Phone alerts only work on phones that have turned them on. Checked every 5 minutes, so alerts can land up to ~5 minutes after a threshold. Delivery has not yet been proven in a practice run.</p>
+
+        {/* Guest contact (read-only here) */}
+        <div className="rounded-md border border-border p-3 space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-medium">Guest contact</p>
+            {canManage && <Button asChild size="sm" variant="ghost"><Link to="/settings?tab=app">Edit in Settings →</Link></Button>}
+          </div>
+          <p className="text-xs">Call camp: <span className="font-semibold">{cfg?.urgent_call_number || "not set"}</span></p>
+          <p className="text-xs">WhatsApp: <span className="font-semibold">{cfg?.whatsapp_display_number || "not set"}</span></p>
+          {toWaLink(cfg?.whatsapp_display_number) && (
+            <button className="text-[11px] text-primary underline break-all text-left" onClick={() => copyText(toWaLink(cfg?.whatsapp_display_number)!)}>
+              {toWaLink(cfg?.whatsapp_display_number)} (copy)
+            </button>
+          )}
+          <p className="text-[11px] text-muted-foreground">WhatsApp and calls go straight to that phone — they don't create a CampStay request or alert the roster.</p>
+        </div>
+
+        {/* Default on-call */}
+        <div className="rounded-md border border-border p-3 space-y-2">
+          <p className="font-medium">Default On-Call (optional)</p>
+          <p className="text-[11px] text-muted-foreground">Used only when no approved shift is on. Shifts always win. Blank = nobody.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {([["default_oncall_primary", "Primary", (coverage as any)?.default_primary_user_id], ["default_oncall_backup", "Backup", (coverage as any)?.default_backup_user_id]] as const).map(([key, lbl, val]) => (
+              <div key={key} className="space-y-1">
+                <label className="text-[11px] text-muted-foreground">{lbl}</label>
+                <Select disabled={!canManage} value={val || NONE} onValueChange={(v) => saveSetting(key, v === NONE ? null : v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>Nobody</SelectItem>
+                    {responderUsers.map((r) => <SelectItem key={r.user_id} value={r.user_id}>{nameOf(r.user_id)}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Escalation switch */}
         <div className="rounded-md border border-border p-3 space-y-2">
