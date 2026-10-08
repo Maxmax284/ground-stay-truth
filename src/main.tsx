@@ -19,11 +19,16 @@ const isInIframe = (() => {
   }
 })();
 
+const host = window.location.hostname;
 const isPreviewHost =
-  window.location.hostname.includes("id-preview--") ||
-  window.location.hostname.includes("lovableproject.com");
+  host.startsWith("id-preview--") ||
+  host.startsWith("preview--") ||
+  host === "lovableproject.com" || host.endsWith(".lovableproject.com") ||
+  host === "lovableproject-dev.com" || host.endsWith(".lovableproject-dev.com") ||
+  host === "beta.lovable.dev" || host.endsWith(".beta.lovable.dev");
+const swKillSwitch = new URLSearchParams(window.location.search).get("sw") === "off";
 
-if (isPreviewHost || isInIframe) {
+if (isPreviewHost || isInIframe || swKillSwitch || !import.meta.env.PROD) {
   navigator.serviceWorker?.getRegistrations().then((registrations) => {
     registrations.forEach((r) => r.unregister());
   });
