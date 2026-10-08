@@ -51,6 +51,7 @@ import { TurnoverBoard } from "@/components/front-desk/TurnoverBoard";
 import { FlightForecastWidget } from "@/components/FlightForecastWidget";
 import { ArrivalExceptionsPanel } from "@/components/front-desk/ArrivalExceptionsPanel";
 import { ChaseList } from "@/components/front-desk/ChaseList";
+import { CoveragePanel } from "@/components/front-desk/CoveragePanel";
 import { UrgentRequestsStrip } from "@/components/front-desk/UrgentRequestsStrip";
 import { DriverChatPanel } from "@/components/front-desk/DriverChatPanel";
 import { GuestThreadLauncher } from "@/components/GuestThreadLauncher";
@@ -253,6 +254,7 @@ export default function FrontDesk() {
           <TabsContent value="chase" className="mt-4">
 <DeskPanel className="space-y-3">
             <UrgentRequestsStrip />
+            <CoveragePanel />
             <ChaseList sections={sections} onOpen={setDetailId} />
           </DeskPanel>
 </TabsContent>
