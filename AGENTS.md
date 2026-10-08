@@ -4,3 +4,4 @@
 - Guest portal excludes the social Camp Pass/exporter; retain operational stay documents and the existing logbook so logistics remain the priority.
 - Message edits are guarded by DB trigger guard_message_update: guests may change only read_at, and only admins may release drafts or set approved_by — so the thread stays an honest audit trail.
 - Urgent guest incidents live in guest_escalations (kind='urgent_request'; NULL kind = legacy messaging handoffs) and change only through create_urgent_request / urgent_request_action, guarded by guard_escalation_lifecycle; guest_escalation_events is add-only — so incident status is server-enforced and auditable.
+- After-hours escalation runs only in DB function run_urgent_escalations (pg_cron every 2 min, exits immediately when auto_escalation_enabled is off or nothing is open); roster/responders are management-approved rows (validate_duty_roster) — never auto-assigned.
