@@ -38,3 +38,12 @@ describe("comms readiness", () => {
     expect(readyToEnableEscalation({ ...full, practice_run_verified: true })).toBe(true);
   });
 });
+
+import { nextSteps } from "../commsReadiness";
+describe("guided setup", () => {
+  it("lists actionable steps and drops them once done", () => {
+    expect(nextSteps(empty).map((s) => s.id)).toEqual(["call", "whatsapp", "responders", "coverage", "push"]);
+    const done = { ...empty, call_number_set: true, whatsapp_number_set: true, responders_notify: 1, coverage_now: { source: "default" }, push_devices: 1 };
+    expect(nextSteps(done)).toEqual([]);
+  });
+});
