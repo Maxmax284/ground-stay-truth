@@ -14,6 +14,7 @@ import { formatCampShort, toCampInputValue, fromCampInputValue } from "@/lib/tim
 import { useSetAssistanceSetting, useAssistanceConfig } from "@/hooks/useUrgentAssistance";
 import { Link } from "react-router-dom";
 import { toWaLink } from "@/lib/contactLinks";
+import { MyAlertEmail } from "./MyAlertEmail";
 
 const copyText = (t: string) => navigator.clipboard?.writeText(t).then(() => toast.success("Link copied"), () => toast.error("Couldn't copy"));
 
@@ -141,6 +142,7 @@ export function CoveragePanel() {
     <Card>
       <CardHeader className="pb-2"><CardTitle className="text-base">Coverage &amp; escalation</CardTitle></CardHeader>
       <CardContent className="space-y-4 text-sm">
+        <MyAlertEmail />
         {/* Now */}
         {coverage && (coverage.gap ? (
           <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2.5">
