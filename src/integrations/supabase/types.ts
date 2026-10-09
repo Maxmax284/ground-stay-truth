@@ -3151,6 +3151,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ops_config_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          new_row: Json | null
+          old_row: Json | null
+          row_id: string | null
+          table_name: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          new_row?: Json | null
+          old_row?: Json | null
+          row_id?: string | null
+          table_name: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          new_row?: Json | null
+          old_row?: Json | null
+          row_id?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
       ops_passcode: {
         Row: {
           hash: string
@@ -5602,6 +5635,7 @@ export type Database = {
         }[]
       }
       get_comms_health: { Args: { _days?: number }; Returns: Json }
+      get_comms_readiness: { Args: never; Returns: Json }
       get_current_coverage: { Args: { _at?: string }; Returns: Json }
       get_email_deliverability: {
         Args: { _email: string }

@@ -232,6 +232,13 @@
       "when": 1791458291863,
       "tag": "0032_urgent_escalation_coverage_gap_email",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1791517996064,
+      "tag": "0033_phase1_ops_audit_and_readiness",
+      "breakpoints": true
     }
   ]
 }
