@@ -114,12 +114,35 @@ Deno.serve(async (req) => {
     const eventId = crypto.randomUUID();
 
     // ---------------------------------------------------------------- roles
-    const { data: roleRows, error: roleErr } = await admin
-      .from("user_roles")
-      .select("user_id, role")
-      .in("role", ["admin", "manager"]);
-    if (roleErr) throw roleErr;
-    const recipientIds = Array.from(new Set((roleRows ?? []).map((r) => r.user_id as string)));
+    // On-duty responder mode: an urgent escalation addressed to ONE approved
+    // responder (primary/backup) emails only that person. They already got the
+    // in-app bell from the escalation job, so in-app is skipped below.
+    const rawCtx = (body.context ?? {}) as Record<string, unknown>;
+    const responderId = typeof rawCtx.responder_user_id === "string" ? rawCtx.responder_user_id : null;
+    let recipientIds: string[];
+    let responderMode = false;
+    if (responderId && event.key.startsWith("urgent_guest_request")) {
+      const { data: cap } = await admin
+        .from("responder_capabilities")
+        .select("user_id")
+        .eq("user_id", responderId)
+        .eq("can_receive_alerts", true)
+        .limit(1);
+      if (!cap || cap.length === 0) {
+        return new Response(JSON.stringify({ ok: true, recipients: 0, reason: "not_approved_responder" }), {
+          headers: { ...CORS, "Content-Type": "application/json" },
+        });
+      }
+      recipientIds = [responderId];
+      responderMode = true;
+    } else {
+      const { data: roleRows, error: roleErr } = await admin
+        .from("user_roles")
+        .select("user_id, role")
+        .in("role", ["admin", "manager"]);
+      if (roleErr) throw roleErr;
+      recipientIds = Array.from(new Set((roleRows ?? []).map((r) => r.user_id as string)));
+    }
     if (recipientIds.length === 0) {
       return new Response(JSON.stringify({ ok: true, recipients: 0 }), {
         headers: { ...CORS, "Content-Type": "application/json" },
