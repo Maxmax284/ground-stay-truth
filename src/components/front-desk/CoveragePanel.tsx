@@ -145,6 +145,19 @@ export function CoveragePanel({ mode = "status" }: { mode?: "status" | "settings
     <Card>
       <CardHeader className="pb-2"><CardTitle className="text-base">{isSettings ? "Coverage & escalation setup" : "Who's on duty"}</CardTitle></CardHeader>
       <CardContent className="space-y-4 text-sm">
+        {showSetup && (
+          <details className="rounded-md border border-border bg-muted/30 p-2.5 text-xs" open>
+            <summary className="cursor-pointer font-medium">How urgent help works (read once)</summary>
+            <ol className="mt-2 list-decimal space-y-1 pl-4 text-muted-foreground">
+              <li><span className="font-medium text-foreground">Camp inbox always:</span> every real urgent request emails all admin accounts (train@lamaimuaythai.com) — the permanent safety net. Practice drills skip it.</li>
+              <li><span className="font-medium text-foreground">Who's on now:</span> the shift's primary gets it at minute 0. No shift? Default On-Call. Nobody at all? Managers + admins immediately.</li>
+              <li><span className="font-medium text-foreground">Watchdog (Automatic escalation):</span> if nobody taps Acknowledge — backup at the "backup" minute, all managers/admins at the "managers" minute, reminders until it's resolved.</li>
+              <li><span className="font-medium text-foreground">Approved responders</span> are the only people who can be put on a shift or Default On-Call. "Can be notified" = gets alerts. "Can assist on site" = can physically show up.</li>
+              <li><span className="font-medium text-foreground">My alert emails</span> are where <em>your</em> alerts land when it's your turn. Add as many inboxes as you want; blank = your login email.</li>
+            </ol>
+            <p className="mt-2 text-[11px] text-muted-foreground">Nothing here closes incidents, moves rooms or assigns people. Humans do that.</p>
+          </details>
+        )}
         {showSetup && <MyAlertEmail />}
         {/* Now */}
         {coverage && (coverage.gap ? (

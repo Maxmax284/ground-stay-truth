@@ -4569,16 +4569,19 @@ export type Database = {
       staff_alert_emails: {
         Row: {
           email: string
+          extra_emails: string[]
           updated_at: string
           user_id: string
         }
         Insert: {
           email: string
+          extra_emails?: string[]
           updated_at?: string
           user_id: string
         }
         Update: {
           email?: string
+          extra_emails?: string[]
           updated_at?: string
           user_id?: string
         }

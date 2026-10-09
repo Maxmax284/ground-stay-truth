@@ -1,0 +1,2 @@
+ALTER TABLE public.staff_alert_emails ADD COLUMN IF NOT EXISTS extra_emails text[] NOT NULL DEFAULT '{}';
+ALTER TABLE public.staff_alert_emails ADD CONSTRAINT staff_alert_extra_emails_max CHECK (cardinality(extra_emails) <= 5);
