@@ -139,7 +139,7 @@ export default function DutyRoster() {
     <DashboardLayout>
       <div className="space-y-4 max-w-5xl">
         <div className="flex flex-wrap items-center gap-2">
-          <Button asChild variant="ghost" size="sm"><Link to="/front-desk?tab=chase"><ArrowLeft className="h-4 w-4 mr-1" />Front Desk</Link></Button>
+          <Button asChild variant="ghost" size="sm"><Link to="/front-desk?tab=duty"><ArrowLeft className="h-4 w-4 mr-1" />Front Desk</Link></Button>
           <h1 className="text-xl font-semibold">Duty roster</h1>
           <span className="text-xs text-muted-foreground">Bangkok time · management-approved only</span>
           <div className="ml-auto flex items-center gap-2">
