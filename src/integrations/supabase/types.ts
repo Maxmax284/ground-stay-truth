@@ -4566,6 +4566,24 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_alert_emails: {
+        Row: {
+          email: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          email: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          email?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       staff_audit_events: {
         Row: {
           actor_email: string | null

@@ -12,3 +12,12 @@
 - [ ] Physical-device touch/PWA verification and staff workflow click-through (staff MFA required)
 
 - [x] After-hours Phase 2 built (switches off); go-live waits on management staffing + verified staff phone alerts
+
+# PMS Roadmap (Oct 2026)
+- [x] Phase 1: comms security, honest push status, append-only ops audit, Alert readiness card
+- [x] Phase 1: staff alert email field on Front Desk panel (managers/admins get escalation emails there)
+- [ ] Phase 1 leftover: Thailand-time audit timeline view; record practice-run result
+- [ ] Phase 2: guided assistance setup; email on-duty primary/backup (non-manager) at their alert email
+- [ ] Phase 3: sandbox end-to-end escalation test + launch gate (needs management approval, real phones)
+- [ ] Phase 4: room readiness, housekeeping, maintenance, tasks
+- [ ] Phase 5: unified PMS oversight/reporting

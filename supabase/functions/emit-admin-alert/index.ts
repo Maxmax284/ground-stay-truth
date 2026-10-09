@@ -155,7 +155,16 @@ Deno.serve(async (req) => {
       .from("profiles")
       .select("user_id, email, full_name")
       .in("user_id", recipientIds);
-    const profileById = new Map((profileRows ?? []).map((p: any) => [p.user_id, p]));
+    const profileById = new Map((profileRows ?? []).map((p: any) => [p.user_id, { ...p }]));
+    // Staff-chosen alert inbox (Front Desk panel) wins over the login email.
+    const { data: alertRows } = await admin
+      .from("staff_alert_emails")
+      .select("user_id, email")
+      .in("user_id", recipientIds);
+    for (const a of alertRows ?? []) {
+      const p = profileById.get(a.user_id) ?? { user_id: a.user_id, full_name: null };
+      profileById.set(a.user_id, { ...p, email: a.email });
+    }
 
     const notifType = CATEGORY_TO_NOTIF_TYPE[event.category] ?? "override";
     const deepLinkAbsolute = body.deep_link
