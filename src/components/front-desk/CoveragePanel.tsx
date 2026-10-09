@@ -221,6 +221,19 @@ export function CoveragePanel() {
               </div>
             ))}
           </div>
+          {canManage && (
+            <div className="flex items-center justify-between gap-2 pt-1 border-t border-border">
+              <p className="text-[11px] text-muted-foreground">Practice drill: emails a [PRACTICE DRILL] alert to you only. No guest, no incident, camp inbox untouched.</p>
+              <Button size="sm" variant="outline" onClick={async () => {
+                const { data, error } = await supabase.functions.invoke("practice-drill", { body: {} });
+                const err = (data as any)?.error ?? (error ? "send_failed" : null);
+                if (err === "not_approved_responder") return toast.error("Add yourself as an approved responder with “Can be notified” first.");
+                if (err) return toast.error("Drill didn't send. Try again or check Operations Monitor.");
+                if ((data as any)?.email_sent > 0) toast.success("Drill sent — check your inbox.");
+                else toast.error("Drill ran but no email went out — check your saved alert email.");
+              }}>Send practice drill</Button>
+            </div>
+          )}
         </div>
 
         {/* Roster */}
