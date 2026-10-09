@@ -239,6 +239,13 @@
       "when": 1791517996064,
       "tag": "0033_phase1_ops_audit_and_readiness",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1791518216923,
+      "tag": "0034_staff_alert_email",
+      "breakpoints": true
     }
   ]
 }
