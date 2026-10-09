@@ -17,7 +17,7 @@
 - [x] Phase 1: comms security, honest push status, append-only ops audit, Alert readiness card
 - [x] Phase 1: staff alert email field on Front Desk panel (managers/admins get escalation emails there)
 - [ ] Phase 1 leftover: Thailand-time audit timeline view; record practice-run result
-- [ ] Phase 2: guided assistance setup; email on-duty primary/backup (non-manager) at their alert email
+- [x] Phase 2: guided setup steps in Alert readiness; on-duty primary/backup emailed at their alert email (approved responders only)
 - [ ] Phase 3: sandbox end-to-end escalation test + launch gate (needs management approval, real phones)
 - [ ] Phase 4: room readiness, housekeeping, maintenance, tasks
 - [ ] Phase 5: unified PMS oversight/reporting
