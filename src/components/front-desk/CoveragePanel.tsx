@@ -226,7 +226,7 @@ export function CoveragePanel() {
               <p className="text-[11px] text-muted-foreground">Practice drill: emails a [PRACTICE DRILL] alert to you only. No guest, no incident, camp inbox untouched.</p>
               <Button size="sm" variant="outline" onClick={async () => {
                 const { data, error } = await supabase.functions.invoke("practice-drill", { body: {} });
-                const err = (data as any)?.error ?? (error ? "send_failed" : null);
+                let err = (data as any)?.error ?? null; if (error) { try { err = (await (error as any).context?.json())?.error ?? "send_failed"; } catch { err = "send_failed"; } }
                 if (err === "not_approved_responder") return toast.error("Add yourself as an approved responder with “Can be notified” first.");
                 if (err) return toast.error("Drill didn't send. Try again or check Operations Monitor.");
                 if ((data as any)?.email_sent > 0) toast.success("Drill sent — check your inbox.");
