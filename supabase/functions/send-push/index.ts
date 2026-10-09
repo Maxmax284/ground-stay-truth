@@ -336,7 +336,8 @@ Deno.serve(async (req) => {
         user_id: sub.user_id,
         endpoint_tail: String(sub.endpoint).slice(-24),
         title,
-        status: result.ok ? "delivered" : "failed",
+        // 2xx = push service accepted it. That is NOT proof the phone showed it.
+        status: result.ok ? "accepted" : "failed",
         http_status: result.status || null,
         error: result.error ?? null,
         source: source ?? "system",
