@@ -274,7 +274,7 @@ Deno.serve(async (req) => {
           // One key per (event, recipient). Never share a key across the
           // fan-out — a shared key gets every recipient after the first
           // rejected with 403 recipient_mismatch.
-          idempotencyKey: `alert-${eventId}-${uid}`,
+          idempotencyKey: typeof ctx.dedupe_key === "string" ? `alert-${ctx.dedupe_key}-${uid}` : `alert-${eventId}-${uid}`,
 
           templateData: {
             subject_line: subject,
