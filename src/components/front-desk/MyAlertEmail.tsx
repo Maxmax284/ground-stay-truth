@@ -45,7 +45,9 @@ export function MyAlertEmail() {
       <div className="flex gap-2">
         <Input id="my-alert-email" type="email" inputMode="email" autoComplete="email" placeholder={user?.email ?? "you@example.com"}
           value={value} onChange={(e) => setValue(e.target.value)} aria-invalid={invalid} />
-        <Button size="sm" disabled={invalid || save.isPending || trimmed === (data ?? "")} onClick={() => save.mutate(trimmed)}>Save</Button>
+        {trimmed === (data ?? "") && !!data
+          ? <span className="self-center whitespace-nowrap text-xs font-medium text-success">✓ Saved</span>
+          : <Button size="sm" disabled={invalid || save.isPending} onClick={() => save.mutate(trimmed)}>Save</Button>}
       </div>
       <p className="text-[11px] text-muted-foreground">
         {invalid ? "That doesn't look like an email." : "Leave blank to use your login email. Alerts include booking details, so use an inbox only you read. An email arriving doesn't mean anyone is on the way."}

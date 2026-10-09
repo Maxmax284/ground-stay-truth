@@ -28,9 +28,10 @@ type Coverage = {
 const NONE = "__none__";
 
 /** Coverage & escalation: who's on now, the approved roster, approved responders, escalation settings. */
-export function CoveragePanel() {
+export function CoveragePanel({ mode = "status" }: { mode?: "status" | "settings" }) {
   const { role, user } = useAuth();
-  const canManage = role === "admin" || role === "manager";
+  const isSettings = mode === "settings";
+  const canManage = isSettings && (role === "admin" || role === "manager");
   const qc = useQueryClient();
   const setSetting = useSetAssistanceSetting();
   const { data: cfg } = useAssistanceConfig();
@@ -140,9 +141,9 @@ export function CoveragePanel() {
 
   return (
     <Card>
-      <CardHeader className="pb-2"><CardTitle className="text-base">Coverage &amp; escalation</CardTitle></CardHeader>
+      <CardHeader className="pb-2"><CardTitle className="text-base">{isSettings ? "Coverage & escalation setup" : "Who's on duty"}</CardTitle></CardHeader>
       <CardContent className="space-y-4 text-sm">
-        <MyAlertEmail />
+        {isSettings && <MyAlertEmail />}
         {/* Now */}
         {coverage && (coverage.gap ? (
           <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2.5">
@@ -165,8 +166,11 @@ export function CoveragePanel() {
         )}
         <p className="text-[11px] text-muted-foreground">A sent alert doesn't mean someone is available. Phone alerts only work on phones that have turned them on. Checked every 5 minutes, so alerts can land up to ~5 minutes after a threshold. Delivery has not yet been proven in a practice run.</p>
 
+        {!isSettings && (role === "admin" || role === "manager") && (
+          <div className="rounded-md bg-muted/50 p-2 text-[11px] text-muted-foreground">Escalation setup, responders, your alert email and the practice drill live in <Link className="underline text-primary" to="/settings?tab=app">Settings → App</Link>.</div>
+        )}
         {/* Guest contact (read-only here) */}
-        <div className="rounded-md border border-border p-3 space-y-1.5">
+        {!isSettings && <div className="rounded-md border border-border p-3 space-y-1.5">
           <div className="flex items-center justify-between gap-2">
             <p className="font-medium">Guest contact</p>
             {canManage && <Button asChild size="sm" variant="ghost"><Link to="/settings?tab=app">Edit in Settings →</Link></Button>}
@@ -179,8 +183,9 @@ export function CoveragePanel() {
             </button>
           )}
           <p className="text-[11px] text-muted-foreground">WhatsApp and calls go straight to that phone — they don't create a CampStay request or alert the roster.</p>
-        </div>
+        </div>}
 
+        {isSettings && <>
         {/* Default on-call */}
         <div className="rounded-md border border-border p-3 space-y-2">
           <p className="font-medium">Default On-Call (optional)</p>
@@ -236,6 +241,7 @@ export function CoveragePanel() {
           )}
         </div>
 
+        </>}
         {/* Roster */}
         <div className="space-y-2">
           <p className="font-medium">Next 7 days</p>
@@ -274,7 +280,7 @@ export function CoveragePanel() {
         </div>
 
         {/* Responders */}
-        <div className="space-y-2">
+        {isSettings && <div className="space-y-2">
           <p className="font-medium">Approved responders</p>
           {(responders ?? []).length === 0 && <p className="text-xs text-muted-foreground">Nobody approved yet. Shifts need approved responders.</p>}
           {(responders ?? []).map((r) => (
@@ -298,7 +304,7 @@ export function CoveragePanel() {
               <Button size="sm" disabled={rUser === NONE || addResponder.isPending} onClick={() => addResponder.mutate()}>Approve</Button>
             </div>
           )}
-        </div>
+        </div>}
       </CardContent>
     </Card>
   );
