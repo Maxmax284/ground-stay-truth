@@ -31,7 +31,9 @@ const NONE = "__none__";
 export function CoveragePanel({ mode = "status" }: { mode?: "status" | "settings" }) {
   const { role, user } = useAuth();
   const isSettings = mode === "settings";
-  const canManage = isSettings && (role === "admin" || role === "manager");
+  const canManage = role === "admin" || role === "manager";
+  // Managers/admins get the full setup on Front Desk too; others see status only.
+  const showSetup = isSettings || canManage;
   const qc = useQueryClient();
   const setSetting = useSetAssistanceSetting();
   const { data: cfg } = useAssistanceConfig();

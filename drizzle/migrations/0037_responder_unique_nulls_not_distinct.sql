@@ -1,0 +1,2 @@
+ALTER TABLE public.responder_capabilities DROP CONSTRAINT responder_capabilities_user_id_property_id_key;
+ALTER TABLE public.responder_capabilities ADD CONSTRAINT responder_capabilities_user_id_property_id_key UNIQUE NULLS NOT DISTINCT (user_id, property_id);
