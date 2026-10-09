@@ -135,6 +135,17 @@ Deno.serve(async (req) => {
       }
       recipientIds = [responderId];
       responderMode = true;
+      // Camp inbox is always in the loop: every admin account (e.g. the camp's
+      // main admin inbox) gets the email too, so a responder dropping the ball
+      // never leaves management blind. Practice drills stay isolated to the
+      // responder so test pings never land in the live camp inbox.
+      if (rawCtx.practice_drill !== true) {
+        const { data: adminRows } = await admin
+          .from("user_roles").select("user_id").eq("role", "admin");
+        for (const r of adminRows ?? []) {
+          if (!recipientIds.includes(r.user_id as string)) recipientIds.push(r.user_id as string);
+        }
+      }
     } else {
       const { data: roleRows, error: roleErr } = await admin
         .from("user_roles")
@@ -200,7 +211,10 @@ Deno.serve(async (req) => {
     const guestId = typeof ctx.guest_id === "string" ? ctx.guest_id : null;
 
     // ------------------------------------------------------- 1) in-app fan-out
-    const inAppTargets = recipientIds.filter(wantsInApp);
+    // Responder already got the bell from the escalation job — don't double it.
+    const inAppTargets = recipientIds.filter(
+      (uid) => wantsInApp(uid) && !(responderMode && uid === responderId),
+    );
     if (inAppTargets.length > 0) {
       const rows = inAppTargets.map((uid) => ({
         user_id: uid,
@@ -260,7 +274,8 @@ Deno.serve(async (req) => {
         }
       }
 
-      const subject = `${SEVERITY_PREFIX[event.severity]} ${event.label}`;
+      const drillTag = rawCtx.practice_drill === true ? "[PRACTICE DRILL] " : "";
+      const subject = `${drillTag}${SEVERITY_PREFIX[event.severity]} ${event.label}`;
       let ok = false;
       let failure: string | null = null;
       let skipped = false;
