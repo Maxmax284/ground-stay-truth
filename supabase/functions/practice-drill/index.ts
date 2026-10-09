@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
 
   const { data: cap } = await admin.from("responder_capabilities").select("user_id")
     .eq("user_id", uid).eq("can_receive_alerts", true).limit(1);
-  if (!cap || cap.length === 0) return json({ error: "not_approved_responder" }, 400);
+  if (!cap || cap.length === 0) return json({ ok: false, error: "not_approved_responder" }); // expected setup state, not a crash
 
   const resp = await fetch(`${url}/functions/v1/emit-admin-alert`, {
     method: "POST",
