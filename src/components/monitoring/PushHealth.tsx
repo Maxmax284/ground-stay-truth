@@ -71,8 +71,8 @@ export function PushHealth() {
 
   const devices = data?.devices ?? [];
   const deliveries = data?.deliveries ?? [];
-  const recentFailures = deliveries.filter((d) => d.status !== "delivered").length;
-  const lastDelivered = deliveries.find((d) => d.status === "delivered");
+  const recentFailures = deliveries.filter((d) => d.status !== "delivered" && d.status !== "accepted").length;
+  const lastDelivered = deliveries.find((d) => d.status === "delivered" || d.status === "accepted");
 
   const verdict =
     devices.length === 0
@@ -155,10 +155,10 @@ export function PushHealth() {
                 <span className="truncate">{d.title ?? "Alert"}</span>
                 <span
                   className={`whitespace-nowrap ${
-                    d.status === "delivered" ? "text-emerald-600" : "text-destructive"
+                    (d.status === "delivered" || d.status === "accepted") ? "text-emerald-600" : "text-destructive"
                   }`}
                 >
-                  {d.status === "delivered" ? "Delivered" : "Didn't arrive"} ·{" "}
+                  {(d.status === "delivered" || d.status === "accepted") ? "Accepted (not confirmed on phone)" : "Failed"} ·{" "}
                   {formatDistanceToNow(new Date(d.created_at), { addSuffix: true })}
                 </span>
               </div>

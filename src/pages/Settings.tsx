@@ -19,6 +19,7 @@ import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 import { AppStatusPanel } from "@/components/settings/AppStatusPanel";
 import { AssistanceSettingsCard } from "@/components/settings/AssistanceSettingsCard";
 import { CommsHealthCard } from "@/components/settings/CommsHealthCard";
+import { AlertReadinessCard } from "@/components/settings/AlertReadinessCard";
 import { SandboxPanel } from "@/components/SandboxPanel";
 import { AIOpsPanel } from "@/components/admin/AIOpsPanel";
 import { useAuth } from "@/hooks/useAuth";
@@ -103,6 +104,7 @@ const Settings = () => {
           {canSeeNotifications && <TabsContent value="sandbox"><ErrorBoundary inline label="Sandbox"><SandboxPanel /></ErrorBoundary></TabsContent>}
           <TabsContent value="app" className="space-y-4">
             {(isAdmin || role === "manager") && <ErrorBoundary inline label="Guest contact & emergency"><AssistanceSettingsCard /></ErrorBoundary>}
+            {(isAdmin || role === "manager") && <ErrorBoundary inline label="Alert readiness"><AlertReadinessCard /></ErrorBoundary>}
             <ErrorBoundary inline label="App status"><AppStatusPanel /></ErrorBoundary>
             {isAdmin && <ErrorBoundary inline label="Message delivery"><CommsHealthCard /></ErrorBoundary>}
           </TabsContent>
