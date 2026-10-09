@@ -184,6 +184,7 @@ export default function FrontDesk() {
         <Tabs defaultValue="arriving" className="w-full">
           {/* Phones: slide sideways instead of stacking rows and eating height. */}
           <TabsList className="scrollbar-none h-auto w-full max-w-full justify-start overflow-x-auto whitespace-nowrap sm:flex-wrap">
+            <TabsTrigger value="duty" className="shrink-0 font-semibold text-destructive data-[state=active]:text-destructive"><ShieldAlert className="h-3.5 w-3.5 mr-1" />Duty &amp; Urgent Help</TabsTrigger>
             <TabsTrigger value="arriving" className="shrink-0">{t("frontDesk.tabs.arriving", { count: totals.arriving })}</TabsTrigger>
             <TabsTrigger value="upcoming" className="shrink-0">{t("frontDesk.tabs.upcoming", { count: totals.upcoming })}</TabsTrigger>
             <TabsTrigger value="staying" className="shrink-0">{t("frontDesk.tabs.staying", { count: totals.staying })}</TabsTrigger>
@@ -252,10 +253,15 @@ export default function FrontDesk() {
           </DeskPanel>
 </TabsContent>
 
+          <TabsContent value="duty" className="mt-4">
+            <DeskPanel className="space-y-3">
+              <UrgentRequestsStrip />
+              <CoveragePanel />
+            </DeskPanel>
+          </TabsContent>
+
           <TabsContent value="chase" className="mt-4">
 <DeskPanel className="space-y-3">
-            <UrgentRequestsStrip />
-            <CoveragePanel />
                         <ChaseList sections={sections} onOpen={setDetailId} />
           </DeskPanel>
 </TabsContent>
