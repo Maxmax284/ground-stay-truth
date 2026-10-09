@@ -109,3 +109,17 @@ export function readinessChecks(r: Readiness): Check[] {
 export function readyToEnableEscalation(r: Readiness): boolean {
   return r.call_number_set && r.responders_notify > 0 && r.push_devices > 0 && r.practice_run_verified;
 }
+
+/** Where each setup step is fixed. Missing id = nothing to click (e.g. needs management decision). */
+export const FIX_LINKS: Record<string, { to: string; label: string }> = {
+  call: { to: "/settings?tab=app", label: "Enter number" },
+  whatsapp: { to: "/settings?tab=app", label: "Enter number" },
+  responders: { to: "/duty-roster", label: "Approve responders" },
+  coverage: { to: "/duty-roster", label: "Add shift or Default On-Call" },
+  push: { to: "/settings?tab=profile", label: "Turn on Ops Alerts" },
+};
+
+/** Steps still needing action, in setup order. */
+export function nextSteps(r: Readiness): Check[] {
+  return readinessChecks(r).filter((c) => (c.state === "missing" || c.state === "warn") && FIX_LINKS[c.id]);
+}
