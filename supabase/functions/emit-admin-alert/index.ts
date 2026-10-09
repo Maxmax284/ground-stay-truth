@@ -193,11 +193,13 @@ Deno.serve(async (req) => {
     // Staff-chosen alert inbox (Front Desk panel) wins over the login email.
     const { data: alertRows } = await admin
       .from("staff_alert_emails")
-      .select("user_id, email")
+      .select("user_id, email, extra_emails")
       .in("user_id", recipientIds);
+    const extraById = new Map<string, string[]>();
     for (const a of alertRows ?? []) {
       const p = profileById.get(a.user_id) ?? { user_id: a.user_id, full_name: null };
       profileById.set(a.user_id, { ...p, email: a.email });
+      extraById.set(a.user_id, (a.extra_emails ?? []).filter((e: string) => e && e !== a.email));
     }
 
     const notifType = CATEGORY_TO_NOTIF_TYPE[event.category] ?? "override";
@@ -240,8 +242,12 @@ Deno.serve(async (req) => {
     }).format(new Date());
 
     for (const uid of emailCandidates) {
-      const profile = profileById.get(uid);
-      if (!profile?.email) continue;
+     const baseProfile = profileById.get(uid);
+     if (!baseProfile?.email) continue;
+     const addrs = [baseProfile.email, ...(extraById.get(uid) ?? [])];
+     for (let ai = 0; ai < addrs.length; ai++) {
+      const profile = { ...baseProfile, email: addrs[ai] };
+      const keySuffix = ai === 0 ? uid : `${uid}-${ai}`;
 
       // Anti-spam: critical bypasses, everything else is rate limited.
       // Guest messages are counted per booking (one chatty guest can't mute
@@ -289,7 +295,7 @@ Deno.serve(async (req) => {
           // One key per (event, recipient). Never share a key across the
           // fan-out — a shared key gets every recipient after the first
           // rejected with 403 recipient_mismatch.
-          idempotencyKey: typeof ctx.dedupe_key === "string" ? `alert-${ctx.dedupe_key}-${uid}` : `alert-${eventId}-${uid}`,
+          idempotencyKey: typeof ctx.dedupe_key === "string" ? `alert-${ctx.dedupe_key}-${keySuffix}` : `alert-${eventId}-${keySuffix}`,
 
           templateData: {
             subject_line: subject,
@@ -333,6 +339,7 @@ Deno.serve(async (req) => {
         failure_reason: failure, booking_id: bookingId, guest_id: guestId,
         triggered_by: body.triggered_by ?? "system", template_key: "admin_alert_generic",
       });
+     }
     }
 
     // --------------------------------------------- 3) push (best effort, as-is)
