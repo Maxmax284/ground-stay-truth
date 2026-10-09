@@ -121,12 +121,16 @@ export default function DutyRoster() {
   // Responders
   const [rUser, setRUser] = useState(NONE);
   const upsertResponder = async (user_id: string, patch: { can_receive_alerts?: boolean; can_assist_on_site?: boolean }, existing?: any) => {
-    const { error } = await (supabase as any).from("responder_capabilities").upsert({
-      user_id, property_id: null,
-      can_receive_alerts: patch.can_receive_alerts ?? existing?.can_receive_alerts ?? true,
-      can_assist_on_site: patch.can_assist_on_site ?? existing?.can_assist_on_site ?? false,
-      approved_by: user!.id, approved_at: new Date().toISOString(),
-    }, { onConflict: "user_id,property_id" });
+    const db = (supabase as any).from("responder_capabilities");
+    // Toggles update the existing row by id; only brand-new approvals insert.
+    const { error } = existing?.id
+      ? await db.update(patch).eq("id", existing.id)
+      : await db.upsert({
+          user_id, property_id: null,
+          can_receive_alerts: patch.can_receive_alerts ?? true,
+          can_assist_on_site: patch.can_assist_on_site ?? false,
+          approved_by: user!.id, approved_at: new Date().toISOString(),
+        }, { onConflict: "user_id,property_id" });
     if (error) toast.error(error.message); else refresh();
   };
   const removeResponder = async (id: string) => {

@@ -31,7 +31,9 @@ const NONE = "__none__";
 export function CoveragePanel({ mode = "status" }: { mode?: "status" | "settings" }) {
   const { role, user } = useAuth();
   const isSettings = mode === "settings";
-  const canManage = isSettings && (role === "admin" || role === "manager");
+  const canManage = role === "admin" || role === "manager";
+  // Managers/admins get the full setup on Front Desk too; others see status only.
+  const showSetup = isSettings || canManage;
   const qc = useQueryClient();
   const setSetting = useSetAssistanceSetting();
   const { data: cfg } = useAssistanceConfig();
@@ -143,7 +145,7 @@ export function CoveragePanel({ mode = "status" }: { mode?: "status" | "settings
     <Card>
       <CardHeader className="pb-2"><CardTitle className="text-base">{isSettings ? "Coverage & escalation setup" : "Who's on duty"}</CardTitle></CardHeader>
       <CardContent className="space-y-4 text-sm">
-        {isSettings && <MyAlertEmail />}
+        {showSetup && <MyAlertEmail />}
         {/* Now */}
         {coverage && (coverage.gap ? (
           <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2.5">
@@ -166,7 +168,7 @@ export function CoveragePanel({ mode = "status" }: { mode?: "status" | "settings
         )}
         <p className="text-[11px] text-muted-foreground">A sent alert doesn't mean someone is available. Phone alerts only work on phones that have turned them on. Checked every 5 minutes, so alerts can land up to ~5 minutes after a threshold. Delivery has not yet been proven in a practice run.</p>
 
-        {!isSettings && (role === "admin" || role === "manager") && (
+        {false && (
           <div className="rounded-md bg-muted/50 p-2 text-[11px] text-muted-foreground">Escalation setup, responders, your alert email and the practice drill live in <Link className="underline text-primary" to="/settings?tab=app">Settings → App</Link>.</div>
         )}
         {/* Guest contact (read-only here) */}
@@ -185,7 +187,7 @@ export function CoveragePanel({ mode = "status" }: { mode?: "status" | "settings
           <p className="text-[11px] text-muted-foreground">WhatsApp and calls go straight to that phone — they don't create a CampStay request or alert the roster.</p>
         </div>}
 
-        {isSettings && <>
+        {showSetup && <>
         {/* Default on-call */}
         <div className="rounded-md border border-border p-3 space-y-2">
           <p className="font-medium">Default On-Call (optional)</p>
@@ -280,7 +282,7 @@ export function CoveragePanel({ mode = "status" }: { mode?: "status" | "settings
         </div>
 
         {/* Responders */}
-        {isSettings && <div className="space-y-2">
+        {showSetup && <div className="space-y-2">
           <p className="font-medium">Approved responders</p>
           {(responders ?? []).length === 0 && <p className="text-xs text-muted-foreground">Nobody approved yet. Shifts need approved responders.</p>}
           {(responders ?? []).map((r) => (
