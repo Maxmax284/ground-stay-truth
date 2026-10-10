@@ -259,6 +259,7 @@ Deno.serve(async (req) => {
           .from("admin_alert_log")
           .select("id", { count: "exact", head: true })
           .eq("recipient_user_id", uid)
+          .eq("recipient_email", profile.email)
           .eq("event_type", event.key)
           .eq("channel", "email")
           .eq("status", "sent")
