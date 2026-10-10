@@ -78,7 +78,7 @@ export default function FrontDesk() {
   const { role } = useAuth();
   const isAdmin = role === "admin";
   const isManagerPlus = role === "admin" || role === "manager";
-  const { sections, intelligence, todaysTasks, pickupByBooking, lastMessageByBooking, isLoading, refetch } = useFrontDeskData();
+  const { sections, intelligence, todaysTasks, pickupByBooking, lastMessageByBooking, shifts, isLoading, refetch } = useFrontDeskData();
   const { data: overrides } = useRecentOverrides(isManagerPlus);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [arrivedDialogFor, setArrivedDialogFor] = useState<FrontDeskBooking | null>(null);
