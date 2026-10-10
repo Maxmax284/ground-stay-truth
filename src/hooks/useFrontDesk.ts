@@ -427,6 +427,7 @@ export function useFrontDeskData() {
     todaysTasks,
     pickupByBooking,
     lastMessageByBooking,
+    shifts: shiftsQuery.data ?? [],
     isLoading:
       bookingsQuery.isLoading ||
       paymentsQuery.isLoading ||
