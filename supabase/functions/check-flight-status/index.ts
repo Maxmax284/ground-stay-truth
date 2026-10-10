@@ -243,11 +243,7 @@ serve(async (req) => {
         last_checked_at: new Date().toISOString(),
       };
 
-      if (cached) {
-        await serviceClient.from("flight_tracking").update(record).eq("id", cached.id);
-      } else {
-        await serviceClient.from("flight_tracking").insert(record);
-      }
+      await serviceClient.from("flight_tracking").upsert(record, { onConflict: "pickup_id" });
 
       return new Response(JSON.stringify({ flight: { ...cached, ...record }, source: "api", found: false }), {
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
@@ -288,25 +284,13 @@ serve(async (req) => {
       last_checked_at: new Date().toISOString(),
     };
 
-    let saved;
-    if (cached) {
-      const { data, error } = await serviceClient
-        .from("flight_tracking")
-        .update(record)
-        .eq("id", cached.id)
-        .select()
-        .single();
-      if (error) throw error;
-      saved = data;
-    } else {
-      const { data, error } = await serviceClient
-        .from("flight_tracking")
-        .insert(record)
-        .select()
-        .single();
-      if (error) throw error;
-      saved = data;
-    }
+    // Upsert on pickup_id: concurrent lookups for the same pickup must not race into a duplicate-key 500.
+    const { data: saved, error: saveError } = await serviceClient
+      .from("flight_tracking")
+      .upsert(record, { onConflict: "pickup_id" })
+      .select()
+      .single();
+    if (saveError) throw saveError;
 
     // Phase 2: Server-side confidence evaluation
     // Queries checklist + flight signals to compute assist_mode
@@ -401,7 +385,7 @@ serve(async (req) => {
     });
   } catch (err) {
     console.error("check-flight-status error:", err);
-    return new Response(JSON.stringify({ error: String(err) }), {
+    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : (err as { message?: string })?.message ?? String(err) }), {
       status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }
