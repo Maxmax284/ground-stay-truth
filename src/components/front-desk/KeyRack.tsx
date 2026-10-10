@@ -4,7 +4,7 @@ import { playGroundSound } from "@/lib/groundSounds";
  * Every hook is derived from data already loaded; tapping a hook only opens
  * the booking sheet. Nothing here changes rooms, bookings or housekeeping.
  */
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useUnits } from "@/hooks/useUnits";
 import type { FrontDeskBooking, TodayTask } from "@/hooks/useFrontDesk";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
