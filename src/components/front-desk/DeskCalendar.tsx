@@ -7,17 +7,25 @@ import { playGroundSound } from "@/lib/groundSounds";
  */
 import { useMemo } from "react";
 import { format, addDays } from "date-fns";
-import { LogIn, LogOut, Car } from "lucide-react";
+import { LogIn, LogOut, Car, Shield } from "lucide-react";
 import type { FrontDeskBooking } from "@/hooks/useFrontDesk";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { cn } from "@/lib/utils";
 
-type EventKind = "arrival" | "departure" | "pickup";
+type EventKind = "arrival" | "departure" | "pickup" | "shift";
+
+export type DeskShift = {
+  id: string;
+  starts_at: string;
+  ends_at: string;
+  primaryName: string;
+  backupName: string | null;
+};
 
 type DeskEvent = {
   key: string;
   kind: EventKind;
-  bookingId: string;
+  bookingId: string | null;
   unitId: string | null;
   label: string;
   sub?: string;
@@ -27,6 +35,7 @@ const KIND_ICON: Record<EventKind, typeof LogIn> = {
   arrival: LogIn,
   departure: LogOut,
   pickup: Car,
+  shift: Shield,
 };
 
 /** Scroll to the cubby on the key rack and flash it. */
