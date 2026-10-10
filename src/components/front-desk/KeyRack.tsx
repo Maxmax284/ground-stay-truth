@@ -20,6 +20,22 @@ const LABEL: Record<HookState, string> = {
   vacant: "Free",
 };
 
+/**
+ * Short fob code — the hero on the tag. "Sea View Villa 3" → "V3",
+ * "Standard Single 2" → "S2". Falls back to first letters of words.
+ */
+function fobCode(name: string): string {
+  const words = name.trim().split(/\s+/);
+  const numMatch = name.match(/(\d+)\s*$/);
+  const num = numMatch ? numMatch[1] : "";
+  // Find the word right before the trailing number ("Villa 3" → "Villa")
+  const base = numMatch ? name.slice(0, numMatch.index).trim().split(/\s+/).pop() ?? "" : "";
+  if (base && num) return (base[0] + num).toUpperCase();
+  if (num) return num;
+  // No number: initials of up to 3 words
+  return words.slice(0, 3).map((w) => w[0]).join("").toUpperCase();
+}
+
 export function KeyRack({
   staying, departing, arriving, tasks, onOpen, notes,
 }: {
@@ -47,7 +63,7 @@ export function KeyRack({
         else if (stay) { state = "occupied"; booking = stay; }
         else if (task) { state = "turnover"; booking = arr; }
         else if (arr) { state = "arriving"; booking = arr; }
-        return { id: u.id as string, name: u.name as string, state, booking };
+        return { id: u.id as string, name: u.name as string, code: fobCode(u.name as string), state, booking };
       })
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   }, [units, staying, departing, arriving, tasks]);
@@ -71,8 +87,8 @@ export function KeyRack({
           ))}
         </div>
       </div>
-      <div className="key-rail">
-        <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-x-2 gap-y-3">
+      <div className="key-board">
+        <div className="key-grid grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8">
           {hooks.map((h, i) => {
             const guest = h.booking ? resolveGuestDisplayName(h.booking as any) : null;
             return (
@@ -82,7 +98,7 @@ export function KeyRack({
                   type="button"
                   disabled={!h.booking}
                   onClick={() => { playGroundSound("brass_clack", 0.5); h.booking && onOpen(h.booking.id) }}
-                  title={guest ? `${h.name} · ${guest}` : `${h.name} · ${LABEL[h.state]}`}
+                  title={`${h.name} · ${guest ?? LABEL[h.state]}`}
                   style={{ animationDelay: `${Math.min(i, 24) * 25}ms` }}
                   className={cn("key-hook min-w-0", `key-${h.state}`)}
                 >
@@ -91,7 +107,7 @@ export function KeyRack({
                   {h.booking && notes?.has(h.booking.id) && (
                     <span className="key-note" title="Unread guest message" aria-label="Unread guest message" />
                   )}
-                  <span className="key-tag">{h.name}</span>
+                  <span className="key-code">{h.code}</span>
                   {guest && <span className="key-guest">{guest}</span>}
                   <span className="key-state">{LABEL[h.state]}</span>
                 </button>
