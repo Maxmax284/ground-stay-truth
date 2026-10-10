@@ -64,6 +64,7 @@ import { FrontDeskSwitcher, useFrontDeskView } from "@/components/front-desk/Fro
 import CheckInDesk from "@/pages/CheckInDesk";
 import ArrivalsBoard from "@/pages/ArrivalsBoard";
 import { KeyRack } from "@/components/front-desk/KeyRack";
+import { DeskCalendar } from "@/components/front-desk/DeskCalendar";
 import { CounterBell } from "@/components/front-desk/CounterBell";
 import { StampAction } from "@/components/front-desk/StampActions";
 import { CashDesk } from "@/components/front-desk/CashDesk";
@@ -142,6 +143,15 @@ export default function FrontDesk() {
           tasks={todaysTasks}
           onOpen={setDetailId}
           notes={new Set([...(lastMessageByBooking?.entries() ?? [])].filter(([, m]) => m.from_guest && !m.is_read).map(([id]) => id))}
+        />
+
+        <DeskCalendar
+          staying={sections.currentlyStaying}
+          departing={sections.departingToday}
+          arriving={sections.arrivingToday}
+          upcoming={sections.upcoming}
+          pickupByBooking={pickupByBooking}
+          onOpen={setDetailId}
         />
 
         {/* Today's Briefing — deterministic by default, optional AI narration */}

@@ -891,6 +891,61 @@
   .key-turnover { --key-c: 28 80% 55%; }
   .key-vacant { --key-c: var(--muted-foreground); }
   .key-vacant .key-led { box-shadow: none; opacity: 0.45; }
+  /* Cubby flash — calendar chip tapped, rack answers */
+  .key-slot-flash { animation: key-slot-flash 1.5s ease-out both; }
+  /* Desk calendar — 7-day strip under the rack */
+  .desk-cal-grid {
+    display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px;
+  }
+  @media (max-width: 900px) {
+    .desk-cal-grid { display: flex; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .desk-cal-grid::-webkit-scrollbar { display: none; }
+    .desk-cal-day { min-width: 132px; }
+  }
+  .desk-cal-day {
+    border-radius: 6px; padding: 6px;
+    border: 1px solid hsl(var(--foreground) / 0.14);
+    background: hsl(var(--foreground) / 0.04);
+    display: flex; flex-direction: column; gap: 5px; min-height: 84px;
+  }
+  .desk-cal-today {
+    border-color: hsl(var(--fight-gold) / 0.6);
+    background: hsl(var(--fight-gold) / 0.07);
+    box-shadow: inset 0 0 0 1px hsl(var(--fight-gold) / 0.25);
+  }
+  .desk-cal-head { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; }
+  .desk-cal-dow {
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em;
+    color: hsl(var(--foreground) / 0.6);
+  }
+  .desk-cal-today .desk-cal-dow { color: hsl(var(--fight-gold)); }
+  .desk-cal-date { font-family: 'Oswald', sans-serif; font-size: 12px; font-weight: 600; color: hsl(var(--foreground) / 0.8); }
+  .desk-cal-events { display: flex; flex-direction: column; gap: 4px; }
+  .desk-cal-empty { color: hsl(var(--foreground) / 0.25); text-align: center; }
+  .desk-cal-chip {
+    display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0;
+    border-radius: 4px; padding: 3px 5px; text-align: left;
+    font-size: 10px; font-weight: 600; line-height: 1.2;
+    border: 1px solid transparent; cursor: pointer;
+    transition: transform 200ms ease, box-shadow 200ms ease;
+  }
+  .desk-cal-chip:hover { transform: translateY(-2px); box-shadow: 0 4px 8px -4px hsl(var(--foreground) / 0.5); }
+  .desk-cal-sub { font-size: 8px; opacity: 0.75; margin-left: auto; }
+  .desk-cal-arrival {
+    background: hsl(var(--fight-gold) / 0.16); border-color: hsl(var(--fight-gold) / 0.45);
+    color: hsl(var(--foreground));
+  }
+  .desk-cal-arrival svg { color: hsl(var(--fight-gold)); }
+  .desk-cal-departure {
+    background: hsl(var(--fight-red) / 0.12); border-color: hsl(var(--fight-red) / 0.4);
+    color: hsl(var(--foreground));
+  }
+  .desk-cal-departure svg { color: hsl(var(--fight-red)); }
+  .desk-cal-pickup {
+    background: hsl(217 91% 65% / 0.12); border-color: hsl(217 91% 65% / 0.4);
+    color: hsl(var(--foreground));
+  }
+  .desk-cal-pickup svg { color: hsl(217 91% 65%); }
   /* Counter bell */
   .counter-bell {
     border-radius: 10px; border: 1.5px solid hsl(var(--fight-gold) / 0.7);
@@ -928,10 +983,15 @@
   0% { transform: rotate(-1deg) translateY(0) scale(1); }
   100% { transform: rotate(0deg) translateY(-16px) scale(1.06); box-shadow: 0 14px 22px -8px hsl(var(--key-c) / 0.65); }
 }
+@keyframes key-slot-flash {
+  0% { box-shadow: inset 0 3px 7px hsl(var(--foreground) / 0.38), 0 0 0 0 hsl(var(--fight-gold) / 0.7); }
+  30% { box-shadow: inset 0 3px 7px hsl(var(--foreground) / 0.38), 0 0 0 5px hsl(var(--fight-gold) / 0.45); }
+  100% { box-shadow: inset 0 3px 7px hsl(var(--foreground) / 0.38), 0 0 0 0 hsl(var(--fight-gold) / 0); }
+}
 @media (prefers-reduced-motion: reduce) {
   .camp-led, .camp-flap-in, .desk-panel-in, .guest-headsup-card, .animate-pulse-ring,
   .animate-pulse-glow, .animate-ken-burns, [class*="intel-anim-"], .key-hook, .counter-bell, .counter-bell-icon, .ink-stamp-press, .desk-sync, .desk-sync-bar,
-  [class*="animate-stagger-"], .key-fob, .key-slip, .key-slip-pulling { animation: none !important; }
+  [class*="animate-stagger-"], .key-fob, .key-slip, .key-slip-pulling, .key-slot-flash { animation: none !important; }
   .guest-headsup-card, .guest-ai-dock { transition: none !important; transform: none !important; }
 }
 
