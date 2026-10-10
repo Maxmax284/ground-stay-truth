@@ -281,6 +281,13 @@
       "when": 1791598574939,
       "tag": "0039_staff_log_urgent_request",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1791606078282,
+      "tag": "0040_enable_realtime_front_desk_tables",
+      "breakpoints": true
     }
   ]
 }
