@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +41,25 @@ export function GuestPaymentSummary({ bookingId, totalPrice, policies, booking }
       return data;
     },
   });
+
+  const queryClient = useQueryClient();
+
+  // Live updates: when staff confirm, record or refund a payment on this
+  // booking, the guest's balance refreshes instantly — no reload needed.
+  // RLS scopes the stream to rows this guest is allowed to read.
+  useEffect(() => {
+    const channel = supabase
+      .channel(`guest-payments-${bookingId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "payments", filter: `booking_id=eq.${bookingId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["guest-payments", bookingId] });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [bookingId, queryClient]);
 
   const balance = useMemo(
     () => calculateOutstanding(totalPrice, payments ?? []),
