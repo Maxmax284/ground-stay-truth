@@ -274,6 +274,13 @@
       "when": 1791521178358,
       "tag": "0038_staff_alert_extra_emails",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1791598574939,
+      "tag": "0039_staff_log_urgent_request",
+      "breakpoints": true
     }
   ]
 }
