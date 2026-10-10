@@ -906,6 +906,28 @@
 @keyframes desk-sync-in { from { opacity:0; } to { opacity:1; } }
 @keyframes desk-sync-sweep { from { background-position:200% 0; } to { background-position:-200% 0; } }
 @keyframes camp-led { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+@keyframes key-pendulum {
+  0% { transform: rotate(0); }
+  18% { transform: rotate(7deg); }
+  42% { transform: rotate(-5deg); }
+  64% { transform: rotate(3deg); }
+  82% { transform: rotate(-1.5deg); }
+  100% { transform: rotate(0); }
+}
+@keyframes key-fob-in {
+  0% { opacity: 0; transform: translateY(-14px) rotate(10deg); }
+  55% { opacity: 1; transform: translateY(1px) rotate(-4deg); }
+  78% { transform: rotate(2.5deg); }
+  100% { opacity: 1; transform: translateY(0) rotate(0); }
+}
+@keyframes key-slip-in {
+  0% { opacity: 0; transform: translateY(-10px) rotate(2deg) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) rotate(-1deg) scale(1); }
+}
+@keyframes key-slip-pull {
+  0% { transform: rotate(-1deg) translateY(0) scale(1); }
+  100% { transform: rotate(0deg) translateY(-16px) scale(1.06); box-shadow: 0 14px 22px -8px hsl(var(--key-c) / 0.65); }
+}
 @media (prefers-reduced-motion: reduce) {
   .camp-led, .camp-flap-in, .desk-panel-in, .guest-headsup-card, .animate-pulse-ring,
   .animate-pulse-glow, .animate-ken-burns, [class*="intel-anim-"], .key-hook, .counter-bell, .counter-bell-icon, .ink-stamp-press, .desk-sync, .desk-sync-bar,
