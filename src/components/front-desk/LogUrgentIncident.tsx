@@ -71,7 +71,7 @@ export function LogUrgentIncident({ bookings }: { bookings: FrontDeskBooking[] }
             <SelectItem value={NONE} disabled>Pick the guest</SelectItem>
             {options.map((b) => (
               <SelectItem key={b.id} value={b.id}>
-                {resolveGuestDisplayName(b.profiles as any) || "Guest"} — {b.units?.name ?? "No room"}
+                {resolveGuestDisplayName(b as any)} — {b.units?.name ?? "No room"}
               </SelectItem>
             ))}
           </SelectContent>
