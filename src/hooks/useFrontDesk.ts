@@ -6,7 +6,7 @@
  * machine, payment math, deposit policy, turnover) live in their
  * existing modules and are NOT duplicated here.
  */
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -78,6 +78,27 @@ export function useFrontDeskData() {
   const { activePropertyId } = useProperty();
   const today = format(new Date(), "yyyy-MM-dd");
   const next7 = format(addDays(new Date(), 7), "yyyy-MM-dd");
+  const qc = useQueryClient();
+
+  // Live board: any booking / housekeeping / pickup change re-pulls the desk
+  // data so the key rack flips the moment a guest arrives, departs or turns over.
+  useEffect(() => {
+    const channel = supabase
+      .channel(`front-desk-live-${activePropertyId ?? "all"}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => {
+        qc.invalidateQueries({ queryKey: ["front-desk"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "housekeeping_tasks" }, () => {
+        qc.invalidateQueries({ queryKey: ["front-desk"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "airport_pickups" }, () => {
+        qc.invalidateQueries({ queryKey: ["front-desk"] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activePropertyId, qc]);
 
   // Pull all bookings relevant to the next 14 days plus anything currently checked in.
   // One query, then we slice client-side.
