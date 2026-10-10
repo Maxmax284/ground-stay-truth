@@ -151,6 +151,7 @@ export default function FrontDesk() {
           arriving={sections.arrivingToday}
           upcoming={sections.upcoming}
           pickupByBooking={pickupByBooking}
+          shifts={shifts}
           onOpen={setDetailId}
         />
 
