@@ -7,17 +7,25 @@ import { playGroundSound } from "@/lib/groundSounds";
  */
 import { useMemo } from "react";
 import { format, addDays } from "date-fns";
-import { LogIn, LogOut, Car } from "lucide-react";
+import { LogIn, LogOut, Car, Shield } from "lucide-react";
 import type { FrontDeskBooking } from "@/hooks/useFrontDesk";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { cn } from "@/lib/utils";
 
-type EventKind = "arrival" | "departure" | "pickup";
+type EventKind = "arrival" | "departure" | "pickup" | "shift";
+
+export type DeskShift = {
+  id: string;
+  starts_at: string;
+  ends_at: string;
+  primaryName: string;
+  backupName: string | null;
+};
 
 type DeskEvent = {
   key: string;
   kind: EventKind;
-  bookingId: string;
+  bookingId: string | null;
   unitId: string | null;
   label: string;
   sub?: string;
@@ -27,6 +35,7 @@ const KIND_ICON: Record<EventKind, typeof LogIn> = {
   arrival: LogIn,
   departure: LogOut,
   pickup: Car,
+  shift: Shield,
 };
 
 /** Scroll to the cubby on the key rack and flash it. */
@@ -48,6 +57,7 @@ export function DeskCalendar({
   arriving,
   upcoming,
   pickupByBooking,
+  shifts = [],
   onOpen,
 }: {
   staying: FrontDeskBooking[];
@@ -55,6 +65,7 @@ export function DeskCalendar({
   arriving: FrontDeskBooking[];
   upcoming: FrontDeskBooking[];
   pickupByBooking?: Map<string, { status: string | null; arrival_datetime: string | null }>;
+  shifts?: DeskShift[];
   onOpen: (bookingId: string) => void;
 }) {
   const days = useMemo(() => {
@@ -107,13 +118,26 @@ export function DeskCalendar({
         });
       });
 
-      // Arrivals first, then pickups, then departures
-      const order: Record<EventKind, number> = { arrival: 0, pickup: 1, departure: 2 };
+      // Duty shifts starting this day (from the live roster)
+      for (const s of shifts) {
+        if (s.starts_at.slice(0, 10) !== key) continue;
+        events.push({
+          key: `shift-${s.id}`,
+          kind: "shift",
+          bookingId: null,
+          unitId: null,
+          label: s.backupName ? `${s.primaryName} +${s.backupName.split(" ")[0]}` : s.primaryName,
+          sub: `${format(new Date(s.starts_at), "HH:mm")}–${format(new Date(s.ends_at), "HH:mm")}`,
+        });
+      }
+
+      // Shifts first, then arrivals, pickups, departures
+      const order: Record<EventKind, number> = { shift: 0, arrival: 1, pickup: 2, departure: 3 };
       events.sort((a, b2) => order[a.kind] - order[b2.kind]);
 
       return { key, day, events };
     });
-  }, [staying, departing, arriving, upcoming, pickupByBooking]);
+  }, [staying, departing, arriving, upcoming, pickupByBooking, shifts]);
 
   const totalEvents = days.reduce((n, d) => n + d.events.length, 0);
 
@@ -122,6 +146,7 @@ export function DeskCalendar({
       <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
         <span className="board-kicker">Week ahead</span>
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+          <span className="flex items-center gap-1"><Shield className="h-3 w-3 text-[hsl(280_60%_65%)]" /> On duty</span>
           <span className="flex items-center gap-1"><LogIn className="h-3 w-3 text-[hsl(var(--fight-gold))]" /> In</span>
           <span className="flex items-center gap-1"><Car className="h-3 w-3 text-[hsl(217_91%_65%)]" /> Pickup</span>
           <span className="flex items-center gap-1"><LogOut className="h-3 w-3 text-[hsl(var(--fight-red))]" /> Out</span>
@@ -145,17 +170,19 @@ export function DeskCalendar({
                 ) : (
                   d.events.map((ev) => {
                     const Icon = KIND_ICON[ev.kind];
+                    const isShift = ev.kind === "shift";
                     return (
                       <button
                         key={ev.key}
                         type="button"
                         title={`${ev.label}${ev.sub ? ` · ${ev.sub}` : ""}`}
                         onClick={() => {
+                          if (isShift || !ev.bookingId) return;
                           playGroundSound("brass_clack", 0.4);
                           flashCubby(ev.unitId);
                           onOpen(ev.bookingId);
                         }}
-                        className={cn("desk-cal-chip", `desk-cal-${ev.kind}`)}
+                        className={cn("desk-cal-chip", `desk-cal-${ev.kind}`, isShift && "cursor-default")}
                       >
                         <Icon className="h-3 w-3 shrink-0" />
                         <span className="truncate">{ev.label}</span>

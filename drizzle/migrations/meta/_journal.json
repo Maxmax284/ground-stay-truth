@@ -288,6 +288,13 @@
       "when": 1791606078282,
       "tag": "0040_enable_realtime_front_desk_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1791606700615,
+      "tag": "0041_enable_realtime_duty_roster",
+      "breakpoints": true
     }
   ]
 }

@@ -946,6 +946,11 @@
     color: hsl(var(--foreground));
   }
   .desk-cal-pickup svg { color: hsl(217 91% 65%); }
+  .desk-cal-shift {
+    background: hsl(280 60% 65% / 0.12); border-color: hsl(280 60% 65% / 0.4);
+    color: hsl(var(--foreground));
+  }
+  .desk-cal-shift svg { color: hsl(280 60% 65%); }
   /* Counter bell */
   .counter-bell {
     border-radius: 10px; border: 1.5px solid hsl(var(--fight-gold) / 0.7);
