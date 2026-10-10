@@ -4,7 +4,7 @@ import { playGroundSound } from "@/lib/groundSounds";
  * Every hook is derived from data already loaded; tapping a hook only opens
  * the booking sheet. Nothing here changes rooms, bookings or housekeeping.
  */
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useUnits } from "@/hooks/useUnits";
 import type { FrontDeskBooking, TodayTask } from "@/hooks/useFrontDesk";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
@@ -48,6 +48,20 @@ export function KeyRack({
   notes?: Set<string>;
 }) {
   const { data: units } = useUnits();
+  // Pull-from-cubby: the slip slides out toward you before the booking opens.
+  const [pulling, setPulling] = useState<string | null>(null);
+  const pullTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleOpen = (hookId: string, bookingId: string) => {
+    if (pullTimer.current) return; // one pull at a time
+    playGroundSound("brass_clack", 0.5);
+    setPulling(hookId);
+    pullTimer.current = setTimeout(() => {
+      pullTimer.current = null;
+      setPulling(null);
+      onOpen(bookingId);
+    }, 280);
+  };
 
   const hooks = useMemo(() => {
     const list = (units ?? []).filter((u: any) => u.is_active !== false);
@@ -96,7 +110,7 @@ export function KeyRack({
                 <button
                   type="button"
                   disabled={!h.booking}
-                  onClick={() => { playGroundSound("brass_clack", 0.5); h.booking && onOpen(h.booking.id) }}
+                  onClick={() => h.booking && handleOpen(h.id, h.booking.id)}
                   title={`${h.name} · ${guest ?? LABEL[h.state]}`}
                   style={{ animationDelay: `${Math.min(i, 24) * 25}ms` }}
                   className="key-hook min-w-0"
@@ -105,13 +119,14 @@ export function KeyRack({
                   {h.booking && notes?.has(h.booking.id) && (
                     <span className="key-note" title="Unread guest message" aria-label="Unread guest message" />
                   )}
+                  {/* key={state} forces a remount on state change → swap animation */}
                   {h.state === "vacant" ? (
-                    <span className="key-fob key-fob-hanging" aria-hidden>
+                    <span key={h.state} className="key-fob key-fob-hanging key-swap-fob" aria-hidden>
                       <span className="key-fob-hole" />
                       <span className="key-code">{h.code}</span>
                     </span>
                   ) : (
-                    <span className="key-slip">
+                    <span key={h.state} className={cn("key-slip key-swap-slip", pulling === h.id && "key-slip-pulling")}>
                       <span className="key-code">{h.code}</span>
                       {guest && <span className="key-guest">{guest}</span>}
                       <span className="key-state">{LABEL[h.state]}</span>
