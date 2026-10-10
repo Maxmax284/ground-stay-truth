@@ -92,25 +92,33 @@ export function KeyRack({
           {hooks.map((h, i) => {
             const guest = h.booking ? resolveGuestDisplayName(h.booking as any) : null;
             return (
-              <div key={h.id} className="key-slot">
-                <span className="key-peg" aria-hidden />
+              <div key={h.id} className={cn("key-slot", `key-${h.state}`)}>
                 <button
                   type="button"
                   disabled={!h.booking}
                   onClick={() => { playGroundSound("brass_clack", 0.5); h.booking && onOpen(h.booking.id) }}
                   title={`${h.name} · ${guest ?? LABEL[h.state]}`}
                   style={{ animationDelay: `${Math.min(i, 24) * 25}ms` }}
-                  className={cn("key-hook min-w-0", `key-${h.state}`)}
+                  className="key-hook min-w-0"
                 >
-                  <span className="key-hook-hole" aria-hidden />
                   <span className="key-led" aria-hidden />
                   {h.booking && notes?.has(h.booking.id) && (
                     <span className="key-note" title="Unread guest message" aria-label="Unread guest message" />
                   )}
-                  <span className="key-code">{h.code}</span>
-                  {guest && <span className="key-guest">{guest}</span>}
-                  <span className="key-state">{LABEL[h.state]}</span>
+                  {h.state === "vacant" ? (
+                    <span className="key-fob key-fob-hanging" aria-hidden>
+                      <span className="key-fob-hole" />
+                      <span className="key-code">{h.code}</span>
+                    </span>
+                  ) : (
+                    <span className="key-slip">
+                      <span className="key-code">{h.code}</span>
+                      {guest && <span className="key-guest">{guest}</span>}
+                      <span className="key-state">{LABEL[h.state]}</span>
+                    </span>
+                  )}
                 </button>
+                <span className="key-cubby-label">{h.code}</span>
               </div>
             );
           })}
