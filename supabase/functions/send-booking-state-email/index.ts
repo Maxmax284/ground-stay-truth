@@ -111,8 +111,6 @@ Deno.serve(async (req) => {
     );
 
     const unitName = (booking as any).units?.name || "Your Unit";
-    const guestName = guestProfile.full_name || "Guest";
-    const lang = guestProfile.preferred_language || "en";
     const currSym = pMap.get("currency_symbol") || "฿";
 
     const base = {
