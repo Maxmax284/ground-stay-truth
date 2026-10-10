@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ChevronDown, Search, Siren, X } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { EmergencyContacts, MedicalFacilities, JellyfishFirstAid } from "./EmergencyBlocks";
 // Locked source edition — never edited in code. Guest edition is derived at render time.
 import manuscript from "../../../content/the-rock/master-manuscript.v1.md?raw";
@@ -70,6 +72,24 @@ function parse(guide: string) {
   return { prologue: prologue.replace(/^THE ROCK\.[\s\S]*?\n(?=# )/, ""), epilogue, depts };
 }
 
+const ruleOf = (b: string) => (b.match(/\*\*THE ACTUAL RULE:\*\*\s*(.+)/)?.[1] ?? "").trim();
+const textOf = (n: React.ReactNode): string =>
+  typeof n === "string" ? n : Array.isArray(n) ? n.map(textOf).join("") : n && typeof n === "object" && "props" in n ? textOf((n as React.ReactElement).props.children) : "";
+
+/** Styles the manuscript's own labels as callouts — the words themselves are never changed. */
+const mdComponents = {
+  p: ({ children }: { children?: React.ReactNode }) => {
+    const t = textOf(children).trimStart();
+    if (t.startsWith("THE ACTUAL RULE"))
+      return <p className="not-prose my-5 rounded-md border-l-4 border-primary bg-primary/10 px-4 py-3 text-sm font-medium text-foreground [&_strong]:mb-1 [&_strong]:block [&_strong]:font-stat [&_strong]:text-[11px] [&_strong]:tracking-widest [&_strong]:text-primary">{children}</p>;
+    if (t.startsWith("FIELD NOTE"))
+      return <p className="not-prose my-5 rounded-md border border-dashed border-border bg-muted/40 px-4 py-3 text-sm italic text-foreground/90 [&_strong]:mb-1 [&_strong]:block [&_strong]:font-stat [&_strong]:not-italic [&_strong]:text-[11px] [&_strong]:tracking-widest [&_strong]:text-muted-foreground">{children}</p>;
+    if (/^DON'?T BE THAT GUY/i.test(t))
+      return <p className="not-prose mt-7 mb-2 w-fit rounded-sm bg-destructive/10 px-2 py-1 font-stat text-[11px] tracking-widest text-destructive [&_strong]:font-normal">{children}</p>;
+    return <p>{children}</p>;
+  },
+};
+
 const plain = (s: string) => s.replace(/[*_>#`[\]]/g, "").replace(/\s+/g, " ").trim();
 
 export function TheRockReader() {
@@ -77,6 +97,8 @@ export function TheRockReader() {
   const [active, setActive] = useState("01");
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
+  const [reader, setReader] = useState<string | null>(null);
+  const isMobile = useIsMobile();
   const topRef = useRef<HTMLDivElement>(null);
 
   const dept = depts.find((d) => d.num === active) ?? depts[0];
@@ -91,11 +113,8 @@ export function TheRockReader() {
   const goTo = (num: string, reportId?: string) => {
     setActive(num);
     setQuery("");
-    if (reportId) setOpen((s) => new Set(s).add(reportId));
-    requestAnimationFrame(() => {
-      const el = reportId ? document.getElementById(reportId) : topRef.current;
-      el?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+    if (reportId) setReader(reportId);
+    else requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
   const openEmergency = () => {
@@ -191,36 +210,30 @@ export function TheRockReader() {
 
             {dept.intro && <div className="text-sm text-muted-foreground"><Md>{dept.intro}</Md></div>}
 
-            <p className="font-stat text-[11px] tracking-widest text-muted-foreground">{dept.reports.length} FIELD REPORTS · TAP TO OPEN</p>
+            <p className="font-stat text-[11px] tracking-widest text-muted-foreground">{dept.reports.length} FIELD REPORTS · TAP A CARD</p>
 
-            <ul className="space-y-3">
+            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {dept.reports.map((r, i) => {
-                const isOpen = open.has(r.id);
+                const rule = ruleOf(r.body);
+                const tagged = /THAT GUY/i.test(r.body);
+                const critical = r.code === "004-03" || r.code === "004-08";
                 return (
-                  <li key={r.id} id={r.id} className="rock-card scroll-mt-28 rounded-md border border-border bg-card" style={{ animationDelay: `${i * 40}ms` }}>
+                  <li key={r.id} id={r.id} className={`rock-card scroll-mt-28 ${i === 0 && dept.reports.length > 2 ? "sm:col-span-2" : ""}`} style={{ animationDelay: `${i * 40}ms` }}>
                     <button
                       type="button"
-                      aria-expanded={isOpen}
                       data-preview-allow
-                      onClick={() => toggle(r.id)}
-                      className="flex w-full items-start gap-3 p-4 text-left"
+                      onClick={() => setReader(r.id)}
+                      className={`group flex h-full w-full flex-col gap-2 rounded-lg border bg-card p-4 text-left transition-all duration-300 hover:-translate-y-1 hover:border-primary/60 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transform-none ${critical ? "border-destructive/40" : "border-border"}`}
                     >
-                      <span className="mt-0.5 font-stat text-xs text-primary">{r.code || "—"}</span>
-                      <span className="flex-1">
-                        <span className="block text-sm font-semibold leading-snug">{r.title}</span>
-                        {!isOpen && <span className="mt-1 line-clamp-2 block text-xs text-muted-foreground">{plain(r.body).slice(0, 180)}</span>}
+                      <span className="flex items-center gap-2">
+                        <span className="rounded-sm border border-primary/40 px-1.5 py-0.5 font-stat text-[10px] tracking-widest text-primary">{r.code || dept.num}</span>
+                        {critical && <span className="rounded-sm bg-destructive/10 px-1.5 py-0.5 font-stat text-[10px] tracking-widest text-destructive">SAFETY</span>}
+                        {tagged && <span className="rounded-sm bg-muted px-1.5 py-0.5 font-stat text-[10px] tracking-widest text-muted-foreground">DON'T BE THAT GUY</span>}
                       </span>
-                      <ChevronDown className={`mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} aria-hidden />
+                      <span className="text-base font-semibold leading-snug">{r.title}</span>
+                      <span className="line-clamp-2 text-xs text-muted-foreground">{rule || plain(r.body).slice(0, 140)}</span>
+                      <span className="mt-auto pt-1 font-stat text-[10px] tracking-widest text-primary opacity-70 transition-opacity group-hover:opacity-100">READ REPORT →</span>
                     </button>
-                    <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
-                      <div className="overflow-hidden">
-                        <div className="border-t border-border px-4 pb-6 pt-4">
-                          <Md>{r.body}</Md>
-                          {r.code === "004-03" && <div className="mt-4"><JellyfishFirstAid /></div>}
-                          {r.code === "004-08" && <div className="mt-4 space-y-4"><EmergencyContacts /><MedicalFacilities /></div>}
-                        </div>
-                      </div>
-                    </div>
                   </li>
                 );
               })}
@@ -246,6 +259,42 @@ export function TheRockReader() {
           )}
         </>
       )}
+
+      {(() => {
+        const all = depts.flatMap((d) => d.reports.map((r) => ({ d, r })));
+        const idx = all.findIndex((x) => x.r.id === reader);
+        const cur = idx >= 0 ? all[idx] : null;
+        const sibs = cur ? cur.d.reports : [];
+        const si = cur ? sibs.findIndex((x) => x.id === cur.r.id) : -1;
+        return (
+          <Sheet open={!!cur} onOpenChange={(o) => !o && setReader(null)}>
+            <SheetContent
+              side={isMobile ? "bottom" : "right"}
+              className={isMobile ? "max-h-[88dvh] overflow-y-auto rounded-t-2xl px-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] pt-3" : "w-full overflow-y-auto sm:max-w-xl"}
+            >
+              {cur && (
+                <article key={cur.r.id} className="rock-fade">
+                  {isMobile && <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-muted" aria-hidden />}
+                  <SheetHeader className="space-y-2 text-left">
+                    <span className="font-stat text-[11px] tracking-widest text-muted-foreground">
+                      DEPT {cur.d.num} · {SHORT[cur.d.num]?.toUpperCase()} · {si + 1}/{sibs.length}
+                    </span>
+                    <span className="w-fit rounded-sm border border-primary/40 px-1.5 py-0.5 font-stat text-[11px] tracking-widest text-primary">FIELD REPORT {cur.r.code}</span>
+                    <SheetTitle className="text-2xl font-bold leading-tight">{cur.r.title}</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-5"><Md>{cur.r.body}</Md></div>
+                  {cur.r.code === "004-03" && <div className="mt-4"><JellyfishFirstAid /></div>}
+                  {cur.r.code === "004-08" && <div className="mt-4 space-y-4"><EmergencyContacts /><MedicalFacilities /></div>}
+                  <div className="mt-8 flex justify-between gap-2 border-t border-border pt-4">
+                    {si > 0 ? <NavBtn onClick={() => setReader(sibs[si - 1].id)}>← {sibs[si - 1].code}</NavBtn> : <span />}
+                    {si < sibs.length - 1 ? <NavBtn onClick={() => setReader(sibs[si + 1].id)}>{sibs[si + 1].code} →</NavBtn> : <NavBtn onClick={() => setReader(null)}>Back to {SHORT[cur.d.num]}</NavBtn>}
+                  </div>
+                </article>
+              )}
+            </SheetContent>
+          </Sheet>
+        );
+      })()}
     </div>
   );
 }
@@ -277,7 +326,7 @@ function Md({ children }: { children: string }) {
   if (!children) return null;
   return (
     <div className="prose prose-sm max-w-none leading-relaxed dark:prose-invert prose-headings:text-foreground prose-h4:mt-7 prose-h4:mb-2.5 prose-h4:tracking-wide prose-p:my-3.5 prose-p:text-foreground/90 prose-li:my-1.5 prose-ul:my-3.5 prose-strong:text-foreground prose-blockquote:my-5 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:px-4 prose-blockquote:py-2 prose-hr:my-6 prose-hr:border-border">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{children}</ReactMarkdown>
     </div>
   );
 }
