@@ -350,6 +350,25 @@ Deno.serve(async (req) => {
       console.warn("admin booking flow audit failed", auditError);
     }
 
+    // Fire the guest confirmation email when the booking is created straight
+    // into `confirmed`. Fire-and-forget: a mail hiccup must not fail the
+    // booking. The state-email function resolves the recipient server-side.
+    if (state === "confirmed") {
+      try {
+        await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-booking-state-email`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: req.headers.get("authorization") ?? "",
+            apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+          },
+          body: JSON.stringify({ booking_id: booking.id, state: "confirmed" }),
+        });
+      } catch (mailError) {
+        console.warn("admin booking flow confirmation email failed", mailError);
+      }
+    }
+
     return jsonResponse(req, {
       ok: true,
       booking_id: booking.id,

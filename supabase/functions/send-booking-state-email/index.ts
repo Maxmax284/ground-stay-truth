@@ -72,18 +72,31 @@ Deno.serve(async (req) => {
 
     const { data: booking, error: bookingErr } = await admin
       .from("bookings")
-      .select("id, guest_id, check_in, check_out, num_guests, total_price, units(name)")
+      .select("id, guest_id, check_in, check_out, num_guests, total_price, manual_guest_name, manual_guest_email, units(name)")
       .eq("id", bookingId)
       .maybeSingle();
     if (bookingErr || !booking) return json({ error: "booking_not_found" }, 404);
-    if (!booking.guest_id) return json({ sent: false, reason: "no_guest_account" });
 
-    const { data: guestProfile } = await admin
-      .from("profiles")
-      .select("email, full_name, preferred_language")
-      .eq("user_id", booking.guest_id)
-      .maybeSingle();
-    if (!guestProfile?.email) return json({ sent: false, reason: "no_guest_email" });
+    // Registered guests resolve via their profile; manual/walk-in bookings
+    // (no guest account) fall back to the email staff typed on the booking.
+    let recipientEmail = "";
+    let guestName = "Guest";
+    let lang = "en";
+    if (booking.guest_id) {
+      const { data: guestProfile } = await admin
+        .from("profiles")
+        .select("email, full_name, preferred_language")
+        .eq("user_id", booking.guest_id)
+        .maybeSingle();
+      recipientEmail = guestProfile?.email ?? "";
+      guestName = guestProfile?.full_name || "Guest";
+      lang = guestProfile?.preferred_language || "en";
+    }
+    if (!recipientEmail && booking.manual_guest_email) {
+      recipientEmail = String(booking.manual_guest_email).trim();
+      guestName = booking.manual_guest_name || "Guest";
+    }
+    if (!recipientEmail) return json({ sent: false, reason: "no_guest_email" });
 
     const { data: policies } = await admin
       .from("policy_settings")
@@ -98,8 +111,6 @@ Deno.serve(async (req) => {
     );
 
     const unitName = (booking as any).units?.name || "Your Unit";
-    const guestName = guestProfile.full_name || "Guest";
-    const lang = guestProfile.preferred_language || "en";
     const currSym = pMap.get("currency_symbol") || "฿";
 
     const base = {
@@ -133,7 +144,7 @@ Deno.serve(async (req) => {
 
     const result = await sendAppEmail({
       templateName,
-      recipientEmail: guestProfile.email,
+      recipientEmail,
       bookingId,
       language: lang,
       source: `state_change:${state}`,
