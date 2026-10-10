@@ -839,7 +839,17 @@
     font-size: 14px; color: hsl(30 30% 12%);
     text-shadow: 0 1px 0 hsl(0 0% 100% / 0.35);
   }
-  .key-slot:hover .key-fob { transform: rotate(-2.5deg) translateY(1px); }
+  /* Brass pendulum sway — weighted swing that dampens out */
+  .key-slot:hover .key-fob { animation: key-pendulum 1.4s cubic-bezier(0.25, 0.6, 0.35, 1) both; }
+  /* Live state swap — fob drops back onto the peg with a swing */
+  .key-swap-fob { animation: key-fob-in 480ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+  /* Live state swap — paper slip tucks down into the cubby */
+  .key-swap-slip { animation: key-slip-in 420ms cubic-bezier(0.2, 0.85, 0.3, 1.1) both; }
+  /* Pull-from-cubby tap — slip slides forward out of the slot */
+  .key-slip-pulling {
+    animation: key-slip-pull 280ms cubic-bezier(0.3, 0.7, 0.4, 1) both !important;
+    z-index: 3;
+  }
   /* Paper slip tucked into the cubby — key is out, guest is in */
   .key-slip {
     position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
