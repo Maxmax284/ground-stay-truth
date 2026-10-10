@@ -57,6 +57,7 @@ export function DeskCalendar({
   arriving,
   upcoming,
   pickupByBooking,
+  shifts = [],
   onOpen,
 }: {
   staying: FrontDeskBooking[];
@@ -64,6 +65,7 @@ export function DeskCalendar({
   arriving: FrontDeskBooking[];
   upcoming: FrontDeskBooking[];
   pickupByBooking?: Map<string, { status: string | null; arrival_datetime: string | null }>;
+  shifts?: DeskShift[];
   onOpen: (bookingId: string) => void;
 }) {
   const days = useMemo(() => {
@@ -116,13 +118,26 @@ export function DeskCalendar({
         });
       });
 
-      // Arrivals first, then pickups, then departures
-      const order: Record<EventKind, number> = { arrival: 0, pickup: 1, departure: 2 };
+      // Duty shifts starting this day (from the live roster)
+      for (const s of shifts) {
+        if (s.starts_at.slice(0, 10) !== key) continue;
+        events.push({
+          key: `shift-${s.id}`,
+          kind: "shift",
+          bookingId: null,
+          unitId: null,
+          label: s.backupName ? `${s.primaryName} +${s.backupName.split(" ")[0]}` : s.primaryName,
+          sub: `${format(new Date(s.starts_at), "HH:mm")}–${format(new Date(s.ends_at), "HH:mm")}`,
+        });
+      }
+
+      // Shifts first, then arrivals, pickups, departures
+      const order: Record<EventKind, number> = { shift: 0, arrival: 1, pickup: 2, departure: 3 };
       events.sort((a, b2) => order[a.kind] - order[b2.kind]);
 
       return { key, day, events };
     });
-  }, [staying, departing, arriving, upcoming, pickupByBooking]);
+  }, [staying, departing, arriving, upcoming, pickupByBooking, shifts]);
 
   const totalEvents = days.reduce((n, d) => n + d.events.length, 0);
 
