@@ -324,6 +324,22 @@ const GuestPortal = () => {
     return () => { supabase.removeChannel(channel); };
   }, [bookingIds.join(","), queryClient]);
 
+  // Realtime for the guest's own bookings and pickups — arrival/departure
+  // dates, status flips and pickup changes re-pull instantly, matching the
+  // front-desk calendar. RLS scopes the stream to rows this guest can read.
+  useEffect(() => {
+    if (!effectiveGuestId) return;
+    const channel = supabase.channel("guest-stay-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["guest-bookings"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "airport_pickups" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["airport_pickup"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [effectiveGuestId, queryClient]);
+
   const messagesByBooking = useMemo(() => {
     const map = new Map<string, typeof messages>();
     (messages ?? []).forEach((m) => { if (!map.has(m.booking_id)) map.set(m.booking_id, []); map.get(m.booking_id)!.push(m); });
