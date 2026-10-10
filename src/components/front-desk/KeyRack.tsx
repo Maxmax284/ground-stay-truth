@@ -71,30 +71,34 @@ export function KeyRack({
           ))}
         </div>
       </div>
-      <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2">
-        {hooks.map((h, i) => {
-          const guest = h.booking ? resolveGuestDisplayName(h.booking as any) : null;
-          return (
-            <button
-              key={h.id}
-              type="button"
-              disabled={!h.booking}
-              onClick={() => { playGroundSound("brass_clack", 0.5); h.booking && onOpen(h.booking.id) }}
-              title={guest ? `${h.name} · ${guest}` : `${h.name} · ${LABEL[h.state]}`}
-              style={{ animationDelay: `${Math.min(i, 24) * 25}ms` }}
-              className={cn("key-hook min-w-0", `key-${h.state}`)}
-            >
-              <span className="key-hook-hole" aria-hidden />
-              {h.booking && notes?.has(h.booking.id) && (
-                <span className="key-note" title="Unread guest message" aria-label="Unread guest message" />
-              )}
-              <span className="block truncate text-[11px] font-semibold leading-tight">{h.name}</span>
-              <span className="block truncate text-[9px] uppercase tracking-wider opacity-80">
-                {LABEL[h.state]}
-              </span>
-            </button>
-          );
-        })}
+      <div className="key-rail">
+        <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-x-2 gap-y-3">
+          {hooks.map((h, i) => {
+            const guest = h.booking ? resolveGuestDisplayName(h.booking as any) : null;
+            return (
+              <div key={h.id} className="key-slot">
+                <span className="key-peg" aria-hidden />
+                <button
+                  type="button"
+                  disabled={!h.booking}
+                  onClick={() => { playGroundSound("brass_clack", 0.5); h.booking && onOpen(h.booking.id) }}
+                  title={guest ? `${h.name} · ${guest}` : `${h.name} · ${LABEL[h.state]}`}
+                  style={{ animationDelay: `${Math.min(i, 24) * 25}ms` }}
+                  className={cn("key-hook min-w-0", `key-${h.state}`)}
+                >
+                  <span className="key-hook-hole" aria-hidden />
+                  <span className="key-led" aria-hidden />
+                  {h.booking && notes?.has(h.booking.id) && (
+                    <span className="key-note" title="Unread guest message" aria-label="Unread guest message" />
+                  )}
+                  <span className="key-tag">{h.name}</span>
+                  {guest && <span className="key-guest">{guest}</span>}
+                  <span className="key-state">{LABEL[h.state]}</span>
+                </button>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );
