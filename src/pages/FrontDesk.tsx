@@ -54,6 +54,7 @@ import { ArrivalExceptionsPanel } from "@/components/front-desk/ArrivalException
 import { ChaseList } from "@/components/front-desk/ChaseList";
 import { CoveragePanel } from "@/components/front-desk/CoveragePanel";
 import { UrgentRequestsStrip } from "@/components/front-desk/UrgentRequestsStrip";
+import { LogUrgentIncident } from "@/components/front-desk/LogUrgentIncident";
 import { DriverChatPanel } from "@/components/front-desk/DriverChatPanel";
 import { GuestThreadLauncher } from "@/components/GuestThreadLauncher";
 import { computeOperationalStatus, TONE_CLASS } from "@/lib/operationalStatus";
@@ -255,6 +256,7 @@ export default function FrontDesk() {
 
           <TabsContent value="duty" className="mt-4">
             <DeskPanel className="space-y-3">
+              <LogUrgentIncident bookings={[...sections.arrivedNotCheckedIn, ...sections.currentlyStaying, ...sections.arrivingToday, ...sections.departingToday, ...sections.upcoming]} />
               <UrgentRequestsStrip />
               <CoveragePanel />
             </DeskPanel>
