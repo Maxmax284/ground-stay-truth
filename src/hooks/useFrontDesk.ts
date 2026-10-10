@@ -388,6 +388,36 @@ export function useFrontDeskData() {
     return map;
   }, [lastMessagesQuery.data, bookingsQuery.data]);
 
+  // Duty roster shifts for the next 7 days (read-only) — feeds the desk
+  // calendar so staff see who's on alongside arrivals and pickups.
+  const shiftsQuery = useQuery({
+    queryKey: ["front-desk-shifts", activePropertyId, today],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("duty_roster")
+        .select("id, starts_at, ends_at, primary_user_id, backup_user_id")
+        .lte("starts_at", new Date(Date.now() + 7 * 864e5).toISOString())
+        .gte("ends_at", new Date().toISOString())
+        .order("starts_at");
+      if (error) throw error;
+      const rows = (data ?? []) as any[];
+      const ids = [...new Set(rows.flatMap((r) => [r.primary_user_id, r.backup_user_id]).filter(Boolean))] as string[];
+      let names = new Map<string, string>();
+      if (ids.length > 0) {
+        const { data: profs } = await supabase.from("profiles").select("user_id, full_name, email").in("user_id", ids);
+        names = new Map((profs ?? []).map((p: any) => [p.user_id, p.full_name || p.email || "Staff"]));
+      }
+      return rows.map((r) => ({
+        id: r.id as string,
+        starts_at: r.starts_at as string,
+        ends_at: r.ends_at as string,
+        primaryName: names.get(r.primary_user_id) ?? "Staff",
+        backupName: r.backup_user_id ? names.get(r.backup_user_id) ?? "Staff" : null,
+      }));
+    },
+    refetchInterval: 60_000,
+  });
+
   return {
     sections,
     intelligence: {
