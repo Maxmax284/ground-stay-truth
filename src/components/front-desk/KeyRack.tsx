@@ -106,7 +106,7 @@ export function KeyRack({
           {hooks.map((h, i) => {
             const guest = h.booking ? resolveGuestDisplayName(h.booking as any) : null;
             return (
-              <div key={h.id} className={cn("key-slot", `key-${h.state}`)}>
+              <div key={h.id} id={`key-slot-${h.id}`} className={cn("key-slot", `key-${h.state}`)}>
                 <button
                   type="button"
                   disabled={!h.booking}

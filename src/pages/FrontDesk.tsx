@@ -64,6 +64,7 @@ import { FrontDeskSwitcher, useFrontDeskView } from "@/components/front-desk/Fro
 import CheckInDesk from "@/pages/CheckInDesk";
 import ArrivalsBoard from "@/pages/ArrivalsBoard";
 import { KeyRack } from "@/components/front-desk/KeyRack";
+import { DeskCalendar } from "@/components/front-desk/DeskCalendar";
 import { CounterBell } from "@/components/front-desk/CounterBell";
 import { StampAction } from "@/components/front-desk/StampActions";
 import { CashDesk } from "@/components/front-desk/CashDesk";
