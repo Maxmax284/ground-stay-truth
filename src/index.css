@@ -931,7 +931,7 @@
 @media (prefers-reduced-motion: reduce) {
   .camp-led, .camp-flap-in, .desk-panel-in, .guest-headsup-card, .animate-pulse-ring,
   .animate-pulse-glow, .animate-ken-burns, [class*="intel-anim-"], .key-hook, .counter-bell, .counter-bell-icon, .ink-stamp-press, .desk-sync, .desk-sync-bar,
-  [class*="animate-stagger-"] { animation: none !important; }
+  [class*="animate-stagger-"], .key-fob, .key-slip, .key-slip-pulling { animation: none !important; }
   .guest-headsup-card, .guest-ai-dock { transition: none !important; transform: none !important; }
 }
 
