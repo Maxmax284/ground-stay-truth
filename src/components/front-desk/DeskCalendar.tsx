@@ -146,6 +146,7 @@ export function DeskCalendar({
       <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
         <span className="board-kicker">Week ahead</span>
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+          <span className="flex items-center gap-1"><Shield className="h-3 w-3 text-[hsl(280_60%_65%)]" /> On duty</span>
           <span className="flex items-center gap-1"><LogIn className="h-3 w-3 text-[hsl(var(--fight-gold))]" /> In</span>
           <span className="flex items-center gap-1"><Car className="h-3 w-3 text-[hsl(217_91%_65%)]" /> Pickup</span>
           <span className="flex items-center gap-1"><LogOut className="h-3 w-3 text-[hsl(var(--fight-red))]" /> Out</span>
@@ -169,17 +170,19 @@ export function DeskCalendar({
                 ) : (
                   d.events.map((ev) => {
                     const Icon = KIND_ICON[ev.kind];
+                    const isShift = ev.kind === "shift";
                     return (
                       <button
                         key={ev.key}
                         type="button"
                         title={`${ev.label}${ev.sub ? ` · ${ev.sub}` : ""}`}
                         onClick={() => {
+                          if (isShift || !ev.bookingId) return;
                           playGroundSound("brass_clack", 0.4);
                           flashCubby(ev.unitId);
                           onOpen(ev.bookingId);
                         }}
-                        className={cn("desk-cal-chip", `desk-cal-${ev.kind}`)}
+                        className={cn("desk-cal-chip", `desk-cal-${ev.kind}`, isShift && "cursor-default")}
                       >
                         <Icon className="h-3 w-3 shrink-0" />
                         <span className="truncate">{ev.label}</span>
