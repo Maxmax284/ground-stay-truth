@@ -48,6 +48,20 @@ export function KeyRack({
   notes?: Set<string>;
 }) {
   const { data: units } = useUnits();
+  // Pull-from-cubby: the slip slides out toward you before the booking opens.
+  const [pulling, setPulling] = useState<string | null>(null);
+  const pullTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleOpen = (hookId: string, bookingId: string) => {
+    if (pullTimer.current) return; // one pull at a time
+    playGroundSound("brass_clack", 0.5);
+    setPulling(hookId);
+    pullTimer.current = setTimeout(() => {
+      pullTimer.current = null;
+      setPulling(null);
+      onOpen(bookingId);
+    }, 280);
+  };
 
   const hooks = useMemo(() => {
     const list = (units ?? []).filter((u: any) => u.is_active !== false);
