@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
 
     const result = await sendAppEmail({
       templateName,
-      recipientEmail: guestProfile.email,
+      recipientEmail,
       bookingId,
       language: lang,
       source: `state_change:${state}`,
