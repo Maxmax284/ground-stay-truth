@@ -145,6 +145,15 @@ export default function FrontDesk() {
           notes={new Set([...(lastMessageByBooking?.entries() ?? [])].filter(([, m]) => m.from_guest && !m.is_read).map(([id]) => id))}
         />
 
+        <DeskCalendar
+          staying={sections.currentlyStaying}
+          departing={sections.departingToday}
+          arriving={sections.arrivingToday}
+          upcoming={sections.upcoming}
+          pickupByBooking={pickupByBooking}
+          onOpen={setDetailId}
+        />
+
         {/* Today's Briefing — deterministic by default, optional AI narration */}
         <TodaysBriefing
           sections={sections}
