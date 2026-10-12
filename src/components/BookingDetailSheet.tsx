@@ -252,7 +252,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+      <SheetContent scrollBody className="h-[100dvh] w-full sm:max-w-lg">
         <SheetHeader className="pb-4">
           <SheetTitle className="flex items-center gap-3 flex-wrap">
             <span>{booking.units?.name ?? t("bookingDetail.unknownUnit")}</span>

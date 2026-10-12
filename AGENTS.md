@@ -7,3 +7,4 @@
 - After-hours escalation runs only in DB function run_urgent_escalations (pg_cron every 2 min, exits immediately when auto_escalation_enabled is off or nothing is open); roster/responders are management-approved rows (validate_duty_roster) — never auto-assigned.
 - Guest phone/WhatsApp links are built only via src/lib/contactLinks.ts and saved E.164 through set_assistance_setting — one formatter so Settings, guest card and Front Desk never disagree.
 - Audit tables (ops_config_audit, policy_settings_history, guest_escalation_events) are append-only via DB triggers; push log status "accepted" means push-service accepted, never device-delivered — so readiness never overclaims.
+- Booking detail sheets use the shared scrollBody layout with safe-area-aware dismissal outside the scroll region — so installed iPhone users can always close a long booking.
