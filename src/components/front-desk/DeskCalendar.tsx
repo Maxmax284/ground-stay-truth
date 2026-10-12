@@ -39,6 +39,24 @@ const KIND_ICON: Record<EventKind, typeof LogIn> = {
   shift: Shield,
 };
 
+/** "yyyy-MM-dd" of a timestamp in camp time (Asia/Bangkok), never UTC or device time. */
+const campDateFmt = new Intl.DateTimeFormat("en-CA", {
+  timeZone: CAMP_TIMEZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+function campDateKey(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : campDateFmt.format(d);
+}
+
+/** UTC ms bounds of a camp-local calendar day key ("yyyy-MM-dd"). Camp offset is fixed +07:00. */
+function campDayBounds(key: string): { start: number; end: number } {
+  const start = new Date(`${key}T00:00:00+07:00`).getTime();
+  return { start, end: start + 24 * 60 * 60 * 1000 };
+}
+
 /** Scroll to the cubby on the key rack and flash it. */
 function flashCubby(unitId: string | null) {
   if (!unitId) return;
