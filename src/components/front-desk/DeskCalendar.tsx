@@ -137,16 +137,26 @@ export function DeskCalendar({
         });
       });
 
-      // Duty shifts starting this day (from the live roster)
+      // Duty shifts covering this camp day (from the live roster).
+      // Match on camp-time overlap, not the UTC date slice: a 06:00 Bangkok
+      // start is stored as 23:00Z the day before, and overnight shifts must
+      // also show on the morning they run into.
+      const { start: dayStart, end: dayEnd } = campDayBounds(key);
       for (const s of shifts) {
-        if (s.starts_at.slice(0, 10) !== key) continue;
+        const sStart = new Date(s.starts_at).getTime();
+        const sEnd = new Date(s.ends_at).getTime();
+        if (Number.isNaN(sStart) || Number.isNaN(sEnd)) continue;
+        if (sStart >= dayEnd || sEnd <= dayStart) continue;
+        const startedEarlier = campDateKey(s.starts_at) !== key;
         events.push({
           key: `shift-${s.id}`,
           kind: "shift",
           bookingId: null,
           unitId: null,
           label: s.backupName ? `${s.primaryName} +${s.backupName.split(" ")[0]}` : s.primaryName,
-          sub: `${format(new Date(s.starts_at), "HH:mm")}–${format(new Date(s.ends_at), "HH:mm")}`,
+          sub: startedEarlier
+            ? `until ${formatCampTime(s.ends_at)}`
+            : `${formatCampTime(s.starts_at)}–${formatCampTime(s.ends_at)}`,
         });
       }
 
