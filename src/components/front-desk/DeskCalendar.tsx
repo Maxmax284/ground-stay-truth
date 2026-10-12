@@ -8,6 +8,7 @@ import { playGroundSound } from "@/lib/groundSounds";
 import { useMemo } from "react";
 import { format, addDays } from "date-fns";
 import { LogIn, LogOut, Car, Shield } from "lucide-react";
+import { CAMP_TIMEZONE, formatCampTime } from "@/lib/timezone";
 import type { FrontDeskBooking } from "@/hooks/useFrontDesk";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { cn } from "@/lib/utils";
