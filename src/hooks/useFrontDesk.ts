@@ -94,6 +94,9 @@ export function useFrontDeskData() {
       .on("postgres_changes", { event: "*", schema: "public", table: "airport_pickups" }, () => {
         qc.invalidateQueries({ queryKey: ["front-desk"] });
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "maintenance_blocks" }, () => {
+        qc.invalidateQueries({ queryKey: ["maintenance_blocks"] });
+      })
       .on("postgres_changes", { event: "*", schema: "public", table: "duty_roster" }, () => {
         qc.invalidateQueries({ queryKey: ["front-desk-shifts"] });
       })
