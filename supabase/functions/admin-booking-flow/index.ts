@@ -214,8 +214,33 @@ Deno.serve(async (req) => {
       return jsonResponse(req, { error: "Unsupported action" }, 400);
     }
 
-    const guest = await ensureGuestAccount(admin, body?.guest ?? {});
     const stay = body?.stay ?? {};
+
+    // Refuse rooms blocked for maintenance before touching any guest account.
+    // Block end_date is inclusive (the last blocked night).
+    {
+      const mbUnit = asString(stay.unit_id);
+      const mbIn = asString(stay.check_in);
+      const mbOut = asString(stay.check_out);
+      if (mbUnit && mbIn && mbOut) {
+        const { data: blocks, error: mbError } = await admin
+          .from("maintenance_blocks")
+          .select("start_date, end_date, reason")
+          .eq("unit_id", mbUnit)
+          .lt("start_date", mbOut)
+          .gte("end_date", mbIn)
+          .limit(1);
+        if (mbError) throw new Error(mbError.message);
+        if (blocks && blocks.length > 0) {
+          const b = blocks[0] as any;
+          return jsonResponse(req, {
+            error: `Room is blocked for maintenance ${b.start_date} → ${b.end_date}${b.reason ? ` (${b.reason})` : ""}`,
+          }, 409);
+        }
+      }
+    }
+
+    const guest = await ensureGuestAccount(admin, body?.guest ?? {});
     const pickupInput = body?.pickup ?? {};
 
     const unitId = asString(stay.unit_id);
