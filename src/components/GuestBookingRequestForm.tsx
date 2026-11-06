@@ -283,7 +283,7 @@ export function GuestBookingRequestForm({ open, onOpenChange, defaultUnitId }: G
       if (data.airport_pickup && bookingResult?.id) {
         const transportFee = policies?.find((p) => p.key === "transport_base_fee");
         const feeType = policies?.find((p) => p.key === "transport_fee_type");
-        const baseFee = transportFee ? Number(transportFee.value) : 500;
+        const baseFee = transportFee ? Number(transportFee.value) : 600;
         const fee = String(feeType?.value).replace(/"/g, "") === "per_person"
           ? baseFee * Number(data.pickup_passenger_count || 1)
           : baseFee;
