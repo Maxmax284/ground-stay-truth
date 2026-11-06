@@ -69,7 +69,9 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
   const canRecordPay = permissions.canRecordPayment(role);
   const canDepositOverride = permissions.canOverrideDeposit(role);
   const hasDocuments = (documents?.length ?? 0) > 0;
-  const hasPayments = (existingPayments?.length ?? 0) > 0;
+  // Only money actually received counts — pending obligations are not payments.
+  const receivedPayments = (existingPayments ?? []).filter((p: any) => p.status === "recorded");
+  const hasPayments = receivedPayments.length > 0;
 
   // Deposit policy
   const depositPolicy = useMemo(() => getDepositPolicy(policies), [policies]);
@@ -96,7 +98,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
   // Cash payment at check-in
   const isCheckinTransition = targetState === "checked_in";
   const showCashAtCheckin = isCheckinTransition && canRecordPay;
-  const totalPaid = (existingPayments ?? []).reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+  const totalPaid = receivedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
   const outstandingAtCheckin = totalPrice ? totalPrice - totalPaid : null;
 
   // Pre-fill deposit amount
@@ -126,8 +128,17 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
 
   const refundInfo = useMemo(() => {
     if ((targetState !== "cancelled" && targetState !== "no_show") || !checkInDate || !policies) return null;
-    return calculateRefund(checkInDate, totalPrice ?? null, policies);
-  }, [targetState, checkInDate, totalPrice, policies]);
+    const base = calculateRefund(checkInDate, totalPrice ?? null, policies);
+    // Refund can never exceed what was actually collected (net of refunds).
+    const collected = (existingPayments ?? []).reduce((sum: number, p: any) => {
+      if (p.status !== "recorded") return sum;
+      const amt = Number(p.amount) || 0;
+      return p.type === "refund" ? sum - amt : sum + amt;
+    }, 0);
+    const pct = totalPrice ? (base.refundAmount ?? 0) / totalPrice : 0;
+    const capped = Math.max(0, Math.round(Math.min(collected, collected * pct) * 100) / 100);
+    return { ...base, refundAmount: capped, collected, nothingPaid: collected <= 0 };
+  }, [targetState, checkInDate, totalPrice, policies, existingPayments]);
 
   // AI Pre-flight check when target state changes
   useEffect(() => {
@@ -422,7 +433,16 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
               </div>
             </div>
           )}
-          {refundInfo && (
+          {refundInfo && (refundInfo as any).nothingPaid && (
+            <div className="flex items-start gap-2 text-sm rounded-md p-3 bg-muted text-foreground border border-border">
+              <DollarSign className="h-4 w-4 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium">No payments collected — nothing to refund</p>
+                <p className="text-xs mt-1">Refund due: <strong>{formatPrice(0, policies)}</strong>. Any pending payment requests on this booking were never paid.</p>
+              </div>
+            </div>
+          )}
+          {refundInfo && !(refundInfo as any).nothingPaid && (
             <div className={`flex items-start gap-2 text-sm rounded-md p-3 ${refundInfo.tier === "free" ? "bg-success/10 text-[hsl(var(--success))]" : refundInfo.tier === "partial" ? "bg-warning/10 text-warning-foreground" : "bg-destructive/10 text-destructive"}`}>
               <DollarSign className="h-4 w-4 shrink-0 mt-0.5" />
               <div>
@@ -440,7 +460,7 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
 
                     : refundInfo.label}
                 </p>
-                {refundInfo.refundAmount != null && <p className="text-xs mt-1">{targetState === "no_show" ? t("noShow.refundAmount", { defaultValue: "Refund due" }) : t("refund.refundAmount")}: <strong>{formatPrice(refundInfo.refundAmount, policies)}</strong>{totalPrice != null && ` ${t("refund.ofTotal", { total: formatPrice(totalPrice, policies) })}`}</p>}
+                {refundInfo.refundAmount != null && <p className="text-xs mt-1">{targetState === "no_show" ? t("noShow.refundAmount", { defaultValue: "Refund due" }) : t("refund.refundAmount")}: <strong>{formatPrice(refundInfo.refundAmount, policies)}</strong>{` of ${formatPrice((refundInfo as any).collected, policies)} collected`}</p>}
               </div>
             </div>
           )}

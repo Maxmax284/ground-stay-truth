@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,7 @@ import { BookingFilters, type BookingSort } from "@/components/BookingFilters";
 import { BookingFormDialog } from "@/components/BookingFormDialog";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { GuestThreadLauncher } from "@/components/GuestThreadLauncher";
-import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
+import { STATE_VARIANTS, ACTIVE_STATES, type BookingState } from "@/lib/bookingStateMachine";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -169,7 +169,14 @@ const Bookings = () => {
   // Manager+ may push an expired hold / deposit deadline forward.
   const canOverrideDeadline = permissions.canOverrideDeposit(role);
 
-  const [stateFilter, setStateFilter] = useState<BookingState | null>(null);
+  // Dashboard tiles deep-link with ?filter=… — preset the list from it.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlFilter = searchParams.get("filter");
+  const quickFilter = urlFilter === "arriving_today" || urlFilter === "departing_today" || urlFilter === "active" ? urlFilter : null;
+  const [stateFilter, setStateFilter] = useState<BookingState | null>(
+    urlFilter && !quickFilter ? (urlFilter as BookingState) : null,
+  );
+  const clearQuickFilter = () => { const n = new URLSearchParams(searchParams); n.delete("filter"); setSearchParams(n, { replace: true }); };
   const [unitFilter, setUnitFilter] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState<string | null>(null);
   const [dateTo, setDateTo] = useState<string | null>(null);
@@ -213,6 +220,13 @@ const Bookings = () => {
     }
 
 
+    if (quickFilter) {
+      const today = format(new Date(), "yyyy-MM-dd");
+      if (quickFilter === "arriving_today") visible = visible.filter((b: any) => String(b.check_in).slice(0, 10) === today && b.state !== "cancelled");
+      else if (quickFilter === "departing_today") visible = visible.filter((b: any) => String(b.check_out).slice(0, 10) === today && b.state !== "cancelled");
+      else visible = visible.filter((b: any) => ACTIVE_STATES.includes(b.state));
+    }
+
     // "Expired only" — holds / deposit windows that have run out and are
     // still sitting there waiting on a human decision.
     if (expiredOnly) {
@@ -242,7 +256,7 @@ const Bookings = () => {
         break;
     }
     return sorted;
-  }, [rawBookings, showCancelled, showCompleted, stateFilter, sort, expiredOnly, policiesForDeadlines]);
+  }, [rawBookings, showCancelled, showCompleted, stateFilter, sort, expiredOnly, policiesForDeadlines, quickFilter]);
 
   // Count of expired holds/deposits across the loaded set — drives the filter chip.
   const { data: readiness } = useBookingReadiness(bookings as any);
@@ -311,6 +325,12 @@ const Bookings = () => {
           <TabsContent value="bookings" className="space-y-4">
         {canRecordPayment && (
           <BackfillWorklistCard onOpenBooking={(id) => setSelectedBookingId(id)} />
+        )}
+        {quickFilter && (
+          <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm">
+            <span>Showing: <strong>{quickFilter === "arriving_today" ? "Today's arrivals" : quickFilter === "departing_today" ? "Today's departures" : "Active bookings"}</strong></span>
+            <Button size="sm" variant="outline" className="h-8" onClick={clearQuickFilter}>Show all</Button>
+          </div>
         )}
         <BookingFilters
           state={stateFilter}

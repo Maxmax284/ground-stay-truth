@@ -83,7 +83,7 @@ export function AirportPickupSection({ bookingId, guestName, hideRadar }: Props)
 
   const baseFee = useMemo(() => {
     const setting = policies?.find((p) => p.key === "transport_base_fee");
-    return setting ? Number(setting.value) : 500;
+    return setting ? Number(setting.value) : 600;
   }, [policies]);
 
   const transportEnabled = policies?.find((p) => p.key === "transport_enabled");
