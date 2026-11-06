@@ -26,7 +26,7 @@ import { BookingFilters, type BookingSort } from "@/components/BookingFilters";
 import { BookingFormDialog } from "@/components/BookingFormDialog";
 import { BookingDetailSheet } from "@/components/BookingDetailSheet";
 import { GuestThreadLauncher } from "@/components/GuestThreadLauncher";
-import { STATE_VARIANTS, type BookingState } from "@/lib/bookingStateMachine";
+import { STATE_VARIANTS, ACTIVE_STATES, type BookingState } from "@/lib/bookingStateMachine";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -325,6 +325,12 @@ const Bookings = () => {
           <TabsContent value="bookings" className="space-y-4">
         {canRecordPayment && (
           <BackfillWorklistCard onOpenBooking={(id) => setSelectedBookingId(id)} />
+        )}
+        {quickFilter && (
+          <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm">
+            <span>Showing: <strong>{quickFilter === "arriving_today" ? "Today's arrivals" : quickFilter === "departing_today" ? "Today's departures" : "Active bookings"}</strong></span>
+            <Button size="sm" variant="outline" className="h-8" onClick={clearQuickFilter}>Show all</Button>
+          </div>
         )}
         <BookingFilters
           state={stateFilter}
