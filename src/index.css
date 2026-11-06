@@ -889,6 +889,10 @@
   .key-departing { --key-c: var(--fight-red); }
   .key-arriving { --key-c: 217 91% 65%; }
   .key-turnover { --key-c: 28 80% 55%; }
+  .key-maintenance { --key-c: 38 92% 45%; }
+  .key-maintenance .key-slip {
+    background-image: repeating-linear-gradient(135deg, hsl(38 92% 50% / 0.18) 0 6px, transparent 6px 12px);
+  }
   .key-vacant { --key-c: var(--muted-foreground); }
   .key-vacant .key-led { box-shadow: none; opacity: 0.45; }
   /* Cubby flash — calendar chip tapped, rack answers */

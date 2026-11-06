@@ -10,13 +10,17 @@ import type { FrontDeskBooking, TodayTask } from "@/hooks/useFrontDesk";
 import { resolveGuestDisplayName } from "@/lib/guestDisplay";
 import { cn } from "@/lib/utils";
 
-type HookState = "occupied" | "departing" | "arriving" | "turnover" | "vacant";
+import { useMaintenanceBlocks, type MaintenanceBlock } from "@/hooks/useMaintenanceBlocks";
+import { campToday, MaintenanceSheet, WalkInSheet } from "@/components/front-desk/KeyRackActions";
+
+type HookState = "occupied" | "departing" | "arriving" | "turnover" | "maintenance" | "vacant";
 
 const LABEL: Record<HookState, string> = {
   occupied: "In house",
   departing: "Out today",
   arriving: "Due in",
   turnover: "Flip",
+  maintenance: "Blocked",
   vacant: "Free",
 };
 
@@ -63,6 +67,12 @@ export function KeyRack({
     }, 280);
   };
 
+  const today = campToday();
+  // Blocks covering today or later (for the walk-in overlap check too).
+  const { data: blocks = [] } = useMaintenanceBlocks({ dateFrom: today });
+  const [walkInUnit, setWalkInUnit] = useState<string | null>(null);
+  const [openBlock, setOpenBlock] = useState<{ block: MaintenanceBlock; name: string } | null>(null);
+
   const hooks = useMemo(() => {
     const list = (units ?? []).filter((u: any) => u.is_active !== false);
     return list
@@ -71,22 +81,24 @@ export function KeyRack({
         const stay = staying.find((b) => b.unit_id === u.id);
         const arr = arriving.find((b) => b.unit_id === u.id);
         const task = tasks.find((t) => t.unit_id === u.id);
+        const block = blocks.find((b) => b.unit_id === u.id && b.start_date <= today && b.end_date >= today);
         let state: HookState = "vacant";
         let booking: FrontDeskBooking | undefined;
         if (dep) { state = "departing"; booking = dep; }
         else if (stay) { state = "occupied"; booking = stay; }
+        else if (block) { state = "maintenance"; booking = undefined; }
         else if (task) { state = "turnover"; booking = arr; }
         else if (arr) { state = "arriving"; booking = arr; }
-        return { id: u.id as string, name: u.name as string, code: fobCode(u.name as string), state, booking };
+        return { id: u.id as string, name: u.name as string, code: fobCode(u.name as string), state, booking, block };
       })
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-  }, [units, staying, departing, arriving, tasks]);
+  }, [units, staying, departing, arriving, tasks, blocks, today]);
 
   if (hooks.length === 0) return null;
 
   const counts = hooks.reduce<Record<HookState, number>>(
     (acc, h) => ({ ...acc, [h.state]: acc[h.state] + 1 }),
-    { occupied: 0, departing: 0, arriving: 0, turnover: 0, vacant: 0 },
+    { occupied: 0, departing: 0, arriving: 0, turnover: 0, maintenance: 0, vacant: 0 },
   );
 
   return (
@@ -109,9 +121,13 @@ export function KeyRack({
               <div key={h.id} id={`key-slot-${h.id}`} className={cn("key-slot", `key-${h.state}`)}>
                 <button
                   type="button"
-                  disabled={!h.booking}
-                  onClick={() => h.booking && handleOpen(h.id, h.booking.id)}
-                  title={`${h.name} · ${guest ?? LABEL[h.state]}`}
+                  onClick={() => {
+                    if (h.booking) handleOpen(h.id, h.booking.id);
+                    else if (h.block) { playGroundSound("brass_clack", 0.4); setOpenBlock({ block: h.block, name: h.name }); }
+                    else if (h.state === "vacant") { playGroundSound("brass_clack", 0.4); setWalkInUnit(h.id); }
+                  }}
+                  aria-label={`${h.name} · ${guest ?? LABEL[h.state]}${h.state === "vacant" ? " — tap to book walk-in" : ""}`}
+                  title={`${h.name} · ${guest ?? (h.block ? `Blocked: ${h.block.reason ?? "maintenance"}` : LABEL[h.state])}`}
                   style={{ animationDelay: `${Math.min(i, 24) * 25}ms` }}
                   className="key-hook min-w-0"
                 >
@@ -129,6 +145,7 @@ export function KeyRack({
                     <span key={h.state} className={cn("key-slip key-swap-slip", pulling === h.id && "key-slip-pulling")}>
                       <span className="key-code">{h.code}</span>
                       {guest && <span className="key-guest">{guest}</span>}
+                      {!guest && h.block && <span className="key-guest">{h.block.reason || "Maintenance"}</span>}
                       <span className="key-state">{LABEL[h.state]}</span>
                     </span>
                   )}
@@ -139,6 +156,8 @@ export function KeyRack({
           })}
         </div>
       </div>
+      <WalkInSheet unitId={walkInUnit} blocks={blocks} onClose={() => setWalkInUnit(null)} onCreated={onOpen} />
+      <MaintenanceSheet block={openBlock?.block ?? null} unitName={openBlock?.name ?? ""} onClose={() => setOpenBlock(null)} />
     </section>
   );
 }
