@@ -31,7 +31,7 @@ export function BookingReadinessRow({ readiness }: { readiness?: BookingReadines
             aria-label={`${label}: ${done ? t("readiness.yes", "yes") : t("readiness.no", "not yet")}`}
             className={cn(
               "inline-flex items-center justify-center rounded-full h-5 w-5",
-              done ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10" : "text-muted-foreground/50 bg-muted/50",
+              done ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10" : "text-muted-foreground border border-border bg-muted/40",
             )}
           >
             <Icon className="h-3 w-3" />

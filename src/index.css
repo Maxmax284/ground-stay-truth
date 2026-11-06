@@ -1132,6 +1132,16 @@
   .key-note, .tm30-slip, .logbook-stamp { animation: none; }
 }
 
+/* Bookings list cards: camp-pass dark ticket, legible on any theme.
+   (Never combine with .ledger-row — its background-image wiped the dark
+   gradient and left light text on parchment.) */
+.booking-card { --input: 0 0% 34%; --background: 30 9% 13%; --accent: 30 9% 20%;
+  /* Lighter status hues so badges clear 4.5:1 on the dark ticket */
+  --info: 217 85% 74%; --success: 152 55% 60%; --warning: 38 92% 62%; --warning-foreground: 38 92% 70%;
+  --destructive: 0 80% 70%; --secondary: 30 9% 22%; --secondary-foreground: 36 20% 92%; --accent-foreground: 36 20% 92%; }
+.booking-card .camp-pass-meta { color: hsl(36 20% 92% / 0.78); }
+.booking-card .text-muted-foreground { color: hsl(0 0% 74%); }
+
 /* The Ledger — ruled accommodation book rows (Booking History) */
 .ledger-row { position:relative; overflow:hidden;
   background-image: repeating-linear-gradient(to bottom, transparent 0 23px, hsl(var(--border) / 0.45) 23px 24px);

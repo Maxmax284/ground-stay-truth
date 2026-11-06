@@ -110,7 +110,7 @@ function BookingCard({ booking, onClick, onExtend, onRecordPayment, discountFlag
   const cardDeadline = getBookingDeadline(booking, cardPolicies as any);
   return (
     <div
-      className={cn("camp-pass ledger-row rounded-lg border p-4 pt-5 cursor-pointer active:bg-accent/50 transition-colors")}
+      className={cn("camp-pass booking-card rounded-lg border p-4 pt-5 cursor-pointer active:bg-accent/50 transition-colors")}
       onClick={onClick}
     >
       {booking.state === "cancelled" && <span className="ledger-void" aria-hidden>VOID</span>}
@@ -134,7 +134,7 @@ function BookingCard({ booking, onClick, onExtend, onRecordPayment, discountFlag
       {/* Talking to the guest is a first-class action on the card itself —
           staff shouldn't have to know where the Messenger tab lives. */}
       <div className="mt-3 grid grid-cols-1 gap-2 min-[390px]:grid-cols-2" onClick={(e) => e.stopPropagation()}>
-        <Button size="sm" variant="outline" className="h-7 flex-1 px-2 text-xs" asChild>
+        <Button size="sm" variant="outline" className="h-9 flex-1 px-2 text-xs" asChild>
           <Link to={`/bookings/${booking.id}/status`}>
             <ClipboardList className="h-3 w-3 mr-1" /> {t("bookingStatus.title", "Status")}
           </Link>
@@ -142,7 +142,7 @@ function BookingCard({ booking, onClick, onExtend, onRecordPayment, discountFlag
         <GuestThreadLauncher
           bookingId={booking.id}
           guestName={resolveGuestDisplayName(booking as any)}
-          className="h-7 flex-1 px-2 text-xs gap-1"
+          className="h-9 flex-1 px-2 text-xs gap-1"
         />
         {cardDeadline?.isExpired && onExtend && (
           <Button size="sm" variant="outline" className="h-7 flex-1 px-2 text-xs" onClick={() => onExtend(booking)}>
