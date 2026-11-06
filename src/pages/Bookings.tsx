@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -169,7 +169,14 @@ const Bookings = () => {
   // Manager+ may push an expired hold / deposit deadline forward.
   const canOverrideDeadline = permissions.canOverrideDeposit(role);
 
-  const [stateFilter, setStateFilter] = useState<BookingState | null>(null);
+  // Dashboard tiles deep-link with ?filter=… — preset the list from it.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlFilter = searchParams.get("filter");
+  const quickFilter = urlFilter === "arriving_today" || urlFilter === "departing_today" || urlFilter === "active" ? urlFilter : null;
+  const [stateFilter, setStateFilter] = useState<BookingState | null>(
+    urlFilter && !quickFilter ? (urlFilter as BookingState) : null,
+  );
+  const clearQuickFilter = () => { const n = new URLSearchParams(searchParams); n.delete("filter"); setSearchParams(n, { replace: true }); };
   const [unitFilter, setUnitFilter] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState<string | null>(null);
   const [dateTo, setDateTo] = useState<string | null>(null);
@@ -213,6 +220,13 @@ const Bookings = () => {
     }
 
 
+    if (quickFilter) {
+      const today = format(new Date(), "yyyy-MM-dd");
+      if (quickFilter === "arriving_today") visible = visible.filter((b: any) => String(b.check_in).slice(0, 10) === today && b.state !== "cancelled");
+      else if (quickFilter === "departing_today") visible = visible.filter((b: any) => String(b.check_out).slice(0, 10) === today && b.state !== "cancelled");
+      else visible = visible.filter((b: any) => ACTIVE_STATES.includes(b.state));
+    }
+
     // "Expired only" — holds / deposit windows that have run out and are
     // still sitting there waiting on a human decision.
     if (expiredOnly) {
@@ -242,7 +256,7 @@ const Bookings = () => {
         break;
     }
     return sorted;
-  }, [rawBookings, showCancelled, showCompleted, stateFilter, sort, expiredOnly, policiesForDeadlines]);
+  }, [rawBookings, showCancelled, showCompleted, stateFilter, sort, expiredOnly, policiesForDeadlines, quickFilter]);
 
   // Count of expired holds/deposits across the loaded set — drives the filter chip.
   const { data: readiness } = useBookingReadiness(bookings as any);
