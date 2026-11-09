@@ -1,5 +1,5 @@
 // Unified guest display resolver.
-// Priority: linked profile name → manual_guest_name → manual_guest_email → "Guest".
+// Priority: booking guest name → linked account name → contact fallback → "Guest".
 // Use everywhere the UI needs a human label for a booking's guest.
 
 export interface GuestDisplaySource {
@@ -12,6 +12,8 @@ export interface GuestDisplaySource {
 
 export function resolveGuestDisplayName(booking?: GuestDisplaySource | null): string {
   if (!booking) return "Guest";
+  const bookingName = booking.manual_guest_name?.trim();
+  if (bookingName) return bookingName;
   const profileName =
     booking.profiles?.full_name?.trim() ||
     booking.guest?.full_name?.trim() ||
