@@ -2418,5 +2418,15 @@
     "sent": "Front desk notified",
     "landedMsg": "✈️ I've landed and I'm on my way to the camp.",
     "hereMsg": "📍 I'm here at the camp."
+  },
+  "guestIdentity": {
+    "accountName": "Account owner name",
+    "bookingName": "Guest staying in this room",
+    "saved": "Name saved",
+    "failed": "Could not save name. Check your access and try again.",
+    "editAccount": "Edit account name",
+    "editBooking": "Edit booking guest",
+    "save": "Save name",
+    "cancel": "Keep current name"
   }
 }

@@ -3,6 +3,8 @@
  * Read-only aggregate + staff notes + admin merge entry point.
  */
 import { useState } from "react";
+import { GuestNameEditor } from "./GuestNameEditor";
+import { useGuestDirectory } from "@/hooks/useGuestDirectory";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
@@ -34,7 +36,9 @@ interface Props {
   onMerge: (g: GuestDirectoryRow) => void;
 }
 
-export function GuestProfileSheet({ guest, open, onOpenChange, onOpenBooking, onMerge }: Props) {
+export function GuestProfileSheet({ guest: selectedGuest, open, onOpenChange, onOpenBooking, onMerge }: Props) {
+  const { data: directory } = useGuestDirectory();
+  const guest = directory?.find(g => g.guest_key === selectedGuest?.guest_key) ?? selectedGuest;
   const { t } = useTranslation();
   const { role } = useAuth();
   const { data: policies } = usePolicySettings();
@@ -81,6 +85,7 @@ export function GuestProfileSheet({ guest, open, onOpenChange, onOpenBooking, on
             </div>
 
             <div className="space-y-1 text-sm">
+              <GuestNameEditor key={guest.guest_key} account guestId={guest.guest_id} name={guest.full_name ?? ""} />
               {guest.email && (
                 <button className="flex items-center gap-2 text-muted-foreground hover:text-foreground" onClick={() => copy(guest.email)}>
                   <Mail className="h-3.5 w-3.5" /> <span className="truncate">{guest.email}</span> <Copy className="h-3 w-3" />
@@ -126,6 +131,7 @@ export function GuestProfileSheet({ guest, open, onOpenChange, onOpenBooking, on
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="font-medium truncate">{s.unit_name ?? "—"}</p>
+                        {s.guest_name && <p className="text-sm text-foreground">{s.guest_name}</p>}
                         <p className="text-xs text-muted-foreground">
                           {format(new Date(s.check_in), "MMM d, yyyy")} – {format(new Date(s.check_out), "MMM d, yyyy")}
                           {s.confirmation_number ? ` · ${s.confirmation_number}` : ""}

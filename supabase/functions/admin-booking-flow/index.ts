@@ -93,13 +93,15 @@ async function ensureGuestAccount(admin: any, input: any) {
     }
   }
 
+  // A booking may be for a friend using the account owner's email. Never
+  // replace an existing account's identity/contact/language with booking input.
   const { error: upsertProfileError } = await admin.from("profiles").upsert({
     user_id: userId,
     email,
     full_name: fullName,
     phone,
     preferred_language: preferredLanguage,
-  }, { onConflict: "user_id" });
+  }, { onConflict: "user_id", ignoreDuplicates: true });
   if (upsertProfileError) throw new Error(upsertProfileError.message);
 
   const { error: roleError } = await admin.from("user_roles").upsert({ user_id: userId, role: "guest" }, { onConflict: "user_id,role" });
@@ -158,7 +160,7 @@ async function confirmLanding(admin: any, callerId: string, bookingId: string, a
     change_type: "normal",
   });
 
-  const guestName = (booking as any).profiles?.full_name ?? booking.manual_guest_name ?? "Guest";
+  const guestName = booking.manual_guest_name?.trim() || (booking as any).profiles?.full_name || "Guest";
   const unitName = (booking as any).units?.name ?? "unit";
   const driverName = pickup.drivers?.name ?? "driver pending";
   const plate = pickup.drivers?.license_plate ? ` · ${pickup.drivers.license_plate}` : "";

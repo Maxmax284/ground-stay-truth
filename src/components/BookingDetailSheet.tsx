@@ -79,6 +79,7 @@ import { ModifyStayDialog } from "@/components/ModifyStayDialog";
 import { useMyElevation } from "@/hooks/useAdminElevation";
 import { ElevatedAction } from "@/components/admin/ElevatedAction";
 import { StayModificationHistory } from "@/components/StayModificationHistory";
+import { GuestNameEditor } from "@/components/guests/GuestNameEditor";
 
 interface BookingDetailSheetProps { bookingId: string | null; open: boolean; onOpenChange: (open: boolean) => void; isAdmin: boolean; }
 
@@ -274,6 +275,10 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
           {/* One tap to the guest's own conversation, from any tab. */}
           <div className="flex">
             <GuestThreadLauncher bookingId={booking.id} guestName={guestName} className="h-8 text-xs gap-1" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <GuestNameEditor key={`booking-${booking.id}`} bookingId={booking.id} name={guestName ?? ""} />
+            <GuestNameEditor key={`account-${booking.guest_id}`} account guestId={booking.guest_id} name={booking.profiles?.full_name ?? ""} />
           </div>
           {guestName && <div className="flex items-center gap-2 text-sm text-foreground"><User className="h-4 w-4 text-muted-foreground" /><span className="font-medium">{guestName}</span>{guestHistory?.isReturning && <Badge variant="secondary" className="text-[10px]">{t("loyalty.returningGuest", { count: (guestHistory.completedStays ?? 0) + 1 })}</Badge>}{isCompleted && (bookingReview ? <Badge className={`text-[10px] ${bookingReview.status === "approved" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300" : bookingReview.status === "rejected" ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"}`}>{t("reviews.reviewStatus", { defaultValue: "Review" })}: {t(`reviews.${bookingReview.status}`)}</Badge> : <span className="text-xs text-muted-foreground">{t("reviews.noReviewSubmitted", { defaultValue: "No review submitted" })}</span>)}</div>}
           {softHoldInfo && (

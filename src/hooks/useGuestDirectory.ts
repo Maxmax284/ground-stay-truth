@@ -30,6 +30,7 @@ export interface GuestDirectoryRow {
 }
 
 export interface GuestBookingRow {
+  guest_name?: string | null;
   booking_id: string;
   confirmation_number: string | null;
   unit_name: string | null;
@@ -85,11 +86,17 @@ export function useGuestBookings(guestKey: string | null) {
     queryKey: ["guest-bookings", guestKey],
     enabled: !!guestKey,
     queryFn: async () => {
+      if (!guestKey) return [];
       const { data, error } = await supabase.rpc("get_guest_bookings", {
-        _guest_key: guestKey!,
+        _guest_key: guestKey,
       });
       if (error) throw error;
-      return (data ?? []) as GuestBookingRow[];
+      if (!data?.length) return [];
+      const { data: names, error: nameError } = await supabase.from("bookings")
+        .select("id, manual_guest_name").in("id", data.map(s => s.booking_id));
+      if (nameError) throw nameError;
+      const byId = new Map((names ?? []).map(s => [s.id, s.manual_guest_name]));
+      return data.map(s => ({ ...s, guest_name: byId.get(s.booking_id) }));
     },
   });
 }

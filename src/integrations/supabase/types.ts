@@ -5922,6 +5922,10 @@ export type Database = {
         Args: { _key: string; _value: Json }
         Returns: undefined
       }
+      staff_edit_guest_identity: {
+        Args: { _booking_id?: string; _full_name?: string; _guest_id?: string }
+        Returns: undefined
+      }
       staff_log_urgent_request: {
         Args: {
           _booking_id: string
