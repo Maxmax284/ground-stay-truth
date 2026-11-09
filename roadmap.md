@@ -1,5 +1,6 @@
 # CampStay UX pass
-- [ ] Guest identity repair: preserve account owner, show booking guest, add audited admin/manager name editing, restore Kenny's account, verify
+- [x] Guest identity repair: preserve account owner, show booking guest, add audited admin/manager name editing, restore Kenny's account
+- [ ] Guest identity staff save/read-back verification (blocked by authenticator-code gate)
 - [x] Remove social Camp Pass and exporter; retain existing guest logistics and logbook
 - [x] Review guest aesthetics/usability and propose logistics-first refinements without implementing them
 - [x] Mobile containment gate: guest portal, preview, messages, alerts, tabs, floating controls, safe areas

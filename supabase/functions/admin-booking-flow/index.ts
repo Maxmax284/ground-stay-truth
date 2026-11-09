@@ -160,7 +160,7 @@ async function confirmLanding(admin: any, callerId: string, bookingId: string, a
     change_type: "normal",
   });
 
-  const guestName = (booking as any).profiles?.full_name ?? booking.manual_guest_name ?? "Guest";
+  const guestName = booking.manual_guest_name?.trim() || (booking as any).profiles?.full_name || "Guest";
   const unitName = (booking as any).units?.name ?? "unit";
   const driverName = pickup.drivers?.name ?? "driver pending";
   const plate = pickup.drivers?.license_plate ? ` · ${pickup.drivers.license_plate}` : "";
