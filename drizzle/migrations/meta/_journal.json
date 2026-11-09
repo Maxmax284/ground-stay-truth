@@ -295,6 +295,13 @@
       "when": 1791606700615,
       "tag": "0041_enable_realtime_duty_roster",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1794199891994,
+      "tag": "0042_staff_edit_guest_identity",
+      "breakpoints": true
     }
   ]
 }
