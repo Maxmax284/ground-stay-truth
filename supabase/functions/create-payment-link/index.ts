@@ -228,6 +228,13 @@ serve(async (req) => {
     let collectLabel = "Deposit";
 
     if (overrideAmount > 0) {
+      // Custom amounts are a management decision and can never exceed what the booking owes.
+      if (callerRole !== "admin" && callerRole !== "manager") {
+        return jsonResponse(req, { error: "Only admins or managers can set a custom amount" }, 403);
+      }
+      if (!Number.isFinite(overrideAmount) || (collect !== "security_deposit" && overrideAmount > grandTotal)) {
+        return jsonResponse(req, { error: "Custom amount exceeds the booking total" }, 400);
+      }
       amount = Math.round(overrideAmount);
       paymentTypeForRecord = collect === "security_deposit" ? "security_deposit" :
                              collect === "balance" ? "balance" :

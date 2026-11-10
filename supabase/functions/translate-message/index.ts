@@ -109,7 +109,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    const targetLangName = LANG_NAMES[target_language] || target_language;
+    const targetLangName = typeof target_language === "string" ? LANG_NAMES[target_language] : undefined;
+    if (!targetLangName) {
+      return new Response(JSON.stringify({ error: "Unsupported target_language" }), {
+        status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

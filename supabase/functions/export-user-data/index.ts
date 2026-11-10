@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
       adminClient.from("notifications").select("id, type, message, created_at, read").eq("user_id", userId),
       adminClient.from("user_consents").select("*").eq("user_id", userId),
       adminClient.from("reviews").select("id, title, body, rating, created_at, status").eq("guest_id", userId),
-      adminClient.from("guest_documents").select("id, file_name, created_at, verification_status"),
+      adminClient.from("guest_documents").select("id, file_name, created_at, verification_status").eq("uploaded_by", userId),
       adminClient.from("airport_pickups").select("id, flight_number, status, arrival_datetime, created_at").eq("booking_id", userId),
       adminClient.from("user_roles").select("role, created_at").eq("user_id", userId),
     ]);

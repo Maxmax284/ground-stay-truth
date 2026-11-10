@@ -9,6 +9,7 @@
 // -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isInternalCaller, isInternalOrStaff, unauthorized } from "../_shared/internalAuth.ts";
 
 const AVIATIONSTACK_BASE = "http://api.aviationstack.com/v1";
 
@@ -39,6 +40,7 @@ function getCorsHeaders(req: Request) {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: getCorsHeaders(req) });
+  if (!(await isInternalOrStaff(req, ["admin","manager"]))) return unauthorized(getCorsHeaders(req));
 
   try {
     const AVIATIONSTACK_KEY = Deno.env.get("AVIATIONSTACK_API_KEY");

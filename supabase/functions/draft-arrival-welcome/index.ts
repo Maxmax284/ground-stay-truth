@@ -9,6 +9,7 @@
 // -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sanitizeChatMessages } from "../_shared/chatSanitize.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
@@ -277,7 +278,7 @@ If the request is unclear or just a question, respond conversationally without u
 
       const messages: any[] = [{ role: "system", content: systemMsg }];
       if (Array.isArray(chat_history)) {
-        for (const msg of chat_history) {
+        for (const msg of sanitizeChatMessages(chat_history, 30)) {
           messages.push({ role: msg.role, content: msg.content });
         }
       }

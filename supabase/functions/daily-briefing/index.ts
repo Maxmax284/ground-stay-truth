@@ -11,6 +11,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { emitAdminAlert } from "../_shared/adminAlert.ts";
 import { buildOpsBrief } from "../_shared/opsBrief.ts";
+import { isInternalCaller, isInternalOrStaff, unauthorized } from "../_shared/internalAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -194,6 +195,7 @@ async function sweepAdminAlerts(admin: any, summary: string) {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (!(await isInternalOrStaff(req, ["admin","manager"]))) return unauthorized(corsHeaders);
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

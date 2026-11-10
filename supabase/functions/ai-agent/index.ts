@@ -25,6 +25,7 @@
 // -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sanitizeChatMessages } from "../_shared/chatSanitize.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
@@ -739,9 +740,7 @@ serve(async (req) => {
       "staff";
 
     const body = await req.json().catch(() => ({}));
-    const messages: Array<Record<string, unknown>> = Array.isArray(body.messages)
-      ? body.messages.slice(-20)
-      : [];
+    const messages: Array<Record<string, unknown>> = sanitizeChatMessages(body.messages, 20);
     const langName = typeof body.language === "string" ? body.language : "English";
     if (messages.length === 0) return json({ error: "No messages" }, 400);
 

@@ -7,9 +7,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsPreflight, getCorsHeaders } from "../_shared/cors.ts";
 import { sendFenrirSecurityEvent } from "../_shared/fenrir.ts";
 import { emitAdminAlert } from "../_shared/adminAlert.ts";
+import { isInternalCaller, isInternalOrStaff, unauthorized } from "../_shared/internalAuth.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsPreflight(req);
+  if (!(await isInternalCaller(req))) return unauthorized(getCorsHeaders(req));
 
   const sb = createClient(
     Deno.env.get("SUPABASE_URL")!,

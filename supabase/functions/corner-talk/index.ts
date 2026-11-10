@@ -900,7 +900,8 @@ async function translateOutput(
     th: "Thai", fr: "French", de: "German", ru: "Russian",
     zh: "Chinese", ja: "Japanese", ko: "Korean", es: "Spanish",
   };
-  const targetLang = langMap[language] || language;
+  const targetLang = langMap[language];
+  if (!targetLang) return output;
 
   try {
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

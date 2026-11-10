@@ -22,7 +22,9 @@ export function downloadCSV(
       headers
         .map((h) => {
           const val = row[h] ?? "";
-          const str = String(val);
+          let str = String(val);
+          // Neutralize spreadsheet formulas (CSV injection)
+          if (typeof val === "string" && /^[=+\-@\t\r]/.test(str)) str = "'" + str;
           // Escape commas and quotes
           return str.includes(",") || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str;
         })

@@ -11,6 +11,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkAiGuard, logAiUsage, hashIp, resolveRoleAndProperty } from "../_shared/aiGuard.ts";
+import { getCaller, unauthorized } from "../_shared/internalAuth.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
@@ -50,8 +51,10 @@ serve(async (req) => {
   const ipHash = await hashIp(req);
 
   try {
-    const { documentId, filePath, expectedType } = await req.json();
-    if (!documentId || !filePath) {
+    const caller = await getCaller(req);
+    if (!caller) return unauthorized(getCorsHeaders(req));
+    const { documentId, expectedType } = await req.json();
+    if (!documentId || typeof documentId !== "string") {
       return new Response(JSON.stringify({ error: "documentId and filePath required" }), {
         status: 400,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
@@ -68,9 +71,19 @@ serve(async (req) => {
     // Resolve actor + property for governance
     const { data: docRow } = await supabase
       .from("guest_documents")
-      .select("uploaded_by, booking_id, bookings!inner(property_id)")
+      .select("uploaded_by, booking_id, file_path, bookings!inner(property_id, guest_id)")
       .eq("id", documentId)
       .maybeSingle();
+    if (!docRow) {
+      return new Response(JSON.stringify({ error: "Document not found" }), {
+        status: 404, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+    const isOwner = (docRow as any).uploaded_by === caller.userId || (docRow as any).bookings?.guest_id === caller.userId;
+    const isStaff = caller.roles.some((r) => ["admin", "manager", "front_desk_supervisor", "front_desk"].includes(r));
+    if (!isOwner && !isStaff) return unauthorized(getCorsHeaders(req));
+    // Always use the stored path — never a caller-supplied one.
+    const filePath: string = (docRow as any).file_path;
     const actorId: string | null = (docRow as any)?.uploaded_by ?? null;
     const propertyId: string | null = (docRow as any)?.bookings?.property_id ?? null;
     const { role } = await resolveRoleAndProperty(supabase, actorId);

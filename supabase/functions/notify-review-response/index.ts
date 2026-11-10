@@ -60,6 +60,18 @@ Deno.serve(async (req) => {
       });
     }
 
+    const { data: roleRows } = await createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    ).from("user_roles").select("role").eq("user_id", claims.claims.sub as string);
+    const isStaff = (roleRows ?? []).some((r: any) => ["admin", "manager"].includes(r.role));
+    if (!isStaff) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+
     const { review_id, admin_response } = await req.json();
     if (!review_id) {
       return new Response(JSON.stringify({ error: "review_id is required" }), {
