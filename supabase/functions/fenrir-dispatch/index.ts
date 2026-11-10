@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getCaller, isInternalCaller, unauthorized } from "../_shared/internalAuth.ts";
 import { FENRIR_EVENT_MAP, sendFenrirSecurityEvent } from "../_shared/fenrir.ts";
 
 const ALLOWED_ORIGINS = [
@@ -36,8 +37,12 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+    const internal = await isInternalCaller(req);
+    const caller = internal ? null : await getCaller(req);
+    if (!internal && !caller) return unauthorized(getCorsHeaders(req));
+
     const { events } = await req.json();
-    if (!Array.isArray(events) || events.length === 0) {
+    if (!Array.isArray(events) || events.length === 0 || events.length > 50) {
       return new Response(
         JSON.stringify({ error: "events array required" }),
         { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
