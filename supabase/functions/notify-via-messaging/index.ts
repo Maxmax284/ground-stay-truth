@@ -29,6 +29,7 @@ import {
   type Role,
 } from "../_shared/richMessages.ts";
 import { sendWithRetry, type SendResult } from "../_shared/messagingRetry.ts";
+import { getCaller, isInternalCaller, STAFF_ROLES, unauthorized } from "../_shared/internalAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -369,8 +370,19 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceRoleKey);
 
+    const internal = await isInternalCaller(req);
+    const caller = internal ? null : await getCaller(req);
+    if (!internal && !caller) return unauthorized(corsHeaders);
+    const isStaff = internal || !!caller?.roles.some((r) => STAFF_ROLES.includes(r));
+
     const payload = (await req.json()) as Payload;
-    const { event_type, subject_id, metadata = {}, target_user_ids, target_roles, guest_user_id } = payload;
+    const { event_type, subject_id, metadata = {} } = payload;
+    // Non-staff callers may only trigger the default staff routing for an event;
+    // they cannot pick recipients or roles.
+    const target_user_ids = isStaff ? payload.target_user_ids : undefined;
+    const target_roles = isStaff ? payload.target_roles : undefined;
+    const guest_user_id = isStaff ? payload.guest_user_id : undefined;
+    if (!isStaff && !EVENT_ROLE_MAP[event_type]) return unauthorized(corsHeaders);
 
     if (!event_type) {
       return new Response(JSON.stringify({ error: "event_type required" }), {
