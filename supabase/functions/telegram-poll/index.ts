@@ -4,6 +4,7 @@
 // Designed to be invoked by pg_cron every minute. Each invocation long-polls
 // for up to ~50s, fitting inside the 60s cron interval.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isInternalCaller, isInternalOrStaff, unauthorized } from "../_shared/internalAuth.ts";
 
 const MAX_RUNTIME_MS = 55_000;
 const MIN_REMAINING_MS = 5_000;
@@ -25,7 +26,8 @@ async function sendTelegramMessage(botToken: string, chatId: number | string, te
   });
 }
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
+  if (!(await isInternalCaller(req))) return unauthorized();
   const startTime = Date.now();
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

@@ -6,6 +6,7 @@
 // Never touches files younger than 24h (grace period for in-flight writes).
 // -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isInternalCaller, isInternalOrStaff, unauthorized } from "../_shared/internalAuth.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
@@ -50,16 +51,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Auth: accept service role key OR anon key (for pg_cron via pg_net)
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const authHeader = req.headers.get("Authorization");
-    const token = authHeader?.replace("Bearer ", "") ?? "";
-    if (token !== serviceRoleKey && token !== anonKey) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
-      });
-    }
+    if (!(await isInternalOrStaff(req, ["admin"]))) return unauthorized(getCorsHeaders(req));
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
     const results: Record<string, number> = {};

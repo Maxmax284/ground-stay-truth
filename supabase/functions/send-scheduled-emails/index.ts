@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendAppEmail } from "../_shared/appEmail.ts";
+import { isInternalCaller, isInternalOrStaff, unauthorized } from "../_shared/internalAuth.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
@@ -36,6 +37,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: getCorsHeaders(req) });
   }
+  if (!(await isInternalCaller(req))) return unauthorized(getCorsHeaders(req));
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
