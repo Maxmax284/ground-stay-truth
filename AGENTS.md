@@ -10,3 +10,5 @@
 - Booking detail sheets use the shared scrollBody layout with safe-area-aware dismissal outside the scroll region — so installed iPhone users can always close a long booking.
 - Existing account profiles are never overwritten by booking creation; booking names live in manual_guest_name and win in booking displays, while directory identity stays account-based, so friends sharing an email retain separate staying names.
 - Staff name editing uses staff_edit_guest_identity with server-derived admin/manager authority, property checks and ID-only audit metadata; the shared GuestNameEditor keeps account and booking edits explicit.
+
+- Privileged edge functions verify callers via supabase/functions/_shared/internalAuth.ts (service role, cron x-internal-token from integration_secrets, or server-derived staff role) — the public anon key is never proof of identity.
