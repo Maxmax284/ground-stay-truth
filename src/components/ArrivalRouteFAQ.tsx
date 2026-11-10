@@ -526,10 +526,14 @@ function printArrivalSheet(
     }));
     return;
   }
-  const flight = pickup?.flight_number ?? "—";
-  const intl = pickup?.international_flight_number ?? "—";
+  const esc = (v: unknown) =>
+    String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+  const flight = esc(pickup?.flight_number ?? "—");
+  const intl = esc(pickup?.international_flight_number ?? "—");
+  bookingId = esc(bookingId);
+  lang = esc(lang);
   const arrivalAt = pickup?.arrival_datetime
-    ? new Date(pickup.arrival_datetime).toLocaleString(lang)
+    ? esc(new Date(pickup.arrival_datetime).toLocaleString(lang))
     : "—";
 
   const title = t("arrivalFAQ.printTitle", { defaultValue: "Arrival Instructions — Koh Samui" });
