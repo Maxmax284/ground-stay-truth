@@ -44,7 +44,23 @@ Deno.serve(async (req) => {
     // ─── Inbound message payload (POST) ───
     // Meta payload shape:
     // { object, entry: [{ changes: [{ field: "messages", value: { messages: [...], contacts: [...] } }] }] }
-    const payload = await req.json().catch(() => null);
+    // Verify Meta's X-Hub-Signature-256 (HMAC-SHA256 of raw body with the app secret).
+    const rawBody = await req.text();
+    const appSecret = await getSecret(admin, "whatsapp_meta_app_secret");
+    const sigHeader = req.headers.get("x-hub-signature-256") || "";
+    if (!appSecret || !sigHeader.startsWith("sha256=")) {
+      return new Response("Forbidden", { status: 403 });
+    }
+    const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(appSecret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    const mac = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(rawBody)));
+    const expectedSig = Array.from(mac).map((b) => b.toString(16).padStart(2, "0")).join("");
+    const gotSig = sigHeader.slice(7).toLowerCase();
+    let diff = expectedSig.length ^ gotSig.length;
+    for (let i = 0; i < Math.min(expectedSig.length, gotSig.length); i++) diff |= expectedSig.charCodeAt(i) ^ gotSig.charCodeAt(i);
+    if (diff !== 0) return new Response("Forbidden", { status: 403 });
+
+    let payload: any = null;
+    try { payload = JSON.parse(rawBody); } catch { payload = null; }
     if (!payload || payload.object !== "whatsapp_business_account") {
       return new Response("ok", { status: 200 });
     }
