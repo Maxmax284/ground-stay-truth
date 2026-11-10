@@ -10,6 +10,7 @@
 // -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendAppEmail } from "../_shared/appEmail.ts";
+import { getStaffCaller, isInternalCaller, unauthorized } from "../_shared/internalAuth.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
@@ -42,13 +43,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
-      });
-    }
+    const internal = await isInternalCaller(req);
+    const staff = internal ? null : await getStaffCaller(req, ["admin", "manager", "front_desk_supervisor", "front_desk"]);
+    if (!internal && !staff) return unauthorized(getCorsHeaders(req));
+    const canOverride = internal || !!staff?.roles.some((r) => r === "admin" || r === "manager");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -63,6 +61,12 @@ Deno.serve(async (req) => {
     const isResend = payload?.resend === true;
     const overrideTo =
       typeof payload?.override_to === "string" ? payload.override_to.trim() : "";
+    if (overrideTo && (!canOverride || !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(overrideTo) || overrideTo.length > 254)) {
+      return new Response(JSON.stringify({ error: "override_to not allowed" }), {
+        status: 403,
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
     if (!booking_id) {
       return new Response(JSON.stringify({ error: "booking_id required" }), {
         status: 400,
