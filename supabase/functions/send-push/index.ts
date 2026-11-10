@@ -14,6 +14,7 @@ import { emitAdminAlert } from "../_shared/adminAlert.ts";
 // Env: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY (fallback: policy_settings row).
 // -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { getCaller, isInternalCaller } from "../_shared/internalAuth.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://lmtcampstay.com",
@@ -247,6 +248,10 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+    const internal = await isInternalCaller(req);
+    const caller = internal ? null : await getCaller(req);
+    if (!internal && !caller) return json({ error: "unauthorized" }, 401);
+
     const reqBody = await req.json();
 
     // Non-secret key-shape diagnostic: never returns key material, only
@@ -283,6 +288,12 @@ Deno.serve(async (req) => {
 
     if (!user_ids || !Array.isArray(user_ids) || !title || !body) {
       return json({ error: "user_ids (array), title, and body are required" }, 400);
+    }
+    if (caller) {
+      const privileged = caller.roles.some((r) => r === "admin" || r === "manager");
+      if (!privileged && user_ids.some((u: unknown) => u !== caller.userId)) {
+        return json({ error: "forbidden" }, 403);
+      }
     }
 
     const { data: subs, error } = await supabase

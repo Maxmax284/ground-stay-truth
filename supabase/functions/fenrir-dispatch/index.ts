@@ -63,8 +63,8 @@ Deno.serve(async (req) => {
     const auditRows = events.map((e: any) => ({
       event_type: e.event_type,
       severity: e.severity,
-      actor_id: e.details?.actor_id || null,
-      actor_role: e.details?.actor_role || null,
+      actor_id: caller ? caller.userId : (e.details?.actor_id || null),
+      actor_role: caller ? (caller.roles[0] ?? null) : (e.details?.actor_role || null),
       actor_email: e.details?.actor_email || null,
       confidence_score: e.confidence_score ?? 50,
       details: e.details ?? {},
