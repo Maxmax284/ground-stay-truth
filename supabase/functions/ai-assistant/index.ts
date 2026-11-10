@@ -12,6 +12,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { logAiUsage as logAiUsageEvent } from "../_shared/aiGuard.ts";
 import { emitAdminAlert } from "../_shared/adminAlert.ts";
+import { asUuid, sanitizeChatMessages } from "../_shared/chatSanitize.ts";
 
 // F-53: PII minimization — strip sensitive data before sending to AI
 function minimizePII(text: string): string {
@@ -488,7 +489,9 @@ serve(async (req) => {
     }).catch(() => {});
 
     const body = await req.json();
-    const { mode, role: clientRole, messages, context, language, property_id, operational_mode, focused_context } = body;
+    const { mode, role: clientRole, context, language, operational_mode, focused_context } = body;
+    const messages = sanitizeChatMessages(body.messages);
+    const property_id = asUuid(body.property_id);
     // Answer discipline — depth intent classified client-side. Unknown values
     // fall back to the full structured contract (never truncate blindly).
     const rawIntent = typeof body.intent === "string" ? body.intent : "";
