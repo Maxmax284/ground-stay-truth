@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import { useState, useMemo } from "react";
 import { AmenityList } from "@/components/AmenityBadge";
 import { useTranslation } from "react-i18next";
@@ -33,11 +34,19 @@ const Units = () => {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const icalUrl = (unitId: string) =>
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ical-export?unit_id=${unitId}`;
-
   const copyIcalUrl = async (unitId: string) => {
-    await navigator.clipboard.writeText(icalUrl(unitId));
+    const { data, error } = await supabase
+      .from("unit_ical_tokens")
+      .select("token")
+      .eq("unit_id", unitId)
+      .maybeSingle();
+    if (error || !data) {
+      toast({ title: "Only admins/managers can copy iCal links", variant: "destructive" });
+      return;
+    }
+    await navigator.clipboard.writeText(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ical-export?unit_id=${unitId}&token=${data.token}`,
+    );
     setCopiedId(unitId);
     toast({ title: "iCal feed URL copied" });
     setTimeout(() => setCopiedId(null), 2000);
