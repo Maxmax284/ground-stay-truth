@@ -47,8 +47,15 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     const unitId = url.searchParams.get("unit_id");
+    const token = url.searchParams.get("token");
 
-    if (!unitId) {
+    if (!unitId || !token || !/^[0-9a-f]{48}$/.test(token) || !/^[0-9a-f-]{36}$/i.test(unitId)) {
+      return new Response(JSON.stringify({ error: "Not found" }), {
+        status: 404,
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+    if (false) {
       return new Response(JSON.stringify({ error: "unit_id is required" }), {
         status: 400,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
@@ -59,6 +66,18 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    const { data: tok } = await supabase
+      .from("unit_ical_tokens")
+      .select("token")
+      .eq("unit_id", unitId)
+      .maybeSingle();
+    if (!tok || tok.token !== token) {
+      return new Response(JSON.stringify({ error: "Not found" }), {
+        status: 404,
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
 
     // Fetch unit name
     const { data: unit, error: unitErr } = await supabase
@@ -81,7 +100,7 @@ serve(async (req) => {
 
     const { data: bookings } = await supabase
       .from("bookings")
-      .select("id, check_in, check_out, state, notes")
+      .select("id, check_in, check_out, state")
       .eq("unit_id", unitId)
       .gte("check_out", cutoff)
       .not("state", "in", '("cancelled","no_show","inquiry")');
@@ -134,7 +153,7 @@ serve(async (req) => {
         `DTSTAMP:${now}`,
         `DTSTART;VALUE=DATE:${icalDate(m.start_date)}`,
         `DTEND;VALUE=DATE:${icalDate(m.end_date)}`,
-        `SUMMARY:${escapeIcal("Maintenance" + (m.reason ? `: ${m.reason}` : ""))}`,
+        `SUMMARY:Blocked`,
         `STATUS:CONFIRMED`,
         "TRANSP:OPAQUE",
         "END:VEVENT"
