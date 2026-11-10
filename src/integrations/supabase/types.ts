@@ -5034,6 +5034,39 @@ export type Database = {
         }
         Relationships: []
       }
+      unit_ical_tokens: {
+        Row: {
+          created_at: string
+          token: string
+          unit_id: string
+        }
+        Insert: {
+          created_at?: string
+          token?: string
+          unit_id: string
+        }
+        Update: {
+          created_at?: string
+          token?: string
+          unit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unit_ical_tokens_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: true
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unit_ical_tokens_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: true
+            referencedRelation: "units_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       units: {
         Row: {
           amenities: string[] | null
