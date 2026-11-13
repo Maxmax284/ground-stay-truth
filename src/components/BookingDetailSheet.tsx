@@ -169,7 +169,7 @@ export function BookingDetailSheet({ bookingId, open, onOpenChange, isAdmin: isR
     if (!booking) return null;
     const state = booking.state as BookingState;
     const hasDocuments = (documents?.length ?? 0) > 0;
-    const hasPaid = (payments?.length ?? 0) > 0;
+    const hasPaid = (payments ?? []).some((p: any) => p.status === "recorded");
 
     // Stay support alerts for checked-in bookings
     const supportAlerts: string[] = [];

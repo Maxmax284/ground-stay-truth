@@ -301,7 +301,8 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
     }
 
     // If deposit form is showing, record payment first
-    if (showDepositForm) {
+    const waiveDeposit = showDepositForm && depositOverride && Number(depositAmount || 0) === 0;
+    if (showDepositForm && !waiveDeposit) {
       if (!depositAmount || Number(depositAmount) <= 0) {
         toast({ title: t("payments.enterValidAmount"), variant: "destructive" });
         return;
@@ -356,9 +357,9 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
     try {
       const reasonText = [
         adminOverride ? "[ADMIN OVERRIDE]" : "",
-        depositOverride ? `[MANAGER DEPOSIT OVERRIDE] ${depositOverrideReason}` : "",
+        waiveDeposit ? `[MANAGER OVERRIDE — DEPOSIT WAIVED] ${depositOverrideReason}` : depositOverride ? `[MANAGER DEPOSIT OVERRIDE] ${depositOverrideReason}` : "",
         earlyCheckinApproved && targetState === "checked_in" ? "[EARLY CHECK-IN APPROVED]" : "",
-        showDepositForm ? `[DEPOSIT: ${formatPrice(Number(depositAmount), policies)} via ${depositMethod}]` : "",
+        showDepositForm && !waiveDeposit ? `[DEPOSIT: ${formatPrice(Number(depositAmount), policies)} via ${depositMethod}]` : "",
         cashAtCheckin && checkinPayAmount ? `[CASH AT CHECK-IN: ${formatPrice(Number(checkinPayAmount), policies)} via ${checkinPayMethod}]` : "",
         reason,
         refundInfo ? `[${targetState === "no_show" ? "No-show deposit" : "Refund"}: ${refundInfo.label}${refundInfo.refundAmount != null ? ` — ${formatPrice(refundInfo.refundAmount, policies)}` : ""}]` : "",
@@ -617,7 +618,9 @@ export function BookingStateTransition({ bookingId, currentState, isAdmin, check
               ? t("common.updating")
               : targetIsGated
                 ? t("stateTransition.requestApproval")
-                : showDepositForm
+                : showDepositForm && depositOverride && Number(depositAmount || 0) === 0
+                  ? t("deposit.waiveAndConfirm", { defaultValue: "Waive Deposit & Confirm" })
+                  : showDepositForm
                   ? t("deposit.recordAndConfirm")
                   : cashAtCheckin
                     ? t("checkin.recordAndCheckIn", { defaultValue: "Record Payment & Check In" })
