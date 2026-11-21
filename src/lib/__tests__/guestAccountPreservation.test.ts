@@ -28,4 +28,44 @@ describe("booking creation preserves account identity", () => {
     expect(result.userId).toBe("owner-id");
     expect(result.createdAccount).toBe(false);
   });
+
+  it("saves phone and language when the signup trigger already created the new profile", async () => {
+    let existingProfile: Record<string, unknown> | null = null;
+    const admin = {
+      auth: {
+        admin: {
+          createUser: async () => {
+            // handle_new_user creates this row before ensureGuestAccount upserts.
+            existingProfile = {
+              user_id: "new-id",
+              email: "new@example.test",
+              full_name: "New Guest",
+              phone: null,
+              preferred_language: "en",
+            };
+            return { data: { user: { id: "new-id" } }, error: null };
+          },
+        },
+      },
+      from: (table: string) => ({
+        select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: existingProfile, error: null }) }) }),
+        upsert: async (values: object, options: { ignoreDuplicates?: boolean }) => {
+          if (table === "profiles" && !(options.ignoreDuplicates && existingProfile)) {
+            existingProfile = { ...existingProfile, ...values };
+          }
+          return { error: null };
+        },
+      }),
+    };
+
+    const result = await ensureGuestAccount(admin, {
+      email: "new@example.test",
+      full_name: "New Guest",
+      phone: "+66812345678",
+      preferred_language: "th",
+    });
+
+    expect(result.createdAccount).toBe(true);
+    expect(existingProfile).toMatchObject({ phone: "+66812345678", preferred_language: "th" });
+  });
 });

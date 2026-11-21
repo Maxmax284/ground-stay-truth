@@ -23,3 +23,7 @@
 - [ ] Phase 3: sandbox end-to-end escalation test + launch gate (needs management approval, real phones)
 - [ ] Phase 4: room readiness, housekeeping, maintenance, tasks
 - [ ] Phase 5: unified PMS oversight/reporting
+
+# Project monitoring repairs (Nov 2026)
+- [x] Restore authenticated hourly scheduled guest emails; retired Telegram polling stays off
+- [x] Preserve phone and preferred language for newly created guest accounts

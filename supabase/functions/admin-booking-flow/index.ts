@@ -95,13 +95,15 @@ async function ensureGuestAccount(admin: any, input: any) {
 
   // A booking may be for a friend using the account owner's email. Never
   // replace an existing account's identity/contact/language with booking input.
+  // For a newly created account, the signup trigger has already inserted the
+  // profile, so this upsert must update that row with the submitted details.
   const { error: upsertProfileError } = await admin.from("profiles").upsert({
     user_id: userId,
     email,
     full_name: fullName,
     phone,
     preferred_language: preferredLanguage,
-  }, { onConflict: "user_id", ignoreDuplicates: true });
+  }, { onConflict: "user_id", ignoreDuplicates: !createdAccount });
   if (upsertProfileError) throw new Error(upsertProfileError.message);
 
   const { error: roleError } = await admin.from("user_roles").upsert({ user_id: userId, role: "guest" }, { onConflict: "user_id,role" });
