@@ -10,6 +10,7 @@
 // -----------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendAppEmail } from "../_shared/appEmail.ts";
+import { isInternalCaller } from "../_shared/internalAuth.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("SITE_URL") || "https://ground-stay-truth.lovable.app",
@@ -46,8 +47,7 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     // ─── AUTH: Only allow internal/cron calls with service role key ───────
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader || authHeader !== `Bearer ${serviceRoleKey}`) {
+    if (!(await isInternalCaller(req))) {
       return new Response(JSON.stringify({ error: "Unauthorized — internal use only" }), {
         status: 401,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },

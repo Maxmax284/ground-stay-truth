@@ -9,6 +9,24 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
 let cachedCronToken: string | null = null;
+let cachedAt = 0;
+const CACHE_MS = 60_000; // short cache so token rotation takes effect within a minute
+
+function safeEqual(a: string, b: string): boolean {
+  const ea = new TextEncoder().encode(a), eb = new TextEncoder().encode(b);
+  let diff = ea.length ^ eb.length;
+  for (let i = 0; i < Math.max(ea.length, eb.length); i++) diff |= (ea[i] ?? 0) ^ (eb[i] ?? 0);
+  return diff === 0;
+}
+
+async function loadCronToken(force = false): Promise<string | null> {
+  if (!force && cachedCronToken && Date.now() - cachedAt < CACHE_MS) return cachedCronToken;
+  const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+  const { data } = await admin.from("integration_secrets").select("encrypted_value").eq("secret_key", "cron_internal_token").maybeSingle();
+  cachedCronToken = data?.encrypted_value ?? null;
+  cachedAt = Date.now();
+  return cachedCronToken;
+}
 
 function bearer(req: Request): string {
   const h = req.headers.get("Authorization") || req.headers.get("authorization") || "";
@@ -18,19 +36,14 @@ function bearer(req: Request): string {
 export async function isInternalCaller(req: Request): Promise<boolean> {
   const b = bearer(req);
   const apikey = req.headers.get("apikey") || "";
-  if (SERVICE_KEY && (b === SERVICE_KEY || apikey === SERVICE_KEY)) return true;
+  if (SERVICE_KEY && (safeEqual(b, SERVICE_KEY) || safeEqual(apikey, SERVICE_KEY))) return true;
   const tok = req.headers.get("x-internal-token") || "";
   if (!tok) return false;
-  if (!cachedCronToken) {
-    const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-    const { data } = await admin
-      .from("integration_secrets")
-      .select("encrypted_value")
-      .eq("secret_key", "cron_internal_token")
-      .maybeSingle();
-    cachedCronToken = data?.encrypted_value ?? null;
-  }
-  return !!cachedCronToken && cachedCronToken.length >= 32 && tok === cachedCronToken;
+  let t = await loadCronToken();
+  if (t && t.length >= 32 && safeEqual(tok, t)) return true;
+  // Token may have just been rotated: refetch once before rejecting.
+  t = await loadCronToken(true);
+  return !!t && t.length >= 32 && safeEqual(tok, t);
 }
 
 export interface StaffCaller { userId: string; roles: string[] }
