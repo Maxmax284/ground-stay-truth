@@ -12,3 +12,4 @@
 - Staff name editing uses staff_edit_guest_identity with server-derived admin/manager authority, property checks and ID-only audit metadata; the shared GuestNameEditor keeps account and booking edits explicit.
 
 - Privileged edge functions verify callers via supabase/functions/_shared/internalAuth.ts (service role, cron x-internal-token from integration_secrets, or server-derived staff role) — the public anon key is never proof of identity.
+- Keep gated document-security candidates unwired under security/document-g2 with synthetic tests; production adapters and policy changes require separate rollout approval because preview shares the live backend.

@@ -31,7 +31,8 @@
 # Document security remediation (Nov 2026)
 - [x] Security-only repair plan reviewed with separate authorization gates
 - [ ] Containment actions (G1): awaiting explicit authorization; no live changes authorized by plan review alone
-- [ ] Isolated synthetic implementation and tests (G2): awaiting gate authorization; shared preview database must not be used
+- [x] Isolated synthetic development (G2): prepared unwired access/link/upload, retention and verification candidates; 70 security tests and 13 regressions pass with fabricated fixtures only
+- [ ] G2 database/storage integration evidence: blocked pending an independent test backend and separately authorized schema/policy preparation; local tests do not prove RLS or storage enforcement
 - [ ] Production policies, storage settings and code (G3/G4): separate rollout authorization required
 - [ ] Retention disposition and historical-link remediation (G5/G6): legal policy and explicit action approval required
 - [ ] Archives connector (G7): remains disabled; separate authorization required
